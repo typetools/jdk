@@ -686,6 +686,9 @@ public class HashMap<K extends @Nullable Object,V extends @Nullable Object> exte
      *
      * @return the table
      */
+    @SuppressWarnings("cast.unsafe")
+    @CFComment({"index: #1: cast from @DoubleVal(12.0) float to @IntVal(12) int will not produce any runtime error",
+        "issue link: https://github.com/typetools/checker-framework/issues/2731"})
     final Node<K,V>[] resize() {
         Node<K,V>[] oldTab = table;
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
@@ -704,7 +707,7 @@ public class HashMap<K extends @Nullable Object,V extends @Nullable Object> exte
             newCap = oldThr;
         else {               // zero initial threshold signifies using defaults
             newCap = DEFAULT_INITIAL_CAPACITY;
-            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); // #1
         }
         if (newThr == 0) {
             float ft = (float)newCap * loadFactor;

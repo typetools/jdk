@@ -36,6 +36,7 @@ import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -4865,8 +4866,10 @@ public class Collections {
      * @return an immutable list containing only the specified object.
      * @since 1.3
      */
+    @SuppressWarnings("return.type.incompatible")
+    @CFComment("index: #1: returns a list containing only the specified object o, hence @MinLen(1)")
     public static <T> @MinLen(1) List<T> singletonList(T o) {
-        return new SingletonList<>(o);
+        return new SingletonList<>(o); // #1
     }
 
     /**
