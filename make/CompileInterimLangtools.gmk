@@ -71,7 +71,9 @@ define SetupInterimModule
       COPY := .gif .png .xml .css .js javax.tools.JavaCompilerTool, \
       BIN := $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules/$1.interim, \
       ADD_JAVAC_FLAGS := --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
-          --patch-module $1.interim=$(TOPDIR)/checker-qual.jar \
+        --patch-module $1.interim=$(TOPDIR)/checker-qual.jar \
+        --processor-path $(TOPDIR)/checker.jar \
+        -processor org.checkerframework.checker.nullness.NullnessChecker \
           $$(INTERIM_LANGTOOLS_ADD_EXPORTS) \
           -Xlint:-module, \
   ))
