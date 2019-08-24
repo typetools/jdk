@@ -601,7 +601,7 @@ $(eval $(call SetupJavaCompilation, $(MODULE), \
         --module-source-path $(MODULESOURCEPATH) \
         --module-path $(MODULEPATH) \
         --processor-path $(TOPDIR)/checker.jar \
-        -processor org.checkerframework.checker.nullness.NullnessChecker \
+        -processor org.checkerframework.checker.nullness.NullnessChecker, org.checkerframework.checker.signature.SignatureChecker \
         --system none, \
 ))
 
