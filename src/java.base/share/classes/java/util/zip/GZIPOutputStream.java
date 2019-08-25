@@ -191,8 +191,8 @@ class GZIPOutputStream extends DeflaterOutputStream {
     @CFComment("index: https://github.com/typetools/checker-framework/issues/2731")
     private void writeHeader() throws IOException {
         out.write(new byte[] {
-                      (byte) GZIP_MAGIC,        // Magic number (short) #1
-                      (byte)(GZIP_MAGIC >> 8),  // Magic number (short) #2
+                      (byte) GZIP_MAGIC,        // Magic number (short)
+                      (byte)(GZIP_MAGIC >> 8),  // Magic number (short)
                       Deflater.DEFLATED,        // Compression method (CM)
                       0,                        // Flags (FLG)
                       0,                        // Modification time MTIME (int)
