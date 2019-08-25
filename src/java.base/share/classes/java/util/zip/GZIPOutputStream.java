@@ -188,9 +188,7 @@ class GZIPOutputStream extends DeflaterOutputStream {
      * Writes GZIP member header.
      */
     @SuppressWarnings("cast.unsafe")
-    @CFComment({"index: #1: cast from @IntVal(35615) int to @IntVal(31) byte will not produce any runtime error",
-        "index: #2: cast from @IntVal(139) int to @IntVal(-117) byte will not produce any runtime error",
-        "issue link: https://github.com/typetools/checker-framework/issues/2731"})
+    @CFComment("index: https://github.com/typetools/checker-framework/issues/2731")
     private void writeHeader() throws IOException {
         out.write(new byte[] {
                       (byte) GZIP_MAGIC,        // Magic number (short) #1
