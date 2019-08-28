@@ -73,7 +73,7 @@ define SetupInterimModule
       ADD_JAVAC_FLAGS := --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
         --patch-module $1.interim=$(TOPDIR)/checker-qual.jar \
         --processor-path $(TOPDIR)/checker.jar \
-        -processor org.checkerframework.checker.nullness.NullnessChecker, org.checkerframework.checker.signature.SignatureChecker \
+        -processor org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.signature.SignatureChecker,org.checkerframework.checker.index.IndexChecker \
           $$(INTERIM_LANGTOOLS_ADD_EXPORTS) \
           -Xlint:-module, \
   ))
