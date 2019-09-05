@@ -1,1 +1,1 @@
--processor org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.signature.SignatureChecker,org.checkerframework.checker.index.IndexChecker \
+-processor org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.signature.SignatureChecker,org.checkerframework.checker.index.IndexChecker
