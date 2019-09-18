@@ -1,6 +1,5 @@
 Sometimes openjdk/jdk and openjdk/jdk11u have their history rewritten incompatibly. :-(
 
-
 Here is how Mike dealt with that problem the last time it happened.
 
 # Do this:
