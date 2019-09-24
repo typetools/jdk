@@ -3233,7 +3233,7 @@ public final class String
      * @jls 3.10.5 String Literals
      */
     @Pure
-    public native @Interned @PolyAll @SameLen({"this"}) String intern(@UnknownInterned String this);
+    public native @Interned @PolyAll @SameLen({"this"}) String intern(@UnknownInterned @PolyAll String this);
 
     /**
      * Returns a string whose value is the concatenation of this
