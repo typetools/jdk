@@ -37,7 +37,6 @@ import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.index.qual.SameLen;
 import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.checker.interning.qual.UnknownInterned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -3233,7 +3232,7 @@ public final class String
      * @jls 3.10.5 String Literals
      */
     @Pure
-    public native @Interned @PolyAll @SameLen({"this"}) String intern(@UnknownInterned @PolyAll String this);
+    public native @Interned @PolyAll @SameLen({"this"}) String intern(@PolyAll String this);
 
     /**
      * Returns a string whose value is the concatenation of this
