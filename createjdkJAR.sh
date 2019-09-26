@@ -1,6 +1,7 @@
 #! /bin/bash
 
-# This script creates the JARs of compiled Annotated-JDK modules. The directory containing these JARs will be uploaded to maven central.
+# This script creates a directory named 'jdk11' containing JARs of compiled Annotated-JDK modules.
+# The directory containing these JARs will be uploaded to maven central as zip to be used with build tools like Maven/Gradle/Bazel
 JAVAVERSION=11
 
 # Remove previously present files.
