@@ -27,6 +27,7 @@ package java.security;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.*;
 import java.security.cert.Certificate;
@@ -278,7 +279,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @param password the password, which may be {@code null}
          */
-        public PasswordProtection(char[] password) {
+        public PasswordProtection(@Nullable char[] password) {
             this.password = (password == null) ? null : password.clone();
             this.protectionAlgorithm = null;
             this.protectionParameters = null;
@@ -305,8 +306,8 @@ public @UsesObjectEquals class KeyStore {
          *
          * @since 1.8
          */
-        public PasswordProtection(char[] password, String protectionAlgorithm,
-            AlgorithmParameterSpec protectionParameters) {
+        public PasswordProtection(@Nullable char[] password, String protectionAlgorithm,
+            @Nullable AlgorithmParameterSpec protectionParameters) {
             if (protectionAlgorithm == null) {
                 throw new NullPointerException("invalid null input");
             }
@@ -331,7 +332,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @since 1.8
          */
-        public String getProtectionAlgorithm() {
+        public @Nullable String getProtectionAlgorithm() {
             return protectionAlgorithm;
         }
 
@@ -360,7 +361,7 @@ public @UsesObjectEquals class KeyStore {
          * @exception IllegalStateException if the password has
          *              been cleared (destroyed)
          */
-        public synchronized char[] getPassword() {
+        public synchronized @Nullable char[] getPassword() {
             if (destroyed) {
                 throw new IllegalStateException("password has been cleared");
             }
@@ -1435,7 +1436,7 @@ public @UsesObjectEquals class KeyStore {
      *
      * @since 1.5
      */
-    public final void store(LoadStoreParameter param)
+    public final void store(@Nullable LoadStoreParameter param)
                 throws KeyStoreException, IOException,
                 NoSuchAlgorithmException, CertificateException {
         if (!initialized) {
@@ -1477,7 +1478,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception CertificateException if any of the certificates in the
      * keystore could not be loaded
      */
-    public final void load(InputStream stream, char[] password)
+    public final void load(@Nullable InputStream stream, @Nullable char[] password)
         throws IOException, NoSuchAlgorithmException, CertificateException
     {
         keyStoreSpi.engineLoad(stream, password);
@@ -1510,7 +1511,7 @@ public @UsesObjectEquals class KeyStore {
      *
      * @since 1.5
      */
-    public final void load(LoadStoreParameter param)
+    public final void load(@Nullable LoadStoreParameter param)
                 throws IOException, NoSuchAlgorithmException,
                 CertificateException {
 
@@ -1546,7 +1547,7 @@ public @UsesObjectEquals class KeyStore {
      *
      * @since 1.5
      */
-    public final Entry getEntry(String alias, ProtectionParameter protParam)
+    public final @Nullable Entry getEntry(String alias, @Nullable ProtectionParameter protParam)
                 throws NoSuchAlgorithmException, UnrecoverableEntryException,
                 KeyStoreException {
 
@@ -1584,7 +1585,7 @@ public @UsesObjectEquals class KeyStore {
      * @since 1.5
      */
     public final void setEntry(String alias, Entry entry,
-                        ProtectionParameter protParam)
+                        @Nullable ProtectionParameter protParam)
                 throws KeyStoreException {
         if (alias == null || entry == null) {
             throw new NullPointerException("invalid null input");
@@ -1685,7 +1686,7 @@ public @UsesObjectEquals class KeyStore {
      *
      * @since 9
      */
-    public static final KeyStore getInstance(File file, char[] password)
+    public static final KeyStore getInstance(File file, @Nullable char[] password)
         throws KeyStoreException, IOException, NoSuchAlgorithmException,
             CertificateException {
         return getInstance(file, password, null, true);
@@ -1742,7 +1743,7 @@ public @UsesObjectEquals class KeyStore {
      * @since 9
      */
     public static final KeyStore getInstance(File file,
-        LoadStoreParameter param) throws KeyStoreException, IOException,
+        @Nullable LoadStoreParameter param) throws KeyStoreException, IOException,
             NoSuchAlgorithmException, CertificateException {
         return getInstance(file, null, param, false);
     }
