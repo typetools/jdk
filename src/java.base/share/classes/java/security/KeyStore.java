@@ -195,7 +195,7 @@ import sun.security.util.Debug;
  * @since 1.2
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class KeyStore {
 
     private static final Debug kdebug = Debug.getInstance("keystore");
@@ -241,7 +241,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @return the parameter used to protect keystore data, or null
          */
-        public ProtectionParameter getProtectionParameter();
+        public @Nullable ProtectionParameter getProtectionParameter();
     }
 
     /**
@@ -279,7 +279,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @param password the password, which may be {@code null}
          */
-        public PasswordProtection(@Nullable char[] password) {
+        public PasswordProtection(char @Nullable [] password) {
             this.password = (password == null) ? null : password.clone();
             this.protectionAlgorithm = null;
             this.protectionParameters = null;
@@ -306,7 +306,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @since 1.8
          */
-        public PasswordProtection(@Nullable char[] password, String protectionAlgorithm,
+        public PasswordProtection(char @Nullable [] password, String protectionAlgorithm,
             @Nullable AlgorithmParameterSpec protectionParameters) {
             if (protectionAlgorithm == null) {
                 throw new NullPointerException("invalid null input");
@@ -344,7 +344,7 @@ public @UsesObjectEquals class KeyStore {
          *
          * @since 1.8
          */
-        public AlgorithmParameterSpec getProtectionParameters() {
+        public @Nullable AlgorithmParameterSpec getProtectionParameters() {
             return protectionParameters;
         }
 
@@ -361,7 +361,7 @@ public @UsesObjectEquals class KeyStore {
          * @exception IllegalStateException if the password has
          *              been cleared (destroyed)
          */
-        public synchronized @Nullable char[] getPassword() {
+        public synchronized char @Nullable [] getPassword() {
             if (destroyed) {
                 throw new IllegalStateException("password has been cleared");
             }
@@ -1052,7 +1052,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception UnrecoverableKeyException if the key cannot be recovered
      * (e.g., the given password is wrong).
      */
-    public final Key getKey(String alias, char[] password)
+    public final @Nullable Key getKey(String alias, char[] password)
         throws KeyStoreException, NoSuchAlgorithmException,
             UnrecoverableKeyException
     {
@@ -1078,7 +1078,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception KeyStoreException if the keystore has not been initialized
      * (loaded).
      */
-    public final Certificate[] getCertificateChain(String alias)
+    public final Certificate @Nullable [] getCertificateChain(String alias)
         throws KeyStoreException
     {
         if (!initialized) {
@@ -1111,7 +1111,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception KeyStoreException if the keystore has not been initialized
      * (loaded).
      */
-    public final Certificate getCertificate(String alias)
+    public final @Nullable Certificate getCertificate(String alias)
         throws KeyStoreException
     {
         if (!initialized) {
@@ -1131,7 +1131,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception KeyStoreException if the keystore has not been initialized
      * (loaded).
      */
-    public final Date getCreationDate(String alias)
+    public final @Nullable Date getCreationDate(String alias)
         throws KeyStoreException
     {
         if (!initialized) {
@@ -1382,7 +1382,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception KeyStoreException if the keystore has not been initialized
      * (loaded).
      */
-    public final String getCertificateAlias(Certificate cert)
+    public final @Nullable String getCertificateAlias(Certificate cert)
         throws KeyStoreException
     {
         if (!initialized) {
@@ -1478,7 +1478,7 @@ public @UsesObjectEquals class KeyStore {
      * @exception CertificateException if any of the certificates in the
      * keystore could not be loaded
      */
-    public final void load(@Nullable InputStream stream, @Nullable char[] password)
+    public final void load(@Nullable InputStream stream, char @Nullable [] password)
         throws IOException, NoSuchAlgorithmException, CertificateException
     {
         keyStoreSpi.engineLoad(stream, password);
@@ -1686,7 +1686,7 @@ public @UsesObjectEquals class KeyStore {
      *
      * @since 9
      */
-    public static final KeyStore getInstance(File file, @Nullable char[] password)
+    public static final KeyStore getInstance(File file, char @Nullable [] password)
         throws KeyStoreException, IOException, NoSuchAlgorithmException,
             CertificateException {
         return getInstance(file, password, null, true);
@@ -1969,7 +1969,7 @@ public @UsesObjectEquals class KeyStore {
          *   of either PasswordProtection or CallbackHandlerProtection; or
          *   if file does not exist or does not refer to a normal file
          */
-        public static Builder newInstance(String type, Provider provider,
+        public static Builder newInstance(String type, @Nullable Provider provider,
                 File file, ProtectionParameter protection) {
             if ((type == null) || (file == null) || (protection == null)) {
                 throw new NullPointerException();
@@ -2183,7 +2183,7 @@ public @UsesObjectEquals class KeyStore {
          * @throws NullPointerException if type or protection is null
          */
         public static Builder newInstance(final String type,
-                final Provider provider, final ProtectionParameter protection) {
+                final @Nullable Provider provider, final ProtectionParameter protection) {
             if ((type == null) || (protection == null)) {
                 throw new NullPointerException();
             }
