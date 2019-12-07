@@ -97,6 +97,7 @@ abstract class AbstractSpinedBuffer {
     /**
      * Is the buffer currently empty?
      */
+    @Pure
     public boolean isEmpty() {
         return (spineIndex == 0) && (elementIndex == 0);
     }

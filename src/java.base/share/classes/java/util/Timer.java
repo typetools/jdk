@@ -593,6 +593,7 @@ class TaskQueue {
     /**
      * Returns the number of tasks currently on the queue.
      */
+    @Pure
     int size() {
         return size;
     }
@@ -659,6 +660,7 @@ class TaskQueue {
     /**
      * Returns true if the priority queue contains no elements.
      */
+    @Pure
     boolean isEmpty() {
         return size==0;
     }

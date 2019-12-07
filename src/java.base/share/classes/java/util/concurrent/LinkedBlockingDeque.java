@@ -792,6 +792,7 @@ public class LinkedBlockingDeque<E>
      *
      * @return the number of elements in this deque
      */
+    @Pure
     public int size() {
         final ReentrantLock lock = this.lock;
         lock.lock();

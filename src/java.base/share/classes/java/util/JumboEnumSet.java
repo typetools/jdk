@@ -162,6 +162,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return the number of elements in this set
      */
+    @Pure
     public @NonNegative int size() {
         return size;
     }
@@ -171,6 +172,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return {@code true} if this set contains no elements
      */
+    @Pure
     public boolean isEmpty() {
         return size == 0;
     }

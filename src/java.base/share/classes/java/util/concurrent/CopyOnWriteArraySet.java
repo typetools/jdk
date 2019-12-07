@@ -132,6 +132,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *
      * @return the number of elements in this set
      */
+    @Pure
     public int size() {
         return al.size();
     }
@@ -141,6 +142,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *
      * @return {@code true} if this set contains no elements
      */
+    @Pure
     public boolean isEmpty() {
         return al.isEmpty();
     }

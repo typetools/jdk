@@ -1902,6 +1902,7 @@ public final class Collectors {
         }
 
         @Override
+        @SideEffectFree
         public Set<Map.Entry<Boolean, T>> entrySet() {
             return new AbstractSet<>() {
                 @Override
@@ -1912,6 +1913,7 @@ public final class Collectors {
                 }
 
                 @Override
+                @Pure
                 public int size() {
                     return 2;
                 }

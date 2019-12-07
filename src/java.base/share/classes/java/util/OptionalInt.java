@@ -149,6 +149,7 @@ public final class OptionalInt {
      * @return  {@code true} if a value is not present, otherwise {@code false}
      * @since   11
      */
+    @Pure
     public boolean isEmpty() {
         return !isPresent;
     }

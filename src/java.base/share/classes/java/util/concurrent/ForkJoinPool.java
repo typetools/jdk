@@ -824,6 +824,7 @@ public class ForkJoinPool extends AbstractExecutorService {
          * any tasks than does queueSize, by checking whether a
          * near-empty queue has at least one unclaimed task.
          */
+        @Pure
         final boolean isEmpty() {
             ForkJoinTask<?>[] a; int n, cap, b;
             VarHandle.acquireFence(); // needed by external callers

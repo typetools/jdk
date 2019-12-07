@@ -190,6 +190,7 @@ public final @NonNull class Optional<T> {
      * @return  {@code true} if a value is not present, otherwise {@code false}
      * @since   11
      */
+    @Pure
     public boolean isEmpty() {
         return value == null;
     }

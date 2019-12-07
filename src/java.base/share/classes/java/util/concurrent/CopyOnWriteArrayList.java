@@ -163,6 +163,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return the number of elements in this list
      */
+    @Pure
     public int size() {
         return getArray().length;
     }
@@ -172,6 +173,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return {@code true} if this list contains no elements
      */
+    @Pure
     public boolean isEmpty() {
         return size() == 0;
     }
@@ -1294,6 +1296,7 @@ public class CopyOnWriteArrayList<E>
             return true;
         }
 
+        @Pure
         public boolean isEmpty() {
             return size() == 0;
         }
@@ -1354,6 +1357,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public int size() {
             synchronized (lock) {
                 checkForComodification();
