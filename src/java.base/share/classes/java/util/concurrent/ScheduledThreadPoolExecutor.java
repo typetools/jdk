@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 

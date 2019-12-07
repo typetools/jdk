@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
