@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.ref.WeakReference;
 import java.util.AbstractQueue;
 import java.util.Arrays;

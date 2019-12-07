@@ -34,6 +34,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.util.Arrays;

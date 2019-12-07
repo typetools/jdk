@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 

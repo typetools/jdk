@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.function.IntConsumer;

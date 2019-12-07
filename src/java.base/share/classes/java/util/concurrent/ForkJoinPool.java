@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
