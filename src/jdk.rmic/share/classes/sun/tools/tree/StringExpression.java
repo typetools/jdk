@@ -25,6 +25,12 @@
 
 package sun.tools.tree;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import sun.tools.java.*;
 import sun.tools.asm.Assembler;
 import java.io.PrintStream;
@@ -77,7 +83,9 @@ class StringExpression extends ConstantExpression {
     /**
      * Equality
      */
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if ((obj != null) && (obj instanceof StringExpression)) {
             return value.equals(((StringExpression)obj).value);
         }
