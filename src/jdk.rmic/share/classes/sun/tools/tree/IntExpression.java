@@ -25,12 +25,6 @@
 
 package sun.tools.tree;
 
-import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectFree;
-
 import sun.tools.java.*;
 import java.io.PrintStream;
 
@@ -52,9 +46,7 @@ class IntExpression extends IntegerExpression {
      * Equality, this is needed so that switch statements
      * can put IntExpressions in a hashtable
      */
-    @Pure
-    @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object obj) {
+    public boolean equals(Object obj) {
         if ((obj != null) && (obj instanceof IntExpression)) {
             return value == ((IntExpression)obj).value;
         }

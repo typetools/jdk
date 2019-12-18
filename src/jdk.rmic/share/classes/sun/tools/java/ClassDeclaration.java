@@ -25,12 +25,6 @@
 
 package sun.tools.java;
 
-import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectFree;
-
 /**
  * This class represents an Java class declaration. It refers
  * to either a binary or source definition.
@@ -235,9 +229,7 @@ class ClassDeclaration implements Constants {
     /**
      * Equality
      */
-    @Pure
-    @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object obj) {
+    public boolean equals(Object obj) {
         if (obj instanceof ClassDeclaration) {
             return type.equals(((ClassDeclaration)obj).type);
         }
