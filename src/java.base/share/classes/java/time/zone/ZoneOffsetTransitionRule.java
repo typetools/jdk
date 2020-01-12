@@ -61,12 +61,6 @@
  */
 package java.time.zone;
 
-import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectFree;
-
 import static java.time.temporal.TemporalAdjusters.nextOrSame;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 
@@ -521,9 +515,7 @@ public final class ZoneOffsetTransitionRule implements Serializable {
      * @return true if equal
      */
     @Override
-    @Pure
-    @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object otherRule) {
+    public boolean equals(Object otherRule) {
         if (otherRule == this) {
             return true;
         }

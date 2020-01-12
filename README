@@ -7,6 +7,13 @@ It does *not* contain annotations for certain files:
  * the jdk.rmic module
  * objectweb/asm files
 
+It does *not* contain annotations for certain files (because annotations in
+them cause build failures, espeically in the interim builds):
+ * the jdk.rmic module
+ * objectweb/asm files
+ * src/java.base/share/classes/java/time/*
+ * src/jdk.compiler/share/classes/com/sun/tools/javac/*
+
 There are two annotated versions of the JDK:
  * A JDK 11 version, in this directory.
  * A JDK 8 version, in directory `checker/jdk/` of repository
