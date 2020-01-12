@@ -4,7 +4,7 @@ Typetools fork of the JDK
 This fork of the JDK contains type annotations for pluggable type-checking.
 
 It does *not* contain annotations for certain files (because annotations in
-them cause build failures, espeically in the interim builds):
+them cause build failures, especially in the interim builds):
  * the jdk.rmic module
  * objectweb/asm files
  * src/java.base/share/classes/java/time/*
