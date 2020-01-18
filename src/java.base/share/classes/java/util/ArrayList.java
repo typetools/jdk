@@ -319,7 +319,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -331,7 +331,7 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
         return indexOfRange(o, 0, size);
     }
 
@@ -361,7 +361,7 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
         return lastIndexOfRange(o, 0, size);
     }
 
@@ -666,7 +666,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayList<E> this, @Nullable Object o) {
+    public boolean remove(@GuardSatisfied ArrayList<E> this, Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;

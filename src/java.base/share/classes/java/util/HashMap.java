@@ -562,7 +562,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied Object key) {
         Node<K,V> e;
         return (e = getNode(hash(key), key)) == null ? null : e.value;
     }
@@ -604,7 +604,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied Object key) {
         return getNode(hash(key), key) != null;
     }
 
@@ -808,7 +808,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
-    public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, @Nullable Object key) {
+    public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, Object key) {
         Node<K,V> e;
         return (e = removeNode(hash(key), key, null, false, true)) == null ?
             null : e.value;
@@ -888,7 +888,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied Object value) {
         Node<K,V>[] tab; V v;
         if ((tab = table) != null && size > 0) {
             for (Node<K,V> e : tab) {

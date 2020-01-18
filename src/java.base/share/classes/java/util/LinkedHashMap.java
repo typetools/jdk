@@ -421,7 +421,7 @@ public class LinkedHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied Object value) {
         for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
             V v = e.value;
             if (v == value || (value != null && value.equals(v)))
@@ -446,7 +446,7 @@ public class LinkedHashMap<K,V>
      * distinguish these two cases.
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied Object key) {
         Node<K,V> e;
         if ((e = getNode(hash(key), key)) == null)
             return null;
