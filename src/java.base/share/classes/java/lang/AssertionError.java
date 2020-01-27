@@ -175,7 +175,7 @@ public class AssertionError extends Error {
      *
      * @since 1.7
      */
-    public AssertionError(String message, Throwable cause) {
+    public AssertionError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }
