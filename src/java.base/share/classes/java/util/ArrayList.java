@@ -319,7 +319,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -331,11 +331,11 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
         return indexOfRange(o, 0, size);
     }
 
-    int indexOfRange(Object o, int start, int end) {
+    int indexOfRange(@Nullable Object o, int start, int end) {
         Object[] es = elementData;
         if (o == null) {
             for (int i = start; i < end; i++) {
@@ -361,11 +361,11 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied Object o) {
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable Object o) {
         return lastIndexOfRange(o, 0, size);
     }
 
-    int lastIndexOfRange(Object o, int start, int end) {
+    int lastIndexOfRange(@Nullable Object o, int start, int end) {
         Object[] es = elementData;
         if (o == null) {
             for (int i = end - 1; i >= start; i--) {
@@ -666,7 +666,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayList<E> this, Object o) {
+    public boolean remove(@GuardSatisfied ArrayList<E> this, @Nullable Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;
@@ -1297,7 +1297,7 @@ public class ArrayList<E> extends AbstractList<E>
             return a;
         }
 
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
             }
@@ -1317,19 +1317,19 @@ public class ArrayList<E> extends AbstractList<E>
             return hash;
         }
 
-        public int indexOf(Object o) {
+        public int indexOf(@Nullable Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public int lastIndexOf(Object o) {
+        public int lastIndexOf(@Nullable Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return indexOf(o) >= 0;
         }
 
