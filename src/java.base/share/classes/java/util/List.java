@@ -284,7 +284,7 @@ public interface List<E> extends Collection<E> {
      *         prevents it from being added to this list
      */
     @ReleasesNoLocks
-    boolean add(@GuardSatisfied List<E> this, E e);
+    boolean add(@GuardSatisfied List<E> this, @Nullable E e);
 
     /**
      * Removes the first occurrence of the specified element from this list,
@@ -637,7 +637,7 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index > size()})
      */
     @ReleasesNoLocks
-    void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
+    void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, @Nullable E element);
 
     /**
      * Removes the element at the specified position in this list (optional
