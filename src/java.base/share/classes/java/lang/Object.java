@@ -172,6 +172,7 @@ public class Object {
      * @see     java.util.HashMap
      */
     @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@GuardSatisfied Object this, @GuardSatisfied @Nullable Object obj) {
         return (this == obj);
     }
