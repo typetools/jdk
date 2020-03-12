@@ -1502,7 +1502,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(Object o) {
+    public boolean remove(@Nullable Object o) {
         if (o == null) return false;
         restartFromHead: for (;;) {
             for (Node p = head, pred = null; p != null; ) {
@@ -1538,7 +1538,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param o object to be checked for containment in this queue
      * @return {@code true} if this queue contains the specified element
      */
-    public boolean contains(Object o) {
+    public boolean contains(@Nullable Object o) {
         if (o == null) return false;
         restartFromHead: for (;;) {
             for (Node p = head, pred = null; p != null; ) {

@@ -212,7 +212,7 @@ public class HashSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable Object o) {
         return map.containsKey(o);
     }
 
@@ -244,7 +244,7 @@ public class HashSet<E>
      * @param o object to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(@GuardSatisfied HashSet<E> this, Object o) {
+    public boolean remove(@GuardSatisfied HashSet<E> this, @Nullable Object o) {
         return map.remove(o)==PRESENT;
     }
 

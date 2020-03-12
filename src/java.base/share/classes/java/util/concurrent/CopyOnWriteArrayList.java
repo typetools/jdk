@@ -236,7 +236,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element whose presence in this list is to be tested
      * @return {@code true} if this list contains the specified element
      */
-    public boolean contains(Object o) {
+    public boolean contains(@Nullable Object o) {
         return indexOf(o) >= 0;
     }
 

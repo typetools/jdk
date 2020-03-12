@@ -386,7 +386,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@GuardSatisfied PriorityQueue<E> this, Object o) {
+    public boolean remove(@GuardSatisfied PriorityQueue<E> this, @Nullable Object o) {
         int i = indexOf(o);
         if (i == -1)
             return false;
@@ -420,7 +420,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable Object o) {
         return indexOf(o) >= 0;
     }
 

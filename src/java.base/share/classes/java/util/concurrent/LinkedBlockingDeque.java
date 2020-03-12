@@ -785,7 +785,7 @@ public class LinkedBlockingDeque<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if this deque changed as a result of the call
      */
-    public boolean remove(Object o) {
+    public boolean remove(@Nullable Object o) {
         return removeFirstOccurrence(o);
     }
 
@@ -813,7 +813,7 @@ public class LinkedBlockingDeque<E>
      * @param o object to be checked for containment in this deque
      * @return {@code true} if this deque contains the specified element
      */
-    public boolean contains(Object o) {
+    public boolean contains(@Nullable Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
