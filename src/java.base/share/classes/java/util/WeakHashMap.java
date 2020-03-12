@@ -408,7 +408,7 @@ public class WeakHashMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied Object key) {
+    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -432,7 +432,7 @@ public class WeakHashMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied Object key) {
+    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
         return getEntry(key) != null;
     }
 
@@ -606,7 +606,7 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
-    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, Object key) {
+    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @Nullable Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -692,7 +692,7 @@ public class WeakHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied Object value) {
+    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
         if (value==null)
             return containsNullValue();
 
@@ -905,11 +905,11 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return containsKey(o);
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
                 return true;
@@ -962,7 +962,7 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return containsValue(o);
         }
 
@@ -1002,7 +1002,7 @@ public class WeakHashMap<K,V>
             return new EntryIterator();
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
             Map.Entry<?,?> e = (Map.Entry<?,?>)o;
@@ -1010,7 +1010,7 @@ public class WeakHashMap<K,V>
             return candidate != null && candidate.equals(e);
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             return removeMapping(o);
         }
 
