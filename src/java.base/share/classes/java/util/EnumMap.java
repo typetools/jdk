@@ -298,7 +298,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      *     return can also indicate that the map previously associated
      *     {@code null} with the specified key.)
      */
-    public @Nullable V remove(Object key) {
+    public @Nullable V remove(@Nullable Object key) {
         if (!isValidKey(key))
             return null;
         int index = ((Enum<?>)key).ordinal();
@@ -417,10 +417,10 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return containsKey(o);
         }
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             int oldSize = size;
             EnumMap.this.remove(o);
             return size != oldSize;
@@ -459,10 +459,10 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return containsValue(o);
         }
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             o = maskNull(o);
 
             for (int i = 0; i < vals.length; i++) {
@@ -504,13 +504,13 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
 
         @Pure
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
             Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
             return containsMapping(entry.getKey(), entry.getValue());
         }
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
             Map.Entry<?,?> entry = (Map.Entry<?,?>)o;

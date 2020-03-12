@@ -576,7 +576,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public boolean removeFirstOccurrence(Object o) {
+    public boolean removeFirstOccurrence(@Nullable Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -593,7 +593,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public boolean removeLastOccurrence(Object o) {
+    public boolean removeLastOccurrence(@Nullable Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();

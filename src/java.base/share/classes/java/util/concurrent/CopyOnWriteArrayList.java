@@ -512,7 +512,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(Object o) {
+    public boolean remove(@Nullable Object o) {
         Object[] snapshot = getArray();
         int index = indexOfRange(o, snapshot, 0, snapshot.length);
         return index >= 0 && remove(o, snapshot, index);
@@ -1286,7 +1286,7 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return indexOf(o) >= 0;
         }
 
@@ -1435,7 +1435,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             synchronized (lock) {
                 checkForComodification();
                 int index = indexOf(o);
