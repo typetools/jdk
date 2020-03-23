@@ -368,7 +368,6 @@ public final @UsesObjectEquals class Objects {
      * @throws NullPointerException if {@code obj} is {@code null}
      * @since 1.8
      */
-    @CFComment({"nullness: TODO: treat like other nullness assertion methods in the Checker Framework."})
     @EnsuresNonNull("#1")
     @Pure
     public static <T extends @NonNull Object> T requireNonNull(@GuardSatisfied T obj, @GuardSatisfied Supplier<String> messageSupplier) {
