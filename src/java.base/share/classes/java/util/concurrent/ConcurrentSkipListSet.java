@@ -232,7 +232,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public boolean contains(@Nullable Object o) {
+    public boolean contains(Object o) {
         return m.containsKey(o);
     }
 
@@ -268,7 +268,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
      */
-    public boolean remove(@Nullable Object o) {
+    public boolean remove(Object o) {
         return m.remove(o, Boolean.TRUE);
     }
 
