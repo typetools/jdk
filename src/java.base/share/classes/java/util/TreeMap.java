@@ -175,7 +175,7 @@ public class TreeMap<K,V>
      *        If {@code null}, the {@linkplain Comparable natural
      *        ordering} of the keys will be used.
      */
-    public TreeMap(Comparator<? super K> comparator) {
+    public TreeMap(@Nullable Comparator<? super K> comparator) {
         this.comparator = comparator;
     }
 
@@ -295,21 +295,22 @@ public class TreeMap<K,V>
         return (p==null ? null : p.value);
     }
 
-    public Comparator<? super K> comparator(@GuardSatisfied TreeMap<K, V> this) {
+    @Pure
+    public @Nullable Comparator<? super K> comparator(@GuardSatisfied TreeMap<K, V> this) {
         return comparator;
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public K firstKey() {
+    public @KeyFor("this") K firstKey() {
         return key(getFirstEntry());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public K lastKey() {
+    public @KeyFor("this") K lastKey() {
         return key(getLastEntry());
     }
 
