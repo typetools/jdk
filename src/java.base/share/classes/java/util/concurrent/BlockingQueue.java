@@ -312,7 +312,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(Object o);
+    boolean remove(@Nullable Object o);
 
     /**
      * Returns {@code true} if this queue contains the specified element.
@@ -328,7 +328,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(Object o);
+    boolean contains(@Nullable Object o);
 
     /**
      * Removes all available elements from this queue and adds them
