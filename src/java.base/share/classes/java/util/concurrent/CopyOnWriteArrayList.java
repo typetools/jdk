@@ -633,7 +633,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #contains(Object)
      */
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(Collection<? extends @NonNull Object> c) {
         Object[] es = getArray();
         int len = es.length;
         for (Object e : c) {
@@ -659,7 +659,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(Collection<? extends @NonNull Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -680,7 +680,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(Collection<? extends @NonNull Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
@@ -1290,7 +1290,7 @@ public class CopyOnWriteArrayList<E>
             return indexOf(o) >= 0;
         }
 
-        public boolean containsAll(Collection<?> c) {
+        public boolean containsAll(Collection<? extends @NonNull Object> c) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1500,12 +1500,12 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @NonNull Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> c.contains(e));
         }
 
-        public boolean retainAll(Collection<?> c) {
+        public boolean retainAll(Collection<? extends @NonNull Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> !c.contains(e));
         }
