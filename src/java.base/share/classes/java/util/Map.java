@@ -261,12 +261,6 @@ public interface Map<K, V> {
      *         does not permit null keys
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @CFComment({"lock: The parameter is not nullable, because implementations of Map.get and",
-    "Map.put are specifically permitted to throw NullPointerException if",
-    "any of the arguments is a null).  And some implementations do not",
-    "permit nulls (sorted queues PriorityQueue, Hashtable, most concurrent",
-    "collections).  Some other implementation do accept nulls and are so",
-    "annotated (see ArrayList, LinkedList, HashMap)."})
     @Pure
     @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
 
