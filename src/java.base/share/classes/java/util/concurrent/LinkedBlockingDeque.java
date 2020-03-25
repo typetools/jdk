@@ -578,7 +578,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public boolean removeFirstOccurrence(@Nullable Object o) {
+    public boolean removeFirstOccurrence(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -595,7 +595,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public boolean removeLastOccurrence(@Nullable Object o) {
+    public boolean removeLastOccurrence(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -787,7 +787,7 @@ public class LinkedBlockingDeque<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if this deque changed as a result of the call
      */
-    public boolean remove(@Nullable Object o) {
+    public boolean remove(Object o) {
         return removeFirstOccurrence(o);
     }
 
