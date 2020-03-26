@@ -194,7 +194,7 @@ public class CopyOnWriteArrayList<E>
      * @param to one past last index to search
      * @return index of element, or -1 if absent
      */
-    private static int indexOfRange(Object o, Object[] es, int from, int to) {
+    private static int indexOfRange(@Nullable Object o, Object[] es, int from, int to) {
         if (o == null) {
             for (int i = from; i < to; i++)
                 if (es[i] == null)
@@ -215,7 +215,7 @@ public class CopyOnWriteArrayList<E>
      * @param to one past last element of range, first element to search
      * @return index of element, or -1 if absent
      */
-    private static int lastIndexOfRange(Object o, Object[] es, int from, int to) {
+    private static int lastIndexOfRange(@Nullable Object o, Object[] es, int from, int to) {
         if (o == null) {
             for (int i = to - 1; i >= from; i--)
                 if (es[i] == null)
@@ -243,7 +243,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int indexOf(Object o) {
+    public int indexOf(@Nullable Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
     }
@@ -271,7 +271,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int lastIndexOf(Object o) {
+    public int lastIndexOf(@Nullable Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
     }
@@ -522,7 +522,7 @@ public class CopyOnWriteArrayList<E>
      * A version of remove(Object) using the strong hint that given
      * recent snapshot contains o at the given index.
      */
-    private boolean remove(Object o, Object[] snapshot, int index) {
+    private boolean remove(@Nullable Object o, Object[] snapshot, int index) {
         synchronized (lock) {
             Object[] current = getArray();
             int len = current.length;
@@ -633,7 +633,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #contains(Object)
      */
-    public boolean containsAll(Collection<? extends @NonNull Object> c) {
+    public boolean containsAll(Collection<?> c) {
         Object[] es = getArray();
         int len = es.length;
         for (Object e : c) {
