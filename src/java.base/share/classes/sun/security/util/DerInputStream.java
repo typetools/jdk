@@ -25,6 +25,8 @@
 
 package sun.security.util;
 
+import org.checkerframework.checker.signedness.qual.Unsigned;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.EOFException;
@@ -236,7 +238,7 @@ public class DerInputStream {
      * Get a bit string from the input stream. Padded bits (if any)
      * will be stripped off before the bit string is returned.
      */
-    public byte[] getBitString() throws IOException {
+    public @Unsigned byte[] getBitString() throws IOException {
         if (buffer.read() != DerValue.tag_BitString)
             throw new IOException("DER input not an bit string");
 

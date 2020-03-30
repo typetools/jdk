@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -876,7 +877,7 @@ public final class Double extends Number implements Comparable<Double> {
      */
     @Pure
     @HotSpotIntrinsicCandidate
-    public static long doubleToLongBits(double value) {
+    public static @Unsigned long doubleToLongBits(double value) {
         if (!isNaN(value)) {
             return doubleToRawLongBits(value);
         }
@@ -921,7 +922,7 @@ public final class Double extends Number implements Comparable<Double> {
      */
     @Pure
     @HotSpotIntrinsicCandidate
-    public static native long doubleToRawLongBits(double value);
+    public static native @Unsigned long doubleToRawLongBits(double value);
 
     /**
      * Returns the {@code double} value corresponding to a given
@@ -986,7 +987,7 @@ public final class Double extends Number implements Comparable<Double> {
      */
     @Pure
     @HotSpotIntrinsicCandidate
-    public static native double longBitsToDouble(long bits);
+    public static native double longBitsToDouble(@Unsigned long bits);
 
     /**
      * Compares two {@code Double} objects numerically.  There

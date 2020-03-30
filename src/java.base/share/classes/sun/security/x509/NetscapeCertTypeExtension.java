@@ -25,6 +25,8 @@
 
 package sun.security.x509;
 
+import org.checkerframework.checker.signedness.qual.Unsigned;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
@@ -159,7 +161,7 @@ implements CertAttrSet<String> {
      *
      * @param bitString the bits to be set for the extension.
      */
-    public NetscapeCertTypeExtension(byte[] bitString) throws IOException {
+    public NetscapeCertTypeExtension(@Unsigned byte[] bitString) throws IOException {
         this.bitString =
             new BitArray(bitString.length*8, bitString).toBooleanArray();
         this.extensionId = NetscapeCertType_Id;

@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -789,7 +790,7 @@ public final class Float extends Number implements Comparable<Float> {
      */
     @Pure
     @HotSpotIntrinsicCandidate
-    public static int floatToIntBits(float value) {
+    public static @Unsigned int floatToIntBits(float value) {
         if (!isNaN(value)) {
             return floatToRawIntBits(value);
         }
@@ -832,7 +833,7 @@ public final class Float extends Number implements Comparable<Float> {
      * @since 1.3
      */
     @HotSpotIntrinsicCandidate
-    public static native int floatToRawIntBits(float value);
+    public static native @Unsigned int floatToRawIntBits(float value);
 
     /**
      * Returns the {@code float} value corresponding to a given
@@ -894,7 +895,7 @@ public final class Float extends Number implements Comparable<Float> {
      *          pattern.
      */
     @HotSpotIntrinsicCandidate
-    public static native float intBitsToFloat(int bits);
+    public static native float intBitsToFloat(@Unsigned int bits);
 
     /**
      * Compares two {@code Float} objects numerically.  There are

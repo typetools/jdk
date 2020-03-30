@@ -25,6 +25,8 @@
 
 package sun.security.x509;
 
+import org.checkerframework.checker.signedness.qual.Unsigned;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Enumeration;
@@ -106,7 +108,7 @@ implements CertAttrSet<String> {
      *
      * @param bitString the bits to be set for the extension.
      */
-    public KeyUsageExtension(byte[] bitString) throws IOException {
+    public KeyUsageExtension(@Unsigned byte[] bitString) throws IOException {
         this.bitString =
             new BitArray(bitString.length*8,bitString).toBooleanArray();
         this.extensionId = PKIXExtensions.KeyUsage_Id;
@@ -120,7 +122,7 @@ implements CertAttrSet<String> {
      *
      * @param bitString the bits to be set for the extension.
      */
-    public KeyUsageExtension(boolean[] bitString) throws IOException {
+    public KeyUsageExtension(@Unsigned boolean[] bitString) throws IOException {
         this.bitString = bitString;
         this.extensionId = PKIXExtensions.KeyUsage_Id;
         this.critical = true;

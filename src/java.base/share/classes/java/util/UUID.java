@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -137,7 +138,7 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
      * @param  leastSigBits
      *         The least significant bits of the {@code UUID}
      */
-    public UUID(long mostSigBits, long leastSigBits) {
+    public UUID(@Unsigned long mostSigBits, @Unsigned long leastSigBits) {
         this.mostSigBits = mostSigBits;
         this.leastSigBits = leastSigBits;
     }
@@ -241,7 +242,7 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
      *
      * @return  The least significant 64 bits of this UUID's 128 bit value
      */
-    public long getLeastSignificantBits(@GuardSatisfied UUID this) {
+    public @Unsigned long getLeastSignificantBits(@GuardSatisfied UUID this) {
         return leastSigBits;
     }
 
@@ -250,7 +251,7 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
      *
      * @return  The most significant 64 bits of this UUID's 128 bit value
      */
-    public long getMostSignificantBits(@GuardSatisfied UUID this) {
+    public @Unsigned long getMostSignificantBits(@GuardSatisfied UUID this) {
         return mostSigBits;
     }
 

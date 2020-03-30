@@ -28,6 +28,7 @@ package javax.crypto.spec;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -75,7 +76,7 @@ public class RC2ParameterSpec implements AlgorithmParameterSpec {
      * the buffer are copied to protect against subsequent modification.
      * @exception IllegalArgumentException if {@code iv} is null.
      */
-    public RC2ParameterSpec(int effectiveKeyBits, byte[] iv) {
+    public RC2ParameterSpec(int effectiveKeyBits, @Unsigned byte[] iv) {
         this(effectiveKeyBits, iv, 0);
     }
 
@@ -96,7 +97,7 @@ public class RC2ParameterSpec implements AlgorithmParameterSpec {
      * starts.
      * @exception IllegalArgumentException if {@code iv} is null.
      */
-    public RC2ParameterSpec(int effectiveKeyBits, byte[] iv, int offset) {
+    public RC2ParameterSpec(int effectiveKeyBits, @Unsigned byte[] iv, int offset) {
         this.effectiveKeyBits = effectiveKeyBits;
         if (iv == null) throw new IllegalArgumentException("IV missing");
         int blockSize = 8;

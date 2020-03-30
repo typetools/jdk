@@ -25,6 +25,8 @@
 
 package sun.security.util;
 
+import org.checkerframework.checker.signedness.qual.Unsigned;
+
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.IOException;
@@ -234,7 +236,7 @@ extends ByteArrayOutputStream implements DerEncoder {
      *
      * @param bits the bit string, MSB first
      */
-    public void putBitString(byte[] bits) throws IOException {
+    public void putBitString(@Unsigned byte[] bits) throws IOException {
         write(DerValue.tag_BitString);
         putLength(bits.length + 1);
         write(0);               // all of last octet is used

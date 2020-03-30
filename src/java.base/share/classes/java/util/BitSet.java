@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -202,7 +203,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @return a {@code BitSet} containing all the bits in the long array
      * @since 1.7
      */
-    public static BitSet valueOf(long[] longs) {
+    public static BitSet valueOf(@Unsigned long[] longs) {
         int n;
         for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
             ;
@@ -253,7 +254,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @return a {@code BitSet} containing all the bits in the byte array
      * @since 1.7
      */
-    public static BitSet valueOf(byte[] bytes) {
+    public static BitSet valueOf(@Unsigned byte[] bytes) {
         return BitSet.valueOf(ByteBuffer.wrap(bytes));
     }
 
