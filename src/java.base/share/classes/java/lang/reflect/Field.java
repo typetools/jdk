@@ -800,7 +800,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void set(@UnknownInitialization Object obj, @Nullable Object value)
+    public void set(@UnknownInitialization Object obj, Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
