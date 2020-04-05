@@ -430,7 +430,7 @@ class Field extends AccessibleObject implements Member {
     @SideEffectFree
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public @Nullable Object get(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public @Nullable Object get(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -465,7 +465,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public boolean getBoolean(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public boolean getBoolean(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -500,7 +500,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public byte getByte(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public byte getByte(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -537,7 +537,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public char getChar(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public char getChar(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -574,7 +574,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public short getShort(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public short getShort(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -611,7 +611,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public int getInt(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public int getInt(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -648,7 +648,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public long getLong(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public long getLong(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -685,7 +685,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public float getFloat(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public float getFloat(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -722,7 +722,7 @@ class Field extends AccessibleObject implements Member {
     @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public double getDouble(@GuardSatisfied Field this, @UnknownInitialization @GuardSatisfied Object obj)
+    public double getDouble(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
