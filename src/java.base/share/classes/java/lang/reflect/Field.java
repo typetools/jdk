@@ -72,10 +72,10 @@ import sun.reflect.annotation.TypeAnnotationParser;
  * @author Nakul Saraiya
  * @since 1.1
  */
-@CFComment({"In general, the field value `get` methods should take a top-qualified `obj` parameter " +
-	    "and have a top-qualified return type; the field value `set` methods should take a " +
+@CFComment({"In general, the field value `get` methods should take a top-qualified `obj` parameter ",
+	    "and have a top-qualified return type; the field value `set` methods should take a ",
 	    "top-qualified `obj` parameter and a bottom-qualified `value` parameter.",
-	    "nullness: the `obj` parameter in `get`/`set` methods is @NonNull, because instance fields " +
+	    "nullness: the `obj` parameter in `get`/`set` methods is @NonNull, because instance fields ",
 	    "require a receiver. Static field accesses need to suppress the errors.",
 	    "initialization: using fully-initialized types should make the typical use case easier.",
 	    "lock: require @GuardSatisfied to ensure type system soundness."})
