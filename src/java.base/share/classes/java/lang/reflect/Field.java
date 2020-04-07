@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import jdk.internal.misc.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
@@ -71,6 +72,13 @@ import sun.reflect.annotation.TypeAnnotationParser;
  * @author Nakul Saraiya
  * @since 1.1
  */
+@CFComment({"In general, the field value `get` methods should take a top-qualified `obj` parameter " +
+	    "and have a top-qualified return type; the field value `set` methods should take a " +
+	    "top-qualified `obj` parameter and a bottom-qualified `value` parameter.",
+	    "nullness: the `obj` parameter in `get`/`set` methods is @NonNull, because instance fields " +
+	    "require a receiver. Static field accesses need to suppress the errors.",
+	    "initialization: using fully-initialized types should make the typical use case easier.",
+	    "lock: require @GuardSatisfied to ensure type system soundness."})
 @AnnotatedFor({"interning", "lock", "nullness"})
 public final
 class Field extends AccessibleObject implements Member {
@@ -800,7 +808,8 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void set(@UnknownInitialization Object obj, Object value)
+    public void set(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj,
+            @GuardSatisfied @Interned Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -836,7 +845,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setBoolean(@UnknownInitialization Object obj, boolean z)
+    public void setBoolean(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, boolean z)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -872,7 +881,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setByte(@UnknownInitialization Object obj, byte b)
+    public void setByte(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, byte b)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -908,7 +917,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setChar(@UnknownInitialization Object obj, char c)
+    public void setChar(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, char c)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -944,7 +953,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setShort(@UnknownInitialization Object obj, short s)
+    public void setShort(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, short s)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -980,7 +989,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setInt(@UnknownInitialization Object obj, int i)
+    public void setInt(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, int i)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1016,7 +1025,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setLong(@UnknownInitialization Object obj, long l)
+    public void setLong(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, long l)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1052,7 +1061,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setFloat(@UnknownInitialization Object obj, float f)
+    public void setFloat(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, float f)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1088,7 +1097,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setDouble(@UnknownInitialization Object obj, double d)
+    public void setDouble(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, double d)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
