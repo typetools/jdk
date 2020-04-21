@@ -25,7 +25,6 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util.links;
 
-import org.checkerframework.dataflow.qual.Pure;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
@@ -65,20 +64,17 @@ public abstract class LinkInfo {
     /**
      * True if this is a link to a VarArg.
      */
-    @Pure
     public boolean isVarArg = false;
 
     /**
      * Set this to true to indicate that you are linking to a type parameter.
      */
-    @Pure
     public boolean isTypeBound = false;
 
     /**
      * Whether the document element is in a Java 5 declaration
      * location or not.
      */
-    @Pure
     public boolean isJava5DeclarationLocation = true;
 
     /**
@@ -89,7 +85,6 @@ public abstract class LinkInfo {
     /**
      * True if the link should be strong.
      */
-    @Pure
     public boolean isStrong = false;
 
     /**
