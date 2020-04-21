@@ -63,7 +63,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return an array of arrays of String.
      */
-    String[] @MinLen(!) [] options();
+    String[] @MinLen(1) [] options();
 
     /**
      * Return the packages
