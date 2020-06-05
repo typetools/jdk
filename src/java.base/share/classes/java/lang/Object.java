@@ -50,7 +50,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     java.lang.Class
  * @since   1.0
  */
-@AnnotatedFor({"guieffect", "index", "lock", "nullness","aliasing"})
+@AnnotatedFor({"guieffect", "index", "lock", "nullness", "aliasing"})
 @PolyUIType
 public class Object {
 
