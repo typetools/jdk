@@ -64,6 +64,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return an array of arrays of String.
      */
+    @SideEffectFree
     String[] @MinLen(1) [] options();
 
     /**
@@ -84,6 +85,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return classes and interfaces specified on the command line.
      */
+    @SideEffectFree
     ClassDoc @MinLen(1) [] specifiedClasses();
 
     /**
@@ -93,6 +95,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return included classes and interfaces in all packages.
      */
+    @SideEffectFree
     ClassDoc[] classes();
 
     /**
