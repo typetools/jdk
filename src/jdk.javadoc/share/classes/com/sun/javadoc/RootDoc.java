@@ -25,6 +25,7 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.common.value.qual.MinLen;
 
 /**

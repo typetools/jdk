@@ -25,6 +25,7 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
 import java.io.File;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
