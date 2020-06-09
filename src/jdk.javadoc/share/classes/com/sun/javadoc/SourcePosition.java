@@ -25,10 +25,11 @@
 
 package com.sun.javadoc;
 
-import org.checkerframework.framework.qual.AnnotatedFor;
 import java.io.File;
+
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * This interface describes a source position: filename, line number,

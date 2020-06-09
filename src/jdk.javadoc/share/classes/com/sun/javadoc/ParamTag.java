@@ -25,8 +25,8 @@
 
 package com.sun.javadoc;
 
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Represents an @param documentation tag.

@@ -25,8 +25,9 @@
 
 package com.sun.javadoc;
 
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Represents the root of the program structure information
