@@ -25,6 +25,8 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.checker.signature.qual.FqBinaryName;
+
 /**
  * Parameter information.
  * This includes a parameter type and parameter name.

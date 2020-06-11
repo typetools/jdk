@@ -25,6 +25,8 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
+import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -108,7 +110,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      * @return a PackageDoc holding the specified package, null if
      * this package is not referenced.
      */
-    PackageDoc packageNamed(String name);
+    PackageDoc packageNamed(@DotSeparatedIdentifiers String name);
 
     /**
      * Return a ClassDoc for the specified class or interface name.

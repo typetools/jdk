@@ -176,7 +176,7 @@ public class DocEnv {
     /**
      * Look up ClassDoc by qualified name.
      */
-    public ClassDocImpl lookupClass(String name) {
+    public ClassDocImpl lookupClass(@ClassGetName String name) {
         ClassSymbol c = getClassSymbol(name);
         if (c != null) {
             return getClassDoc(c);
