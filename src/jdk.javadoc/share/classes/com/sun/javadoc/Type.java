@@ -44,7 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
-@AnnotatedFor({"nullness", "value"})
+@AnnotatedFor({"nullness", "signature", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface Type {
@@ -65,7 +65,7 @@ public interface Type {
      * returns "{@code java.lang.String}".
      * @return qualified name of this type excluding any dimension information.
      */
-    String qualifiedTypeName();
+    @BinaryNameOrPrimitiveType String qualifiedTypeName();
 
     /**
      * Return the simple name of this type excluding any dimension information.
@@ -78,7 +78,7 @@ public interface Type {
      * @since 1.5
      * @return the simple name of this type excluding any dimension information.
      */
-    String simpleTypeName();
+    @IdentifierOrPrimitiveType String simpleTypeName();
 
     /**
      * Return the type's dimension information, as a string.

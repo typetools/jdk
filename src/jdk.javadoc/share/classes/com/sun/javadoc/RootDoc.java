@@ -44,7 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
-@AnnotatedFor({"nullness", "value"})
+@AnnotatedFor({"nullness", "signature", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface RootDoc extends Doc, DocErrorReporter {
@@ -120,5 +120,5 @@ public interface RootDoc extends Doc, DocErrorReporter {
      * @return a ClassDoc holding the specified class, null if
      * this class is not referenced.
      */
-    ClassDoc classNamed(String qualifiedName);
+    ClassDoc classNamed(@BinaryName String qualifiedName);
 }
