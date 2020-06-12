@@ -26,6 +26,7 @@
 package com.sun.javadoc;
 
 import org.checkerframework.checker.signature.qual.FqBinaryName;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Parameter information.

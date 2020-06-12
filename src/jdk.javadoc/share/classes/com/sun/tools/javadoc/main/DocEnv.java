@@ -25,6 +25,8 @@
 
 package com.sun.tools.javadoc.main;
 
+import org.checkerframework.checker.signature.qual.ClassGetName;
+
 import java.lang.reflect.Modifier;
 import java.util.*;
 
