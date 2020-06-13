@@ -601,7 +601,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      *
      * @since 1.8
      */
-    public static final int @Positive @IntVal(1) BYTES = SIZE / Byte.SIZE;
+    public static final @Positive @IntVal(1) int BYTES = SIZE / Byte.SIZE;
 
     /** use serialVersionUID from JDK 1.1. for interoperability */
     private static final long serialVersionUID = -7183698231559129828L;

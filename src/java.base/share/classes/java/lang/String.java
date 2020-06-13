@@ -49,6 +49,7 @@ import org.checkerframework.common.value.qual.ArrayLenRange;
 import org.checkerframework.common.value.qual.EnsuresMinLenIf;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.common.value.qual.PolyValue;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;

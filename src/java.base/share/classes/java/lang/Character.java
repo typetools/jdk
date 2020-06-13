@@ -553,7 +553,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      *
      * @since 1.5
      */
-    public static final IntVal('\uDBFF') char MAX_HIGH_SURROGATE = '\uDBFF';
+    public static final @IntVal('\uDBFF') char MAX_HIGH_SURROGATE = '\uDBFF';
 
     /**
      * The minimum value of a
@@ -564,7 +564,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      *
      * @since 1.5
      */
-    public static final IntVal('\uDC00') char MIN_LOW_SURROGATE  = '\uDC00';
+    public static final @IntVal('\uDC00') char MIN_LOW_SURROGATE  = '\uDC00';
 
     /**
      * The maximum value of a
