@@ -25,6 +25,8 @@
 
 package java.util.spi;
 
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import jdk.internal.misc.JavaUtilResourceBundleAccess;
 import jdk.internal.misc.SharedSecrets;
 
