@@ -186,7 +186,7 @@ public abstract class AbstractResourceBundleProvider implements ResourceBundlePr
      *         bundle loading
      */
     @Override
-    public ResourceBundle getBundle(String baseName, Locale locale) {
+    public ResourceBundle getBundle(@BinaryName String baseName, Locale locale) {
         Module module = this.getClass().getModule();
         String bundleName = toBundleName(baseName, locale);
         ResourceBundle bundle = null;

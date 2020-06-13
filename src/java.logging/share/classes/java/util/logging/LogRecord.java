@@ -286,7 +286,7 @@ public @UsesObjectEquals class LogRecord implements java.io.Serializable {
      * The result may be null if the message is not localizable.
      * @return the localization resource bundle name
      */
-    public @Nullable String getResourceBundleName() {
+    public @Nullable @BinaryName String getResourceBundleName() {
         return resourceBundleName;
     }
 
