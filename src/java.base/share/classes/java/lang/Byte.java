@@ -26,10 +26,11 @@
 package java.lang;
 
 import org.checkerframework.checker.index.qual.PolyIndex;
-import org.checkerframework.checker.index.qual.PolyIndex;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.IntRange;
+import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -115,7 +116,7 @@ public final class Byte extends Number implements Comparable<Byte> {
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public static @PolyIndex @Interned Byte valueOf(@PolyIndex byte b) {
+    public static @PolyIndex @Interned @PolyValue Byte valueOf(@PolyIndex @PolyValue byte b) {
         final int offset = 128;
         return ByteCache.cache[(int)b + offset];
     }
@@ -163,7 +164,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static byte parseByte(String s, @Positive int radix)
+    public static byte parseByte(String s, @Positive @IntRange(from = 2, to = 36) int radix)
         throws NumberFormatException {
         int i = Integer.parseInt(s, radix);
         if (i < MIN_VALUE || i > MAX_VALUE)
@@ -223,7 +224,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static @Interned Byte valueOf(String s, @Positive int radix)
+    public static @Interned Byte valueOf(String s, @Positive @IntRange(from = 2, to = 36) int radix)
         throws NumberFormatException {
         return valueOf(parseByte(s, radix));
     }
@@ -364,7 +365,7 @@ public final class Byte extends Number implements Comparable<Byte> {
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public @PolyIndex byte byteValue(@PolyIndex Byte this) {
+    public @PolyIndex @PolyValue byte byteValue(@PolyIndex @PolyValue Byte this) {
         return value;
     }
 
@@ -375,7 +376,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex short shortValue(@PolyIndex Byte this) {
+    public @PolyIndex @PolyValue short shortValue(@PolyIndex @PolyValue Byte this) {
         return (short)value;
     }
 
@@ -386,7 +387,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex int intValue(@PolyIndex Byte this) {
+    public @PolyIndex @PolyValue int intValue(@PolyIndex @PolyValue Byte this) {
         return (int)value;
     }
 
@@ -397,7 +398,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex long longValue(@PolyIndex Byte this) {
+    public @PolyIndex @PolyValue long longValue(@PolyIndex @PolyValue Byte this) {
         return (long)value;
     }
 
@@ -408,7 +409,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public float floatValue() {
+    public @PolyValue float floatValue(@PolyValue Byte this) {
         return (float)value;
     }
 
@@ -419,7 +420,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public double doubleValue() {
+    public @PolyValue double doubleValue(@PolyValue Byte this) {
         return (double)value;
     }
 

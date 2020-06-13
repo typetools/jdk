@@ -28,6 +28,7 @@ package java.lang;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -155,7 +156,7 @@ public final class Boolean implements java.io.Serializable,
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public boolean booleanValue() {
+    public @PolyValue boolean booleanValue(@PolyValue Boolean this) {
         return value;
     }
 
@@ -176,7 +177,7 @@ public final class Boolean implements java.io.Serializable,
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public static @Interned Boolean valueOf(boolean b) {
+    public static @Interned @PolyValue Boolean valueOf(@PolyValue boolean b) {
         return (b ? TRUE : FALSE);
     }
 
@@ -193,7 +194,7 @@ public final class Boolean implements java.io.Serializable,
      */
     @Pure
     @StaticallyExecutable
-    public static @Interned Boolean valueOf(@Nullable String s) {
+    public static @Interned @PolyValue Boolean valueOf(@Nullable @PolyValue String s) {
         return parseBoolean(s) ? TRUE : FALSE;
     }
 

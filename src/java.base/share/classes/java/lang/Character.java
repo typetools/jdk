@@ -34,7 +34,9 @@ import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.ArrayLen;
+import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
+import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -7974,7 +7976,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public @NonNegative char charValue() {
+    public @PolyValue @NonNegative char charValue(@PolyValue Character this) {
         return value;
     }
 
@@ -10062,7 +10064,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      */
     @Pure
     @StaticallyExecutable
-    public static @GTENegativeOne int digit(char ch, @Positive int radix) {
+    public static @GTENegativeOne int digit(char ch, @Positive @IntRange(from = 2, to = 36) int radix) {
         return digit((int)ch, radix);
     }
 
@@ -10116,7 +10118,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      */
     @Pure
     @StaticallyExecutable
-    public static @GTENegativeOne int digit(int codePoint, @Positive int radix) {
+    public static @GTENegativeOne int digit(int codePoint, @Positive @IntRange(from = 2, to = 36) int radix) {
         return CharacterData.of(codePoint).digit(codePoint, radix);
     }
 
@@ -10157,7 +10159,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      */
     @Pure
     @StaticallyExecutable
-    public static int getNumericValue(char ch) {
+    public static @PolyValue int getNumericValue(@PolyValue char ch) {
         return getNumericValue((int)ch);
     }
 
@@ -10538,7 +10540,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      */
     @Pure
     @StaticallyExecutable
-    public static char forDigit(int digit, @Positive int radix) {
+    public static char forDigit(int digit, @Positive @IntRange(from = 2, to = 36) int radix) {
         if ((digit >= radix) || (digit < 0)) {
             return '\0';
         }
