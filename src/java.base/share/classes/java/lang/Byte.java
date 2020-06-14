@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.PolyIndex;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.common.value.qual.PolyValue;
@@ -86,7 +87,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      * @see java.lang.Integer#toString(int)
      */
     @SideEffectFree
-    public static String toString(byte b) {
+    public static @ArrayLen({1,2,3,4}) String toString(byte b) {
         return Integer.toString((int)b, 10);
     }
 
@@ -436,7 +437,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      *          base&nbsp;10.
      */
     @SideEffectFree
-    public String toString() {
+    public @ArrayLen({1,2,3,4}) String toString() {
         return Integer.toString((int)value);
     }
 
