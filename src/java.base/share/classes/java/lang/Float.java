@@ -702,7 +702,7 @@ public final class Float extends Number implements Comparable<Float> {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyValue double doubleValuef@PolyValue Float this() {
+    public @PolyValue double doubleValue(@PolyValue Float this) {
         return (double)value;
     }
 

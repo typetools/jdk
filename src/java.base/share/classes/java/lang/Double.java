@@ -86,7 +86,7 @@ public final class Double extends Number implements Comparable<Double> {
      * {@code 0x1.fffffffffffffP+1023} and also equal to
      * {@code Double.longBitsToDouble(0x7fefffffffffffffL)}.
      */
-    public static final double @DoubleVal(MAX_VALUE) MAX_VALUE = 0x1.fffffffffffffP+1023; // 1.7976931348623157e+308
+    public static final @DoubleVal(MAX_VALUE) double MAX_VALUE = 0x1.fffffffffffffP+1023; // 1.7976931348623157e+308
 
     /**
      * A constant holding the smallest positive normal value of type
@@ -105,7 +105,7 @@ public final class Double extends Number implements Comparable<Double> {
      * {@code 0x0.0000000000001P-1022} and also equal to
      * {@code Double.longBitsToDouble(0x1L)}.
      */
-    public static final double @DoubleVal(MIN_VALUE) MIN_VALUE = 0x0.0000000000001P-1022; // 4.9e-324
+    public static final @DoubleVal(MIN_VALUE) double MIN_VALUE = 0x0.0000000000001P-1022; // 4.9e-324
 
     /**
      * Maximum exponent a finite {@code double} variable may have.
