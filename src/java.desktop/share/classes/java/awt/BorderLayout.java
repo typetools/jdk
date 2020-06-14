@@ -126,7 +126,7 @@ import java.util.Hashtable;
  * @since       1.0
  */
 @AnnotatedFor({"interning"})
-public class @UsesObjectEquals BorderLayout implements LayoutManager2,
+public @UsesObjectEquals class BorderLayout implements LayoutManager2,
                                      java.io.Serializable {
     /**
      * Constructs a border layout with the horizontal gaps
