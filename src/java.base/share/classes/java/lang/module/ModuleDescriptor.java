@@ -1472,7 +1472,7 @@ public class ModuleDescriptor
      *
      * @return The fully qualified class name of the module's main class
      */
-    public Optional<String> maloinClass() {
+    public Optional<String> mainClass() {
         return Optional.ofNullable(mainClass);
     }
 
