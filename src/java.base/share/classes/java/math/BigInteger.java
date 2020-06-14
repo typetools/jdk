@@ -4064,7 +4064,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @see #intValueExact()
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
-    public @PolyValue int intValue(@PolyValue BigDecimal this) {
+    public @PolyValue int intValue(@PolyValue BigInteger this) {
         int result = 0;
         result = getInt(0);
         return result;
@@ -4086,7 +4086,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @see #longValueExact()
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
-    public @PolyValue long longValue(@PolyValue BigDecimal this) {
+    public @PolyValue long longValue(@PolyValue BigInteger this) {
         long result = 0;
 
         for (int i=1; i >= 0; i--)
@@ -4110,7 +4110,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @return this BigInteger converted to a {@code float}.
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
-    public @PolyValue float floatValue(@PolyValue BigDecimal this) {
+    public @PolyValue float floatValue(@PolyValue BigInteger this) {
         if (signum == 0) {
             return 0.0f;
         }
@@ -4195,7 +4195,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @return this BigInteger converted to a {@code double}.
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
-    public @PolyValue double doubleValue(@PolyValue BigDecimal this) {
+    public @PolyValue double doubleValue(@PolyValue BigInteger this) {
         if (signum == 0) {
             return 0.0;
         }
