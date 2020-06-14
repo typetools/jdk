@@ -25,6 +25,8 @@
 
 package java.sql;
 
+import org.checkerframework.checker.tainting.qual.Untainted;
+
 import java.util.regex.Pattern;
 import static java.util.stream.Collectors.joining;
 
