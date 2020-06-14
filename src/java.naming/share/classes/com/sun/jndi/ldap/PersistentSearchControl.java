@@ -53,7 +53,7 @@ final public class PersistentSearchControl extends BasicControl {
      * The persistent search control's assigned object identifier
      * is 2.16.840.1.113730.3.4.3.
      */
-    public static final String @Interned OID = "2.16.840.1.113730.3.4.3";
+    public static final @Interned String OID = "2.16.840.1.113730.3.4.3";
 
     /**
      * Indicates interest in entries which have been added.
