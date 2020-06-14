@@ -575,7 +575,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      *
      * @since 1.5
      */
-    public static final IntVal('\uDFFF') char MAX_LOW_SURROGATE  = '\uDFFF';
+    public static final @IntVal('\uDFFF') char MAX_LOW_SURROGATE  = '\uDFFF';
 
     /**
      * The minimum value of a Unicode surrogate code unit in the
@@ -583,7 +583,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      *
      * @since 1.5
      */
-    public static final IntVal(MIN_HIGH_SURROGATE) char MIN_SURROGATE = MIN_HIGH_SURROGATE;
+    public static final @IntVal(MIN_HIGH_SURROGATE) char MIN_SURROGATE = MIN_HIGH_SURROGATE;
 
     /**
      * The maximum value of a Unicode surrogate code unit in the
@@ -591,7 +591,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      *
      * @since 1.5
      */
-    public static final IntVal(MAX_LOW_SURROGATE) char MAX_SURROGATE = MAX_LOW_SURROGATE;
+    public static final @IntVal(MAX_LOW_SURROGATE) char MAX_SURROGATE = MAX_LOW_SURROGATE;
 
     /**
      * The minimum value of a
