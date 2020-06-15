@@ -347,7 +347,7 @@ public class TestSetResourceBundle {
             }
 
             @Override
-            public @BinaryName String getResourceBundleName() {
+            public String getResourceBundleName() {
                 return PROPERTY_BUNDLE_NAME;
             }
         };
