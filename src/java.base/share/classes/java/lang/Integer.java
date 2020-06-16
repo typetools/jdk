@@ -155,6 +155,7 @@ public final class Integer extends Number implements Comparable<Integer> {
      * @see     java.lang.Character#MAX_RADIX
      * @see     java.lang.Character#MIN_RADIX
      */
+    @CFComment("@IntRange(2, 36) int radix: the method uses 10 if radix is outside the valid range, but that is still probably an error, and other methods (like many methods in Integer, and Byte.toString) do throw an exception if the radix is outside the valid range")
     @SideEffectFree
     @StaticallyExecutable
     public static @ArrayLenRange(from = 1) String toString(int i, @Positive @IntRange(from = 2, to = 36) int radix) {
@@ -237,6 +238,7 @@ public final class Integer extends Number implements Comparable<Integer> {
      * @see     #toString(int, int)
      * @since 1.8
      */
+    @CFComment("@IntRange(2, 36) int radix: see CFComment on toString")
     @SideEffectFree
     @StaticallyExecutable
     public static String toUnsignedString(@Unsigned int i, @Positive @IntRange(from = 2, to = 36) int radix) {
