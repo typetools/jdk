@@ -154,11 +154,7 @@ import jdk.internal.vm.annotation.Stable;
  * @jls     15.18.1 String Concatenation Operator +
  */
 
-<<<<<<< HEAD
 @AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness"})
-=======
-@AnnotatedFor({"formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness", "value"})
->>>>>>> master
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence {
 
@@ -253,14 +249,10 @@ public final class String
      * an empty character sequence.  Note that use of this constructor is
      * unnecessary since Strings are immutable.
      */
-    @SideEffectFree
-<<<<<<< HEAD
-    @Unique
-    public String() {
-=======
+
     @StaticallyExecutable
+    @Unique
     public @StringVal("") String() {
->>>>>>> master
         this.value = "".value;
         this.coder = "".coder;
     }
