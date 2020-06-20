@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.common.aliasing.qual.Unique;
 
 import java.util.Arrays;
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -112,7 +113,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     java.lang.String
  * @since   1.0
  */
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"aliasing", "lock", "nullness", "index"})
  public final class StringBuffer
     extends AbstractStringBuilder
     implements java.io.Serializable, Comparable<StringBuffer>, CharSequence
@@ -132,6 +133,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * initial capacity of 16 characters.
      */
     @HotSpotIntrinsicCandidate
+    @Unique
     public StringBuffer() {
         super(16);
     }

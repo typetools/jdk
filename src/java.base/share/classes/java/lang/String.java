@@ -49,6 +49,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.common.aliasing.qual.Unique;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
@@ -147,7 +148,7 @@ import jdk.internal.vm.annotation.Stable;
  * @jls     15.18.1 String Concatenation Operator +
  */
 
-@AnnotatedFor({"formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness"})
+@AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness"})
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence {
 
@@ -243,6 +244,7 @@ public final class String
      * unnecessary since Strings are immutable.
      */
     @SideEffectFree
+    @Unique
     public String() {
         this.value = "".value;
         this.coder = "".coder;

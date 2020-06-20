@@ -28,6 +28,7 @@ package java.lang;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.common.aliasing.qual.Unique;
 
 /**
  * The class {@code Exception} and its subclasses are a form of
@@ -46,7 +47,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since   1.0
  */
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"aliasing", "nullness"})
 public class Exception extends Throwable {
     static final long serialVersionUID = -3387516993124229948L;
 
@@ -56,6 +57,7 @@ public class Exception extends Throwable {
      * call to {@link #initCause}.
      */
     @SideEffectFree
+    @Unique
     public Exception() {
         super();
     }
