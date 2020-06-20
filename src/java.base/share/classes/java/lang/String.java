@@ -250,6 +250,7 @@ public final class String
      * unnecessary since Strings are immutable.
      */
 
+    @SideEffectFree
     @StaticallyExecutable
     @Unique
     public @StringVal("") String() {
