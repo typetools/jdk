@@ -25,6 +25,10 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Represents the root of the program structure information
  * for one run of javadoc.  From this root all other program
@@ -40,6 +44,7 @@ package com.sun.javadoc;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
+@AnnotatedFor({"nullness", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface RootDoc extends Doc, DocErrorReporter {
@@ -61,7 +66,8 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return an array of arrays of String.
      */
-    String[][] options();
+    @SideEffectFree
+    String[] @MinLen(1) [] options();
 
     /**
      * Return the packages
@@ -81,7 +87,8 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return classes and interfaces specified on the command line.
      */
-    ClassDoc[] specifiedClasses();
+    @SideEffectFree
+    ClassDoc @MinLen(1) [] specifiedClasses();
 
     /**
      * Return the
@@ -90,6 +97,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      *
      * @return included classes and interfaces in all packages.
      */
+    @SideEffectFree
     ClassDoc[] classes();
 
     /**

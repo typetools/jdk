@@ -25,6 +25,9 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Represents a method of a java class.
  *
@@ -36,6 +39,7 @@ package com.sun.javadoc;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
+@AnnotatedFor({"nullness", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface MethodDoc extends ExecutableMemberDoc {
@@ -45,6 +49,7 @@ public interface MethodDoc extends ExecutableMemberDoc {
      *
      * @return true if this method is abstract
      */
+    @Pure
     boolean isAbstract();
 
     /**
@@ -52,6 +57,7 @@ public interface MethodDoc extends ExecutableMemberDoc {
      *
      * @return true if this method is default
      */
+    @Pure
     boolean isDefault();
 
     /**
@@ -106,5 +112,6 @@ public interface MethodDoc extends ExecutableMemberDoc {
      * @return {@code true} if this method overrides the other
      * @since 1.5
      */
+    @Pure
     boolean overrides(MethodDoc meth);
 }

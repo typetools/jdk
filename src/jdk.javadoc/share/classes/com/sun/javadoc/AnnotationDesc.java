@@ -25,6 +25,8 @@
 
 package com.sun.javadoc;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Represents an annotation.
@@ -38,6 +40,7 @@ package com.sun.javadoc;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
+@AnnotatedFor({"nullness", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface AnnotationDesc {
@@ -64,6 +67,7 @@ public interface AnnotationDesc {
      *
      * @return true if the annotation is synthesized.
      */
+    @Pure
     boolean isSynthesized();
 
     /**

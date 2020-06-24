@@ -171,7 +171,6 @@ import java.io.Serializable;
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness", "index"})
-@Covariant({0})
 public interface Map<K, V> {
     // Query Operations
 
@@ -212,7 +211,7 @@ public interface Map<K, V> {
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object key);
+    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
 
     /**
      * Returns {@code true} if this map maps one or more keys to the
@@ -233,7 +232,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object value);
+    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -261,14 +260,8 @@ public interface Map<K, V> {
      *         does not permit null keys
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @CFComment({"lock: The parameter is not nullable, because implementations of Map.get and",
-    "Map.put are specifically permitted to throw NullPointerException if",
-    "any of the arguments is a null).  And some implementations do not",
-    "permit nulls (sorted queues PriorityQueue, Hashtable, most concurrent",
-    "collections).  Some other implementation do accept nulls and are so",
-    "annotated (see ArrayList, LinkedList, HashMap)."})
     @Pure
-    @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object key);
+    @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
 
     // Modification Operations
 
@@ -330,7 +323,7 @@ public interface Map<K, V> {
      *         map does not permit null keys
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @Nullable V remove(@GuardSatisfied Map<K, V> this, @Nullable Object key);
+    @Nullable V remove(@GuardSatisfied Map<K, V> this, Object key);
 
 
     // Bulk Operations
@@ -808,7 +801,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    default V putIfAbsent(K key, V value) {
+    default @Nullable V putIfAbsent(K key, V value) {
         V v = get(key);
         if (v == null) {
             v = put(key, value);
@@ -951,7 +944,7 @@ public interface Map<K, V> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    default V replace(K key, V value) {
+    default @Nullable V replace(K key, V value) {
         V curValue;
         if (((curValue = get(key)) != null) || containsKey(key)) {
             curValue = put(key, value);
