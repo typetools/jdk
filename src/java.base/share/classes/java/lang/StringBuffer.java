@@ -133,8 +133,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * initial capacity of 16 characters.
      */
     @HotSpotIntrinsicCandidate
-    @Unique
-    public StringBuffer() {
+    public @Unique StringBuffer() {
         super(16);
     }
 

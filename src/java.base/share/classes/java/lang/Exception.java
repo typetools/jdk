@@ -57,8 +57,7 @@ public class Exception extends Throwable {
      * call to {@link #initCause}.
      */
     @SideEffectFree
-    @Unique
-    public Exception() {
+    public @Unique Exception() {
         super();
     }
 

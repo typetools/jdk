@@ -249,11 +249,9 @@ public final class String
      * an empty character sequence.  Note that use of this constructor is
      * unnecessary since Strings are immutable.
      */
-
     @SideEffectFree
     @StaticallyExecutable
-    @Unique
-    public @StringVal("") String() {
+    public @StringVal("") @Unique String() {
         this.value = "".value;
         this.coder = "".coder;
     }
