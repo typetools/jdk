@@ -24,7 +24,7 @@
  */
 
 package java.lang.reflect;
-import org.checkerframework.checker.value.MinLen;
+import org.checkerframework.common.value.MinLen;
 
 /**
  * WildcardType represents a wildcard type expression, such as
