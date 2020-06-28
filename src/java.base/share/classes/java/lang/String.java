@@ -269,7 +269,7 @@ public final class String
     @SideEffectFree
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public @PolyValue String(@PolyValue String original) {
+    public @PolyValue @Unique String(@PolyValue String original) {
         this.value = original.value;
         this.coder = original.coder;
         this.hash = original.hash;
@@ -286,7 +286,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public @PolyValue String(char value @GuardSatisfied @PolyValue []) {
+    public @PolyValue @Unique String(char value @GuardSatisfied @PolyValue []) {
         this(value, 0, value.length, null);
     }
 
@@ -313,7 +313,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(char value @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
+    public @Unique String(char value @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
         this(value, offset, count, rangeCheck(value, offset, count));
     }
 
@@ -352,7 +352,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(int @GuardSatisfied [] codePoints, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
+    public @Unique String(int @GuardSatisfied [] codePoints, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
         checkBoundsOffCount(offset, count, codePoints.length);
         if (count == 0) {
             this.value = "".value;
@@ -414,7 +414,7 @@ public final class String
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="1.1")
-    public String(byte ascii @GuardSatisfied [], int hibyte, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
+    public @Unique String(byte ascii @GuardSatisfied [], int hibyte, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int count) {
         checkBoundsOffCount(offset, count, ascii.length);
         if (count == 0) {
             this.value = "".value;
@@ -468,7 +468,7 @@ public final class String
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="1.1")
-    public String(byte ascii @GuardSatisfied [], int hibyte) {
+    public @Unique String(byte ascii @GuardSatisfied [], int hibyte) {
         this(ascii, hibyte, 0, ascii.length);
     }
 
@@ -507,7 +507,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length, String charsetName)
+    public @Unique String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length, String charsetName)
             throws UnsupportedEncodingException {
         if (charsetName == null)
             throw new NullPointerException("charsetName");
@@ -550,7 +550,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length, Charset charset) {
+    public @Unique String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length, Charset charset) {
         if (charset == null)
             throw new NullPointerException("charset");
         checkBoundsOffCount(offset, length, bytes.length);
@@ -585,7 +585,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte bytes @GuardSatisfied [], String charsetName)
+    public @Unique String(@PolySigned byte bytes @GuardSatisfied [], String charsetName)
             throws UnsupportedEncodingException {
         this(bytes, 0, bytes.length, charsetName);
     }
@@ -612,7 +612,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte bytes @GuardSatisfied [], Charset charset) {
+    public @Unique String(@PolySigned byte bytes @GuardSatisfied [], Charset charset) {
         this(bytes, 0, bytes.length, charset);
     }
 
@@ -644,7 +644,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length) {
+    public @Unique String(@PolySigned byte bytes @GuardSatisfied [], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length) {
         checkBoundsOffCount(offset, length, bytes.length);
         StringCoding.Result ret = StringCoding.decode(bytes, offset, length);
         this.value = ret.value;
@@ -669,7 +669,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@PolySigned byte @GuardSatisfied [] bytes) {
+    public @Unique String(@PolySigned byte @GuardSatisfied [] bytes) {
         this(bytes, 0, bytes.length);
     }
 
@@ -684,7 +684,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@GuardSatisfied StringBuffer buffer) {
+    public @Unique String(@GuardSatisfied StringBuffer buffer) {
         this(buffer.toString());
     }
 
@@ -705,7 +705,7 @@ public final class String
      */
     @SideEffectFree
     @StaticallyExecutable
-    public String(@GuardSatisfied StringBuilder builder) {
+    public @Unique String(@GuardSatisfied StringBuilder builder) {
         this(builder, null);
     }
 

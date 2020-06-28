@@ -34,6 +34,8 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.common.aliasing.qual.Unique;
+import org.checkerframework.common.aliasing.qual.LeakedToResult;
+import org.checkerframework.common.aliasing.qual.NonLeaked;
 
 import java.util.Arrays;
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -146,7 +148,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      *             argument is less than {@code 0}.
      */
     @HotSpotIntrinsicCandidate
-    public StringBuffer(@NonNegative int capacity) {
+    public @Unique StringBuffer(@NonNegative int capacity) {
         super(capacity);
     }
 
@@ -158,7 +160,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * @param   str   the initial contents of the buffer.
      */
     @HotSpotIntrinsicCandidate
-    public StringBuffer(String str) {
+    public @Unique StringBuffer(String str) {
         super(str.length() + 16);
         append(str);
     }
@@ -176,7 +178,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * @param      seq   the sequence to copy.
      * @since 1.5
      */
-    public StringBuffer(CharSequence seq) {
+    public @Unique StringBuffer(CharSequence seq) {
         this(seq.length() + 16);
         append(seq);
     }
@@ -319,7 +321,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 
     @Override
     @HotSpotIntrinsicCandidate
-    public synchronized StringBuffer append(@Nullable String str) {
+    public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked @Nullable String s) {
         toStringCache = null;
         super.append(str);
         return this;
