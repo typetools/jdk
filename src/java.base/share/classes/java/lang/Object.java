@@ -63,7 +63,7 @@ public class Object {
      * Constructs a new object.
      */
     @HotSpotIntrinsicCandidate
-    public @Unique Object() {}
+    public @Unique @Untainted Object() {}
 
     /**
      * Returns the runtime class of this {@code Object}. The returned
