@@ -321,7 +321,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 
     @Override
     @HotSpotIntrinsicCandidate
-    public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked @Nullable String s) {
+    public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked @Nullable String str) {
         toStringCache = null;
         super.append(str);
         return this;
