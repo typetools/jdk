@@ -38,6 +38,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.common.aliasing.qual.Unique;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
@@ -52,7 +53,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  */
 @AnnotatedFor({"aliasing", "guieffect", "index", "lock", "nullness"})
 @PolyUIType
-public class Object {
+public @UsesObjectEquals class Object {
 
     private static native void registerNatives();
     static {
