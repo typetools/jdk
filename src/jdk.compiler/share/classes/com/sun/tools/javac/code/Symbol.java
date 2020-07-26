@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.code;
 
+import org.checkerframework.checker.interning.qual.InternedDistinct;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.util.Collections;
@@ -2103,7 +2105,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         /** Dummy completer to be used when the symbol has been completed or
          * does not need completion.
          */
-        public final static Completer NULL_COMPLETER = new Completer() {
+        public final static @InternedDistinct Completer NULL_COMPLETER = new Completer() {
             public void complete(Symbol sym) { }
             public boolean isTerminal() { return true; }
         };
