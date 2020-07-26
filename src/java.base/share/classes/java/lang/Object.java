@@ -33,10 +33,12 @@ import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.tainting.qual.Untainted;;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.common.aliasing.qual.Unique;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
@@ -49,7 +51,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     java.lang.Class
  * @since   1.0
  */
-@AnnotatedFor({"guieffect", "index", "lock", "nullness"})
+@AnnotatedFor({"aliasing", "guieffect", "index", "lock", "nullness"})
 @PolyUIType
 public class Object {
 
@@ -62,7 +64,7 @@ public class Object {
      * Constructs a new object.
      */
     @HotSpotIntrinsicCandidate
-    public Object() {}
+    public @Unique @Untainted Object() {}
 
     /**
      * Returns the runtime class of this {@code Object}. The returned
@@ -374,7 +376,7 @@ public class Object {
      * @see    #wait()
      * @see    #wait(long, int)
      */
-    public final native void wait(@NonNegative long timeoutMillis) throws InterruptedException;
+    public final native void wait(@UnknownInitialization Object this, @NonNegative long timeoutMillis) throws InterruptedException;
 
     /**
      * Causes the current thread to wait until it is awakened, typically
