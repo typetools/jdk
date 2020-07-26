@@ -25,6 +25,9 @@
 
 package java.sql;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Positive;
+
 /**
  * An object that can be used to get information about the types
  * and properties of the columns in a <code>ResultSet</code> object.
@@ -43,8 +46,7 @@ package java.sql;
  *
  * @since 1.1
  */
-import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.checker.index.qual.Positive;
+
 public interface ResultSetMetaData extends Wrapper {
 
     /**
