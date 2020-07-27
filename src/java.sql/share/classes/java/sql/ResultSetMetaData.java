@@ -25,6 +25,7 @@
 
 package java.sql;
 
+import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 
@@ -101,25 +102,25 @@ public interface ResultSetMetaData extends Wrapper {
      *          <code>columnNullable</code> or <code>columnNullableUnknown</code>
      * @exception SQLException if a database access error occurs
      */
-    int isNullable(@Positive int column) throws SQLException;
+    @IntVal({0,1,2}) int isNullable(@Positive int column) throws SQLException;
 
     /**
      * The constant indicating that a
      * column does not allow <code>NULL</code> values.
      */
-    int columnNoNulls = 0;
+    @IntVal(0) int columnNoNulls = 0;
 
     /**
      * The constant indicating that a
      * column allows <code>NULL</code> values.
      */
-    int columnNullable = 1;
+    @IntVal(1) int columnNullable = 1;
 
     /**
      * The constant indicating that the
      * nullability of a column's values is unknown.
      */
-    int columnNullableUnknown = 2;
+    @IntVal(2) int columnNullableUnknown = 2;
 
     /**
      * Indicates whether values in the designated column are signed numbers.
