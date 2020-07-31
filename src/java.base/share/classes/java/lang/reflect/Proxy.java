@@ -25,6 +25,9 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.module.ModuleDescriptor;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -282,6 +285,7 @@ import static java.lang.module.ModuleDescriptor.Modifier.SYNTHETIC;
  * @revised 9
  * @spec JPMS
  */
+@AnnotatedFor({"nullness"})
 public class Proxy implements java.io.Serializable {
     private static final long serialVersionUID = -2222568056686623797L;
 
@@ -373,7 +377,7 @@ public class Proxy implements java.io.Serializable {
      */
     @Deprecated
     @CallerSensitive
-    public static Class<?> getProxyClass(ClassLoader loader,
+    public static Class<?> getProxyClass(@Nullable ClassLoader loader,
                                          Class<?>... interfaces)
         throws IllegalArgumentException
     {
@@ -991,7 +995,7 @@ public class Proxy implements java.io.Serializable {
      * @spec JPMS
      */
     @CallerSensitive
-    public static Object newProxyInstance(ClassLoader loader,
+    public static Object newProxyInstance(@Nullable ClassLoader loader,
                                           Class<?>[] interfaces,
                                           InvocationHandler h) {
         Objects.requireNonNull(h);
