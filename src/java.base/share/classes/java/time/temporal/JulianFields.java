@@ -61,6 +61,8 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.FOREVER;
@@ -87,6 +89,7 @@ import java.util.Map;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class JulianFields {
 
     /**

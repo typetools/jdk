@@ -66,6 +66,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.time.temporal.ChronoField.ERA;
 import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
@@ -134,6 +135,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class YearMonth
         implements Temporal, TemporalAdjuster, Comparable<YearMonth>, Serializable {
 
@@ -357,7 +359,7 @@ public final class YearMonth
      * @return true if the field is supported on this year-month, false if not
      */
     @Override
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         if (field instanceof ChronoField) {
             return field == YEAR || field == MONTH_OF_YEAR ||
                     field == PROLEPTIC_MONTH || field == YEAR_OF_ERA || field == ERA;
@@ -393,7 +395,7 @@ public final class YearMonth
      * @return true if the unit can be added/subtracted, false if not
      */
     @Override
-    public boolean isSupported(TemporalUnit unit) {
+    public boolean isSupported(@Nullable TemporalUnit unit) {
         if (unit instanceof ChronoUnit) {
             return unit == MONTHS || unit == YEARS || unit == DECADES || unit == CENTURIES || unit == MILLENNIA || unit == ERAS;
         }

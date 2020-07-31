@@ -190,6 +190,7 @@ import sun.util.locale.provider.LocaleResources;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class WeekFields implements Serializable {
     // implementation notes
     // querying week-of-month or week-of-year should return the week value bound within the month/year

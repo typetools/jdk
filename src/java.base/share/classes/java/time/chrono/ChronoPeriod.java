@@ -61,6 +61,11 @@
  */
 package java.time.chrono;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.DateTimeException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
@@ -91,6 +96,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public interface ChronoPeriod
         extends TemporalAmount {
 
@@ -341,7 +347,9 @@ public interface ChronoPeriod
      * @return true if this is equal to the other period
      */
     @Override
-    boolean equals(Object obj);
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    boolean equals(@Nullable Object obj);
 
     /**
      * A hash code for this period.

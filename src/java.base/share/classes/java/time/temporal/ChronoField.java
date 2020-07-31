@@ -56,6 +56,8 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.ERAS;
 import static java.time.temporal.ChronoUnit.FOREVER;
@@ -99,6 +101,7 @@ import sun.util.locale.provider.LocaleResources;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public enum ChronoField implements TemporalField {
 
     /**

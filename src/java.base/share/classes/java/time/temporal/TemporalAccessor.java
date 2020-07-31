@@ -61,6 +61,9 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.DateTimeException;
 import java.util.Objects;
 
@@ -100,6 +103,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public interface TemporalAccessor {
 
     /**
@@ -123,7 +127,7 @@ public interface TemporalAccessor {
      * @param field  the field to check, null returns false
      * @return true if this date-time can be queried for the field, false if not
      */
-    boolean isSupported(TemporalField field);
+    boolean isSupported(@Nullable TemporalField field);
 
     /**
      * Gets the range of valid values for the specified field.

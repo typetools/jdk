@@ -61,6 +61,8 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.DateTimeException;
 
 /**
@@ -100,6 +102,7 @@ import java.time.DateTimeException;
  * @since 1.8
  */
 @FunctionalInterface
+@AnnotatedFor({"nullness"})
 public interface TemporalQuery<R> {
 
     /**

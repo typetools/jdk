@@ -64,6 +64,9 @@ package java.time;
 import static java.time.temporal.ChronoField.DAY_OF_WEEK;
 import static java.time.temporal.ChronoUnit.DAYS;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
@@ -106,6 +109,7 @@ import java.util.Locale;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public enum DayOfWeek implements TemporalAccessor, TemporalAdjuster {
 
     /**
@@ -248,7 +252,7 @@ public enum DayOfWeek implements TemporalAccessor, TemporalAdjuster {
      * @return true if the field is supported on this day-of-week, false if not
      */
     @Override
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         if (field instanceof ChronoField) {
             return field == DAY_OF_WEEK;
         }
