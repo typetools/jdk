@@ -404,7 +404,7 @@ public class Proxy implements java.io.Serializable {
      * @return  a Constructor of the proxy class taking single
      *          {@code InvocationHandler} parameter
      */
-    private static Constructor<?> getProxyConstructor(Class<?> caller,
+    private static Constructor<?> getProxyConstructor(@Nullable Class<?> caller,
                                                       ClassLoader loader,
                                                       Class<?>... interfaces)
     {
@@ -1012,7 +1012,7 @@ public class Proxy implements java.io.Serializable {
         return newProxyInstance(caller, cons, h);
     }
 
-    private static Object newProxyInstance(Class<?> caller, // null if no SecurityManager
+    private static Object newProxyInstance(@Nullable Class<?> caller, // null if no SecurityManager
                                            Constructor<?> cons,
                                            InvocationHandler h) {
         /*
