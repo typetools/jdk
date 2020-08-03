@@ -38,6 +38,8 @@ package java.util.concurrent;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -79,7 +81,8 @@ import java.util.function.Predicate;
  * @author  Doug Lea
  * @param <E> the type of elements held in this deque
  */
-public class LinkedBlockingDeque<E>
+@AnnotatedFor({"nullness"})
+public class LinkedBlockingDeque<E extends Object>
     extends AbstractQueue<E>
     implements BlockingDeque<E>, java.io.Serializable {
 
@@ -458,7 +461,7 @@ public class LinkedBlockingDeque<E>
         return x;
     }
 
-    public E pollFirst() {
+    public @Nullable E pollFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -468,7 +471,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollLast() {
+    public @Nullable E pollLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -504,7 +507,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollFirst(long timeout, TimeUnit unit)
+    public @Nullable E pollFirst(long timeout, TimeUnit unit)
         throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -522,7 +525,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollLast(long timeout, TimeUnit unit)
+    public @Nullable E pollLast(long timeout, TimeUnit unit)
         throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -558,7 +561,7 @@ public class LinkedBlockingDeque<E>
         return x;
     }
 
-    public E peekFirst() {
+    public @Nullable E peekFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -568,7 +571,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E peekLast() {
+    public @Nullable E peekLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -578,6 +581,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     public boolean removeFirstOccurrence(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
@@ -595,6 +599,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     public boolean removeLastOccurrence(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
@@ -667,7 +672,7 @@ public class LinkedBlockingDeque<E>
         return removeFirst();
     }
 
-    public E poll() {
+    public @Nullable E poll() {
         return pollFirst();
     }
 
@@ -675,7 +680,7 @@ public class LinkedBlockingDeque<E>
         return takeFirst();
     }
 
-    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(long timeout, TimeUnit unit) throws InterruptedException {
         return pollFirst(timeout, unit);
     }
 
@@ -693,7 +698,7 @@ public class LinkedBlockingDeque<E>
         return getFirst();
     }
 
-    public E peek() {
+    public @Nullable E peek() {
         return peekFirst();
     }
 
@@ -787,6 +792,7 @@ public class LinkedBlockingDeque<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if this deque changed as a result of the call
      */
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     public boolean remove(Object o) {
         return removeFirstOccurrence(o);
     }
@@ -815,7 +821,8 @@ public class LinkedBlockingDeque<E>
      * @param o object to be checked for containment in this deque
      * @return {@code true} if this deque contains the specified element
      */
-    public boolean contains(@Nullable Object o) {
+    @CFComment("probably accepts null in practice, but docs at best imply this")
+    public boolean contains(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -1341,7 +1348,7 @@ public class LinkedBlockingDeque<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1349,7 +1356,7 @@ public class LinkedBlockingDeque<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
