@@ -29,8 +29,8 @@ import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.LengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.framework.util.PurityChecker.qual.Pure;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
