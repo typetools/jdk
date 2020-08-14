@@ -63,6 +63,7 @@ package java.time.temporal;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.time.DateTimeException;
 import java.util.Objects;
@@ -309,6 +310,8 @@ public interface TemporalAccessor {
      * @throws DateTimeException if unable to query
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @CFComment({"nullness: TemporalQuery promises that this is equivalent to query.queryFrom, so "
+        + "it returns plain R, just like that method."})
     default <R> R query(TemporalQuery<R> query) {
         if (query == TemporalQueries.zoneId()
                 || query == TemporalQueries.chronology()

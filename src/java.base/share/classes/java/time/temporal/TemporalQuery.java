@@ -62,6 +62,7 @@
 package java.time.temporal;
 
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.time.DateTimeException;
 
@@ -143,6 +144,8 @@ public interface TemporalQuery<R> {
      * @throws DateTimeException if unable to query
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @CFComment({"nullness: This is a function object, so we return plain R to distinguish between "
+        + "instances that can return null and those that cannot."})
     R queryFrom(TemporalAccessor temporal);
 
 }
