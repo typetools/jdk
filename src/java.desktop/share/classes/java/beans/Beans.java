@@ -26,6 +26,7 @@
 package java.beans;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import com.sun.beans.finder.ClassFinder;
@@ -60,7 +61,7 @@ import java.util.Vector;
  * @since 1.1
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class Beans {
 
     /**
@@ -79,7 +80,7 @@ public @UsesObjectEquals class Beans {
      * @exception IOException if an I/O error occurs.
      */
 
-    public static Object instantiate(ClassLoader cls, String beanName) throws IOException, ClassNotFoundException {
+    public static Object instantiate(@Nullable ClassLoader cls, String beanName) throws IOException, ClassNotFoundException {
         return Beans.instantiate(cls, beanName, null, null);
     }
 
@@ -102,7 +103,7 @@ public @UsesObjectEquals class Beans {
      * @since 1.2
      */
     @SuppressWarnings("deprecation")
-    public static Object instantiate(ClassLoader cls, String beanName,
+    public static Object instantiate(@Nullable ClassLoader cls, String beanName,
                                      BeanContext beanContext)
             throws IOException, ClassNotFoundException {
         return Beans.instantiate(cls, beanName, beanContext, null);
@@ -167,9 +168,9 @@ public @UsesObjectEquals class Beans {
      * documentation</a> for further information.
      */
     @Deprecated(since = "9")
-    public static Object instantiate(ClassLoader cls, String beanName,
-                                     BeanContext beanContext,
-                                     AppletInitializer initializer)
+    public static Object instantiate(@Nullable ClassLoader cls, String beanName,
+                                     @Nullable BeanContext beanContext,
+                                     @Nullable AppletInitializer initializer)
             throws IOException, ClassNotFoundException {
 
         InputStream ins;
