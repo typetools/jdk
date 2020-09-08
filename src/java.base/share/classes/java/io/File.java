@@ -270,6 +270,7 @@ public class File
      * The parameter order is used to disambiguate this method from the
      * public(File, String) constructor.
      */
+    @SideEffectFree
     private File(String child, File parent) {
         assert parent.path != null;
         assert (!parent.path.equals(""));
@@ -286,6 +287,7 @@ public class File
      * @throws  NullPointerException
      *          If the <code>pathname</code> argument is <code>null</code>
      */
+    @SideEffectFree
     public File(String pathname) {
         if (pathname == null) {
             throw new NullPointerException();
@@ -326,6 +328,7 @@ public class File
      * @throws  NullPointerException
      *          If <code>child</code> is <code>null</code>
      */
+    @SideEffectFree
     public File(@Nullable String parent, String child) {
         if (child == null) {
             throw new NullPointerException();
@@ -369,6 +372,7 @@ public class File
      * @throws  NullPointerException
      *          If <code>child</code> is <code>null</code>
      */
+    @SideEffectFree
     public File(@Nullable File parent, String child) {
         if (child == null) {
             throw new NullPointerException();
@@ -424,6 +428,7 @@ public class File
      * @see java.net.URI
      * @since 1.4
      */
+    @SideEffectFree
     public File(URI uri) {
 
         // Check our many preconditions
@@ -465,6 +470,7 @@ public class File
      *          pathname, or the empty string if this pathname's name sequence
      *          is empty
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     public String getName() {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) return path.substring(prefixLength);
@@ -485,6 +491,7 @@ public class File
      *          does not name a parent
      */
     @Pure
+    @SideEffectFree  // pure with respect to .equals but not ==
     public @Nullable String getParent(@GuardSatisfied File this) {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) {
@@ -512,6 +519,7 @@ public class File
      * @since 1.2
      */
     @Pure
+    @SideEffectFree  // pure with respect to .equals but not ==
     public @Nullable File getParentFile(@GuardSatisfied File this) {
         String p = this.getParent();
         if (p == null) return null;
@@ -525,6 +533,7 @@ public class File
      *
      * @return  The string form of this abstract pathname
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     public String getPath() {
         return path;
     }
@@ -586,6 +595,7 @@ public class File
      *
      * @since 1.2
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     public File getAbsoluteFile() {
         String absPath = getAbsolutePath();
         return new File(absPath, fs.prefixLength(absPath));
@@ -629,6 +639,8 @@ public class File
      * @since   1.1
      * @see     Path#toRealPath
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
+    @ReleasesNoLocks // rest of file is not annotated for the Lock Checker
     public String getCanonicalPath() throws IOException {
         if (isInvalid()) {
             throw new IOException("Invalid file path");
@@ -657,11 +669,13 @@ public class File
      * @since 1.2
      * @see     Path#toRealPath
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     public File getCanonicalFile() throws IOException {
         String canonPath = getCanonicalPath();
         return new File(canonPath, fs.prefixLength(canonPath));
     }
 
+    @SideEffectFree  // pure with respect to .equals but not ==
     private static String slashify(String path, boolean isDirectory) {
         String p = path;
         if (File.separatorChar != '/')
@@ -696,6 +710,7 @@ public class File
      * {@link #toURI() toURI} method, and then converting the URI into a URL
      * via the {@link java.net.URI#toURL() URI.toURL} method.
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     @Deprecated
     public URL toURL() throws MalformedURLException {
         if (isInvalid()) {
@@ -745,6 +760,7 @@ public class File
      * @see java.net.URI#toURL()
      * @since 1.4
      */
+    @SideEffectFree  // pure with respect to .equals but not ==
     public URI toURI() {
         try {
             File f = getAbsoluteFile();
@@ -857,7 +873,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file
      */
-    @Pure
+    @SideEffectFree
     public boolean isDirectory(@GuardSatisfied File this) {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -891,7 +907,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file
      */
-    @Pure
+    @SideEffectFree
     public boolean isFile(@GuardSatisfied File this) {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -921,7 +937,7 @@ public class File
      *
      * @since 1.2
      */
-    @Pure
+    @SideEffectFree
     public boolean isHidden(@GuardSatisfied File this) {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -965,6 +981,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file
      */
+    @SideEffectFree
     public long lastModified() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -996,6 +1013,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file
      */
+    @SideEffectFree
     public @NonNegative long length() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -1144,6 +1162,7 @@ public class File
      *          SecurityManager#checkRead(String)} method denies read access to
      *          the directory
      */
+    @SideEffectFree
     public String @Nullable [] list() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -1184,6 +1203,7 @@ public class File
      *
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
+    @SideEffectFree
     public String @Nullable [] list(@Nullable FilenameFilter filter) {
         String names[] = list();
         if ((names == null) || (filter == null)) {
@@ -1236,6 +1256,7 @@ public class File
      *
      * @since  1.2
      */
+    @SideEffectFree
     public File @Nullable [] listFiles() {
         String[] ss = list();
         if (ss == null) return null;
@@ -1277,6 +1298,7 @@ public class File
      * @since  1.2
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
+    @SideEffectFree
     public File @Nullable [] listFiles(@Nullable FilenameFilter filter) {
         String ss[] = list();
         if (ss == null) return null;
@@ -1315,6 +1337,7 @@ public class File
      * @since  1.2
      * @see java.nio.file.Files#newDirectoryStream(Path,java.nio.file.DirectoryStream.Filter)
      */
+    @SideEffectFree
     public File @Nullable [] listFiles(@Nullable FileFilter filter) {
         String ss[] = list();
         if (ss == null) return null;
@@ -1752,6 +1775,7 @@ public class File
      *
      * @since 1.6
      */
+    @SideEffectFree
     public boolean canExecute() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
@@ -1808,6 +1832,7 @@ public class File
      * @since  1.2
      * @see java.nio.file.FileStore
      */
+    @SideEffectFree
     public static File @Nullable [] listRoots() {
         return fs.listRoots();
     }
@@ -1830,6 +1855,7 @@ public class File
      *
      * @since  1.6
      */
+    @SideEffectFree
     public @NonNegative long getTotalSpace() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -1868,6 +1894,7 @@ public class File
      *
      * @since  1.6
      */
+    @SideEffectFree
     public @NonNegative long getFreeSpace() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -1909,6 +1936,7 @@ public class File
      *
      * @since  1.6
      */
+    @SideEffectFree
     public @NonNegative long getUsableSpace() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -2306,6 +2334,7 @@ public class File
      * @since   1.7
      * @see Path#toFile
      */
+    @SideEffectFree
     public Path toPath() {
         Path result = filePath;
         if (result == null) {
