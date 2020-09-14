@@ -26,6 +26,7 @@
 package javax.lang.model.util;
 
 import org.checkerframework.checker.signature.qual.CanonicalName;
+import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 
 import java.util.ArrayList;
 import java.util.Collections;
