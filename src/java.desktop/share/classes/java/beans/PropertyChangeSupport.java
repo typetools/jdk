@@ -353,7 +353,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
         }
     }
 
-    private static void fire(@Nullable PropertyChangeListener[] listeners, PropertyChangeEvent event) {
+    private static void fire(PropertyChangeListener @Nullable [] listeners, PropertyChangeEvent event) {
         if (listeners != null) {
             for (PropertyChangeListener listener : listeners) {
                 listener.propertyChange(event);
@@ -436,7 +436,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @return true if there are one or more listeners for the given property
      * @since 1.2
      */
-    @PolyUIEffect public boolean hasListeners(@PolyUI PropertyChangeSupport this, String propertyName) {
+    @PolyUIEffect public boolean hasListeners(@PolyUI PropertyChangeSupport this, @Nullable String propertyName) {
         return this.map.hasListeners(propertyName);
     }
 
