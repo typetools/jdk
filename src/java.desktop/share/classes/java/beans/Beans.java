@@ -104,7 +104,7 @@ public @UsesObjectEquals class Beans {
      */
     @SuppressWarnings("deprecation")
     public static Object instantiate(@Nullable ClassLoader cls, String beanName,
-                                     BeanContext beanContext)
+                                     @Nullable BeanContext beanContext)
             throws IOException, ClassNotFoundException {
         return Beans.instantiate(cls, beanName, beanContext, null);
     }
@@ -525,7 +525,7 @@ class BeansAppletContext implements AppletContext {
         this.target = target;
     }
 
-    public AudioClip getAudioClip(URL url) {
+    public @Nullable AudioClip getAudioClip(URL url) {
         // We don't currently support audio clips in the Beans.instantiate
         // applet context, unless by some luck there exists a URL content
         // class that can generate an AudioClip from the audio URL.
@@ -536,7 +536,7 @@ class BeansAppletContext implements AppletContext {
         }
     }
 
-    public synchronized Image getImage(URL url) {
+    public synchronized @Nullable Image getImage(URL url) {
         Object o = imageCache.get(url);
         if (o != null) {
             return (Image)o;
@@ -560,7 +560,7 @@ class BeansAppletContext implements AppletContext {
         }
     }
 
-    public Applet getApplet(String name) {
+    public @Nullable Applet getApplet(String name) {
         return null;
     }
 
@@ -586,12 +586,12 @@ class BeansAppletContext implements AppletContext {
         // We do nothing.
     }
 
-    public InputStream getStream(String key){
+    public @Nullable InputStream getStream(String key){
         // We do nothing.
         return null;
     }
 
-    public Iterator<String> getStreamKeys(){
+    public @Nullable Iterator<String> getStreamKeys(){
         // We do nothing.
         return null;
     }
@@ -632,7 +632,7 @@ class BeansAppletStub implements AppletStub {
         return codeBase;
     }
 
-    public String getParameter(String name) {
+    public @Nullable String getParameter(String name) {
         return null;
     }
 
