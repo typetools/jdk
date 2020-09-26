@@ -893,7 +893,7 @@ public final class Locale implements Cloneable, Serializable {
      *
      * @return the default locale for this instance of the Java Virtual Machine
      */
-    public static Locale getDefault() {
+    public static @Nullable Locale getDefault() {
         // do not synchronize this method - see 4071298
         return defaultLocale;
     }
