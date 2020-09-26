@@ -28,6 +28,7 @@ package java.awt;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.applet.Applet;
@@ -290,7 +291,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #getForeground
      * @see #setForeground
      */
-    Color       foreground;
+    @Nullable Color       foreground;
 
     /**
      * The background color for this component.
@@ -300,7 +301,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #getBackground
      * @see #setBackground
      */
-    Color       background;
+    @Nullable Color       background;
 
     /**
      * The font used by this component.
@@ -1790,7 +1791,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @since 1.0
      */
     @Transient
-    public Color getForeground() {
+    public @Nullable Color getForeground() {
         Color foreground = this.foreground;
         if (foreground != null) {
             return foreground;
@@ -1808,7 +1809,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #getForeground
      * @since 1.0
      */
-    public void setForeground(Color c) {
+    public void setForeground(@Nullable Color c) {
         Color oldColor = foreground;
         ComponentPeer peer = this.peer;
         foreground = c;
@@ -1845,7 +1846,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @since 1.0
      */
     @Transient
-    public Color getBackground() {
+    public @Nullable Color getBackground() {
         Color background = this.background;
         if (background != null) {
             return background;
@@ -1867,7 +1868,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #getBackground
      * @since 1.0
      */
-    public void setBackground(Color c) {
+    public void setBackground(@Nullable Color c) {
         Color oldColor = background;
         ComponentPeer peer = this.peer;
         background = c;

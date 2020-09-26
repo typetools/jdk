@@ -24,6 +24,8 @@
  */
 package java.awt;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.awt.peer.DialogPeer;
 import java.awt.event.*;
 import java.io.ObjectInputStream;
@@ -33,6 +35,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import javax.accessibility.*;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import sun.awt.AppContext;
 import sun.awt.AWTPermissions;
 import sun.awt.SunToolkit;
@@ -327,7 +332,7 @@ public class Dialog extends Window {
      * @see Component#setSize
      * @see Component#setVisible
      */
-     public Dialog(Frame owner) {
+     public Dialog(@Nullable Frame owner) {
          this(owner, "", false);
      }
 
@@ -353,7 +358,7 @@ public class Dialog extends Window {
      * @see java.awt.Dialog#setModalityType
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
-     public Dialog(Frame owner, boolean modal) {
+     public Dialog(@Nullable Frame owner, boolean modal) {
          this(owner, "", modal);
      }
 
@@ -374,7 +379,7 @@ public class Dialog extends Window {
      * @see Component#setSize
      * @see Component#setVisible
      */
-     public Dialog(Frame owner, String title) {
+     public Dialog(@Nullable Frame owner, @Nullable String title) {
          this(owner, title, false);
      }
 
@@ -404,7 +409,7 @@ public class Dialog extends Window {
      * @see Component#setSize
      * @see Component#setVisible
      */
-     public Dialog(Frame owner, String title, boolean modal) {
+     public Dialog(@Nullable Frame owner, @Nullable String title, boolean modal) {
          this(owner, title, modal ? DEFAULT_MODALITY_TYPE : ModalityType.MODELESS);
      }
 
@@ -437,8 +442,8 @@ public class Dialog extends Window {
      * @see Component#setVisible
      * @since 1.4
      */
-     public Dialog(Frame owner, String title, boolean modal,
-                   GraphicsConfiguration gc) {
+     public Dialog(@Nullable Frame owner, @Nullable String title, boolean modal,
+    		 @Nullable GraphicsConfiguration gc) {
          this(owner, title, modal ? DEFAULT_MODALITY_TYPE : ModalityType.MODELESS, gc);
      }
 
@@ -455,7 +460,7 @@ public class Dialog extends Window {
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @since 1.2
      */
-     public Dialog(Dialog owner) {
+     public Dialog(@Nullable Dialog owner) {
          this(owner, "", false);
      }
 
@@ -475,7 +480,7 @@ public class Dialog extends Window {
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @since 1.2
      */
-     public Dialog(Dialog owner, String title) {
+     public Dialog(@Nullable Dialog owner, @Nullable String title) {
          this(owner, title, false);
      }
 
@@ -505,7 +510,7 @@ public class Dialog extends Window {
      *
      * @since 1.2
      */
-     public Dialog(Dialog owner, String title, boolean modal) {
+     public Dialog(@Nullable Dialog owner, @Nullable String title, boolean modal) {
          this(owner, title, modal ? DEFAULT_MODALITY_TYPE : ModalityType.MODELESS);
      }
 
@@ -541,7 +546,7 @@ public class Dialog extends Window {
      *
      * @since 1.4
      */
-     public Dialog(Dialog owner, String title, boolean modal,
+     public Dialog(@Nullable Dialog owner, String title, boolean modal,
                    GraphicsConfiguration gc) {
          this(owner, title, modal ? DEFAULT_MODALITY_TYPE : ModalityType.MODELESS, gc);
      }
@@ -566,7 +571,7 @@ public class Dialog extends Window {
      *
      * @since 1.6
      */
-    public Dialog(Window owner) {
+    public Dialog(@Nullable Window owner) {
         this(owner, "", ModalityType.MODELESS);
     }
 
@@ -592,7 +597,7 @@ public class Dialog extends Window {
      *
      * @since 1.6
      */
-    public Dialog(Window owner, String title) {
+    public Dialog(@Nullable Window owner, @Nullable String title) {
         this(owner, title, ModalityType.MODELESS);
     }
 
@@ -625,7 +630,7 @@ public class Dialog extends Window {
      *
      * @since 1.6
      */
-    public Dialog(Window owner, ModalityType modalityType) {
+    public Dialog(@Nullable Window owner, @Nullable ModalityType modalityType) {
         this(owner, "", modalityType);
     }
 
@@ -660,7 +665,7 @@ public class Dialog extends Window {
      *
      * @since 1.6
      */
-    public Dialog(Window owner, String title, ModalityType modalityType) {
+    public Dialog(@Nullable Window owner, @Nullable String title, @Nullable ModalityType modalityType) {
         super(owner);
 
         if ((owner != null) &&
@@ -711,8 +716,8 @@ public class Dialog extends Window {
      *
      * @since 1.6
      */
-    public Dialog(Window owner, String title, ModalityType modalityType,
-                  GraphicsConfiguration gc) {
+    public Dialog(@Nullable Window owner, @Nullable String title, @Nullable ModalityType modalityType,
+    		@Nullable GraphicsConfiguration gc) {
         super(owner, gc);
 
         if ((owner != null) &&

@@ -27,6 +27,7 @@ package javax.swing;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.beans.*;
@@ -671,7 +672,7 @@ public abstract class JComponent extends Container implements Serializable,
      */
     @BeanProperty(hidden = true, visualUpdate = true, description
             = "The component's look and feel delegate.")
-    protected void setUI(ComponentUI newUI) {
+    protected void setUI(@Nullable ComponentUI newUI) {
         /* We do not check that the UI instance is different
          * before allowing the switch in order to enable the
          * same UI instance *with different default settings*
@@ -2753,7 +2754,7 @@ public abstract class JComponent extends Container implements Serializable,
      */
     @BeanProperty(preferred = true, visualUpdate = true, description
             = "The background color of the component.")
-    public void setBackground(Color bg) {
+    public void setBackground(@Nullable Color bg) {
         Color oldBg = getBackground();
         super.setBackground(bg);
         if ((oldBg != null) ? !oldBg.equals(bg) : ((bg != null) && !bg.equals(oldBg))) {
@@ -2770,7 +2771,7 @@ public abstract class JComponent extends Container implements Serializable,
      */
     @BeanProperty(preferred = true, visualUpdate = true, description
             = "The font for the component.")
-    public void setFont(Font font) {
+    public void setFont(@Nullable Font font) {
         Font oldFont = getFont();
         super.setFont(font);
         // font already bound in AWT1.2

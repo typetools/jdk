@@ -29,6 +29,9 @@ import java.awt.Insets;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.plaf.ComponentUI;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import sun.awt.AppContext;
 
 /**
@@ -193,11 +196,11 @@ public class DefaultLookup {
         return (Icon)iValue;
     }
 
-    public static Icon getIcon(JComponent c, ComponentUI ui, String key) {
+    public static @Nullable Icon getIcon(JComponent c, ComponentUI ui, String key) {
         return getIcon(c, ui, key, null);
     }
 
-    public static Border getBorder(JComponent c, ComponentUI ui, String key,
+    public static @Nullable Border getBorder(JComponent c, ComponentUI ui, String key,
             Border defaultValue) {
         Object iValue = get(c, ui, key);
         if (iValue == null || !(iValue instanceof Border)) {
@@ -206,11 +209,11 @@ public class DefaultLookup {
         return (Border)iValue;
     }
 
-    public static Border getBorder(JComponent c, ComponentUI ui, String key) {
+    public static @Nullable Border getBorder(JComponent c, ComponentUI ui, String key) {
         return getBorder(c, ui, key, null);
     }
 
-    public Object getDefault(JComponent c, ComponentUI ui, String key) {
+    public @Nullable Object getDefault(JComponent c, ComponentUI ui, String key) {
         // basic
         return UIManager.get(key, c.getLocale());
     }

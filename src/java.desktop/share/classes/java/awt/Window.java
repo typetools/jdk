@@ -63,6 +63,8 @@ import javax.accessibility.AccessibleRole;
 import javax.accessibility.AccessibleState;
 import javax.accessibility.AccessibleStateSet;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import sun.awt.AWTAccessor;
 import sun.awt.AWTPermissions;
 import sun.awt.AppContext;
@@ -3270,7 +3272,7 @@ public class Window extends Container implements Accessible {
      * @see java.awt.GraphicsEnvironment#getCenterPoint
      * @since 1.4
      */
-    public void setLocationRelativeTo(Component c) {
+    public void setLocationRelativeTo(@Nullable Component c) {
         // target location
         int dx = 0, dy = 0;
         // target GC

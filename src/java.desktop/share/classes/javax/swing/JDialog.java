@@ -24,6 +24,8 @@
  */
 package javax.swing;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.JavaBean;
@@ -230,7 +232,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Frame owner, String title) {
+    public JDialog(Frame owner, @Nullable String title) {
         this(owner, title, false);
     }
 
@@ -269,7 +271,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Frame owner, String title, boolean modal) {
+    public JDialog(@Nullable Frame owner, @Nullable String title, boolean modal) {
         super(owner == null? SwingUtilities.getSharedOwnerFrame() : owner,
               title, modal);
         if (owner == null) {
@@ -319,7 +321,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      * @since 1.4
      */
-    public JDialog(Frame owner, String title, boolean modal,
+    public JDialog(@Nullable Frame owner, @Nullable String title, boolean modal,
                    GraphicsConfiguration gc) {
         super(owner == null? SwingUtilities.getSharedOwnerFrame() : owner,
               title, modal, gc);
@@ -345,7 +347,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner) {
+    public JDialog(@Nullable Dialog owner) {
         this(owner, false);
     }
 
@@ -371,7 +373,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, boolean modal) {
+    public JDialog(@Nullable Dialog owner, boolean modal) {
         this(owner, "", modal);
     }
 
@@ -391,7 +393,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, String title) {
+    public JDialog(@Nullable Dialog owner, @Nullable String title) {
         this(owner, title, false);
     }
 
@@ -419,7 +421,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, String title, boolean modal) {
+    public JDialog(@Nullable Dialog owner, @Nullable String title, boolean modal) {
         super(owner, title, modal);
         dialogInit();
     }
@@ -457,7 +459,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      * @since 1.4
      */
-    public JDialog(Dialog owner, String title, boolean modal,
+    public JDialog(@Nullable Dialog owner, @Nullable String title, boolean modal,
                    GraphicsConfiguration gc) {
         super(owner, title, modal, gc);
         dialogInit();
@@ -486,7 +488,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner) {
+    public JDialog(@Nullable Window owner) {
         this(owner, Dialog.ModalityType.MODELESS);
     }
 
@@ -522,7 +524,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, ModalityType modalityType) {
+    public JDialog(@Nullable Window owner, @Nullable ModalityType modalityType) {
         this(owner, "", modalityType);
     }
 
@@ -551,7 +553,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title) {
+    public JDialog(@Nullable Window owner, @Nullable String title) {
         this(owner, title, Dialog.ModalityType.MODELESS);
     }
 
@@ -589,7 +591,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title, Dialog.ModalityType modalityType) {
+    public JDialog(@Nullable Window owner, @Nullable String title, Dialog.ModalityType modalityType) {
         super(owner, title, modalityType);
         dialogInit();
     }
@@ -634,8 +636,8 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title, Dialog.ModalityType modalityType,
-                   GraphicsConfiguration gc) {
+    public JDialog(@Nullable Window owner, @Nullable String title, Dialog.ModalityType modalityType,
+    			   @Nullable GraphicsConfiguration gc) {
         super(owner, title, modalityType, gc);
         dialogInit();
     }

@@ -24,6 +24,8 @@
  */
 package javax.swing;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -220,7 +222,7 @@ public class JFrame  extends Frame implements WindowConstants,
      * @see Component#setVisible
      * @see JComponent#getDefaultLocale
      */
-    public JFrame(String title) throws HeadlessException {
+    public JFrame(@Nullable String title) throws HeadlessException {
         super(title);
         frameInit();
     }

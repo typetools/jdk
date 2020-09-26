@@ -27,6 +27,7 @@ package java.awt;
 
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.dnd.DropTarget;
@@ -1776,7 +1777,7 @@ public @UIType class Container extends Component {
      * @see #invalidate
      * @since 1.0
      */
-    public void setFont(Font f) {
+    public void setFont(@Nullable Font f) {
         boolean shouldinvalidate = false;
 
         Font oldfont = getFont();

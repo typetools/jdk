@@ -802,7 +802,7 @@ public final class Locale implements Cloneable, Serializable {
         return getInstance(language, "", country, variant, null);
     }
 
-    static Locale getInstance(String language, String script, String country,
+    static @Nullable Locale getInstance(String language, String script, String country,
                                       String variant, @Nullable LocaleExtensions extensions) {
         if (language== null || script == null || country == null || variant == null) {
             throw new NullPointerException();
@@ -816,7 +816,7 @@ public final class Locale implements Cloneable, Serializable {
         return getInstance(baseloc, extensions);
     }
 
-    static Locale getInstance(BaseLocale baseloc, @Nullable LocaleExtensions extensions) {
+    static @Nullable Locale getInstance(BaseLocale baseloc, @Nullable LocaleExtensions extensions) {
         if (extensions == null) {
             return LOCALECACHE.get(baseloc);
         } else {
@@ -941,7 +941,7 @@ public final class Locale implements Cloneable, Serializable {
         return getDefault();
     }
 
-    private static Locale initDefault() {
+    private static @Nullable Locale initDefault() {
         String language, region, script, country, variant;
         Properties props = GetPropertyAction.privilegedGetProperties();
         language = props.getProperty("user.language", "en");
@@ -2157,7 +2157,7 @@ public final class Locale implements Cloneable, Serializable {
      */
     private transient volatile int hashCodeValue;
 
-    private static volatile Locale defaultLocale = initDefault();
+    private static volatile @Nullable Locale defaultLocale = initDefault();
     private static volatile @MonotonicNonNull Locale defaultDisplayLocale;
     private static volatile @MonotonicNonNull Locale defaultFormatLocale;
 
