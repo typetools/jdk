@@ -1488,7 +1488,7 @@ public class JFileChooser extends JComponent implements Accessible {
      */
     @BeanProperty(preferred = true, description
             = "Sets the File View used to get file type information.")
-    public void setFileView(@Nullabel FileView fileView) {
+    public void setFileView(@Nullable FileView fileView) {
         FileView oldValue = this.fileView;
         this.fileView = fileView;
         firePropertyChange(FILE_VIEW_CHANGED_PROPERTY, oldValue, fileView);
