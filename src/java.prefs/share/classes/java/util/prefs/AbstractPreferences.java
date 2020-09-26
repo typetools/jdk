@@ -26,6 +26,10 @@
 package java.util.prefs;
 
 import java.util.*;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.*;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -119,6 +123,7 @@ import java.lang.Double;
  * @see     Preferences
  * @since   1.4
  */
+@AnnotatedFor({"nullness"})
 public abstract class AbstractPreferences extends Preferences {
     /**
      * The code point U+0000, assigned to the null control character, is the
@@ -140,7 +145,7 @@ public abstract class AbstractPreferences extends Preferences {
     /**
      * Our parent node.
      */
-    final AbstractPreferences parent;
+    final @Nullable AbstractPreferences parent;
 
     /**
      * Our root node.
@@ -289,7 +294,7 @@ public abstract class AbstractPreferences extends Preferences {
      * @throws IllegalArgumentException if key contains the null control
      *         character, code point U+0000.
      */
-    public String get(String key, String def) {
+    public @Nullable String get(String key, @Nullable String def) {
         if (key==null)
             throw new NullPointerException("Null key");
         if (key.indexOf(CODE_POINT_U0000) != -1)
@@ -694,7 +699,7 @@ public abstract class AbstractPreferences extends Preferences {
      * @throws IllegalArgumentException if key contains the null control
      *         character, code point U+0000.
      */
-    public byte[] getByteArray(String key, byte[] def) {
+    public byte @Nullable[] getByteArray(String key, byte @Nullable[] def) {
         byte[] result = def;
         String value = get(key, null);
         try {
@@ -790,7 +795,7 @@ public abstract class AbstractPreferences extends Preferences {
      * @throws IllegalStateException if this node (or an ancestor) has been
      *         removed with the {@link #removeNode()} method.
      */
-    public Preferences parent() {
+    public @Nullable Preferences parent() {
         synchronized(lock) {
             if (removed)
                 throw new IllegalStateException("Node has been removed.");
