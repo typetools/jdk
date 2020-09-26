@@ -27,6 +27,7 @@ package java.util.prefs;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
@@ -525,7 +526,7 @@ public abstract @UsesObjectEquals class Preferences {
      * @throws IllegalArgumentException if key contains the null control
      *         character, code point U+0000.
      */
-    public abstract @Nullable String get(String key, @Nullable String def);
+    public abstract @PolyNull String get(String key, @PolyNull String def);
 
     /**
      * Removes the value associated with the specified key in this preference
@@ -903,7 +904,7 @@ public abstract @UsesObjectEquals class Preferences {
      * @see #get(String,String)
      * @see #putByteArray(String,byte[])
      */
-    public abstract byte @Nullable[] getByteArray(String key, byte @Nullable[] def);
+    public abstract byte @PolyNull[] getByteArray(String key, byte @PolyNull[] def);
 
     /**
      * Returns all of the keys that have an associated value in this
