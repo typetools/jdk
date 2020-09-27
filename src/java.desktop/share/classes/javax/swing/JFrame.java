@@ -25,6 +25,7 @@
 package javax.swing;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.AWTEvent;
 import java.awt.BorderLayout;
@@ -120,6 +121,7 @@ import javax.accessibility.AccessibleStateSet;
  * @author David Kloba
  * @since 1.2
  */
+@AnnotatedFor({"nullness"})
 @JavaBean(defaultProperty = "JMenuBar", description = "A toplevel window which can be minimized to an icon.")
 @SwingContainer(delegate = "getContentPane")
 @SuppressWarnings("serial") // Same-version serialization only
@@ -441,7 +443,7 @@ public class JFrame  extends Frame implements WindowConstants,
      */
     @BeanProperty(hidden = true, description
             = "Mechanism for transfer of data into the component")
-    public void setTransferHandler(TransferHandler newHandler) {
+    public void setTransferHandler(@Nullable TransferHandler newHandler) {
         TransferHandler oldHandler = transferHandler;
         transferHandler = newHandler;
         SwingUtilities.installSwingDropTargetAsNecessary(this, transferHandler);
@@ -457,7 +459,7 @@ public class JFrame  extends Frame implements WindowConstants,
      * @see #setTransferHandler
      * @since 1.6
      */
-    public TransferHandler getTransferHandler() {
+    public @Nullable TransferHandler getTransferHandler() {
         return transferHandler;
     }
 
@@ -479,7 +481,7 @@ public class JFrame  extends Frame implements WindowConstants,
     */
     @BeanProperty(bound = false, hidden = true, description
             = "The menubar for accessing pulldown menus from this frame.")
-    public void setJMenuBar(final JMenuBar menubar) {
+    public void setJMenuBar(final @Nullable JMenuBar menubar) {
         getRootPane().setJMenuBar(menubar);
     }
 
@@ -489,7 +491,7 @@ public class JFrame  extends Frame implements WindowConstants,
     *
     * @see #setJMenuBar
     */
-    public JMenuBar getJMenuBar() {
+    public @Nullable JMenuBar getJMenuBar() {
         return getRootPane().getJMenuBar();
     }
 
@@ -591,7 +593,7 @@ public class JFrame  extends Frame implements WindowConstants,
      * @see #setRootPaneCheckingEnabled
      * @see javax.swing.RootPaneContainer
      */
-    public void setLayout(LayoutManager manager) {
+    public void setLayout(@Nullable LayoutManager manager) {
         if(isRootPaneCheckingEnabled()) {
             getContentPane().setLayout(manager);
         }
@@ -643,7 +645,7 @@ public class JFrame  extends Frame implements WindowConstants,
     /**
      * {@inheritDoc}
      */
-    public void setIconImage(Image image) {
+    public void setIconImage(@Nullable Image image) {
         super.setIconImage(image);
     }
 
