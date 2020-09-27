@@ -25,11 +25,11 @@
 
 package java.util.prefs;
 
-import java.util.*;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import java.util.*;
 import java.io.*;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -294,7 +294,7 @@ public abstract class AbstractPreferences extends Preferences {
      * @throws IllegalArgumentException if key contains the null control
      *         character, code point U+0000.
      */
-    public @Nullable String get(String key, @Nullable String def) {
+    public @PolyNull String get(String key, @PolyNull String def) {
         if (key==null)
             throw new NullPointerException("Null key");
         if (key.indexOf(CODE_POINT_U0000) != -1)
@@ -699,7 +699,7 @@ public abstract class AbstractPreferences extends Preferences {
      * @throws IllegalArgumentException if key contains the null control
      *         character, code point U+0000.
      */
-    public byte @Nullable[] getByteArray(String key, byte @Nullable[] def) {
+    public byte @PolyNull[] getByteArray(String key, byte @PolyNull[] def) {
         byte[] result = def;
         String value = get(key, null);
         try {
@@ -1300,7 +1300,7 @@ public abstract class AbstractPreferences extends Preferences {
      *         due to a failure in the backing store, or inability to
      *         communicate with it.
      */
-    protected AbstractPreferences getChild(String nodeName)
+    protected @Nullable AbstractPreferences getChild(String nodeName)
             throws BackingStoreException {
         synchronized(lock) {
             // assert kidCache.get(nodeName)==null;
@@ -1562,7 +1562,7 @@ public abstract class AbstractPreferences extends Preferences {
         }
     }
 
-    private static Thread eventDispatchThread = null;
+    private static @Nullable Thread eventDispatchThread = null;
 
     /**
      * This method starts the event dispatch thread the first time it
