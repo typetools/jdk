@@ -97,7 +97,7 @@ import sun.security.action.GetBooleanAction;
  * @see       LayoutManager
  * @since     1.0
  */
-@AnnotatedFor({"guieffect"})
+@AnnotatedFor({"guieffect", "nullness"})
 public @UIType class Container extends Component {
 
     private static final PlatformLogger log = PlatformLogger.getLogger("java.awt.Container");
@@ -118,7 +118,7 @@ public @UIType class Container extends Component {
      * @see #setLayout
      * @see #getLayout
      */
-    LayoutManager layoutMgr;
+    @Nullable LayoutManager layoutMgr;
 
     /**
      * Event router for lightweight components.  If this container
@@ -462,7 +462,7 @@ public @UIType class Container extends Component {
      * @see #add(Component, Object)
      * @see #invalidate
      */
-    public Component add(String name, Component comp) {
+    public Component add(@Nullable String name, Component comp) {
         addImpl(comp, name, -1);
         return comp;
     }
@@ -999,7 +999,7 @@ public @UIType class Container extends Component {
      * @see       LayoutManager
      * @since     1.1
      */
-    public void add(Component comp, Object constraints) {
+    public void add(Component comp, @Nullable Object constraints) {
         addImpl(comp, constraints, -1);
     }
 
@@ -1031,7 +1031,7 @@ public @UIType class Container extends Component {
      * @see #remove
      * @see LayoutManager
      */
-    public void add(Component comp, Object constraints, int index) {
+    public void add(Component comp, @Nullable Object constraints, int index) {
        addImpl(comp, constraints, index);
     }
 
@@ -1102,7 +1102,7 @@ public @UIType class Container extends Component {
      * @see       LayoutManager2
      * @since     1.1
      */
-    protected void addImpl(Component comp, Object constraints, int index) {
+    protected void addImpl(Component comp, @Nullable Object constraints, int index) {
         synchronized (getTreeLock()) {
             /* Check for correct arguments:  index in bounds,
              * comp cannot be one of this container's parents,
@@ -1499,7 +1499,7 @@ public @UIType class Container extends Component {
      * @see #setLayout
      * @return the current layout manager for this container
      */
-    public LayoutManager getLayout() {
+    public @Nullable LayoutManager getLayout() {
         return layoutMgr;
     }
 
@@ -1514,7 +1514,7 @@ public @UIType class Container extends Component {
      * @see #getLayout
      * @see #invalidate
      */
-    public void setLayout(LayoutManager mgr) {
+    public void setLayout(@Nullable LayoutManager mgr) {
         layoutMgr = mgr;
         invalidateIfValid();
     }
@@ -2567,7 +2567,7 @@ public @UIType class Container extends Component {
      * @see Component#contains
      * @since 1.1
      */
-    public Component getComponentAt(int x, int y) {
+    public @Nullable Component getComponentAt(int x, int y) {
         return locate(x, y);
     }
 
@@ -2576,7 +2576,7 @@ public @UIType class Container extends Component {
      * replaced by {@code getComponentAt(int, int)}.
      */
     @Deprecated
-    public Component locate(int x, int y) {
+    public @Nullable Component locate(int x, int y) {
         if (!contains(x, y)) {
             return null;
         }
@@ -2609,7 +2609,7 @@ public @UIType class Container extends Component {
      * @see        Component#contains
      * @since      1.1
      */
-    public Component getComponentAt(Point p) {
+    public @Nullable Component getComponentAt(Point p) {
         return getComponentAt(p.x, p.y);
     }
 
