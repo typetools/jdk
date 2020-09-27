@@ -87,7 +87,7 @@ public class UIDefaults extends Hashtable<Object,Object>
 
     private Vector<String> resourceBundles;
 
-    private @Nullable Locale defaultLocale = Locale.getDefault();
+    private Locale defaultLocale = Locale.getDefault();
 
     /**
      * Maps from a Locale to a cached Map of the ResourceBundle. This is done
@@ -981,7 +981,7 @@ public class UIDefaults extends Hashtable<Object,Object>
      * @see #get(Object,Locale)
      * @since 1.4
      */
-    public @Nullable Locale getDefaultLocale() {
+    public Locale getDefaultLocale() {
         return defaultLocale;
     }
 
