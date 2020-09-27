@@ -28,6 +28,7 @@ package java.awt;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -219,7 +220,7 @@ import static sun.java2d.pipe.hw.ExtendedBufferCapabilities.VSyncType.VSYNC_ON;
  * @author      Arthur van Hoff
  * @author      Sami Shaio
  */
-@AnnotatedFor({"guieffect", "interning"})
+@AnnotatedFor({"guieffect", "interning", "nullness"})
 public abstract @UsesObjectEquals @UIType class Component implements ImageObserver, MenuContainer,
                                            Serializable
 {
@@ -243,7 +244,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * for top-level components.
      * @see #getParent
      */
-    transient Container parent;
+    transient @Nullable Container parent;
 
     /**
      * The {@code AppContext} of the component. Applets/Plugin may
@@ -411,7 +412,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #setDropTarget
      * @see #getDropTarget
      */
-    DropTarget dropTarget;
+    @MonotonicNonNull DropTarget dropTarget;
 
     /**
      * @serial
@@ -532,7 +533,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      *
      * @serial
      */
-    Dimension prefSize;
+    @Nullable Dimension prefSize;
 
     /**
      * Whether or not setPreferredSize has been invoked with a non-null value.
@@ -1015,7 +1016,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * Constructs a name for this component.  Called by {@code getName}
      * when the name is {@code null}.
      */
-    String constructComponentName() {
+    @Nullable String constructComponentName() {
         return null; // For strict compliance with prior platform versions, a Component
                      // that doesn't set its name should return null from
                      // getName()
@@ -1059,7 +1060,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @return the parent container of this component
      * @since 1.0
      */
-    public Container getParent() {
+    public @Nullable Container getParent() {
         return getParent_NoClientCode();
     }
 
@@ -1067,14 +1068,14 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
     //       This functionality is implemented in a package-private method
     //       to insure that it cannot be overridden by client subclasses.
     //       DO NOT INVOKE CLIENT CODE ON THIS THREAD!
-    final Container getParent_NoClientCode() {
+    final @Nullable Container getParent_NoClientCode() {
         return parent;
     }
 
     // This method is overridden in the Window class to return null,
     //    because the parent field of the Window object contains
     //    the owner of the window, not its parent.
-    Container getContainer() {
+    @Nullable Container getContainer() {
         return getParent_NoClientCode();
     }
 
@@ -1133,7 +1134,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @return the drop target
      */
 
-    public synchronized DropTarget getDropTarget() { return dropTarget; }
+    public synchronized @Nullable DropTarget getDropTarget() { return dropTarget; }
 
     /**
      * Gets the {@code GraphicsConfiguration} associated with this
@@ -1150,11 +1151,11 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      *          {@code Component} or {@code null}
      * @since 1.3
      */
-    public GraphicsConfiguration getGraphicsConfiguration() {
+    public @Nullable GraphicsConfiguration getGraphicsConfiguration() {
         return getGraphicsConfiguration_NoClientCode();
     }
 
-    final GraphicsConfiguration getGraphicsConfiguration_NoClientCode() {
+    final @Nullable GraphicsConfiguration getGraphicsConfiguration_NoClientCode() {
         return graphicsConfig;
     }
 
@@ -1375,7 +1376,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * tree lock, as it is done in Component.getMousePosition() and
      * Container.getMousePosition(boolean).
      */
-    Component findUnderMouseInWindow(PointerInfo pi) {
+    @Nullable Component findUnderMouseInWindow(PointerInfo pi) {
         if (!isShowing()) {
             return null;
         }
@@ -1904,7 +1905,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @since 1.0
      */
     @Transient
-    public Font getFont() {
+    public @Nullable Font getFont() {
         return getFont_NoClientCode();
     }
 
@@ -1912,7 +1913,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
     //       This functionality is implemented in a package-private method
     //       to insure that it cannot be overridden by client subclasses.
     //       DO NOT INVOKE CLIENT CODE ON THIS THREAD!
-    final Font getFont_NoClientCode() {
+    final @Nullable Font getFont_NoClientCode() {
         Font font = this.font;
         if (font != null) {
             return font;
@@ -2665,7 +2666,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #isPreferredSizeSet
      * @since 1.5
      */
-    public void setPreferredSize(Dimension preferredSize) {
+    public void setPreferredSize(@Nullable Dimension preferredSize) {
         Dimension old;
         // If the preferred size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set preferred
@@ -2741,7 +2742,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #isMinimumSizeSet
      * @since 1.5
      */
-    public void setMinimumSize(Dimension minimumSize) {
+    public void setMinimumSize(@Nullable Dimension minimumSize) {
         Dimension old;
         // If the minimum size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set minimum
@@ -2815,7 +2816,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see #isMaximumSizeSet
      * @since 1.5
      */
-    public void setMaximumSize(Dimension maximumSize) {
+    public void setMaximumSize(@Nullable Dimension maximumSize) {
         // If the maximum size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set maximum
         // size.
@@ -3109,7 +3110,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see       #paint
      * @since     1.0
      */
-    public Graphics getGraphics() {
+    public @Nullable Graphics getGraphics() {
         if (peer instanceof LightweightPeer) {
             // This is for a lightweight component, need to
             // translate coordinate spaces and clip relative
@@ -3131,7 +3132,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
         }
     }
 
-    final Graphics getGraphics_NoClientCode() {
+    final @Nullable Graphics getGraphics_NoClientCode() {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             // This is for a lightweight component, need to
@@ -3212,7 +3213,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see       Cursor
      * @since     1.1
      */
-    public void setCursor(Cursor cursor) {
+    public void setCursor(@Nullable Cursor cursor) {
         this.cursor = cursor;
         updateCursorImmediately();
     }
@@ -3664,7 +3665,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see GraphicsEnvironment#isHeadless
      * @since 1.0
      */
-    public Image createImage(int width, int height) {
+    public @Nullable Image createImage(int width, int height) {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             if (parent != null) { return parent.createImage(width, height); }
@@ -3689,7 +3690,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see GraphicsEnvironment#isHeadless
      * @since 1.4
      */
-    public VolatileImage createVolatileImage(int width, int height) {
+    public @Nullable VolatileImage createVolatileImage(int width, int height) {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             if (parent != null) {
@@ -3720,7 +3721,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see java.awt.image.VolatileImage
      * @since 1.4
      */
-    public VolatileImage createVolatileImage(int width, int height,
+    public @Nullable VolatileImage createVolatileImage(int width, int height,
                                              ImageCapabilities caps)
             throws AWTException {
         // REMIND : check caps
@@ -4799,7 +4800,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see       #contains(int, int)
      * @since     1.0
      */
-    public Component getComponentAt(int x, int y) {
+    public @Nullable Component getComponentAt(int x, int y) {
         return locate(x, y);
     }
 
@@ -4815,7 +4816,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * replaced by getComponentAt(int, int).
      */
     @Deprecated
-    public Component locate(int x, int y) {
+    public @Nullable Component locate(int x, int y) {
         return contains(x, y) ? this : null;
     }
 
@@ -4827,7 +4828,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see java.awt.Component#contains
      * @since 1.1
      */
-    public Component getComponentAt(Point p) {
+    public @Nullable Component getComponentAt(Point p) {
         return getComponentAt(p.x, p.y);
     }
 
@@ -6155,7 +6156,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      *          {@code null} if no context can be determined
      * @since 1.2
      */
-    public InputContext getInputContext() {
+    public @Nullable InputContext getInputContext() {
         Container parent = this.parent;
         if (parent == null) {
             return null;
@@ -8134,7 +8135,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @see Container#isFocusCycleRoot()
      * @since 1.4
      */
-    public Container getFocusCycleRootAncestor() {
+    public @Nullable Container getFocusCycleRootAncestor() {
         Container rootAncestor = this.parent;
         while (rootAncestor != null && !rootAncestor.isFocusCycleRoot()) {
             rootAncestor = rootAncestor.parent;
@@ -8727,7 +8728,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @param newValue the property's new value
      */
     protected void firePropertyChange(String propertyName,
-                                      Object oldValue, Object newValue) {
+                                      @Nullable Object oldValue, @Nullable Object newValue) {
         PropertyChangeSupport changeSupport;
         synchronized (getObjectLock()) {
             changeSupport = this.changeSupport;
@@ -9280,7 +9281,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @return Window ancestor of the component or component by itself if it is Window;
      *         null, if component is not a part of window hierarchy
      */
-    Window getContainingWindow() {
+    @Nullable Window getContainingWindow() {
         return SunToolkit.getContainingWindow(this);
     }
 
@@ -10171,7 +10172,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
         return nextAbove < 0 ? -1 : nextAbove;
     }
 
-    final ComponentPeer getHWPeerAboveMe() {
+    final @Nullable ComponentPeer getHWPeerAboveMe() {
         checkTreeLock();
 
         Container cont = getContainer();
@@ -10487,7 +10488,7 @@ public abstract @UsesObjectEquals @UIType class Component implements ImageObserv
      * @param shape the new 'mixing-cutout' shape
      * @since 9
      */
-    public void setMixingCutoutShape(Shape shape) {
+    public void setMixingCutoutShape(@Nullable Shape shape) {
         Region region = shape == null ? null : Region.getInstance(shape, null);
 
         synchronized (getTreeLock()) {
