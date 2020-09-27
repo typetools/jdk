@@ -36,8 +36,6 @@ import java.lang.ref.SoftReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 public abstract class LocaleObjectCache<K, V> {
     private final ConcurrentMap<K, CacheEntry<K, V>> map;
     private final ReferenceQueue<V> queue = new ReferenceQueue<>();
@@ -50,7 +48,7 @@ public abstract class LocaleObjectCache<K, V> {
         map = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
-    public @Nullable V get(K key) {
+    public V get(K key) {
         V value = null;
 
         cleanStaleEntries();
