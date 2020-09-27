@@ -25,6 +25,7 @@
 package javax.swing;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -95,6 +96,7 @@ import javax.accessibility.*;
  * @author Scott Violet
  * @since 1.2
  */
+@AnnotatedFor({"nullness"})
 @JavaBean(defaultProperty = "JMenuBar", description = "A toplevel window for creating dialog boxes.")
 @SwingContainer(delegate = "getContentPane")
 @SuppressWarnings("serial") // Same-version serialization only
@@ -132,7 +134,7 @@ public class JDialog extends Dialog implements WindowConstants,
     /**
      * The {@code TransferHandler} for this dialog.
      */
-    private TransferHandler transferHandler;
+    private @Nullable TransferHandler transferHandler;
 
     /**
      * Creates a modeless dialog without a title and without a specified
@@ -803,7 +805,7 @@ public class JDialog extends Dialog implements WindowConstants,
      */
     @BeanProperty(hidden = true, description
             = "Mechanism for transfer of data into the component")
-    public void setTransferHandler(TransferHandler newHandler) {
+    public void setTransferHandler(@Nullable TransferHandler newHandler) {
         TransferHandler oldHandler = transferHandler;
         transferHandler = newHandler;
         SwingUtilities.installSwingDropTargetAsNecessary(this, transferHandler);
@@ -819,7 +821,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setTransferHandler
      * @since 1.6
      */
-    public TransferHandler getTransferHandler() {
+    public @Nullable TransferHandler getTransferHandler() {
         return transferHandler;
     }
 
@@ -911,7 +913,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setRootPaneCheckingEnabled
      * @see javax.swing.RootPaneContainer
      */
-    protected void addImpl(Component comp, Object constraints, int index)
+    protected void addImpl(Component comp, @Nullable Object constraints, int index)
     {
         if(isRootPaneCheckingEnabled()) {
             getContentPane().add(comp, constraints, index);
@@ -953,7 +955,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setRootPaneCheckingEnabled
      * @see javax.swing.RootPaneContainer
      */
-    public void setLayout(LayoutManager manager) {
+    public void setLayout(@Nullable LayoutManager manager) {
         if(isRootPaneCheckingEnabled()) {
             getContentPane().setLayout(manager);
         }
@@ -1099,7 +1101,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @since 1.6
      */
     @BeanProperty(bound = false)
-    public Graphics getGraphics() {
+    public @Nullable Graphics getGraphics() {
         JComponent.getGraphicsInvoked(this);
         return super.getGraphics();
     }
