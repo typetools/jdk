@@ -25,8 +25,6 @@
 
 package com.sun.javadoc;
 
-import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -46,7 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
-@AnnotatedFor({"nullness", "signature", "value"})
+@AnnotatedFor({"nullness", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface RootDoc extends Doc, DocErrorReporter {
@@ -110,7 +108,7 @@ public interface RootDoc extends Doc, DocErrorReporter {
      * @return a PackageDoc holding the specified package, null if
      * this package is not referenced.
      */
-    PackageDoc packageNamed(@DotSeparatedIdentifiers String name);
+    PackageDoc packageNamed(String name);
 
     /**
      * Return a ClassDoc for the specified class or interface name.
@@ -122,5 +120,5 @@ public interface RootDoc extends Doc, DocErrorReporter {
      * @return a ClassDoc holding the specified class, null if
      * this class is not referenced.
      */
-    ClassDoc classNamed(@BinaryName String qualifiedName);
+    ClassDoc classNamed(String qualifiedName);
 }

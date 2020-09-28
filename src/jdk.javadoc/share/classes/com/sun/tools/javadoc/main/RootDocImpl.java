@@ -25,10 +25,7 @@
 
 package com.sun.tools.javadoc.main;
 
-import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.dataflow.qual.Pure;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Locale;
@@ -221,7 +218,7 @@ public class RootDocImpl extends DocImpl implements RootDoc {
      * @return a ClassDocImpl holding the specified class, null if
      * this class is not referenced.
      */
-    public ClassDoc classNamed(@BinaryName String qualifiedName) {
+    public ClassDoc classNamed(String qualifiedName) {
         return env.lookupClass(qualifiedName);
     }
 
@@ -233,7 +230,7 @@ public class RootDocImpl extends DocImpl implements RootDoc {
      * @return a PackageDoc holding the specified package, null if
      * this package is not referenced.
      */
-    public PackageDoc packageNamed(@DotSeparatedIdentifiers String name) {
+    public PackageDoc packageNamed(String name) {
         return env.lookupPackage(name);
     }
 
@@ -251,7 +248,7 @@ public class RootDocImpl extends DocImpl implements RootDoc {
      *
      * @return the string <code>"*RootDocImpl*"</code>.
      */
-    public @BinaryName String qualifiedName() {
+    public String qualifiedName() {
         return "*RootDocImpl*";
     }
 

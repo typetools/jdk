@@ -25,9 +25,7 @@
 
 package com.sun.tools.javadoc.main;
 
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.dataflow.qual.Pure;
-
 import com.sun.source.util.TreePath;
 import java.lang.reflect.Modifier;
 
@@ -267,14 +265,14 @@ public class FieldDocImpl extends MemberDocImpl implements FieldDoc {
 
     private String name;
 
-    public @BinaryName String qualifiedName() {
+    public String qualifiedName() {
         if (qualifiedName == null) {
             qualifiedName = sym.enclClass().getQualifiedName() + "." + name();
         }
         return qualifiedName;
     }
 
-    private @BinaryName String qualifiedName;
+    private String qualifiedName;
 
     /**
      * Return the source position of the entity, or null if

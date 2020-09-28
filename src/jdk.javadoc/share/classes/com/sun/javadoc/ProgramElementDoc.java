@@ -25,7 +25,6 @@
 
 package com.sun.javadoc;
 
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -46,7 +45,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *   in the package {@code jdk.javadoc.doclet}.
  *   For more information, see the <i>Migration Guide</i> in the documentation for that package.
  */
-@AnnotatedFor({"lock", "nullness", "signature", "value"})
+@AnnotatedFor({"lock", "nullness", "value"})
 @Deprecated(since="9", forRemoval=true)
 @SuppressWarnings("removal")
 public interface ProgramElementDoc extends Doc {
@@ -78,7 +77,7 @@ public interface ProgramElementDoc extends Doc {
      *
      * @return the qualified name of the program element as a String.
      */
-    @BinaryName String qualifiedName();
+    String qualifiedName();
 
     /**
      * Get the modifier specifier integer.

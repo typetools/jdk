@@ -25,9 +25,7 @@
 
 package com.sun.tools.javadoc.main;
 
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.dataflow.qual.Pure;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -308,7 +306,7 @@ public abstract class DocImpl implements Doc, Comparable<Object> {
      *
      * @return  the name
      */
-    public abstract @BinaryName String qualifiedName();
+    public abstract String qualifiedName();
 
     /**
      * Compares this Object with the specified Object for order.  Returns a

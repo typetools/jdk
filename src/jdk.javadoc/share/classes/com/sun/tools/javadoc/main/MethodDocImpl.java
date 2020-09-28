@@ -25,9 +25,7 @@
 
 package com.sun.tools.javadoc.main;
 
-import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.dataflow.qual.Pure;
-
 import java.lang.reflect.Modifier;
 
 import com.sun.javadoc.*;
@@ -232,14 +230,14 @@ public class MethodDocImpl
 
     private String name;
 
-    public @BinaryName String qualifiedName() {
+    public String qualifiedName() {
         if (qualifiedName == null) {
             qualifiedName =  sym.enclClass().getQualifiedName() + "." + sym.name;
         }
         return qualifiedName;
     }
 
-    private @BinaryName String qualifiedName;
+    private String qualifiedName;
 
     /**
      * Returns a string representation of this method.  Includes the
