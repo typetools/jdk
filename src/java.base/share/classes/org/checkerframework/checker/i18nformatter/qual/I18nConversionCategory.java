@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringJoiner;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -176,11 +175,16 @@ public enum I18nConversionCategory {
         if (this.types == null) {
             sb.append(" conversion category (all types)");
         } else {
-            StringJoiner sj = new StringJoiner(", ", " conversion category (one of: ", ")");
+            sb.append(" conversion category (one of: ");
+            boolean first = true;
             for (Class<?> cls : this.types) {
-                sj.add(cls.getCanonicalName());
+                if (!first) {
+                    sb.append(", ");
+                }
+                sb.append(cls.getCanonicalName());
+                first = false;
             }
-            sb.append(sj);
+            sb.append(")");
         }
         return sb.toString();
     }

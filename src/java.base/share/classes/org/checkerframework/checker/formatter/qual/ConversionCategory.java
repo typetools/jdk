@@ -7,7 +7,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringJoiner;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -296,11 +295,16 @@ public enum ConversionCategory {
     public String toString() {
         StringBuilder sb = new StringBuilder(this.name());
         if (this != UNUSED && this != GENERAL) {
-            StringJoiner sj = new StringJoiner(", ", " conversion category (one of: ", ")");
+            sb.append(" conversion category (one of: ");
+            boolean first = true;
             for (Class<?> cls : this.types) {
-                sj.add(className(cls));
+                if (!first) {
+                    sb.append(", ");
+                }
+                sb.append(className(cls));
+                first = false;
             }
-            sb.append(sj);
+            sb.append(")");
         }
         return sb.toString();
     }

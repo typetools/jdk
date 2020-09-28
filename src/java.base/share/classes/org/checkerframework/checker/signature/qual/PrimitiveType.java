@@ -12,7 +12,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * @checker_framework.manual #signature-checker Signature Checker
  */
-@SubtypeOf({IdentifierOrPrimitiveType.class, CanonicalName.class})
+@SubtypeOf({IdentifierOrPrimitiveType.class})
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})

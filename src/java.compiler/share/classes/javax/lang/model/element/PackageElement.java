@@ -25,7 +25,6 @@
 
 package javax.lang.model.element;
 
-import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
 import java.util.List;
 
 /**
@@ -56,7 +55,7 @@ public interface PackageElement extends Element, QualifiedNameable {
      * empty name if this is an unnamed package
      * @jls 6.7 Fully Qualified Names and Canonical Names
      */
-    @DotSeparatedIdentifiers Name getQualifiedName();
+    Name getQualifiedName();
 
     /**
      * Returns the simple name of this package.  For an {@linkplain
