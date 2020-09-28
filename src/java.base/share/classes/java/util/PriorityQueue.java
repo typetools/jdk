@@ -438,7 +438,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return an array containing all of the elements in this queue
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(PriorityQueue<@PolyNull E> this) {
+    public Object[] toArray() {
         return Arrays.copyOf(queue, size);
     }
 

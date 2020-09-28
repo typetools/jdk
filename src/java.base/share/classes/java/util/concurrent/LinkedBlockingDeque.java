@@ -37,7 +37,6 @@ package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.AbstractQueue;
@@ -904,7 +903,7 @@ public class LinkedBlockingDeque<E>
      * @return an array containing all of the elements in this deque
      */
     @SuppressWarnings("unchecked")
-    public @PolyNull Object[] toArray(LinkedBlockingDeque<@PolyNull E> this) {
+    public Object[] toArray() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {

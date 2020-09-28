@@ -24,8 +24,6 @@
  */
 package com.sun.java.util.jar.pack;
 
-import org.checkerframework.checker.nullness.qual.PolyNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -74,7 +72,7 @@ final class FixedList<E> implements List<E> {
     }
 
     @Override
-    public @PolyNull Object[] toArray(FixedList<@PolyNull E> this) {
+    public Object[] toArray() {
         return flist.toArray();
     }
 

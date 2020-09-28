@@ -1084,7 +1084,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return an array containing all of the elements in this deque
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(ArrayDeque<@PolyNull E> this) {
+    public Object[] toArray() {
         return toArray(Object[].class);
     }
 

@@ -37,7 +37,6 @@ package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.ref.WeakReference;
@@ -577,7 +576,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
-    public @PolyNull Object[] toArray(ArrayBlockingQueue<@PolyNull E> this) {
+    public Object[] toArray() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {

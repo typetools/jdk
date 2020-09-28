@@ -1280,7 +1280,7 @@ public class ArrayList<E> extends AbstractList<E>
             return modified;
         }
 
-        public @PolyNull Object[] toArray(SubList<@PolyNull E> this) {
+        public Object[] toArray() {
             checkForComodification();
             return Arrays.copyOfRange(root.elementData, offset, offset + size);
         }
