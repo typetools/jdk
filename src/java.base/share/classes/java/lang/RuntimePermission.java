@@ -401,7 +401,7 @@ import java.lang.module.ModuleFinder;
  * @since 1.2
  */
 
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullnes"})
 public final class RuntimePermission extends BasicPermission {
 
     private static final long serialVersionUID = 7399184964622342223L;
