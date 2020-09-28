@@ -28,6 +28,7 @@ package java.awt;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.dnd.DropTarget;
@@ -438,7 +439,7 @@ public @UIType class Container extends Component {
      * @see javax.swing.JComponent#revalidate()
      * @return    the component argument
      */
-    public Component add(Component comp) {
+    public Component add(@UnknownInitialization(Container.class) Container this, Component comp) {
         addImpl(comp, null, -1);
         return comp;
     }
@@ -462,7 +463,7 @@ public @UIType class Container extends Component {
      * @see #add(Component, Object)
      * @see #invalidate
      */
-    public Component add(@Nullable String name, Component comp) {
+    public Component add(@UnknownInitialization(Container.class) Container this, @Nullable String name, Component comp) {
         addImpl(comp, name, -1);
         return comp;
     }
@@ -491,7 +492,7 @@ public @UIType class Container extends Component {
      * @see #validate
      * @see javax.swing.JComponent#revalidate()
      */
-    public Component add(Component comp, int index) {
+    public Component add(@UnknownInitialization(Container.class) Container this, Component comp, int index) {
         addImpl(comp, null, index);
         return comp;
     }
@@ -999,7 +1000,7 @@ public @UIType class Container extends Component {
      * @see       LayoutManager
      * @since     1.1
      */
-    public void add(Component comp, @Nullable Object constraints) {
+    public void add(@UnknownInitialization(Container.class) Container this, Component comp, @Nullable Object constraints) {
         addImpl(comp, constraints, -1);
     }
 
@@ -1031,7 +1032,7 @@ public @UIType class Container extends Component {
      * @see #remove
      * @see LayoutManager
      */
-    public void add(Component comp, @Nullable Object constraints, int index) {
+    public void add(@UnknownInitialization(Container.class) Container this, Component comp, @Nullable Object constraints, int index) {
        addImpl(comp, constraints, index);
     }
 
@@ -1514,7 +1515,7 @@ public @UIType class Container extends Component {
      * @see #getLayout
      * @see #invalidate
      */
-    public void setLayout(@Nullable LayoutManager mgr) {
+    public void setLayout(@UnknownInitialization(Container.class) Container this, @Nullable LayoutManager mgr) {
         layoutMgr = mgr;
         invalidateIfValid();
     }
