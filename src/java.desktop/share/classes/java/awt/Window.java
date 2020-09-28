@@ -63,9 +63,6 @@ import javax.accessibility.AccessibleRole;
 import javax.accessibility.AccessibleState;
 import javax.accessibility.AccessibleStateSet;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.framework.qual.AnnotatedFor;
-
 import sun.awt.AWTAccessor;
 import sun.awt.AWTPermissions;
 import sun.awt.AppContext;
@@ -160,7 +157,6 @@ import sun.util.logging.PlatformLogger;
  * @see java.awt.BorderLayout
  * @since       1.0
  */
-@AnnotatedFor({"nullness"})
 public class Window extends Container implements Accessible {
 
     /**
@@ -297,7 +293,7 @@ public class Window extends Container implements Accessible {
      *
      * @since 1.6
      */
-    transient @Nullable Dialog modalBlocker;
+    transient Dialog modalBlocker;
 
     /**
      * @serial
@@ -448,7 +444,7 @@ public class Window extends Container implements Accessible {
      *
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
-    Window(@Nullable GraphicsConfiguration gc) {
+    Window(GraphicsConfiguration gc) {
         init(gc);
     }
 
@@ -484,7 +480,7 @@ public class Window extends Container implements Accessible {
         }
     }
 
-    private GraphicsConfiguration initGC(@Nullable GraphicsConfiguration gc) {
+    private GraphicsConfiguration initGC(GraphicsConfiguration gc) {
         GraphicsEnvironment.checkHeadless();
 
         if (gc == null) {
@@ -496,7 +492,7 @@ public class Window extends Container implements Accessible {
         return gc;
     }
 
-    private void init(@Nullable GraphicsConfiguration gc) {
+    private void init(GraphicsConfiguration gc) {
         GraphicsEnvironment.checkHeadless();
 
         syncLWRequests = systemSyncLWRequests;
@@ -573,7 +569,7 @@ public class Window extends Container implements Accessible {
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #isShowing
      */
-    public Window(@Nullable Frame owner) {
+    public Window(Frame owner) {
         this(owner == null ? (GraphicsConfiguration)null :
             owner.getGraphicsConfiguration());
         ownedInit(owner);
@@ -603,7 +599,7 @@ public class Window extends Container implements Accessible {
      *
      * @since     1.2
      */
-    public Window(@Nullable Window owner) {
+    public Window(Window owner) {
         this(owner == null ? (GraphicsConfiguration)null :
             owner.getGraphicsConfiguration());
         ownedInit(owner);
@@ -637,7 +633,7 @@ public class Window extends Container implements Accessible {
      * @see       #isShowing
      * @since     1.3
      */
-    public Window(@Nullable Window owner, @Nullable GraphicsConfiguration gc) {
+    public Window(Window owner, GraphicsConfiguration gc) {
         this(gc);
         ownedInit(owner);
     }
@@ -720,7 +716,7 @@ public class Window extends Container implements Accessible {
      * @see       #setIconImage(Image)
      * @since     1.6
      */
-    public synchronized void setIconImages(java.util.@Nullable List<? extends Image> icons) {
+    public synchronized void setIconImages(java.util.List<? extends Image> icons) {
         this.icons = (icons == null) ? new ArrayList<Image>() :
             new ArrayList<Image>(icons);
         WindowPeer peer = (WindowPeer)this.peer;
@@ -758,7 +754,7 @@ public class Window extends Container implements Accessible {
      * @see       #getIconImages()
      * @since     1.6
      */
-    public void setIconImage(@Nullable Image image) {
+    public void setIconImage(Image image) {
         ArrayList<Image> imageList = new ArrayList<Image>();
         if (image != null) {
             imageList.add(image);
@@ -868,7 +864,7 @@ public class Window extends Container implements Accessible {
      * @see #pack
      * @since 1.6
      */
-    public void setMinimumSize(@Nullable Dimension minimumSize) {
+    public void setMinimumSize(Dimension minimumSize) {
         synchronized (getTreeLock()) {
             super.setMinimumSize(minimumSize);
             Dimension size = getSize();
@@ -1394,7 +1390,7 @@ public class Window extends Container implements Accessible {
      * and returns the string value of that property.
      * @return    the warning string for this window.
      */
-    public final @Nullable String getWarningString() {
+    public final String getWarningString() {
         return warningString;
     }
 
@@ -1460,7 +1456,7 @@ public class Window extends Container implements Accessible {
      * @see       Cursor
      * @since     1.1
      */
-    public void setCursor(@Nullable Cursor cursor) {
+    public void setCursor(Cursor cursor) {
         if (cursor == null) {
             cursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
         }
@@ -1473,10 +1469,10 @@ public class Window extends Container implements Accessible {
      * @return the owner of this window
      * @since 1.2
      */
-    public @Nullable Window getOwner() {
+    public Window getOwner() {
         return getOwner_NoClientCode();
     }
-    final @Nullable Window getOwner_NoClientCode() {
+    final Window getOwner_NoClientCode() {
         return (Window)parent;
     }
 
@@ -1535,7 +1531,7 @@ public class Window extends Container implements Accessible {
         }
     }
 
-    @Nullable Dialog getModalBlocker() {
+    Dialog getModalBlocker() {
         return modalBlocker;
     }
 
@@ -2336,7 +2332,7 @@ public class Window extends Container implements Accessible {
      * @see #getMostRecentFocusOwner
      * @see #isFocused
      */
-    public @Nullable Component getFocusOwner() {
+    public Component getFocusOwner() {
         return (isFocused())
             ? KeyboardFocusManager.getCurrentKeyboardFocusManager().
                   getFocusOwner()
@@ -2360,7 +2356,7 @@ public class Window extends Container implements Accessible {
      * @see #isFocusableWindow
      * @since 1.4
      */
-    public @Nullable Component getMostRecentFocusOwner() {
+    public Component getMostRecentFocusOwner() {
         if (isFocused()) {
             return getFocusOwner();
         } else {
@@ -2492,7 +2488,7 @@ public class Window extends Container implements Accessible {
      * @see Container#isFocusCycleRoot()
      * @since 1.4
      */
-    public final @Nullable Container getFocusCycleRootAncestor() {
+    public final Container getFocusCycleRootAncestor() {
         return null;
     }
 
@@ -3203,7 +3199,7 @@ public class Window extends Container implements Accessible {
     } // inner class AccessibleAWTWindow
 
     @Override
-    void setGraphicsConfiguration(@Nullable GraphicsConfiguration gc) {
+    void setGraphicsConfiguration(GraphicsConfiguration gc) {
         if (gc == null) {
             gc = GraphicsEnvironment.
                     getLocalGraphicsEnvironment().
@@ -3274,7 +3270,7 @@ public class Window extends Container implements Accessible {
      * @see java.awt.GraphicsEnvironment#getCenterPoint
      * @since 1.4
      */
-    public void setLocationRelativeTo(@Nullable Component c) {
+    public void setLocationRelativeTo(Component c) {
         // target location
         int dx = 0, dy = 0;
         // target GC
@@ -3405,7 +3401,7 @@ public class Window extends Container implements Accessible {
      * @see #createBufferStrategy
      * @since 1.4
      */
-    public @Nullable BufferStrategy getBufferStrategy() {
+    public BufferStrategy getBufferStrategy() {
         return super.getBufferStrategy();
     }
 
@@ -3689,7 +3685,7 @@ public class Window extends Container implements Accessible {
      *
      * @since 1.7
      */
-    public @Nullable Shape getShape() {
+    public Shape getShape() {
         synchronized (getTreeLock()) {
             return shape == null ? null : new Path2D.Float(shape);
         }
@@ -3744,7 +3740,7 @@ public class Window extends Container implements Accessible {
      *
      * @since 1.7
      */
-    public void setShape(@Nullable Shape shape) {
+    public void setShape(Shape shape) {
         synchronized (getTreeLock()) {
             if (shape != null) {
                 GraphicsConfiguration gc = getGraphicsConfiguration();
@@ -3781,7 +3777,7 @@ public class Window extends Container implements Accessible {
      * @see GraphicsDevice.WindowTranslucency
      */
     @Override
-    public @Nullable Color getBackground() {
+    public Color getBackground() {
         return super.getBackground();
     }
 
@@ -3861,7 +3857,7 @@ public class Window extends Container implements Accessible {
      * @see GraphicsConfiguration#isTranslucencyCapable()
      */
     @Override
-    public void setBackground(@Nullable Color bgColor) {
+    public void setBackground(Color bgColor) {
         Color oldBg = getBackground();
         super.setBackground(bgColor);
         if (oldBg != null && oldBg.equals(bgColor)) {
@@ -3979,7 +3975,7 @@ public class Window extends Container implements Accessible {
 
     // A window has an owner, but it does NOT have a container
     @Override
-    final @Nullable Container getContainer() {
+    final Container getContainer() {
         return null;
     }
 
