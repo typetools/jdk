@@ -77,18 +77,12 @@ import org.checkerframework.framework.qual.InheritedAnnotation;
 @Repeatable(EnsuresNonNullIf.List.class)
 public @interface EnsuresNonNullIf {
     /**
-     * Returns Java expression(s) that are non-null after the method returns the given result.
-     *
      * @return Java expression(s) that are non-null after the method returns the given result
      * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
      */
     String[] expression();
 
-    /**
-     * Returns the return value of the method under which the postcondition holds.
-     *
-     * @return the return value of the method under which the postcondition holds
-     */
+    /** @return the return value of the method under which the postcondition holds */
     boolean result();
 
     /**
@@ -103,11 +97,7 @@ public @interface EnsuresNonNullIf {
     @ConditionalPostconditionAnnotation(qualifier = NonNull.class)
     @InheritedAnnotation
     @interface List {
-        /**
-         * Returns the repeatable annotations.
-         *
-         * @return the repeatable annotations
-         */
+        /** @return the repeatable annotations */
         EnsuresNonNullIf[] value();
     }
 }

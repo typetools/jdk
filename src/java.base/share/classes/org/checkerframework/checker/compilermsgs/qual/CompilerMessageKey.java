@@ -8,7 +8,8 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * A string that is definitely a compiler message key.
+ * The annotation to distinguish compiler message Strings from normal Strings. The programmer should
+ * hardly ever need to use it explicitly.
  *
  * @checker_framework.manual #compilermsgs-checker Compiler Message Key Checker
  */

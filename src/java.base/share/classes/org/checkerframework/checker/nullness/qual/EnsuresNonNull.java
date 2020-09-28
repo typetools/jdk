@@ -45,8 +45,6 @@ import org.checkerframework.framework.qual.PostconditionAnnotation;
 @Repeatable(EnsuresNonNull.List.class)
 public @interface EnsuresNonNull {
     /**
-     * Returns Java expressions that are {@link NonNull} after successful method termination.
-     *
      * @return Java expressions that are {@link NonNull} after successful method termination
      * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
      */
@@ -64,11 +62,7 @@ public @interface EnsuresNonNull {
     @PostconditionAnnotation(qualifier = NonNull.class)
     @InheritedAnnotation
     @interface List {
-        /**
-         * Returns the repeatable annotations.
-         *
-         * @return the repeatable annotations
-         */
+        /** @return the repeatable annotations */
         EnsuresNonNull[] value();
     }
 }
