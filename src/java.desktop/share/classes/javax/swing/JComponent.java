@@ -2561,7 +2561,7 @@ public abstract class JComponent extends Container implements Serializable,
      *          <code>create</code> flag is false and there is no
      *          current <code>ActionMap</code>, returns <code>null</code>
      */
-    final ActionMap getActionMap(boolean create) {
+    final @Nullable ActionMap getActionMap(boolean create) {
         if (getFlag(ACTIONMAP_CREATED)) {
             return actionMap;
         }
