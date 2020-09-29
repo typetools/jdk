@@ -533,7 +533,7 @@ public class JFileChooser extends JComponent implements Accessible {
      */
     @BeanProperty(description
             = "The list of selected files if the chooser is in multiple selection mode.")
-    public void setSelectedFiles(@Nullable File[] selectedFiles) {
+    public void setSelectedFiles(File @Nullable[] selectedFiles) {
         File[] oldValue = this.selectedFiles;
         if (selectedFiles == null || selectedFiles.length == 0) {
             selectedFiles = null;
