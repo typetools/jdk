@@ -284,7 +284,7 @@ public class JFileChooser extends JComponent implements Accessible {
 
     private @Nullable File currentDirectory = null;
     private @Nullable File selectedFile = null;
-    private @Nullable File[] selectedFiles;
+    private File @Nullable[] selectedFiles;
 
     // *************************************
     // ***** JFileChooser Constructors *****
