@@ -407,7 +407,7 @@ public final @NonNull class Optional<T> {
      * @since 10
      */
     @EnsuresQualifier(expression = "this", qualifier = Present.class)
-    public T orElseThrow() {
+    public T orElseThrow(@Present Optional<T> this) {
         if (value == null) {
             throw new NoSuchElementException("No value present");
         }
