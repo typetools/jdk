@@ -34,6 +34,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
+import org.checkerframework.framework.qual.EnsuresQualifier;
 import org.checkerframework.framework.qual.EnsuresQualifierIf;
 
 import java.util.function.Consumer;
@@ -193,6 +194,7 @@ public final @NonNull class Optional<T> {
      * @since   11
      */
     @Pure
+    @EnsuresQualifierIf(result = false, expression = "this", qualifier = Present.class)
     public boolean isEmpty() {
         return value == null;
     }
@@ -404,6 +406,7 @@ public final @NonNull class Optional<T> {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
+    @EnsuresQualifier(expression = "this", qualifier = Present.class)
     public T orElseThrow() {
         if (value == null) {
             throw new NoSuchElementException("No value present");
@@ -428,6 +431,7 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if no value is present and the exception
      *          supplying function is {@code null}
      */
+    @EnsuresQualifier(expression = "this", qualifier = Present.class)
     public <X extends Throwable> T orElseThrow(@Present Optional<T> this, Supplier<? extends X> exceptionSupplier) throws X {
         if (value != null) {
             return value;
