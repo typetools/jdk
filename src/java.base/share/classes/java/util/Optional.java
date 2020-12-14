@@ -483,6 +483,7 @@ public final @NonNull class Optional<T> {
      * @return hash code value of the present value or {@code 0} if no value is
      *         present
      */
+    @Pure
     @Override
     public int hashCode() {
         return Objects.hashCode(value);
