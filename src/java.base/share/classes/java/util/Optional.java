@@ -369,6 +369,7 @@ public final @NonNull class Optional<T> {
      * @return the optional value as a {@code Stream}
      * @since 9
      */
+    @SideEffectFree
     public Stream<T> stream() {
         if (!isPresent()) {
             return Stream.empty();
