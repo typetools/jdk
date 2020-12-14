@@ -117,6 +117,7 @@ public final @NonNull class Optional<T> {
      * @param <T> The type of the non-existent value
      * @return an empty {@code Optional}
      */
+    @SideEffectFree
     public static<T> Optional<T> empty() {
         @SuppressWarnings("unchecked")
         Optional<T> t = (Optional<T>) EMPTY;
@@ -142,6 +143,7 @@ public final @NonNull class Optional<T> {
      * @return an {@code Optional} with the value present
      * @throws NullPointerException if value is {@code null}
      */
+    @SideEffectFree
     public static <T> @Present Optional<T> of(@NonNull T value) {
         return new Optional<>(value);
     }
@@ -155,6 +157,7 @@ public final @NonNull class Optional<T> {
      * @return an {@code Optional} with a present value if the specified value
      *         is non-{@code null}, otherwise an empty {@code Optional}
      */
+    @SideEffectFree
     public static <T> Optional<T> ofNullable(@Nullable T value) {
         return value == null ? empty() : of(value);
     }
@@ -169,6 +172,7 @@ public final @NonNull class Optional<T> {
      * @return the non-{@code null} value described by this {@code Optional}
      * @throws NoSuchElementException if no value is present
      */
+    @Pure
     public @NonNull T get(@Present Optional<T> this) {
         if (value == null) {
             throw new NoSuchElementException("No value present");
@@ -181,6 +185,7 @@ public final @NonNull class Optional<T> {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @Pure
     @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
     public boolean isPresent() {
         return value != null;
@@ -380,6 +385,7 @@ public final @NonNull class Optional<T> {
      *        May be {@code null}.
      * @return the value, if present, otherwise {@code other}
      */
+    @Pure
     public @PolyNull T orElse(@PolyNull T other) {
         return value != null ? value : other;
     }
@@ -406,6 +412,7 @@ public final @NonNull class Optional<T> {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
+    @Pure
     @EnsuresQualifier(expression = "this", qualifier = Present.class)
     public T orElseThrow(@Present Optional<T> this) {
         if (value == null) {
@@ -493,6 +500,7 @@ public final @NonNull class Optional<T> {
      *
      * @return the string representation of this instance
      */
+    @SideEffectFree
     @Override
     public String toString() {
         return value != null
