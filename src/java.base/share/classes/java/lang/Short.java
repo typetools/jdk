@@ -626,7 +626,7 @@ public final class Short extends Number implements Comparable<Short> {
      */
     @Pure
     @StaticallyExecutable
-    public static @NonNegative @SignedPositive @ long toUnsignedLong(short x) {
+    public static @NonNegative @SignedPositive long toUnsignedLong(short x) {
         return ((long) x) & 0xffffL;
     }
 
