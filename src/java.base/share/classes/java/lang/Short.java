@@ -56,7 +56,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     java.lang.Number
  * @since   1.1
  */
-@AnnotatedFor({"nullness", "index", "value"})
+@AnnotatedFor({"nullness", "index", "signedness", "value"})
 public final class Short extends Number implements Comparable<Short> {
 
     /**

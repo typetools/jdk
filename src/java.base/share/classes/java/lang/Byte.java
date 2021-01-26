@@ -59,7 +59,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     java.lang.Number
  * @since   1.1
  */
-@AnnotatedFor({"index", "interning", "nullness", "value"})
+@AnnotatedFor({"index", "interning", "nullness", "signedness", "value"})
 public final class Byte extends Number implements Comparable<Byte> {
 
     /**

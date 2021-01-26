@@ -236,7 +236,7 @@ import sun.reflect.misc.ReflectUtil;
  *     Object Serialization Specification, Section 3, Object Input Classes</a>
  * @since   1.1
  */
-@AnnotatedFor({"nullness", "index"})
+@AnnotatedFor({"nullness", "index", "signedness"})
 public class ObjectInputStream
     extends InputStream implements ObjectInput, ObjectStreamConstants
 {
