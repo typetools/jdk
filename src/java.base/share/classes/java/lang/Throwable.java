@@ -472,7 +472,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *         been called on this throwable.
      * @since  1.4
      */
-    public synchronized @UnknownInitialization Throwable initCause(@UnknownInitialization Throwable this, @Nullable Throwable cause) {
+    public synchronized Throwable initCause(@UnknownInitialization Throwable this, @Nullable Throwable cause) {
         if (this.cause != this)
             throw new IllegalStateException("Can't overwrite cause with " +
                                             Objects.toString(cause, "a null"), this);
