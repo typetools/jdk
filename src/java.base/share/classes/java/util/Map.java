@@ -31,6 +31,7 @@ import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -1301,7 +1302,7 @@ public interface Map<K, V> {
     // It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A
     // remappingFunction that returns null is is probably rare, and these annotations accommodate
     // the majority of uses that don't return null.
-    default @Nullable V merge(K key, V value,
+    default @Nullable V merge(K key, @NonNull V value,
             BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
