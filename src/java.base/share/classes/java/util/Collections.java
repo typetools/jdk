@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.common.value.qual.ArrayLen;
@@ -1578,7 +1579,7 @@ public class Collections {
         }
 
         @Override
-        public @Nullable V merge(K key, V value,
+        public @Nullable V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
@@ -2747,7 +2748,7 @@ public class Collections {
             synchronized (mutex) {return m.compute(key, remappingFunction);}
         }
         @Override
-        public @Nullable V merge(K key, V value,
+        public @Nullable V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             synchronized (mutex) {return m.merge(key, value, remappingFunction);}
         }
@@ -3806,7 +3807,7 @@ public class Collections {
         }
 
         @Override
-        public @Nullable V merge(K key, V value,
+        public @Nullable V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             Objects.requireNonNull(remappingFunction);
             return m.merge(key, value, (v1, v2) -> {
@@ -4787,7 +4788,7 @@ public class Collections {
         }
 
         @Override
-        public @Nullable V merge(K key, V value,
+        public @Nullable V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
@@ -5123,7 +5124,7 @@ public class Collections {
         }
 
         @Override
-        public @Nullable V merge(K key, V value,
+        public @Nullable V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }

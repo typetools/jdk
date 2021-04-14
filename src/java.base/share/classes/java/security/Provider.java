@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.*;
 import java.util.*;
 import static java.util.Locale.ENGLISH;
