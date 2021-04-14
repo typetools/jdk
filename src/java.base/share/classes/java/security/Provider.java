@@ -686,7 +686,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized Object compute(Object key, BiFunction<? super Object,
+    public synchronized @Nullable Object compute(Object key, BiFunction<? super Object,
             ? super Object, ? extends Object> remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
@@ -717,7 +717,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized Object computeIfAbsent(Object key, Function<? super Object,
+    public synchronized @Nullable Object computeIfAbsent(Object key, Function<? super Object,
             ? extends Object> mappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
@@ -747,7 +747,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized Object computeIfPresent(Object key, BiFunction<? super Object,
+    public synchronized @Nullable Object computeIfPresent(Object key, BiFunction<? super Object,
             ? super Object, ? extends Object> remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
@@ -780,7 +780,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized Object merge(Object key, Object value,  BiFunction<? super Object,
+    public synchronized @Nullable Object merge(Object key, Object value,  BiFunction<? super Object,
             ? super Object, ? extends Object>  remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);

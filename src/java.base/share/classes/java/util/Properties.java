@@ -1466,25 +1466,25 @@ class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized Object computeIfAbsent(Object key,
+    public synchronized @Nullable Object computeIfAbsent(Object key,
             Function<? super Object, ?> mappingFunction) {
         return map.computeIfAbsent(key, mappingFunction);
     }
 
     @Override
-    public synchronized Object computeIfPresent(Object key,
+    public synchronized @Nullable Object computeIfPresent(Object key,
             BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return map.computeIfPresent(key, remappingFunction);
     }
 
     @Override
-    public synchronized Object compute(Object key,
+    public synchronized @Nullable Object compute(Object key,
             BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return map.compute(key, remappingFunction);
     }
 
     @Override
-    public synchronized Object merge(Object key, Object value,
+    public synchronized @Nullable Object merge(Object key, Object value,
             BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return map.merge(key, value, remappingFunction);
     }

@@ -32,6 +32,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * A WeakHashMap-like data structure that uses a pair of weakly-referenced keys
  * with identity equality semantics to associate a strongly-referenced value.
@@ -148,7 +150,7 @@ final class WeakPairMap<K1, K2, V> {
      * @throws RuntimeException      or Error if the mappingFunction does so, in
      *                               which case the mapping is left unestablished
      */
-    public V computeIfAbsent(K1 k1, K2 k2,
+    public @Nullable V computeIfAbsent(K1 k1, K2 k2,
                              BiFunction<? super K1, ? super K2, ? extends V>
                                  mappingFunction) {
         expungeStaleAssociations();

@@ -63,6 +63,7 @@ public class Object {
     /**
      * Constructs a new object.
      */
+    @SideEffectFree
     @HotSpotIntrinsicCandidate
     public @Unique @Untainted Object() {}
 

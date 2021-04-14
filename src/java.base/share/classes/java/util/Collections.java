@@ -1561,24 +1561,24 @@ public class Collections {
         }
 
         @Override
-        public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        public @Nullable V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V computeIfPresent(K key,
+        public @Nullable V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V compute(K key,
+        public @Nullable V compute(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V merge(K key, V value,
+        public @Nullable V merge(K key, V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
@@ -2732,22 +2732,22 @@ public class Collections {
             synchronized (mutex) {return m.replace(key, value);}
         }
         @Override
-        public V computeIfAbsent(K key,
+        public @Nullable V computeIfAbsent(K key,
                 Function<? super K, ? extends V> mappingFunction) {
             synchronized (mutex) {return m.computeIfAbsent(key, mappingFunction);}
         }
         @Override
-        public V computeIfPresent(K key,
+        public @Nullable V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             synchronized (mutex) {return m.computeIfPresent(key, remappingFunction);}
         }
         @Override
-        public V compute(K key,
+        public @Nullable V compute(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             synchronized (mutex) {return m.compute(key, remappingFunction);}
         }
         @Override
-        public V merge(K key, V value,
+        public @Nullable V merge(K key, V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             synchronized (mutex) {return m.merge(key, value, remappingFunction);}
         }
@@ -3783,7 +3783,7 @@ public class Collections {
         }
 
         @Override
-        public V computeIfAbsent(K key,
+        public @Nullable V computeIfAbsent(K key,
                 Function<? super K, ? extends V> mappingFunction) {
             Objects.requireNonNull(mappingFunction);
             return m.computeIfAbsent(key, k -> {
@@ -3794,19 +3794,19 @@ public class Collections {
         }
 
         @Override
-        public V computeIfPresent(K key,
+        public @Nullable V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             return m.computeIfPresent(key, typeCheck(remappingFunction));
         }
 
         @Override
-        public V compute(K key,
+        public @Nullable V compute(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             return m.compute(key, typeCheck(remappingFunction));
         }
 
         @Override
-        public V merge(K key, V value,
+        public @Nullable V merge(K key, V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             Objects.requireNonNull(remappingFunction);
             return m.merge(key, value, (v1, v2) -> {
@@ -4769,25 +4769,25 @@ public class Collections {
         }
 
         @Override
-        public V computeIfAbsent(K key,
+        public @Nullable V computeIfAbsent(K key,
                 Function<? super K, ? extends V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V computeIfPresent(K key,
+        public @Nullable V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V compute(K key,
+        public @Nullable V compute(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V merge(K key, V value,
+        public @Nullable V merge(K key, V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
@@ -5105,25 +5105,25 @@ public class Collections {
         }
 
         @Override
-        public V computeIfAbsent(K key,
+        public @Nullable V computeIfAbsent(K key,
                 Function<? super K, ? extends V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V computeIfPresent(K key,
+        public @Nullable V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V compute(K key,
+        public @Nullable V compute(K key,
                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V merge(K key, V value,
+        public @Nullable V merge(K key, V value,
                 BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
