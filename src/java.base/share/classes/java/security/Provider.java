@@ -26,6 +26,7 @@
 package java.security;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import java.io.*;
 import java.util.*;
@@ -688,8 +689,8 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized @Nullable Object compute(Object key, BiFunction<? super Object,
-            ? super Object, ? extends Object> remappingFunction) {
+    public synchronized @PolyNull Object compute(Object key, BiFunction<? super Object,
+            ? super Object, ? extends @PolyNull Object> remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
 
@@ -719,8 +720,8 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized @Nullable Object computeIfAbsent(Object key, Function<? super Object,
-            ? extends Object> mappingFunction) {
+    public synchronized @PolyNull Object computeIfAbsent(Object key, Function<? super Object,
+            ? extends @PolyNull Object> mappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
 
@@ -749,8 +750,8 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized @Nullable Object computeIfPresent(Object key, BiFunction<? super Object,
-            ? super Object, ? extends Object> remappingFunction) {
+    public synchronized @PolyNull Object computeIfPresent(Object key, BiFunction<? super Object,
+            ? super Object, ? extends @PolyNull Object> remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
 
@@ -782,8 +783,8 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized @Nullable Object merge(Object key, Object value,  BiFunction<? super Object,
-            ? super Object, ? extends Object>  remappingFunction) {
+    public synchronized @PolyNull Object merge(Object key, Object value,  BiFunction<? super Object,
+            ? super Object, ? extends @PolyNull Object>  remappingFunction) {
         check("putProviderProperty." + name);
         check("removeProviderProperty." + name);
 

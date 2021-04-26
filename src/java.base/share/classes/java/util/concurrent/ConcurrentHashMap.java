@@ -1711,7 +1711,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws RuntimeException or Error if the mappingFunction does so,
      *         in which case the mapping is left unestablished
      */
-    public @Nullable V computeIfAbsent(K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
+    public @PolyNull V computeIfAbsent(K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
         if (key == null || mappingFunction == null)
             throw new NullPointerException();
         int h = spread(key.hashCode());
@@ -2041,7 +2041,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws RuntimeException or Error if the remappingFunction does so,
      *         in which case the mapping is unchanged
      */
-    public @Nullable V merge(K key, @NonNull V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    public @PolyNull V merge(K key, @NonNull V value, BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (key == null || value == null || remappingFunction == null)
             throw new NullPointerException();
         int h = spread(key.hashCode());

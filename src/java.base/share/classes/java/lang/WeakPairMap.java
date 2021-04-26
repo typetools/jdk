@@ -24,6 +24,9 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -31,8 +34,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A WeakHashMap-like data structure that uses a pair of weakly-referenced keys
@@ -150,8 +151,8 @@ final class WeakPairMap<K1, K2, V> {
      * @throws RuntimeException      or Error if the mappingFunction does so, in
      *                               which case the mapping is left unestablished
      */
-    public @Nullable V computeIfAbsent(K1 k1, K2 k2,
-                             BiFunction<? super K1, ? super K2, ? extends V>
+    public @PolyNull V computeIfAbsent(K1 k1, K2 k2,
+                             BiFunction<? super K1, ? super K2, ? extends @PolyNull V>
                                  mappingFunction) {
         expungeStaleAssociations();
         try {

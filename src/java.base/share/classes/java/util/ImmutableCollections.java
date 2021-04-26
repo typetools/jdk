@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -718,10 +719,10 @@ class ImmutableCollections {
 
     abstract static class AbstractImmutableMap<K,V> extends AbstractMap<K,V> implements Serializable {
         @Override public void clear() { throw uoe(); }
-        @Override public @Nullable V compute(K key, BiFunction<? super K,? super V,? extends V> rf) { throw uoe(); }
-        @Override public @Nullable V computeIfAbsent(K key, Function<? super K,? extends V> mf) { throw uoe(); }
-        @Override public @Nullable V computeIfPresent(K key, BiFunction<? super K,? super V,? extends V> rf) { throw uoe(); }
-        @Override public @Nullable V merge(K key, @NonNull V value, BiFunction<? super V,? super V,? extends V> rf) { throw uoe(); }
+        @Override public @PolyNull V compute(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @PolyNull V computeIfAbsent(K key, Function<? super K,? extends @PolyNull V> mf) { throw uoe(); }
+        @Override public @PolyNull V computeIfPresent(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @PolyNull V merge(K key, @NonNull V value, BiFunction<? super V,? super V,? extends @PolyNull V> rf) { throw uoe(); }
         @Override public V put(K key, V value) { throw uoe(); }
         @Override public void putAll(Map<? extends K,? extends V> m) { throw uoe(); }
         @Override public V putIfAbsent(K key, V value) { throw uoe(); }
