@@ -57,6 +57,7 @@ import java.nio.channels.Selector;
  * @author JSR-51 Expert Group
  * @since 1.4
  */
+
 @AnnotatedFor({"mustcall", "returnsreceiver"})
 public abstract class AbstractSelectableChannel
     extends SelectableChannel

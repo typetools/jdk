@@ -59,7 +59,7 @@ import java.util.Collections;
  * @see     java.nio.channels.SocketChannel
  * @since   1.0
  */
-@AnnotatedFor({"interning", "nullness", "mustcall", "calledmethods"})
+@AnnotatedFor({"calledmethods", "interning", "mustcall", "nullness"})
 public
 @UsesObjectEquals class Socket implements java.io.Closeable {
     /**

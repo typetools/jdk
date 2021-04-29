@@ -55,7 +55,7 @@ import java.util.Objects;
  * @since       1.1
  */
 
-@AnnotatedFor({"index", "interning", "nullness", "mustcall"})
+@AnnotatedFor({"index", "interning", "mustcall", "nullness"})
 public abstract @UsesObjectEquals class Writer implements Appendable, Closeable, Flushable {
 
     /**

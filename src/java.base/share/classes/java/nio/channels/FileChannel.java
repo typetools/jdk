@@ -159,7 +159,7 @@ import java.util.Collections;
  * @since 1.4
  */
 
-@AnnotatedFor({"nullness", "index", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "nullness"})
 public abstract class FileChannel
     extends AbstractInterruptibleChannel
     implements SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel

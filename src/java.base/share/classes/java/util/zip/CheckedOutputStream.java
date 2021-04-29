@@ -43,7 +43,7 @@ import java.io.IOException;
  * @author      David Connelly
  * @since 1.1
  */
-@AnnotatedFor({"index", "signedness", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "signedness"})
 public
 class CheckedOutputStream extends FilterOutputStream {
     private Checksum cksum;

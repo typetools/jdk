@@ -43,7 +43,7 @@ import org.checkerframework.framework.qual.CFComment;
  * @since 1.1
  *
  */
-@AnnotatedFor({"index", "signedness", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "signedness"})
 public
 class GZIPOutputStream extends DeflaterOutputStream {
     /**

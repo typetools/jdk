@@ -319,7 +319,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *
  * @since   1.5
  */
-@AnnotatedFor({"index", "interning", "lock", "signedness", "mustcall"})
+@AnnotatedFor({"index", "interning", "lock", "mustcall", "signedness"})
 public final @UsesObjectEquals class Scanner implements Iterator<String>, Closeable {
 
     // Internal buffer used to hold input

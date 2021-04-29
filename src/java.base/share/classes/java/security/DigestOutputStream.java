@@ -57,7 +57,7 @@ import java.io.ByteArrayOutputStream;
  * @author Benjamin Renaud
  * @since 1.2
  */
-@AnnotatedFor({"signedness", "mustcall"})
+@AnnotatedFor({"mustcall", "signedness"})
 public class DigestOutputStream extends FilterOutputStream {
 
     private boolean on = true;

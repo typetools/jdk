@@ -56,7 +56,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since       1.1
  */
 
-@AnnotatedFor({"lock", "nullness", "index", "mustcall"})
+@AnnotatedFor({"index", "lock", "mustcall", "nullness"})
 public class LineNumberReader extends BufferedReader {
 
     /** The current line number */

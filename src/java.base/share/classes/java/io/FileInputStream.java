@@ -69,7 +69,7 @@ import sun.nio.ch.FileChannelImpl;
  * @see     java.nio.file.Files#newInputStream
  * @since   1.0
  */
-@AnnotatedFor({"nullness","index", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "nullness"})
 public
 class FileInputStream extends InputStream
 {

@@ -67,7 +67,7 @@ import java.nio.charset.UnsupportedCharsetException;
  * @since       1.1
  */
 
-@AnnotatedFor({"formatter", "index", "lock", "nullness", "mustcall"})
+@AnnotatedFor({"formatter", "index", "lock", "mustcall", "nullness"})
 public class PrintWriter extends Writer {
 
     /**

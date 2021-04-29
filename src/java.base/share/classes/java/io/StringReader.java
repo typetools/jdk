@@ -41,7 +41,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since       1.1
  */
 
-@AnnotatedFor({"nullness", "index", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "nullness"})
 @InheritableMustCall({})
 public class StringReader extends Reader {
 

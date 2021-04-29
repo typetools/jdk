@@ -79,6 +79,7 @@ import java.nio.channels.spi.SelectorProvider;
  * @author JSR-51 Expert Group
  * @since 1.4
  */
+
 @AnnotatedFor({"mustcall"})
 public abstract class ServerSocketChannel
     extends AbstractSelectableChannel

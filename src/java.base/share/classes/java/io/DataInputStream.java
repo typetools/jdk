@@ -50,7 +50,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @see     java.io.DataOutputStream
  * @since   1.0
  */
-@AnnotatedFor({"nullness", "index", "signedness", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "nullness", "signedness"})
 public
 class DataInputStream extends FilterInputStream implements DataInput {
 

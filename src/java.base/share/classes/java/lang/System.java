@@ -102,7 +102,7 @@ import sun.security.util.SecurityConstants;
  *
  * @since   1.0
  */
-@AnnotatedFor({"index", "interning", "lock", "nullness", "signedness", "mustcall"})
+@AnnotatedFor({"index", "interning", "lock", "mustcall", "nullness", "signedness"})
 public final @UsesObjectEquals class System {
     /* Register the natives via the static initializer.
      *

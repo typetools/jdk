@@ -52,7 +52,7 @@ import org.checkerframework.framework.qual.CFComment;
  * @since   1.0
  */
 @CFComment({"lock: Note that the @GuardSatisfied is for locks that are external to the implementation class."})
-@AnnotatedFor({"lock", "nullness", "index", "signedness", "mustcall"})
+@AnnotatedFor({"index", "lock", "mustcall", "nullness", "signedness"})
 public class FilterOutputStream extends OutputStream {
     /**
      * The underlying output stream to be filtered.

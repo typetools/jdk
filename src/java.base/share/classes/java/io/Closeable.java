@@ -39,7 +39,7 @@ import java.io.IOException;
  *
  * @since 1.5
  */
-@AnnotatedFor({"lock", "nullness", "mustcall"})
+@AnnotatedFor({"lock", "mustcall", "nullness"})
 @InheritableMustCall("close")
 public interface Closeable extends AutoCloseable {
 

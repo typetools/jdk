@@ -57,7 +57,7 @@ import jdk.internal.misc.Unsafe;
  * @author  Arthur van Hoff
  * @since   1.0
  */
-@AnnotatedFor({"nullness", "index", "mustcall"})
+@AnnotatedFor({"index", "nullness", "mustcall"})
 public
 class BufferedInputStream extends FilterInputStream {
 

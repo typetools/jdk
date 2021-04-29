@@ -61,7 +61,7 @@ import java.util.Collections;
  * @see     java.nio.channels.ServerSocketChannel
  * @since   1.0
  */
-@AnnotatedFor({"interning", "mustcall", "calledmethods"})
+@AnnotatedFor({"calledmethods", "interning", "mustcall"})
 public
 @UsesObjectEquals class ServerSocket implements java.io.Closeable {
     /**

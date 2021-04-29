@@ -1916,7 +1916,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  * @author  Iris Clark
  * @since 1.5
  */
-@AnnotatedFor({"formatter", "index", "lock", "nullness", "mustcall"})
+@AnnotatedFor({"formatter", "index", "lock", "mustcall", "nullness"})
 public final class Formatter implements Closeable, Flushable {
     private Appendable a;
     private final Locale l;

@@ -85,7 +85,7 @@ import sun.nio.ch.Interruptible;
  * @since 1.4
  */
 
-@AnnotatedFor({"interning", "calledmethods"})
+@AnnotatedFor({"calledmethods", "interning"})
 public abstract @UsesObjectEquals class AbstractInterruptibleChannel
     implements Channel, InterruptibleChannel
 {

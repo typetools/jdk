@@ -80,7 +80,7 @@ import sun.nio.cs.StreamEncoder;
  * @since       1.1
  */
 
-@AnnotatedFor({"nullness", "index", "mustcall"})
+@AnnotatedFor({"index", "mustcall", "nullness"})
 public class OutputStreamWriter extends Writer {
 
     private final StreamEncoder se;
