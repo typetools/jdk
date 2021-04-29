@@ -200,7 +200,7 @@ public abstract class SSLSocketFactory extends SocketFactory
      * @throws IOException if an I/O error occurs when creating the socket
      * @throws NullPointerException if the parameter s is null
      */
-    public abstract @MustCallAlias Socket createSocket(@MustCallAl Socket s, String host,
+    public abstract @MustCallAlias Socket createSocket(@MustCallAlias Socket s, String host,
             int port, boolean autoClose) throws IOException;
 
     /**
