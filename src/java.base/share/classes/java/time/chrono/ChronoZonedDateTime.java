@@ -61,6 +61,11 @@
  */
 package java.time.chrono;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.time.temporal.ChronoField.INSTANT_SECONDS;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
 import static java.time.temporal.ChronoUnit.FOREVER;
@@ -119,6 +124,7 @@ import java.util.Objects;
  * @param <D> the concrete type for the date of this date-time
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public interface ChronoZonedDateTime<D extends ChronoLocalDate>
         extends Temporal, Comparable<ChronoZonedDateTime<?>> {
 
@@ -380,7 +386,7 @@ public interface ChronoZonedDateTime<D extends ChronoLocalDate>
      * @return true if the field can be queried, false if not
      */
     @Override
-    boolean isSupported(TemporalField field);
+    boolean isSupported(@Nullable TemporalField field);
 
     /**
      * Checks if the specified unit is supported.
@@ -401,7 +407,7 @@ public interface ChronoZonedDateTime<D extends ChronoLocalDate>
      * @return true if the unit can be added/subtracted, false if not
      */
     @Override
-    default boolean isSupported(TemporalUnit unit) {
+    default boolean isSupported(@Nullable TemporalUnit unit) {
         if (unit instanceof ChronoUnit) {
             return unit != FOREVER;
         }
@@ -660,7 +666,9 @@ public interface ChronoZonedDateTime<D extends ChronoLocalDate>
      * @return true if this is equal to the other date-time
      */
     @Override
-    boolean equals(Object obj);
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    boolean equals(@Nullable Object obj);
 
     /**
      * A hash code for this date-time.

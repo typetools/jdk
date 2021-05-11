@@ -56,6 +56,8 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.Duration;
 
 /**
@@ -74,6 +76,7 @@ import java.time.Duration;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public enum ChronoUnit implements TemporalUnit {
 
     /**

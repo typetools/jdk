@@ -66,6 +66,11 @@ import static java.time.LocalTime.SECONDS_PER_HOUR;
 import static java.time.LocalTime.SECONDS_PER_MINUTE;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -127,6 +132,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class ZoneOffset
         extends ZoneId
         implements TemporalAccessor, TemporalAdjuster, Comparable<ZoneOffset>, Serializable {
@@ -526,7 +532,7 @@ public final class ZoneOffset
      * @return true if the field is supported on this offset, false if not
      */
     @Override
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         if (field instanceof ChronoField) {
             return field == OFFSET_SECONDS;
         }
@@ -716,7 +722,9 @@ public final class ZoneOffset
      * @return true if this is equal to the other offset
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
            return true;
         }

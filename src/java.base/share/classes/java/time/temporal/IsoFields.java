@@ -56,6 +56,8 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.time.DayOfWeek.THURSDAY;
 import static java.time.DayOfWeek.WEDNESDAY;
 import static java.time.temporal.ChronoField.DAY_OF_WEEK;
@@ -158,6 +160,7 @@ import sun.util.locale.provider.LocaleResources;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class IsoFields {
 
     /**
