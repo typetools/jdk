@@ -3710,7 +3710,7 @@ public class Arrays {
      * @since 1.6
      */
     @SuppressWarnings("unchecked")
-    public static <T> @Nullable T[] copyOf(T[] original, @NonNegative int newLength) {
+    public static <T> T[] copyOf(T[] original, @NonNegative int newLength) {
         return (T[]) copyOf(original, newLength, original.getClass());
     }
 
@@ -3739,7 +3739,7 @@ public class Arrays {
      * @since 1.6
      */
     @HotSpotIntrinsicCandidate
-    public static <T,U> @Nullable T[] copyOf(U[] original, @NonNegative int newLength, Class<? extends T[]> newType) {
+    public static <T,U> T[] copyOf(U[] original, @NonNegative int newLength, Class<? extends T[]> newType) {
         @SuppressWarnings("unchecked")
         T[] copy = ((Object)newType == (Object)Object[].class)
             ? (T[]) new Object[newLength]
@@ -3971,7 +3971,7 @@ public class Arrays {
      * @since 1.6
      */
     @SuppressWarnings("unchecked")
-    public static <T> @Nullable T[] copyOfRange(T[] original, @IndexOrHigh({"#1"}) int from, int to) {
+    public static <T> T[] copyOfRange(T[] original, @IndexOrHigh({"#1"}) int from, int to) {
         return copyOfRange(original, from, to, (Class<? extends T[]>) original.getClass());
     }
 
@@ -4009,7 +4009,7 @@ public class Arrays {
      * @since 1.6
      */
     @HotSpotIntrinsicCandidate
-    public static <T,U> @Nullable T[] copyOfRange(U[] original, @IndexOrHigh({"#1"}) int from, int to, Class<? extends T[]> newType) {
+    public static <T,U> T[] copyOfRange(U[] original, @IndexOrHigh({"#1"}) int from, int to, Class<? extends T[]> newType) {
         int newLength = to - from;
         if (newLength < 0)
             throw new IllegalArgumentException(from + " > " + to);
