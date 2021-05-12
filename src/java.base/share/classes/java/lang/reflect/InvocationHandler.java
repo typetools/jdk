@@ -25,6 +25,9 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * {@code InvocationHandler} is the interface implemented by
  * the <i>invocation handler</i> of a proxy instance.
@@ -38,6 +41,7 @@ package java.lang.reflect;
  * @see         Proxy
  * @since       1.3
  */
+@AnnotatedFor({"nullness"})
 public interface InvocationHandler {
 
     /**
@@ -90,6 +94,6 @@ public interface InvocationHandler {
      *
      * @see     UndeclaredThrowableException
      */
-    public Object invoke(Object proxy, Method method, Object[] args)
+    public Object invoke(Object proxy, Method method, @Nullable Object @Nullable [] args)
         throws Throwable;
 }
