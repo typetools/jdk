@@ -40,6 +40,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
@@ -97,6 +98,7 @@ import jdk.internal.misc.SharedSecrets;
  * @author Doug Lea
  * @param <E> the type of elements held in this list
  */
+@AnnotatedFor({"nullness"})
 public class CopyOnWriteArrayList<E>
     implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
     private static final long serialVersionUID = 8673264195747942595L;
@@ -263,7 +265,7 @@ public class CopyOnWriteArrayList<E>
      *         {@code -1} if the element is not found.
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
-    public int indexOf(E e, int index) {
+    public int indexOf(@Nullable E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
     }
@@ -292,7 +294,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is greater
      *         than or equal to the current size of this list
      */
-    public int lastIndexOf(E e, int index) {
+    public int lastIndexOf(@Nullable E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
     }
@@ -659,7 +661,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<@Nullable ?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -680,7 +682,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    public boolean retainAll(Collection<@Nullable ?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
