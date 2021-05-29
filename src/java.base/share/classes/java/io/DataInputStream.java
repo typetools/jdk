@@ -30,8 +30,10 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -48,7 +50,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @see     java.io.DataOutputStream
  * @since   1.0
  */
-@AnnotatedFor({"nullness", "index", "signedness"})
+@AnnotatedFor({"index", "mustcall", "nullness", "signedness"})
 public
 class DataInputStream extends FilterInputStream implements DataInput {
 
@@ -58,7 +60,7 @@ class DataInputStream extends FilterInputStream implements DataInput {
      *
      * @param  in   the specified input stream
      */
-    public DataInputStream(InputStream in) {
+    public @MustCallAlias DataInputStream(@MustCallAlias InputStream in) {
         super(in);
     }
 
@@ -299,7 +301,7 @@ class DataInputStream extends FilterInputStream implements DataInput {
      *             another I/O error occurs.
      * @see         java.io.FilterInputStream#in
      */
-    public final @NonNegative int readUnsignedByte() throws IOException {
+    public final @SignedPositive @NonNegative int readUnsignedByte() throws IOException {
         int ch = in.read();
         if (ch < 0)
             throw new EOFException();
@@ -348,7 +350,7 @@ class DataInputStream extends FilterInputStream implements DataInput {
      *             another I/O error occurs.
      * @see        java.io.FilterInputStream#in
      */
-    public final @NonNegative int readUnsignedShort() throws IOException {
+    public final @SignedPositive @NonNegative int readUnsignedShort() throws IOException {
         int ch1 = in.read();
         int ch2 = in.read();
         if ((ch1 | ch2) < 0)

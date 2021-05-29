@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.DefaultFor;
 import org.checkerframework.framework.qual.SubtypeOf;
 import org.checkerframework.framework.qual.TypeKind;
+import org.checkerframework.framework.qual.UpperBoundFor;
 
 /**
  * The value is to be interpreted as signed. That is, if the most significant bit in the bitwise
@@ -20,20 +21,23 @@ import org.checkerframework.framework.qual.TypeKind;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({UnknownSignedness.class})
 @DefaultFor(
-        typeKinds = {
-            TypeKind.BYTE,
-            TypeKind.INT,
-            TypeKind.LONG,
-            TypeKind.SHORT,
-            TypeKind.FLOAT,
-            TypeKind.DOUBLE
-        },
-        types = {
-            java.lang.Byte.class,
-            java.lang.Integer.class,
-            java.lang.Long.class,
-            java.lang.Short.class,
-            java.lang.Float.class,
-            java.lang.Double.class
-        })
+    typeKinds = {
+      TypeKind.BYTE,
+      TypeKind.INT,
+      TypeKind.LONG,
+      TypeKind.SHORT,
+      TypeKind.FLOAT,
+      TypeKind.DOUBLE
+    },
+    types = {
+      java.lang.Byte.class,
+      java.lang.Integer.class,
+      java.lang.Long.class,
+      java.lang.Short.class,
+      java.lang.Float.class,
+      java.lang.Double.class
+    })
+@UpperBoundFor(
+    typeKinds = {TypeKind.FLOAT, TypeKind.DOUBLE},
+    types = {java.lang.Float.class, java.lang.Double.class})
 public @interface Signed {}

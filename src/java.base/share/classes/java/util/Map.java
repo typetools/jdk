@@ -31,7 +31,9 @@ import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -529,6 +531,7 @@ public interface Map<K, V> {
          * @see Comparable
          * @since 1.8
          */
+        @Pure
         public static <K extends Comparable<? super K>, V> Comparator<Map.Entry<K, V>> comparingByKey() {
             return (Comparator<Map.Entry<K, V>> & Serializable)
                 (c1, c2) -> c1.getKey().compareTo(c2.getKey());
@@ -546,6 +549,7 @@ public interface Map<K, V> {
          * @see Comparable
          * @since 1.8
          */
+        @Pure
         public static <K, V extends Comparable<? super V>> Comparator<Map.Entry<K, V>> comparingByValue() {
             return (Comparator<Map.Entry<K, V>> & Serializable)
                 (c1, c2) -> c1.getValue().compareTo(c2.getValue());
@@ -564,6 +568,7 @@ public interface Map<K, V> {
          * @return a comparator that compares {@link Map.Entry} by the key.
          * @since 1.8
          */
+        @Pure
         public static <K, V> Comparator<Map.Entry<K, V>> comparingByKey(Comparator<? super K> cmp) {
             Objects.requireNonNull(cmp);
             return (Comparator<Map.Entry<K, V>> & Serializable)
@@ -583,6 +588,7 @@ public interface Map<K, V> {
          * @return a comparator that compares {@link Map.Entry} by the value.
          * @since 1.8
          */
+        @Pure
         public static <K, V> Comparator<Map.Entry<K, V>> comparingByValue(Comparator<? super V> cmp) {
             Objects.requireNonNull(cmp);
             return (Comparator<Map.Entry<K, V>> & Serializable)
@@ -645,6 +651,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
+    @Pure
     default V getOrDefault(Object key, V defaultValue) {
         V v;
         return (((v = get(key)) != null) || containsKey(key))
@@ -1026,8 +1033,8 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default V computeIfAbsent(K key,
-            Function<? super K, ? extends @Nullable V> mappingFunction) {
+    default @PolyNull V computeIfAbsent(K key,
+            Function<? super K, ? extends @PolyNull V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
         V v;
         if ((v = get(key)) == null) {
@@ -1103,8 +1110,8 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default V computeIfPresent(K key,
-            BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
+    default @PolyNull V computeIfPresent(K key,
+            BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue;
         if ((oldValue = get(key)) != null) {
@@ -1195,8 +1202,8 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default V compute(K key,
-            BiFunction<? super K, ? super @Nullable V, ? extends @Nullable V> remappingFunction) {
+    default @PolyNull V compute(K key,
+            BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue = get(key);
 
@@ -1296,8 +1303,8 @@ public interface Map<K, V> {
     // It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A
     // remappingFunction that returns null is is probably rare, and these annotations accommodate
     // the majority of uses that don't return null.
-    default V merge(K key, V value,
-            BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    default @PolyNull V merge(K key, @NonNull V value,
+            BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
         V oldValue = get(key);

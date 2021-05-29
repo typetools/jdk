@@ -29,7 +29,10 @@ import org.checkerframework.checker.guieffect.qual.PolyUI;
 import org.checkerframework.checker.guieffect.qual.PolyUIEffect;
 import org.checkerframework.checker.guieffect.qual.PolyUIType;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
+import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.Serializable;
@@ -87,7 +90,7 @@ import java.util.Map.Entry;
  * @see VetoableChangeSupport
  * @since 1.1
  */
-@AnnotatedFor({"fenum", "guieffect","interning"})
+@AnnotatedFor({"fenum", "guieffect","interning", "nullness"})
 @PolyUIType
 public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     private PropertyChangeListenerMap map = new PropertyChangeListenerMap();
@@ -98,7 +101,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param sourceBean  The bean to be given as the source for any events.
      */
     @SafeEffect
-    public PropertyChangeSupport(@PolyUI Object sourceBean) {
+    public PropertyChangeSupport(@PolyUI @UnknownInitialization(Object.class) Object sourceBean) {
         if (sourceBean == null) {
             throw new NullPointerException();
         }
@@ -116,7 +119,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param listener  The PropertyChangeListener to be added
      */
     @PolyUIEffect
-    public void addPropertyChangeListener(@PolyUI PropertyChangeSupport this, @PolyUI PropertyChangeListener listener) {
+    public void addPropertyChangeListener(@PolyUI PropertyChangeSupport this, @Nullable @PolyUI PropertyChangeListener listener) {
         if (listener == null) {
             return;
         }
@@ -143,7 +146,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param listener  The PropertyChangeListener to be removed
      */
     @PolyUIEffect
-    public void removePropertyChangeListener(@PolyUI PropertyChangeSupport this, PropertyChangeListener listener) {
+    public void removePropertyChangeListener(@PolyUI PropertyChangeSupport this, @Nullable PropertyChangeListener listener) {
         if (listener == null) {
             return;
         }
@@ -211,8 +214,8 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     @PolyUIEffect
     public void addPropertyChangeListener(
                 @PolyUI PropertyChangeSupport this,
-                String propertyName,
-                @PolyUI PropertyChangeListener listener) {
+                @Nullable String propertyName,
+                @Nullable @PolyUI PropertyChangeListener listener) {
         if (listener == null || propertyName == null) {
             return;
         }
@@ -238,8 +241,8 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      */
     @PolyUIEffect public void removePropertyChangeListener(
                 @PolyUI PropertyChangeSupport this,
-                String propertyName,
-                PropertyChangeListener listener) {
+                @Nullable String propertyName,
+                @Nullable PropertyChangeListener listener) {
         if (listener == null || propertyName == null) {
             return;
         }
@@ -278,7 +281,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param oldValue      the old value of the property
      * @param newValue      the new value of the property
      */
-    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, @FenumTop Object oldValue, @FenumTop Object newValue) {
+    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, @Nullable @FenumTop Object oldValue, @Nullable @FenumTop Object newValue) {
         if (oldValue == null || newValue == null || !oldValue.equals(newValue)) {
             firePropertyChange(new PropertyChangeEvent(this.source, propertyName, oldValue, newValue));
         }
@@ -352,7 +355,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
         }
     }
 
-    private static void fire(PropertyChangeListener[] listeners, PropertyChangeEvent event) {
+    private static void fire(PropertyChangeListener @Nullable [] listeners, PropertyChangeEvent event) {
         if (listeners != null) {
             for (PropertyChangeListener listener : listeners) {
                 listener.propertyChange(event);
@@ -376,7 +379,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param newValue      the new value of the property
      * @since 1.5
      */
-    @PolyUIEffect public void fireIndexedPropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, int index, Object oldValue, Object newValue) {
+    @PolyUIEffect public void fireIndexedPropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, int index, @Nullable Object oldValue, @Nullable Object newValue) {
         if (oldValue == null || newValue == null || !oldValue.equals(newValue)) {
             firePropertyChange(new IndexedPropertyChangeEvent(source, propertyName, oldValue, newValue, index));
         }
@@ -435,7 +438,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @return true if there are one or more listeners for the given property
      * @since 1.2
      */
-    @PolyUIEffect public boolean hasListeners(@PolyUI PropertyChangeSupport this, String propertyName) {
+    @PolyUIEffect public boolean hasListeners(@PolyUI PropertyChangeSupport this, @Nullable String propertyName) {
         return this.map.hasListeners(propertyName);
     }
 
@@ -505,7 +508,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     /**
      * The object to be provided as the "source" for any generated events.
      */
-    private Object source;
+    private @NotOnlyInitialized Object source;
 
     /**
      * @serialField children                                   Hashtable

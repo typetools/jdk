@@ -187,7 +187,7 @@ public interface Set<E> extends Collection<E> {
      * @return an array containing all the elements in this set
      */
     @SideEffectFree
-    Object[] toArray();
+    @PolyNull Object[] toArray(Set<@PolyNull E> this);
 
     /**
      * Returns an array containing all of the elements in this set; the
@@ -232,7 +232,7 @@ public interface Set<E> extends Collection<E> {
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a);
+    <T> @Nullable T [] toArray(@PolyNull T[] a);
 
 
     // Modification Operations

@@ -267,6 +267,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * This is a slight abuse of generics, accepted by javac.
      */
     @SuppressWarnings("unchecked")
+    @Pure
     static final <E> E elementAt(Object[] es, int i) {
         return (E) es[i];
     }
@@ -426,6 +427,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
         return e;
     }
 
+    @Pure
     public @Nullable E peekFirst() {
         return elementAt(elements, head);
     }
@@ -1084,7 +1086,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return an array containing all of the elements in this deque
      */
     @SideEffectFree
-    public Object[] toArray() {
+    public @PolyNull Object[] toArray(ArrayDeque<@PolyNull E> this) {
         return toArray(Object[].class);
     }
 
