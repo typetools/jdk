@@ -610,7 +610,7 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      *
      * @return  This selector
      */
-    public abstract Selector wakeup();
+    public abstract Selector wakeup(Selector this);
 
     /**
      * Closes this selector.
