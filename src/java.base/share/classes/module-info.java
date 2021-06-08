@@ -82,8 +82,8 @@ module java.base {
     exports org.checkerframework.checker.fenum.qual;
     exports org.checkerframework.checker.formatter.qual;
     exports org.checkerframework.checker.guieffect.qual;
-    exports org.checkerframework.checker.i18nformatter.qual;
     exports org.checkerframework.checker.i18n.qual;
+    exports org.checkerframework.checker.i18nformatter.qual;
     exports org.checkerframework.checker.index.qual;
     exports org.checkerframework.checker.initialization.qual;
     exports org.checkerframework.checker.interning.qual;
@@ -106,6 +106,7 @@ module java.base {
     exports org.checkerframework.common.value.qual;
     exports org.checkerframework.dataflow.qual;
     exports org.checkerframework.framework.qual;
+    exports org.checkerframework.framework.util;
 
     exports java.io;
     exports java.lang;
