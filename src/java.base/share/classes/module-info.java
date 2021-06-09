@@ -106,7 +106,6 @@ module java.base {
     exports org.checkerframework.common.value.qual;
     exports org.checkerframework.dataflow.qual;
     exports org.checkerframework.framework.qual;
-    exports org.checkerframework.framework.util;
 
     exports java.io;
     exports java.lang;
