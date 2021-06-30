@@ -32,6 +32,8 @@ import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.NewObject;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
@@ -7928,7 +7930,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
     @Pure
     @StaticallyExecutable
     @Deprecated(since="9")
-    public Character(char value) {
+    public @PolyValue Character(@PolyValue char value) {
         this.value = value;
     }
 
@@ -7961,7 +7963,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      * @since  1.5
      */
     @HotSpotIntrinsicCandidate
-    public static @PolyValue Character valueOf(@PolyValue char c) {
+    public static @NewObject @PolyValue Character valueOf(@PolyValue char c) {
         if (c <= 127) { // must cache
             return CharacterCache.cache[(int)c];
         }
