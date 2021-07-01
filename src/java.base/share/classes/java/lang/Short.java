@@ -28,7 +28,6 @@ package java.lang;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyIndex;
 import org.checkerframework.checker.index.qual.Positive;
-import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.NewObject;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
@@ -226,7 +225,7 @@ public final class Short extends Number implements Comparable<Short> {
      */
     @SideEffectFree
     @StaticallyExecutable
-    public static @NewObject valueOf(String s) throws NumberFormatException {
+    public static @NewObject Short valueOf(String s) throws NumberFormatException {
         return valueOf(s, 10);
     }
 
