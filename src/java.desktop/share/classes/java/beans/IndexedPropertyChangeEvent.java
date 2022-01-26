@@ -24,6 +24,9 @@
  */
 package java.beans;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * An "IndexedPropertyChange" event gets delivered whenever a component that
  * conforms to the JavaBeans&trade; specification (a "bean") changes a bound
@@ -40,6 +43,7 @@ package java.beans;
  * @since 1.5
  * @author Mark Davidson
  */
+@AnnotatedFor({"nullable"})
 public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
     private static final long serialVersionUID = -320227448495806870L;
 
@@ -56,7 +60,7 @@ public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
      * @param index index of the property element that was changed.
      */
     public IndexedPropertyChangeEvent(Object source, String propertyName,
-                                      Object oldValue, Object newValue,
+                                      @Nullable Object oldValue, @Nullable Object newValue,
                                       int index) {
         super (source, propertyName, oldValue, newValue);
         this.index = index;
