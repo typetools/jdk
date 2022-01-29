@@ -83,7 +83,7 @@ import java.util.Map.Entry;
  * @see PropertyChangeSupport
  * @since 1.1
  */
-@AnnotatedFor({"interning", "nullable"})
+@AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
     private VetoableChangeListenerMap map = new VetoableChangeListenerMap();
 

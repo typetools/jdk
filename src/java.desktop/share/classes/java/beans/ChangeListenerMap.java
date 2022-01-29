@@ -49,7 +49,7 @@ import java.util.Set;
  *
  * @author Sergey A. Malenkov
  */
-@AnnotatedFor({"interning", "nullable"})
+@AnnotatedFor({"interning", "nullness"})
 abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
     private @MonotonicNonNull Map<@Nullable String, L[]> map;
 

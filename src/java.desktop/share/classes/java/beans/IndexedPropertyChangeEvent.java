@@ -43,7 +43,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since 1.5
  * @author Mark Davidson
  */
-@AnnotatedFor({"nullable"})
+@AnnotatedFor({"nullness"})
 public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
     private static final long serialVersionUID = -320227448495806870L;
 
