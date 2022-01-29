@@ -44,6 +44,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Mark Davidson
  */
 @AnnotatedFor({"nullness"})
+@CFComment({"nullness: don't permit null property name, class documentation may ",
+            "be a typo caused by cut-and-paste from PropertyChangeEvent"})
 public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
     private static final long serialVersionUID = -320227448495806870L;
 

@@ -49,6 +49,7 @@ import java.util.Set;
  *
  * @author Sergey A. Malenkov
  */
+@CFComment("nullness: null values are permitted for property names, though not documented in Javadoc")
 @AnnotatedFor({"interning", "nullness"})
 abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
     private @MonotonicNonNull Map<@Nullable String, L[]> map;
