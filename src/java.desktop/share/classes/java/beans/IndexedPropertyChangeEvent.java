@@ -26,6 +26,7 @@ package java.beans;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 /**
  * An "IndexedPropertyChange" event gets delivered whenever a component that
