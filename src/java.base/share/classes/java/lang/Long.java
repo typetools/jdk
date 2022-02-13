@@ -1227,7 +1227,7 @@ public final class Long extends Number implements Comparable<Long> {
     @SideEffectFree
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public static @NewObject @PolyValue @PolySigned Long valueOf(@PolyValue @PolySigned long l) {
+    public static @NewObject @PolyValue Long valueOf(@PolyValue long l) {
         final int offset = 128;
         if (l >= -128 && l <= 127) { // will cache
             return LongCache.cache[(int)l + offset];
@@ -1349,7 +1349,7 @@ public final class Long extends Number implements Comparable<Long> {
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="9")
-    public @PolyIndex @PolyValue @PolySigned Long(@PolyIndex @PolyValue @PolySigned long value) {
+    public @PolyIndex @PolyValue Long(@PolyIndex @PolyValue long value) {
         this.value = value;
     }
 
@@ -1418,7 +1418,7 @@ public final class Long extends Number implements Comparable<Long> {
     @Pure
     @StaticallyExecutable
     @HotSpotIntrinsicCandidate
-    public @PolyIndex @PolyValue @PolySigned long longValue(@PolyIndex @PolyValue @PolySigned Long this) {
+    public @PolyIndex @PolyValue long longValue(@PolyIndex @PolyValue Long this) {
         return value;
     }
 
