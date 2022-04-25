@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -87,6 +88,7 @@ public final @UsesObjectEquals class Objects {
      * @see Object#equals(Object)
      */
     @Pure
+    @EqualsMethod
     public static boolean equals(@GuardSatisfied @Nullable Object a, @GuardSatisfied @Nullable Object b) {
         return (a == b) || (a != null && a.equals(b));
     }
