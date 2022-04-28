@@ -66,6 +66,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.time.LocalTime.SECONDS_PER_DAY;
 import static java.time.temporal.ChronoField.ALIGNED_DAY_OF_WEEK_IN_MONTH;
@@ -142,6 +143,7 @@ import java.util.stream.Stream;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class LocalDate
         implements Temporal, TemporalAdjuster, ChronoLocalDate, Serializable {
 
@@ -542,7 +544,7 @@ public final class LocalDate
      * @return true if the field is supported on this date, false if not
      */
     @Override  // override for Javadoc
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         return ChronoLocalDate.super.isSupported(field);
     }
 
@@ -576,7 +578,7 @@ public final class LocalDate
      * @return true if the unit can be added/subtracted, false if not
      */
     @Override  // override for Javadoc
-    public boolean isSupported(TemporalUnit unit) {
+    public boolean isSupported(@Nullable TemporalUnit unit) {
         return ChronoLocalDate.super.isSupported(unit);
     }
 

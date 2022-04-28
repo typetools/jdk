@@ -64,6 +64,9 @@ package java.time;
 import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
 import static java.time.temporal.ChronoUnit.MONTHS;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.time.chrono.Chronology;
 import java.time.chrono.IsoChronology;
 import java.time.format.DateTimeFormatterBuilder;
@@ -103,6 +106,7 @@ import java.util.Locale;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public enum Month implements TemporalAccessor, TemporalAdjuster {
 
     /**
@@ -275,7 +279,7 @@ public enum Month implements TemporalAccessor, TemporalAdjuster {
      * @return true if the field is supported on this month-of-year, false if not
      */
     @Override
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         if (field instanceof ChronoField) {
             return field == MONTH_OF_YEAR;
         }

@@ -63,6 +63,8 @@ package java.time.temporal;
 
 import java.time.DateTimeException;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Strategy for adjusting a temporal object.
  * <p>
@@ -103,6 +105,7 @@ import java.time.DateTimeException;
  * @since 1.8
  */
 @FunctionalInterface
+@AnnotatedFor({"nullness"})
 public interface TemporalAdjuster {
 
     /**

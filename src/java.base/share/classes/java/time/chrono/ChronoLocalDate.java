@@ -61,6 +61,11 @@
  */
 package java.time.chrono;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.ERA;
 import static java.time.temporal.ChronoField.YEAR;
@@ -238,6 +243,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public interface ChronoLocalDate
         extends Temporal, TemporalAdjuster, Comparable<ChronoLocalDate> {
 
@@ -383,7 +389,7 @@ public interface ChronoLocalDate
      * @return true if the field can be queried, false if not
      */
     @Override
-    default boolean isSupported(TemporalField field) {
+    default boolean isSupported(@Nullable TemporalField field) {
         if (field instanceof ChronoField) {
             return field.isDateBased();
         }
@@ -409,7 +415,7 @@ public interface ChronoLocalDate
      * @return true if the unit can be added/subtracted, false if not
      */
     @Override
-    default boolean isSupported(TemporalUnit unit) {
+    default boolean isSupported(@Nullable TemporalUnit unit) {
         if (unit instanceof ChronoUnit) {
             return unit.isDateBased();
         }
@@ -778,7 +784,9 @@ public interface ChronoLocalDate
      * @return true if this is equal to the other date
      */
     @Override
-    boolean equals(Object obj);
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    boolean equals(@Nullable Object obj);
 
     /**
      * A hash code for this date.

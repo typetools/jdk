@@ -66,6 +66,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.time.temporal.ChronoField.INSTANT_SECONDS;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
@@ -167,6 +168,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public final class ZonedDateTime
         implements Temporal, ChronoZonedDateTime<LocalDate>, Serializable {
 
@@ -369,7 +371,7 @@ public final class ZonedDateTime
      * @param preferredOffset  the zone offset, null if no preference
      * @return the zoned date-time, not null
      */
-    public static ZonedDateTime ofLocal(LocalDateTime localDateTime, ZoneId zone, ZoneOffset preferredOffset) {
+    public static ZonedDateTime ofLocal(LocalDateTime localDateTime, ZoneId zone, @Nullable ZoneOffset preferredOffset) {
         Objects.requireNonNull(localDateTime, "localDateTime");
         Objects.requireNonNull(zone, "zone");
         if (zone instanceof ZoneOffset) {
@@ -707,7 +709,7 @@ public final class ZonedDateTime
      * @return true if the field is supported on this date-time, false if not
      */
     @Override
-    public boolean isSupported(TemporalField field) {
+    public boolean isSupported(@Nullable TemporalField field) {
         return field instanceof ChronoField || (field != null && field.isSupportedBy(this));
     }
 
@@ -748,7 +750,7 @@ public final class ZonedDateTime
      * @return true if the unit can be added/subtracted, false if not
      */
     @Override  // override for Javadoc
-    public boolean isSupported(TemporalUnit unit) {
+    public boolean isSupported(@Nullable TemporalUnit unit) {
         return ChronoZonedDateTime.super.isSupported(unit);
     }
 

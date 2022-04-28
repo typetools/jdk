@@ -66,6 +66,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -143,6 +144,7 @@ import jdk.internal.misc.VM;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public abstract class Clock {
 
     /**

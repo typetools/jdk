@@ -66,6 +66,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -181,6 +182,7 @@ import static java.util.Map.entry;
  *
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public abstract class ZoneId implements Serializable {
 
     /**
