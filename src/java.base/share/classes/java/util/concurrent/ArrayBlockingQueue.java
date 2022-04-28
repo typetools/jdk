@@ -39,6 +39,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.lang.ref.WeakReference;
 import java.util.AbstractQueue;
@@ -88,7 +90,8 @@ import java.util.function.Predicate;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-public class ArrayBlockingQueue<E> extends AbstractQueue<E>
+@AnnotatedFor({"nullness"})
+public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         implements BlockingQueue<E>, java.io.Serializable {
 
     /*
@@ -510,7 +513,8 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@Nullable Object o) {
+    @CFComment("probably accepts null in practice, but docs at best imply this")
+    public boolean remove(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -542,7 +546,8 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * @param o object to be checked for containment in this queue
      * @return {@code true} if this queue contains the specified element
      */
-    public boolean contains(@Nullable Object o) {
+    @CFComment("probably accepts null in practice, but docs at best imply this")
+    public boolean contains(Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -1479,7 +1484,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1487,7 +1492,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

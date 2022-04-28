@@ -145,7 +145,7 @@ import java.util.function.Consumer;
  * @see         java.lang.ref.WeakReference
  */
 @CFComment({"lock: permits null keys and values"})
-@AnnotatedFor({"lock", "index"})
+@AnnotatedFor({"lock", "index", "nullness"})
 public class WeakHashMap<K,V>
     extends AbstractMap<K,V>
     implements Map<K,V> {
