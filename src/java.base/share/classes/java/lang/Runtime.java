@@ -357,7 +357,7 @@ public @UsesObjectEquals class Runtime {
      * @see     #exec(String[], String[], File)
      * @see     ProcessBuilder
      */
-    public Process exec(@Untainted command, String @Nullable [] envp) throws IOException {
+    public Process exec(@Untainted String command, String @Nullable [] envp) throws IOException {
         return exec(command, envp, null);
     }
 
