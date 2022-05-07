@@ -194,7 +194,7 @@ import sun.security.action.GetPropertyAction;
 @AnnotatedFor({"nullness", "tainting"})
 public final class ProcessBuilder
 {
-    private List<@Untainted String> command;
+    private List<String> command;
     private File directory;
     private Map<String,String> environment;
     private boolean redirectErrorStream;
