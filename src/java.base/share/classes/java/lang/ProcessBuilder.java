@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.tainting.qual.Untainted;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.File;
@@ -190,10 +191,10 @@ import sun.security.action.GetPropertyAction;
  * @since 1.5
  */
 
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullness", "tainting"})
 public final class ProcessBuilder
 {
-    private List<String> command;
+    private List<@Untainted String> command;
     private File directory;
     private Map<String,String> environment;
     private boolean redirectErrorStream;
@@ -210,7 +211,7 @@ public final class ProcessBuilder
      *
      * @param  command the list containing the program and its arguments
      */
-    public ProcessBuilder(List<String> command) {
+    public ProcessBuilder(List<@Untainted String> command) {
         if (command == null)
             throw new NullPointerException();
         this.command = command;
@@ -227,7 +228,7 @@ public final class ProcessBuilder
      *
      * @param command a string array containing the program and its arguments
      */
-    public ProcessBuilder(String... command) {
+    public ProcessBuilder(@Untainted String... command) {
         this.command = new ArrayList<>(command.length);
         for (String arg : command)
             this.command.add(arg);
@@ -244,7 +245,7 @@ public final class ProcessBuilder
      * @param  command the list containing the program and its arguments
      * @return this process builder
      */
-    public ProcessBuilder command(List<String> command) {
+    public ProcessBuilder command(List<@Untainted String> command) {
         if (command == null)
             throw new NullPointerException();
         this.command = command;
@@ -262,7 +263,7 @@ public final class ProcessBuilder
      * @param  command a string array containing the program and its arguments
      * @return this process builder
      */
-    public ProcessBuilder command(String... command) {
+    public ProcessBuilder command(@Untainted String... command) {
         this.command = new ArrayList<>(command.length);
         for (String arg : command)
             this.command.add(arg);
