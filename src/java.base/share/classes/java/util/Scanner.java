@@ -33,6 +33,7 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -1220,7 +1221,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param pattern A delimiting pattern
      * @return this scanner
      */
-    public Scanner useDelimiter(Pattern pattern) {
+    public @This Scanner useDelimiter(Pattern pattern) {
         modCount++;
         delimPattern = pattern;
         return this;
@@ -1240,7 +1241,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param pattern A string specifying a delimiting pattern
      * @return this scanner
      */
-    public Scanner useDelimiter(String pattern) {
+    public @This Scanner useDelimiter(String pattern) {
         modCount++;
         delimPattern = patternCache.forName(pattern);
         return this;
@@ -1272,7 +1273,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param locale A string specifying the locale to use
      * @return this scanner
      */
-    public Scanner useLocale(Locale locale) {
+    public @This Scanner useLocale(Locale locale) {
         if (locale.equals(this.locale))
             return this;
 
@@ -1361,7 +1362,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return this scanner
      * @throws IllegalArgumentException if radix is out of range
      */
-    public Scanner useRadix(@IntRange(from = 2, to = 36) int radix) {
+    public @This Scanner useRadix(@IntRange(from = 2, to = 36) int radix) {
         if ((radix < Character.MIN_RADIX) || (radix > Character.MAX_RADIX))
             throw new IllegalArgumentException("radix:"+radix);
 
@@ -1837,7 +1838,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the specified pattern is not found
      * @throws IllegalStateException if this scanner is closed
      */
-    public Scanner skip(@GuardSatisfied Scanner this, Pattern pattern) {
+    public @This Scanner skip(@GuardSatisfied Scanner this, Pattern pattern) {
         ensureOpen();
         if (pattern == null)
             throw new NullPointerException();
@@ -1870,7 +1871,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return this scanner
      * @throws IllegalStateException if this scanner is closed
      */
-    public Scanner skip(@GuardSatisfied Scanner this, String pattern) {
+    public @This Scanner skip(@GuardSatisfied Scanner this, String pattern) {
         return skip(patternCache.forName(pattern));
     }
 
@@ -2784,7 +2785,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      *
      * @since 1.6
      */
-    public Scanner reset(@GuardSatisfied Scanner this) {
+    public @This Scanner reset(@GuardSatisfied Scanner this) {
         delimPattern = WHITESPACE_PATTERN;
         useLocale(Locale.getDefault(Locale.Category.FORMAT));
         useRadix(10);
