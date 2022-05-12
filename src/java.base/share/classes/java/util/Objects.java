@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -240,7 +241,7 @@ public final @UsesObjectEquals class Objects {
      */
     @CFComment({"lock: TODO: treat like other nullness assertion methods in the Checker Framework."})
     @EnsuresNonNull("#1")
-    public static <T> @NonNull T requireNonNull(@NonNull T obj) {
+    public static <T> @NonNull @PolyMustCall T requireNonNull(@NonNull @PolyMustCall T obj) {
         if (obj == null)
             throw new NullPointerException();
         return obj;
