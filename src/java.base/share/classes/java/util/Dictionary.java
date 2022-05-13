@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -122,7 +123,7 @@ class Dictionary<K,V> {
      * @see     java.util.Dictionary#put(java.lang.Object, java.lang.Object)
      */
     @Pure
-    public abstract @Nullable V get(@GuardSatisfied Dictionary<K, V> this, Object key);
+    public abstract @Nullable V get(@GuardSatisfied Dictionary<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
 
     /**
      * Maps the specified {@code key} to the specified

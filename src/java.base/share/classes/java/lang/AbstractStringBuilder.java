@@ -519,7 +519,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * @param   obj   an {@code Object}.
      * @return  a reference to this object.
      */
-    public AbstractStringBuilder append(Object obj) {
+    public AbstractStringBuilder append(@GuardSatisfied @Nullable Object obj) {
         return append(String.valueOf(obj));
     }
 
@@ -1089,7 +1089,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * @return     a reference to this object.
      * @throws     StringIndexOutOfBoundsException  if the offset is invalid.
      */
-    public AbstractStringBuilder insert(@NonNegative int offset, Object obj) {
+    public AbstractStringBuilder insert(@NonNegative int offset, @GuardSatisfied @Nullable Object obj) {
         return insert(offset, String.valueOf(obj));
     }
 

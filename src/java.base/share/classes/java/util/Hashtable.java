@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -397,7 +398,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Pure
     @SuppressWarnings("unchecked")
-    public synchronized @Nullable V get(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object key) {
+    public synchronized @Nullable V get(@GuardSatisfied Hashtable<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
         int index = (hash & 0x7FFFFFFF) % tab.length;

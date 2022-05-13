@@ -176,7 +176,7 @@ public final class StringBuilder
     }
 
     @Override
-    public StringBuilder append(@Nullable Object obj) {
+    public StringBuilder append(@GuardSatisfied @Nullable Object obj) {
         return append(String.valueOf(obj));
     }
 
@@ -330,7 +330,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public StringBuilder insert(@NonNegative int offset, @Nullable Object obj) {
+    public StringBuilder insert(@NonNegative int offset, @GuardSatisfied @Nullable Object obj) {
             super.insert(offset, obj);
             return this;
     }
