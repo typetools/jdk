@@ -25,6 +25,8 @@
 
 package sun.util.resources;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.AbstractSet;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -125,6 +127,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
     }
 
     @Override
+    @Pure
     public boolean containsKey(String key) {
         return keySet().contains(key);
     }

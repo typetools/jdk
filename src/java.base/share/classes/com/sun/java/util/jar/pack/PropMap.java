@@ -25,6 +25,8 @@
 
 package com.sun.java.util.jar.pack;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -256,6 +258,7 @@ final class PropMap implements SortedMap<String, String>  {
     }
 
     @Override
+    @Pure
     public boolean containsKey(Object key) {
         return theMap.containsKey(key);
     }
