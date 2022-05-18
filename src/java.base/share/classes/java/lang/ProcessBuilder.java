@@ -278,7 +278,7 @@ public final class ProcessBuilder
      *
      * @return this process builder's program and its arguments
      */
-    public List<String> command() {
+    public List<@Untainted String> command() {
         return command;
     }
 
