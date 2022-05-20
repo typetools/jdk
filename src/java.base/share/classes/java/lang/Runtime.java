@@ -357,7 +357,7 @@ public @UsesObjectEquals class Runtime {
      * @see     #exec(String[], String[], File)
      * @see     ProcessBuilder
      */
-    public Process exec(@Untainted String command, String @Nullable [] envp) throws IOException {
+    public Process exec(@Untainted String command, @Untainted String @Nullable [] envp) throws IOException {
         return exec(command, envp, null);
     }
 
@@ -411,7 +411,7 @@ public @UsesObjectEquals class Runtime {
      * @see     ProcessBuilder
      * @since 1.3
      */
-    public Process exec(@Untainted String command, String @Nullable [] envp, @Nullable File dir)
+    public Process exec(@Untainted String command, @Untainted String @Nullable [] envp, @Nullable File dir)
         throws IOException {
         if (command.length() == 0)
             throw new IllegalArgumentException("Empty command");
@@ -497,7 +497,7 @@ public @UsesObjectEquals class Runtime {
      *
      * @see     ProcessBuilder
      */
-    public Process exec(@Untainted String[] cmdarray, String @Nullable [] envp) throws IOException {
+    public Process exec(@Untainted String[] cmdarray, @Untainted String @Nullable [] envp) throws IOException {
         return exec(cmdarray, envp, null);
     }
 
@@ -591,7 +591,7 @@ public @UsesObjectEquals class Runtime {
      * @see     ProcessBuilder
      * @since 1.3
      */
-    public Process exec(@Untainted String[] cmdarray, String @Nullable [] envp, @Nullable File dir)
+    public Process exec(@Untainted String[] cmdarray, @Untainted String @Nullable [] envp, @Nullable File dir)
         throws IOException {
         return new ProcessBuilder(cmdarray)
             .environment(envp)
