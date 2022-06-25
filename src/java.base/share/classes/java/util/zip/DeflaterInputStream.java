@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.FilterInputStream;
@@ -81,7 +82,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @param in input stream to read the uncompressed data to
      * @throws NullPointerException if {@code in} is null
      */
-    public DeflaterInputStream(InputStream in) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in) {
         this(in, new Deflater());
         usesDefaultDeflater = true;
     }
@@ -94,7 +95,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @param defl compressor ("deflater") for this stream
      * @throws NullPointerException if {@code in} or {@code defl} is null
      */
-    public DeflaterInputStream(InputStream in, Deflater defl) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in, Deflater defl) {
         this(in, defl, 512);
     }
 
@@ -108,7 +109,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @throws IllegalArgumentException if {@code bufLen <= 0}
      * @throws NullPointerException if {@code in} or {@code defl} is null
      */
-    public DeflaterInputStream(InputStream in, Deflater defl, @Positive int bufLen) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in, Deflater defl, @Positive int bufLen) {
         super(in);
 
         // Sanity checks

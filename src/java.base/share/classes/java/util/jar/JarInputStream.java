@@ -25,6 +25,7 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -62,7 +63,7 @@ class JarInputStream extends ZipInputStream {
      * @param in the actual input stream
      * @exception IOException if an I/O error has occurred
      */
-    public JarInputStream(InputStream in) throws IOException {
+    public @MustCallAlias JarInputStream(@MustCallAlias InputStream in) throws IOException {
         this(in, true);
     }
 
@@ -76,7 +77,7 @@ class JarInputStream extends ZipInputStream {
      * it is signed.
      * @exception IOException if an I/O error has occurred
      */
-    public JarInputStream(InputStream in, boolean verify) throws IOException {
+    public @MustCallAlias JarInputStream(@MustCallAlias InputStream in, boolean verify) throws IOException {
         super(in);
         this.doVerify = verify;
 

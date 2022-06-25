@@ -28,6 +28,7 @@ package java.io;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -67,7 +68,7 @@ class PipedOutputStream extends OutputStream {
      * @param      snk   The piped input stream to connect to.
      * @exception  IOException  if an I/O error occurs.
      */
-    public PipedOutputStream(PipedInputStream snk)  throws IOException {
+    public @MustCallAlias PipedOutputStream(@MustCallAlias PipedInputStream snk)  throws IOException {
         connect(snk);
     }
 

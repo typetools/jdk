@@ -26,6 +26,7 @@
 package java.util.zip;
 
 import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -121,7 +122,7 @@ class ZipOutputStream extends DeflaterOutputStream implements ZipConstants {
      *
      * @param out the actual output stream
      */
-    public ZipOutputStream(OutputStream out) {
+    public @MustCallAlias ZipOutputStream(@MustCallAlias OutputStream out) {
         this(out, StandardCharsets.UTF_8);
     }
 
@@ -135,7 +136,7 @@ class ZipOutputStream extends DeflaterOutputStream implements ZipConstants {
      *
      * @since 1.7
      */
-    public ZipOutputStream(OutputStream out, Charset charset) {
+    public @MustCallAlias ZipOutputStream(@MustCallAlias OutputStream out, Charset charset) {
         super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
         if (charset == null)
             throw new NullPointerException("charset is null");

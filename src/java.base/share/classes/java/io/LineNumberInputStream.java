@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -68,7 +69,7 @@ class LineNumberInputStream extends FilterInputStream {
      *
      * @param      in   the underlying input stream.
      */
-    public LineNumberInputStream(InputStream in) {
+    public @MustCallAlias LineNumberInputStream(@MustCallAlias InputStream in) {
         super(in);
     }
 

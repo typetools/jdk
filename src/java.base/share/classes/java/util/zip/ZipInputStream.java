@@ -28,6 +28,7 @@ package java.util.zip;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
@@ -83,7 +84,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      *
      * @param in the actual input stream
      */
-    public ZipInputStream(InputStream in) {
+    public @MustCallAlias ZipInputStream(@MustCallAlias InputStream in) {
         this(in, StandardCharsets.UTF_8);
     }
 
@@ -101,7 +102,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      *
      * @since 1.7
      */
-    public ZipInputStream(InputStream in, Charset charset) {
+    public @MustCallAlias ZipInputStream(@MustCallAlias InputStream in, Charset charset) {
         super(new PushbackInputStream(in, 512), new Inflater(true), 512);
         usesDefaultInflater = true;
         if (in == null) {

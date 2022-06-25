@@ -28,6 +28,7 @@ package java.util.zip;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -82,7 +83,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      *
      * @since 1.7
      */
-    public DeflaterOutputStream(OutputStream out,
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out,
                                 Deflater def,
                                 @Positive int size,
                                 boolean syncFlush) {
@@ -110,7 +111,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      * @param size the output buffer size
      * @exception IllegalArgumentException if {@code size <= 0}
      */
-    public DeflaterOutputStream(OutputStream out, Deflater def, @Positive int size) {
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out, Deflater def, @Positive int size) {
         this(out, def, size, false);
     }
 
@@ -128,7 +129,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      *
      * @since 1.7
      */
-    public DeflaterOutputStream(OutputStream out,
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out,
                                 Deflater def,
                                 boolean syncFlush) {
         this(out, def, 512, syncFlush);
@@ -145,7 +146,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      * @param out the output stream
      * @param def the compressor ("deflater")
      */
-    public DeflaterOutputStream(OutputStream out, Deflater def) {
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out, Deflater def) {
         this(out, def, 512, false);
     }
 
@@ -165,7 +166,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      *
      * @since 1.7
      */
-    public DeflaterOutputStream(OutputStream out, boolean syncFlush) {
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out, boolean syncFlush) {
         this(out, new Deflater(), 512, syncFlush);
         usesDefaultDeflater = true;
     }
@@ -178,7 +179,7 @@ class DeflaterOutputStream extends FilterOutputStream {
      *
      * @param out the output stream
      */
-    public DeflaterOutputStream(OutputStream out) {
+    public @MustCallAlias DeflaterOutputStream(@MustCallAlias OutputStream out) {
         this(out, false);
         usesDefaultDeflater = true;
     }
