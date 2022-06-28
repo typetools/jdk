@@ -5151,6 +5151,9 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
+    @CFComment({"The @PolyMustCall annotations don't make sense, because toString",
+      "shouldn't care about MustCall types, especially of the array.  However,",
+      "without these annotations, calls to Arrays.toString yield a MustCall error."})
     public static @MinLen(2) String toString(@PolyMustCall @PolyNull @PolyInterned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
