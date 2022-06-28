@@ -37,8 +37,9 @@ import static org.junit.Assert.*;
  * @summary unit tests to assert Wrapper zero identities and conversion behave correctly
  * @modules java.base/sun.invoke.util
  * @compile -XDignore.symbol.file WrapperTest.java
- * @run junit test.sun.invoke.util.WrapperTest
  */
+// Test harness cannot find junit.jar in .../jtreg/lib/ .
+//  * @run junit test.sun.invoke.util.WrapperTest
 public class WrapperTest {
 
     @Test
