@@ -659,7 +659,7 @@ public class IdentityHashMap<K,V>
      * @see Object#equals(Object)
      */
     @Pure
-    public boolean equals(@GuardSatisfied @Nullable IdentityHashMap<K, V> this, @GuardSatisfied Object o) {
+    public boolean equals(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable Object o) {
         if (o == this) {
             return true;
         } else if (o instanceof IdentityHashMap) {
