@@ -12,7 +12,7 @@ jobs:
       ls -al
       env | sort
     displayName: show environment
-  - bash: pwd && ls && bash ./configure --with-jtreg=/jtreg --disable-warnings-as-errors
+  - bash: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
     displayName: configure
   - bash: make jdk
     timeoutInMinutes: 90
@@ -57,7 +57,7 @@ jobs:
       eval `/tmp/$USER/plume-scripts/ci-info typetools`
       cd ../jdk11u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README" && false)
     displayName: git merge
-  - bash: cd ../jdk11u && export JT_HOME=/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
+  - bash: cd ../jdk11u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
     displayName: configure
   - bash: cd ../jdk11u && make jdk
     displayName: make jdk
