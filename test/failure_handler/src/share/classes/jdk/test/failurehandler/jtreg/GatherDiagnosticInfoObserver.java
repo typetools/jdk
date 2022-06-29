@@ -120,7 +120,7 @@ public class GatherDiagnosticInfoObserver implements Harness.Observer {
         // TODO find a better way to get JDKs
         InterviewParameters rp = (InterviewParameters) params;
         Map<?,?> map = new HashMap<>();
-        // rp.save(map);
+        rp.save(map);
         compileJdk = (String) map.get("regtest.compilejdk");
         testJdk = (String) map.get("regtest.testjdk");
     }
