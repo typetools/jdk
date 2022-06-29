@@ -67,9 +67,11 @@ public class DeprecatePack200 {
         { UNPACK200_MSG, 0, List.of(UNPACK200_CMD, "-h", "-XDsuppress-tool-removal-message") }
     };
 
+    /*
     @Test(dataProvider = "tools")
     public void CheckWarnings(Predicate<String> msg, long count, List<String> cmd) {
         List<String> output = Utils.runExec(cmd, null, true);
         assertEquals(output.stream().filter(msg).count(), count);
     }
+    */
 }
