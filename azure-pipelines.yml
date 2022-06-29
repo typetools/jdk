@@ -120,6 +120,21 @@ jobs:
 #     condition: failed()
 #     displayName: publish all.tgz
 
+- job: test_cftests_all_jdk17
+  timeoutInMinutes: 90
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth 1 -q https://github.com/plume-lib/plume-scripts.git
+    displayName: clone plume-scripts
+  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+    displayName: clone checker-framework
+  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
+    displayName: test-cftests-all.sh
+
 - job: test_daikon
   pool:
     vmImage: 'ubuntu-latest'
