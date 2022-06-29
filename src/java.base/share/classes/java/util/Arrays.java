@@ -31,6 +31,8 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.SearchIndexFor;
 import org.checkerframework.checker.interning.qual.PolyInterned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
+import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -39,6 +41,7 @@ import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.util.ArraysSupport;
@@ -5149,7 +5152,10 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String toString(@PolyNull @PolyInterned Object @Nullable [] a) {
+    @CFComment({"The @PolyMustCall annotations don't make sense, because toString",
+      "shouldn't care about MustCall types, especially of the array.  However,",
+      "without these annotations, calls to Arrays.toString yield a MustCall error."})
+    public static @MinLen(2) String toString(@PolyMustCall @PolyNull @PolyInterned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
@@ -5201,7 +5207,7 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String deepToString(@PolyNull @PolyInterned Object @Nullable [] a) {
+    public static @MinLen(2) String deepToString(@PolyMustCall @PolyNull @PolyInterned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 

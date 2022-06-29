@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.FilterInputStream;
@@ -85,7 +86,7 @@ class InflaterInputStream extends FilterInputStream {
      * @param size the input buffer size
      * @exception IllegalArgumentException if {@code size <= 0}
      */
-    public InflaterInputStream(InputStream in, Inflater inf, @Positive int size) {
+    public @MustCallAlias InflaterInputStream(@MustCallAlias InputStream in, Inflater inf, @Positive int size) {
         super(in);
         if (in == null || inf == null) {
             throw new NullPointerException();
@@ -102,7 +103,7 @@ class InflaterInputStream extends FilterInputStream {
      * @param in the input stream
      * @param inf the decompressor ("inflater")
      */
-    public InflaterInputStream(InputStream in, Inflater inf) {
+    public @MustCallAlias InflaterInputStream(@MustCallAlias InputStream in, Inflater inf) {
         this(in, inf, 512);
     }
 
@@ -112,7 +113,7 @@ class InflaterInputStream extends FilterInputStream {
      * Creates a new input stream with a default decompressor and buffer size.
      * @param in the input stream
      */
-    public InflaterInputStream(InputStream in) {
+    public @MustCallAlias InflaterInputStream(@MustCallAlias InputStream in) {
         this(in, new Inflater());
         usesDefaultInflater = true;
     }

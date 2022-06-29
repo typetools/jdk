@@ -31,6 +31,7 @@ import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -91,7 +92,7 @@ public class Object {
     @SafeEffect
     @Pure
     @HotSpotIntrinsicCandidate
-    public final native Class<?> getClass(@PolyUI @GuardSatisfied @UnknownInitialization Object this);
+    public final native Class<? extends @MustCall() Object> getClass(@PolyUI @GuardSatisfied @UnknownInitialization Object this);
 
     /**
      * Returns a hash code value for the object. This method is

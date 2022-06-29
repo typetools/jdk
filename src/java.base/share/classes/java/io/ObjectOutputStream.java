@@ -28,6 +28,7 @@ package java.io;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -246,7 +247,7 @@ public class ObjectOutputStream
      * @see     ObjectOutputStream#putFields()
      * @see     ObjectInputStream#ObjectInputStream(InputStream)
      */
-    public ObjectOutputStream(OutputStream out) throws IOException {
+    public @MustCallAlias ObjectOutputStream(@MustCallAlias OutputStream out) throws IOException {
         verifySubclass();
         bout = new BlockDataOutputStream(out);
         handles = new HandleTable(10, (float) 3.00);

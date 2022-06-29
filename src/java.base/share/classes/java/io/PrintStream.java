@@ -119,7 +119,7 @@ public class PrintStream extends FilterOutputStream
     }
 
     /* Private constructors */
-    private PrintStream(boolean autoFlush, OutputStream out) {
+    private @MustCallAlias PrintStream(boolean autoFlush, @MustCallAlias OutputStream out) {
         super(out);
         this.autoFlush = autoFlush;
         this.charOut = new OutputStreamWriter(this);
@@ -131,7 +131,7 @@ public class PrintStream extends FilterOutputStream
      * by constructors creating a FileOutputStream that also take a
      * charset name.
      */
-    private PrintStream(boolean autoFlush, Charset charset, OutputStream out) {
+    private @MustCallAlias PrintStream(boolean autoFlush, Charset charset, @MustCallAlias OutputStream out) {
         this(out, autoFlush, charset);
     }
 

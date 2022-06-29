@@ -30,9 +30,11 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -377,7 +379,11 @@ public
      * @throws IOException if an I/O error has occurred
      * @throws IllegalStateException if the zip file has been closed
      */
-    public @Nullable InputStream getInputStream(ZipEntry entry) throws IOException {
+    @CFComment({"These @MustCallAlias annotations might not be right.  The",
+      "Javadoc documentation above is not clear.  It seems that closing the",
+      "ZipEntry does close the InputStream, but it is not clear that closing",
+      "the InputStream also closes the ZipEntry."})
+    public @Nullable @MustCallAlias InputStream getInputStream(@MustCallAlias ZipEntry entry) throws IOException {
         Objects.requireNonNull(entry, "entry");
         int pos = -1;
         ZipFileInputStream in;

@@ -31,6 +31,7 @@ import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -111,7 +112,7 @@ public class PipedInputStream extends InputStream {
      * @param      src   the stream to connect to.
      * @exception  IOException  if an I/O error occurs.
      */
-    public PipedInputStream(PipedOutputStream src) throws IOException {
+    public @MustCallAlias PipedInputStream(@MustCallAlias PipedOutputStream src) throws IOException {
         this(src, DEFAULT_PIPE_SIZE);
     }
 
@@ -129,7 +130,7 @@ public class PipedInputStream extends InputStream {
      * @exception  IllegalArgumentException if {@code pipeSize <= 0}.
      * @since      1.6
      */
-    public PipedInputStream(PipedOutputStream src, @Positive int pipeSize)
+    public @MustCallAlias PipedInputStream(@MustCallAlias PipedOutputStream src, @Positive int pipeSize)
             throws IOException {
          initPipe(pipeSize);
          connect(src);
