@@ -68,9 +68,10 @@ jobs:
   #   timeoutInMinutes: 0
   #   displayName: make run-test-tier1
   # - bash: make -C /jdk11u :test/jdk:tier1
-  - bash: cd ../jdk11u && make run-test TEST="jtreg:test/jdk:tier1"
-    timeoutInMinutes: 0
-    displayName: make run-test
+  ## Temporarily comment out because of trouble finding junit and jasm
+  # - bash: cd ../jdk11u && make run-test TEST="jtreg:test/jdk:tier1"
+  #   timeoutInMinutes: 0
+  #   displayName: make run-test
 
 - job: test_cftests_all_jdk8
   pool:
