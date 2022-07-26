@@ -25,6 +25,7 @@
 
 package java.io;
 
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
@@ -71,7 +72,7 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      *
      * @since 11
      */
-    public static OutputStream nullOutputStream() {
+    public static @MustCall() OutputStream nullOutputStream() {
         return new OutputStream() {
             private volatile boolean closed;
 
