@@ -85,7 +85,7 @@ public abstract class InputStream implements Closeable {
      *
      * @since 11
      */
-    public static InputStream nullInputStream() {
+    public static @MustCall() InputStream nullInputStream() {
         return new InputStream() {
             private volatile boolean closed;
 

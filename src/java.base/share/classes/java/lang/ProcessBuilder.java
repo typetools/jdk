@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -430,6 +431,7 @@ public final class ProcessBuilder
     /**
      * Implements a <a href="#redirect-output">null input stream</a>.
      */
+    @MustCall()
     static class NullInputStream extends InputStream {
         static final NullInputStream INSTANCE = new NullInputStream();
         private NullInputStream() {}
@@ -440,6 +442,7 @@ public final class ProcessBuilder
     /**
      * Implements a <a href="#redirect-input">null output stream</a>.
      */
+    @MustCall()
     static class NullOutputStream extends OutputStream {
         static final NullOutputStream INSTANCE = new NullOutputStream();
         private NullOutputStream() {}
