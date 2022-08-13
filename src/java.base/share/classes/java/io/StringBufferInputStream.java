@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -49,8 +50,9 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *             of JDK&nbsp;1.1, the preferred way to create a stream from a
  *             string is via the <code>StringReader</code> class.
  */
-@AnnotatedFor({"nullness", "index"})
+@AnnotatedFor({"index", "nullness", "mustcall"})
 @Deprecated
+@InheritableMustCall({})
 public
 class StringBufferInputStream extends InputStream {
     /**

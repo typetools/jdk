@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -48,7 +49,8 @@ import java.util.Arrays;
  * @author      Herb Jellinek
  * @since       1.1
  */
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"index", "lock", "mustcall", "nullness"})
+@InheritableMustCall({})
 public
 class CharArrayWriter extends Writer {
     /**
