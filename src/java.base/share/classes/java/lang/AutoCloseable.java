@@ -27,6 +27,7 @@ package java.lang;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 /**
  * An object that may hold resources (such as file or socket handles)
@@ -51,6 +52,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Josh Bloch
  * @since 1.7
  */
+@CFComment("Not `InheritableMustCall(close) because the Stream interface extends AutoCloseable, but most Streams do not need to be closed.")
 @AnnotatedFor({"lock"})
 public interface AutoCloseable {
     /**
