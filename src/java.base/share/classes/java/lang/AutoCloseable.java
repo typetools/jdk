@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -52,8 +53,8 @@ import org.checkerframework.framework.qual.CFComment;
  * @author Josh Bloch
  * @since 1.7
  */
-@CFComment("Not `InheritableMustCall(close) because the Stream interface extends AutoCloseable, but most Streams do not need to be closed.")
-@AnnotatedFor({"lock"})
+@AnnotatedFor({"lock", "mustcall", "nullness"})
+@InheritableMustCall("close")
 public interface AutoCloseable {
     /**
      * Closes this resource, relinquishing any underlying resources.
