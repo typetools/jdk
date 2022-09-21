@@ -26,7 +26,6 @@
 package java.io;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
-import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -40,7 +39,6 @@ import java.io.IOException;
  * @since 1.5
  */
 @AnnotatedFor({"lock", "mustcall", "nullness"})
-@InheritableMustCall("close")
 public interface Closeable extends AutoCloseable {
 
     /**
