@@ -537,7 +537,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the directory.
      */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+    public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
         throws IOException
     {
         // avoid creating a matcher if all entries are required.
@@ -613,7 +613,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the directory.
      */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir,
+    public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir,
                                                            DirectoryStream.Filter<? super Path> filter)
         throws IOException
     {
@@ -2921,7 +2921,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see #readAllLines
      */
-    public static @MustCall("close") BufferedReader newBufferedReader(Path path, Charset cs)
+    public static BufferedReader newBufferedReader(Path path, Charset cs)
         throws IOException
     {
         CharsetDecoder decoder = cs.newDecoder();
@@ -3975,7 +3975,7 @@ public final @UsesObjectEquals class Files {
      * @see     #walk(Path, int, FileVisitOption...)
      * @since   1.8
      */
-    public static Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
+    public static @MustCall("close") Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
         return walk(start, Integer.MAX_VALUE, options);
     }
 
@@ -4127,7 +4127,7 @@ public final @UsesObjectEquals class Files {
      * @see     java.io.BufferedReader#lines()
      * @since   1.8
      */
-    public static Stream<String> lines(Path path, Charset cs) throws IOException {
+    public static @MustCall("close") Stream<String> lines(Path path, Charset cs) throws IOException {
         // Use the good splitting spliterator if:
         // 1) the path is associated with the default file system;
         // 2) the character set is supported; and
@@ -4229,7 +4229,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
-    public static Stream<String> lines(Path path) throws IOException {
+    public static @MustCall("close") Stream<String> lines(Path path) throws IOException {
         return lines(path, UTF_8.INSTANCE);
     }
 }
