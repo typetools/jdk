@@ -53,7 +53,10 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since 1.7
  */
 @AnnotatedFor({"lock", "mustcall", "nullness"})
-@InheritableMustCall("close")
+@CFComment({"MustCall:  Do not write @InheritableMustCall(close) because doing so requires",
+  "writing @InheritableMustCall({}) on Stream, and that leads to a `annotations.on.use` error at",
+  "every type use like `@MustCall(close) Stream.  Instead, write `@MustCall(close)` on every",
+  "appropriate class that implements AutoCloseable (which includes a few, but not most, Streams)."})
 public interface AutoCloseable {
     /**
      * Closes this resource, relinquishing any underlying resources.
