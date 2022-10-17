@@ -238,7 +238,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         return isValidKey(key) && vals[((Enum<?>)key).ordinal()] != null;
     }
 
-    private boolean containsMapping(@GuardSatisfied @UnknownSignedness Object, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    private boolean containsMapping(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return isValidKey(key) &&
             maskNull(value).equals(vals[((Enum<?>)key).ordinal()]);
     }
