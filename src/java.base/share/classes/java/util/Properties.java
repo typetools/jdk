@@ -30,6 +30,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.propkey.qual.PropertyKey;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -1297,13 +1298,13 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
-    public boolean containsValue(Object value) {
+    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
     @Override
     @Pure
-    public boolean containsKey(Object key) {
+    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.containsKey(key);
     }
 
@@ -1318,7 +1319,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized Object remove(Object key) {
+    public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
@@ -1431,7 +1432,7 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
-    public Object getOrDefault(Object key, Object defaultValue) {
+    public Object getOrDefault(@GuardSatisfied @Nullable @UnknownSignedness Object key, Object defaultValue) {
         return map.getOrDefault(key, defaultValue);
     }
 
@@ -1451,7 +1452,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized boolean remove(Object key, Object value) {
+    public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 

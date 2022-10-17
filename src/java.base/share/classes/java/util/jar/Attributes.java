@@ -28,6 +28,7 @@ package java.util.jar;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -200,7 +201,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
-    public Object remove(Object name) {
+    public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
 
@@ -213,7 +214,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         the specified value
      */
     @Pure
-    public boolean containsValue(Object value) {
+    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
@@ -224,7 +225,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return true if this Map contains the specified attribute name
      */
     @Pure
-    public boolean containsKey(Object name) {
+    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.containsKey(name);
     }
 
