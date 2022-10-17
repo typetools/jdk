@@ -979,7 +979,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object) {
+    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
         return get(key) != null;
     }
 

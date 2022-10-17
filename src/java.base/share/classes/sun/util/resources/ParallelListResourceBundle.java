@@ -129,7 +129,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
 
     @Override
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object String key) {
+    public boolean containsKey(@GuardSatisfied @UnknownSignedness String key) {
         return keySet().contains(key);
     }
 
