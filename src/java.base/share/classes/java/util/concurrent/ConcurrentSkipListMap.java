@@ -1298,7 +1298,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified key is null
      */
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object) {
+    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
         return doGet(key) != null;
     }
 
