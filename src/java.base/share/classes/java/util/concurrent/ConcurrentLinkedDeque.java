@@ -35,10 +35,12 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -1084,7 +1086,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} if this deque contains the specified element
      */
     @Pure
-    public boolean contains(@Nullable Object o) {
+    public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         if (o != null) {
             for (Node<E> p = first(); p != null; p = succ(p)) {
                 final E item;
@@ -1151,7 +1153,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} if the deque contained the specified element
      * @throws NullPointerException if the specified element is null
      */
-    public boolean remove(Object o) {
+    public boolean remove(@GuardSatisfied @UnknownSignedness Object o) {
         return removeFirstOccurrence(o);
     }
 

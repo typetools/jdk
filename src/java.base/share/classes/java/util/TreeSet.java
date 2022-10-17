@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -246,7 +247,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      */
     @Pure
-    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.containsKey(o);
     }
 
@@ -288,7 +289,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
      */
-    public boolean remove(@GuardSatisfied TreeSet<E> this, Object o) {
+    public boolean remove(@GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.remove(o)==PRESENT;
     }
 

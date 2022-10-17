@@ -325,7 +325,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws     NullPointerException  if the value is {@code null}
      */
     @Pure
-    public synchronized boolean contains(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object value) {
+    public synchronized boolean contains(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
         if (value == null) {
             throw new NullPointerException();
         }

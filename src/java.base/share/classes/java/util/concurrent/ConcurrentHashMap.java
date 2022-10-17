@@ -2160,7 +2160,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified value is null
      */
     @Pure
-    public boolean contains(Object value) {
+    public boolean contains(@GuardSatisfied @UnknownSignedness Object value) {
         return containsValue(value);
     }
 

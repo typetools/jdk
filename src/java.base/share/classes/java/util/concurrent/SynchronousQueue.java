@@ -36,9 +36,11 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -972,7 +974,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code false}
      */
     @Pure
-    public boolean contains(Object o) {
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -983,7 +985,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param o the element to remove
      * @return {@code false}
      */
-    public boolean remove(Object o) {
+    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
 

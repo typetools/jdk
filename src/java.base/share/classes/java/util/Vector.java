@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -370,7 +371,7 @@ public class Vector<E>
      * @return {@code true} if this vector contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean contains(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o, 0) >= 0;
     }
 
@@ -386,7 +387,7 @@ public class Vector<E>
      *         this vector, or -1 if this vector does not contain the element
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o, 0);
     }
 
@@ -407,7 +408,7 @@ public class Vector<E>
      * @see     Object#equals(Object)
      */
     @Pure
-    public synchronized @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable Object o, @NonNegative int index) {
+    public synchronized @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o, @NonNegative int index) {
         if (o == null) {
             for (int i = index ; i < elementCount ; i++)
                 if (elementData[i]==null)
@@ -432,7 +433,7 @@ public class Vector<E>
      *         this vector, or -1 if this vector does not contain the element
      */
     @Pure
-    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable Object o) {
+    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return lastIndexOf(o, elementCount-1);
     }
 
@@ -453,7 +454,7 @@ public class Vector<E>
      *         than or equal to the current size of this vector
      */
     @Pure
-    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable Object o, @NonNegative int index) {
+    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o, @NonNegative int index) {
         if (index >= elementCount)
             throw new IndexOutOfBoundsException(index + " >= "+ elementCount);
 
@@ -831,7 +832,7 @@ public class Vector<E>
      * @return true if the Vector contained the specified element
      * @since 1.2
      */
-    public boolean remove(@GuardSatisfied Vector<E> this, @Nullable Object o) {
+    public boolean remove(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return removeElement(o);
     }
 

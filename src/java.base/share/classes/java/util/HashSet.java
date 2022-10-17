@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -213,7 +214,7 @@ public class HashSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.containsKey(o);
     }
 
@@ -245,7 +246,7 @@ public class HashSet<E>
      * @param o object to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(@GuardSatisfied HashSet<E> this, @Nullable Object o) {
+    public boolean remove(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.remove(o)==PRESENT;
     }
 

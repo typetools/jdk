@@ -1292,7 +1292,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public boolean contains(Object value) {
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.contains(value);
     }
 
