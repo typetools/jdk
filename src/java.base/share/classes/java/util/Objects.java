@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -76,7 +77,7 @@ public final @UsesObjectEquals class Objects {
      */
     @Pure
     @EqualsMethod
-    public static boolean equals(@GuardSatisfied @Nullable Object a, @GuardSatisfied @Nullable Object b) {
+    public static boolean equals(@GuardSatisfied @Nullable @UnknownSignedness Object a, @GuardSatisfied @Nullable @UnknownSignedness Object b) {
         return (a == b) || (a != null && a.equals(b));
     }
 
@@ -98,7 +99,7 @@ public final @UsesObjectEquals class Objects {
     * @see Objects#equals(Object, Object)
     */
     @Pure
-    public static boolean deepEquals(@GuardSatisfied @Nullable Object a, @GuardSatisfied @Nullable Object b) {
+    public static boolean deepEquals(@GuardSatisfied @Nullable @UnknownSignedness Object a, @GuardSatisfied @Nullable @UnknownSignedness Object b) {
         if (a == b)
             return true;
         else if (a == null || b == null)
@@ -117,7 +118,7 @@ public final @UsesObjectEquals class Objects {
      * @see Object#hashCode
      */
     @Pure
-    public static int hashCode(@GuardSatisfied @Nullable Object o) {
+    public static int hashCode(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return o != null ? o.hashCode() : 0;
     }
 
@@ -148,7 +149,7 @@ public final @UsesObjectEquals class Objects {
     * @see List#hashCode
     */
     @Pure
-    public static int hash(@GuardSatisfied @Nullable Object... values) {
+    public static int hash(@GuardSatisfied @Nullable @UnknownSignedness Object... values) {
         return Arrays.hashCode(values);
     }
 
@@ -163,7 +164,7 @@ public final @UsesObjectEquals class Objects {
      * @see String#valueOf(Object)
      */
     @SideEffectFree
-    public static String toString(@GuardSatisfied @Nullable Object o) {
+    public static String toString(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return String.valueOf(o);
     }
 
@@ -181,7 +182,7 @@ public final @UsesObjectEquals class Objects {
      * @see Objects#toString(Object)
      */
     @SideEffectFree
-    public static @PolyNull String toString(@GuardSatisfied @Nullable Object o, @PolyNull String nullDefault) {
+    public static @PolyNull String toString(@GuardSatisfied @Nullable @UnknownSignedness Object o, @PolyNull String nullDefault) {
         return (o != null) ? o.toString() : nullDefault;
     }
 
@@ -206,7 +207,7 @@ public final @UsesObjectEquals class Objects {
      * @see Comparator
      */
     @Pure
-    public static <T> int compare(@GuardSatisfied @Nullable T a, @GuardSatisfied @Nullable T b, @GuardSatisfied Comparator<? super T> c) {
+    public static <T> int compare(@GuardSatisfied @Nullable @UnknownSignedness T a, @GuardSatisfied @Nullable @UnknownSignedness T b, @GuardSatisfied Comparator<? super T> c) {
         return (a == b) ? 0 :  c.compare(a, b);
     }
 
@@ -254,7 +255,7 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNull("#1")
     @SideEffectFree
-    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull T obj, @Nullable String message) {
+    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @Nullable String message) {
         if (obj == null)
             throw new NullPointerException(message);
         return obj;
@@ -276,7 +277,7 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNullIf(expression={"#1"}, result=false)
     @Pure
-    public static boolean isNull(@GuardSatisfied @Nullable Object obj) {
+    public static boolean isNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj == null;
     }
 
@@ -296,7 +297,7 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
-    public static boolean nonNull(@GuardSatisfied @Nullable Object obj) {
+    public static boolean nonNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj != null;
     }
 
@@ -360,7 +361,7 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNull("#1")
     @Pure
-    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull T obj, @GuardSatisfied Supplier<String> messageSupplier) {
+    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @GuardSatisfied Supplier<String> messageSupplier) {
         if (obj == null)
             throw new NullPointerException(messageSupplier == null ?
                                            null : messageSupplier.get());
