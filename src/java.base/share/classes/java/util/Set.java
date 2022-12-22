@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -160,7 +161,7 @@ public interface Set<E> extends Collection<E> {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(@GuardSatisfied Set<E> this, @GuardSatisfied Object o);
+    boolean contains(@GuardSatisfied Set<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this set.  The elements are
@@ -293,7 +294,7 @@ public interface Set<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this set
      */
-    boolean remove(@GuardSatisfied Set<E> this, Object o);
+    boolean remove(@GuardSatisfied Set<E> this, @UnknownSignedness Object o);
 
 
     // Bulk Operations
@@ -318,7 +319,7 @@ public interface Set<E> extends Collection<E> {
      * @see    #contains(Object)
      */
     @Pure
-    boolean containsAll(@GuardSatisfied Set<E> this, @GuardSatisfied Collection<?> c);
+    boolean containsAll(@GuardSatisfied Set<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Adds all of the elements in the specified collection to this set if
@@ -365,7 +366,7 @@ public interface Set<E> extends Collection<E> {
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    boolean retainAll(@GuardSatisfied Set<E> this, Collection<?> c);
+    boolean retainAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes from this set all of its elements that are contained in the
@@ -388,7 +389,7 @@ public interface Set<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied Set<E> this, Collection<?> c);
+    boolean removeAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements from this set (optional operation).

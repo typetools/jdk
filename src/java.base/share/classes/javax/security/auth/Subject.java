@@ -25,6 +25,7 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1218,7 +1219,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1246,7 +1247,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1298,7 +1299,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;
@@ -1328,7 +1329,7 @@ public final class Subject implements java.io.Serializable {
             return modified;
         }
 
-        public boolean containsAll(Collection<?> c) {
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             for (Object item : c) {
@@ -1341,7 +1342,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean retainAll(Collection<?> c) {
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;

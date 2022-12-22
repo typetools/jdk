@@ -262,7 +262,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *        in the specified collection
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.containsAll(c);
 
@@ -308,7 +308,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.removeAll(c);
 
@@ -328,7 +328,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.retainAll(c);
 

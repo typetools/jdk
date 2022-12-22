@@ -1344,11 +1344,11 @@ public class TreeMap<K,V>
             return TreeMap.this.size();
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             return TreeMap.this.containsValue(o);
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
             for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e)) {
                 if (valEquals(e.getValue(), o)) {
                     deleteEntry(e);
@@ -1374,7 +1374,7 @@ public class TreeMap<K,V>
             return new EntryIterator(getFirstEntry());
         }
 
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
             Object value = entry.getValue();
@@ -1382,7 +1382,7 @@ public class TreeMap<K,V>
             return p != null && valEquals(p.getValue(), value);
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
             Object value = entry.getValue();
@@ -1448,7 +1448,7 @@ public class TreeMap<K,V>
         public @NonNegative int size() { return m.size(); }
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
-        public boolean contains(Object o) { return m.containsKey(o); }
+        public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
         public void clear() { m.clear(); }
         public E lower(E e) { return m.lowerKey(e); }
         public E floor(E e) { return m.floorKey(e); }
@@ -1465,7 +1465,7 @@ public class TreeMap<K,V>
             Map.Entry<E,?> e = m.pollLastEntry();
             return (e == null) ? null : e.getKey();
         }
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
             int oldSize = size();
             m.remove(o);
             return size() != oldSize;
@@ -1830,7 +1830,7 @@ public class TreeMap<K,V>
 
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public final boolean containsKey(Object key) {
+        public final boolean containsKey(@UnknownSignedness Object key) {
             return inRange(key) && m.containsKey(key);
         }
 
@@ -2012,7 +2012,7 @@ public class TreeMap<K,V>
                 return n == null || tooHigh(n.key);
             }
 
-            public boolean contains(Object o) {
+            public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;
                 Object key = entry.getKey();
@@ -2023,7 +2023,7 @@ public class TreeMap<K,V>
                     valEquals(node.getValue(), entry.getValue());
             }
 
-            public boolean remove(Object o) {
+            public boolean remove(@UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;
                 Object key = entry.getKey();

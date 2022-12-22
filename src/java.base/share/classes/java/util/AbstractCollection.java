@@ -324,7 +324,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @see #contains(Object)
      */
     @Pure
-    public boolean containsAll(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied Collection<?> c) {
+    public boolean containsAll(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c) {
         for (Object e : c)
             if (!contains(e))
                 return false;
@@ -380,7 +380,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    public boolean removeAll(@GuardSatisfied AbstractCollection<E> this, Collection<?> c) {
+    public boolean removeAll(@GuardSatisfied AbstractCollection<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<?> it = iterator();
@@ -415,7 +415,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    public boolean retainAll(@GuardSatisfied AbstractCollection<E> this, Collection<?> c) {
+    public boolean retainAll(@GuardSatisfied AbstractCollection<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<E> it = iterator();

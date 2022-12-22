@@ -1368,11 +1368,11 @@ public class Properties extends Hashtable<Object,Object> {
 
         @Override public int size() { return entrySet.size(); }
         @Override public boolean isEmpty() { return entrySet.isEmpty(); }
-        @Override public boolean contains(Object o) { return entrySet.contains(o); }
+        @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> T[] toArray(T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }
-        @Override public boolean remove(Object o) { return entrySet.remove(o); }
+        @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 
         @Override
         public boolean add(Map.Entry<Object, Object> e) {
@@ -1385,7 +1385,7 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        public boolean containsAll(Collection<?> c) {
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.containsAll(c);
         }
 
@@ -1405,12 +1405,12 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
-        public boolean retainAll(Collection<?> c) {
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
         }
 

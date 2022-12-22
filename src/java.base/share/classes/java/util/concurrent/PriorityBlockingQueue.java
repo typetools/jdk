@@ -650,7 +650,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@Nullable Object o) {
+    public boolean remove(@Nullable @UnknownSignedness Object o) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -1024,7 +1024,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1032,7 +1032,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
