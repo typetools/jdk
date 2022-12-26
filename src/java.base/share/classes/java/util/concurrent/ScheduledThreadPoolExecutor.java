@@ -35,6 +35,7 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -1033,7 +1034,7 @@ public class ScheduledThreadPoolExecutor
             return -1;
         }
 
-        public boolean contains(Object x) {
+        public boolean contains(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1043,7 +1044,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
-        public boolean remove(Object x) {
+        public boolean remove(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {

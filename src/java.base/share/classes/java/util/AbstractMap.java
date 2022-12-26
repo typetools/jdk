@@ -405,7 +405,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                public boolean contains(Object k) {
+                public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
                 }
             };
@@ -467,7 +467,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                public boolean contains(Object v) {
+                public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
                 }
             };

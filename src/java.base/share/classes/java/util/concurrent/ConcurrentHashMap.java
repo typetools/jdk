@@ -4482,8 +4482,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          */
         @SideEffectFree
         public abstract Iterator<E> iterator();
-        public abstract boolean contains(Object o);
-        public abstract boolean remove(Object o);
+        public abstract boolean contains(@UnknownSignedness Object o);
+        public abstract boolean remove(@UnknownSignedness Object o);
 
         private static final String OOME_MSG = "Required array size too large";
 
@@ -4568,7 +4568,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return sb.append(']').toString();
         }
 
-        public final boolean containsAll(Collection<? extends @NonNull Object> c) {
+        public final boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c != this) {
                 for (Object e : c) {
                     if (e == null || !contains(e))
@@ -4578,7 +4578,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return true;
         }
 
-        public boolean removeAll(Collection<? extends @NonNull Object> c) {
+        public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             // Use (c instanceof Set) as a hint that lookup in c is as
@@ -4600,7 +4600,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return modified;
         }
 
-        public final boolean retainAll(Collection<? extends @NonNull Object> c) {
+        public final boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<E> it = iterator(); it.hasNext();) {
@@ -4648,7 +4648,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * {@inheritDoc}
          * @throws NullPointerException if the specified key is null
          */
-        public boolean contains(Object o) { return map.containsKey(o); }
+        public boolean contains(@UnknownSignedness Object o) { return map.containsKey(o); }
 
         /**
          * Removes the key from this map view, by removing the key (and its
@@ -4659,7 +4659,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @return {@code true} if the backing map contained the specified key
          * @throws NullPointerException if the specified key is null
          */
-        public boolean remove(Object o) { return map.remove(o) != null; }
+        public boolean remove(@UnknownSignedness Object o) { return map.remove(o) != null; }
 
         /**
          * @return an iterator over the keys of the backing map
@@ -4755,11 +4755,11 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         implements Collection<V>, java.io.Serializable {
         private static final long serialVersionUID = 2249069246763182397L;
         ValuesView(ConcurrentHashMap<K,V> map) { super(map); }
-        public final boolean contains(Object o) {
+        public final boolean contains(@UnknownSignedness Object o) {
             return map.containsValue(o);
         }
 
-        public final boolean remove(Object o) {
+        public final boolean remove(@UnknownSignedness Object o) {
             if (o != null) {
                 for (Iterator<V> it = iterator(); it.hasNext();) {
                     if (o.equals(it.next())) {
@@ -4786,7 +4786,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             throw new UnsupportedOperationException();
         }
 
-        @Override public boolean removeAll(Collection<? extends @NonNull Object> c) {
+        @Override public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<V> it = iterator(); it.hasNext();) {
@@ -4832,7 +4832,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         private static final long serialVersionUID = 2249069246763182397L;
         EntrySetView(ConcurrentHashMap<K,V> map) { super(map); }
 
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             Object k, v, r; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
@@ -4841,7 +4841,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
                     (v == r || v.equals(r)));
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
             Object k, v; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&

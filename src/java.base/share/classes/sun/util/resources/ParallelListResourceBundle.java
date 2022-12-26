@@ -206,7 +206,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
         }
 
         @Override
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             if (set.contains(o)) {
                 return true;
             }

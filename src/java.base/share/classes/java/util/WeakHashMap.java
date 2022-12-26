@@ -908,11 +908,11 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
 
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
                 return true;
@@ -965,7 +965,7 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
 
@@ -1005,13 +1005,13 @@ public class WeakHashMap<K,V>
             return new EntryIterator();
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> e
                     && getEntry(e.getKey()) != null
                     && getEntry(e.getKey()).equals(e);
         }
 
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
 

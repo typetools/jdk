@@ -35,6 +35,7 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -312,7 +313,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(Object o);
+    boolean remove(@UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this queue contains the specified element.
@@ -328,7 +329,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(Object o);
+    boolean contains(@UnknownSignedness Object o);
 
     /**
      * Removes all available elements from this queue and adds them

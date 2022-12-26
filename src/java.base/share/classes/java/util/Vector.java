@@ -900,7 +900,7 @@ public class Vector<E>
      * @throws NullPointerException if the specified collection is null
      */
     @Pure
-    public synchronized boolean containsAll(@GuardSatisfied Vector<E> this, @GuardSatisfied Collection<?> c) {
+    public synchronized boolean containsAll(@GuardSatisfied Vector<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c) {
         return super.containsAll(c);
     }
 
@@ -951,7 +951,7 @@ public class Vector<E>
      *         or if the specified collection is null
      * @since 1.2
      */
-    public boolean removeAll(@GuardSatisfied Vector<E> this, Collection<?> c) {
+    public boolean removeAll(@GuardSatisfied Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -975,7 +975,7 @@ public class Vector<E>
      *         or if the specified collection is null
      * @since 1.2
      */
-    public boolean retainAll(@GuardSatisfied Vector<E> this, Collection<?> c) {
+    public boolean retainAll(@GuardSatisfied Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

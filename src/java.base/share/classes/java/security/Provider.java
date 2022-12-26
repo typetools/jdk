@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 
@@ -547,7 +548,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized boolean remove(Object key, Object value) {
+    public synchronized boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
         check("removeProviderProperty."+name);
         if (debug != null) {
             debug.println("Remove " + name + " provider property " + key);

@@ -997,7 +997,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code false} unless given collection is empty
      */
     @Pure
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         return c.isEmpty();
     }
 
@@ -1008,7 +1008,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -1019,7 +1019,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
