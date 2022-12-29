@@ -3505,6 +3505,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     @SuppressWarnings("unchecked")
     public static <T> @Nullable T[] copyOf(T[] original, @NonNegative int newLength) {
         return (T[]) copyOf(original, newLength, original.getClass());
@@ -3534,6 +3535,7 @@ public class Arrays {
      *     an array of class {@code newType}
      * @since 1.6
      */
+    @SideEffectFree
     @IntrinsicCandidate
     public static <T,U> @Nullable T[] copyOf(U[] original, @NonNegative int newLength, Class<? extends T[]> newType) {
         @SuppressWarnings("unchecked")
@@ -3562,6 +3564,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned byte[] copyOf(@PolySigned byte[] original, @NonNegative int newLength) {
         byte[] copy = new byte[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3586,6 +3589,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned short[] copyOf(@PolySigned short[] original, @NonNegative int newLength) {
         short[] copy = new short[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3610,6 +3614,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned int[] copyOf(@PolySigned int[] original, @NonNegative int newLength) {
         int[] copy = new int[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3634,6 +3639,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned long[] copyOf(@PolySigned long[] original, @NonNegative int newLength) {
         long[] copy = new long[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3658,6 +3664,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned char[] copyOf(@PolySigned char[] original, @NonNegative int newLength) {
         char[] copy = new char[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3682,6 +3689,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static float[] copyOf(float[] original, @NonNegative int newLength) {
         float[] copy = new float[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3706,6 +3714,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static double[] copyOf(double[] original, @NonNegative int newLength) {
         double[] copy = new double[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3730,6 +3739,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static boolean[] copyOf(boolean[] original, @NonNegative int newLength) {
         boolean[] copy = new boolean[newLength];
         System.arraycopy(original, 0, copy, 0,
@@ -3767,6 +3777,7 @@ public class Arrays {
      * @since 1.6
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> @Nullable T[] copyOfRange(T[] original, @IndexOrHigh({"#1"}) int from, int to) {
         return copyOfRange(original, from, to, (Class<? extends T[]>) original.getClass());
     }
@@ -3805,6 +3816,7 @@ public class Arrays {
      * @since 1.6
      */
     @IntrinsicCandidate
+    @SideEffectFree
     public static <T,U> @Nullable T[] copyOfRange(U[] original, @IndexOrHigh({"#1"}) int from, int to, Class<? extends T[]> newType) {
         int newLength = to - from;
         if (newLength < 0)
@@ -3844,6 +3856,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned byte[] copyOfRange(@PolySigned byte[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -3880,6 +3893,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned short[] copyOfRange(@PolySigned short[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -3916,6 +3930,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned int[] copyOfRange(@PolySigned int[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -3952,6 +3967,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned long[] copyOfRange(@PolySigned long[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -3988,6 +4004,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned char[] copyOfRange(@PolySigned char[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -4024,6 +4041,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static float[] copyOfRange(float[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -4060,6 +4078,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static double[] copyOfRange(double[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
@@ -4096,6 +4115,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static boolean[] copyOfRange(boolean[] original, @IndexOrHigh({"#1"}) int from, int to) {
         int newLength = to - from;
         if (newLength < 0)
