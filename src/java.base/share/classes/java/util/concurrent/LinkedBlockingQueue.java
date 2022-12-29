@@ -39,6 +39,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 
@@ -594,7 +595,7 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
-    public @PolyNull Object[] toArray(LinkedBlockingQueue<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(LinkedBlockingQueue<@PolyNull @PolySigned E> this) {
         fullyLock();
         try {
             int size = count.get();

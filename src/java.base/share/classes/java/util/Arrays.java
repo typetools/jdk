@@ -2994,7 +2994,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    public static boolean equals(@PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a, @PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean equals(@PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a, @PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
         if (a==a2)
             return true;
         if (a==null || a2==null)
@@ -3454,7 +3454,7 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolyInterned Object[] a, @PolyNull @PolyInterned Object val) {
+    public static void fill(@PolyNull @PolySigned @PolyInterned Object[] a, @PolyNull @PolySigned @PolyInterned Object val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
     }
@@ -3478,7 +3478,7 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyNull @PolyInterned Object val) {
+    public static void fill(@PolyNull @PolySigned @PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyNull @PolySigned @PolyInterned Object val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
             a[i] = val;
@@ -4175,7 +4175,7 @@ public class Arrays {
 
         @SideEffectFree
         @Override
-        public @PolyNull Object[] toArray(Arrays.ArrayList<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(Arrays.ArrayList<@PolyNull @PolySigned E> this) {
             return Arrays.copyOf(a, a.length, Object[].class);
         }
 
@@ -4532,7 +4532,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolyNull @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int hashCode(@PolyNull @PolySigned @PolyInterned Object a @GuardSatisfied  @Nullable []) {
         if (a == null)
             return 0;
 
@@ -4574,7 +4574,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int deepHashCode(@PolyNull @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int deepHashCode(@PolyNull @PolySigned @PolyInterned Object a @GuardSatisfied  @Nullable []) {
         if (a == null)
             return 0;
 
@@ -4648,7 +4648,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static boolean deepEquals(@PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a1, @PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean deepEquals(@PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a1, @PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
         if (a1 == a2)
             return true;
         if (a1 == null || a2==null)
@@ -4970,7 +4970,7 @@ public class Arrays {
     @CFComment({"The @PolyMustCall annotations don't make sense, because toString",
       "shouldn't care about MustCall types, especially of the array.  However,",
       "without these annotations, calls to Arrays.toString yield a MustCall error."})
-    public static @MinLen(2) String toString(@PolyMustCall @PolyNull @PolyInterned Object @PolyMustCall @Nullable [] a) {
+    public static @MinLen(2) String toString(@PolyMustCall @PolyNull @PolySigned @PolyInterned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
@@ -5022,7 +5022,7 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String deepToString(@PolyMustCall @PolyNull @PolyInterned Object @PolyMustCall @Nullable [] a) {
+    public static @MinLen(2) String deepToString(@PolyMustCall @PolyNull @PolySigned @PolyInterned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
