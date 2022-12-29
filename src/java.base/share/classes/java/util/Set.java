@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
@@ -190,7 +191,7 @@ public interface Set<E> extends Collection<E> {
      * @return an array containing all the elements in this set
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(Set<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(Set<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this set; the
@@ -235,7 +236,7 @@ public interface Set<E> extends Collection<E> {
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    <T> @Nullable T [] toArray(@PolyNull T[] a);
+    <T> @Nullable @PolySigned T [] toArray(@PolyNull @PolySigned T[] a);
 
 
     // Modification Operations
