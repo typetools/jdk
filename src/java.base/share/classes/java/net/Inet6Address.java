@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,7 +47,7 @@ import java.util.Arrays;
  * Defined by <a href="http://www.ietf.org/rfc/rfc2373.txt">
  * <i>RFC&nbsp;2373: IP Version 6 Addressing Architecture</i></a>.
  *
- * <h3> <a id="format">Textual representation of IP addresses</a> </h3>
+ * <h2> <a id="format">Textual representation of IP addresses</a> </h2>
  *
  * Textual representation of IPv6 address used as input to methods
  * takes one of the following forms:
@@ -125,7 +125,7 @@ import java.util.Arrays;
  * form because it is unambiguous when used in combination with other
  * textual data.
  *
- * <h4> Special IPv6 address </h4>
+ * <h3> Special IPv6 address </h3>
  *
  * <blockquote>
  * <table class="borderless">
@@ -144,7 +144,7 @@ import java.util.Arrays;
  *         address.</td></tr>
  * </table></blockquote>
  *
- * <h4><a id="scoped">Textual representation of IPv6 scoped addresses</a></h4>
+ * <h3><a id="scoped">Textual representation of IPv6 scoped addresses</a></h3>
  *
  * <p> The textual representation of IPv6 addresses as described above can be
  * extended to specify IPv6 scoped addresses. This extension to the basic
@@ -186,12 +186,7 @@ public final
 @UsesObjectEquals class Inet6Address extends InetAddress {
     static final int INADDRSZ = 16;
 
-    /*
-     * cached scope_id - for link-local address use only.
-     */
-    private transient int cached_scope_id;  // 0
-
-    private class Inet6AddressHolder {
+    private static class Inet6AddressHolder {
 
         private Inet6AddressHolder() {
             ipaddress = new byte[INADDRSZ];
@@ -277,10 +272,9 @@ public final
         }
 
         public boolean equals(Object o) {
-            if (! (o instanceof Inet6AddressHolder)) {
+            if (!(o instanceof Inet6AddressHolder that)) {
                 return false;
             }
-            Inet6AddressHolder that = (Inet6AddressHolder)o;
 
             return Arrays.equals(this.ipaddress, that.ipaddress);
         }
@@ -378,6 +372,7 @@ public final
 
     private final transient Inet6AddressHolder holder6;
 
+    @java.io.Serial
     private static final long serialVersionUID = 6880410070516793377L;
 
     // Perform native initialization
@@ -425,7 +420,7 @@ public final
      * set to the value corresponding to the given interface for the address
      * type specified in {@code addr}. The call will fail with an
      * UnknownHostException if the given interface does not have a numeric
-     * scope_id assigned for the given address type (eg. link-local or site-local).
+     * scope_id assigned for the given address type (e.g. link-local or site-local).
      * See <a href="Inet6Address.html#scoped">here</a> for a description of IPv6
      * scoped addresses.
      *
@@ -443,7 +438,7 @@ public final
                                             NetworkInterface nif)
         throws UnknownHostException
     {
-        if (host != null && host.length() > 0 && host.charAt(0) == '[') {
+        if (host != null && !host.isEmpty() && host.charAt(0) == '[') {
             if (host.charAt(host.length()-1) == ']') {
                 host = host.substring(1, host.length() -1);
             }
@@ -476,7 +471,7 @@ public final
                                             int scope_id)
         throws UnknownHostException
     {
-        if (host != null && host.length() > 0 && host.charAt(0) == '[') {
+        if (host != null && !host.isEmpty() && host.charAt(0) == '[') {
             if (host.charAt(host.length()-1) == ']') {
                 host = host.substring(1, host.length() -1);
             }
@@ -517,7 +512,7 @@ public final
 
     /* check the two Ipv6 addresses and return false if they are both
      * non global address types, but not the same.
-     * (ie. one is sitelocal and the other linklocal)
+     * (i.e. one is site-local and the other link-local)
      * return true otherwise.
      */
 
@@ -539,10 +534,9 @@ public final
         Enumeration<InetAddress> addresses = ifc.getInetAddresses();
         while (addresses.hasMoreElements()) {
             InetAddress addr = addresses.nextElement();
-            if (!(addr instanceof Inet6Address)) {
+            if (!(addr instanceof Inet6Address ia6_addr)) {
                 continue;
             }
-            Inet6Address ia6_addr = (Inet6Address)addr;
             /* check if site or link local prefixes match */
             if (!isDifferentLocalAddressType(thisAddr, ia6_addr.getAddress())){
                 /* type not the same, so carry on searching */
@@ -571,13 +565,17 @@ public final
     }
 
     /**
-     * @serialField ipaddress byte[]
-     * @serialField scope_id int
-     * @serialField scope_id_set boolean
-     * @serialField scope_ifname_set boolean
-     * @serialField ifname String
+     * @serialField ipaddress byte[] holds a 128-bit (16 bytes) IPv6 address
+     * @serialField scope_id int the address scope id. {@code 0} if undefined
+     * @serialField scope_id_set boolean {@code true} when the scope_id field
+     *              contains  a valid integer scope_id
+     * @serialField scope_ifname_set boolean {@code true} if the object is
+     *              constructed with a scoped interface instead of a numeric
+     *              scope id
+     * @serialField ifname String the name of the scoped network interface.
+     *              {@code null} if undefined
      */
-
+    @java.io.Serial
     private static final ObjectStreamField[] serialPersistentFields = {
          new ObjectStreamField("ipaddress", byte[].class),
          new ObjectStreamField("scope_id", int.class),
@@ -592,10 +590,15 @@ public final
                 Inet6Address.class, "holder6");
 
     /**
-     * restore the state of this object from stream
-     * including the scope information, only if the
-     * scoped interface name is valid on this system
+     * Restores the state of this object from the stream.
+     * This includes the scope information, but only if the
+     * scoped interface name is valid on this system.
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException {
         NetworkInterface scope_ifname = null;
@@ -611,7 +614,7 @@ public final
         boolean scope_ifname_set = gf.get("scope_ifname_set", false);
         String ifname = (String)gf.get("ifname", null);
 
-        if (ifname != null && !"".equals (ifname)) {
+        if (ifname != null && !ifname.isEmpty()) {
             try {
                 scope_ifname = NetworkInterface.getByName(ifname);
                 if (scope_ifname == null) {
@@ -651,14 +654,18 @@ public final
             ipaddress, scope_id, scope_id_set, scope_ifname, scope_ifname_set
         );
 
-        UNSAFE.putObject(this, FIELDS_OFFSET, h);
+        UNSAFE.putReference(this, FIELDS_OFFSET, h);
     }
 
     /**
-     * default behavior is overridden in order to write the
-     * scope_ifname field as a String, rather than a NetworkInterface
-     * which is not serializable
+     * The default behavior of this method is overridden in order to
+     * write the scope_ifname field as a {@code String}, rather than a
+     * {@code NetworkInterface} which is not serializable.
+     *
+     * @param  s the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @java.io.Serial
     private synchronized void writeObject(ObjectOutputStream s)
         throws IOException
     {
@@ -693,7 +700,7 @@ public final
     /**
      * Utility routine to check if the InetAddress is a wildcard address.
      *
-     * @return a {@code boolean} indicating if the Inetaddress is
+     * @return a {@code boolean} indicating if the InetAddress is
      *         a wildcard address.
      */
     @Override
@@ -805,6 +812,7 @@ public final
     public boolean isMCOrgLocal() {
         return holder6.isMCOrgLocal();
     }
+
     /**
      * Returns the raw IP address of this {@code InetAddress} object. The result
      * is in network byte order: the highest order byte of the address is in
@@ -818,6 +826,13 @@ public final
     }
 
     /**
+     * Returns a reference to the byte[] with the IPv6 address.
+     */
+    byte[] addressBytes() {
+        return holder6.ipaddress;
+    }
+
+    /**
      * Returns the numeric scopeId, if this instance is associated with
      * an interface. If no scoped_id is set, the returned value is zero.
      *
@@ -826,18 +841,18 @@ public final
      * @since 1.5
      */
      public int getScopeId() {
-        return holder6.scope_id;
+         return holder6.scope_id;
      }
 
     /**
      * Returns the scoped interface, if this instance was created with
-     * with a scoped interface.
+     * a scoped interface.
      *
      * @return the scoped interface, or null if not set.
      * @since 1.5
      */
      public NetworkInterface getScopedInterface() {
-        return holder6.scope_ifname;
+         return holder6.scope_ifname;
      }
 
     /**
@@ -884,12 +899,10 @@ public final
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (obj == null || !(obj instanceof Inet6Address))
-            return false;
-
-        Inet6Address inetAddr = (Inet6Address)obj;
-
-        return holder6.equals(inetAddr.holder6);
+        if (obj instanceof Inet6Address inetAddr) {
+            return holder6.equals(inetAddr.holder6);
+        }
+        return false;
     }
 
     /**

@@ -43,7 +43,6 @@ import java.util.Set;
  * module's content.
  *
  * @since 9
- * @spec JPMS
  * @see Configuration#modules()
  */
 public final class ResolvedModule {
@@ -85,7 +84,7 @@ public final class ResolvedModule {
      * @return The module descriptor
      */
     ModuleDescriptor descriptor() {
-        return reference().descriptor();
+        return mref.descriptor();
     }
 
     /**
@@ -99,7 +98,7 @@ public final class ResolvedModule {
      * @return The module name
      */
     public String name() {
-        return reference().descriptor().name();
+        return mref.descriptor().name();
     }
 
     /**
@@ -147,12 +146,9 @@ public final class ResolvedModule {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object ob) {
-        if (!(ob instanceof ResolvedModule))
-            return false;
-
-        ResolvedModule that = (ResolvedModule) ob;
-        return Objects.equals(this.cf, that.cf)
-                && Objects.equals(this.mref, that.mref);
+        return (ob instanceof ResolvedModule that)
+            && Objects.equals(this.cf, that.cf)
+            && Objects.equals(this.mref, that.mref);
     }
 
     /**

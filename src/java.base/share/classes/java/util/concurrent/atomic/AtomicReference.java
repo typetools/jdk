@@ -64,6 +64,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
         }
     }
 
+    @SuppressWarnings("serial") // Conditionally serializable
     private volatile V value;
 
     /**

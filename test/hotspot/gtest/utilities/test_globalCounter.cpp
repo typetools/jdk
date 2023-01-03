@@ -23,11 +23,10 @@
 
 #include "precompiled.hpp"
 #include "runtime/atomic.hpp"
-#include "runtime/orderAccess.hpp"
 #include "runtime/os.hpp"
 #include "utilities/globalCounter.hpp"
 #include "utilities/globalCounter.inline.hpp"
-#include "utilitiesHelper.inline.hpp"
+#include "threadHelper.inline.hpp"
 
 #define GOOD_VALUE 1337
 #define BAD_VALUE  4711
@@ -47,15 +46,15 @@ public:
   void main_run() {
     _wrt_start->signal();
     while (!_exit) {
-      GlobalCounter::critical_section_begin(this);
-      volatile TestData* test = OrderAccess::load_acquire(_test);
-      long value = OrderAccess::load_acquire(&test->test_value);
+      GlobalCounter::CSContext cs_context = GlobalCounter::critical_section_begin(this);
+      volatile TestData* test = Atomic::load_acquire(_test);
+      long value = Atomic::load_acquire(&test->test_value);
       ASSERT_EQ(value, GOOD_VALUE);
-      GlobalCounter::critical_section_end(this);
+      GlobalCounter::critical_section_end(this, cs_context);
       {
         GlobalCounter::CriticalSection cs(this);
-        volatile TestData* test = OrderAccess::load_acquire(_test);
-        long value = OrderAccess::load_acquire(&test->test_value);
+        volatile TestData* test = Atomic::load_acquire(_test);
+        long value = Atomic::load_acquire(&test->test_value);
         ASSERT_EQ(value, GOOD_VALUE);
       }
     }
@@ -82,7 +81,7 @@ public:
 
     TestData* tmp = new TestData();
     tmp->test_value = GOOD_VALUE;
-    OrderAccess::release_store_fence(&test, tmp);
+    Atomic::release_store_fence(&test, tmp);
 
     reader1->doit();
     reader2->doit();
@@ -99,7 +98,7 @@ public:
       volatile TestData* free_tmp = test;
       tmp = new TestData();
       tmp->test_value = GOOD_VALUE;
-      OrderAccess::release_store(&test, tmp);
+      Atomic::release_store(&test, tmp);
       GlobalCounter::write_synchronize();
       free_tmp->test_value = BAD_VALUE;
       delete free_tmp;

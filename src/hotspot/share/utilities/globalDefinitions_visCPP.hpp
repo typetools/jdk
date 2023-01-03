@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP
-#define SHARE_VM_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP
+#ifndef SHARE_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP
+#define SHARE_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP
 
 #include "jni.h"
 
@@ -111,7 +111,6 @@ inline int g_isfinite(jdouble f)                 { return _finite(f); }
 // Miscellaneous
 
 // Visual Studio 2005 deprecates POSIX names - use ISO C++ names instead
-#if _MSC_VER >= 1400
 #define open _open
 #define close _close
 #define read  _read
@@ -119,48 +118,13 @@ inline int g_isfinite(jdouble f)                 { return _finite(f); }
 #define lseek _lseek
 #define unlink _unlink
 #define strdup _strdup
-#endif
-
-#if _MSC_VER < 1800
-// Visual Studio 2013 introduced strtoull(); before, one has to use _strtoui64() instead.
-#define strtoull _strtoui64
-// Visual Studio prior to 2013 had no va_copy, but could safely copy va_list by assignement
-#define va_copy(dest, src) dest = src
-// Fixes some wrong warnings about 'this' : used in base member initializer list
-#pragma warning( disable : 4355 )
-#endif
-
-
-#pragma warning( disable : 4100 ) // unreferenced formal parameter
-#pragma warning( disable : 4127 ) // conditional expression is constant
-#pragma warning( disable : 4514 ) // unreferenced inline function has been removed
-#pragma warning( disable : 4244 ) // possible loss of data
-#pragma warning( disable : 4512 ) // assignment operator could not be generated
-#pragma warning( disable : 4201 ) // nonstandard extension used : nameless struct/union (needed in windows.h)
-#pragma warning( disable : 4511 ) // copy constructor could not be generated
-#pragma warning( disable : 4291 ) // no matching operator delete found; memory will not be freed if initialization thows an exception
-#pragma warning( disable : 4351 ) // new behavior: elements of array ... will be default initialized
-#ifdef CHECK_UNHANDLED_OOPS
-#pragma warning( disable : 4521 ) // class has multiple copy ctors of a single type
-#pragma warning( disable : 4522 ) // class has multiple assignment operators of a single type
-#endif // CHECK_UNHANDLED_OOPS
-#if _MSC_VER >= 1400
-#pragma warning( disable : 4996 ) // unsafe string functions. Same as define _CRT_SECURE_NO_WARNINGS/_CRT_SECURE_NO_DEPRICATE
-#endif
-
-// Portability macros
-#define PRAGMA_INTERFACE
-#define PRAGMA_IMPLEMENTATION
-#define PRAGMA_IMPLEMENTATION_(arg)
 
 // Formatting.
 #define FORMAT64_MODIFIER "I64"
 
 #define offset_of(klass,field) offsetof(klass,field)
 
-#ifndef USE_LIBRARY_BASED_TLS_ONLY
-#define THREAD_LOCAL_DECL __declspec( thread )
-#endif
+#define THREAD_LOCAL __declspec(thread)
 
 // Inlining support
 // MSVC has '__declspec(noinline)' but according to the official documentation
@@ -172,4 +136,8 @@ inline int g_isfinite(jdouble f)                 { return _finite(f); }
 // Alignment
 #define ATTRIBUTE_ALIGNED(x) __declspec(align(x))
 
-#endif // SHARE_VM_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP
+#ifdef _M_ARM64
+#define USE_VECTORED_EXCEPTION_HANDLING
+#endif
+
+#endif // SHARE_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP

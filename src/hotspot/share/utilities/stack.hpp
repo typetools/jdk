@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_STACK_HPP
-#define SHARE_VM_UTILITIES_STACK_HPP
+#ifndef SHARE_UTILITIES_STACK_HPP
+#define SHARE_UTILITIES_STACK_HPP
 
 #include "memory/allocation.hpp"
 
@@ -84,10 +84,6 @@ protected:
   size_t       _full_seg_size;  // Number of items in already-filled segments.
   size_t       _cache_size;     // Number of segments in the cache.
 };
-
-#ifdef __GNUC__
-#define inline
-#endif // __GNUC__
 
 template <class E, MEMFLAGS F>
 class Stack:  public StackBase<F>
@@ -207,8 +203,4 @@ private:
   size_t    _full_seg_size;
 };
 
-#ifdef __GNUC__
-#undef inline
-#endif // __GNUC__
-
-#endif // SHARE_VM_UTILITIES_STACK_HPP
+#endif // SHARE_UTILITIES_STACK_HPP

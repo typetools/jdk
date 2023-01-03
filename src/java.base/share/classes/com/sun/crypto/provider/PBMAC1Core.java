@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -108,80 +108,91 @@ abstract class PBMAC1Core extends HmacCore {
             salt = pbeKey.getSalt(); // maybe null if unspecified
             iCount = pbeKey.getIterationCount(); // maybe 0 if unspecified
         } else if (key instanceof SecretKey) {
-            byte[] passwdBytes = key.getEncoded();
-            if ((passwdBytes == null) ||
-                !(key.getAlgorithm().regionMatches(true, 0, "PBE", 0, 3))) {
+            byte[] passwdBytes;
+            if (!(key.getAlgorithm().regionMatches(true, 0, "PBE", 0, 3)) ||
+                    (passwdBytes = key.getEncoded()) == null) {
                 throw new InvalidKeyException("Missing password");
             }
             passwdChars = new char[passwdBytes.length];
             for (int i=0; i<passwdChars.length; i++) {
                 passwdChars[i] = (char) (passwdBytes[i] & 0x7f);
             }
+            Arrays.fill(passwdBytes, (byte)0x00);
         } else {
             throw new InvalidKeyException("SecretKey of PBE type required");
         }
-        if (params == null) {
-            // should not auto-generate default values since current
-            // javax.crypto.Mac api does not have any method for caller to
-            // retrieve the generated defaults.
-            if ((salt == null) || (iCount == 0)) {
-                throw new InvalidAlgorithmParameterException
-                    ("PBEParameterSpec required for salt and iteration count");
-            }
-        } else if (!(params instanceof PBEParameterSpec)) {
-            throw new InvalidAlgorithmParameterException
-                ("PBEParameterSpec type required");
-        } else {
-            PBEParameterSpec pbeParams = (PBEParameterSpec) params;
-            // make sure the parameter values are consistent
-            if (salt != null) {
-                if (!Arrays.equals(salt, pbeParams.getSalt())) {
-                    throw new InvalidAlgorithmParameterException
-                        ("Inconsistent value of salt between key and params");
-                }
-            } else {
-                salt = pbeParams.getSalt();
-            }
-            if (iCount != 0) {
-                if (iCount != pbeParams.getIterationCount()) {
-                    throw new InvalidAlgorithmParameterException
-                        ("Different iteration count between key and params");
-                }
-            } else {
-                iCount = pbeParams.getIterationCount();
-            }
-        }
-        // For security purpose, we need to enforce a minimum length
-        // for salt; just require the minimum salt length to be 8-byte
-        // which is what PKCS#5 recommends and openssl does.
-        if (salt.length < 8) {
-            throw new InvalidAlgorithmParameterException
-                ("Salt must be at least 8 bytes long");
-        }
-        if (iCount <= 0) {
-            throw new InvalidAlgorithmParameterException
-                ("IterationCount must be a positive number");
-        }
 
-        PBEKeySpec pbeSpec =
-            new PBEKeySpec(passwdChars, salt, iCount, blockLength);
+        PBEKeySpec pbeSpec;
+        try {
+            if (params == null) {
+                // should not auto-generate default values since current
+                // javax.crypto.Mac api does not have any method for caller to
+                // retrieve the generated defaults.
+                if ((salt == null) || (iCount == 0)) {
+                    throw new InvalidAlgorithmParameterException
+                            ("PBEParameterSpec required for salt and iteration count");
+                }
+            } else if (!(params instanceof PBEParameterSpec)) {
+                throw new InvalidAlgorithmParameterException
+                        ("PBEParameterSpec type required");
+            } else {
+                PBEParameterSpec pbeParams = (PBEParameterSpec) params;
+                // make sure the parameter values are consistent
+                if (salt != null) {
+                    if (!Arrays.equals(salt, pbeParams.getSalt())) {
+                        throw new InvalidAlgorithmParameterException
+                                ("Inconsistent value of salt between key and params");
+                    }
+                } else {
+                    salt = pbeParams.getSalt();
+                }
+                if (iCount != 0) {
+                    if (iCount != pbeParams.getIterationCount()) {
+                        throw new InvalidAlgorithmParameterException
+                                ("Different iteration count between key and params");
+                    }
+                } else {
+                    iCount = pbeParams.getIterationCount();
+                }
+            }
+            // For security purpose, we need to enforce a minimum length
+            // for salt; just require the minimum salt length to be 8-byte
+            // which is what PKCS#5 recommends and openssl does.
+            if (salt.length < 8) {
+                throw new InvalidAlgorithmParameterException
+                        ("Salt must be at least 8 bytes long");
+            }
+            if (iCount <= 0) {
+                throw new InvalidAlgorithmParameterException
+                        ("IterationCount must be a positive number");
+            }
+
+            pbeSpec = new PBEKeySpec(passwdChars, salt, iCount, blockLength);
             // password char[] was cloned in PBEKeySpec constructor,
             // so we can zero it out here
-        java.util.Arrays.fill(passwdChars, ' ');
+        } finally {
+            Arrays.fill(passwdChars, '\0');
+        }
 
-        SecretKey s = null;
+        PBKDF2KeyImpl s = null;
         PBKDF2Core kdf = getKDFImpl(kdfAlgo);
+        byte[] derivedKey;
         try {
-            s = kdf.engineGenerateSecret(pbeSpec);
-
+            s = (PBKDF2KeyImpl)kdf.engineGenerateSecret(pbeSpec);
+            derivedKey = s.getEncoded();
         } catch (InvalidKeySpecException ikse) {
             InvalidKeyException ike =
                 new InvalidKeyException("Cannot construct PBE key");
             ike.initCause(ikse);
             throw ike;
+        } finally {
+            pbeSpec.clearPassword();
+            if (s != null) {
+                s.clearPassword();
+            }
         }
-        byte[] derivedKey = s.getEncoded();
         SecretKey cipherKey = new SecretKeySpec(derivedKey, kdfAlgo);
+        Arrays.fill(derivedKey, (byte)0);
 
         super.engineInit(cipherKey, null);
     }

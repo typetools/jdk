@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,14 +25,15 @@
  * @test
  * @bug     4496223 4496270 4618686 4720974 4812240 6253614 6253604
  * @summary <DESC>
- * @author  jamieh
- * @library ../lib
+ * @library ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build JavadocTester
+ * @build javadoc.tester.*
  * @run main TestTagInheritence
  */
 
 // TODO: Inheritence should be Inheritance!   fix separately as noreg-trivial
+import javadoc.tester.JavadocTester;
+
 public class TestTagInheritence extends JavadocTester {
 
     public static void main(String... args) throws Exception {
@@ -41,7 +42,7 @@ public class TestTagInheritence extends JavadocTester {
     }
 
     @Test
-    void test() {
+    public void test() {
         javadoc("-Xdoclint:none",
                 "-d", "out",
                 "-sourcepath", testSrc,
@@ -50,7 +51,7 @@ public class TestTagInheritence extends JavadocTester {
 
         //Test bad inheritDoc tag warning.
         checkOutput(Output.OUT, true,
-                "warning - @inheritDoc used but testBadInheritDocTag() "
+                "warning: @inheritDoc used but testBadInheritDocTag() "
                 + "does not override or implement any method.");
 
         //Test valid usage of inheritDoc tag.
@@ -61,10 +62,12 @@ public class TestTagInheritence extends JavadocTester {
 
         //First sentence test (6253614)
         checkOutput("firstSentence/B.html", true,
-                "<div class=\"block\">First sentence.</div>");
+                """
+                    <div class="block">First sentence.</div>""");
 
         //Another first sentence test (6253604)
         checkOutput("firstSentence2/C.html", true,
-                "<div class=\"block\">First sentence.</div>");
+                """
+                    <div class="block">First sentence.</div>""");
     }
 }

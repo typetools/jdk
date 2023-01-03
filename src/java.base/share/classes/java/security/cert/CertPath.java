@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -125,9 +125,11 @@ import java.util.List;
  */
 public abstract class CertPath implements Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = 6068470306649138683L;
 
-    private String type;        // the type of certificates in this chain
+    /** The type of certificates in this chain. */
+    private String type;
 
     /**
      * Creates a {@code CertPath} of the specified type.
@@ -187,16 +189,9 @@ public abstract class CertPath implements Serializable {
         if (this == other)
             return true;
 
-        if (! (other instanceof CertPath))
-            return false;
-
-        CertPath otherCP = (CertPath) other;
-        if (! otherCP.getType().equals(type))
-            return false;
-
-        List<? extends Certificate> thisCertList = this.getCertificates();
-        List<? extends Certificate> otherCertList = otherCP.getCertificates();
-        return(thisCertList.equals(otherCertList));
+        return other instanceof CertPath that
+                && that.getType().equals(this.type)
+                && this.getCertificates().equals(that.getCertificates());
     }
 
     /**
@@ -255,7 +250,7 @@ public abstract class CertPath implements Serializable {
      * encoding.
      *
      * @return the encoded bytes
-     * @exception CertificateEncodingException if an encoding error occurs
+     * @throws    CertificateEncodingException if an encoding error occurs
      */
     public abstract byte[] getEncoded()
         throws CertificateEncodingException;
@@ -266,7 +261,7 @@ public abstract class CertPath implements Serializable {
      *
      * @param encoding the name of the encoding to use
      * @return the encoded bytes
-     * @exception CertificateEncodingException if an encoding error occurs or
+     * @throws    CertificateEncodingException if an encoding error occurs or
      *   the encoding requested is not supported
      */
     public abstract byte[] getEncoded(String encoding)
@@ -290,6 +285,7 @@ public abstract class CertPath implements Serializable {
      * @throws ObjectStreamException if a {@code CertPathRep} object
      * representing this certification path could not be created
      */
+    @java.io.Serial
     protected Object writeReplace() throws ObjectStreamException {
         try {
             return new CertPathRep(type, getEncoded());
@@ -308,6 +304,7 @@ public abstract class CertPath implements Serializable {
      */
     protected static class CertPathRep implements Serializable {
 
+        @java.io.Serial
         private static final long serialVersionUID = 3015633072427920915L;
 
         /** The Certificate type */
@@ -335,6 +332,7 @@ public abstract class CertPath implements Serializable {
          * @throws ObjectStreamException if a {@code CertPath} could not
          * be constructed
          */
+        @java.io.Serial
         protected Object readResolve() throws ObjectStreamException {
             try {
                 CertificateFactory cf = CertificateFactory.getInstance(type);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,9 @@ import java.lang.reflect.Executable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static compiler.compilercontrol.share.IntrinsicCommand.VALID_INTRINSIC_SAMPLES;
+import static compiler.compilercontrol.share.IntrinsicCommand.INVALID_INTRINSIC_SAMPLES;
+
 public class MultiCommand extends AbstractTestBase {
     private final List<CompileCommand> testCases;
 
@@ -51,11 +54,22 @@ public class MultiCommand extends AbstractTestBase {
         CommandGenerator cmdGen = new CommandGenerator();
         List<Command> commands = cmdGen.generateCommands();
         List<CompileCommand> testCases = new ArrayList<>();
+
         for (Command cmd : commands) {
+            String argument = null;
+
             if (validOnly && cmd == Command.NONEXISTENT) {
                 // replace with a valid command
                 cmd = Command.EXCLUDE;
             }
+            if (cmd == Command.INTRINSIC) {
+                if (validOnly) {
+                    argument = Utils.getRandomElement(VALID_INTRINSIC_SAMPLES);
+                } else {
+                    argument = Utils.getRandomElement(INVALID_INTRINSIC_SAMPLES);
+                }
+            }
+
             Executable exec = Utils.getRandomElement(METHODS).first;
             MethodDescriptor md;
             if (validOnly) {
@@ -63,7 +77,12 @@ public class MultiCommand extends AbstractTestBase {
             } else {
                 md = AbstractTestBase.METHOD_GEN.generateRandomDescriptor(exec);
             }
-            CompileCommand cc = cmdGen.generateCompileCommand(cmd, md, null);
+            CompileCommand cc;
+            if (cmd == Command.INTRINSIC) {
+                cc = cmdGen.generateCompileCommand(cmd, md, null, argument);
+            } else {
+                cc = cmdGen.generateCompileCommand(cmd, md, null);
+            }
             testCases.add(cc);
         }
         return new MultiCommand(testCases);
@@ -76,7 +95,6 @@ public class MultiCommand extends AbstractTestBase {
         builder.addFlag("-XX:+UnlockDiagnosticVMOptions");
         builder.addFlag("-XX:CompilerDirectivesLimit=101");
         for (CompileCommand cc : testCases) {
-            cc.print();
             builder.add(cc);
         }
         Scenario scenario = builder.build();

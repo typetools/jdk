@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,7 +68,7 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
 
             // If standalone names are requested and no "standalone." resources are found,
             // try the default ones instead.
-            if (strings == null && key.indexOf("standalone.") != -1) {
+            if (strings == null && key.contains("standalone.")) {
                 key = key.replaceFirst("standalone.", "");
                 strings = javatime ? lr.getJavaTimeNames(key) : lr.getCalendarNames(key);
             }
@@ -84,10 +84,10 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
                         Era[] jeras = CalendarSystem.forName("japanese").getEras();
                         if (value <= jeras.length) {
                             // Localized era name could not be retrieved from this provider.
-                            // This can occur either for NewEra or SupEra.
+                            // This can occur either for Reiwa or SupEra.
                             //
                             // If it's CLDR provider, try COMPAT first, which is guaranteed to have
-                            // the name for NewEra.
+                            // the name for Reiwa.
                             if (type == LocaleProviderAdapter.Type.CLDR) {
                                 lr = LocaleProviderAdapter.forJRE().getLocaleResources(locale);
                                 key = getResourceKeyFor(LocaleProviderAdapter.Type.JRE,
@@ -117,7 +117,7 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
                 }
                 name = strings[value];
                 // If name is empty in standalone, try its `format' style.
-                if (name.length() == 0
+                if (name.isEmpty()
                         && (style == SHORT_STANDALONE || style == LONG_STANDALONE
                             || style == NARROW_STANDALONE)) {
                     name = getDisplayName(calendarType, field, value,
@@ -129,7 +129,7 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
         return name;
     }
 
-    private static int[] REST_OF_STYLES = {
+    private static final int[] REST_OF_STYLES = {
         SHORT_STANDALONE, LONG_FORMAT, LONG_STANDALONE,
         NARROW_FORMAT, NARROW_STANDALONE
     };
@@ -166,27 +166,38 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
 
             // If standalone names are requested and no "standalone." resources are found,
             // try the default ones instead.
-            if (strings == null && key.indexOf("standalone.") != -1) {
+            if (strings == null && key.contains("standalone.")) {
                 key = key.replaceFirst("standalone.", "");
                 strings = javatime ? lr.getJavaTimeNames(key) : lr.getCalendarNames(key);
             }
 
             if (strings != null) {
-                if (!hasDuplicates(strings)) {
+                if (!hasDuplicates(strings) || field == AM_PM) {
                     if (field == YEAR) {
                         if (strings.length > 0) {
                             map.put(strings[0], 1);
                         }
                     } else {
                         int base = (field == DAY_OF_WEEK) ? 1 : 0;
-                        for (int i = 0; i < strings.length; i++) {
+                        // Duplicates can happen with AM_PM field. In such a case,
+                        // am/pm (index 0 and 1) have precedence over day
+                        // periods.
+                        for (int i = strings.length - 1; i >= 0; i--) {
                             String name = strings[i];
                             // Ignore any empty string (some standalone month names
-                            // are not defined)
-                            if (name.length() == 0) {
+                            // or flexible day periods are not defined)
+                            if (name.isEmpty()) {
                                 continue;
                             }
-                            map.put(name, base + i);
+                            if (field == AM_PM && !javatime && i > PM) {
+                                // Unlike in the case of java.time.format.DateTimeFormatter(Builder),
+                                // when dealing with java.util.Calendar, don't set AM_PM field value
+                                // to anything that isn't either AM or PM (this can happen when
+                                // day periods are involved)
+                                continue;
+                            } else {
+                                map.put(name, base + i);
+                            }
                         }
                     }
                 }
@@ -257,11 +268,13 @@ public class CalendarNameProviderImpl extends CalendarNameProvider implements Av
         return langtags;
     }
 
+    // Check if each string is unique, except null or empty strings,
+    // as these strings are used for keys in the name-to-value map.
     private boolean hasDuplicates(String[] strings) {
         int len = strings.length;
         for (int i = 0; i < len - 1; i++) {
             String a = strings[i];
-            if (a != null) {
+            if (a != null && !a.isEmpty()) {
                 for (int j = i + 1; j < len; j++) {
                     if (a.equals(strings[j]))  {
                         return true;

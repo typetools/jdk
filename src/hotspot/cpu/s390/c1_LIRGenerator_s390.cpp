@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016, 2017, SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2017 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,6 +37,7 @@
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "vmreg_s390.inline.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 #ifdef ASSERT
 #define __ gen()->lir(__FILE__, __LINE__)->
@@ -223,16 +224,16 @@ void LIRGenerator::cmp_reg_mem(LIR_Condition condition, LIR_Opr reg, LIR_Opr bas
   __ cmp_reg_mem(condition, reg, new LIR_Address(base, disp, type), info);
 }
 
-bool LIRGenerator::strength_reduce_multiply(LIR_Opr left, int c, LIR_Opr result, LIR_Opr tmp) {
+bool LIRGenerator::strength_reduce_multiply(LIR_Opr left, jint c, LIR_Opr result, LIR_Opr tmp) {
   if (tmp->is_valid()) {
     if (is_power_of_2(c + 1)) {
       __ move(left, tmp);
-      __ shift_left(left, log2_intptr(c + 1), left);
+      __ shift_left(left, log2i_exact(c + 1), left);
       __ sub(left, tmp, result);
       return true;
     } else if (is_power_of_2(c - 1)) {
       __ move(left, tmp);
-      __ shift_left(left, log2_intptr(c - 1), left);
+      __ shift_left(left, log2i_exact(c - 1), left);
       __ add(left, tmp, result);
       return true;
     }
@@ -330,7 +331,7 @@ void LIRGenerator::do_ArithmeticOp_FPU(ArithmeticOp* x) {
   } else {
     LIR_Opr reg = rlock(x);
     LIR_Opr tmp = LIR_OprFact::illegalOpr;
-    arithmetic_op_fpu(x->op(), reg, left.result(), right.result(), x->is_strictfp(), tmp);
+    arithmetic_op_fpu(x->op(), reg, left.result(), right.result(), tmp);
     set_result(x, reg);
   }
 }
@@ -384,7 +385,7 @@ void LIRGenerator::do_ArithmeticOp_Long(ArithmeticOp* x) {
 
     if (!ImplicitDiv0Checks) {
       __ cmp(lir_cond_equal, right.result(), LIR_OprFact::longConst(0));
-      __ branch(lir_cond_equal, T_LONG, new DivByZeroStub(info));
+      __ branch(lir_cond_equal, new DivByZeroStub(info));
       // Idiv/irem cannot trap (passing info would generate an assertion).
       info = NULL;
     }
@@ -460,7 +461,7 @@ void LIRGenerator::do_ArithmeticOp_Int(ArithmeticOp* x) {
 
     if (!ImplicitDiv0Checks) {
       __ cmp(lir_cond_equal, right.result(), LIR_OprFact::intConst(0));
-      __ branch(lir_cond_equal, T_INT, new DivByZeroStub(info));
+      __ branch(lir_cond_equal, new DivByZeroStub(info));
       // Idiv/irem cannot trap (passing info would generate an assertion).
       info = NULL;
     }
@@ -529,8 +530,9 @@ void LIRGenerator::do_ArithmeticOp(ArithmeticOp* x) {
     case doubleTag: do_ArithmeticOp_FPU(x);  return;
     case longTag:   do_ArithmeticOp_Long(x); return;
     case intTag:    do_ArithmeticOp_Int(x);  return;
+    default:
+      ShouldNotReachHere();
   }
-  ShouldNotReachHere();
 }
 
 // _ishl, _lshl, _ishr, _lshr, _iushr, _lushr
@@ -634,47 +636,49 @@ void LIRGenerator::do_MathIntrinsic(Intrinsic* x) {
       LIR_Opr dst = rlock_result(x);
 
       switch (x->id()) {
-      case vmIntrinsics::_dsqrt: {
-        __ sqrt(value.result(), dst, LIR_OprFact::illegalOpr);
-        break;
-      }
-      case vmIntrinsics::_dabs: {
-        __ abs(value.result(), dst, LIR_OprFact::illegalOpr);
-        break;
-      }
+        case vmIntrinsics::_dsqrt: {
+          __ sqrt(value.result(), dst, LIR_OprFact::illegalOpr);
+          break;
+        }
+        case vmIntrinsics::_dabs: {
+          __ abs(value.result(), dst, LIR_OprFact::illegalOpr);
+          break;
+        }
+        default:
+          ShouldNotReachHere();
       }
       break;
     }
+    case vmIntrinsics::_dsin:   // fall through
+    case vmIntrinsics::_dcos:   // fall through
+    case vmIntrinsics::_dtan:   // fall through
+    case vmIntrinsics::_dlog:   // fall through
     case vmIntrinsics::_dlog10: // fall through
-    case vmIntrinsics::_dlog: // fall through
-    case vmIntrinsics::_dsin: // fall through
-    case vmIntrinsics::_dtan: // fall through
-    case vmIntrinsics::_dcos: // fall through
     case vmIntrinsics::_dexp: {
       assert(x->number_of_arguments() == 1, "wrong type");
 
       address runtime_entry = NULL;
       switch (x->id()) {
-      case vmIntrinsics::_dsin:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dsin);
-        break;
-      case vmIntrinsics::_dcos:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dcos);
-        break;
-      case vmIntrinsics::_dtan:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dtan);
-        break;
-      case vmIntrinsics::_dlog:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dlog);
-        break;
-      case vmIntrinsics::_dlog10:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dlog10);
-        break;
-      case vmIntrinsics::_dexp:
-        runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dexp);
-        break;
-      default:
-        ShouldNotReachHere();
+        case vmIntrinsics::_dsin:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dsin);
+          break;
+        case vmIntrinsics::_dcos:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dcos);
+          break;
+        case vmIntrinsics::_dtan:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dtan);
+          break;
+        case vmIntrinsics::_dlog:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dlog);
+          break;
+        case vmIntrinsics::_dlog10:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dlog10);
+          break;
+        case vmIntrinsics::_dexp:
+          runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dexp);
+          break;
+        default:
+          ShouldNotReachHere();
       }
 
       LIR_Opr result = call_runtime(x->argument_at(0), runtime_entry, x->type(), NULL);
@@ -688,6 +692,8 @@ void LIRGenerator::do_MathIntrinsic(Intrinsic* x) {
       set_result(x, result);
       break;
     }
+    default:
+      break;
   }
 }
 
@@ -982,9 +988,9 @@ void LIRGenerator::do_If (If* x) {
   profile_branch(x, cond);
   move_to_phi(x->state());
   if (x->x()->type()->is_float_kind()) {
-    __ branch(lir_cond(cond), right->type(), x->tsux(), x->usux());
+    __ branch(lir_cond(cond), x->tsux(), x->usux());
   } else {
-    __ branch(lir_cond(cond), right->type(), x->tsux());
+    __ branch(lir_cond(cond), x->tsux());
   }
   assert(x->default_sux() == x->fsux(), "wrong destination above");
   __ jump(x->default_sux());

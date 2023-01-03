@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -59,18 +59,22 @@ class NativeGSSContext implements GSSContextSpi {
 
     private static final int NUM_OF_INQUIRE_VALUES = 6;
 
+    // Warning: The following 9 fields are used by NativeUtil.c
     private long pContext = 0; // Pointer to the gss_ctx_id_t structure
     private GSSNameElement srcName;
     private GSSNameElement targetName;
-    private GSSCredElement cred;
     private boolean isInitiator;
     private boolean isEstablished;
-    private Oid actualMech; // Assigned during context establishment
-
-    private ChannelBinding cb;
     private GSSCredElement delegatedCred;
     private int flags;
     private int lifetime = GSSCredential.DEFAULT_LIFETIME;
+    private Oid actualMech; // Assigned during context establishment
+
+    private GSSCredElement cred;
+    private GSSCredElement disposeCred;
+
+    private ChannelBinding cb;
+    private GSSCredElement disposeDelegatedCred;
     private final GSSLibStub cStub;
 
     private boolean skipDelegPermCheck;
@@ -107,6 +111,7 @@ class NativeGSSContext implements GSSContextSpi {
     }
 
     // Perform the Service permission check
+    @SuppressWarnings("removal")
     private void doServicePermCheck() throws GSSException {
         if (System.getSecurityManager() != null) {
             String action = (isInitiator? "initiate" : "accept");
@@ -134,6 +139,7 @@ class NativeGSSContext implements GSSContextSpi {
 
     // Perform the Delegation permission check
     private void doDelegPermCheck() throws GSSException {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             String targetStr = targetName.getKrbName();
@@ -160,7 +166,7 @@ class NativeGSSContext implements GSSContextSpi {
                 SunNativeProvider.debug("Precomputed mechToken length: " +
                                          mechTokenLen);
                 GSSHeader gssHeader = new GSSHeader
-                    (new ObjectIdentifier(cStub.getMech().toString()),
+                    (ObjectIdentifier.of(cStub.getMech().toString()),
                      mechTokenLen);
                 ByteArrayOutputStream baos = new ByteArrayOutputStream(600);
 
@@ -192,6 +198,7 @@ class NativeGSSContext implements GSSContextSpi {
         }
         cStub = stub;
         cred = myCred;
+        disposeCred = null;
         targetName = peer;
         isInitiator = true;
         lifetime = time;
@@ -199,8 +206,9 @@ class NativeGSSContext implements GSSContextSpi {
         if (GSSUtil.isKerberosMech(cStub.getMech())) {
             doServicePermCheck();
             if (cred == null) {
-                cred = new GSSCredElement(null, lifetime,
-                                          GSSCredential.INITIATE_ONLY, cStub);
+                disposeCred = cred =
+                    new GSSCredElement(null, lifetime,
+                            GSSCredential.INITIATE_ONLY, cStub);
             }
             srcName = cred.getName();
         }
@@ -211,6 +219,7 @@ class NativeGSSContext implements GSSContextSpi {
         throws GSSException {
         cStub = stub;
         cred = myCred;
+        disposeCred = null;
 
         if (cred != null) targetName = cred.getName();
 
@@ -226,6 +235,7 @@ class NativeGSSContext implements GSSContextSpi {
     }
 
     // Constructor for imported context
+    // Warning: called by NativeUtil.c
     NativeGSSContext(long pCtxt, GSSLibStub stub) throws GSSException {
         assert(pContext != 0);
         pContext = pCtxt;
@@ -297,9 +307,9 @@ class NativeGSSContext implements GSSContextSpi {
                         (cStub.getContextName(pContext, true), cStub);
                 }
                 if (cred == null) {
-                    cred = new GSSCredElement(srcName, lifetime,
-                                              GSSCredential.INITIATE_ONLY,
-                                              cStub);
+                    disposeCred = cred =
+                        new GSSCredElement(srcName, lifetime,
+                                GSSCredential.INITIATE_ONLY, cStub);
                 }
             }
         }
@@ -315,6 +325,7 @@ class NativeGSSContext implements GSSContextSpi {
                                     inToken.length);
             long pCred = (cred == null? 0 : cred.pCred);
             outToken = cStub.acceptContext(pCred, cb, inToken, this);
+            disposeDelegatedCred = delegatedCred;
             SunNativeProvider.debug("acceptSecContext=> outToken len=" +
                                     (outToken == null? 0 : outToken.length));
 
@@ -323,9 +334,12 @@ class NativeGSSContext implements GSSContextSpi {
                     (cStub.getContextName(pContext, false), cStub);
                 // Replace the current default acceptor cred now that
                 // the context acceptor name is available
-                if (cred != null) cred.dispose();
-                cred = new GSSCredElement(targetName, lifetime,
-                                          GSSCredential.ACCEPT_ONLY, cStub);
+                if (disposeCred != null) {
+                    disposeCred.dispose();
+                }
+                disposeCred = cred =
+                    new GSSCredElement(targetName, lifetime,
+                            GSSCredential.ACCEPT_ONLY, cStub);
             }
 
             // Only inspect token when the permission check has not
@@ -346,9 +360,15 @@ class NativeGSSContext implements GSSContextSpi {
     }
 
     public void dispose() throws GSSException {
+        if (disposeCred != null) {
+            disposeCred.dispose();
+        }
+        if (disposeDelegatedCred != null) {
+            disposeDelegatedCred.dispose();
+        }
+        disposeDelegatedCred = disposeCred = cred = null;
         srcName = null;
         targetName = null;
-        cred = null;
         delegatedCred = null;
         if (pContext != 0) {
             pContext = cStub.deleteContext(pContext);
@@ -612,6 +632,7 @@ class NativeGSSContext implements GSSContextSpi {
         }
     }
     public GSSCredentialSpi getDelegCred() throws GSSException {
+        disposeDelegatedCred = null;
         return delegatedCred;
     }
     public boolean isInitiator() {

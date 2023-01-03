@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -351,7 +351,7 @@ public @UsesObjectEquals class CertificateFactory {
      * @return a certificate object initialized with the data
      * from the input stream.
      *
-     * @exception CertificateException on parsing errors.
+     * @throws    CertificateException on parsing errors.
      */
     public final Certificate generateCertificate(InputStream inStream)
         throws CertificateException
@@ -389,7 +389,7 @@ public @UsesObjectEquals class CertificateFactory {
      * @param inStream an {@code InputStream} containing the data
      * @return a {@code CertPath} initialized with the data from the
      *   {@code InputStream}
-     * @exception CertificateException if an exception occurs while decoding
+     * @throws    CertificateException if an exception occurs while decoding
      * @since 1.4
      */
     public final CertPath generateCertPath(InputStream inStream)
@@ -411,7 +411,7 @@ public @UsesObjectEquals class CertificateFactory {
      * @param encoding the encoding used for the data
      * @return a {@code CertPath} initialized with the data from the
      *   {@code InputStream}
-     * @exception CertificateException if an exception occurs while decoding or
+     * @throws    CertificateException if an exception occurs while decoding or
      *   the encoding requested is not supported
      * @since 1.4
      */
@@ -432,7 +432,7 @@ public @UsesObjectEquals class CertificateFactory {
      * @param certificates a {@code List} of {@code Certificate}s
      * @return a {@code CertPath} initialized with the supplied list of
      *   certificates
-     * @exception CertificateException if an exception occurs
+     * @throws    CertificateException if an exception occurs
      * @since 1.4
      */
     public final CertPath
@@ -475,7 +475,7 @@ public @UsesObjectEquals class CertificateFactory {
      * java.security.cert.Certificate objects
      * initialized with the data from the input stream.
      *
-     * @exception CertificateException on parsing errors.
+     * @throws    CertificateException on parsing errors.
      */
     public final Collection<? extends Certificate> generateCertificates
             (InputStream inStream) throws CertificateException {
@@ -509,7 +509,7 @@ public @UsesObjectEquals class CertificateFactory {
      * @return a CRL object initialized with the data
      * from the input stream.
      *
-     * @exception CRLException on parsing errors.
+     * @throws    CRLException on parsing errors.
      */
     public final CRL generateCRL(InputStream inStream)
         throws CRLException
@@ -548,7 +548,7 @@ public @UsesObjectEquals class CertificateFactory {
      * java.security.cert.CRL objects initialized with the data from the input
      * stream.
      *
-     * @exception CRLException on parsing errors.
+     * @throws    CRLException on parsing errors.
      */
     public final Collection<? extends CRL> generateCRLs(InputStream inStream)
             throws CRLException {

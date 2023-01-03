@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_IDEALKIT_HPP
-#define SHARE_VM_OPTO_IDEALKIT_HPP
+#ifndef SHARE_OPTO_IDEALKIT_HPP
+#define SHARE_OPTO_IDEALKIT_HPP
 
 #include "opto/addnode.hpp"
 #include "opto/cfgnode.hpp"
@@ -220,7 +220,7 @@ class IdealKit: public StackObj {
              const Type* t,
              BasicType bt,
              int adr_idx,
-             bool require_atomic_access = false);
+             bool require_atomic_access = false, MemNode::MemOrd mo = MemNode::unordered);
 
   // Return the new StoreXNode
   Node* store(Node* ctl,
@@ -260,4 +260,4 @@ class IdealKit: public StackObj {
                             Node* parm3);
 };
 
-#endif // SHARE_VM_OPTO_IDEALKIT_HPP
+#endif // SHARE_OPTO_IDEALKIT_HPP

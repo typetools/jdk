@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,17 +22,17 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SERIAL_SERIALHEAP_HPP
-#define SHARE_VM_GC_SERIAL_SERIALHEAP_HPP
+#ifndef SHARE_GC_SERIAL_SERIALHEAP_HPP
+#define SHARE_GC_SERIAL_SERIALHEAP_HPP
 
 #include "gc/serial/defNewGeneration.hpp"
 #include "gc/serial/tenuredGeneration.hpp"
 #include "gc/shared/genCollectedHeap.hpp"
 #include "utilities/growableArray.hpp"
 
-class GenCollectorPolicy;
 class GCMemoryManager;
 class MemoryPool;
+class OopIterateClosure;
 class TenuredGeneration;
 
 class SerialHeap : public GenCollectedHeap {
@@ -46,7 +46,7 @@ private:
 public:
   static SerialHeap* heap();
 
-  SerialHeap(GenCollectorPolicy* policy);
+  SerialHeap();
 
   virtual Name kind() const {
     return CollectedHeap::Serial;
@@ -58,11 +58,6 @@ public:
 
   virtual GrowableArray<GCMemoryManager*> memory_managers();
   virtual GrowableArray<MemoryPool*> memory_pools();
-
-  // override
-  virtual bool is_in_closed_subset(const void* p) const {
-    return is_in(p);
-  }
 
   DefNewGeneration* young_gen() const {
     assert(_young_gen->kind() == Generation::DefNew, "Wrong generation type");
@@ -81,6 +76,10 @@ public:
   template <typename OopClosureType1, typename OopClosureType2>
   void oop_since_save_marks_iterate(OopClosureType1* cur,
                                     OopClosureType2* older);
+
+  void young_process_roots(OopIterateClosure* root_closure,
+                           OopIterateClosure* old_gen_closure,
+                           CLDClosure* cld_closure);
 };
 
-#endif // SHARE_VM_GC_CMS_CMSHEAP_HPP
+#endif // SHARE_GC_SERIAL_SERIALHEAP_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,9 @@
 #define SHARE_GC_Z_ZRELOCATE_HPP
 
 #include "gc/z/zRelocationSet.hpp"
-#include "gc/z/zWorkers.hpp"
-#include "memory/allocation.hpp"
+
+class ZForwarding;
+class ZWorkers;
 
 class ZRelocate {
   friend class ZRelocateTask;
@@ -34,13 +35,15 @@ class ZRelocate {
 private:
   ZWorkers* const _workers;
 
-  bool work(ZRelocationSetParallelIterator* iter);
+  void work(ZRelocationSetParallelIterator* iter);
 
 public:
   ZRelocate(ZWorkers* workers);
 
-  void start();
-  bool relocate(ZRelocationSet* relocation_set);
+  uintptr_t relocate_object(ZForwarding* forwarding, uintptr_t from_addr) const;
+  uintptr_t forward_object(ZForwarding* forwarding, uintptr_t from_addr) const;
+
+  void relocate(ZRelocationSet* relocation_set);
 };
 
 #endif // SHARE_GC_Z_ZRELOCATE_HPP

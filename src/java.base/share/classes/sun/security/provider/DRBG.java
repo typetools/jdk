@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,6 +60,7 @@ public final class DRBG extends SecureRandomSpi {
 
     private static final String PROP_NAME = "securerandom.drbg.config";
 
+    @java.io.Serial
     private static final long serialVersionUID = 9L;
 
     private transient AbstractDrbg impl;
@@ -92,6 +93,7 @@ public final class DRBG extends SecureRandomSpi {
 
         // Can be configured with a security property
 
+        @SuppressWarnings("removal")
         String config = AccessController.doPrivileged((PrivilegedAction<String>)
                 () -> Security.getProperty(PROP_NAME));
 
@@ -273,6 +275,7 @@ public final class DRBG extends SecureRandomSpi {
         }
     }
 
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
             throws IOException, ClassNotFoundException {
         s.defaultReadObject();

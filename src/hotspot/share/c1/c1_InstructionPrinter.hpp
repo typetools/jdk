@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_INSTRUCTIONPRINTER_HPP
-#define SHARE_VM_C1_C1_INSTRUCTIONPRINTER_HPP
+#ifndef SHARE_C1_C1_INSTRUCTIONPRINTER_HPP
+#define SHARE_C1_C1_INSTRUCTIONPRINTER_HPP
 
 #include "c1/c1_IR.hpp"
 #include "c1/c1_Instruction.hpp"
@@ -47,8 +47,8 @@ class InstructionPrinter: public InstructionVisitor {
 
  public:
   InstructionPrinter(bool print_phis = true, outputStream* output = tty)
-    : _print_phis(print_phis)
-    , _output(output)
+    : _output(output)
+    , _print_phis(print_phis)
   {}
 
   outputStream* output() { return _output; }
@@ -115,7 +115,6 @@ class InstructionPrinter: public InstructionVisitor {
   virtual void do_BlockBegin     (BlockBegin*      x);
   virtual void do_Goto           (Goto*            x);
   virtual void do_If             (If*              x);
-  virtual void do_IfInstanceOf   (IfInstanceOf*    x);
   virtual void do_TableSwitch    (TableSwitch*     x);
   virtual void do_LookupSwitch   (LookupSwitch*    x);
   virtual void do_Return         (Return*          x);
@@ -141,4 +140,4 @@ class InstructionPrinter: public InstructionVisitor {
 };
 #endif // PRODUCT
 
-#endif // SHARE_VM_C1_C1_INSTRUCTIONPRINTER_HPP
+#endif // SHARE_C1_C1_INSTRUCTIONPRINTER_HPP

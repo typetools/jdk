@@ -1,6 +1,5 @@
 /*
- * reserved comment block
- * DO NOT REMOVE OR ALTER!
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,8 +25,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * @version $Id: ElementValue
  * @since 6.0
+ * @LastModified: May 2021
  */
 public abstract class ElementValue
 {
@@ -106,7 +105,7 @@ public abstract class ElementValue
                 return new ArrayElementValue(ARRAY, evalues, cpool);
 
             default:
-                throw new RuntimeException("Unexpected element value kind in annotation: " + type);
+                throw new IllegalArgumentException("Unexpected element value kind in annotation: " + type);
         }
     }
 

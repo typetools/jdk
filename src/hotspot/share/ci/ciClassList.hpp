@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CI_CICLASSLIST_HPP
-#define SHARE_VM_CI_CICLASSLIST_HPP
+#ifndef SHARE_CI_CICLASSLIST_HPP
+#define SHARE_CI_CICLASSLIST_HPP
 
 class ciEnv;
 class ciObjectFactory;
@@ -48,6 +48,7 @@ class   ciNullObject;
 class   ciInstance;
 class     ciCallSite;
 class     ciMemberName;
+class     ciNativeEntryPoint;
 class     ciMethodHandle;
 class     ciMethodType;
 class     ciArray;
@@ -97,6 +98,7 @@ friend class ciObject;                 \
 friend class ciNullObject;             \
 friend class ciInstance;               \
 friend class ciMemberName;             \
+friend class ciNativeEntryPoint;       \
 friend class ciMethod;                 \
 friend class ciMethodData;             \
 friend class ciMethodHandle;           \
@@ -118,4 +120,4 @@ friend class ciArrayKlass;             \
 friend class ciObjArrayKlass;          \
 friend class ciTypeArrayKlass;         \
 
-#endif // SHARE_VM_CI_CICLASSLIST_HPP
+#endif // SHARE_CI_CICLASSLIST_HPP

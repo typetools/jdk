@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,12 +28,13 @@
  *          get overwritten when the sourcepath is equal to the destination
  *          directory.
  *          Also test that -docfilessubdirs and -excludedocfilessubdir both work.
- * @author jamieh
- * @library ../lib
+ * @library ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build JavadocTester
+ * @build javadoc.tester.*
  * @run main TestDocFileDir
  */
+
+import javadoc.tester.JavadocTester;
 
 public class TestDocFileDir extends JavadocTester {
 
@@ -44,7 +45,7 @@ public class TestDocFileDir extends JavadocTester {
 
     // Output dir = "", Input dir = ""
     @Test
-    void test1() {
+    public void test1() {
         copyDir(testSrc("pkg"), ".");
         setOutputDirectoryCheck(DirectoryCheck.NO_HTML_FILES);
         javadoc("pkg/C.java");
@@ -55,7 +56,7 @@ public class TestDocFileDir extends JavadocTester {
 
     // Output dir = Input Dir
     @Test
-    void test2() {
+    public void test2() {
         String outdir = "out2";
         copyDir(testSrc("pkg"), outdir);
         setOutputDirectoryCheck(DirectoryCheck.NO_HTML_FILES);
@@ -69,7 +70,7 @@ public class TestDocFileDir extends JavadocTester {
 
     // Exercising -docfilessubdirs and -excludedocfilessubdir
     @Test
-    void test3() {
+    public void test3() {
         String outdir = "out3";
         setOutputDirectoryCheck(DirectoryCheck.NONE);
         javadoc("-d", outdir,

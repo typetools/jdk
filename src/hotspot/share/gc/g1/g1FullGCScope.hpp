@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,19 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1FULLGCSCOPE_HPP
-#define SHARE_VM_GC_G1_G1FULLGCSCOPE_HPP
+#ifndef SHARE_GC_G1_G1FULLGCSCOPE_HPP
+#define SHARE_GC_G1_G1FULLGCSCOPE_HPP
 
 #include "gc/g1/g1CollectedHeap.hpp"
 #include "gc/g1/g1HeapTransition.hpp"
-#include "gc/shared/collectorCounters.hpp"
+#include "gc/g1/g1Trace.hpp"
 #include "gc/shared/gcId.hpp"
-#include "gc/shared/gcTrace.hpp"
 #include "gc/shared/gcTraceTime.hpp"
 #include "gc/shared/gcTimer.hpp"
+#include "gc/shared/gcVMOperations.hpp"
 #include "gc/shared/isGCActiveMark.hpp"
-#include "gc/shared/vmGCOperations.hpp"
 #include "memory/allocation.hpp"
+#include "memory/resourceArea.hpp"
 #include "services/memoryService.hpp"
 
 class GCMemoryManager;
@@ -51,12 +51,15 @@ class G1FullGCScope : public StackObj {
   IsGCActiveMark          _active;
   GCTraceCPUTime          _cpu_time;
   ClearedAllSoftRefs      _soft_refs;
-  TraceCollectorStats     _collector_stats;
-  TraceMemoryManagerStats _memory_stats;
+  G1MonitoringScope       _monitoring_scope;
   G1HeapTransition        _heap_transition;
+  size_t                  _region_compaction_threshold;
 
 public:
-  G1FullGCScope(GCMemoryManager* memory_manager, bool explicit_gc, bool clear_soft);
+  G1FullGCScope(G1MonitoringSupport* monitoring_support,
+                bool explicit_gc,
+                bool clear_soft,
+                bool do_maximal_compaction);
   ~G1FullGCScope();
 
   bool is_explicit_gc();
@@ -65,6 +68,7 @@ public:
   STWGCTimer* timer();
   G1FullGCTracer* tracer();
   G1HeapTransition* heap_transition();
+  size_t region_compaction_threshold();
 };
 
-#endif //SHARE_VM_GC_G1_G1FULLGCSCOPE_HPP
+#endif // SHARE_GC_G1_G1FULLGCSCOPE_HPP

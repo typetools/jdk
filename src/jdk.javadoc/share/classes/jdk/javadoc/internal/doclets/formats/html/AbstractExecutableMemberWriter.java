@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,25 +27,30 @@ package jdk.javadoc.internal.doclets.formats.html;
 
 import java.util.List;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
-import javax.lang.model.util.SimpleTypeVisitor9;
+import javax.lang.model.util.SimpleTypeVisitor14;
 
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
+import jdk.javadoc.internal.doclets.formats.html.markup.Entity;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
 
-import static jdk.javadoc.internal.doclets.formats.html.LinkInfoImpl.Kind.*;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.EXECUTABLE_MEMBER_PARAM;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.MEMBER;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.MEMBER_DEPRECATED_PREVIEW;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.MEMBER_TYPE_PARAMS;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.RECEIVER_TYPE;
+import static jdk.javadoc.internal.doclets.formats.html.HtmlLinkInfo.Kind.THROWS_TYPE;
 
 /**
  * Print method and constructor info.
@@ -54,10 +59,6 @@ import static jdk.javadoc.internal.doclets.formats.html.LinkInfoImpl.Kind.*;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Robert Field
- * @author Atul M Dambalkar
- * @author Bhavesh Patel (Modified)
  */
 public abstract class AbstractExecutableMemberWriter extends AbstractMemberWriter {
 
@@ -69,19 +70,6 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
         super(writer);
     }
 
-    /**
-     * Add the type parameters for the executable member.
-     *
-     * @param member the member to write type parameters for.
-     * @param htmltree the content tree to which the parameters will be added.
-     */
-    protected void addTypeParameters(ExecutableElement member, Content htmltree) {
-        Content typeParameters = getTypeParameters(member);
-        if (!typeParameters.isEmpty()) {
-            htmltree.addContent(typeParameters);
-            htmltree.addContent(Contents.SPACE);
-        }
-    }
 
     /**
      * Get the type parameters for the executable member.
@@ -90,28 +78,26 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      * @return the type parameters.
      */
     protected Content getTypeParameters(ExecutableElement member) {
-        LinkInfoImpl linkInfo = new LinkInfoImpl(configuration, MEMBER_TYPE_PARAMS, member);
+        HtmlLinkInfo linkInfo = new HtmlLinkInfo(configuration, MEMBER_TYPE_PARAMS, member);
         return writer.getTypeParameterLinks(linkInfo);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected Content getDeprecatedLink(Element member) {
-        Content deprecatedLinkContent = new ContentBuilder();
-        deprecatedLinkContent.addContent(utils.getFullyQualifiedName(member));
+    protected Content getSummaryLink(Element member) {
+        Content content = new ContentBuilder();
+        content.add(utils.getFullyQualifiedName(member));
         if (!utils.isConstructor(member)) {
-            deprecatedLinkContent.addContent(".");
-            deprecatedLinkContent.addContent(member.getSimpleName());
+            content.add(".");
+            content.add(member.getSimpleName());
         }
-        String signature = utils.flatSignature((ExecutableElement) member);
+        String signature = utils.flatSignature((ExecutableElement) member, typeElement);
         if (signature.length() > 2) {
-            deprecatedLinkContent.addContent(Contents.ZERO_WIDTH_SPACE);
+            content.add(new HtmlTree(TagName.WBR));
         }
-        deprecatedLinkContent.addContent(signature);
+        content.add(signature);
 
-        return writer.getDocLink(MEMBER, utils.getEnclosingTypeElement(member), member, deprecatedLinkContent);
+        return writer.getDocLink(MEMBER_DEPRECATED_PREVIEW, utils.getEnclosingTypeElement(member),
+                member, content, null, false);
     }
 
     /**
@@ -123,15 +109,13 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      * @param tdSummary the content tree to which the link will be added
      */
     @Override
-    protected void addSummaryLink(LinkInfoImpl.Kind context, TypeElement te, Element member,
-            Content tdSummary) {
+    protected void addSummaryLink(HtmlLinkInfo.Kind context, TypeElement te, Element member,
+                                  Content tdSummary) {
         ExecutableElement ee = (ExecutableElement)member;
-        Content memberLink = HtmlTree.SPAN(HtmlStyle.memberNameLink,
-                writer.getDocLink(context, te, ee,
-                name(ee), false));
+        Content memberLink = writer.getDocLink(context, te, ee, name(ee), HtmlStyle.memberNameLink);
         Content code = HtmlTree.CODE(memberLink);
-        addParameters(ee, false, code, name(ee).length() - 1);
-        tdSummary.addContent(code);
+        addParameters(ee, code);
+        tdSummary.add(code);
     }
 
     /**
@@ -143,7 +127,7 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      */
     @Override
     protected void addInheritedSummaryLink(TypeElement te, Element member, Content linksTree) {
-        linksTree.addContent(writer.getDocLink(MEMBER, te, member, name(member), false));
+        linksTree.add(writer.getDocLink(MEMBER, te, member, name(member)));
     }
 
     /**
@@ -154,36 +138,68 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      * @param isVarArg true if this is a link to var arg.
      * @param tree the content tree to which the parameter information will be added.
      */
-    protected void addParam(ExecutableElement member, VariableElement param,
+    protected void addParam(ExecutableElement member, VariableElement param, TypeMirror paramType,
             boolean isVarArg, Content tree) {
-        Content link = writer.getLink(new LinkInfoImpl(configuration, EXECUTABLE_MEMBER_PARAM,
-                param.asType()).varargs(isVarArg));
-        tree.addContent(link);
+        Content link = writer.getLink(new HtmlLinkInfo(configuration, EXECUTABLE_MEMBER_PARAM,
+                paramType).varargs(isVarArg));
+        tree.add(link);
         if(name(param).length() > 0) {
-            tree.addContent(Contents.SPACE);
-            tree.addContent(name(param));
+            tree.add(Entity.NO_BREAK_SPACE);
+            tree.add(name(param));
         }
     }
 
     /**
-     * Add the receiver annotations information.
+     * Add the receiver information.
+     *
+     * <p>Note: receivers can only have type-use annotations.</p>
      *
      * @param member the member to write receiver annotations for.
      * @param rcvrType the receiver type.
-     * @param descList list of annotation description.
      * @param tree the content tree to which the information will be added.
      */
-    protected void addReceiverAnnotations(ExecutableElement member, TypeMirror rcvrType,
-            List<? extends AnnotationMirror> annotationMirrors, Content tree) {
-        writer.addReceiverAnnotationInfo(member, rcvrType, annotationMirrors, tree);
-        tree.addContent(Contents.SPACE);
-        tree.addContent(utils.getTypeName(rcvrType, false));
-        LinkInfoImpl linkInfo = new LinkInfoImpl(configuration, RECEIVER_TYPE, rcvrType);
-        tree.addContent(writer.getTypeParameterLinks(linkInfo));
-        tree.addContent(Contents.SPACE);
-        tree.addContent("this");
+    protected void addReceiver(ExecutableElement member, TypeMirror rcvrType, Content tree) {
+        var info = new HtmlLinkInfo(configuration, RECEIVER_TYPE, rcvrType);
+        info.linkToSelf = false;
+        tree.add(writer.getLink(info));
+        tree.add(Entity.NO_BREAK_SPACE);
+        if (member.getKind() == ElementKind.CONSTRUCTOR) {
+            tree.add(utils.getTypeName(rcvrType, false));
+            tree.add(".");
+        }
+        tree.add("this");
     }
 
+    /**
+     * Returns {@code true} if a receiver type is annotated anywhere in its type for
+     * inclusion in member details.
+     *
+     * @param receiverType the receiver type.
+     * @return {@code true} if the receiver is annotated
+     */
+    protected boolean isAnnotatedReceiver(TypeMirror receiverType) {
+        return new SimpleTypeVisitor14<Boolean, Void>() {
+            @Override
+            protected Boolean defaultAction(TypeMirror e, Void unused) {
+                return utils.isAnnotated(e);
+            }
+
+            @Override
+            public Boolean visitDeclared(DeclaredType t, Void unused) {
+                if (super.visitDeclared(t, unused) || visit(t.getEnclosingType())) {
+                    return true;
+                }
+
+                for (var e : t.getTypeArguments()) {
+                    if (visit(e)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }.visit(receiverType);
+    }
 
     /**
      * Add all the parameters for the executable member.
@@ -191,8 +207,13 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      * @param member the member to write parameters for.
      * @param htmltree the content tree to which the parameters information will be added.
      */
-    protected void addParameters(ExecutableElement member, Content htmltree, int indentSize) {
-        addParameters(member, true, htmltree, indentSize);
+    protected void addParameters(ExecutableElement member, Content htmltree) {
+        Content paramTree = getParameters(member, false);
+        if (paramTree.charCount() > 2) {
+            // only add <wbr> for non-empty parameters
+            htmltree.add(new HtmlTree(TagName.WBR));
+        }
+        htmltree.add(paramTree);
     }
 
     /**
@@ -200,92 +221,79 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
      *
      * @param member the member to write parameters for.
      * @param includeAnnotations true if annotation information needs to be added.
-     * @param htmltree the content tree to which the parameters information will be added.
+     * @return the content tree containing the parameter information
      */
-    protected void addParameters(ExecutableElement member,
-            boolean includeAnnotations, Content htmltree, int indentSize) {
+    protected Content getParameters(ExecutableElement member, boolean includeAnnotations) {
         Content paramTree = new ContentBuilder();
+        paramTree.add("(");
         String sep = "";
         List<? extends VariableElement> parameters = member.getParameters();
-        CharSequence indent = makeSpace(indentSize + 1);
         TypeMirror rcvrType = member.getReceiverType();
-        if (includeAnnotations && rcvrType != null && utils.isAnnotated(rcvrType)) {
-            List<? extends AnnotationMirror> annotationMirrors = rcvrType.getAnnotationMirrors();
-            addReceiverAnnotations(member, rcvrType, annotationMirrors, paramTree);
-            sep = "," + DocletConstants.NL + indent;
+        if (includeAnnotations && rcvrType != null && isAnnotatedReceiver(rcvrType)) {
+            addReceiver(member, rcvrType, paramTree);
+            sep = "," + DocletConstants.NL + " ";
         }
         int paramstart;
+        ExecutableType instMeth = utils.asInstantiatedMethodType(typeElement, member);
         for (paramstart = 0; paramstart < parameters.size(); paramstart++) {
-            paramTree.addContent(sep);
+            paramTree.add(sep);
             VariableElement param = parameters.get(paramstart);
+            TypeMirror paramType = instMeth.getParameterTypes().get(paramstart);
 
             if (param.getKind() != ElementKind.INSTANCE_INIT) {
                 if (includeAnnotations) {
-                    boolean foundAnnotations =
-                            writer.addAnnotationInfo(indent.length(),
-                            member, param, paramTree);
-                    if (foundAnnotations) {
-                        paramTree.addContent(DocletConstants.NL);
-                        paramTree.addContent(indent);
+                    Content annotationInfo = writer.getAnnotationInfo(param, false);
+                    if (!annotationInfo.isEmpty()) {
+                        paramTree.add(annotationInfo)
+                                .add(DocletConstants.NL)
+                                .add(" ");
                     }
                 }
-                addParam(member, param,
+                addParam(member, param, paramType,
                     (paramstart == parameters.size() - 1) && member.isVarArgs(), paramTree);
                 break;
             }
         }
 
         for (int i = paramstart + 1; i < parameters.size(); i++) {
-            paramTree.addContent(",");
-            paramTree.addContent(DocletConstants.NL);
-            paramTree.addContent(indent);
+            paramTree.add(",");
+            paramTree.add(DocletConstants.NL);
+            paramTree.add(" ");
+
             if (includeAnnotations) {
-                boolean foundAnnotations =
-                        writer.addAnnotationInfo(indent.length(), member, parameters.get(i),
-                        paramTree);
-                if (foundAnnotations) {
-                    paramTree.addContent(DocletConstants.NL);
-                    paramTree.addContent(indent);
+                Content annotationInfo = writer.getAnnotationInfo(parameters.get(i), false);
+                if (!annotationInfo.isEmpty()) {
+                    paramTree.add(annotationInfo)
+                            .add(DocletConstants.NL)
+                            .add(" ");
                 }
             }
-            addParam(member, parameters.get(i), (i == parameters.size() - 1) && member.isVarArgs(),
+            addParam(member, parameters.get(i), instMeth.getParameterTypes().get(i),
+                    (i == parameters.size() - 1) && member.isVarArgs(),
                     paramTree);
         }
-        if (paramTree.isEmpty()) {
-            htmltree.addContent("()");
-        } else {
-            htmltree.addContent(Contents.ZERO_WIDTH_SPACE);
-            htmltree.addContent("(");
-            htmltree.addContent(paramTree);
-            paramTree.addContent(")");
-        }
+        paramTree.add(")");
+        return paramTree;
     }
 
     /**
-     * Add exceptions for the executable member.
+     * Get a content tree containing the exception information for the executable member.
      *
      * @param member the member to write exceptions for.
-     * @param htmltree the content tree to which the exceptions information will be added.
+     * @return the content tree containing the exceptions information.
      */
-    protected void addExceptions(ExecutableElement member, Content htmltree, int indentSize) {
-        List<? extends TypeMirror> exceptions = member.getThrownTypes();
-        if (!exceptions.isEmpty()) {
-            CharSequence indent = makeSpace(indentSize + 1 - 7);
-            htmltree.addContent(DocletConstants.NL);
-            htmltree.addContent(indent);
-            htmltree.addContent("throws ");
-            indent = makeSpace(indentSize + 1);
-            Content link = writer.getLink(new LinkInfoImpl(configuration, MEMBER, exceptions.get(0)));
-            htmltree.addContent(link);
-            for(int i = 1; i < exceptions.size(); i++) {
-                htmltree.addContent(",");
-                htmltree.addContent(DocletConstants.NL);
-                htmltree.addContent(indent);
-                Content exceptionLink = writer.getLink(new LinkInfoImpl(configuration, MEMBER,
-                        exceptions.get(i)));
-                htmltree.addContent(exceptionLink);
+    protected Content getExceptions(ExecutableElement member) {
+        List<? extends TypeMirror> exceptions = utils.asInstantiatedMethodType(typeElement, member).getThrownTypes();
+        Content htmlTree = new ContentBuilder();
+        for (TypeMirror t : exceptions) {
+            if (!htmlTree.isEmpty()) {
+                htmlTree.add(",");
+                htmlTree.add(DocletConstants.NL);
             }
+            Content link = writer.getLink(new HtmlLinkInfo(configuration, THROWS_TYPE, t));
+            htmlTree.add(link);
         }
+        return htmlTree;
     }
 
     protected TypeElement implementsMethodInIntfac(ExecutableElement method,
@@ -302,62 +310,5 @@ public abstract class AbstractExecutableMemberWriter extends AbstractMemberWrite
             }
         }
         return null;
-    }
-
-    /**
-     * For backward compatibility, include an anchor using the erasures of the
-     * parameters.  NOTE:  We won't need this method anymore after we fix
-     * see tags so that they use the type instead of the erasure.
-     *
-     * @param executableElement the ExecutableElement to anchor to.
-     * @return the 1.4.x style anchor for the executable element.
-     */
-    protected String getErasureAnchor(ExecutableElement executableElement) {
-        final StringBuilder buf = new StringBuilder(writer.anchorName(executableElement));
-        buf.append("(");
-        List<? extends VariableElement> parameters = executableElement.getParameters();
-        boolean foundTypeVariable = false;
-        for (int i = 0; i < parameters.size(); i++) {
-            if (i > 0) {
-                buf.append(",");
-            }
-            TypeMirror t = parameters.get(i).asType();
-            SimpleTypeVisitor9<Boolean, Void> stv = new SimpleTypeVisitor9<Boolean, Void>() {
-                boolean foundTypeVariable = false;
-
-                @Override
-                public Boolean visitArray(ArrayType t, Void p) {
-                    visit(t.getComponentType());
-                    buf.append(utils.getDimension(t));
-                    return foundTypeVariable;
-                }
-
-                @Override
-                public Boolean visitTypeVariable(TypeVariable t, Void p) {
-                    buf.append(utils.asTypeElement(t).getQualifiedName());
-                    foundTypeVariable = true;
-                    return foundTypeVariable;
-                }
-
-                @Override
-                public Boolean visitDeclared(DeclaredType t, Void p) {
-                    buf.append(utils.getQualifiedTypeName(t));
-                    return foundTypeVariable;
-                }
-
-                @Override
-                protected Boolean defaultAction(TypeMirror e, Void p) {
-                    buf.append(e);
-                    return foundTypeVariable;
-                }
-            };
-
-            boolean isTypeVariable = stv.visit(t);
-            if (!foundTypeVariable) {
-                foundTypeVariable = isTypeVariable;
-            }
-        }
-        buf.append(")");
-        return foundTypeVariable ? writer.links.getName(buf.toString()) : null;
     }
 }

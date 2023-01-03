@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,7 +73,7 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
         throws IOException
     {
         String[] s = split(attribute);
-        if (s[0].length() == 0)
+        if (s[0].isEmpty())
             throw new IllegalArgumentException(attribute);
         DynamicFileAttributeView view = getFileAttributeView(file, s[0], options);
         if (view == null)
@@ -86,7 +86,7 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
         throws IOException
     {
         String[] s = split(attributes);
-        if (s[0].length() == 0)
+        if (s[0].isEmpty())
             throw new IllegalArgumentException(attributes);
         DynamicFileAttributeView view = getFileAttributeView(file, s[0], options);
         if (view == null)
@@ -154,4 +154,11 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
             return false;
         }
     }
+
+    /**
+     * Returns a path name as bytes for a Unix domain socket.
+     * Different encodings may be used for these names on some platforms.
+     * If path is empty, then an empty byte[] is returned.
+     */
+    public abstract byte[] getSunPathForSocketFile(Path path);
 }

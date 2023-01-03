@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "c1/c1_IR.hpp"
 #include "c1/c1_InstructionPrinter.hpp"
 #include "c1/c1_Optimizer.hpp"
+#include "compiler/oopMap.hpp"
 #include "memory/resourceArea.hpp"
 #include "utilities/bitMap.inline.hpp"
 
@@ -132,8 +133,8 @@ BlockBegin* IRScope::build_graph(Compilation* compilation, int osr_bci) {
 
 
 IRScope::IRScope(Compilation* compilation, IRScope* caller, int caller_bci, ciMethod* method, int osr_bci, bool create_graph)
-: _callees(2)
-, _compilation(compilation)
+: _compilation(compilation)
+, _callees(2)
 , _requires_phi_function(method->max_locals())
 {
   _caller             = caller;
@@ -184,11 +185,11 @@ bool IRScopeDebugInfo::should_reexecute() {
 
 // Stack must be NON-null
 CodeEmitInfo::CodeEmitInfo(ValueStack* stack, XHandlers* exception_handlers, bool deoptimize_on_exception)
-  : _scope(stack->scope())
-  , _scope_debug_info(NULL)
+  : _scope_debug_info(NULL)
+  , _scope(stack->scope())
+  , _exception_handlers(exception_handlers)
   , _oop_map(NULL)
   , _stack(stack)
-  , _exception_handlers(exception_handlers)
   , _is_method_handle_invoke(false)
   , _deoptimize_on_exception(deoptimize_on_exception) {
   assert(_stack != NULL, "must be non null");
@@ -196,9 +197,9 @@ CodeEmitInfo::CodeEmitInfo(ValueStack* stack, XHandlers* exception_handlers, boo
 
 
 CodeEmitInfo::CodeEmitInfo(CodeEmitInfo* info, ValueStack* stack)
-  : _scope(info->_scope)
+  : _scope_debug_info(NULL)
+  , _scope(info->_scope)
   , _exception_handlers(NULL)
-  , _scope_debug_info(NULL)
   , _oop_map(NULL)
   , _stack(stack == NULL ? info->_stack : stack)
   , _is_method_handle_invoke(info->_is_method_handle_invoke)
@@ -440,7 +441,7 @@ class UseCountComputer: public ValueVisitor, BlockClosure {
 
 
 // helper macro for short definition of trace-output inside code
-#ifndef PRODUCT
+#ifdef ASSERT
   #define TRACE_LINEAR_SCAN(level, code)       \
     if (TraceLinearScanLevel >= level) {       \
       code;                                    \
@@ -509,7 +510,7 @@ class ComputeLinearScanOrder : public StackObj {
   void compute_dominators();
 
   // debug functions
-  NOT_PRODUCT(void print_blocks();)
+  DEBUG_ONLY(void print_blocks();)
   DEBUG_ONLY(void verify();)
 
   Compilation* compilation() const { return _compilation; }
@@ -527,14 +528,14 @@ ComputeLinearScanOrder::ComputeLinearScanOrder(Compilation* c, BlockBegin* start
   _num_blocks(0),
   _num_loops(0),
   _iterative_dominators(false),
+  _linear_scan_order(NULL), // initialized later with correct size
   _visited_blocks(_max_block_id),
   _active_blocks(_max_block_id),
   _dominator_blocks(_max_block_id),
   _forward_branches(_max_block_id, _max_block_id, 0),
   _loop_end_blocks(8),
-  _work_list(8),
-  _linear_scan_order(NULL), // initialized later with correct size
   _loop_map(0),             // initialized later with correct size
+  _work_list(8),
   _compilation(c)
 {
   TRACE_LINEAR_SCAN(2, tty->print_cr("***** computing linear-scan block order"));
@@ -559,7 +560,7 @@ ComputeLinearScanOrder::ComputeLinearScanOrder(Compilation* c, BlockBegin* start
   compute_order(start_block);
   compute_dominators();
 
-  NOT_PRODUCT(print_blocks());
+  DEBUG_ONLY(print_blocks());
   DEBUG_ONLY(verify());
 }
 
@@ -1047,7 +1048,7 @@ void ComputeLinearScanOrder::compute_dominators() {
 }
 
 
-#ifndef PRODUCT
+#ifdef ASSERT
 void ComputeLinearScanOrder::print_blocks() {
   if (TraceLinearScanLevel >= 2) {
     tty->print_cr("----- loop information:");
@@ -1104,9 +1105,7 @@ void ComputeLinearScanOrder::print_blocks() {
     }
   }
 }
-#endif
 
-#ifdef ASSERT
 void ComputeLinearScanOrder::verify() {
   assert(_linear_scan_order->length() == _num_blocks, "wrong number of blocks in list");
 
@@ -1182,7 +1181,7 @@ void ComputeLinearScanOrder::verify() {
     }
   }
 }
-#endif
+#endif // ASSERT
 
 
 void IR::compute_code() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,59 +30,65 @@
 #include "memory/metaspaceCounters.hpp"
 #include "runtime/perfData.hpp"
 
-class ZOldGenerationCounters : public GenerationCounters {
+class ZGenerationCounters : public GenerationCounters {
 public:
-  ZOldGenerationCounters(const char* name, size_t min_capacity, size_t max_capacity) :
-    // The "1, 1" parameters are for the n-th generation (=1) with 1 space.
-    GenerationCounters(name,
-                       1 /* ordinal */,
-                       1 /* spaces */,
-                       min_capacity /* min_capacity */,
-                       max_capacity /* max_capacity */,
-                       min_capacity /* curr_capacity */) {}
+  ZGenerationCounters(const char* name, int ordinal, int spaces,
+                      size_t min_capacity, size_t max_capacity, size_t curr_capacity) :
+      GenerationCounters(name, ordinal, spaces,
+                         min_capacity, max_capacity, curr_capacity) {}
 
-  virtual void update_all() {
-    size_t committed = ZHeap::heap()->capacity();
-    _current_size->set_value(committed);
+  void update_capacity(size_t capacity) {
+    _current_size->set_value(capacity);
   }
 };
 
 // Class to expose perf counters used by jstat.
 class ZServiceabilityCounters : public CHeapObj<mtGC> {
 private:
-  ZOldGenerationCounters _old_collection_counters;
-  HSpaceCounters         _old_space_counters;
+  ZGenerationCounters _generation_counters;
+  HSpaceCounters      _space_counters;
+  CollectorCounters   _collector_counters;
 
 public:
   ZServiceabilityCounters(size_t min_capacity, size_t max_capacity);
+
+  CollectorCounters* collector_counters();
 
   void update_sizes();
 };
 
 ZServiceabilityCounters::ZServiceabilityCounters(size_t min_capacity, size_t max_capacity) :
     // generation.1
-    _old_collection_counters("old",
-                             min_capacity,
-                             max_capacity),
+    _generation_counters("old"        /* name */,
+                         1            /* ordinal */,
+                         1            /* spaces */,
+                         min_capacity /* min_capacity */,
+                         max_capacity /* max_capacity */,
+                         min_capacity /* curr_capacity */),
     // generation.1.space.0
-    _old_space_counters(_old_collection_counters.name_space(),
-                        "space",
-                        0 /* ordinal */,
-                        max_capacity /* max_capacity */,
-                        min_capacity /* init_capacity */) {}
+    _space_counters(_generation_counters.name_space(),
+                    "space"      /* name */,
+                    0            /* ordinal */,
+                    max_capacity /* max_capacity */,
+                    min_capacity /* init_capacity */),
+    // gc.collector.2
+    _collector_counters("Z concurrent cycle pauses" /* name */,
+                        2                           /* ordinal */) {}
+
+CollectorCounters* ZServiceabilityCounters::collector_counters() {
+  return &_collector_counters;
+}
 
 void ZServiceabilityCounters::update_sizes() {
   if (UsePerfData) {
-    size_t capacity = ZHeap::heap()->capacity();
-    size_t used = MIN2(ZHeap::heap()->used(), capacity);
+    const size_t capacity = ZHeap::heap()->capacity();
+    const size_t used = MIN2(ZHeap::heap()->used(), capacity);
 
-    _old_space_counters.update_capacity(capacity);
-    _old_space_counters.update_used(used);
-
-    _old_collection_counters.update_all();
+    _generation_counters.update_capacity(capacity);
+    _space_counters.update_capacity(capacity);
+    _space_counters.update_used(used);
 
     MetaspaceCounters::update_performance_counters();
-    CompressedClassSpaceCounters::update_performance_counters();
   }
 }
 
@@ -103,8 +109,10 @@ MemoryUsage ZServiceabilityMemoryPool::get_memory_usage() {
   return MemoryUsage(initial_size(), used, committed, max_size());
 }
 
-ZServiceabilityMemoryManager::ZServiceabilityMemoryManager(ZServiceabilityMemoryPool* pool)
-    : GCMemoryManager("ZGC", "end of major GC") {
+ZServiceabilityMemoryManager::ZServiceabilityMemoryManager(const char* name,
+                                                           const char* end_message,
+                                                           ZServiceabilityMemoryPool* pool) :
+    GCMemoryManager(name, end_message) {
   add_pool(pool);
 }
 
@@ -112,7 +120,8 @@ ZServiceability::ZServiceability(size_t min_capacity, size_t max_capacity) :
     _min_capacity(min_capacity),
     _max_capacity(max_capacity),
     _memory_pool(_min_capacity, _max_capacity),
-    _memory_manager(&_memory_pool),
+    _cycle_memory_manager("ZGC Cycles", "end of GC cycle", &_memory_pool),
+    _pause_memory_manager("ZGC Pauses", "end of GC pause", &_memory_pool),
     _counters(NULL) {}
 
 void ZServiceability::initialize() {
@@ -123,35 +132,45 @@ MemoryPool* ZServiceability::memory_pool() {
   return &_memory_pool;
 }
 
-GCMemoryManager* ZServiceability::memory_manager() {
-  return &_memory_manager;
+GCMemoryManager* ZServiceability::cycle_memory_manager() {
+  return &_cycle_memory_manager;
+}
+
+GCMemoryManager* ZServiceability::pause_memory_manager() {
+  return &_pause_memory_manager;
 }
 
 ZServiceabilityCounters* ZServiceability::counters() {
   return _counters;
 }
 
-ZServiceabilityMemoryUsageTracker::~ZServiceabilityMemoryUsageTracker() {
-  MemoryService::track_memory_usage();
-}
+ZServiceabilityCycleTracer::ZServiceabilityCycleTracer() :
+    _memory_manager_stats(ZHeap::heap()->serviceability_cycle_memory_manager(),
+                          ZCollectedHeap::heap()->gc_cause(),
+                          true  /* allMemoryPoolsAffected */,
+                          true  /* recordGCBeginTime */,
+                          true  /* recordPreGCUsage */,
+                          true  /* recordPeakUsage */,
+                          true  /* recordPostGCUsage */,
+                          true  /* recordAccumulatedGCTime */,
+                          true  /* recordGCEndTime */,
+                          true  /* countCollection */) {}
 
-ZServiceabilityManagerStatsTracer::ZServiceabilityManagerStatsTracer(bool is_gc_begin, bool is_gc_end) :
-    _stats(ZHeap::heap()->serviceability_memory_manager(),
-           ZCollectedHeap::heap()->gc_cause() /* cause */,
-           true        /* allMemoryPoolsAffected */,
-           is_gc_begin /* recordGCBeginTime */,
-           is_gc_begin /* recordPreGCUsage */,
-           true        /* recordPeakUsage */,
-           is_gc_end   /* recordPostGCusage */,
-           true        /* recordAccumulatedGCTime */,
-           is_gc_end   /* recordGCEndTime */,
-           is_gc_end   /* countCollection */) {}
+ZServiceabilityPauseTracer::ZServiceabilityPauseTracer() :
+    _svc_gc_marker(SvcGCMarker::CONCURRENT),
+    _counters_stats(ZHeap::heap()->serviceability_counters()->collector_counters()),
+    _memory_manager_stats(ZHeap::heap()->serviceability_pause_memory_manager(),
+                          ZCollectedHeap::heap()->gc_cause(),
+                          true  /* allMemoryPoolsAffected */,
+                          true  /* recordGCBeginTime */,
+                          false /* recordPreGCUsage */,
+                          false /* recordPeakUsage */,
+                          false /* recordPostGCUsage */,
+                          true  /* recordAccumulatedGCTime */,
+                          true  /* recordGCEndTime */,
+                          true  /* countCollection */) {}
 
-ZServiceabilityCountersTracer::ZServiceabilityCountersTracer() {
-  // Nothing to trace with TraceCollectorStats, since ZGC has
-  // neither a young collector nor a full collector.
-}
-
-ZServiceabilityCountersTracer::~ZServiceabilityCountersTracer() {
+ZServiceabilityPauseTracer::~ZServiceabilityPauseTracer()  {
   ZHeap::heap()->serviceability_counters()->update_sizes();
+  MemoryService::track_memory_usage();
 }

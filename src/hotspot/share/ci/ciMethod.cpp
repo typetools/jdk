@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,8 +32,8 @@
 #include "ci/ciStreams.hpp"
 #include "ci/ciSymbol.hpp"
 #include "ci/ciReplay.hpp"
+#include "ci/ciSymbols.hpp"
 #include "ci/ciUtilities.inline.hpp"
-#include "classfile/systemDictionary.hpp"
 #include "compiler/abstractCompiler.hpp"
 #include "compiler/methodLiveness.hpp"
 #include "interpreter/interpreter.hpp"
@@ -44,8 +44,9 @@
 #include "oops/generateOopMap.hpp"
 #include "oops/method.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "prims/nativeLookup.hpp"
+#include "prims/methodHandles.hpp"
 #include "runtime/deoptimization.hpp"
+#include "runtime/handles.inline.hpp"
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/xmlstream.hpp"
 #ifdef COMPILER2
@@ -71,24 +72,25 @@ ciMethod::ciMethod(const methodHandle& h_m, ciInstanceKlass* holder) :
   assert(h_m() != NULL, "no null method");
 
   if (LogTouchedMethods) {
-    h_m()->log_touched(Thread::current());
+    h_m->log_touched(Thread::current());
   }
   // These fields are always filled in in loaded methods.
-  _flags = ciFlags(h_m()->access_flags());
+  _flags = ciFlags(h_m->access_flags());
 
   // Easy to compute, so fill them in now.
-  _max_stack          = h_m()->max_stack();
-  _max_locals         = h_m()->max_locals();
-  _code_size          = h_m()->code_size();
-  _intrinsic_id       = h_m()->intrinsic_id();
-  _handler_count      = h_m()->exception_table_length();
-  _size_of_parameters = h_m()->size_of_parameters();
-  _uses_monitors      = h_m()->access_flags().has_monitor_bytecodes();
-  _balanced_monitors  = !_uses_monitors || h_m()->access_flags().is_monitor_matching();
-  _is_c1_compilable   = !h_m()->is_not_c1_compilable();
-  _is_c2_compilable   = !h_m()->is_not_c2_compilable();
+  _max_stack          = h_m->max_stack();
+  _max_locals         = h_m->max_locals();
+  _code_size          = h_m->code_size();
+  _intrinsic_id       = h_m->intrinsic_id();
+  _handler_count      = h_m->exception_table_length();
+  _size_of_parameters = h_m->size_of_parameters();
+  _uses_monitors      = h_m->access_flags().has_monitor_bytecodes();
+  _balanced_monitors  = !_uses_monitors || h_m->access_flags().is_monitor_matching();
+  _is_c1_compilable   = !h_m->is_not_c1_compilable();
+  _is_c2_compilable   = !h_m->is_not_c2_compilable();
   _can_be_parsed      = true;
-  _has_reserved_stack_access = h_m()->has_reserved_stack_access();
+  _has_reserved_stack_access = h_m->has_reserved_stack_access();
+  _is_overpass        = h_m->is_overpass();
   // Lazy fields, filled in on demand.  Require allocation.
   _code               = NULL;
   _exception_handlers = NULL;
@@ -109,11 +111,11 @@ ciMethod::ciMethod(const methodHandle& h_m, ciInstanceKlass* holder) :
       _can_be_parsed = false;
     }
   } else {
-    CHECK_UNHANDLED_OOPS_ONLY(Thread::current()->clear_unhandled_oops());
+    DEBUG_ONLY(CompilerThread::current()->check_possible_safepoint());
   }
 
-  if (h_m()->method_holder()->is_linked()) {
-    _can_be_statically_bound = h_m()->can_be_statically_bound();
+  if (h_m->method_holder()->is_linked()) {
+    _can_be_statically_bound = h_m->can_be_statically_bound();
   } else {
     // Have to use a conservative value in this case.
     _can_be_statically_bound = false;
@@ -121,25 +123,25 @@ ciMethod::ciMethod(const methodHandle& h_m, ciInstanceKlass* holder) :
 
   // Adjust the definition of this condition to be more useful:
   // %%% take these conditions into account in vtable generation
-  if (!_can_be_statically_bound && h_m()->is_private())
+  if (!_can_be_statically_bound && h_m->is_private())
     _can_be_statically_bound = true;
-  if (_can_be_statically_bound && h_m()->is_abstract())
+  if (_can_be_statically_bound && h_m->is_abstract())
     _can_be_statically_bound = false;
 
   // generating _signature may allow GC and therefore move m.
   // These fields are always filled in.
-  _name = env->get_symbol(h_m()->name());
-  ciSymbol* sig_symbol = env->get_symbol(h_m()->signature());
-  constantPoolHandle cpool = h_m()->constants();
+  _name = env->get_symbol(h_m->name());
+  ciSymbol* sig_symbol = env->get_symbol(h_m->signature());
+  constantPoolHandle cpool(Thread::current(), h_m->constants());
   _signature = new (env->arena()) ciSignature(_holder, cpool, sig_symbol);
   _method_data = NULL;
-  _nmethod_age = h_m()->nmethod_age();
+  _nmethod_age = h_m->nmethod_age();
   // Take a snapshot of these values, so they will be commensurate with the MDO.
-  if (ProfileInterpreter || TieredCompilation) {
-    int invcnt = h_m()->interpreter_invocation_count();
+  if (ProfileInterpreter || CompilerConfig::is_c1_profiling()) {
+    int invcnt = h_m->interpreter_invocation_count();
     // if the value overflowed report it as max int
     _interpreter_invocation_count = invcnt < 0 ? max_jint : invcnt ;
-    _interpreter_throwout_count   = h_m()->interpreter_throwout_count();
+    _interpreter_throwout_count   = h_m->interpreter_throwout_count();
   } else {
     _interpreter_invocation_count = 0;
     _interpreter_throwout_count = 0;
@@ -152,6 +154,8 @@ ciMethod::ciMethod(const methodHandle& h_m, ciInstanceKlass* holder) :
     ciReplay::initialize(this);
   }
 #endif
+
+  CompilerOracle::tag_blackhole_if_possible(h_m);
 }
 
 
@@ -166,16 +170,16 @@ ciMethod::ciMethod(ciInstanceKlass* holder,
   ciMetadata((Metadata*)NULL),
   _name(                   name),
   _holder(                 holder),
-  _intrinsic_id(           vmIntrinsics::_none),
-  _liveness(               NULL),
-  _can_be_statically_bound(false),
+  _method_data(            NULL),
   _method_blocks(          NULL),
-  _method_data(            NULL)
+  _intrinsic_id(           vmIntrinsics::_none),
+  _instructions_size(-1),
+  _can_be_statically_bound(false),
+  _liveness(               NULL)
 #if defined(COMPILER2)
   ,
   _flow(                   NULL),
-  _bcea(                   NULL),
-  _instructions_size(-1)
+  _bcea(                   NULL)
 #endif // COMPILER2
 {
   // Usually holder and accessor are the same type but in some cases
@@ -256,15 +260,6 @@ bool    ciMethod::has_linenumber_table() const {
 
 
 // ------------------------------------------------------------------
-// ciMethod::compressed_linenumber_table
-u_char* ciMethod::compressed_linenumber_table() const {
-  check_is_loaded();
-  VM_ENTRY_MARK;
-  return get_Method()->compressed_linenumber_table();
-}
-
-
-// ------------------------------------------------------------------
 // ciMethod::line_number_from_bci
 int ciMethod::line_number_from_bci(int bci) const {
   check_is_loaded();
@@ -283,34 +278,6 @@ int ciMethod::vtable_index() {
   VM_ENTRY_MARK;
   return get_Method()->vtable_index();
 }
-
-
-// ------------------------------------------------------------------
-// ciMethod::native_entry
-//
-// Get the address of this method's native code, if any.
-address ciMethod::native_entry() {
-  check_is_loaded();
-  assert(flags().is_native(), "must be native method");
-  VM_ENTRY_MARK;
-  Method* method = get_Method();
-  address entry = method->native_function();
-  assert(entry != NULL, "must be valid entry point");
-  return entry;
-}
-
-
-// ------------------------------------------------------------------
-// ciMethod::interpreter_entry
-//
-// Get the entry point for running this method in the interpreter.
-address ciMethod::interpreter_entry() {
-  check_is_loaded();
-  VM_ENTRY_MARK;
-  methodHandle mh(THREAD, get_Method());
-  return Interpreter::entry_for_method(mh);
-}
-
 
 // ------------------------------------------------------------------
 // ciMethod::uses_balanced_monitors
@@ -333,10 +300,12 @@ bool ciMethod::has_balanced_monitors() {
   }
 
   {
-    EXCEPTION_MARK;
+    ExceptionMark em(THREAD);
     ResourceMark rm(THREAD);
     GeneratePairingInfo gpi(method);
-    gpi.compute_map(CATCH);
+    if (!gpi.compute_map(THREAD)) {
+      fatal("Unrecoverable verification or out-of-memory error");
+    }
     if (!gpi.monitor_safe()) {
       return false;
     }
@@ -402,12 +371,14 @@ MethodLivenessResult ciMethod::raw_liveness_at_bci(int bci) {
 // will return true for all locals in some cases to improve debug
 // information.
 MethodLivenessResult ciMethod::liveness_at_bci(int bci) {
-  MethodLivenessResult result = raw_liveness_at_bci(bci);
-  if (CURRENT_ENV->should_retain_local_variables() || DeoptimizeALot || CompileTheWorld) {
+  if (CURRENT_ENV->should_retain_local_variables() || DeoptimizeALot) {
     // Keep all locals live for the user's edification and amusement.
-    result.at_put_range(0, result.size(), true);
+    MethodLivenessResult result(_max_locals);
+    result.set_range(0, _max_locals);
+    result.set_is_valid();
+    return result;
   }
-  return result;
+  return raw_liveness_at_bci(bci);
 }
 
 // ciMethod::live_local_oops_at_bci
@@ -427,7 +398,7 @@ MethodLivenessResult ciMethod::liveness_at_bci(int bci) {
 ResourceBitMap ciMethod::live_local_oops_at_bci(int bci) {
   VM_ENTRY_MARK;
   InterpreterOopMap mask;
-  OopMapCache::compute_one_oop_map(get_Method(), bci, &mask);
+  OopMapCache::compute_one_oop_map(methodHandle(THREAD, get_Method()), bci, &mask);
   int mask_size = max_locals();
   ResourceBitMap result(mask_size);
   int i;
@@ -458,6 +429,27 @@ const BitMap& ciMethod::bci_block_start() {
 
 
 // ------------------------------------------------------------------
+// ciMethod::check_overflow
+//
+// Check whether the profile counter is overflowed and adjust if true.
+// For invoke* it will turn negative values into max_jint,
+// and for checkcast/aastore/instanceof turn positive values into min_jint.
+int ciMethod::check_overflow(int c, Bytecodes::Code code) {
+  switch (code) {
+    case Bytecodes::_aastore:    // fall-through
+    case Bytecodes::_checkcast:  // fall-through
+    case Bytecodes::_instanceof: {
+      return (c > 0 ? min_jint : c); // always non-positive
+    }
+    default: {
+      assert(Bytecodes::is_invoke(code), "%s", Bytecodes::name(code));
+      return (c < 0 ? max_jint : c); // always non-negative
+    }
+  }
+}
+
+
+// ------------------------------------------------------------------
 // ciMethod::call_profile_at_bci
 //
 // Get the ciCallProfile for the invocation of this method.
@@ -469,7 +461,7 @@ ciCallProfile ciMethod::call_profile_at_bci(int bci) {
     ciProfileData* data = method_data()->bci_to_data(bci);
     if (data != NULL && data->is_CounterData()) {
       // Every profiled call site has a counter.
-      int count = data->as_CounterData()->count();
+      int count = check_overflow(data->as_CounterData()->count(), java_code_at_bci(bci));
 
       if (!data->is_ReceiverTypeData()) {
         result._receiver_count[0] = 0;  // that's a definite zero
@@ -485,22 +477,20 @@ ciCallProfile ciMethod::call_profile_at_bci(int bci) {
           morphism++;
         }
         int epsilon = 0;
-        if (TieredCompilation) {
-          // For a call, it is assumed that either the type of the receiver(s)
-          // is recorded or an associated counter is incremented, but not both. With
-          // tiered compilation, however, both can happen due to the interpreter and
-          // C1 profiling invocations differently. Address that inconsistency here.
-          if (morphism == 1 && count > 0) {
-            epsilon = count;
-            count = 0;
-          }
+        // For a call, it is assumed that either the type of the receiver(s)
+        // is recorded or an associated counter is incremented, but not both. With
+        // tiered compilation, however, both can happen due to the interpreter and
+        // C1 profiling invocations differently. Address that inconsistency here.
+        if (morphism == 1 && count > 0) {
+          epsilon = count;
+          count = 0;
         }
         for (uint i = 0; i < call->row_limit(); i++) {
           ciKlass* receiver = call->receiver(i);
           if (receiver == NULL)  continue;
-          int rcount = call->receiver_count(i) + epsilon;
+          int rcount = saturated_add(call->receiver_count(i), epsilon);
           if (rcount == 0) rcount = 1; // Should be valid value
-          receivers_count_total += rcount;
+          receivers_count_total = saturated_add(receivers_count_total, rcount);
           // Add the receiver to result data.
           result.add_receiver(receiver, rcount);
           // If we extend profiling to record methods,
@@ -530,7 +520,7 @@ ciCallProfile ciMethod::call_profile_at_bci(int bci) {
         // do nothing.  Otherwise, increase count to be the sum of all
         // receiver's counts.
         if (count >= 0) {
-          count += receivers_count_total;
+          count = saturated_add(count, receivers_count_total);
         }
       }
       result._count = count;
@@ -685,23 +675,26 @@ ciMethod* ciMethod::find_monomorphic_target(ciInstanceKlass* caller,
     return NULL;
   }
 
-  ciMethod* root_m = resolve_invoke(caller, actual_recv, check_access);
+  ciMethod* root_m = resolve_invoke(caller, actual_recv, check_access, true /* allow_abstract */);
   if (root_m == NULL) {
     // Something went wrong looking up the actual receiver method.
     return NULL;
   }
-  assert(!root_m->is_abstract(), "resolve_invoke promise");
 
   // Make certain quick checks even if UseCHA is false.
 
   // Is it private or final?
   if (root_m->can_be_statically_bound()) {
+    assert(!root_m->is_abstract(), "sanity");
     return root_m;
   }
 
   if (actual_recv->is_leaf_type() && actual_recv == root_m->holder()) {
     // Easy case.  There is no other place to put a method, so don't bother
     // to go through the VM_ENTRY_MARK and all the rest.
+    if (root_m->is_abstract()) {
+      return NULL;
+    }
     return root_m;
   }
 
@@ -715,17 +708,22 @@ ciMethod* ciMethod::find_monomorphic_target(ciInstanceKlass* caller,
 
   VM_ENTRY_MARK;
 
-  // Disable CHA for default methods for now
-  if (root_m->get_Method()->is_default_method()) {
-    return NULL;
-  }
-
   methodHandle target;
   {
     MutexLocker locker(Compile_lock);
-    Klass* context = actual_recv->get_Klass();
-    target = Dependencies::find_unique_concrete_method(context,
-                                                       root_m->get_Method());
+    InstanceKlass* context = actual_recv->get_instanceKlass();
+    if (UseVtableBasedCHA) {
+      target = methodHandle(THREAD, Dependencies::find_unique_concrete_method(context,
+                                                                              root_m->get_Method(),
+                                                                              callee_holder->get_Klass(),
+                                                                              this->get_Method()));
+    } else {
+      if (root_m->is_abstract()) {
+        return NULL; // not supported
+      }
+      target = methodHandle(THREAD, Dependencies::find_unique_concrete_method(context, root_m->get_Method()));
+    }
+    assert(target() == NULL || !target()->is_abstract(), "not allowed");
     // %%% Should upgrade this ciMethod API to look for 1 or 2 concrete methods.
   }
 
@@ -760,52 +758,59 @@ ciMethod* ciMethod::find_monomorphic_target(ciInstanceKlass* caller,
 }
 
 // ------------------------------------------------------------------
+// ciMethod::can_be_statically_bound
+//
+// Tries to determine whether a method can be statically bound in some context.
+bool ciMethod::can_be_statically_bound(ciInstanceKlass* context) const {
+  return (holder() == context) && can_be_statically_bound();
+}
+
+// ------------------------------------------------------------------
 // ciMethod::resolve_invoke
 //
 // Given a known receiver klass, find the target for the call.
 // Return NULL if the call has no target or the target is abstract.
-ciMethod* ciMethod::resolve_invoke(ciKlass* caller, ciKlass* exact_receiver, bool check_access) {
-   check_is_loaded();
-   VM_ENTRY_MARK;
+ciMethod* ciMethod::resolve_invoke(ciKlass* caller, ciKlass* exact_receiver, bool check_access, bool allow_abstract) {
+  check_is_loaded();
+  VM_ENTRY_MARK;
 
-   Klass* caller_klass = caller->get_Klass();
-   Klass* recv         = exact_receiver->get_Klass();
-   Klass* resolved     = holder()->get_Klass();
-   Symbol* h_name      = name()->get_symbol();
-   Symbol* h_signature = signature()->get_symbol();
+  Klass* caller_klass = caller->get_Klass();
+  Klass* recv         = exact_receiver->get_Klass();
+  Klass* resolved     = holder()->get_Klass();
+  Symbol* h_name      = name()->get_symbol();
+  Symbol* h_signature = signature()->get_symbol();
 
-   LinkInfo link_info(resolved, h_name, h_signature, caller_klass,
-                      check_access ? LinkInfo::needs_access_check : LinkInfo::skip_access_check);
-   methodHandle m;
-   // Only do exact lookup if receiver klass has been linked.  Otherwise,
-   // the vtable has not been setup, and the LinkResolver will fail.
-   if (recv->is_array_klass()
-        ||
-       (InstanceKlass::cast(recv)->is_linked() && !exact_receiver->is_interface())) {
-     if (holder()->is_interface()) {
-       m = LinkResolver::resolve_interface_call_or_null(recv, link_info);
-     } else {
-       m = LinkResolver::resolve_virtual_call_or_null(recv, link_info);
-     }
-   }
+  LinkInfo link_info(resolved, h_name, h_signature, caller_klass,
+                     check_access ? LinkInfo::AccessCheck::required : LinkInfo::AccessCheck::skip,
+                     check_access ? LinkInfo::LoaderConstraintCheck::required : LinkInfo::LoaderConstraintCheck::skip);
+  Method* m = NULL;
+  // Only do exact lookup if receiver klass has been linked.  Otherwise,
+  // the vtable has not been setup, and the LinkResolver will fail.
+  if (recv->is_array_klass()
+       ||
+      (InstanceKlass::cast(recv)->is_linked() && !exact_receiver->is_interface())) {
+    if (holder()->is_interface()) {
+      m = LinkResolver::resolve_interface_call_or_null(recv, link_info);
+    } else {
+      m = LinkResolver::resolve_virtual_call_or_null(recv, link_info);
+    }
+  }
 
-   if (m.is_null()) {
-     // Return NULL only if there was a problem with lookup (uninitialized class, etc.)
-     return NULL;
-   }
+  if (m == NULL) {
+    // Return NULL only if there was a problem with lookup (uninitialized class, etc.)
+    return NULL;
+  }
 
-   ciMethod* result = this;
-   if (m() != get_Method()) {
-     result = CURRENT_THREAD_ENV->get_method(m());
-   }
+  ciMethod* result = this;
+  if (m != get_Method()) {
+    result = CURRENT_THREAD_ENV->get_method(m);
+  }
 
-   // Don't return abstract methods because they aren't
-   // optimizable or interesting.
-   if (result->is_abstract()) {
-     return NULL;
-   } else {
-     return result;
-   }
+  if (result->is_abstract() && !allow_abstract) {
+    // Don't return abstract methods because they aren't optimizable or interesting.
+    return NULL;
+  }
+  return result;
 }
 
 // ------------------------------------------------------------------
@@ -841,19 +846,6 @@ int ciMethod::resolve_vtable_index(ciKlass* caller, ciKlass* receiver) {
 }
 
 // ------------------------------------------------------------------
-// ciMethod::interpreter_call_site_count
-int ciMethod::interpreter_call_site_count(int bci) {
-  if (method_data() != NULL) {
-    ResourceMark rm;
-    ciProfileData* data = method_data()->bci_to_data(bci);
-    if (data != NULL && data->is_CounterData()) {
-      return scale_count(data->as_CounterData()->count());
-    }
-  }
-  return -1;  // unknown
-}
-
-// ------------------------------------------------------------------
 // ciMethod::get_field_at_bci
 ciField* ciMethod::get_field_at_bci(int bci, bool &will_link) {
   ciBytecodeStream iter(this);
@@ -872,6 +864,14 @@ ciMethod* ciMethod::get_method_at_bci(int bci, bool &will_link, ciSignature* *de
 }
 
 // ------------------------------------------------------------------
+ciKlass* ciMethod::get_declared_method_holder_at_bci(int bci) {
+  ciBytecodeStream iter(this);
+  iter.reset_to_bci(bci);
+  iter.next();
+  return iter.get_declared_method_holder();
+}
+
+// ------------------------------------------------------------------
 // Adjust a CounterData count to be commensurate with
 // interpreter_invocation_count.  If the MDO exists for
 // only 25% of the time the method exists, then the
@@ -882,14 +882,8 @@ int ciMethod::scale_count(int count, float prof_factor) {
   if (count > 0 && method_data() != NULL) {
     int counter_life;
     int method_life = interpreter_invocation_count();
-    if (TieredCompilation) {
-      // In tiered the MDO's life is measured directly, so just use the snapshotted counters
-      counter_life = MAX2(method_data()->invocation_count(), method_data()->backedge_count());
-    } else {
-      int current_mileage = method_data()->current_mileage();
-      int creation_mileage = method_data()->creation_mileage();
-      counter_life = current_mileage - creation_mileage;
-    }
+    // In tiered the MDO's life is measured directly, so just use the snapshotted counters
+    counter_life = MAX2(method_data()->invocation_count(), method_data()->backedge_count());
 
     // counter_life due to backedge_counter could be > method_life
     if (counter_life > method_life)
@@ -912,6 +906,13 @@ bool ciMethod::is_ignored_by_security_stack_walk() const {
   return get_Method()->is_ignored_by_security_stack_walk();
 }
 
+// ------------------------------------------------------------------
+// ciMethod::needs_clinit_barrier
+//
+bool ciMethod::needs_clinit_barrier() const {
+  check_is_loaded();
+  return is_static() && !holder()->is_initialized();
+}
 
 // ------------------------------------------------------------------
 // invokedynamic support
@@ -941,7 +942,7 @@ bool ciMethod::is_compiled_lambda_form() const {
 // ciMethod::is_object_initializer
 //
 bool ciMethod::is_object_initializer() const {
-   return name() == ciSymbol::object_initializer_name();
+   return name() == ciSymbols::object_initializer_name();
 }
 
 // ------------------------------------------------------------------
@@ -973,8 +974,7 @@ bool ciMethod::ensure_method_data(const methodHandle& h_m) {
   }
   if (h_m()->method_data() != NULL) {
     _method_data = CURRENT_ENV->get_method_data(h_m()->method_data());
-    _method_data->load_data();
-    return true;
+    return _method_data->load_data();
   } else {
     _method_data = CURRENT_ENV->get_empty_methodData();
     return false;
@@ -986,7 +986,8 @@ bool ciMethod::ensure_method_data() {
   bool result = true;
   if (_method_data == NULL || _method_data->is_empty()) {
     GUARDED_VM_ENTRY({
-      result = ensure_method_data(get_Method());
+      methodHandle mh(Thread::current(), get_Method());
+      result = ensure_method_data(mh);
     });
   }
   return result;
@@ -1041,17 +1042,17 @@ MethodCounters* ciMethod::ensure_method_counters() {
 // ------------------------------------------------------------------
 // ciMethod::has_option
 //
-bool ciMethod::has_option(const char* option) {
+bool ciMethod::has_option(enum CompileCommand option) {
   check_is_loaded();
   VM_ENTRY_MARK;
   methodHandle mh(THREAD, get_Method());
-  return CompilerOracle::has_option_string(mh, option);
+  return CompilerOracle::has_option(mh, option);
 }
 
 // ------------------------------------------------------------------
 // ciMethod::has_option_value
 //
-bool ciMethod::has_option_value(const char* option, double& value) {
+bool ciMethod::has_option_value(enum CompileCommand option, double& value) {
   check_is_loaded();
   VM_ENTRY_MARK;
   methodHandle mh(THREAD, get_Method());
@@ -1071,48 +1072,9 @@ bool ciMethod::can_be_compiled() {
 }
 
 // ------------------------------------------------------------------
-// ciMethod::set_not_compilable
-//
-// Tell the VM that this method cannot be compiled at all.
-void ciMethod::set_not_compilable(const char* reason) {
-  check_is_loaded();
-  VM_ENTRY_MARK;
-  ciEnv* env = CURRENT_ENV;
-  if (is_c1_compile(env->comp_level())) {
-    _is_c1_compilable = false;
-  } else {
-    _is_c2_compilable = false;
-  }
-  get_Method()->set_not_compilable(env->comp_level(), true, reason);
-}
-
-// ------------------------------------------------------------------
-// ciMethod::can_be_osr_compiled
-//
-// Have previous compilations of this method succeeded?
-//
-// Implementation note: the VM does not currently keep track
-// of failed OSR compilations per bci.  The entry_bci parameter
-// is currently unused.
-bool ciMethod::can_be_osr_compiled(int entry_bci) {
-  check_is_loaded();
-  VM_ENTRY_MARK;
-  ciEnv* env = CURRENT_ENV;
-  return !get_Method()->is_not_osr_compilable(env->comp_level());
-}
-
-// ------------------------------------------------------------------
 // ciMethod::has_compiled_code
 bool ciMethod::has_compiled_code() {
   return instructions_size() > 0;
-}
-
-int ciMethod::comp_level() {
-  check_is_loaded();
-  VM_ENTRY_MARK;
-  CompiledMethod* nm = get_Method()->code();
-  if (nm != NULL) return nm->comp_level();
-  return 0;
 }
 
 int ciMethod::highest_osr_comp_level() {
@@ -1188,9 +1150,9 @@ bool ciMethod::was_executed_more_than(int times) {
 bool ciMethod::has_unloaded_classes_in_signature() {
   VM_ENTRY_MARK;
   {
-    EXCEPTION_MARK;
+    ExceptionMark em(THREAD);
     methodHandle m(THREAD, get_Method());
-    bool has_unloaded = Method::has_unloaded_classes_in_signature(m, (JavaThread *)THREAD);
+    bool has_unloaded = Method::has_unloaded_classes_in_signature(m, thread);
     if( HAS_PENDING_EXCEPTION ) {
       CLEAR_PENDING_EXCEPTION;
       return true;     // Declare that we may have unloaded classes
@@ -1210,16 +1172,16 @@ bool ciMethod::is_klass_loaded(int refinfo_index, bool must_be_resolved) const {
 // ciMethod::check_call
 bool ciMethod::check_call(int refinfo_index, bool is_static) const {
   // This method is used only in C2 from InlineTree::ok_to_inline,
-  // and is only used under -Xcomp or -XX:CompileTheWorld.
+  // and is only used under -Xcomp.
   // It appears to fail when applied to an invokeinterface call site.
   // FIXME: Remove this method and resolve_method_statically; refactor to use the other LinkResolver entry points.
   VM_ENTRY_MARK;
   {
-    EXCEPTION_MARK;
+    ExceptionMark em(THREAD);
     HandleMark hm(THREAD);
     constantPoolHandle pool (THREAD, get_Method()->constants());
     Bytecodes::Code code = (is_static ? Bytecodes::_invokestatic : Bytecodes::_invokevirtual);
-    methodHandle spec_method = LinkResolver::resolve_method_statically(code, pool, refinfo_index, THREAD);
+    Method* spec_method = LinkResolver::resolve_method_statically(code, pool, refinfo_index, THREAD);
     if (HAS_PENDING_EXCEPTION) {
       CLEAR_PENDING_EXCEPTION;
       return false;
@@ -1254,17 +1216,16 @@ void ciMethod::print_codes_on(outputStream* st) {
   return get_Method()->flag_accessor(); \
 }
 
-bool ciMethod::is_empty_method() const {         FETCH_FLAG_FROM_VM(is_empty_method); }
-bool ciMethod::is_vanilla_constructor() const {  FETCH_FLAG_FROM_VM(is_vanilla_constructor); }
 bool ciMethod::has_loops      () const {         FETCH_FLAG_FROM_VM(has_loops); }
 bool ciMethod::has_jsrs       () const {         FETCH_FLAG_FROM_VM(has_jsrs);  }
 bool ciMethod::is_getter      () const {         FETCH_FLAG_FROM_VM(is_getter); }
 bool ciMethod::is_setter      () const {         FETCH_FLAG_FROM_VM(is_setter); }
 bool ciMethod::is_accessor    () const {         FETCH_FLAG_FROM_VM(is_accessor); }
 bool ciMethod::is_initializer () const {         FETCH_FLAG_FROM_VM(is_initializer); }
+bool ciMethod::is_empty       () const {         FETCH_FLAG_FROM_VM(is_empty_method); }
 
 bool ciMethod::is_boxing_method() const {
-  if (holder()->is_box_klass()) {
+  if (intrinsic_id() != vmIntrinsics::_none && holder()->is_box_klass()) {
     switch (intrinsic_id()) {
       case vmIntrinsics::_Boolean_valueOf:
       case vmIntrinsics::_Byte_valueOf:
@@ -1283,7 +1244,7 @@ bool ciMethod::is_boxing_method() const {
 }
 
 bool ciMethod::is_unboxing_method() const {
-  if (holder()->is_box_klass()) {
+  if (intrinsic_id() != vmIntrinsics::_none && holder()->is_box_klass()) {
     switch (intrinsic_id()) {
       case vmIntrinsics::_booleanValue:
       case vmIntrinsics::_byteValue:
@@ -1301,6 +1262,11 @@ bool ciMethod::is_unboxing_method() const {
   return false;
 }
 
+bool ciMethod::is_vector_method() const {
+  return (holder() == ciEnv::current()->vector_VectorSupport_klass()) &&
+         (intrinsic_id() != vmIntrinsics::_none);
+}
+
 BCEscapeAnalyzer  *ciMethod::get_bcea() {
 #ifdef COMPILER2
   if (_bcea == NULL) {
@@ -1314,8 +1280,8 @@ BCEscapeAnalyzer  *ciMethod::get_bcea() {
 }
 
 ciMethodBlocks  *ciMethod::get_method_blocks() {
-  Arena *arena = CURRENT_ENV->arena();
   if (_method_blocks == NULL) {
+    Arena *arena = CURRENT_ENV->arena();
     _method_blocks = new (arena) ciMethodBlocks(arena, this);
   }
   return _method_blocks;
@@ -1405,8 +1371,8 @@ void ciMethod::print_impl(outputStream* st) {
 // ------------------------------------------------------------------
 
 static BasicType erase_to_word_type(BasicType bt) {
-  if (is_subword_type(bt)) return T_INT;
-  if (bt == T_ARRAY)       return T_OBJECT;
+  if (is_subword_type(bt))   return T_INT;
+  if (is_reference_type(bt)) return T_OBJECT;
   return bt;
 }
 

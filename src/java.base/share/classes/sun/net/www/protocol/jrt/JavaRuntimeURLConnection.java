@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,7 @@ import sun.net.www.URLConnection;
  * URLConnection implementation that can be used to connect to resources
  * contained in the runtime image.
  */
+@SuppressWarnings("removal")
 public class JavaRuntimeURLConnection extends URLConnection {
 
     // ImageReader to access resources in jimage
@@ -66,7 +67,7 @@ public class JavaRuntimeURLConnection extends URLConnection {
     JavaRuntimeURLConnection(URL url) throws IOException {
         super(url);
         String path = url.getPath();
-        if (path.length() == 0 || path.charAt(0) != '/')
+        if (path.isEmpty() || path.charAt(0) != '/')
             throw new MalformedURLException(url + " missing path or /");
         if (path.length() == 1) {
             this.module = null;

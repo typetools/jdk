@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,11 +23,13 @@
  */
 
 #include "precompiled.hpp"
-#include "classfile/dictionary.hpp"
 #include "classfile/classLoaderData.inline.hpp"
+#include "classfile/classLoaderDataGraph.hpp"
+#include "classfile/dictionary.hpp"
 #include "classfile/loaderConstraints.hpp"
 #include "logging/log.hpp"
 #include "memory/resourceArea.hpp"
+#include "oops/klass.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/safepoint.hpp"
@@ -56,7 +58,7 @@ LoaderConstraintEntry* LoaderConstraintTable::new_entry(
 void LoaderConstraintTable::free_entry(LoaderConstraintEntry *entry) {
   // decrement name refcount before freeing
   entry->name()->decrement_refcount();
-  Hashtable<InstanceKlass*, mtClass>::free_entry(entry);
+  BasicHashtable<mtClass>::free_entry(entry);
 }
 
 // The loaderConstraintTable must always be accessed with the
@@ -65,7 +67,7 @@ void LoaderConstraintTable::free_entry(LoaderConstraintEntry *entry) {
 
 LoaderConstraintEntry** LoaderConstraintTable::find_loader_constraint(
                                     Symbol* name, Handle loader) {
-
+  assert_lock_strong(SystemDictionary_lock);
   unsigned int hash = compute_hash(name);
   int index = hash_to_index(hash);
   LoaderConstraintEntry** pp = bucket_addr(index);
@@ -76,7 +78,10 @@ LoaderConstraintEntry** LoaderConstraintTable::find_loader_constraint(
     if (p->hash() == hash) {
       if (p->name() == name) {
         for (int i = p->num_loaders() - 1; i >= 0; i--) {
-          if (p->loader_data(i) == loader_data) {
+          if (p->loader_data(i) == loader_data &&
+              // skip unloaded klasses
+              (p->klass() == NULL ||
+               p->klass()->is_loader_alive())) {
             return pp;
           }
         }
@@ -89,7 +94,7 @@ LoaderConstraintEntry** LoaderConstraintTable::find_loader_constraint(
 
 
 void LoaderConstraintTable::purge_loader_constraints() {
-  assert(SafepointSynchronize::is_at_safepoint(), "must be at safepoint");
+  assert_locked_or_safepoint(SystemDictionary_lock);
   LogTarget(Info, class, loader, constraints) lt;
   // Remove unloaded entries from constraint table
   for (int index = 0; index < table_size(); index++) {
@@ -186,6 +191,7 @@ void log_ldr_constraint_msg(Symbol* class_name, const char* reason,
 bool LoaderConstraintTable::add_entry(Symbol* class_name,
                                       InstanceKlass* klass1, Handle class_loader1,
                                       InstanceKlass* klass2, Handle class_loader2) {
+
   LogTarget(Info, class, loader, constraints) lt;
   if (klass1 != NULL && klass2 != NULL) {
     if (klass1 == klass2) {
@@ -239,9 +245,8 @@ bool LoaderConstraintTable::add_entry(Symbol* class_name,
     p->set_loaders(NEW_C_HEAP_ARRAY(ClassLoaderData*, 2, mtClass));
     p->set_loader(0, class_loader1());
     p->set_loader(1, class_loader2());
-    p->set_klass(klass);
-    p->set_next(bucket(index));
-    set_entry(index, p);
+    Hashtable<InstanceKlass*, mtClass>::add_entry(index, p);
+
     if (lt.is_enabled()) {
       ResourceMark rm;
       lt.print("adding new constraint for name: %s, loader[0]: %s,"
@@ -436,9 +441,8 @@ void LoaderConstraintTable::verify(PlaceholderTable* placeholders) {
         Symbol* name = ik->name();
         ClassLoaderData* loader_data = ik->class_loader_data();
         Dictionary* dictionary = loader_data->dictionary();
-        unsigned int d_hash = dictionary->compute_hash(name);
-        int d_index = dictionary->hash_to_index(d_hash);
-        InstanceKlass* k = dictionary->find_class(d_index, d_hash, name);
+        unsigned int name_hash = dictionary->compute_hash(name);
+        InstanceKlass* k = dictionary->find_class(name_hash, name);
         if (k != NULL) {
           // We found the class in the dictionary, so we should
           // make sure that the Klass* matches what we already have.
@@ -446,10 +450,7 @@ void LoaderConstraintTable::verify(PlaceholderTable* placeholders) {
         } else {
           // If we don't find the class in the dictionary, it
           // has to be in the placeholders table.
-          unsigned int p_hash = placeholders->compute_hash(name);
-          int p_index = placeholders->hash_to_index(p_hash);
-          PlaceholderEntry* entry = placeholders->get_entry(p_index, p_hash,
-                                                            name, loader_data);
+          PlaceholderEntry* entry = placeholders->get_entry(name_hash, name, loader_data);
 
           // The InstanceKlass might not be on the entry, so the only
           // thing we can check here is whether we were successful in
@@ -475,13 +476,15 @@ void LoaderConstraintTable::print_on(outputStream* st) const {
                                 probe != NULL;
                                 probe = probe->next()) {
       st->print("%4d: ", cindex);
-      probe->name()->print_on(st);
-      st->print(" , loaders:");
+      st->print("Symbol: %s loaders:", probe->name()->as_C_string());
       for (int n = 0; n < probe->num_loaders(); n++) {
+        st->cr();
+        st->print("    ");
         probe->loader_data(n)->print_value_on(st);
-        st->print(", ");
       }
       st->cr();
     }
   }
 }
+
+void LoaderConstraintTable::print() const { print_on(tty); }

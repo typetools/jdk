@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,12 +42,6 @@ import sun.security.util.Debug;
  * @since 1.2
  */
 public class SecureClassLoader extends ClassLoader {
-    /*
-     * If initialization succeed this is set to true and security checks will
-     * succeed. Otherwise the object is not initialized and the object is
-     * useless.
-     */
-    private final boolean initialized;
 
     /*
      * Map that maps the CodeSource to a ProtectionDomain. The key is a
@@ -74,19 +68,13 @@ public class SecureClassLoader extends ClassLoader {
      * method  to ensure creation of a class loader is allowed.
      *
      * @param parent the parent ClassLoader
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkCreateClassLoader} method doesn't allow
      *             creation of a class loader.
      * @see SecurityManager#checkCreateClassLoader
      */
     protected SecureClassLoader(ClassLoader parent) {
         super(parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
-        initialized = true;
     }
 
     /**
@@ -97,19 +85,13 @@ public class SecureClassLoader extends ClassLoader {
      * calls the security manager's {@code checkCreateClassLoader}
      * method  to ensure creation of a class loader is allowed.
      *
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkCreateClassLoader} method doesn't allow
      *             creation of a class loader.
      * @see SecurityManager#checkCreateClassLoader
      */
     protected SecureClassLoader() {
         super();
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
-        initialized = true;
     }
 
     /**
@@ -126,15 +108,9 @@ public class SecureClassLoader extends ClassLoader {
      *         doesn't allow creation of a class loader.
      *
      * @since 9
-     * @spec JPMS
      */
     protected SecureClassLoader(String name, ClassLoader parent) {
         super(name, parent);
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
-        initialized = true;
     }
 
     /**
@@ -151,18 +127,18 @@ public class SecureClassLoader extends ClassLoader {
      * @param      b    the bytes that make up the class data. The bytes in
      *             positions {@code off} through {@code off+len-1}
      *             should have the format of a valid class file as defined by
-     *             <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *             <cite>The Java Virtual Machine Specification</cite>.
      * @param      off  the start offset in {@code b} of the class data
      * @param      len  the length of the class data
      * @param      cs   the associated CodeSource, or {@code null} if none
      * @return the {@code Class} object created from the data,
      *         and optional CodeSource.
-     * @exception  ClassFormatError if the data did not contain a valid class
-     * @exception  IndexOutOfBoundsException if either {@code off} or
+     * @throws     ClassFormatError if the data did not contain a valid class
+     * @throws     IndexOutOfBoundsException if either {@code off} or
      *             {@code len} is negative, or if
      *             {@code off+len} is greater than {@code b.length}.
      *
-     * @exception  SecurityException if an attempt is made to add this class
+     * @throws     SecurityException if an attempt is made to add this class
      *             to a package that contains classes that were signed by
      *             a different set of certificates than this class, or if
      *             the class name begins with "java.".
@@ -188,12 +164,12 @@ public class SecureClassLoader extends ClassLoader {
      * @param      b    the bytes that make up the class data.  The bytes from positions
      *                  {@code b.position()} through {@code b.position() + b.limit() -1}
      *                  should have the format of a valid class file as defined by
-     *                  <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *                  <cite>The Java Virtual Machine Specification</cite>.
      * @param      cs   the associated CodeSource, or {@code null} if none
      * @return the {@code Class} object created from the data,
      *         and optional CodeSource.
-     * @exception  ClassFormatError if the data did not contain a valid class
-     * @exception  SecurityException if an attempt is made to add this class
+     * @throws     ClassFormatError if the data did not contain a valid class
+     * @throws     SecurityException if an attempt is made to add this class
      *             to a package that contains classes that were signed by
      *             a different set of certificates than this class, or if
      *             the class name begins with "java.".
@@ -220,7 +196,6 @@ public class SecureClassLoader extends ClassLoader {
      */
     protected PermissionCollection getPermissions(CodeSource codesource)
     {
-        check();
         return new Permissions(); // ProtectionDomain defers the binding
     }
 
@@ -260,15 +235,6 @@ public class SecureClassLoader extends ClassLoader {
         });
     }
 
-    /*
-     * Check to make sure the class loader has been initialized.
-     */
-    private void check() {
-        if (!initialized) {
-            throw new SecurityException("ClassLoader object not initialized");
-        }
-    }
-
     private static class CodeSourceKey {
         private final CodeSource cs;
 
@@ -288,18 +254,17 @@ public class SecureClassLoader extends ClassLoader {
                 return true;
             }
 
-            if (!(obj instanceof CodeSourceKey)) {
-                return false;
-            }
-
-            CodeSourceKey csk = (CodeSourceKey) obj;
-
-            if (!Objects.equals(cs.getLocationNoFragString(),
-                                csk.cs.getLocationNoFragString())) {
-                return false;
-            }
-
-            return cs.matchCerts(csk.cs, true);
+            return obj instanceof CodeSourceKey other
+                    && Objects.equals(cs.getLocationNoFragString(),
+                                other.cs.getLocationNoFragString())
+                    && cs.matchCerts(other.cs, true);
         }
+    }
+
+    /**
+     * Called by the VM, during -Xshare:dump
+     */
+    private void resetArchivedStates() {
+        pdcache.clear();
     }
 }

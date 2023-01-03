@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,13 @@ import javax.crypto.SecretKey;
 @Deprecated
 public interface TlsMasterSecret extends SecretKey {
 
+    /***
+     * @deprecated A {@code serialVersionUID} field in an interface is
+     * ineffectual. Do not use; no replacement.
+     */
+    @Deprecated
+    @SuppressWarnings("serial")
+    @java.io.Serial
     public static final long serialVersionUID = -461748105810469773L;
 
     /**

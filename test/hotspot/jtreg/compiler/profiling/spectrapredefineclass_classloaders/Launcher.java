@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,14 +27,14 @@
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
  *          java.instrument
- *          java.management
+ * @requires vm.jvmti
  * @build compiler.profiling.spectrapredefineclass_classloaders.Agent
  *        compiler.profiling.spectrapredefineclass_classloaders.Test
  *        compiler.profiling.spectrapredefineclass_classloaders.A
  *        compiler.profiling.spectrapredefineclass_classloaders.B
- * @run driver ClassFileInstaller compiler.profiling.spectrapredefineclass_classloaders.Agent
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller compiler.profiling.spectrapredefineclass_classloaders.Agent
  * @run driver compiler.profiling.spectrapredefineclass_classloaders.Launcher
- * @run main/othervm -XX:-TieredCompilation -XX:-BackgroundCompilation
+ * @run main/othervm -XX:CompilationMode=high-only -XX:-BackgroundCompilation -XX:CompileThreshold=10000
  *                   -XX:-UseOnStackReplacement -XX:TypeProfileLevel=222
  *                   -XX:ReservedCodeCacheSize=3M -Djdk.attach.allowAttachSelf
  *                   compiler.profiling.spectrapredefineclass_classloaders.Agent

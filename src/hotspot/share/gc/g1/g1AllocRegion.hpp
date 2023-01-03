@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1ALLOCREGION_HPP
-#define SHARE_VM_GC_G1_G1ALLOCREGION_HPP
+#ifndef SHARE_GC_G1_G1ALLOCREGION_HPP
+#define SHARE_GC_G1_G1ALLOCREGION_HPP
 
 #include "gc/g1/heapRegion.hpp"
 #include "gc/g1/g1EvacStats.hpp"
-#include "gc/g1/g1InCSetState.hpp"
+#include "gc/g1/g1HeapRegionAttr.hpp"
+#include "gc/g1/g1NUMA.hpp"
 
 class G1CollectedHeap;
 
@@ -38,7 +39,7 @@ class G1CollectedHeap;
 // and a lock will need to be taken when the active region needs to be
 // replaced.
 
-class G1AllocRegion {
+class G1AllocRegion : public CHeapObj<mtGC> {
 
 private:
   // The active allocating region we are currently allocating out
@@ -91,6 +92,9 @@ private:
   HeapWord* new_alloc_region_and_allocate(size_t word_size, bool force);
 
 protected:
+  // The memory node index this allocation region belongs to.
+  uint _node_index;
+
   // Reset the alloc region to point a the dummy region.
   void reset_alloc_region();
 
@@ -131,7 +135,7 @@ protected:
   virtual void retire_region(HeapRegion* alloc_region,
                              size_t allocated_bytes) = 0;
 
-  G1AllocRegion(const char* name, bool bot_updates);
+  G1AllocRegion(const char* name, bool bot_updates, uint node_index);
 
 public:
   static void setup(G1CollectedHeap* g1h, HeapRegion* dummy_region);
@@ -160,20 +164,21 @@ public:
                                       size_t desired_word_size,
                                       size_t* actual_word_size);
 
-  // Second-level allocation: Should be called while holding a
-  // lock. It will try to first allocate lock-free out of the active
-  // region or, if it's unable to, it will try to replace the active
-  // alloc region with a new one. We require that the caller takes the
-  // appropriate lock before calling this so that it is easier to make
-  // it conform to its locking protocol.
   inline HeapWord* attempt_allocation_locked(size_t word_size);
-  // Same as attempt_allocation_locked(size_t, bool), but allowing specification
-  // of minimum word size of the block in min_word_size, and the maximum word
-  // size of the allocation in desired_word_size. The actual size of the block is
-  // returned in actual_word_size.
+  // Second-level allocation: Should be called while holding a
+  // lock. We require that the caller takes the appropriate lock
+  // before calling this so that it is easier to make it conform
+  // to the locking protocol. The min and desired word size allow
+  // specifying a minimum and maximum size of the allocation. The
+  // actual size of allocation is returned in actual_word_size.
   inline HeapWord* attempt_allocation_locked(size_t min_word_size,
                                              size_t desired_word_size,
                                              size_t* actual_word_size);
+
+  // Perform an allocation out of a new allocation region, retiring the current one.
+  inline HeapWord* attempt_allocation_using_new_region(size_t min_word_size,
+                                                       size_t desired_word_size,
+                                                       size_t* actual_word_size);
 
   // Should be called to allocate a new region even if the max of this
   // type of regions has been reached. Should only be called if other
@@ -220,8 +225,8 @@ protected:
   virtual void retire_region(HeapRegion* alloc_region, size_t allocated_bytes);
   virtual size_t retire(bool fill_up);
 public:
-  MutatorAllocRegion()
-    : G1AllocRegion("Mutator Alloc Region", false /* bot_updates */),
+  MutatorAllocRegion(uint node_index)
+    : G1AllocRegion("Mutator Alloc Region", false /* bot_updates */, node_index),
       _wasted_bytes(0),
       _retained_alloc_region(NULL) { }
 
@@ -245,33 +250,35 @@ public:
 
   virtual void init();
 };
+
 // Common base class for allocation regions used during GC.
 class G1GCAllocRegion : public G1AllocRegion {
 protected:
   G1EvacStats* _stats;
-  InCSetState::in_cset_state_t _purpose;
+  G1HeapRegionAttr::region_type_t _purpose;
 
   virtual HeapRegion* allocate_new_region(size_t word_size, bool force);
   virtual void retire_region(HeapRegion* alloc_region, size_t allocated_bytes);
 
   virtual size_t retire(bool fill_up);
 
-  G1GCAllocRegion(const char* name, bool bot_updates, G1EvacStats* stats, InCSetState::in_cset_state_t purpose)
-  : G1AllocRegion(name, bot_updates), _stats(stats), _purpose(purpose) {
+  G1GCAllocRegion(const char* name, bool bot_updates, G1EvacStats* stats,
+                  G1HeapRegionAttr::region_type_t purpose, uint node_index = G1NUMA::AnyNodeIndex)
+  : G1AllocRegion(name, bot_updates, node_index), _stats(stats), _purpose(purpose) {
     assert(stats != NULL, "Must pass non-NULL PLAB statistics");
   }
 };
 
 class SurvivorGCAllocRegion : public G1GCAllocRegion {
 public:
-  SurvivorGCAllocRegion(G1EvacStats* stats)
-  : G1GCAllocRegion("Survivor GC Alloc Region", false /* bot_updates */, stats, InCSetState::Young) { }
+  SurvivorGCAllocRegion(G1EvacStats* stats, uint node_index)
+  : G1GCAllocRegion("Survivor GC Alloc Region", false /* bot_updates */, stats, G1HeapRegionAttr::Young, node_index) { }
 };
 
 class OldGCAllocRegion : public G1GCAllocRegion {
 public:
   OldGCAllocRegion(G1EvacStats* stats)
-  : G1GCAllocRegion("Old GC Alloc Region", true /* bot_updates */, stats, InCSetState::Old) { }
+  : G1GCAllocRegion("Old GC Alloc Region", true /* bot_updates */, stats, G1HeapRegionAttr::Old) { }
 
   // This specialization of release() makes sure that the last card that has
   // been allocated into has been completely filled by a dummy object.  This
@@ -281,4 +288,4 @@ public:
   virtual HeapRegion* release();
 };
 
-#endif // SHARE_VM_GC_G1_G1ALLOCREGION_HPP
+#endif // SHARE_GC_G1_G1ALLOCREGION_HPP

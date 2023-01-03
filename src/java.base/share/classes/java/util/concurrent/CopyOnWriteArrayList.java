@@ -34,15 +34,18 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -58,7 +61,7 @@ import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * A thread-safe variant of {@link java.util.ArrayList} in which all mutative
@@ -146,9 +149,7 @@ public class CopyOnWriteArrayList<E>
             es = ((CopyOnWriteArrayList<?>)c).getArray();
         else {
             es = c.toArray();
-            // defend against c.toArray (incorrectly) not returning Object[]
-            // (see e.g. https://bugs.openjdk.java.net/browse/JDK-6260652)
-            if (es.getClass() != Object[].class)
+            if (c.getClass() != java.util.ArrayList.class)
                 es = Arrays.copyOf(es, es.length, Object[].class);
         }
         setArray(es);
@@ -236,14 +237,14 @@ public class CopyOnWriteArrayList<E>
      * @param o element whose presence in this list is to be tested
      * @return {@code true} if this list contains the specified element
      */
-    public boolean contains(@Nullable Object o) {
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int indexOf(@Nullable Object o) {
+    public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
     }
@@ -271,7 +272,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int lastIndexOf(@Nullable Object o) {
+    public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
     }
@@ -422,8 +423,9 @@ public class CopyOnWriteArrayList<E>
             if (oldValue != element) {
                 es = es.clone();
                 es[index] = element;
-                setArray(es);
             }
+            // Ensure volatile write semantics even when oldvalue == element
+            setArray(es);
             return oldValue;
         }
     }
@@ -512,7 +514,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@Nullable Object o) {
+    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] snapshot = getArray();
         int index = indexOfRange(o, snapshot, 0, snapshot.length);
         return index >= 0 && remove(o, snapshot, index);
@@ -522,7 +524,7 @@ public class CopyOnWriteArrayList<E>
      * A version of remove(Object) using the strong hint that given
      * recent snapshot contains o at the given index.
      */
-    private boolean remove(@Nullable Object o, Object[] snapshot, int index) {
+    private boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o, Object[] snapshot, int index) {
         synchronized (lock) {
             Object[] current = getArray();
             int len = current.length;
@@ -633,7 +635,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #contains(Object)
      */
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         Object[] es = getArray();
         int len = es.length;
         for (Object e : c) {
@@ -659,7 +661,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -680,7 +682,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
@@ -698,6 +700,9 @@ public class CopyOnWriteArrayList<E>
      */
     public int addAllAbsent(Collection<? extends E> c) {
         Object[] cs = c.toArray();
+        if (c.getClass() != ArrayList.class) {
+            cs = cs.clone();
+        }
         if (cs.length == 0)
             return 0;
         synchronized (lock) {
@@ -749,9 +754,10 @@ public class CopyOnWriteArrayList<E>
             Object[] es = getArray();
             int len = es.length;
             Object[] newElements;
-            if (len == 0 && cs.getClass() == Object[].class)
+            if (len == 0 && (c.getClass() == CopyOnWriteArrayList.class ||
+                             c.getClass() == ArrayList.class)) {
                 newElements = cs;
-            else {
+            } else {
                 newElements = Arrays.copyOf(es, len + cs.length);
                 System.arraycopy(cs, 0, newElements, len, cs.length);
             }
@@ -1286,11 +1292,11 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
-        public boolean containsAll(Collection<? extends @NonNull Object> c) {
+        public boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1435,7 +1441,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             synchronized (lock) {
                 checkForComodification();
                 int index = indexOf(o);
@@ -1500,12 +1506,12 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean removeAll(Collection<? extends @NonNull Object> c) {
+        public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> c.contains(e));
         }
 
-        public boolean retainAll(Collection<? extends @NonNull Object> c) {
+        public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> !c.contains(e));
         }
@@ -1600,6 +1606,7 @@ public class CopyOnWriteArrayList<E>
 
     /** Initializes the lock; for use when deserializing or cloning. */
     private void resetLock() {
+        @SuppressWarnings("removal")
         Field lockField = java.security.AccessController.doPrivileged(
             (java.security.PrivilegedAction<Field>) () -> {
                 try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,20 +31,20 @@ import sun.net.www.HeaderParser;
 
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger.Level;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLPermission;
+import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
@@ -59,6 +59,7 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -73,8 +74,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.stream.Collectors.joining;
+import jdk.internal.net.http.HttpRequestImpl;
 
 /**
  * Miscellaneous utilities
@@ -127,16 +129,23 @@ public final class Utils {
 
     public static final BiPredicate<String,String> ACCEPT_ALL = (x,y) -> true;
 
-    private static final Set<String> DISALLOWED_HEADERS_SET;
+    private static final Set<String> DISALLOWED_HEADERS_SET = getDisallowedHeaders();
 
-    static {
-        // A case insensitive TreeSet of strings.
-        TreeSet<String> treeSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        treeSet.addAll(Set.of("connection", "content-length",
-                "date", "expect", "from", "host", "origin",
-                "referer", "upgrade",
-                "via", "warning"));
-        DISALLOWED_HEADERS_SET = Collections.unmodifiableSet(treeSet);
+    private static Set<String> getDisallowedHeaders() {
+        Set<String> headers = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        headers.addAll(Set.of("connection", "content-length", "expect", "host", "upgrade"));
+
+        String v = getNetProperty("jdk.httpclient.allowRestrictedHeaders");
+        if (v != null) {
+            // any headers found are removed from set.
+            String[] tokens = v.trim().split(",");
+            for (String token : tokens) {
+                headers.remove(token);
+            }
+            return Collections.unmodifiableSet(headers);
+        } else {
+            return Collections.unmodifiableSet(headers);
+        }
     }
 
     public static final BiPredicate<String, String>
@@ -158,6 +167,27 @@ public final class Utils {
                 return true;
             };
 
+    // Headers that are not generally restricted, and can therefore be set by users,
+    // but can in some contexts be overridden by the implementation.
+    // Currently, only contains "Authorization" which will
+    // be overridden, when an Authenticator is set on the HttpClient.
+    // Needs to be BiPred<String,String> to fit with general form of predicates
+    // used by caller.
+
+    public static final BiPredicate<String, String> CONTEXT_RESTRICTED(HttpClient client) {
+        return (k, v) -> !client.authenticator().isPresent() ||
+                (!k.equalsIgnoreCase("Authorization")
+                        && !k.equalsIgnoreCase("Proxy-Authorization"));
+    }
+
+    public record ProxyHeaders(HttpHeaders userHeaders, HttpHeaders systemHeaders) {}
+
+    private static final BiPredicate<String, String> HOST_RESTRICTED = (k,v) -> !"host".equalsIgnoreCase(k);
+    public static final BiPredicate<String, String> PROXY_TUNNEL_RESTRICTED(HttpClient client)  {
+        return CONTEXT_RESTRICTED(client).and(HOST_RESTRICTED);
+    }
+
+    private static final Predicate<String> IS_HOST = "host"::equalsIgnoreCase;
     private static final Predicate<String> IS_PROXY_HEADER = (k) ->
             k != null && k.length() > 6 && "proxy-".equalsIgnoreCase(k.substring(0,6));
     private static final Predicate<String> NO_PROXY_HEADER =
@@ -229,7 +259,8 @@ public final class Utils {
 
     public static final BiPredicate<String, String> PROXY_TUNNEL_FILTER =
             (s,v) -> isAllowedForProxy(s, v, PROXY_AUTH_TUNNEL_DISABLED_SCHEMES,
-                    IS_PROXY_HEADER);
+                    // Allows Proxy-* and Host headers when establishing the tunnel.
+                    IS_PROXY_HEADER.or(IS_HOST));
     public static final BiPredicate<String, String> PROXY_FILTER =
             (s,v) -> isAllowedForProxy(s, v, PROXY_AUTH_DISABLED_SCHEMES,
                     ALL_HEADERS);
@@ -242,6 +273,15 @@ public final class Utils {
                       : ! PROXY_AUTH_DISABLED_SCHEMES.isEmpty();
     }
 
+    // WebSocket connection Upgrade headers
+    private static final String HEADER_CONNECTION = "Connection";
+    private static final String HEADER_UPGRADE    = "Upgrade";
+
+    public static final void setWebSocketUpgradeHeaders(HttpRequestImpl request) {
+        request.setSystemHeader(HEADER_UPGRADE, "websocket");
+        request.setSystemHeader(HEADER_CONNECTION, "Upgrade");
+    }
+
     public static IllegalArgumentException newIAE(String message, Object... args) {
         return new IllegalArgumentException(format(message, args));
     }
@@ -250,11 +290,21 @@ public final class Utils {
     }
 
     public static Throwable getCompletionCause(Throwable x) {
-        if (!(x instanceof CompletionException)
-                && !(x instanceof ExecutionException)) return x;
-        final Throwable cause = x.getCause();
-        if (cause == null) {
+        Throwable cause = x;
+        while ((cause instanceof CompletionException)
+                || (cause instanceof ExecutionException)) {
+            cause = cause.getCause();
+        }
+        if (cause == null && cause != x) {
             throw new InternalError("Unexpected null cause", x);
+        }
+        return cause;
+    }
+
+    public static Throwable getCancelCause(Throwable x) {
+        Throwable cause = getCompletionCause(x);
+        if (cause instanceof ConnectionExpiredException) {
+            cause = cause.getCause();
         }
         return cause;
     }
@@ -285,11 +335,16 @@ public final class Utils {
         if (!(t instanceof IOException))
             return t;
 
+        if (t instanceof SSLHandshakeException)
+            return t;  // no need to decorate
+
         String msg = messageSupplier.get();
         if (msg == null)
             return t;
 
         if (t instanceof ConnectionExpiredException) {
+            if (t.getCause() instanceof SSLHandshakeException)
+                return t;  // no need to decorate
             IOException ioe = new IOException(msg, t.getCause());
             t = new ConnectionExpiredException(ioe);
         } else {
@@ -325,8 +380,8 @@ public final class Utils {
                                                     Stream<String> headers) {
         String urlString = new StringBuilder()
                 .append(uri.getScheme()).append("://")
-                .append(uri.getAuthority())
-                .append(uri.getPath()).toString();
+                .append(uri.getRawAuthority())
+                .append(uri.getRawPath()).toString();
 
         StringBuilder actionStringBuilder = new StringBuilder(method);
         String collected = headers.collect(joining(","));
@@ -349,7 +404,7 @@ public final class Utils {
         for (char c : allowedTokenChars) {
             tchar[c] = true;
         }
-        for (char c = 0x21; c < 0xFF; c++) {
+        for (char c = 0x21; c <= 0xFF; c++) {
             fieldvchar[c] = true;
         }
         fieldvchar[0x7F] = false; // a little hole (DEL) in the range
@@ -441,26 +496,31 @@ public final class Utils {
     }
 
 
+    @SuppressWarnings("removal")
     public static int getIntegerNetProperty(String name, int defaultValue) {
         return AccessController.doPrivileged((PrivilegedAction<Integer>) () ->
                 NetProperties.getInteger(name, defaultValue));
     }
 
+    @SuppressWarnings("removal")
     public static String getNetProperty(String name) {
         return AccessController.doPrivileged((PrivilegedAction<String>) () ->
                 NetProperties.get(name));
     }
 
+    @SuppressWarnings("removal")
     public static boolean getBooleanProperty(String name, boolean def) {
         return AccessController.doPrivileged((PrivilegedAction<Boolean>) () ->
                 Boolean.parseBoolean(System.getProperty(name, String.valueOf(def))));
     }
 
+    @SuppressWarnings("removal")
     public static String getProperty(String name) {
         return AccessController.doPrivileged((PrivilegedAction<String>) () ->
                 System.getProperty(name));
     }
 
+    @SuppressWarnings("removal")
     public static int getIntegerProperty(String name, int defaultValue) {
         return AccessController.doPrivileged((PrivilegedAction<Integer>) () ->
                 Integer.parseInt(System.getProperty(name, String.valueOf(defaultValue))));
@@ -497,15 +557,9 @@ public final class Utils {
 
     public static String stackTrace(Throwable t) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        String s = null;
-        try {
-            PrintStream p = new PrintStream(bos, true, "US-ASCII");
-            t.printStackTrace(p);
-            s = bos.toString("US-ASCII");
-        } catch (UnsupportedEncodingException ex) {
-            throw new InternalError(ex); // Can't happen
-        }
-        return s;
+        PrintStream p = new PrintStream(bos, true, US_ASCII);
+        t.printStackTrace(p);
+        return bos.toString(US_ASCII);
     }
 
     /**
@@ -606,33 +660,33 @@ public final class Utils {
     }
 
     public static boolean hasRemaining(List<ByteBuffer> bufs) {
-        synchronized (bufs) {
-            for (ByteBuffer buf : bufs) {
-                if (buf.hasRemaining())
-                    return true;
-            }
+        for (ByteBuffer buf : bufs) {
+            if (buf.hasRemaining())
+                return true;
         }
         return false;
     }
 
     public static long remaining(List<ByteBuffer> bufs) {
         long remain = 0;
-        synchronized (bufs) {
-            for (ByteBuffer buf : bufs) {
-                remain += buf.remaining();
-            }
+        for (ByteBuffer buf : bufs) {
+            remain += buf.remaining();
         }
         return remain;
     }
 
+    public static long synchronizedRemaining(List<ByteBuffer> bufs) {
+        synchronized (bufs) {
+            return remaining(bufs);
+        }
+    }
+
     public static int remaining(List<ByteBuffer> bufs, int max) {
         long remain = 0;
-        synchronized (bufs) {
-            for (ByteBuffer buf : bufs) {
-                remain += buf.remaining();
-                if (remain > max) {
-                    throw new IllegalArgumentException("too many bytes");
-                }
+        for (ByteBuffer buf : bufs) {
+            remain += buf.remaining();
+            if (remain > max) {
+                throw new IllegalArgumentException("too many bytes");
             }
         }
         return (int) remain;
@@ -794,6 +848,33 @@ public final class Utils {
     public static Logger getDebugLogger(Supplier<String> dbgTag, boolean on) {
         Level errLevel = on ? Level.ALL : Level.OFF;
         return getDebugLogger(dbgTag, errLevel);
+    }
+
+    /**
+     * Return the host string from a HttpRequestImpl
+     *
+     * @param request
+     * @return
+     */
+    public static String hostString(HttpRequestImpl request) {
+        URI uri = request.uri();
+        int port = uri.getPort();
+        String host = uri.getHost();
+
+        boolean defaultPort;
+        if (port == -1) {
+            defaultPort = true;
+        } else if (uri.getScheme().equalsIgnoreCase("https")) {
+            defaultPort = port == 443;
+        } else {
+            defaultPort = port == 80;
+        }
+
+        if (defaultPort) {
+            return host;
+        } else {
+            return host + ":" + Integer.toString(port);
+        }
     }
 
     /**
@@ -1013,17 +1094,6 @@ public final class Utils {
 
     // -- toAsciiString-like support to encode path and query URI segments
 
-    private static final char[] hexDigits = {
-            '0', '1', '2', '3', '4', '5', '6', '7',
-            '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-    };
-
-    private static void appendEscape(StringBuilder sb, byte b) {
-        sb.append('%');
-        sb.append(hexDigits[(b >> 4) & 0x0f]);
-        sb.append(hexDigits[(b >> 0) & 0x0f]);
-    }
-
     // Encodes all characters >= \u0080 into escaped, normalized UTF-8 octets,
     // assuming that s is otherwise legal
     //
@@ -1051,13 +1121,16 @@ public final class Utils {
             assert false : x;
         }
 
+        HexFormat format = HexFormat.of().withUpperCase();
         StringBuilder sb = new StringBuilder();
         while (bb.hasRemaining()) {
             int b = bb.get() & 0xff;
-            if (b >= 0x80)
-                appendEscape(sb, (byte)b);
-            else
-                sb.append((char)b);
+            if (b >= 0x80) {
+                sb.append('%');
+                format.toHexDigits(sb, (byte)b);
+            } else {
+                sb.append((char) b);
+            }
         }
         return sb.toString();
     }

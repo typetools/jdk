@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,8 +28,9 @@ package java.awt.geom;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.awt.Shape;
 import java.awt.Rectangle;
+import java.awt.Shape;
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -208,9 +209,10 @@ public abstract @UsesObjectEquals class Line2D implements Shape, Cloneable {
             return new Rectangle2D.Float(x, y, w, h);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 6161772511649436349L;
     }
 
@@ -360,9 +362,10 @@ public abstract @UsesObjectEquals class Line2D implements Shape, Cloneable {
             return new Rectangle2D.Double(x, y, w, h);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 7979627399746467499L;
     }
 

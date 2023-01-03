@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -650,6 +650,8 @@ public abstract class Parser {
      * @exception IOException
      */
     private void dtdsub() throws Exception {
+        startInternalSub(); // reports the event before parsing the subset
+
         char ch;
         for (short st = 0; st >= 0;) {
             ch = getch();
@@ -1589,7 +1591,7 @@ public abstract class Parser {
                             str = name(false);
                             //          PI target name may not be empty string [#2.6]
                             //          PI target name 'XML' is reserved [#2.6]
-                            if ((str.length() == 0)
+                            if ((str.isEmpty())
                                     || (mXml.name.equals(str.toLowerCase()) == true)) {
                                 panic(FAULT);
                             }
@@ -2229,6 +2231,13 @@ public abstract class Parser {
      */
     protected abstract void docType(String name, String pubid, String sysid)
             throws SAXException;
+
+    /**
+     * Reports the start of DTD internal subset.
+     *
+     * @throws SAXException if the receiver throws SAXException
+     */
+    public abstract void startInternalSub () throws SAXException;
 
     /**
      * Reports a comment.
@@ -2982,7 +2991,7 @@ public abstract class Parser {
     private Reader utf16(InputStream is)
             throws Exception {
         if (mChIdx != 0) {
-            //The bom method has read ONE byte into the buffer.
+            // The bom method has read ONE byte into the buffer.
             byte b0 = (byte)mChars[0];
             if (b0 == 0x00 || b0 == 0x3C) {
                 int b1 = is.read();
@@ -2999,9 +3008,9 @@ public abstract class Parser {
                     mChars[mChIdx++] = (char)(b2);
                     return new ReaderUTF16(is, 'l');
                 } else {
-                    /**not every InputStream supports reset, so we have to remember
+                    /* not every InputStream supports reset, so we have to remember
                      * the state for further parsing
-                    **/
+                     */
                     mChars[0] = (char)(b0);
                     mChars[mChIdx++] = (char)(b1);
                     mChars[mChIdx++] = (char)(b2);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2018 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -27,24 +27,24 @@
 #include "asm/macroAssembler.inline.hpp"
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
-#include "classfile/systemDictionary.hpp"
 #include "gc/shared/collectedHeap.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "interpreter/interpreter.hpp"
 #include "oops/arrayOop.hpp"
-#include "oops/markOop.hpp"
+#include "oops/markWord.hpp"
 #include "runtime/basicLock.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/os.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/align.hpp"
-
+#include "utilities/powerOfTwo.hpp"
 
 void C1_MacroAssembler::inline_cache_check(Register receiver, Register iCache) {
   const Register temp_reg = R12_scratch2;
   Label Lmiss;
 
-  verify_oop(receiver);
+  verify_oop(receiver, FILE_AND_LINE);
   MacroAssembler::null_check(receiver, oopDesc::klass_offset_in_bytes(), &Lmiss);
   load_klass(temp_reg, receiver);
 
@@ -79,8 +79,11 @@ void C1_MacroAssembler::build_frame(int frame_size_in_bytes, int bang_size_in_by
   assert(bang_size_in_bytes >= frame_size_in_bytes, "stack bang size incorrect");
   generate_stack_overflow_check(bang_size_in_bytes);
 
-  std(return_pc, _abi(lr), R1_SP);     // SP->lr = return_pc
+  std(return_pc, _abi0(lr), R1_SP);     // SP->lr = return_pc
   push_frame(frame_size_in_bytes, R0); // SP -= frame_size_in_bytes
+
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->nmethod_entry_barrier(this, R20);
 }
 
 
@@ -100,22 +103,29 @@ void C1_MacroAssembler::lock_object(Register Rmark, Register Roop, Register Rbox
   // Load object header.
   ld(Rmark, oopDesc::mark_offset_in_bytes(), Roop);
 
-  verify_oop(Roop);
+  verify_oop(Roop, FILE_AND_LINE);
 
   // Save object being locked into the BasicObjectLock...
   std(Roop, BasicObjectLock::obj_offset_in_bytes(), Rbox);
+
+  if (DiagnoseSyncOnValueBasedClasses != 0) {
+    load_klass(Rscratch, Roop);
+    lwz(Rscratch, in_bytes(Klass::access_flags_offset()), Rscratch);
+    testbitdi(CCR0, R0, Rscratch, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
+    bne(CCR0, slow_int);
+  }
 
   if (UseBiasedLocking) {
     biased_locking_enter(CCR0, Roop, Rmark, Rscratch, R0, done, &slow_int);
   }
 
   // ... and mark it unlocked.
-  ori(Rmark, Rmark, markOopDesc::unlocked_value);
+  ori(Rmark, Rmark, markWord::unlocked_value);
 
   // Save unlocked object header into the displaced header location on the stack.
   std(Rmark, BasicLock::displaced_header_offset_in_bytes(), Rbox);
 
-  // Compare object markOop with Rmark and if equal exchange Rscratch with object markOop.
+  // Compare object markWord with Rmark and if equal exchange Rscratch with object markWord.
   assert(oopDesc::mark_offset_in_bytes() == 0, "cas must take a zero displacement");
   cmpxchgd(/*flag=*/CCR0,
            /*current_value=*/Rscratch,
@@ -137,7 +147,7 @@ void C1_MacroAssembler::lock_object(Register Rmark, Register Roop, Register Rbox
   bind(cas_failed);
   // We did not find an unlocked object so see if this is a recursive case.
   sub(Rscratch, Rscratch, R1_SP);
-  load_const_optimized(R0, (~(os::vm_page_size()-1) | markOopDesc::lock_mask_in_place));
+  load_const_optimized(R0, (~(os::vm_page_size()-1) | markWord::lock_mask_in_place));
   and_(R0/*==0?*/, Rscratch, R0);
   std(R0/*==0, perhaps*/, BasicLock::displaced_header_offset_in_bytes(), Rbox);
   bne(CCR0, slow_int);
@@ -157,7 +167,7 @@ void C1_MacroAssembler::unlock_object(Register Rmark, Register Roop, Register Rb
   if (UseBiasedLocking) {
     // Load the object out of the BasicObjectLock.
     ld(Roop, BasicObjectLock::obj_offset_in_bytes(), Rbox);
-    verify_oop(Roop);
+    verify_oop(Roop, FILE_AND_LINE);
     biased_locking_exit(CCR0, Roop, R0, done);
   }
   // Test first it it is a fast recursive unlock.
@@ -167,11 +177,11 @@ void C1_MacroAssembler::unlock_object(Register Rmark, Register Roop, Register Rb
   if (!UseBiasedLocking) {
     // Load object.
     ld(Roop, BasicObjectLock::obj_offset_in_bytes(), Rbox);
-    verify_oop(Roop);
+    verify_oop(Roop, FILE_AND_LINE);
   }
 
   // Check if it is still a light weight lock, this is is true if we see
-  // the stack address of the basicLock in the markOop of the object.
+  // the stack address of the basicLock in the markWord of the object.
   cmpxchgd(/*flag=*/CCR0,
            /*current_value=*/R0,
            /*compare_value=*/Rbox,
@@ -215,7 +225,7 @@ void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register
   if (UseBiasedLocking && !len->is_valid()) {
     ld(t1, in_bytes(Klass::prototype_header_offset()), klass);
   } else {
-    load_const_optimized(t1, (intx)markOopDesc::prototype());
+    load_const_optimized(t1, (intx)markWord::prototype().value());
   }
   std(t1, oopDesc::mark_offset_in_bytes(), obj);
   store_klass(obj, klass);
@@ -294,7 +304,7 @@ void C1_MacroAssembler::initialize_object(
     } else {
       cmpwi(CCR0, t1, con_size_in_bytes);
     }
-    asm_assert_eq("bad size in initialize_object", 0x753);
+    asm_assert_eq("bad size in initialize_object");
   }
 #endif
 
@@ -316,7 +326,7 @@ void C1_MacroAssembler::initialize_object(
 //         relocInfo::runtime_call_type);
   }
 
-  verify_oop(obj);
+  verify_oop(obj, FILE_AND_LINE);
 }
 
 
@@ -383,14 +393,14 @@ void C1_MacroAssembler::allocate_array(
     //     relocInfo::runtime_call_type);
   }
 
-  verify_oop(obj);
+  verify_oop(obj, FILE_AND_LINE);
 }
 
 
 #ifndef PRODUCT
 
 void C1_MacroAssembler::verify_stack_oop(int stack_offset) {
-  verify_oop_addr((RegisterOrConstant)(stack_offset + STACK_BIAS), R1_SP, "broken oop in stack slot");
+  verify_oop_addr((RegisterOrConstant)stack_offset, R1_SP, "broken oop in stack slot");
 }
 
 void C1_MacroAssembler::verify_not_null_oop(Register r) {
@@ -399,8 +409,7 @@ void C1_MacroAssembler::verify_not_null_oop(Register r) {
   bne(CCR0, not_null);
   stop("non-null oop required");
   bind(not_null);
-  if (!VerifyOops) return;
-  verify_oop(r);
+  verify_oop(r, FILE_AND_LINE);
 }
 
 #endif // PRODUCT

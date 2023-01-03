@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,16 +22,30 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing;
 
-import java.awt.*;
-import java.beans.JavaBean;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.TextComponent;
 import java.beans.BeanProperty;
-import javax.swing.text.*;
-import javax.accessibility.*;
-
-import java.io.ObjectOutputStream;
+import java.beans.JavaBean;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Element;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.PlainDocument;
 
 /**
  * A <code>JTextArea</code> is a multi-line area that displays plain text.
@@ -39,7 +53,7 @@ import java.io.IOException;
  * compatibility with the <code>java.awt.TextArea</code> class where it can
  * reasonably do so.
  * You can find information and examples of using all the text components in
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/components/text.html">Using Text Components</a>,
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/text.html">Using Text Components</a>,
  * a section in <em>The Java Tutorial.</em>
  *
  * <p>
@@ -107,7 +121,7 @@ import java.io.IOException;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -226,7 +240,7 @@ public class JTextArea extends JTextComponent {
     /**
      * Returns the class ID for the UI.
      *
-     * @return the ID ("TextAreaUI")
+     * @return the string "TextAreaUI"
      * @see JComponent#getUIClassID
      * @see UIDefaults#getUI
      */
@@ -732,6 +746,7 @@ public class JTextArea extends JTextComponent {
      * See readObject() and writeObject() in JComponent for more
      * information about serialization in Swing.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         if (getUIClassID().equals(uiClassID)) {
@@ -776,12 +791,17 @@ public class JTextArea extends JTextComponent {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      */
     @SuppressWarnings("serial") // Same-version serialization only
     protected class AccessibleJTextArea extends AccessibleJTextComponent {
+
+        /**
+         * Constructs an {@code AccessibleJTextArea}.
+         */
+        protected AccessibleJTextArea() {}
 
         /**
          * Gets the state set of this object.

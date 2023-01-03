@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,8 @@
 #include "ci/ciEnv.hpp"
 #include "ci/ciInstance.hpp"
 #include "ci/ciMetadata.hpp"
-#include "code/oopRecorder.hpp"
+#include "code/oopRecorder.inline.hpp"
+#include "gc/shared/collectedHeap.hpp"
 #include "memory/allocation.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/jniHandles.inline.hpp"
@@ -162,7 +163,7 @@ template class ValueRecorder<jobject>;
 
 oop ObjectLookup::ObjectEntry::oop_value() const { return JNIHandles::resolve(_value); }
 
-ObjectLookup::ObjectLookup(): _gc_count(Universe::heap()->total_collections()), _values(4) {}
+ObjectLookup::ObjectLookup(): _values(4), _gc_count(Universe::heap()->total_collections()) {}
 
 void ObjectLookup::maybe_resort() {
   // The values are kept sorted by address which may be invalidated

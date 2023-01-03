@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug  8132096 8157611 8190552
+ * @bug  8132096 8157611 8190552 8251357
  * @summary test the APIs  in the DocTree interface
  * @modules jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.file
@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.BreakIterator;
@@ -52,7 +53,6 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.util.Elements;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
-import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 
 import com.sun.source.doctree.DocTree;
@@ -98,14 +98,14 @@ public class DocCommentTreeApiTester {
             test.runDocTreePath("Anchor.java", "package.html");
 
             // test for correct parsing using valid and some invalid html tags
-            test.runFileObjectTest("overview0.html");
-            test.runFileObjectTest("overview1.html");
-            test.runFileObjectTest("overview2.html");
-            test.runFileObjectTest("overview3.html");
-            test.runFileObjectTest("overview4.html");
-            test.runFileObjectTest("overview5.html");
-            test.runFileObjectTest("overview6.html");
-            test.runFileObjectTest("overview7.html");
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(Path.of(testSrc))) {
+                for (Path entry: ds) {
+                    String name = entry.getFileName().toString();
+                    if (name.matches("overview[0-9]+\\.html")) {
+                        test.runFileObjectTest(name);
+                    }
+                }
+            }
 
         } finally {
             test.status();

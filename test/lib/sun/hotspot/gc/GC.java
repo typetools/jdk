@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,14 +31,14 @@ import sun.hotspot.WhiteBox;
  */
 public enum GC {
     /*
-     * Enum values much match CollectedHeap::Name
+     * Enum values must match CollectedHeap::Name
      */
     Serial(1),
     Parallel(2),
-    ConcMarkSweep(3),
-    G1(4),
-    Epsilon(5),
-    Z(6);
+    G1(3),
+    Epsilon(4),
+    Z(5),
+    Shenandoah(6);
 
     private static final WhiteBox WB = WhiteBox.getWhiteBox();
 
@@ -49,10 +49,17 @@ public enum GC {
     }
 
     /**
-     * @return true if this GC is supported by the VM
+     * @return true if this GC is supported by the VM, i.e., it is built into the VM.
      */
     public boolean isSupported() {
         return WB.isGCSupported(name);
+    }
+
+    /**
+     * @return true if this GC is supported by the JVMCI compiler
+     */
+    public boolean isSupportedByJVMCICompiler() {
+        return WB.isGCSupportedByJVMCICompiler(name);
     }
 
     /**
@@ -68,5 +75,17 @@ public enum GC {
      */
     public static boolean isSelectedErgonomically() {
         return WB.isGCSelectedErgonomically();
+    }
+
+    /**
+     * @return the selected GC.
+     */
+    public static GC selected() {
+      for (GC gc : values()) {
+        if (gc.isSelected()) {
+          return gc;
+        }
+      }
+      throw new IllegalStateException("No selected GC found");
     }
 }

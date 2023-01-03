@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,7 +35,6 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
@@ -103,7 +102,7 @@ public class ConsoleCallbackHandler implements CallbackHandler {
                 System.err.flush();
 
                 String result = readLine();
-                if (result.equals("")) {
+                if (result.isEmpty()) {
                     result = nc.getDefaultName();
                 }
 
@@ -212,7 +211,7 @@ public class ConsoleCallbackHandler implements CallbackHandler {
             prompt = "";
         }
         prompt = prefix + prompt;
-        if (!prompt.equals("")) {
+        if (!prompt.isEmpty()) {
             System.err.println(prompt);
         }
 
@@ -236,8 +235,9 @@ public class ConsoleCallbackHandler implements CallbackHandler {
             result = Integer.parseInt(readLine());
             if (result < 0 || result > (options.length - 1)) {
                 result = defaultOption;
+            } else {
+                result = options[result].value;
             }
-            result = options[result].value;
         } catch (NumberFormatException e) {
             result = defaultOption;
         }

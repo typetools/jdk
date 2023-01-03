@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,8 +81,14 @@ import sun.security.util.SecurityConstants;
  *
  * @author Roland Schemers
  * @since 1.2
+ * @deprecated This class is only useful in conjunction with
+ *       {@linkplain SecurityManager the Security Manager}, which is deprecated
+ *       and subject to removal in a future release. Consequently, this class
+ *       is also deprecated and subject to removal. There is no replacement for
+ *       the Security Manager or this class.
  */
 
+@Deprecated(since="17", forRemoval=true)
 public final class AccessControlContext {
 
     private ProtectionDomain[] context;
@@ -95,6 +101,7 @@ public final class AccessControlContext {
     // native codes. Don't touch it.
     private AccessControlContext privilegedContext;
 
+    @SuppressWarnings("removal")
     private DomainCombiner combiner = null;
 
     // limited privilege scope
@@ -109,6 +116,7 @@ public final class AccessControlContext {
     private static boolean debugInit = false;
     private static Debug debug = null;
 
+    @SuppressWarnings("removal")
     static Debug getDebug()
     {
         if (debugInit)
@@ -168,16 +176,16 @@ public final class AccessControlContext {
      * @param combiner the {@code DomainCombiner} to be associated
      *          with the provided {@code AccessControlContext}.
      *
-     * @exception NullPointerException if the provided
+     * @throws    NullPointerException if the provided
      *          {@code context} is {@code null}.
      *
-     * @exception SecurityException if a security manager is installed and the
+     * @throws    SecurityException if a security manager is installed and the
      *          caller does not have the "createAccessControlContext"
      *          {@link SecurityPermission}
      * @since 1.3
      */
     public AccessControlContext(AccessControlContext acc,
-                                DomainCombiner combiner) {
+                                @SuppressWarnings("removal") DomainCombiner combiner) {
 
         this(acc, combiner, false);
     }
@@ -188,9 +196,10 @@ public final class AccessControlContext {
      * permission
      */
     AccessControlContext(AccessControlContext acc,
-                        DomainCombiner combiner,
+                        @SuppressWarnings("removal") DomainCombiner combiner,
                         boolean preauthorized) {
         if (!preauthorized) {
+            @SuppressWarnings("removal")
             SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
                 sm.checkPermission(SecurityConstants.CREATE_ACC_PERMISSION);
@@ -217,7 +226,7 @@ public final class AccessControlContext {
      * This "argument wrapper" context will be passed as the actual context
      * parameter on an internal doPrivileged() call used in the implementation.
      */
-    AccessControlContext(ProtectionDomain caller, DomainCombiner combiner,
+    AccessControlContext(ProtectionDomain caller, @SuppressWarnings("removal") DomainCombiner combiner,
         AccessControlContext parent, AccessControlContext context,
         Permission[] perms)
     {
@@ -329,6 +338,7 @@ public final class AccessControlContext {
     /**
      * get the assigned combiner from the privileged or inherited context
      */
+    @SuppressWarnings("removal")
     DomainCombiner getAssignedCombiner() {
         AccessControlContext acc;
         if (isPrivileged) {
@@ -350,11 +360,12 @@ public final class AccessControlContext {
      *          {@code AccessControlContext}, or {@code null}
      *          if there is none.
      *
-     * @exception SecurityException if a security manager is installed and
+     * @throws    SecurityException if a security manager is installed and
      *          the caller does not have the "getDomainCombiner"
      *          {@link SecurityPermission}
      * @since 1.3
      */
+    @SuppressWarnings("removal")
     public DomainCombiner getDomainCombiner() {
 
         SecurityManager sm = System.getSecurityManager();
@@ -367,6 +378,7 @@ public final class AccessControlContext {
     /**
      * package private for AccessController
      */
+    @SuppressWarnings("removal")
     DomainCombiner getCombiner() {
         return combiner;
     }
@@ -389,11 +401,12 @@ public final class AccessControlContext {
      *
      * @param perm the requested permission.
      *
-     * @exception AccessControlException if the specified permission
+     * @throws    AccessControlException if the specified permission
      * is not permitted, based on the current security policy and the
      * context encapsulated by this object.
-     * @exception NullPointerException if the permission to check for is null.
+     * @throws    NullPointerException if the permission to check for is null.
      */
+    @SuppressWarnings("removal")
     public void checkPermission(Permission perm)
         throws AccessControlException
     {
@@ -554,6 +567,7 @@ public final class AccessControlContext {
      * The limited privilege scope can indirectly flow from the inherited
      * parent thread or an assigned context previously captured by getContext().
      */
+    @SuppressWarnings("removal")
     AccessControlContext optimize() {
         // the assigned (privileged or inherited) context
         AccessControlContext acc;
@@ -758,18 +772,9 @@ public final class AccessControlContext {
         if (obj == this)
             return true;
 
-        if (! (obj instanceof AccessControlContext))
-            return false;
-
-        AccessControlContext that = (AccessControlContext) obj;
-
-        if (!equalContext(that))
-            return false;
-
-        if (!equalLimitedContext(that))
-            return false;
-
-        return true;
+        return obj instanceof AccessControlContext that
+                && equalContext(that)
+                && equalLimitedContext(that);
     }
 
     /*

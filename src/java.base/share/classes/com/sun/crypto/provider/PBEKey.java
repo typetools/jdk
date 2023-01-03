@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import java.lang.ref.Reference;
 import java.security.MessageDigest;
 import java.security.KeyRep;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.Locale;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.PBEKeySpec;
@@ -49,6 +50,7 @@ import jdk.internal.ref.CleanerFactory;
  */
 final class PBEKey implements SecretKey {
 
+    @java.io.Serial
     static final long serialVersionUID = -2234768909660948176L;
 
     private byte[] key;
@@ -60,7 +62,8 @@ final class PBEKey implements SecretKey {
      *
      * @param keytype the given PBE key specification
      */
-    PBEKey(PBEKeySpec keySpec, String keytype) throws InvalidKeySpecException {
+    PBEKey(PBEKeySpec keySpec, String keytype, boolean useCleaner)
+            throws InvalidKeySpecException {
         char[] passwd = keySpec.getPassword();
         if (passwd == null) {
             // Should allow an empty password.
@@ -77,13 +80,15 @@ final class PBEKey implements SecretKey {
         this.key = new byte[passwd.length];
         for (int i=0; i<passwd.length; i++)
             this.key[i] = (byte) (passwd[i] & 0x7f);
-        java.util.Arrays.fill(passwd, ' ');
+        Arrays.fill(passwd, '\0');
         type = keytype;
 
         // Use the cleaner to zero the key when no longer referenced
-        final byte[] k = this.key;
-        CleanerFactory.cleaner().register(this,
-                () -> java.util.Arrays.fill(k, (byte)0x00));
+        if (useCleaner) {
+            final byte[] k = this.key;
+            CleanerFactory.cleaner().register(this,
+                () -> Arrays.fill(k, (byte) 0x00));
+        }
     }
 
     public byte[] getEncoded() {
@@ -130,14 +135,27 @@ final class PBEKey implements SecretKey {
 
         byte[] thatEncoded = that.getEncoded();
         boolean ret = MessageDigest.isEqual(this.key, thatEncoded);
-        java.util.Arrays.fill(thatEncoded, (byte)0x00);
+        Arrays.fill(thatEncoded, (byte)0x00);
         return ret;
+    }
+
+    /**
+     * Clears the internal copy of the key.
+     *
+     */
+    @Override
+    public void destroy() {
+        if (key != null) {
+            Arrays.fill(key, (byte) 0x00);
+            key = null;
+        }
     }
 
     /**
      * readObject is called to restore the state of this key from
      * a stream.
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
          throws java.io.IOException, ClassNotFoundException
     {
@@ -154,10 +172,11 @@ final class PBEKey implements SecretKey {
      * @throws java.io.ObjectStreamException if a new object representing
      * this PBE key could not be created
      */
+    @java.io.Serial
     private Object writeReplace() throws java.io.ObjectStreamException {
         return new KeyRep(KeyRep.Type.SECRET,
-                        getAlgorithm(),
-                        getFormat(),
-                        getEncoded());
+                getAlgorithm(),
+                getFormat(),
+                key);
     }
 }

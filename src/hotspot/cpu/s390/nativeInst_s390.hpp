@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -25,8 +25,8 @@
 
 // Major contributions by AHa, JL, LS
 
-#ifndef CPU_S390_VM_NATIVEINST_S390_HPP
-#define CPU_S390_VM_NATIVEINST_S390_HPP
+#ifndef CPU_S390_NATIVEINST_S390_HPP
+#define CPU_S390_NATIVEINST_S390_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "runtime/icache.hpp"
@@ -104,12 +104,6 @@ class NativeInstruction {
     return MacroAssembler::get_poll_register(addr_at(0));
   }
 
-  bool is_memory_serialization(JavaThread *thread, void *ucontext) {
-    // Is the current instruction a write access of thread to the
-    // memory serialization page?
-    return MacroAssembler::is_memory_serialization(long_at(0), thread, ucontext);
-  }
-
  public:
 
   // The output of __ breakpoint_trap().
@@ -142,9 +136,6 @@ class NativeInstruction {
  public:
 
   void verify();
-
-  // unit test stuff
-  static void test() {}                        // Override for testing.
 
   friend NativeInstruction* nativeInstruction_at(address address) {
     NativeInstruction* inst = (NativeInstruction*)address;
@@ -279,9 +270,6 @@ class NativeCall: public NativeInstruction {
 
   void verify_alignment() {} // Yet another real do nothing guy :)
   void verify();
-
-  // unit test stuff
-  static void test();
 
   // Creation.
   friend NativeCall* nativeCall_at(address instr) {
@@ -449,9 +437,6 @@ class NativeFarCall: public NativeInstruction {
 
   void verify();
 
-  // Unit tests
-  static void test();
-
   // Instantiates a NativeFarCall object starting at the given instruction
   // address and returns the NativeFarCall object.
   inline friend NativeFarCall* nativeFarCall_at(address instr) {
@@ -496,18 +481,15 @@ class NativeMovConstReg: public NativeInstruction {
   // Patch data in code stream.
   address set_data_plain(intptr_t x, CodeBlob *code);
   // Patch data in code stream and oop pool if necessary.
-  void set_data(intptr_t x);
+  void set_data(intptr_t x, relocInfo::relocType expected_type = relocInfo::none);
 
   // Patch narrow oop constant in code stream.
   void set_narrow_oop(intptr_t data);
   void set_narrow_klass(intptr_t data);
-  void set_pcrel_addr(intptr_t addr, CompiledMethod *nm = NULL, bool copy_back_to_oop_pool=false);
-  void set_pcrel_data(intptr_t data, CompiledMethod *nm = NULL, bool copy_back_to_oop_pool=false);
+  void set_pcrel_addr(intptr_t addr, CompiledMethod *nm = NULL);
+  void set_pcrel_data(intptr_t data, CompiledMethod *nm = NULL);
 
   void verify();
-
-  // unit test stuff
-  static void test();
 
   // Creation.
   friend NativeMovConstReg* nativeMovConstReg_at(address address) {
@@ -534,13 +516,19 @@ class NativeMovConstReg: public NativeInstruction {
 // The instruction sequence looks like this:
 //   iihf        %r1,$bits1              ; load offset for mem access
 //   iilf        %r1,$bits2
-//   [compress oop]                      ; optional, load only
+//   [compress oop]                      ; optional, store only
 //   load/store  %r2,0(%r1,%r2)          ; memory access
 
 class NativeMovRegMem;
 inline NativeMovRegMem* nativeMovRegMem_at (address address);
 class NativeMovRegMem: public NativeInstruction {
  public:
+  enum z_specific_constants {
+    instruction_size = 12 // load_const used with access_field_id
+  };
+
+  int num_bytes_to_end_of_patch() const { return instruction_size; }
+
   intptr_t offset() const {
     return nativeMovConstReg_at(addr_at(0))->data();
   }
@@ -618,9 +606,6 @@ class NativeJump: public NativeInstruction {
 
   void verify();
 
-  // Unit testing stuff
-  static void test();
-
   // Insertion of native jump instruction.
   static void insert(address code_pos, address entry);
 
@@ -669,4 +654,4 @@ class NativeGeneralJump: public NativeInstruction {
   void verify() PRODUCT_RETURN;
 };
 
-#endif // CPU_S390_VM_NATIVEINST_S390_HPP
+#endif // CPU_S390_NATIVEINST_S390_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,16 +22,16 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_INSTANCEREFKLASS_INLINE_HPP
-#define SHARE_VM_OOPS_INSTANCEREFKLASS_INLINE_HPP
+#ifndef SHARE_OOPS_INSTANCEREFKLASS_INLINE_HPP
+#define SHARE_OOPS_INSTANCEREFKLASS_INLINE_HPP
+
+#include "oops/instanceRefKlass.hpp"
 
 #include "classfile/javaClasses.inline.hpp"
 #include "gc/shared/referenceProcessor.hpp"
 #include "logging/log.hpp"
 #include "oops/access.inline.hpp"
-#include "oops/compressedOops.inline.hpp"
 #include "oops/instanceKlass.inline.hpp"
-#include "oops/instanceRefKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
@@ -98,12 +98,14 @@ void InstanceRefKlass::oop_oop_iterate_discovered_and_discovery(oop obj, Referen
 
 template <typename T, class OopClosureType, class Contains>
 void InstanceRefKlass::oop_oop_iterate_fields(oop obj, OopClosureType* closure, Contains& contains) {
+  assert(closure->ref_discoverer() == NULL, "ReferenceDiscoverer should not be set");
   do_referent<T>(obj, closure, contains);
   do_discovered<T>(obj, closure, contains);
 }
 
 template <typename T, class OopClosureType, class Contains>
 void InstanceRefKlass::oop_oop_iterate_fields_except_referent(oop obj, OopClosureType* closure, Contains& contains) {
+  assert(closure->ref_discoverer() == NULL, "ReferenceDiscoverer should not be set");
   do_discovered<T>(obj, closure, contains);
 }
 
@@ -183,11 +185,16 @@ void InstanceRefKlass::trace_reference_gc(const char *s, oop obj) {
   T* discovered_addr = (T*) java_lang_ref_Reference::discovered_addr_raw(obj);
 
   log_develop_trace(gc, ref)("InstanceRefKlass %s for obj " PTR_FORMAT, s, p2i(obj));
-  log_develop_trace(gc, ref)("     referent_addr/* " PTR_FORMAT " / " PTR_FORMAT,
-      p2i(referent_addr), p2i((oop)HeapAccess<ON_UNKNOWN_OOP_REF | AS_NO_KEEPALIVE>::oop_load_at(obj, java_lang_ref_Reference::referent_offset)));
+  if (java_lang_ref_Reference::is_phantom(obj)) {
+    log_develop_trace(gc, ref)("     referent_addr/* " PTR_FORMAT " / " PTR_FORMAT,
+                               p2i(referent_addr), p2i((oop)HeapAccess<ON_PHANTOM_OOP_REF | AS_NO_KEEPALIVE>::oop_load(referent_addr)));
+  } else {
+    log_develop_trace(gc, ref)("     referent_addr/* " PTR_FORMAT " / " PTR_FORMAT,
+                               p2i(referent_addr), p2i((oop)HeapAccess<ON_WEAK_OOP_REF | AS_NO_KEEPALIVE>::oop_load(referent_addr)));
+  }
   log_develop_trace(gc, ref)("     discovered_addr/* " PTR_FORMAT " / " PTR_FORMAT,
       p2i(discovered_addr), p2i((oop)HeapAccess<AS_NO_KEEPALIVE>::oop_load(discovered_addr)));
 }
 #endif
 
-#endif // SHARE_VM_OOPS_INSTANCEREFKLASS_INLINE_HPP
+#endif // SHARE_OOPS_INSTANCEREFKLASS_INLINE_HPP

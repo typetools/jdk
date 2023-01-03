@@ -31,16 +31,20 @@ import build.tools.symbolgenerator.CreateSymbols
 import build.tools.symbolgenerator.CreateSymbols
                                   .ModuleHeaderDescription
                                   .RequiresDescription;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -53,6 +57,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,11 +70,15 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileManager.Location;
@@ -113,6 +122,7 @@ import com.sun.tools.classfile.Field;
 import com.sun.tools.classfile.InnerClasses_attribute;
 import com.sun.tools.classfile.InnerClasses_attribute.Info;
 import com.sun.tools.classfile.Method;
+import com.sun.tools.classfile.MethodParameters_attribute;
 import com.sun.tools.classfile.ModuleResolution_attribute;
 import com.sun.tools.classfile.ModuleTarget_attribute;
 import com.sun.tools.classfile.Module_attribute;
@@ -120,6 +130,11 @@ import com.sun.tools.classfile.Module_attribute.ExportsEntry;
 import com.sun.tools.classfile.Module_attribute.OpensEntry;
 import com.sun.tools.classfile.Module_attribute.ProvidesEntry;
 import com.sun.tools.classfile.Module_attribute.RequiresEntry;
+import com.sun.tools.classfile.NestHost_attribute;
+import com.sun.tools.classfile.NestMembers_attribute;
+import com.sun.tools.classfile.PermittedSubclasses_attribute;
+import com.sun.tools.classfile.Record_attribute;
+import com.sun.tools.classfile.Record_attribute.ComponentInfo;
 import com.sun.tools.classfile.RuntimeAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleParameterAnnotations_attribute;
@@ -132,9 +147,23 @@ import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.util.Assert;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Pair;
+import java.util.Optional;
 
 /**
- * A tool for processing the .sym.txt files. It allows to:
+ * A tool for processing the .sym.txt files.
+ *
+ * To add historical data for JDK N, N >= 11, do the following:
+ *  * cd <open-jdk-checkout>/make/data/symbols
+ *  * <jdk-N>/bin/java --add-exports jdk.jdeps/com.sun.tools.classfile=ALL-UNNAMED \
+ *                     --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+ *                     --add-exports jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED \
+ *                     --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+ *                     --add-modules jdk.jdeps \
+ *                     ../../../make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java \
+ *                     build-description-incremental symbols include.list
+ *  * sanity-check the new and updates files in make/data/symbols and commit them
+ *
+ * The tools allows to:
  *  * convert the .sym.txt into class/sig files for ct.sym
  *  * in cooperation with the adjacent history Probe, construct .sym.txt files for previous platforms
  *  * enhance existing .sym.txt files with a a new set .sym.txt for the current platform
@@ -186,9 +215,6 @@ import com.sun.tools.javac.util.Pair;
  *
  * Note: the versions are expected to be a single character.
  *
- * To enhance existing historical data with data for JDK N, run:
- *     <jdk-N>/bin/java build.tools.symbolgenerator.CreateSymbols build-description-incremental make/data/symbols/symbols make/data/symbols/include.list
- *
  */
 public class CreateSymbols {
 
@@ -197,63 +223,131 @@ public class CreateSymbols {
      * {@code ctDescriptionFile}, using the file as a recipe to create the sigfiles.
      */
     @SuppressWarnings("unchecked")
-    public void createSymbols(String ctDescriptionFile, String ctSymLocation, CtSymKind ctSymKind) throws IOException {
-        LoadDescriptions data = load(Paths.get(ctDescriptionFile), null);
+    public void createSymbols(String ctDescriptionFileExtra, String ctDescriptionFile, String ctSymLocation,
+                              long timestamp, String currentVersion, String systemModules) throws IOException {
+        LoadDescriptions data = load(ctDescriptionFileExtra != null ? Paths.get(ctDescriptionFileExtra)
+                                                                    : null,
+                                     Paths.get(ctDescriptionFile));
 
         splitHeaders(data.classes);
+
+        Map<String, Map<Character, String>> package2Version2Module = new HashMap<>();
+        Map<String, Set<FileData>> directory2FileData = new TreeMap<>();
 
         for (ModuleDescription md : data.modules.values()) {
             for (ModuleHeaderDescription mhd : md.header) {
                 List<String> versionsList =
                         Collections.singletonList(mhd.versions);
-                writeModulesForVersions(ctSymLocation,
+                writeModulesForVersions(directory2FileData,
                                         md,
                                         mhd,
                                         versionsList);
+                mhd.exports.stream().forEach(pkg -> {
+                    for (char v : mhd.versions.toCharArray()) {
+                        package2Version2Module.computeIfAbsent(pkg, dummy -> new HashMap<>()).put(v, md.name);
+                    }
+                });
             }
         }
 
         for (ClassDescription classDescription : data.classes) {
+            Map<Character, String> version2Module = package2Version2Module.getOrDefault(classDescription.packge().replace('.', '/'), Collections.emptyMap());
             for (ClassHeaderDescription header : classDescription.header) {
-                switch (ctSymKind) {
-                    case JOINED_VERSIONS:
-                        Set<String> jointVersions = new HashSet<>();
-                        jointVersions.add(header.versions);
-                        limitJointVersion(jointVersions, classDescription.fields);
-                        limitJointVersion(jointVersions, classDescription.methods);
-                        writeClassesForVersions(ctSymLocation, classDescription, header, jointVersions);
-                        break;
-                    case SEPARATE:
-                        Set<String> versions = new HashSet<>();
-                        for (char v : header.versions.toCharArray()) {
-                            versions.add("" + v);
+                Set<String> jointVersions = new HashSet<>();
+                jointVersions.add(header.versions);
+                limitJointVersion(jointVersions, classDescription.fields);
+                limitJointVersion(jointVersions, classDescription.methods);
+                Map<String, StringBuilder> module2Versions = new HashMap<>();
+                for (char v : header.versions.toCharArray()) {
+                    String module = version2Module.get(v);
+                    if (module == null) {
+                        if (v >= '9') {
+                            throw new AssertionError("No module for " + classDescription.name +
+                                                     " and version " + v);
                         }
-                        writeClassesForVersions(ctSymLocation, classDescription, header, versions);
-                        break;
+                        module = version2Module.get('9');
+                        if (module == null) {
+                            module = "java.base";
+                        }
+                    }
+                    module2Versions.computeIfAbsent(module, dummy -> new StringBuilder()).append(v);
+                }
+                for (Entry<String, StringBuilder> e : module2Versions.entrySet()) {
+                    Set<String> currentVersions = new HashSet<>(jointVersions);
+                    limitJointVersion(currentVersions, e.getValue().toString());
+                    currentVersions = currentVersions.stream().filter(vers -> !disjoint(vers, e.getValue().toString())).collect(Collectors.toSet());
+                    writeClassesForVersions(directory2FileData, classDescription, header, e.getKey(), currentVersions);
+                }
+            }
+        }
+
+        currentVersion = Integer.toString(Integer.parseInt(currentVersion), Character.MAX_RADIX);
+        currentVersion = currentVersion.toUpperCase(Locale.ROOT);
+
+        openDirectory(directory2FileData, currentVersion + "/")
+                .add(new FileData(currentVersion + "/system-modules",
+                                  Files.readAllBytes(Paths.get(systemModules))));
+
+        try (OutputStream fos = new FileOutputStream(ctSymLocation);
+             OutputStream bos = new BufferedOutputStream(fos);
+             ZipOutputStream jos = new ZipOutputStream(bos)) {
+            for (Entry<String, Set<FileData>> e : directory2FileData.entrySet()) {
+                jos.putNextEntry(createZipEntry(e.getKey(), timestamp));
+                for (FileData fd : e.getValue()) {
+                    jos.putNextEntry(createZipEntry(fd.fileName, timestamp));
+                    jos.write(fd.fileData);
                 }
             }
         }
     }
 
+    private ZipEntry createZipEntry(String name, long timestamp) {
+        ZipEntry ze = new ZipEntry(name);
+
+        ze.setTime(timestamp);
+        return ze;
+    }
+
     public static String EXTENSION = ".sig";
 
-    LoadDescriptions load(Path ctDescription, String deletePlatform) throws IOException {
-        List<PlatformInput> platforms = new ArrayList<>();
+    LoadDescriptions load(Path ctDescriptionWithExtraContent, Path ctDescriptionOpen) throws IOException {
+        Map<String, PlatformInput> platforms = new LinkedHashMap<>();
+
+        if (ctDescriptionWithExtraContent != null && Files.isRegularFile(ctDescriptionWithExtraContent)) {
+            try (LineBasedReader reader = new LineBasedReader(ctDescriptionWithExtraContent)) {
+                while (reader.hasNext()) {
+                    switch (reader.lineKey) {
+                        case "generate":
+                            //ignore
+                            reader.moveNext();
+                            break;
+                        case "platform":
+                            PlatformInput platform = PlatformInput.load(ctDescriptionWithExtraContent,
+                                                                        reader);
+                            platforms.put(platform.version, platform);
+                            reader.moveNext();
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown key: " + reader.lineKey);
+                    }
+                }
+            }
+        }
+
         Set<String> generatePlatforms = null;
 
-        try (LineBasedReader reader = new LineBasedReader(ctDescription)) {
+        try (LineBasedReader reader = new LineBasedReader(ctDescriptionOpen)) {
             while (reader.hasNext()) {
                 switch (reader.lineKey) {
                     case "generate":
                         String[] platformsAttr = reader.attributes.get("platforms").split(":");
                         generatePlatforms = new HashSet<>(List.of(platformsAttr));
-                        generatePlatforms.remove(deletePlatform);
                         reader.moveNext();
                         break;
                     case "platform":
-                        PlatformInput platform = PlatformInput.load(reader);
-                        if (!platform.version.equals(deletePlatform))
-                            platforms.add(platform);
+                        PlatformInput platform = PlatformInput.load(ctDescriptionOpen, reader);
+                        if (!platforms.containsKey(platform.version))
+                            platforms.put(platform.version, platform);
                         reader.moveNext();
                         break;
                     default:
@@ -265,7 +359,7 @@ public class CreateSymbols {
         Map<String, ClassDescription> classes = new LinkedHashMap<>();
         Map<String, ModuleDescription> modules = new LinkedHashMap<>();
 
-        for (PlatformInput platform: platforms) {
+        for (PlatformInput platform : platforms.values()) {
             for (ClassDescription cd : classes.values()) {
                 addNewVersion(cd.header, platform.basePlatform, platform.version);
                 addNewVersion(cd.fields, platform.basePlatform, platform.version);
@@ -275,7 +369,7 @@ public class CreateSymbols {
                 addNewVersion(md.header, platform.basePlatform, platform.version);
             }
             for (String input : platform.files) {
-                Path inputFile = ctDescription.getParent().resolve(input);
+                Path inputFile = platform.ctDescription.getParent().resolve(input);
                 try (LineBasedReader reader = new LineBasedReader(inputFile)) {
                     while (reader.hasNext()) {
                         String nameAttr = reader.attributes.get("name");
@@ -318,18 +412,28 @@ public class CreateSymbols {
 
         ClassList result = new ClassList();
 
-        for (ClassDescription desc : classes.values()) {
+        classes.values().forEach(result::add);
+        return new LoadDescriptions(result,
+                                    modules,
+                                    new ArrayList<>(platforms.values()));
+    }
+
+    private static void removeVersion(LoadDescriptions load, String deletePlatform) {
+        for (Iterator<ClassDescription> it = load.classes.iterator(); it.hasNext();) {
+            ClassDescription desc = it.next();
             Iterator<ClassHeaderDescription> chdIt = desc.header.iterator();
 
             while (chdIt.hasNext()) {
                 ClassHeaderDescription chd = chdIt.next();
 
-                chd.versions = reduce(chd.versions, generatePlatforms);
-                if (chd.versions.isEmpty())
+                chd.versions = removeVersion(chd.versions, deletePlatform);
+                if (chd.versions.isEmpty()) {
                     chdIt.remove();
+                }
             }
 
             if (desc.header.isEmpty()) {
+                it.remove();
                 continue;
             }
 
@@ -338,7 +442,7 @@ public class CreateSymbols {
             while (methodIt.hasNext()) {
                 MethodDescription method = methodIt.next();
 
-                method.versions = reduce(method.versions, generatePlatforms);
+                method.versions = removeVersion(method.versions, deletePlatform);
                 if (method.versions.isEmpty())
                     methodIt.remove();
             }
@@ -348,35 +452,29 @@ public class CreateSymbols {
             while (fieldIt.hasNext()) {
                 FieldDescription field = fieldIt.next();
 
-                field.versions = reduce(field.versions, generatePlatforms);
+                field.versions = removeVersion(field.versions, deletePlatform);
                 if (field.versions.isEmpty())
                     fieldIt.remove();
             }
-
-            result.add(desc);
         }
 
-        Map<String, ModuleDescription> moduleList = new HashMap<>();
-
-        for (ModuleDescription desc : modules.values()) {
+        for (Iterator<ModuleDescription> it = load.modules.values().iterator(); it.hasNext();) {
+            ModuleDescription desc = it.next();
             Iterator<ModuleHeaderDescription> mhdIt = desc.header.iterator();
 
             while (mhdIt.hasNext()) {
                 ModuleHeaderDescription mhd = mhdIt.next();
 
-                mhd.versions = reduce(mhd.versions, generatePlatforms);
+                mhd.versions = removeVersion(mhd.versions, deletePlatform);
                 if (mhd.versions.isEmpty())
                     mhdIt.remove();
             }
 
             if (desc.header.isEmpty()) {
+                it.remove();
                 continue;
             }
-
-            moduleList.put(desc.name, desc);
         }
-
-        return new LoadDescriptions(result, moduleList, platforms);
     }
 
     static final class LoadDescriptions {
@@ -458,18 +556,32 @@ public class CreateSymbols {
         return sb.toString();
     }
 
+    private static String removeVersion(String original, String remove) {
+        StringBuilder sb = new StringBuilder();
+
+        for (char v : original.toCharArray()) {
+            if (v != remove.charAt(0)) {
+                sb.append(v);
+            }
+        }
+        return sb.toString();
+    }
+
     private static class PlatformInput {
         public final String version;
         public final String basePlatform;
         public final List<String> files;
-        public PlatformInput(String version, String basePlatform, List<String> files) {
+        public final Path ctDescription;
+        public PlatformInput(Path ctDescription, String version, String basePlatform, List<String> files) {
+            this.ctDescription = ctDescription;
             this.version = version;
             this.basePlatform = basePlatform;
             this.files = files;
         }
 
-        public static PlatformInput load(LineBasedReader in) throws IOException {
-            return new PlatformInput(in.attributes.get("version"),
+        public static PlatformInput load(Path ctDescription, LineBasedReader in) throws IOException {
+            return new PlatformInput(ctDescription,
+                                     in.attributes.get("version"),
                                      in.attributes.get("base"),
                                      List.of(in.attributes.get("files").split(":")));
         }
@@ -550,7 +662,7 @@ public class CreateSymbols {
                     newHeader.innerClasses = header.innerClasses;
                     newHeader.runtimeAnnotations = header.runtimeAnnotations;
                     newHeader.signature = header.signature;
-                    newHeader.versions = reduce(versions, header.versions);
+                    newHeader.versions = reduce(header.versions, versions);
 
                     newHeaders.add(newHeader);
                 }
@@ -562,26 +674,30 @@ public class CreateSymbols {
 
     void limitJointVersion(Set<String> jointVersions, List<? extends FeatureDescription> features) {
         for (FeatureDescription feature : features) {
-            for (String version : jointVersions) {
-                if (!containsAll(feature.versions, version) &&
-                    !disjoint(feature.versions, version)) {
-                    StringBuilder featurePart = new StringBuilder();
-                    StringBuilder otherPart = new StringBuilder();
-                    for (char v : version.toCharArray()) {
-                        if (feature.versions.indexOf(v) != (-1)) {
-                            featurePart.append(v);
-                        } else {
-                            otherPart.append(v);
-                        }
+            limitJointVersion(jointVersions, feature.versions);
+        }
+    }
+
+    void limitJointVersion(Set<String> jointVersions, String versions) {
+        for (String version : jointVersions) {
+            if (!containsAll(versions, version) &&
+                !disjoint(versions, version)) {
+                StringBuilder featurePart = new StringBuilder();
+                StringBuilder otherPart = new StringBuilder();
+                for (char v : version.toCharArray()) {
+                    if (versions.indexOf(v) != (-1)) {
+                        featurePart.append(v);
+                    } else {
+                        otherPart.append(v);
                     }
-                    jointVersions.remove(version);
-                    if (featurePart.length() == 0 || otherPart.length() == 0) {
-                        throw new AssertionError();
-                    }
-                    jointVersions.add(featurePart.toString());
-                    jointVersions.add(otherPart.toString());
-                    break;
                 }
+                jointVersions.remove(version);
+                if (featurePart.length() == 0 || otherPart.length() == 0) {
+                    throw new AssertionError();
+                }
+                jointVersions.add(featurePart.toString());
+                jointVersions.add(otherPart.toString());
+                break;
             }
         }
     }
@@ -602,33 +718,29 @@ public class CreateSymbols {
         return true;
     }
 
-    void writeClassesForVersions(String ctSymLocation,
+    void writeClassesForVersions(Map<String, Set<FileData>> directory2FileData,
                                  ClassDescription classDescription,
                                  ClassHeaderDescription header,
+                                 String module,
                                  Iterable<String> versions)
             throws IOException {
         for (String ver : versions) {
-            writeClass(ctSymLocation, classDescription, header, ver);
+            writeClass(directory2FileData, classDescription, header, module, ver);
         }
     }
 
-    void writeModulesForVersions(String ctSymLocation,
+    void writeModulesForVersions(Map<String, Set<FileData>> directory2FileData,
                                  ModuleDescription moduleDescription,
                                  ModuleHeaderDescription header,
                                  Iterable<String> versions)
             throws IOException {
         for (String ver : versions) {
-            writeModule(ctSymLocation, moduleDescription, header, ver);
+            writeModule(directory2FileData, moduleDescription, header, ver);
         }
     }
 
-    public enum CtSymKind {
-        JOINED_VERSIONS,
-        SEPARATE;
-    }
-
     //<editor-fold defaultstate="collapsed" desc="Class Writing">
-    void writeModule(String ctSymLocation,
+    void writeModule(Map<String, Set<FileData>> directory2FileData,
                     ModuleDescription moduleDescription,
                     ModuleHeaderDescription header,
                     String version) throws IOException {
@@ -655,23 +767,13 @@ public class CreateSymbols {
                 new Method[0],
                 attributes);
 
-        Path outputClassFile = Paths.get(ctSymLocation,
-                                         version + "-modules",
-                                         moduleDescription.name,
-                                         "module-info" + EXTENSION);
-
-        Files.createDirectories(outputClassFile.getParent());
-
-        try (OutputStream out = Files.newOutputStream(outputClassFile)) {
-            ClassWriter w = new ClassWriter();
-
-            w.write(classFile, out);
-        }
+        doWrite(directory2FileData, version, moduleDescription.name, "module-info" + EXTENSION, classFile);
     }
 
-    void writeClass(String ctSymLocation,
+    void writeClass(Map<String, Set<FileData>> directory2FileData,
                     ClassDescription classDescription,
                     ClassHeaderDescription header,
+                    String module,
                     String version) throws IOException {
         List<CPInfo> constantPool = new ArrayList<>();
         constantPool.add(null);
@@ -724,15 +826,43 @@ public class CreateSymbols {
                 methods.toArray(new Method[0]),
                 attributes);
 
-        Path outputClassFile = Paths.get(ctSymLocation, version, classDescription.name + EXTENSION);
+        doWrite(directory2FileData, version, module, classDescription.name + EXTENSION, classFile);
+    }
 
-        Files.createDirectories(outputClassFile.getParent());
-
-        try (OutputStream out = Files.newOutputStream(outputClassFile)) {
+    private void doWrite(Map<String, Set<FileData>> directory2FileData,
+                         String version,
+                         String moduleName,
+                         String fileName,
+                         ClassFile classFile) throws IOException {
+        int lastSlash = fileName.lastIndexOf('/');
+        String pack = lastSlash != (-1) ? fileName.substring(0, lastSlash + 1) : "/";
+        String directory = version + "/" + moduleName + "/" + pack;
+        String fullFileName = version + "/" + moduleName + "/" + fileName;
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             ClassWriter w = new ClassWriter();
 
             w.write(classFile, out);
+
+            openDirectory(directory2FileData, directory)
+                .add(new FileData(fullFileName, out.toByteArray()));
         }
+    }
+
+    private Set<FileData> openDirectory(Map<String, Set<FileData>> directory2FileData,
+                               String directory) {
+        Comparator<FileData> fileCompare = (fd1, fd2) -> fd1.fileName.compareTo(fd2.fileName);
+        return directory2FileData.computeIfAbsent(directory, d -> new TreeSet<>(fileCompare));
+    }
+
+    private static class FileData {
+        public final String fileName;
+        public final byte[] fileData;
+
+        public FileData(String fileName, byte[] fileData) {
+            this.fileName = fileName;
+            this.fileData = fileData;
+        }
+
     }
 
     private void addAttributes(ModuleDescription md,
@@ -817,6 +947,48 @@ public class CreateSymbols {
     private void addAttributes(ClassHeaderDescription header,
             List<CPInfo> constantPool, Map<String, Attribute> attributes) {
         addGenericAttributes(header, constantPool, attributes);
+        if (header.nestHost != null) {
+            int attributeString = addString(constantPool, Attribute.NestHost);
+            int nestHost = addClass(constantPool, header.nestHost);
+            attributes.put(Attribute.NestHost,
+                           new NestHost_attribute(attributeString, nestHost));
+        }
+        if (header.nestMembers != null && !header.nestMembers.isEmpty()) {
+            int attributeString = addString(constantPool, Attribute.NestMembers);
+            int[] nestMembers = new int[header.nestMembers.size()];
+            int i = 0;
+            for (String intf : header.nestMembers) {
+                nestMembers[i++] = addClass(constantPool, intf);
+            }
+            attributes.put(Attribute.NestMembers,
+                           new NestMembers_attribute(attributeString, nestMembers));
+        }
+        if (header.isRecord) {
+            assert header.recordComponents != null;
+            int attributeString = addString(constantPool, Attribute.Record);
+            ComponentInfo[] recordComponents = new ComponentInfo[header.recordComponents.size()];
+            int i = 0;
+            for (RecordComponentDescription rcd : header.recordComponents) {
+                int name = addString(constantPool, rcd.name);
+                Descriptor desc = new Descriptor(addString(constantPool, rcd.descriptor));
+                Map<String, Attribute> nestedAttrs = new HashMap<>();
+                addGenericAttributes(rcd, constantPool, nestedAttrs);
+                Attributes attrs = new Attributes(nestedAttrs);
+                recordComponents[i++] = new ComponentInfo(name, desc, attrs);
+            }
+            attributes.put(Attribute.Record,
+                           new Record_attribute(attributeString, recordComponents));
+        }
+        if (header.isSealed) {
+            int attributeString = addString(constantPool, Attribute.PermittedSubclasses);
+            int[] subclasses = new int[header.permittedSubclasses.size()];
+            int i = 0;
+            for (String intf : header.permittedSubclasses) {
+                subclasses[i++] = addClass(constantPool, intf);
+            }
+            attributes.put(Attribute.PermittedSubclasses,
+                    new PermittedSubclasses_attribute(attributeString, subclasses));
+        }
         addInnerClassesAttribute(header, constantPool, attributes);
     }
 
@@ -874,6 +1046,18 @@ public class CreateSymbols {
             attributes.put(Attribute.RuntimeVisibleParameterAnnotations,
                            new RuntimeVisibleParameterAnnotations_attribute(attributeString,
                                    annotations));
+        }
+        if (desc.methodParameters != null && !desc.methodParameters.isEmpty()) {
+            int attributeString =
+                    addString(constantPool, Attribute.MethodParameters);
+            MethodParameters_attribute.Entry[] entries =
+                    desc.methodParameters
+                        .stream()
+                        .map(p -> new MethodParameters_attribute.Entry(addString(constantPool, p.name),
+                                                                        p.flags))
+                        .toArray(s -> new MethodParameters_attribute.Entry[s]);
+            attributes.put(Attribute.MethodParameters,
+                           new MethodParameters_attribute(attributeString, entries));
         }
     }
 
@@ -938,10 +1122,35 @@ public class CreateSymbols {
     }
 
     private Annotation createAnnotation(List<CPInfo> constantPool, AnnotationDescription desc) {
+        String annotationType = desc.annotationType;
+        Map<String, Object> values = desc.values;
+
+        if (PREVIEW_FEATURE_ANNOTATION_NEW.equals(annotationType)) {
+            //the non-public PreviewFeature annotation will not be available in ct.sym,
+            //replace with purely synthetic javac-internal annotation:
+            annotationType = PREVIEW_FEATURE_ANNOTATION_INTERNAL;
+        }
+
+        if (PREVIEW_FEATURE_ANNOTATION_OLD.equals(annotationType)) {
+            //the non-public PreviewFeature annotation will not be available in ct.sym,
+            //replace with purely synthetic javac-internal annotation:
+            annotationType = PREVIEW_FEATURE_ANNOTATION_INTERNAL;
+            values = new HashMap<>(values);
+            Boolean essentialAPI = (Boolean) values.remove("essentialAPI");
+            values.put("reflective", essentialAPI != null && !essentialAPI);
+        }
+
         return new Annotation(null,
-                              addString(constantPool, desc.annotationType),
-                              createElementPairs(constantPool, desc.values));
+                              addString(constantPool, annotationType),
+                              createElementPairs(constantPool, values));
     }
+    //where:
+        private static final String PREVIEW_FEATURE_ANNOTATION_OLD =
+                "Ljdk/internal/PreviewFeature;";
+        private static final String PREVIEW_FEATURE_ANNOTATION_NEW =
+                "Ljdk/internal/javac/PreviewFeature;";
+        private static final String PREVIEW_FEATURE_ANNOTATION_INTERNAL =
+                "Ljdk/internal/PreviewFeature+Annotation;";
 
     private element_value_pair[] createElementPairs(List<CPInfo> constantPool, Map<String, Object> annotationAttributes) {
         element_value_pair[] pairs = new element_value_pair[annotationAttributes.size()];
@@ -1129,34 +1338,20 @@ public class CreateSymbols {
         Map<String, ModuleDescription> modules = new HashMap<>();
 
         for (VersionDescription desc : versions) {
-            List<byte[]> classFileData = new ArrayList<>();
+            Iterable<byte[]> classFileData = loadClassData(desc.classes);
 
-            try (BufferedReader descIn =
-                    Files.newBufferedReader(Paths.get(desc.classes))) {
-                String line;
-                while ((line = descIn.readLine()) != null) {
-                    ByteArrayOutputStream data = new ByteArrayOutputStream();
-                    for (int i = 0; i < line.length(); i += 2) {
-                        String hex = line.substring(i, i + 2);
-                        data.write(Integer.parseInt(hex, 16));
-                    }
-                    classFileData.add(data.toByteArray());
-                }
-            } catch (IOException ex) {
-                throw new IllegalStateException(ex);
-            }
-
-            loadVersionClasses(classes, modules, classFileData, excludesIncludes, desc.version);
+            loadVersionClasses(classes, modules, classFileData, excludesIncludes, desc.version, null);
         }
 
         List<PlatformInput> platforms =
                 versions.stream()
-                        .map(desc -> new PlatformInput(desc.version,
+                        .map(desc -> new PlatformInput(null,
+                                                       desc.version,
                                                        desc.primaryBaseline,
                                                        null))
                         .collect(Collectors.toList());
 
-        dumpDescriptions(classes, modules, platforms, descDest.resolve("symbols"), args);
+        dumpDescriptions(classes, modules, platforms, Set.of(), descDest.resolve("symbols"), args);
     }
     //where:
         private static final String DO_NO_MODIFY =
@@ -1189,11 +1384,33 @@ public class CreateSymbols {
             "# ##########################################################\n" +
             "#\n";
 
+        private Iterable<byte[]> loadClassData(String path) {
+            List<byte[]> classFileData = new ArrayList<>();
+
+            try (BufferedReader descIn =
+                    Files.newBufferedReader(Paths.get(path))) {
+                String line;
+                while ((line = descIn.readLine()) != null) {
+                    ByteArrayOutputStream data = new ByteArrayOutputStream();
+                    for (int i = 0; i < line.length(); i += 2) {
+                        String hex = line.substring(i, i + 2);
+                        data.write(Integer.parseInt(hex, 16));
+                    }
+                    classFileData.add(data.toByteArray());
+                }
+            } catch (IOException ex) {
+                throw new IllegalStateException(ex);
+            }
+
+            return classFileData;
+        }
+
     private void loadVersionClasses(ClassList classes,
                                     Map<String, ModuleDescription> modules,
                                     Iterable<byte[]> classData,
                                     ExcludeIncludeList excludesIncludes,
-                                    String version) {
+                                    String version,
+                                    String baseline) {
         Map<String, ModuleDescription> currentVersionModules =
                 new HashMap<>();
 
@@ -1294,6 +1511,16 @@ public class CreateSymbols {
 
             ClassHeaderDescription header = clazz.header.get(0);
 
+            if (header.nestMembers != null) {
+                Iterator<String> nestMemberIt = header.nestMembers.iterator();
+
+                while(nestMemberIt.hasNext()) {
+                    String member = nestMemberIt.next();
+                    if (!includedClasses.contains(member))
+                        nestMemberIt.remove();
+                }
+            }
+
             if (header.innerClasses != null) {
                 Iterator<InnerClassInfo> innerClassIt = header.innerClasses.iterator();
 
@@ -1307,12 +1534,12 @@ public class CreateSymbols {
             ClassDescription existing = classes.find(clazz.name, true);
 
             if (existing != null) {
-                addClassHeader(existing, header, version);
+                addClassHeader(existing, header, version, baseline);
                 for (MethodDescription currentMethod : clazz.methods) {
-                    addMethod(existing, currentMethod, version);
+                    addMethod(existing, currentMethod, version, baseline);
                 }
                 for (FieldDescription currentField : clazz.fields) {
-                    addField(existing, currentField, version);
+                    addField(existing, currentField, version, baseline);
                 }
             } else {
                 classes.add(clazz);
@@ -1349,20 +1576,26 @@ public class CreateSymbols {
     private void dumpDescriptions(ClassList classes,
                                   Map<String, ModuleDescription> modules,
                                   List<PlatformInput> versions,
+                                  Set<String> forceWriteVersions,
                                   Path ctDescriptionFile,
                                   String[] args) throws IOException {
         classes.sort();
 
         Map<String, String> package2Modules = new HashMap<>();
 
-        for (ModuleDescription md : modules.values()) {
-            md.header
-              .stream()
-              .filter(h -> h.versions.contains("9"))
-              .flatMap(h -> h.exports.stream())
-              .map(p -> p.replace('/', '.'))
-              .forEach(p -> package2Modules.put(p, md.name));
-        }
+        versions.stream()
+                .filter(v -> "9".compareTo(v.version) <= 0)
+                .sorted((v1, v2) -> v1.version.compareTo(v2.version))
+                .forEach(v -> {
+            for (ModuleDescription md : modules.values()) {
+                md.header
+                  .stream()
+                  .filter(h -> h.versions.contains(v.version))
+                  .flatMap(h -> h.exports.stream())
+                  .map(p -> p.replace('/', '.'))
+                  .forEach(p -> package2Modules.putIfAbsent(p, md.name));
+            }
+        });
 
         package2Modules.put("java.awt.dnd.peer", "java.desktop");
         package2Modules.put("java.awt.peer", "java.desktop");
@@ -1410,13 +1643,15 @@ public class CreateSymbols {
             for (PlatformInput desc : versions) {
                 List<String> files = desc.files;
 
-                if (files == null) {
+                if (files == null || forceWriteVersions.contains(desc.version)) {
                     files = new ArrayList<>();
                     for (Entry<String, List<ClassDescription>> e : module2Classes.entrySet()) {
                         StringWriter data = new StringWriter();
                         ModuleDescription module = modules.get(e.getKey());
 
-                        module.write(data, desc.basePlatform, desc.version);
+                        if (module != null) { //module == null should only be in tests.
+                            module.write(data, desc.basePlatform, desc.version);
+                        }
 
                         for (ClassDescription clazz : e.getValue()) {
                             clazz.write(data, desc.basePlatform, desc.version);
@@ -1428,9 +1663,34 @@ public class CreateSymbols {
                         String dataString = data.toString();
 
                         if (!dataString.isEmpty()) {
-                            try (Writer out = Files.newBufferedWriter(f)) {
-                                out.append(DO_NO_MODIFY.replace("{YEAR}", String.valueOf(year)));
-                                out.write(dataString);
+                            String existingYear = null;
+                            boolean hasChange = true;
+                            if (Files.isReadable(f)) {
+                                String oldContent = Files.readString(f, StandardCharsets.UTF_8);
+                                int yearPos = DO_NO_MODIFY.indexOf("{YEAR}");
+                                String headerPattern =
+                                        Pattern.quote(DO_NO_MODIFY.substring(0, yearPos)) +
+                                        "([0-9]+)(, [0-9]+)?" +
+                                        Pattern.quote(DO_NO_MODIFY.substring(yearPos + "{YEAR}".length()));
+                                String pattern = headerPattern +
+                                                 Pattern.quote(dataString);
+                                Matcher m = Pattern.compile(pattern, Pattern.MULTILINE).matcher(oldContent);
+                                if (m.matches()) {
+                                    hasChange = false;
+                                } else {
+                                    m = Pattern.compile(headerPattern).matcher(oldContent);
+                                    if (m.find()) {
+                                        existingYear = m.group(1);
+                                    }
+                                }
+                            }
+                            if (hasChange) {
+                                try (Writer out = Files.newBufferedWriter(f, StandardCharsets.UTF_8)) {
+                                    String currentYear = String.valueOf(year);
+                                    String yearSpec = (existingYear != null && !currentYear.equals(existingYear) ? existingYear + ", " : "") + currentYear;
+                                    out.append(DO_NO_MODIFY.replace("{YEAR}", yearSpec));
+                                    out.write(dataString);
+                                }
                             }
                             files.add(f.getFileName().toString());
                         }
@@ -1472,15 +1732,17 @@ public class CreateSymbols {
         }
     }
 
-    public void createIncrementalBaseLine(String ctDescriptionFile,
-                                          String excludeFile,
-                                          String[] args) throws IOException {
-        String specVersion = System.getProperty("java.specification.version");
+    private void incrementalUpdate(String ctDescriptionFile,
+                                   String excludeFile,
+                                   String platformVersion,
+                                   Iterable<byte[]> classBytes,
+                                   Function<LoadDescriptions, String> baseline,
+                                   String[] args) throws IOException {
         String currentVersion =
-                Integer.toString(Integer.parseInt(specVersion), Character.MAX_RADIX);
-        currentVersion = currentVersion.toUpperCase(Locale.ROOT);
+                Integer.toString(Integer.parseInt(platformVersion), Character.MAX_RADIX);
+        String version = currentVersion.toUpperCase(Locale.ROOT);
         Path ctDescriptionPath = Paths.get(ctDescriptionFile).toAbsolutePath();
-        LoadDescriptions data = load(ctDescriptionPath, currentVersion);
+        LoadDescriptions data = load(null, ctDescriptionPath);
 
         ClassList classes = data.classes;
         Map<String, ModuleDescription> modules = data.modules;
@@ -1489,23 +1751,70 @@ public class CreateSymbols {
         ExcludeIncludeList excludeList =
                 ExcludeIncludeList.create(excludeFile);
 
-        Iterable<byte[]> classBytes = dumpCurrentClasses();
-        loadVersionClasses(classes, modules, classBytes, excludeList, currentVersion);
+        loadVersionClasses(classes, modules, classBytes, excludeList, "$", version);
 
-        String baseline;
+        removeVersion(data, version);
 
-        if (versions.isEmpty()) {
-            baseline = null;
-        } else {
-            baseline = versions.stream()
-                               .sorted((v1, v2) -> v2.version.compareTo(v1.version))
-                               .findFirst()
-                               .get()
-                               .version;
+        for (ModuleDescription md : data.modules.values()) {
+            for (ModuleHeaderDescription header : md.header) {
+                header.versions = header.versions.replace("$", version);
+            }
         }
 
-        versions.add(new PlatformInput(currentVersion, baseline, null));
-        dumpDescriptions(classes, modules, versions, ctDescriptionPath, args);
+        for (ClassDescription clazzDesc : data.classes) {
+            for (ClassHeaderDescription header : clazzDesc.header) {
+                header.versions = header.versions.replace("$", version);
+            }
+            for (MethodDescription method : clazzDesc.methods) {
+                method.versions = method.versions.replace("$", version);
+            }
+            for (FieldDescription field : clazzDesc.fields) {
+                field.versions = field.versions.replace("$", version);
+            }
+        }
+
+        if (versions.stream().noneMatch(inp -> version.equals(inp.version))) {
+            versions.add(new PlatformInput(null, version, baseline.apply(data), null));
+        }
+
+        Set<String> writeVersions = new HashSet<>();
+
+        writeVersions.add(version);
+
+        //re-write all platforms that have version as their basline:
+        versions.stream()
+                .filter(inp -> version.equals(inp.basePlatform))
+                .map(inp -> inp.version)
+                .forEach(writeVersions::add);
+        dumpDescriptions(classes, modules, versions, writeVersions, ctDescriptionPath, args);
+    }
+
+    public void createIncrementalBaseLineFromDataFile(String ctDescriptionFile,
+                                                      String excludeFile,
+                                                      String version,
+                                                      String dataFile,
+                                                      String baseline,
+                                                      String[] args) throws IOException {
+        incrementalUpdate(ctDescriptionFile, excludeFile, version, loadClassData(dataFile), x -> baseline, args);
+    }
+
+    public void createIncrementalBaseLine(String ctDescriptionFile,
+                                          String excludeFile,
+                                          String[] args) throws IOException {
+        String specVersion = System.getProperty("java.specification.version");
+        Iterable<byte[]> classBytes = dumpCurrentClasses();
+        Function<LoadDescriptions, String> baseline = data -> {
+            if (data.versions.isEmpty()) {
+                return null;
+            } else {
+                return data.versions.stream()
+                                    .sorted((v1, v2) -> v2.version.compareTo(v1.version))
+                                    .findFirst()
+                                    .get()
+                                    .version;
+            }
+        };
+        incrementalUpdate(ctDescriptionFile, excludeFile, specVersion, classBytes, baseline, args);
     }
 
     private List<byte[]> dumpCurrentClasses() throws IOException {
@@ -1599,7 +1908,7 @@ public class CreateSymbols {
             classes.add(clazzDesc);
         }
 
-        addClassHeader(clazzDesc, headerDesc, version);
+        addClassHeader(clazzDesc, headerDesc, version, null);
 
         for (Method m : cf.methods) {
             if (!include(m.access_flags.flags))
@@ -1611,7 +1920,7 @@ public class CreateSymbols {
             for (Attribute attr : m.attributes) {
                 readAttribute(cf, methDesc, attr);
             }
-            addMethod(clazzDesc, methDesc, version);
+            addMethod(clazzDesc, methDesc, version, null);
         }
         for (Field f : cf.fields) {
             if (!include(f.access_flags.flags))
@@ -1623,7 +1932,7 @@ public class CreateSymbols {
             for (Attribute attr : f.attributes) {
                 readAttribute(cf, fieldDesc, attr);
             }
-            addField(clazzDesc, fieldDesc, version);
+            addField(clazzDesc, fieldDesc, version, null);
         }
     }
 
@@ -1682,16 +1991,20 @@ public class CreateSymbols {
         return (accessFlags & (AccessFlags.ACC_PUBLIC | AccessFlags.ACC_PROTECTED)) != 0;
     }
 
-    private void addClassHeader(ClassDescription clazzDesc, ClassHeaderDescription headerDesc, String version) {
+    private void addClassHeader(ClassDescription clazzDesc, ClassHeaderDescription headerDesc, String version, String baseline) {
         //normalize:
         boolean existed = false;
         for (ClassHeaderDescription existing : clazzDesc.header) {
-            if (existing.equals(headerDesc)) {
+            if (existing.equals(headerDesc) && (!existed || (baseline != null && existing.versions.contains(baseline)))) {
                 headerDesc = existing;
                 existed = true;
-            } else {
-                //check if the only difference between the 7 and 8 version is the Profile annotation
-                //if so, copy it to the pre-8 version, so save space
+            }
+        }
+
+        if (!existed) {
+            //check if the only difference between the 7 and 8 version is the Profile annotation
+            //if so, copy it to the pre-8 version, so save space
+            for (ClassHeaderDescription existing : clazzDesc.header) {
                 List<AnnotationDescription> annots = existing.classAnnotations;
 
                 if (annots != null) {
@@ -1718,14 +2031,13 @@ public class CreateSymbols {
         }
     }
 
-    private void addMethod(ClassDescription clazzDesc, MethodDescription methDesc, String version) {
+    private void addMethod(ClassDescription clazzDesc, MethodDescription methDesc, String version, String baseline) {
         //normalize:
         boolean methodExisted = false;
         for (MethodDescription existing : clazzDesc.methods) {
-            if (existing.equals(methDesc)) {
+            if (existing.equals(methDesc) && (!methodExisted || (baseline != null && existing.versions.contains(baseline)))) {
                 methodExisted = true;
                 methDesc = existing;
-                break;
             }
         }
         methDesc.versions += version;
@@ -1734,13 +2046,12 @@ public class CreateSymbols {
         }
     }
 
-    private void addField(ClassDescription clazzDesc, FieldDescription fieldDesc, String version) {
+    private void addField(ClassDescription clazzDesc, FieldDescription fieldDesc, String version, String baseline) {
         boolean fieldExisted = false;
         for (FieldDescription existing : clazzDesc.fields) {
-            if (existing.equals(fieldDesc)) {
+            if (existing.equals(fieldDesc) && (!fieldExisted || (baseline != null && existing.versions.contains(baseline)))) {
                 fieldExisted = true;
                 fieldDesc = existing;
-                break;
             }
         }
         fieldDesc.versions += version;
@@ -1882,6 +2193,63 @@ public class CreateSymbols {
             case Attribute.ModulePackages:
             case Attribute.ModuleHashes:
                 break;
+            case Attribute.NestHost: {
+                assert feature instanceof ClassHeaderDescription;
+                NestHost_attribute nestHost = (NestHost_attribute) attr;
+                ClassHeaderDescription chd = (ClassHeaderDescription) feature;
+                chd.nestHost = nestHost.getNestTop(cf.constant_pool).getName();
+                break;
+            }
+            case Attribute.NestMembers: {
+                assert feature instanceof ClassHeaderDescription;
+                NestMembers_attribute nestMembers = (NestMembers_attribute) attr;
+                ClassHeaderDescription chd = (ClassHeaderDescription) feature;
+                chd.nestMembers = Arrays.stream(nestMembers.members_indexes)
+                                        .mapToObj(i -> getClassName(cf, i))
+                                        .collect(Collectors.toList());
+                break;
+            }
+            case Attribute.Record: {
+                assert feature instanceof ClassHeaderDescription;
+                Record_attribute record = (Record_attribute) attr;
+                List<RecordComponentDescription> components = new ArrayList<>();
+                for (ComponentInfo info : record.component_info_arr) {
+                    RecordComponentDescription rcd = new RecordComponentDescription();
+                    rcd.name = info.getName(cf.constant_pool);
+                    rcd.descriptor = info.descriptor.getValue(cf.constant_pool);
+                    for (Attribute nestedAttr : info.attributes) {
+                        readAttribute(cf, rcd, nestedAttr);
+                    }
+                    components.add(rcd);
+                }
+                ClassHeaderDescription chd = (ClassHeaderDescription) feature;
+                chd.isRecord = true;
+                chd.recordComponents = components;
+                break;
+            }
+            case Attribute.MethodParameters: {
+                assert feature instanceof MethodDescription;
+                MethodParameters_attribute params = (MethodParameters_attribute) attr;
+                MethodDescription method = (MethodDescription) feature;
+                method.methodParameters = new ArrayList<>();
+                for (MethodParameters_attribute.Entry e : params.method_parameter_table) {
+                    String name = cf.constant_pool.getUTF8Value(e.name_index);
+                    MethodDescription.MethodParam param =
+                            new MethodDescription.MethodParam(e.flags, name);
+                    method.methodParameters.add(param);
+                }
+                break;
+            }
+            case Attribute.PermittedSubclasses: {
+                assert feature instanceof ClassHeaderDescription;
+                PermittedSubclasses_attribute permittedSubclasses = (PermittedSubclasses_attribute) attr;
+                ClassHeaderDescription chd = (ClassHeaderDescription) feature;
+                chd.permittedSubclasses = Arrays.stream(permittedSubclasses.subtypes)
+                        .mapToObj(i -> getClassName(cf, i))
+                        .collect(Collectors.toList());
+                chd.isSealed = true;
+                break;
+            }
             default:
                 throw new IllegalStateException("Unhandled attribute: " +
                                                 attrName);
@@ -2133,6 +2501,7 @@ public class CreateSymbols {
     }
 
     static abstract class FeatureDescription {
+        int flagsNormalization = ~0;
         int flags;
         boolean deprecated;
         String signature;
@@ -2197,7 +2566,7 @@ public class CreateSymbols {
         @Override
         public int hashCode() {
             int hash = 3;
-            hash = 89 * hash + this.flags;
+            hash = 89 * hash + (this.flags & flagsNormalization);
             hash = 89 * hash + (this.deprecated ? 1 : 0);
             hash = 89 * hash + Objects.hashCode(this.signature);
             hash = 89 * hash + listHashCode(this.classAnnotations);
@@ -2214,7 +2583,7 @@ public class CreateSymbols {
                 return false;
             }
             final FeatureDescription other = (FeatureDescription) obj;
-            if (this.flags != other.flags) {
+            if ((this.flags & flagsNormalization) != (other.flags & flagsNormalization)) {
                 return false;
             }
             if (this.deprecated != other.deprecated) {
@@ -2497,6 +2866,40 @@ public class CreateSymbols {
                                                req.requires_flags,
                                                ver);
             }
+
+            @Override
+            public int hashCode() {
+                int hash = 7;
+                hash = 53 * hash + Objects.hashCode(this.moduleName);
+                hash = 53 * hash + this.flags;
+                hash = 53 * hash + Objects.hashCode(this.version);
+                return hash;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj) {
+                    return true;
+                }
+                if (obj == null) {
+                    return false;
+                }
+                if (getClass() != obj.getClass()) {
+                    return false;
+                }
+                final RequiresDescription other = (RequiresDescription) obj;
+                if (this.flags != other.flags) {
+                    return false;
+                }
+                if (!Objects.equals(this.moduleName, other.moduleName)) {
+                    return false;
+                }
+                if (!Objects.equals(this.version, other.version)) {
+                    return false;
+                }
+                return true;
+            }
+
         }
 
         static class ProvidesDescription {
@@ -2531,6 +2934,35 @@ public class CreateSymbols {
                               .mapToObj(wi -> getClassName(cf, wi))
                               .collect(Collectors.toList());
                 return new ProvidesDescription(api, impls);
+            }
+
+            @Override
+            public int hashCode() {
+                int hash = 5;
+                hash = 53 * hash + Objects.hashCode(this.interfaceName);
+                hash = 53 * hash + Objects.hashCode(this.implNames);
+                return hash;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj) {
+                    return true;
+                }
+                if (obj == null) {
+                    return false;
+                }
+                if (getClass() != obj.getClass()) {
+                    return false;
+                }
+                final ProvidesDescription other = (ProvidesDescription) obj;
+                if (!Objects.equals(this.interfaceName, other.interfaceName)) {
+                    return false;
+                }
+                if (!Objects.equals(this.implNames, other.implNames)) {
+                    return false;
+                }
+                return true;
             }
         }
     }
@@ -2662,12 +3094,24 @@ public class CreateSymbols {
     static class ClassHeaderDescription extends HeaderDescription {
         String extendsAttr;
         List<String> implementsAttr;
+        String nestHost;
+        List<String> nestMembers;
+        boolean isRecord;
+        List<RecordComponentDescription> recordComponents;
+        boolean isSealed;
+        List<String> permittedSubclasses;
 
         @Override
         public int hashCode() {
             int hash = super.hashCode();
             hash = 17 * hash + Objects.hashCode(this.extendsAttr);
             hash = 17 * hash + Objects.hashCode(this.implementsAttr);
+            hash = 17 * hash + Objects.hashCode(this.nestHost);
+            hash = 17 * hash + Objects.hashCode(this.nestMembers);
+            hash = 17 * hash + Objects.hashCode(this.isRecord);
+            hash = 17 * hash + Objects.hashCode(this.recordComponents);
+            hash = 17 * hash + Objects.hashCode(this.isSealed);
+            hash = 17 * hash + Objects.hashCode(this.permittedSubclasses);
             return hash;
         }
 
@@ -2686,6 +3130,24 @@ public class CreateSymbols {
             if (!Objects.equals(this.implementsAttr, other.implementsAttr)) {
                 return false;
             }
+            if (!Objects.equals(this.nestHost, other.nestHost)) {
+                return false;
+            }
+            if (!listEquals(this.nestMembers, other.nestMembers)) {
+                return false;
+            }
+            if (this.isRecord != other.isRecord) {
+                return false;
+            }
+            if (!listEquals(this.recordComponents, other.recordComponents)) {
+                return false;
+            }
+            if (this.isSealed != other.isSealed) {
+                return false;
+            }
+            if (!listEquals(this.permittedSubclasses, other.permittedSubclasses)) {
+                return false;
+            }
             return true;
         }
 
@@ -2699,8 +3161,19 @@ public class CreateSymbols {
                 output.append(" extends " + extendsAttr);
             if (implementsAttr != null && !implementsAttr.isEmpty())
                 output.append(" implements " + serializeList(implementsAttr));
+            if (nestHost != null)
+                output.append(" nestHost " + nestHost);
+            if (nestMembers != null && !nestMembers.isEmpty())
+                output.append(" nestMembers " + serializeList(nestMembers));
+            if (isRecord) {
+                output.append(" record true");
+            }
+            if (isSealed) {
+                output.append(" sealed true");
+            }
             writeAttributes(output);
             output.append("\n");
+            writeRecordComponents(output, baselineVersion, version);
             writeInnerClasses(output, baselineVersion, version);
         }
 
@@ -2713,13 +3186,45 @@ public class CreateSymbols {
             String elementsList = reader.attributes.get("implements");
             implementsAttr = deserializeList(elementsList);
 
+            nestHost = reader.attributes.get("nestHost");
+            String nestMembersList = reader.attributes.get("nestMembers");
+            nestMembers = deserializeList(nestMembersList);
+            isRecord = reader.attributes.containsKey("record");
+
             readAttributes(reader);
             reader.moveNext();
+            if (isRecord) {
+                readRecordComponents(reader);
+            }
             readInnerClasses(reader);
+            isSealed = reader.attributes.containsKey("permittedSubclasses");
+            if (isSealed) {
+                String subclassesList = reader.attributes.get("permittedSubclasses");
+                permittedSubclasses = deserializeList(subclassesList);
+            }
 
             return true;
         }
 
+        protected void writeRecordComponents(Appendable output,
+                                              String baselineVersion,
+                                              String version) throws IOException {
+            if (recordComponents != null) {
+                for (RecordComponentDescription rcd : recordComponents) {
+                    rcd.write(output, "", "");
+                }
+            }
+        }
+
+        protected void readRecordComponents(LineBasedReader reader) throws IOException {
+            recordComponents = new ArrayList<>();
+
+            while ("recordcomponent".equals(reader.lineKey)) {
+                RecordComponentDescription rcd = new RecordComponentDescription();
+                rcd.read(reader);
+                recordComponents.add(rcd);
+            }
+        }
     }
 
     static abstract class HeaderDescription extends FeatureDescription {
@@ -2785,12 +3290,18 @@ public class CreateSymbols {
     }
 
     static class MethodDescription extends FeatureDescription {
+        static int METHODS_FLAGS_NORMALIZATION = ~0;
         String name;
         String descriptor;
         List<String> thrownTypes;
         Object annotationDefaultValue;
         List<List<AnnotationDescription>> classParameterAnnotations;
         List<List<AnnotationDescription>> runtimeParameterAnnotations;
+        List<MethodParam> methodParameters;
+
+        public MethodDescription() {
+            flagsNormalization = METHODS_FLAGS_NORMALIZATION;
+        }
 
         @Override
         public int hashCode() {
@@ -2863,6 +3374,15 @@ public class CreateSymbols {
                     output.append(";");
                 }
             }
+            if (methodParameters != null && !methodParameters.isEmpty()) {
+                Function<MethodParam, String> param2String =
+                        p -> Integer.toHexString(p.flags) + ":" + p.name;
+                List<String> paramsAsStrings =
+                        methodParameters.stream()
+                                         .map(param2String)
+                                         .collect(Collectors.toList());
+                output.append(" methodParameters " + serializeList(paramsAsStrings));
+            }
             output.append("\n");
         }
 
@@ -2910,17 +3430,41 @@ public class CreateSymbols {
                 runtimeParameterAnnotations = annos;
             }
 
+            String inMethodParameters = reader.attributes.get("methodParameters");
+            if (inMethodParameters != null) {
+                Function<String, MethodParam> string2Param =
+                        p -> {
+                            int sep = p.indexOf(':');
+                            return new MethodParam(Integer.parseInt(p.substring(0, sep)),
+                                                    p.substring(sep + 1));
+                        };
+                methodParameters =
+                        deserializeList(inMethodParameters).stream()
+                                                          .map(string2Param)
+                                                          .collect(Collectors.toList());
+            }
+
             reader.moveNext();
 
             return true;
         }
 
+        public static class MethodParam {
+            public final int flags;
+            public final String name;
+
+            public MethodParam(int flags, String name) {
+                this.flags = flags;
+                this.name = name;
+            }
+        }
     }
 
     static class FieldDescription extends FeatureDescription {
         String name;
         String descriptor;
         Object constantValue;
+        String keyName = "field";
 
         @Override
         public int hashCode() {
@@ -2957,13 +3501,13 @@ public class CreateSymbols {
             if (shouldIgnore(baselineVersion, version))
                 return ;
             if (!versions.contains(version)) {
-                output.append("-field");
+                output.append("-" + keyName);
                 output.append(" name " + quote(name, false));
                 output.append(" descriptor " + quote(descriptor, false));
                 output.append("\n");
                 return ;
             }
-            output.append("field");
+            output.append(keyName);
             output.append(" name " + name);
             output.append(" descriptor " + descriptor);
             if (constantValue != null) {
@@ -2975,7 +3519,7 @@ public class CreateSymbols {
 
         @Override
         public boolean read(LineBasedReader reader) throws IOException {
-            if (!"field".equals(reader.lineKey))
+            if (!keyName.equals(reader.lineKey))
                 return false;
 
             name = reader.attributes.get("name");
@@ -3004,6 +3548,19 @@ public class CreateSymbols {
             reader.moveNext();
 
             return true;
+        }
+
+    }
+
+    static final class RecordComponentDescription extends FieldDescription {
+
+        public RecordComponentDescription() {
+            this.keyName = "recordcomponent";
+        }
+
+        @Override
+        protected boolean shouldIgnore(String baselineVersion, String version) {
+            return false;
         }
 
     }
@@ -3463,6 +4020,47 @@ public class CreateSymbols {
     }
     //</editor-fold>
 
+    /**Create sig files for ct.sym reading the classes description from the directory that contains
+     * {@code ctDescriptionFile}, using the file as a recipe to create the sigfiles.
+     */
+    @SuppressWarnings("unchecked")
+    public void createJavadocData(String ctDescriptionFileExtra, String ctDescriptionFile,
+                                  String targetDir, int startVersion) throws IOException {
+        LoadDescriptions data = load(ctDescriptionFileExtra != null ? Paths.get(ctDescriptionFileExtra)
+                                                                    : null,
+                                     Paths.get(ctDescriptionFile));
+
+        Path target = Paths.get(targetDir);
+
+        for (PlatformInput version : data.versions) {
+            int versionNumber = Integer.parseInt(version.version, Character.MAX_RADIX);
+            if (versionNumber < startVersion) {
+                continue;
+            }
+            Path outputFile = target.resolve("element-list-" + versionNumber + ".txt");
+            Files.createDirectories(outputFile.getParent());
+            try (Writer w = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
+                Set<ModuleDescription> modules = new TreeSet<>((m1, m2) -> m1.name.compareTo(m2.name));
+                modules.addAll(data.modules.values());
+                for (ModuleDescription module : modules) {
+                    if ("jdk.unsupported".equals(module.name)) {
+                        continue;
+                    }
+                    Optional<ModuleHeaderDescription> header = module.header.stream().filter(h -> h.versions.contains(version.version)).findAny();
+                    if (header.isEmpty()) {
+                        continue;
+                    }
+                    w.write("module:" + module.name);
+                    w.write("\n");
+                    for (String pack : header.get().exports) {
+                        w.write(pack.replace('/', '.'));
+                        w.write("\n");
+                    }
+                }
+            }
+        }
+    }
+
     private static void help() {
         System.err.println("Help...");
     }
@@ -3516,6 +4114,24 @@ public class CreateSymbols {
                                                    args);
                 break;
             }
+            case "build-description-incremental-file": {
+                if (args.length != 6 && args.length != 7) {
+                    help();
+                    return ;
+                }
+
+                if (args.length == 7) {
+                    if ("--normalize-method-flags".equals(args[6])) {
+                        MethodDescription.METHODS_FLAGS_NORMALIZATION = ~(0x100 | 0x20);
+                    } else {
+                        help();
+                        return ;
+                    }
+                }
+
+                new CreateSymbols().createIncrementalBaseLineFromDataFile(args[1], args[2], args[3], args[4], "<none>".equals(args[5]) ? null : args[5], args);
+                break;
+            }
             case "build-description-incremental": {
                 if (args.length != 3) {
                     help();
@@ -3525,16 +4141,78 @@ public class CreateSymbols {
                 new CreateSymbols().createIncrementalBaseLine(args[1], args[2], args);
                 break;
             }
-            case "build-ctsym":
-                if (args.length != 3) {
+            case "build-ctsym": {
+                String ctDescriptionFileExtra;
+                String ctDescriptionFile;
+                String ctSymLocation;
+                String timestampSpec;
+                String currentVersion;
+                String systemModules;
+
+                if (args.length == 6) {
+                    ctDescriptionFileExtra = null;
+                    ctDescriptionFile = args[1];
+                    ctSymLocation = args[2];
+                    timestampSpec = args[3];
+                    currentVersion = args[4];
+                    systemModules = args[5];
+                } else if (args.length == 7) {
+                    ctDescriptionFileExtra = args[1];
+                    ctDescriptionFile = args[2];
+                    ctSymLocation = args[3];
+                    timestampSpec = args[4];
+                    currentVersion = args[5];
+                    systemModules = args[6];
+                } else {
                     help();
                     return ;
                 }
 
-                new CreateSymbols().createSymbols(args[1],
-                                                  args[2],
-                                                  CtSymKind.JOINED_VERSIONS);
+                long timestamp = Long.parseLong(timestampSpec);
+
+                //SOURCE_DATE_EPOCH is in seconds, convert to milliseconds:
+                timestamp *= 1000;
+
+                new CreateSymbols().createSymbols(ctDescriptionFileExtra,
+                                                  ctDescriptionFile,
+                                                  ctSymLocation,
+                                                  timestamp,
+                                                  currentVersion,
+                                                  systemModules);
                 break;
+            }
+            case "build-javadoc-data": {
+                String ctDescriptionFileExtra;
+                String ctDescriptionFile;
+                String targetDir;
+                int startVersion;
+
+                if (args.length == 4) {
+                    ctDescriptionFileExtra = null;
+                    ctDescriptionFile = args[1];
+                    targetDir = args[2];
+                    startVersion = Integer.parseInt(args[3]);
+                } else if (args.length == 5) {
+                    ctDescriptionFileExtra = args[1];
+                    ctDescriptionFile = args[2];
+                    targetDir = args[3];
+                    startVersion = Integer.parseInt(args[4]);
+                } else {
+                    help();
+                    return ;
+                }
+
+                if (startVersion < 9) {
+                    System.err.println("The start version must be at least 9!");
+                    return ;
+                }
+
+                new CreateSymbols().createJavadocData(ctDescriptionFileExtra,
+                                                      ctDescriptionFile,
+                                                      targetDir,
+                                                      startVersion);
+                break;
+            }
         }
     }
 

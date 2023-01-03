@@ -131,7 +131,7 @@
  *    InputStream.
  * <p>Here is an example:</p>
  * <pre>
- * URI uri = new URI("http://java.sun.com/");
+ * URI uri = new URI("http://www.example.com/");
  * URL url = uri.toURL();
  * InputStream in = url.openStream();
  * </pre>
@@ -159,6 +159,6 @@
  */
 @DefaultQualifier(value = KeyForBottom.class, locations = TypeUseLocation.LOWER_BOUND)
 package java.net;
-import  org.checkerframework.framework.qual.DefaultQualifier;
-import  org.checkerframework.framework.qual.TypeUseLocation;
-import  org.checkerframework.checker.nullness.qual.KeyForBottom;
+import org.checkerframework.framework.qual.DefaultQualifier;
+import org.checkerframework.framework.qual.TypeUseLocation;
+import org.checkerframework.checker.nullness.qual.KeyForBottom;

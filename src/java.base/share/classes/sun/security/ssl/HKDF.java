@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,7 +44,6 @@ import java.util.Objects;
  * derivation process.
  */
 final class HKDF {
-    private final String hmacAlg;
     private final Mac hmacObj;
     private final int hmacLen;
 
@@ -61,8 +60,8 @@ final class HKDF {
     HKDF(String hashAlg) throws NoSuchAlgorithmException {
         Objects.requireNonNull(hashAlg,
                 "Must provide underlying HKDF Digest algorithm.");
-        hmacAlg = "Hmac" + hashAlg.replace("-", "");
-        hmacObj = JsseJce.getMac(hmacAlg);
+        String hmacAlg = "Hmac" + hashAlg.replace("-", "");
+        hmacObj = Mac.getInstance(hmacAlg);
         hmacLen = hmacObj.getMacLength();
     }
 

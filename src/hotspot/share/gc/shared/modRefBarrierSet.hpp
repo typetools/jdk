@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_MODREFBARRIERSET_HPP
-#define SHARE_VM_GC_SHARED_MODREFBARRIERSET_HPP
+#ifndef SHARE_GC_SHARED_MODREFBARRIERSET_HPP
+#define SHARE_GC_SHARED_MODREFBARRIERSET_HPP
 
 #include "gc/shared/barrierSet.hpp"
 #include "memory/memRegion.hpp"
@@ -39,6 +39,7 @@ protected:
     : BarrierSet(barrier_set_assembler,
                  barrier_set_c1,
                  barrier_set_c2,
+                 NULL /* barrier_set_nmethod */,
                  fake_rtti.add_tag(BarrierSet::ModRef)) { }
   ~ModRefBarrierSet() { }
 
@@ -78,9 +79,9 @@ public:
     template <typename T>
     static void oop_store_in_heap(T* addr, oop value);
     template <typename T>
-    static oop oop_atomic_cmpxchg_in_heap(oop new_value, T* addr, oop compare_value);
+    static oop oop_atomic_cmpxchg_in_heap(T* addr, oop compare_value, oop new_value);
     template <typename T>
-    static oop oop_atomic_xchg_in_heap(oop new_value, T* addr);
+    static oop oop_atomic_xchg_in_heap(T* addr, oop new_value);
 
     template <typename T>
     static bool oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
@@ -93,12 +94,12 @@ public:
       oop_store_in_heap(AccessInternal::oop_field_addr<decorators>(base, offset), value);
     }
 
-    static oop oop_atomic_xchg_in_heap_at(oop new_value, oop base, ptrdiff_t offset) {
-      return oop_atomic_xchg_in_heap(new_value, AccessInternal::oop_field_addr<decorators>(base, offset));
+    static oop oop_atomic_xchg_in_heap_at(oop base, ptrdiff_t offset, oop new_value) {
+      return oop_atomic_xchg_in_heap(AccessInternal::oop_field_addr<decorators>(base, offset), new_value);
     }
 
-    static oop oop_atomic_cmpxchg_in_heap_at(oop new_value, oop base, ptrdiff_t offset, oop compare_value) {
-      return oop_atomic_cmpxchg_in_heap(new_value, AccessInternal::oop_field_addr<decorators>(base, offset), compare_value);
+    static oop oop_atomic_cmpxchg_in_heap_at(oop base, ptrdiff_t offset, oop compare_value, oop new_value) {
+      return oop_atomic_cmpxchg_in_heap(AccessInternal::oop_field_addr<decorators>(base, offset), compare_value, new_value);
     }
   };
 };
@@ -108,4 +109,4 @@ struct BarrierSet::GetName<ModRefBarrierSet> {
   static const BarrierSet::Name value = BarrierSet::ModRef;
 };
 
-#endif // SHARE_VM_GC_SHARED_MODREFBARRIERSET_HPP
+#endif // SHARE_GC_SHARED_MODREFBARRIERSET_HPP

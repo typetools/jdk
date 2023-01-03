@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,10 +28,12 @@ package java.awt.geom;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.awt.Shape;
 import java.awt.Rectangle;
-import java.util.Arrays;
+import java.awt.Shape;
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.Arrays;
+
 import sun.awt.geom.Curve;
 
 import static java.lang.Math.abs;
@@ -330,9 +332,10 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
                                          right - left, bottom - top);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -1272015596714244385L;
     }
 
@@ -576,9 +579,10 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
                                           right - left, bottom - top);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -4202960122839707295L;
     }
 
@@ -864,7 +868,7 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
      *          the specified offset.
      * @since 1.2
      */
-    public static double getFlatnessSq(double coords[], int offset) {
+    public static double getFlatnessSq(double[] coords, int offset) {
         return getFlatnessSq(coords[offset + 0], coords[offset + 1],
                              coords[offset + 2], coords[offset + 3],
                              coords[offset + 4], coords[offset + 5],
@@ -884,7 +888,7 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
      *          the specified offset.
      * @since 1.2
      */
-    public static double getFlatness(double coords[], int offset) {
+    public static double getFlatness(double[] coords, int offset) {
         return getFlatness(coords[offset + 0], coords[offset + 1],
                            coords[offset + 2], coords[offset + 3],
                            coords[offset + 4], coords[offset + 5],
@@ -1004,9 +1008,9 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
      * the 6 right coordinates
      * @since 1.2
      */
-    public static void subdivide(double src[], int srcoff,
-                                 double left[], int leftoff,
-                                 double right[], int rightoff) {
+    public static void subdivide(double[] src, int srcoff,
+                                 double[] left, int leftoff,
+                                 double[] right, int rightoff) {
         double x1 = src[srcoff + 0];
         double y1 = src[srcoff + 1];
         double ctrlx1 = src[srcoff + 2];
@@ -1069,7 +1073,7 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
      * @return the number of roots, or -1 if the equation is a constant.
      * @since 1.2
      */
-    public static int solveCubic(double eqn[]) {
+    public static int solveCubic(double[] eqn) {
         return solveCubic(eqn, eqn);
     }
 
@@ -1090,7 +1094,7 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
      * @return the number of roots, or -1 if the equation is a constant
      * @since 1.3
      */
-    public static int solveCubic(double eqn[], double res[]) {
+    public static int solveCubic(double[] eqn, double[] res) {
         // From Graphics Gems:
         // http://tog.acm.org/resources/GraphicsGems/gems/Roots3And4.c
         final double d = eqn[3];
@@ -1373,7 +1377,7 @@ public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable
         return (x1 < 0 && x2 > 0) || (x1 > 0 && x2 < 0);
     }
 
-    private static double solveEqn(double eqn[], int order, double t) {
+    private static double solveEqn(double[] eqn, int order, double t) {
         double v = eqn[order];
         while (--order >= 0) {
             v = v * t + eqn[order];

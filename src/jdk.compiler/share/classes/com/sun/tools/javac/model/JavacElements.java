@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.model;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -114,7 +115,7 @@ public class JavacElements implements Elements {
         enter = Enter.instance(context);
         resolve = Resolve.instance(context);
         JavacTask t = context.get(JavacTask.class);
-        javacTaskImpl = t instanceof JavacTaskImpl ? (JavacTaskImpl) t : null;
+        javacTaskImpl = t instanceof JavacTaskImpl taskImpl ? taskImpl : null;
         log = Log.instance(context);
         Source source = Source.instance(context);
         allowModules = Feature.MODULES.allowedInSource(source);
@@ -198,43 +199,48 @@ public class JavacElements implements Elements {
 
         return (S) resultCache.computeIfAbsent(Pair.of(methodName, nameStr), p -> {
             Set<S> found = new LinkedHashSet<>();
+            Set<ModuleSymbol> allModules = new HashSet<>(modules.allModules());
 
-            for (ModuleSymbol msym : modules.allModules()) {
-                S sym = nameToSymbol(msym, nameStr, clazz);
+            allModules.removeAll(modules.getRootModules());
 
-                if (sym == null)
-                    continue;
+            for (Set<ModuleSymbol> modules : Arrays.asList(modules.getRootModules(), allModules)) {
+                for (ModuleSymbol msym : modules) {
+                    S sym = nameToSymbol(msym, nameStr, clazz);
 
-                if (clazz == ClassSymbol.class) {
-                    // Always include classes
-                    found.add(sym);
-                } else if (clazz == PackageSymbol.class) {
-                    // In module mode, ignore the "spurious" empty packages that "enclose" module-specific packages.
-                    // For example, if a module contains classes or package info in package p.q.r, it will also appear
-                    // to have additional packages p.q and p, even though these packages have no content other
-                    // than the subpackage.  We don't want those empty packages showing up in searches for p or p.q.
-                    if (!sym.members().isEmpty() || ((PackageSymbol) sym).package_info != null) {
+                    if (sym == null)
+                        continue;
+
+                    if (clazz == ClassSymbol.class) {
+                        // Always include classes
                         found.add(sym);
+                    } else if (clazz == PackageSymbol.class) {
+                        // In module mode, ignore the "spurious" empty packages that "enclose" module-specific packages.
+                        // For example, if a module contains classes or package info in package p.q.r, it will also appear
+                        // to have additional packages p.q and p, even though these packages have no content other
+                        // than the subpackage.  We don't want those empty packages showing up in searches for p or p.q.
+                        if (!sym.members().isEmpty() || ((PackageSymbol) sym).package_info != null) {
+                            found.add(sym);
+                        }
                     }
                 }
-            }
 
-            if (found.size() == 1) {
-                return Optional.of(found.iterator().next());
-            } else if (found.size() > 1) {
-                //more than one element found, produce a note:
-                if (alreadyWarnedDuplicates.add(methodName + ":" + nameStr)) {
-                    String moduleNames = found.stream()
-                                              .map(s -> s.packge().modle)
-                                              .map(m -> m.toString())
-                                              .collect(Collectors.joining(", "));
-                    log.note(Notes.MultipleElements(methodName, nameStr, moduleNames));
+                if (found.size() == 1) {
+                    return Optional.of(found.iterator().next());
+                } else if (found.size() > 1) {
+                    //more than one element found, produce a note:
+                    if (alreadyWarnedDuplicates.add(methodName + ":" + nameStr)) {
+                        String moduleNames = found.stream()
+                                                  .map(s -> s.packge().modle)
+                                                  .map(m -> m.toString())
+                                                  .collect(Collectors.joining(", "));
+                        log.note(Notes.MultipleElements(methodName, nameStr, moduleNames));
+                    }
+                    return Optional.empty();
+                } else {
+                    //not found, try another option
                 }
-                return Optional.empty();
-            } else {
-                //not found:
-                return Optional.empty();
             }
+            return Optional.empty();
         }).orElse(null);
     }
 
@@ -277,6 +283,9 @@ public class JavacElements implements Elements {
         Symbol sym = cast(Symbol.class, e);
         class Vis extends JCTree.Visitor {
             List<JCAnnotation> result = null;
+            public void visitModuleDef(JCModuleDecl tree) {
+                result = tree.mods.annotations;
+            }
             public void visitPackageDef(JCPackageDecl tree) {
                 result = tree.annotations;
             }
@@ -436,7 +445,10 @@ public class JavacElements implements Elements {
 
     @DefinedBy(Api.LANGUAGE_MODEL)
     public PackageElement getPackageOf(Element e) {
-        return cast(Symbol.class, e).packge();
+        if (e.getKind() == ElementKind.MODULE)
+            return null;
+        else
+            return cast(Symbol.class, e).packge();
     }
 
     @DefinedBy(Api.LANGUAGE_MODEL)
@@ -458,6 +470,8 @@ public class JavacElements implements Elements {
     public Origin getOrigin(Element e) {
         Symbol sym = cast(Symbol.class, e);
         if ((sym.flags() & Flags.GENERATEDCONSTR) != 0)
+            return Origin.MANDATED;
+        if ((sym.flags() & Flags.MANDATED) != 0)
             return Origin.MANDATED;
         //TypeElement.getEnclosedElements does not return synthetic elements,
         //and most synthetic elements are not read from the classfile anyway:
@@ -699,6 +713,12 @@ public class JavacElements implements Elements {
             TypeSymbol tsym = cast(TypeSymbol.class, element);
             return types.isFunctionalInterface(tsym);
         }
+    }
+
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public boolean isAutomaticModule(ModuleElement module) {
+        ModuleSymbol msym = (ModuleSymbol) module;
+        return (msym.flags() & Flags.AUTOMATIC_MODULE) != 0;
     }
 
     /**

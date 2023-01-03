@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -106,6 +107,7 @@ import sun.security.util.ResourcesMgr;
  */
 public final class Subject implements java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = -8308522755600156056L;
 
     /**
@@ -116,6 +118,7 @@ public final class Subject implements java.io.Serializable {
      *          {@code java.security.Principal}.
      *          The set is a {@code Subject.SecureSet}.
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     Set<Principal> principals;
 
     /**
@@ -130,7 +133,7 @@ public final class Subject implements java.io.Serializable {
      *
      * @serial
      */
-    private volatile boolean readOnly = false;
+    private volatile boolean readOnly;
 
     private static final int PRINCIPAL_SET = 1;
     private static final int PUB_CREDENTIAL_SET = 2;
@@ -207,18 +210,20 @@ public final class Subject implements java.io.Serializable {
      *          Sets.
      */
     public Subject(boolean readOnly, Set<? extends Principal> principals,
-                   Set<?> pubCredentials, Set<?> privCredentials)
-    {
-        collectionNullClean(principals);
-        collectionNullClean(pubCredentials);
-        collectionNullClean(privCredentials);
+                   Set<?> pubCredentials, Set<?> privCredentials) {
+        LinkedList<Principal> principalList
+                = collectionNullClean(principals);
+        LinkedList<Object> pubCredsList
+                = collectionNullClean(pubCredentials);
+        LinkedList<Object> privCredsList
+                = collectionNullClean(privCredentials);
 
-        this.principals = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRINCIPAL_SET, principals));
-        this.pubCredentials = Collections.synchronizedSet(new SecureSet<>
-                                (this, PUB_CREDENTIAL_SET, pubCredentials));
-        this.privCredentials = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRIV_CREDENTIAL_SET, privCredentials));
+        this.principals = Collections.synchronizedSet(
+                new SecureSet<>(this, PRINCIPAL_SET, principalList));
+        this.pubCredentials = Collections.synchronizedSet(
+                new SecureSet<>(this, PUB_CREDENTIAL_SET, pubCredsList));
+        this.privCredentials = Collections.synchronizedSet(
+                new SecureSet<>(this, PRIV_CREDENTIAL_SET, privCredsList));
         this.readOnly = readOnly;
     }
 
@@ -244,6 +249,7 @@ public final class Subject implements java.io.Serializable {
      *         {@code Subject} to be read-only.
      */
     public void setReadOnly() {
+        @SuppressWarnings("removal")
         java.lang.SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(AuthPermissionHolder.SET_READ_ONLY_PERMISSION);
@@ -286,7 +292,16 @@ public final class Subject implements java.io.Serializable {
      *
      * @throws NullPointerException if the provided
      *          {@code AccessControlContext} is {@code null}.
+     *
+     * @deprecated This method depends on {@link AccessControlContext}
+     *       which, in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, is deprecated
+     *       and subject to removal in a future release. However, obtaining a
+     *       Subject is useful independent of the Security Manager, so a
+     *       replacement for this method may be added in a future release.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(since="17", forRemoval=true)
     public static Subject getSubject(final AccessControlContext acc) {
 
         java.lang.SecurityManager sm = System.getSecurityManager();
@@ -347,6 +362,7 @@ public final class Subject implements java.io.Serializable {
      *                  AuthPermission("doAs")} permission to invoke this
      *                  method.
      */
+    @SuppressWarnings("removal")
     public static <T> T doAs(final Subject subject,
                         final java.security.PrivilegedAction<T> action) {
 
@@ -409,6 +425,7 @@ public final class Subject implements java.io.Serializable {
      *                  AuthPermission("doAs")} permission to invoke this
      *                  method.
      */
+    @SuppressWarnings("removal")
     public static <T> T doAs(final Subject subject,
                         final java.security.PrivilegedExceptionAction<T> action)
                         throws java.security.PrivilegedActionException {
@@ -465,7 +482,16 @@ public final class Subject implements java.io.Serializable {
      *                  {@link AuthPermission#AuthPermission(String)
      *                  AuthPermission("doAsPrivileged")} permission to invoke
      *                  this method.
+     *
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(since="17", forRemoval=true)
     public static <T> T doAsPrivileged(final Subject subject,
                         final java.security.PrivilegedAction<T> action,
                         final java.security.AccessControlContext acc) {
@@ -531,7 +557,16 @@ public final class Subject implements java.io.Serializable {
      *                  {@link AuthPermission#AuthPermission(String)
      *                  AuthPermission("doAsPrivileged")} permission to invoke
      *                  this method.
+     *
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(since="17", forRemoval=true)
     public static <T> T doAsPrivileged(final Subject subject,
                         final java.security.PrivilegedExceptionAction<T> action,
                         final java.security.AccessControlContext acc)
@@ -557,6 +592,7 @@ public final class Subject implements java.io.Serializable {
                                         createContext(subject, callerAcc));
     }
 
+    @SuppressWarnings("removal")
     private static AccessControlContext createContext(final Subject subject,
                                         final AccessControlContext acc) {
 
@@ -953,7 +989,11 @@ public final class Subject implements java.io.Serializable {
 
     /**
      * Writes this object out to a stream (i.e., serializes it).
+     *
+     * @param  oos the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream oos)
                 throws java.io.IOException {
         synchronized(principals) {
@@ -963,8 +1003,13 @@ public final class Subject implements java.io.Serializable {
 
     /**
      * Reads this object from a stream (i.e., deserializes it)
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
     @SuppressWarnings("unchecked")
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
                 throws java.io.IOException, ClassNotFoundException {
 
@@ -979,8 +1024,9 @@ public final class Subject implements java.io.Serializable {
 
         // Rewrap the principals into a SecureSet
         try {
+            LinkedList<Principal> principalList = collectionNullClean(inputPrincs);
             principals = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRINCIPAL_SET, inputPrincs));
+                                (this, PRINCIPAL_SET, principalList));
         } catch (NullPointerException npe) {
             // Sometimes people deserialize the principals set only.
             // Subject is not accessible, so just don't fail.
@@ -1005,26 +1051,18 @@ public final class Subject implements java.io.Serializable {
      * @throws NullPointerException if the specified collection is either
      *            {@code null} or contains a {@code null} element
      */
-    private static void collectionNullClean(Collection<?> coll) {
-        boolean hasNullElements = false;
+    private static <E> LinkedList<E> collectionNullClean(
+            Collection<? extends E> coll) {
 
         Objects.requireNonNull(coll,
                 ResourcesMgr.getString("invalid.null.input.s."));
 
-        try {
-            hasNullElements = coll.contains(null);
-        } catch (NullPointerException npe) {
-            // A null-hostile collection may choose to throw
-            // NullPointerException if contains(null) is called on it
-            // rather than returning false.
-            // If this happens we know the collection is null-clean.
-            hasNullElements = false;
-        } finally {
-            if (hasNullElements) {
-                throw new NullPointerException
-                    (ResourcesMgr.getString("invalid.null.input.s."));
-            }
+        LinkedList<E> output = new LinkedList<>();
+        for (E e : coll) {
+            output.add(Objects.requireNonNull(e,
+                    ResourcesMgr.getString("invalid.null.input.s.")));
         }
+        return output;
     }
 
     /**
@@ -1035,12 +1073,14 @@ public final class Subject implements java.io.Serializable {
     private static class SecureSet<E>
         implements Set<E>, java.io.Serializable {
 
+        @java.io.Serial
         private static final long serialVersionUID = 7911754171111800359L;
 
         /**
          * @serialField this$0 Subject The outer Subject instance.
          * @serialField elements LinkedList The elements in this set.
          */
+        @java.io.Serial
         private static final ObjectStreamField[] serialPersistentFields = {
             new ObjectStreamField("this$0", Subject.class),
             new ObjectStreamField("elements", LinkedList.class),
@@ -1068,10 +1108,10 @@ public final class Subject implements java.io.Serializable {
             this.elements = new LinkedList<E>();
         }
 
-        SecureSet(Subject subject, int which, Set<? extends E> set) {
+        SecureSet(Subject subject, int which, LinkedList<E> list) {
             this.subject = subject;
             this.which = which;
-            this.elements = new LinkedList<E>(set);
+            this.elements = list;
         }
 
         public int size() {
@@ -1090,6 +1130,7 @@ public final class Subject implements java.io.Serializable {
                         return i.next();
                     }
 
+                    @SuppressWarnings("removal")
                     SecurityManager sm = System.getSecurityManager();
                     if (sm != null) {
                         try {
@@ -1111,6 +1152,7 @@ public final class Subject implements java.io.Serializable {
                                 ("Subject.is.read.only"));
                     }
 
+                    @SuppressWarnings("removal")
                     java.lang.SecurityManager sm = System.getSecurityManager();
                     if (sm != null) {
                         switch (which) {
@@ -1140,6 +1182,7 @@ public final class Subject implements java.io.Serializable {
                         (ResourcesMgr.getString("Subject.is.read.only"));
             }
 
+            @SuppressWarnings("removal")
             java.lang.SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
                 switch (which) {
@@ -1175,7 +1218,8 @@ public final class Subject implements java.io.Serializable {
         }
         }
 
-        public boolean remove(Object o) {
+        @SuppressWarnings("removal")
+        public boolean remove(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1202,7 +1246,8 @@ public final class Subject implements java.io.Serializable {
             return false;
         }
 
-        public boolean contains(Object o) {
+        @SuppressWarnings("removal")
+        public boolean contains(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1244,7 +1289,7 @@ public final class Subject implements java.io.Serializable {
         public boolean addAll(Collection<? extends E> c) {
             boolean result = false;
 
-            collectionNullClean(c);
+            c = collectionNullClean(c);
 
             for (E item : c) {
                 result |= this.add(item);
@@ -1253,8 +1298,9 @@ public final class Subject implements java.io.Serializable {
             return result;
         }
 
-        public boolean removeAll(Collection<?> c) {
-            collectionNullClean(c);
+        @SuppressWarnings("removal")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+            c = collectionNullClean(c);
 
             boolean modified = false;
             final Iterator<E> e = iterator();
@@ -1283,8 +1329,8 @@ public final class Subject implements java.io.Serializable {
             return modified;
         }
 
-        public boolean containsAll(Collection<?> c) {
-            collectionNullClean(c);
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+            c = collectionNullClean(c);
 
             for (Object item : c) {
                 if (this.contains(item) == false) {
@@ -1295,8 +1341,9 @@ public final class Subject implements java.io.Serializable {
             return true;
         }
 
-        public boolean retainAll(Collection<?> c) {
-            collectionNullClean(c);
+        @SuppressWarnings("removal")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+            c = collectionNullClean(c);
 
             boolean modified = false;
             final Iterator<E> e = iterator();
@@ -1316,12 +1363,13 @@ public final class Subject implements java.io.Serializable {
                 if (c.contains(next) == false) {
                     e.remove();
                     modified = true;
-                    }
                 }
+            }
 
             return modified;
         }
 
+        @SuppressWarnings("removal")
         public void clear() {
             final Iterator<E> e = iterator();
             while (e.hasNext()) {
@@ -1415,7 +1463,11 @@ public final class Subject implements java.io.Serializable {
          *      the caller has permission to access each credential
          *      in the set.  If the security check passes,
          *      the set is serialized.
+         *
+         * @param  oos the {@code ObjectOutputStream} to which data is written
+         * @throws IOException if an I/O error occurs
          */
+        @java.io.Serial
         private void writeObject(java.io.ObjectOutputStream oos)
                 throws java.io.IOException {
 
@@ -1433,7 +1485,15 @@ public final class Subject implements java.io.Serializable {
             oos.writeFields();
         }
 
+        /**
+         * Restores the state of this object from the stream.
+         *
+         * @param  ois the {@code ObjectInputStream} from which data is read
+         * @throws IOException if an I/O error occurs
+         * @throws ClassNotFoundException if a serialized class cannot be loaded
+         */
         @SuppressWarnings("unchecked")
+        @java.io.Serial
         private void readObject(ObjectInputStream ois)
             throws IOException, ClassNotFoundException
         {
@@ -1443,13 +1503,7 @@ public final class Subject implements java.io.Serializable {
 
             LinkedList<E> tmp = (LinkedList<E>) fields.get("elements", null);
 
-            Subject.collectionNullClean(tmp);
-
-            if (tmp.getClass() != LinkedList.class) {
-                elements = new LinkedList<E>(tmp);
-            } else {
-                elements = tmp;
-            }
+            elements = Subject.collectionNullClean(tmp);
         }
 
     }
@@ -1482,7 +1536,7 @@ public final class Subject implements java.io.Serializable {
             }
         }
 
-        @SuppressWarnings("unchecked")     /*To suppress warning from line 1374*/
+        @SuppressWarnings({"removal","unchecked"})     /*To suppress warning from line 1374*/
         private void populateSet() {
             final Iterator<?> iterator;
             switch(which) {

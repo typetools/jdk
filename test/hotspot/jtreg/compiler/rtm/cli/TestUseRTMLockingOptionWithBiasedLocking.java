@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,17 +25,13 @@
  * @test
  * @bug 8031320
  * @summary Verify processing of UseRTMLocking and UseBiasedLocking
- *          options combination on CPU and VM with rtm support.
+ *          options combination on CPU, OS, and VM with rtm support.
  * @library /test/lib /
  * @modules java.base/jdk.internal.misc
  *          java.management
- * @requires vm.flavor == "server" & !vm.emulatedClient & vm.rtm.cpu & vm.rtm.os
- * @build sun.hotspot.WhiteBox
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- *                                sun.hotspot.WhiteBox$WhiteBoxPermission
- * @run main/othervm -Xbootclasspath/a:. -XX:+UnlockDiagnosticVMOptions
- *                   -XX:+WhiteBoxAPI
- *                   compiler.rtm.cli.TestUseRTMLockingOptionWithBiasedLocking
+ * @requires vm.flagless
+ * @requires vm.rtm.cpu & vm.rtm.compiler
+ * @run driver compiler.rtm.cli.TestUseRTMLockingOptionWithBiasedLocking
  */
 
 package compiler.rtm.cli;

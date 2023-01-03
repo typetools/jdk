@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@
 package sun.security.provider;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
@@ -35,11 +34,11 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.util.*;
 
-import jdk.internal.ref.CleanerFactory;
 import sun.security.pkcs.PKCS8Key;
 import sun.security.pkcs.EncryptedPrivateKeyInfo;
 import sun.security.x509.AlgorithmId;
 import sun.security.util.ObjectIdentifier;
+import sun.security.util.KnownOIDs;
 import sun.security.util.DerValue;
 
 /**
@@ -107,9 +106,6 @@ final class KeyProtector {
     private static final String DIGEST_ALG = "SHA";
     private static final int DIGEST_LEN = 20;
 
-    // defined by JavaSoft
-    private static final String KEY_PROTECTOR_OID = "1.3.6.1.4.1.42.2.17.1.1";
-
     // The password used for protecting/recovering keys passed through this
     // key protector. We store it as a byte array, so that we can digest it.
     private byte[] passwdBytes;
@@ -120,32 +116,15 @@ final class KeyProtector {
     /**
      * Creates an instance of this class, and initializes it with the given
      * password.
-     *
-     * <p>The password is expected to be in printable ASCII.
-     * Normal rules for good password selection apply: at least
-     * seven characters, mixed case, with punctuation encouraged.
-     * Phrases or words which are easily guessed, for example by
-     * being found in dictionaries, are bad.
      */
-    public KeyProtector(char[] password)
+    public KeyProtector(byte[] passwordBytes)
         throws NoSuchAlgorithmException
     {
-        int i, j;
-
-        if (password == null) {
+        if (passwordBytes == null) {
            throw new IllegalArgumentException("password can't be null");
         }
         md = MessageDigest.getInstance(DIGEST_ALG);
-        // Convert password to byte array, so that it can be digested
-        passwdBytes = new byte[password.length * 2];
-        for (i=0, j=0; i<password.length; i++) {
-            passwdBytes[j++] = (byte)(password[i] >> 8);
-            passwdBytes[j++] = (byte)password[i];
-        }
-        // Use the cleaner to zero the password when no longer referenced
-        final byte[] k = this.passwdBytes;
-        CleanerFactory.cleaner().register(this,
-                () -> java.util.Arrays.fill(k, (byte)0x00));
+        this.passwdBytes = passwordBytes;
     }
 
     /*
@@ -227,12 +206,14 @@ final class KeyProtector {
         digest = md.digest();
         md.reset();
         System.arraycopy(digest, 0, encrKey, encrKeyOffset, digest.length);
+        Arrays.fill(plainKey, (byte)0);
 
         // wrap the protected private key in a PKCS#8-style
         // EncryptedPrivateKeyInfo, and returns its encoding
         AlgorithmId encrAlg;
         try {
-            encrAlg = new AlgorithmId(new ObjectIdentifier(KEY_PROTECTOR_OID));
+            encrAlg = new AlgorithmId(ObjectIdentifier.of
+                    (KnownOIDs.JAVASOFT_JDKKeyProtector));
             return new EncryptedPrivateKeyInfo(encrAlg,encrKey).getEncoded();
         } catch (IOException ioe) {
             throw new KeyStoreException(ioe.getMessage());
@@ -254,7 +235,8 @@ final class KeyProtector {
 
         // do we support the algorithm?
         AlgorithmId encrAlg = encrInfo.getAlgorithm();
-        if (!(encrAlg.getOID().toString().equals(KEY_PROTECTOR_OID))) {
+        if (!(encrAlg.getOID().toString().equals
+                (KnownOIDs.JAVASOFT_JDKKeyProtector.value()))) {
             throw new UnrecoverableKeyException("Unsupported key protection "
                                                 + "algorithm");
         }
@@ -327,9 +309,11 @@ final class KeyProtector {
         // algorithm and instantiates the appropriate key factory,
         // which in turn parses the key material.
         try {
-            return PKCS8Key.parseKey(new DerValue(plainKey));
+            return PKCS8Key.parseKey(plainKey);
         } catch (IOException ioe) {
             throw new UnrecoverableKeyException(ioe.getMessage());
+        } finally {
+            Arrays.fill(plainKey, (byte)0);
         }
     }
 }

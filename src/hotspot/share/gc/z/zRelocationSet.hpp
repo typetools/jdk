@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,50 +24,36 @@
 #ifndef SHARE_GC_Z_ZRELOCATIONSET_HPP
 #define SHARE_GC_Z_ZRELOCATIONSET_HPP
 
-#include "memory/allocation.hpp"
+#include "gc/z/zArray.hpp"
+#include "gc/z/zForwardingAllocator.hpp"
 
-class ZPage;
+class ZForwarding;
+class ZRelocationSetSelector;
+class ZWorkers;
 
 class ZRelocationSet {
   template <bool> friend class ZRelocationSetIteratorImpl;
 
 private:
-  ZPage** _pages;
-  size_t  _npages;
+  ZWorkers*            _workers;
+  ZForwardingAllocator _allocator;
+  ZForwarding**        _forwardings;
+  size_t               _nforwardings;
 
 public:
-  ZRelocationSet();
+  ZRelocationSet(ZWorkers* workers);
 
-  void populate(const ZPage* const* group0, size_t ngroup0,
-                const ZPage* const* group1, size_t ngroup1);
+  void install(const ZRelocationSetSelector* selector);
+  void reset();
 };
 
-template <bool parallel>
-class ZRelocationSetIteratorImpl : public StackObj {
-private:
-  ZRelocationSet* const _relocation_set;
-  size_t                _next;
-
+template <bool Parallel>
+class ZRelocationSetIteratorImpl : public ZArrayIteratorImpl<ZForwarding*, Parallel> {
 public:
   ZRelocationSetIteratorImpl(ZRelocationSet* relocation_set);
-
-  bool next(ZPage** page);
 };
 
-// Iterator types
-#define ZRELOCATIONSET_SERIAL      false
-#define ZRELOCATIONSET_PARALLEL    true
-
-class ZRelocationSetIterator : public ZRelocationSetIteratorImpl<ZRELOCATIONSET_SERIAL> {
-public:
-  ZRelocationSetIterator(ZRelocationSet* relocation_set) :
-      ZRelocationSetIteratorImpl<ZRELOCATIONSET_SERIAL>(relocation_set) {}
-};
-
-class ZRelocationSetParallelIterator : public ZRelocationSetIteratorImpl<ZRELOCATIONSET_PARALLEL> {
-public:
-  ZRelocationSetParallelIterator(ZRelocationSet* relocation_set) :
-      ZRelocationSetIteratorImpl<ZRELOCATIONSET_PARALLEL>(relocation_set) {}
-};
+using ZRelocationSetIterator = ZRelocationSetIteratorImpl<false /* Parallel */>;
+using ZRelocationSetParallelIterator = ZRelocationSetIteratorImpl<true /* Parallel */>;
 
 #endif // SHARE_GC_Z_ZRELOCATIONSET_HPP

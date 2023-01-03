@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2013 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef OS_CPU_AIX_PPC_VM_OS_AIX_PPC_HPP
-#define OS_CPU_AIX_PPC_VM_OS_AIX_PPC_HPP
+#ifndef OS_CPU_AIX_PPC_OS_AIX_PPC_HPP
+#define OS_CPU_AIX_PPC_OS_AIX_PPC_HPP
 
   static void setup_fpu() {}
 
@@ -32,8 +32,11 @@
   // Note: Currently only used in 64 bit Windows implementations
   static bool register_code_area(char *low, char *high) { return true; }
 
-#define PLATFORM_PRINT_NATIVE_STACK 1
-static bool platform_print_native_stack(outputStream* st, void* context,
-                                        char *buf, int buf_size);
+  #define PLATFORM_PRINT_NATIVE_STACK 1
+  static bool platform_print_native_stack(outputStream* st, void* context,
+                                          char *buf, int buf_size);
 
-#endif // OS_CPU_AIX_PPC_VM_OS_AIX_PPC_HPP
+  #define HAVE_FUNCTION_DESCRIPTORS 1
+  static void* resolve_function_descriptor(void* p);
+
+#endif // OS_CPU_AIX_PPC_OS_AIX_PPC_HPP

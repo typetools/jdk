@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -88,10 +88,10 @@ import sun.awt.AWTAccessor;
  * ClassLoader.
  * <p>
  * Please see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
  * How to Use the Focus Subsystem</a>,
  * a section in <em>The Java Tutorial</em>, and the
- * <a href="../../java/awt/doc-files/FocusSpec.html">Focus Specification</a>
+ * <a href="doc-files/FocusSpec.html">Focus Specification</a>
  * for more information.
  *
  * @author David Mendenhall
@@ -648,6 +648,7 @@ public abstract @UsesObjectEquals class KeyboardFocusManager
         peer.clearGlobalFocusOwner(activeWindow);
     }
 
+    @SuppressWarnings("removal")
     void clearGlobalFocusOwnerPriv() {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
             public Void run() {
@@ -1287,6 +1288,7 @@ public abstract @UsesObjectEquals class KeyboardFocusManager
                            newFocusCycleRoot);
     }
 
+    @SuppressWarnings("removal")
     void setGlobalCurrentFocusCycleRootPriv(final Container newFocusCycleRoot) {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
             public Void run() {
@@ -3093,6 +3095,7 @@ public abstract @UsesObjectEquals class KeyboardFocusManager
     private static void checkReplaceKFMPermission()
         throws SecurityException
     {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             if (replaceKeyboardFocusManagerPermission == null) {

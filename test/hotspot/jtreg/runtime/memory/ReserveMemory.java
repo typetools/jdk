@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 // Aix commits on touch, so this test won't work.
 /*
  * @test
- * @key regression
  * @bug 8012015
  * @requires !(os.family == "aix")
  * @summary Make sure reserved (but uncommitted) memory is not accessible
@@ -32,9 +31,8 @@
  * @modules java.base/jdk.internal.misc
  *          java.management
  * @build sun.hotspot.WhiteBox
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- *                              sun.hotspot.WhiteBox$WhiteBoxPermission
- * @run main ReserveMemory
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller sun.hotspot.WhiteBox
+ * @run driver ReserveMemory
  */
 
 import jdk.test.lib.process.ProcessTools;
@@ -55,7 +53,6 @@ public class ReserveMemory {
           "-Xbootclasspath/a:.",
           "-XX:+UnlockDiagnosticVMOptions",
           "-XX:+WhiteBoxAPI",
-          "-XX:-TransmitErrorReport",
           "-XX:-CreateCoredumpOnCrash",
           "-Xmx128m",
           "ReserveMemory",

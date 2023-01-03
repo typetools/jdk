@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,11 +28,13 @@
 #include "code/nmethod.hpp"
 #include "code/relocInfo.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
 #include "oops/compressedOops.inline.hpp"
+#include "oops/oop.inline.hpp"
 #include "runtime/flags/flagSetting.hpp"
 #include "runtime/stubCodeGenerator.hpp"
+#include "utilities/align.hpp"
 #include "utilities/copy.hpp"
-#include "oops/oop.inline.hpp"
 
 const RelocationHolder RelocationHolder::none; // its type is relocInfo::none
 
@@ -40,15 +42,18 @@ const RelocationHolder RelocationHolder::none; // its type is relocInfo::none
 // Implementation of relocInfo
 
 #ifdef ASSERT
-relocInfo::relocInfo(relocType t, int off, int f) {
-  assert(t != data_prefix_tag, "cannot build a prefix this way");
-  assert((t & type_mask) == t, "wrong type");
-  assert((f & format_mask) == f, "wrong format");
-  assert(off >= 0 && off < offset_limit(), "offset out off bounds");
-  assert((off & (offset_unit-1)) == 0, "misaligned offset");
-  (*this) = relocInfo(t, RAW_BITS, off, f);
+relocInfo::relocType relocInfo::check_relocType(relocType type) {
+  assert(type != data_prefix_tag, "cannot build a prefix this way");
+  assert((type & type_mask) == type, "wrong type");
+  return type;
 }
-#endif
+
+void relocInfo::check_offset_and_format(int offset, int format) {
+  assert(offset >= 0 && offset < offset_limit(), "offset out off bounds");
+  assert(is_aligned(offset, offset_unit), "misaligned offset");
+  assert((format & format_mask) == format, "wrong format");
+}
+#endif // ASSERT
 
 void relocInfo::initialize(CodeSection* dest, Relocation* reloc) {
   relocInfo* data = this+1;  // here's where the data might go
@@ -92,18 +97,6 @@ void relocInfo::set_type(relocType t) {
   assert(format()==old_format, "sanity check");
 }
 
-nmethod* RelocIterator::code_as_nmethod() const {
-  return _code->as_nmethod();
-}
-
-void relocInfo::set_format(int f) {
-  int old_offset = addr_offset();
-  assert((f & format_mask) == f, "wrong format");
-  _value = (_value & ~(format_mask << offset_width)) | (f << offset_width);
-  assert(addr_offset()==old_offset, "sanity check");
-}
-
-
 void relocInfo::change_reloc_info_for_address(RelocIterator *itr, address pc, relocType old_type, relocType new_type) {
   bool found = false;
   while (itr->next() && !found) {
@@ -114,11 +107,6 @@ void relocInfo::change_reloc_info_for_address(RelocIterator *itr, address pc, re
     }
   }
   assert(found, "no relocInfo found for pc");
-}
-
-
-void relocInfo::remove_reloc_info_for_address(RelocIterator *itr, address pc, relocType old_type) {
-  change_reloc_info_for_address(itr, pc, old_type, none);
 }
 
 
@@ -179,14 +167,6 @@ RelocIterator::RelocIterator(CodeSection* cs, address begin, address limit) {
   set_limits(begin, limit);
 }
 
-
-enum { indexCardSize = 128 };
-struct RelocIndexEntry {
-  jint addr_offset;          // offset from header_end of an addr()
-  jint reloc_offset;         // offset from header_end of a relocInfo (prefix)
-};
-
-
 bool RelocIterator::addr_in_const() const {
   const int n = CodeBuffer::SECT_CONSTS;
   return section_start(n) <= addr() && addr() < section_end(n);
@@ -214,12 +194,6 @@ void RelocIterator::set_limits(address begin, address limit) {
   }
 }
 
-
-void RelocIterator::set_limit(address limit) {
-  address code_end = (address)code() + code()->size();
-  assert(limit == NULL || limit <= code_end, "in bounds");
-  _limit = limit;
-}
 
 // All the strange bit-encodings are in here.
 // The idea is to encode relocation data which are small integers
@@ -261,7 +235,7 @@ Relocation* RelocIterator::reloc() {
   APPLY_TO_RELOCATIONS(EACH_TYPE);
   #undef EACH_TYPE
   assert(t == relocInfo::none, "must be padding");
-  return new(_rh) Relocation();
+  return new(_rh) Relocation(t);
 }
 
 
@@ -290,12 +264,7 @@ RelocationHolder RelocationHolder::plus(int offset) const {
   return (*this);
 }
 
-
-void Relocation::guarantee_size() {
-  guarantee(false, "Make _relocbuf bigger!");
-}
-
-    // some relocations can compute their own values
+// some relocations can compute their own values
 address Relocation::value() {
   ShouldNotReachHere();
   return NULL;
@@ -309,7 +278,7 @@ void Relocation::set_value(address x) {
 void Relocation::const_set_data_value(address x) {
 #ifdef _LP64
   if (format() == relocInfo::narrow_oop_in_const) {
-    *(narrowOop*)addr() = CompressedOops::encode((oop) x);
+    *(narrowOop*)addr() = CompressedOops::encode(cast_to_oop(x));
   } else {
 #endif
     *(address*)addr() = x;
@@ -321,7 +290,7 @@ void Relocation::const_set_data_value(address x) {
 void Relocation::const_verify_data_value(address x) {
 #ifdef _LP64
   if (format() == relocInfo::narrow_oop_in_const) {
-    guarantee(*(narrowOop*)addr() == CompressedOops::encode((oop) x), "must agree");
+    guarantee(*(narrowOop*)addr() == CompressedOops::encode(cast_to_oop(x)), "must agree");
   } else {
 #endif
     guarantee(*(address*)addr() == x, "must agree");
@@ -446,18 +415,14 @@ void static_stub_Relocation::pack_data_to(CodeSection* dest) {
   short* p = (short*) dest->locs_end();
   CodeSection* insts = dest->outer()->insts();
   normalize_address(_static_call, insts);
-  jint is_aot = _is_aot ? 1 : 0;
-  p = pack_2_ints_to(p, scaled_offset(_static_call, insts->start()), is_aot);
+  p = pack_1_int_to(p, scaled_offset(_static_call, insts->start()));
   dest->set_locs_end((relocInfo*) p);
 }
 
 void static_stub_Relocation::unpack_data() {
   address base = binding()->section_start(CodeBuffer::SECT_INSTS);
-  jint offset;
-  jint is_aot;
-  unpack_2_ints(offset, is_aot);
+  jint offset = unpack_1_int();
   _static_call = address_from_scaled_offset(offset, base);
-  _is_aot = (is_aot == 1);
 }
 
 void trampoline_stub_Relocation::pack_data_to(CodeSection* dest ) {
@@ -572,10 +537,11 @@ oop* oop_Relocation::oop_addr() {
 
 
 oop oop_Relocation::oop_value() {
-  oop v = *oop_addr();
   // clean inline caches store a special pseudo-null
-  if (v == (oop)Universe::non_oop_word())  v = NULL;
-  return v;
+  if (Universe::contains_non_oop_word(oop_addr())) {
+    return NULL;
+  }
+  return *oop_addr();
 }
 
 
@@ -622,14 +588,6 @@ void metadata_Relocation::fix_metadata_relocation() {
   }
 }
 
-
-void metadata_Relocation::verify_metadata_relocation() {
-  if (!metadata_is_immediate()) {
-    // get the metadata from the pool, and re-insert it into the instruction:
-    verify_value(value());
-  }
-}
-
 address virtual_call_Relocation::cached_value() {
   assert(_cached_value != NULL && _cached_value < addr(), "must precede ic_call");
   return _cached_value;
@@ -644,12 +602,12 @@ Method* virtual_call_Relocation::method_value() {
   return (Method*)m;
 }
 
-void virtual_call_Relocation::clear_inline_cache() {
+bool virtual_call_Relocation::clear_inline_cache() {
   // No stubs for ICs
   // Clean IC
   ResourceMark rm;
   CompiledIC* icache = CompiledIC_at(this);
-  icache->set_to_clean();
+  return icache->set_to_clean();
 }
 
 
@@ -672,23 +630,28 @@ Method* opt_virtual_call_Relocation::method_value() {
   return (Method*)m;
 }
 
-void opt_virtual_call_Relocation::clear_inline_cache() {
+template<typename CompiledICorStaticCall>
+static bool set_to_clean_no_ic_refill(CompiledICorStaticCall* ic) {
+  guarantee(ic->set_to_clean(), "Should not need transition stubs");
+  return true;
+}
+
+bool opt_virtual_call_Relocation::clear_inline_cache() {
   // No stubs for ICs
   // Clean IC
   ResourceMark rm;
   CompiledIC* icache = CompiledIC_at(this);
-  icache->set_to_clean();
+  return set_to_clean_no_ic_refill(icache);
 }
 
-
-address opt_virtual_call_Relocation::static_stub(bool is_aot) {
+address opt_virtual_call_Relocation::static_stub() {
   // search for the static stub who points back to this static call
   address static_call_addr = addr();
   RelocIterator iter(code());
   while (iter.next()) {
     if (iter.type() == relocInfo::static_stub_type) {
       static_stub_Relocation* stub_reloc = iter.static_stub_reloc();
-      if (stub_reloc->static_call() == static_call_addr && stub_reloc->is_aot() == is_aot) {
+      if (stub_reloc->static_call() == static_call_addr) {
         return iter.addr();
       }
     }
@@ -715,21 +678,21 @@ void static_call_Relocation::unpack_data() {
   _method_index = unpack_1_int();
 }
 
-void static_call_Relocation::clear_inline_cache() {
+bool static_call_Relocation::clear_inline_cache() {
   // Safe call site info
   CompiledStaticCall* handler = this->code()->compiledStaticCall_at(this);
-  handler->set_to_clean();
+  return set_to_clean_no_ic_refill(handler);
 }
 
 
-address static_call_Relocation::static_stub(bool is_aot) {
+address static_call_Relocation::static_stub() {
   // search for the static stub who points back to this static call
   address static_call_addr = addr();
   RelocIterator iter(code());
   while (iter.next()) {
     if (iter.type() == relocInfo::static_stub_type) {
       static_stub_Relocation* stub_reloc = iter.static_stub_reloc();
-      if (stub_reloc->static_call() == static_call_addr && stub_reloc->is_aot() == is_aot) {
+      if (stub_reloc->static_call() == static_call_addr) {
         return iter.addr();
       }
     }
@@ -757,24 +720,25 @@ address trampoline_stub_Relocation::get_trampoline_for(address call, nmethod* co
   return NULL;
 }
 
-void static_stub_Relocation::clear_inline_cache() {
+bool static_stub_Relocation::clear_inline_cache() {
   // Call stub is only used when calling the interpreted code.
   // It does not really need to be cleared, except that we want to clean out the methodoop.
   CompiledDirectStaticCall::set_stub_to_clean(this);
+  return true;
 }
 
 
 void external_word_Relocation::fix_relocation_after_move(const CodeBuffer* src, CodeBuffer* dest) {
-  address target = _target;
-  if (target == NULL) {
-    // An absolute embedded reference to an external location,
-    // which means there is nothing to fix here.
-    return;
+  if (_target != NULL) {
+    // Probably this reference is absolute,  not relative, so the following is
+    // probably a no-op.
+    set_value(_target);
   }
-  // Probably this reference is absolute, not relative, so the
-  // following is probably a no-op.
-  assert(src->section_index_of(target) == CodeBuffer::SECT_NONE, "sanity");
-  set_value(target);
+  // If target is NULL, this is  an absolute embedded reference to an external
+  // location, which means  there is nothing to fix here.  In either case, the
+  // resulting target should be an "external" address.
+  postcond(src->section_index_of(target()) == CodeBuffer::SECT_NONE);
+  postcond(dest->section_index_of(target()) == CodeBuffer::SECT_NONE);
 }
 
 

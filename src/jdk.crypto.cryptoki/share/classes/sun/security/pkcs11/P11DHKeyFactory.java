@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -214,14 +214,19 @@ final class P11DHKeyFactory extends P11KeyFactory {
 
     <T extends KeySpec> T implGetPublicKeySpec(P11Key key, Class<T> keySpec,
             Session[] session) throws PKCS11Exception, InvalidKeySpecException {
-        if (DHPublicKeySpec.class.isAssignableFrom(keySpec)) {
+        if (keySpec.isAssignableFrom(DHPublicKeySpec.class)) {
             session[0] = token.getObjSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_VALUE),
                 new CK_ATTRIBUTE(CKA_PRIME),
                 new CK_ATTRIBUTE(CKA_BASE),
             };
-            token.p11.C_GetAttributeValue(session[0].id(), key.keyID, attributes);
+            long keyID = key.getKeyID();
+            try {
+                token.p11.C_GetAttributeValue(session[0].id(), keyID, attributes);
+            } finally {
+                key.releaseKeyID();
+            }
             KeySpec spec = new DHPublicKeySpec(
                 attributes[0].getBigInteger(),
                 attributes[1].getBigInteger(),
@@ -236,14 +241,19 @@ final class P11DHKeyFactory extends P11KeyFactory {
 
     <T extends KeySpec> T implGetPrivateKeySpec(P11Key key, Class<T> keySpec,
             Session[] session) throws PKCS11Exception, InvalidKeySpecException {
-        if (DHPrivateKeySpec.class.isAssignableFrom(keySpec)) {
+        if (keySpec.isAssignableFrom(DHPrivateKeySpec.class)) {
             session[0] = token.getObjSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_VALUE),
                 new CK_ATTRIBUTE(CKA_PRIME),
                 new CK_ATTRIBUTE(CKA_BASE),
             };
-            token.p11.C_GetAttributeValue(session[0].id(), key.keyID, attributes);
+            long keyID = key.getKeyID();
+            try {
+                token.p11.C_GetAttributeValue(session[0].id(), keyID, attributes);
+            } finally {
+                key.releaseKeyID();
+            }
             KeySpec spec = new DHPrivateKeySpec(
                 attributes[0].getBigInteger(),
                 attributes[1].getBigInteger(),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,8 +47,8 @@ import java.util.ResourceBundle;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
-import jdk.internal.misc.JavaUtilResourceBundleAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaUtilResourceBundleAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
@@ -463,7 +463,7 @@ public @UsesObjectEquals class Logger {
     private boolean anonymous;
 
     // Cache to speed up behavior of findResourceBundle:
-    private @Nullable ResourceBundle catalog;     // Cached resource bundle
+    private WeakReference<ResourceBundle> catalogRef;  // Cached resource bundle
     private @Nullable String catalogName;         // name associated with catalog
     private @Nullable Locale catalogLocale;       // locale associated with catalog
 
@@ -651,6 +651,7 @@ public @UsesObjectEquals class Logger {
     private static class SystemLoggerHelper {
         static boolean disableCallerCheck = getBooleanProperty("sun.util.logging.disableCallerCheck");
         private static boolean getBooleanProperty(final String key) {
+            @SuppressWarnings("removal")
             String s = AccessController.doPrivileged(new PrivilegedAction<String>() {
                 @Override
                 public String run() {
@@ -1113,7 +1114,7 @@ public @UsesObjectEquals class Logger {
      * @param   params  array of parameters to the message
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg, @Nullable Object params @GuardSatisfied  @Nullable []) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg, @Nullable Object params @GuardSatisfied @Nullable []) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1725,7 +1726,7 @@ public @UsesObjectEquals class Logger {
      * @param   params         array of parameters to the method being entered
      */
     @SideEffectFree
-    public void entering(@GuardSatisfied Logger this, @Nullable String sourceClass, @Nullable String sourceMethod, @Nullable Object params @GuardSatisfied  @Nullable []) {
+    public void entering(@GuardSatisfied Logger this, @Nullable String sourceClass, @Nullable String sourceMethod, @Nullable Object params @GuardSatisfied @Nullable []) {
         String msg = "ENTRY";
         if (params == null ) {
            logp(Level.FINER, sourceClass, sourceMethod, msg);
@@ -2190,6 +2191,11 @@ public @UsesObjectEquals class Logger {
         return config.useParentHandlers;
     }
 
+    private ResourceBundle catalog() {
+        WeakReference<ResourceBundle> ref = catalogRef;
+        return ref == null ? null : ref.get();
+    }
+
     /**
      * Private utility method to map a resource bundle name to an
      * actual resource bundle, using a simple one-entry cache.
@@ -2229,13 +2235,14 @@ public @UsesObjectEquals class Logger {
 
         Locale currentLocale = Locale.getDefault();
         final LoggerBundle lb = loggerBundle;
+        ResourceBundle catalog = catalog();
 
         // Normally we should hit on our simple one entry cache.
         if (lb.userBundle != null &&
                 name.equals(lb.resourceBundleName)) {
             return lb.userBundle;
         } else if (catalog != null && currentLocale.equals(catalogLocale)
-                && name.equals(catalogName)) {
+                    && name.equals(catalogName)) {
             return catalog;
         }
 
@@ -2255,6 +2262,7 @@ public @UsesObjectEquals class Logger {
             try {
                 Module mod = cl.getUnnamedModule();
                 catalog = RbAccess.RB_ACCESS.getBundle(name, currentLocale, mod);
+                catalogRef = new WeakReference<>(catalog);
                 catalogName = name;
                 catalogLocale = currentLocale;
                 return catalog;
@@ -2267,6 +2275,7 @@ public @UsesObjectEquals class Logger {
                         // unnamed module class loader:
                         PrivilegedAction<ClassLoader> getModuleClassLoader =
                                 () -> callerModule.getClassLoader();
+                        @SuppressWarnings("removal")
                         ClassLoader moduleCL =
                                 AccessController.doPrivileged(getModuleClassLoader);
                         // moduleCL can be null if the logger is created by a class
@@ -2282,6 +2291,7 @@ public @UsesObjectEquals class Logger {
                         // with the module's loader this time.
                         catalog = ResourceBundle.getBundle(name, currentLocale,
                                                            moduleCL);
+                        catalogRef = new WeakReference<>(catalog);
                         catalogName = name;
                         catalogLocale = currentLocale;
                         return catalog;
@@ -2299,6 +2309,7 @@ public @UsesObjectEquals class Logger {
             try {
                 // Use the caller's module
                 catalog = RbAccess.RB_ACCESS.getBundle(name, currentLocale, callerModule);
+                catalogRef = new WeakReference<>(catalog);
                 catalogName = name;
                 catalogLocale = currentLocale;
                 return catalog;
@@ -2464,8 +2475,7 @@ public @UsesObjectEquals class Logger {
                 // assert parent.kids != null;
                 for (Iterator<LogManager.LoggerWeakRef> iter = parent.kids.iterator(); iter.hasNext(); ) {
                     ref = iter.next();
-                    Logger kid =  ref.get();
-                    if (kid == this) {
+                    if (ref.refersTo(this)) {
                         // ref is used down below to complete the reparenting
                         iter.remove();
                         break;

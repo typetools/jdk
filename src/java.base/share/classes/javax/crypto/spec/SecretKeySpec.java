@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import jdk.internal.access.JavaxCryptoSpecAccess;
+import jdk.internal.access.SharedSecrets;
+
 import java.security.MessageDigest;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.Locale;
 import javax.crypto.SecretKey;
 
@@ -55,6 +59,7 @@ import javax.crypto.SecretKey;
  */
 public class SecretKeySpec implements KeySpec, SecretKey {
 
+    @java.io.Serial
     private static final long serialVersionUID = 6577238317307289933L;
 
     /**
@@ -70,6 +75,16 @@ public class SecretKeySpec implements KeySpec, SecretKey {
      * @serial
      */
     private String algorithm;
+
+    static {
+        SharedSecrets.setJavaxCryptoSpecAccess(
+                new JavaxCryptoSpecAccess() {
+                    @Override
+                    public void clearSecretKeySpec(SecretKeySpec keySpec) {
+                        keySpec.clear();
+                    }
+                });
+    }
 
     /**
      * Constructs a secret key from the given byte array.
@@ -204,7 +219,7 @@ public class SecretKeySpec implements KeySpec, SecretKey {
                     this.algorithm.toLowerCase(Locale.ENGLISH).hashCode());
     }
 
-   /**
+    /**
      * Tests for equality between the specified object and this
      * object. Two SecretKeySpec objects are considered equal if
      * they are both SecretKey instances which have the
@@ -234,7 +249,19 @@ public class SecretKeySpec implements KeySpec, SecretKey {
         }
 
         byte[] thatKey = ((SecretKey)obj).getEncoded();
+        try {
+            return MessageDigest.isEqual(this.key, thatKey);
+        } finally {
+            if (thatKey != null) {
+                Arrays.fill(thatKey, (byte)0);
+            }
+        }
+    }
 
-        return MessageDigest.isEqual(this.key, thatKey);
+    /**
+     * Clear the key bytes inside.
+     */
+    void clear() {
+        Arrays.fill(key, (byte)0);
     }
 }

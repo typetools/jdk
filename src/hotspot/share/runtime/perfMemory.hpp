@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,9 +22,10 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_PERFMEMORY_HPP
-#define SHARE_VM_RUNTIME_PERFMEMORY_HPP
+#ifndef SHARE_RUNTIME_PERFMEMORY_HPP
+#define SHARE_RUNTIME_PERFMEMORY_HPP
 
+#include "runtime/globals.hpp"
 #include "utilities/exceptions.hpp"
 
 /*
@@ -149,7 +150,7 @@ class PerfMemory : AllStatic {
     // memory segment of another JVM process on the same system.
     static void attach(const char* user, int vmid, PerfMemoryMode mode,
                        char** addrp, size_t* size, TRAPS);
-    static void detach(char* addr, size_t bytes, TRAPS);
+    static void detach(char* addr, size_t bytes);
 
     static void initialize();
     static void destroy();
@@ -167,4 +168,4 @@ class PerfMemory : AllStatic {
 void perfMemory_init();
 void perfMemory_exit();
 
-#endif // SHARE_VM_RUNTIME_PERFMEMORY_HPP
+#endif // SHARE_RUNTIME_PERFMEMORY_HPP

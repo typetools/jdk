@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002, 2017, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2017 SAP SE. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_PPC_VM_INTERP_MASM_PPC_HPP
-#define CPU_PPC_VM_INTERP_MASM_PPC_HPP
+#ifndef CPU_PPC_INTERP_MASM_PPC_HPP
+#define CPU_PPC_INTERP_MASM_PPC_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "interpreter/invocationCounter.hpp"
@@ -77,10 +77,13 @@ class InterpreterMacroAssembler: public MacroAssembler {
                          Register tmp1, Register tmp2, Register tmp3, Label &ok_is_subtype);
 
   // Load object from cpool->resolved_references(index).
-  void load_resolved_reference_at_index(Register result, Register index, Label *L_handle_null = NULL);
+  void load_resolved_reference_at_index(Register result, Register index, Register tmp1, Register tmp2,
+                                        Label *L_handle_null = NULL);
 
   // load cpool->resolved_klass_at(index)
   void load_resolved_klass_at_offset(Register Rcpool, Register Roffset, Register Rklass);
+
+  void load_resolved_method_at_index(int byte_no, Register cache, Register method);
 
   void load_receiver(Register Rparam_count, Register Rrecv_dst);
 
@@ -199,7 +202,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void restore_interpreter_state(Register scratch, bool bcp_and_mdx_only = false);
 
   void increment_backedge_counter(const Register Rcounters, Register Rtmp, Register Rtmp2, Register Rscratch);
-  void test_backedge_count_for_osr(Register backedge_count, Register method_counters, Register target_bcp, Register disp, Register Rtmp);
 
   void record_static_call_in_profile(Register Rentry, Register Rtmp);
   void record_receiver_call_in_profile(Register Rklass, Register Rentry, Register Rtmp);
@@ -209,13 +211,12 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // Object locking
   void lock_object  (Register lock_reg, Register obj_reg);
-  void unlock_object(Register lock_reg, bool check_for_exceptions = true);
+  void unlock_object(Register lock_reg);
 
   // Interpreter profiling operations
   void set_method_data_pointer_for_bcp();
   void test_method_data_pointer(Label& zero_continue);
   void verify_method_data_pointer();
-  void test_invocation_counter_for_mdp(Register invocation_count, Register method_counters, Register Rscratch, Label &profile_continue);
 
   void set_mdp_data_at(int constant, Register value);
 
@@ -266,4 +267,4 @@ class InterpreterMacroAssembler: public MacroAssembler {
                           NotifyMethodExitMode mode, bool check_exceptions);
 };
 
-#endif // CPU_PPC_VM_INTERP_MASM_PPC_HPP
+#endif // CPU_PPC_INTERP_MASM_PPC_HPP

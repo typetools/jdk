@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * A visitor of trees, in the style of the visitor design pattern.
  * Classes implementing this interface are used to operate
@@ -40,7 +42,7 @@ package com.sun.source.tree;
  *
  * <p> <b>WARNING:</b> It is possible that methods will be added to
  * this interface to accommodate new, currently unknown, language
- * structures added to future versions of the Java&trade; programming
+ * structures added to future versions of the Java programming
  * language.  Therefore, visitor classes directly implementing this
  * interface may be source incompatible with future versions of the
  * platform.
@@ -258,6 +260,25 @@ public interface TreeVisitor<R,P> {
     R visitLiteral(LiteralTree node, P p);
 
     /**
+     * Visits an BindingPattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 16
+     */
+    R visitBindingPattern(BindingPatternTree node, P p);
+
+    /**
+     * Visits a DefaultCaseLabelTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 17
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+    R visitDefaultCaseLabel(DefaultCaseLabelTree node, P p);
+
+    /**
      * Visits a MethodTree node.
      * @param node the node being visited
      * @param p a parameter value
@@ -280,6 +301,26 @@ public interface TreeVisitor<R,P> {
      * @return a result value
      */
     R visitNewArray(NewArrayTree node, P p);
+
+    /**
+     * Visits a GuardPatternTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 17
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+    R visitGuardedPattern(GuardedPatternTree node, P p);
+
+    /**
+     * Visits a ParenthesizedPatternTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 17
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+    R visitParenthesizedPattern(ParenthesizedPatternTree node, P p);
 
     /**
      * Visits a NewClassTree node.
@@ -352,6 +393,16 @@ public interface TreeVisitor<R,P> {
      * @return a result value
      */
     R visitSwitch(SwitchTree node, P p);
+
+    /**
+     * Visits a SwitchExpressionTree node.
+     *
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 12
+     */
+    R visitSwitchExpression(SwitchExpressionTree node, P p);
 
     /**
      * Visits a SynchronizedTree node.
@@ -538,4 +589,13 @@ public interface TreeVisitor<R,P> {
      * @return a result value
      */
     R visitOther(Tree node, P p);
+
+    /**
+     * Visits a YieldTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 13
+     */
+    R visitYield(YieldTree node, P p);
 }

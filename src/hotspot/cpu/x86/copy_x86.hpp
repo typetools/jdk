@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,10 @@
  *
  */
 
-#ifndef CPU_X86_VM_COPY_X86_HPP
-#define CPU_X86_VM_COPY_X86_HPP
+#ifndef CPU_X86_COPY_X86_HPP
+#define CPU_X86_COPY_X86_HPP
 
-// Inline functions for memory copy and fill.
-
-// Contains inline asm implementations
-#include OS_CPU_HEADER_INLINE(copy)
+#include OS_CPU_HEADER(copy)
 
 static void pd_fill_to_words(HeapWord* tohw, size_t count, juint value) {
 #ifdef AMD64
@@ -62,4 +59,4 @@ static void pd_zero_to_bytes(void* to, size_t count) {
   (void)memset(to, 0, count);
 }
 
-#endif // CPU_X86_VM_COPY_X86_HPP
+#endif // CPU_X86_COPY_X86_HPP

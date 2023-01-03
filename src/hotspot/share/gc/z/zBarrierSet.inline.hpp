@@ -24,9 +24,10 @@
 #ifndef SHARE_GC_Z_ZBARRIERSET_INLINE_HPP
 #define SHARE_GC_Z_ZBARRIERSET_INLINE_HPP
 
+#include "gc/z/zBarrierSet.hpp"
+
 #include "gc/shared/accessBarrierSupport.inline.hpp"
 #include "gc/z/zBarrier.inline.hpp"
-#include "gc/z/zBarrierSet.hpp"
 #include "utilities/debug.hpp"
 
 template <DecoratorSet decorators, typename BarrierSetT>
@@ -62,6 +63,7 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrier_on_
     } else if (HasDecorator<decorators, ON_WEAK_OOP_REF>::value) {
       return ZBarrier::weak_load_barrier_on_weak_oop_field_preloaded(addr, o);
     } else {
+      assert((HasDecorator<decorators, ON_PHANTOM_OOP_REF>::value), "Must be");
       return ZBarrier::weak_load_barrier_on_phantom_oop_field_preloaded(addr, o);
     }
   } else {
@@ -70,6 +72,7 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrier_on_
     } else if (HasDecorator<decorators, ON_WEAK_OOP_REF>::value) {
       return ZBarrier::load_barrier_on_weak_oop_field_preloaded(addr, o);
     } else {
+      assert((HasDecorator<decorators, ON_PHANTOM_OOP_REF>::value), "Must be");
       return ZBarrier::load_barrier_on_phantom_oop_field_preloaded(addr, o);
     }
   }
@@ -89,6 +92,7 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrier_on_
     } else if (decorators_known_strength & ON_WEAK_OOP_REF) {
       return ZBarrier::weak_load_barrier_on_weak_oop_field_preloaded(addr, o);
     } else {
+      assert(decorators_known_strength & ON_PHANTOM_OOP_REF, "Must be");
       return ZBarrier::weak_load_barrier_on_phantom_oop_field_preloaded(addr, o);
     }
   } else {
@@ -97,6 +101,7 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrier_on_
     } else if (decorators_known_strength & ON_WEAK_OOP_REF) {
       return ZBarrier::load_barrier_on_weak_oop_field_preloaded(addr, o);
     } else {
+      assert(decorators_known_strength & ON_PHANTOM_OOP_REF, "Must be");
       return ZBarrier::load_barrier_on_phantom_oop_field_preloaded(addr, o);
     }
   }
@@ -128,16 +133,16 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_load_in_heap
 
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_in_heap(oop new_value, T* addr, oop compare_value) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_in_heap(T* addr, oop compare_value, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
   ZBarrier::load_barrier_on_oop_field(addr);
-  return Raw::oop_atomic_cmpxchg_in_heap(new_value, addr, compare_value);
+  return Raw::oop_atomic_cmpxchg_in_heap(addr, compare_value, new_value);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_in_heap_at(oop new_value, oop base, ptrdiff_t offset, oop compare_value) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_in_heap_at(oop base, ptrdiff_t offset, oop compare_value, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF | ON_UNKNOWN_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
@@ -146,25 +151,25 @@ inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxc
   // with the motivation that if you're doing Unsafe operations on a Reference.referent
   // field, then you're on your own anyway.
   ZBarrier::load_barrier_on_oop_field(field_addr(base, offset));
-  return Raw::oop_atomic_cmpxchg_in_heap_at(new_value, base, offset, compare_value);
+  return Raw::oop_atomic_cmpxchg_in_heap_at(base, offset, compare_value, new_value);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_in_heap(oop new_value, T* addr) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_in_heap(T* addr, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
-  const oop o = Raw::oop_atomic_xchg_in_heap(new_value, addr);
+  const oop o = Raw::oop_atomic_xchg_in_heap(addr, new_value);
   return ZBarrier::load_barrier_on_oop(o);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_in_heap_at(oop new_value, oop base, ptrdiff_t offset) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_in_heap_at(oop base, ptrdiff_t offset, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
-  const oop o = Raw::oop_atomic_xchg_in_heap_at(new_value, base, offset);
+  const oop o = Raw::oop_atomic_xchg_in_heap_at(base, offset, new_value);
   return ZBarrier::load_barrier_on_oop(o);
 }
 
@@ -210,34 +215,28 @@ inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::clone_in_heap(o
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
 inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_load_not_in_heap(T* addr) {
+  verify_decorators_absent<ON_UNKNOWN_OOP_REF>();
+
   const oop o = Raw::oop_load_not_in_heap(addr);
-
-  if (HasDecorator<decorators, ON_PHANTOM_OOP_REF>::value) {
-    return load_barrier_on_oop_field_preloaded(addr, o);
-  }
-
-  verify_decorators_present<ON_STRONG_OOP_REF>();
-  verify_decorators_absent<AS_NO_KEEPALIVE>();
-
-  return o;
+  return load_barrier_on_oop_field_preloaded(addr, o);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_not_in_heap(oop new_value, T* addr, oop compare_value) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_cmpxchg_not_in_heap(T* addr, oop compare_value, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
-  return Raw::oop_atomic_cmpxchg_not_in_heap(new_value, addr, compare_value);
+  return Raw::oop_atomic_cmpxchg_not_in_heap(addr, compare_value, new_value);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
-inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_not_in_heap(oop new_value, T* addr) {
+inline oop ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_atomic_xchg_not_in_heap(T* addr, oop new_value) {
   verify_decorators_present<ON_STRONG_OOP_REF>();
   verify_decorators_absent<AS_NO_KEEPALIVE>();
 
-  return Raw::oop_atomic_xchg_not_in_heap(new_value, addr);
+  return Raw::oop_atomic_xchg_not_in_heap(addr, new_value);
 }
 
 #endif // SHARE_GC_Z_ZBARRIERSET_INLINE_HPP

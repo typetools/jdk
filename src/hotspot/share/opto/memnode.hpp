@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_MEMNODE_HPP
-#define SHARE_VM_OPTO_MEMNODE_HPP
+#ifndef SHARE_OPTO_MEMNODE_HPP
+#define SHARE_OPTO_MEMNODE_HPP
 
 #include "opto/multnode.hpp"
 #include "opto/node.hpp"
@@ -42,6 +42,9 @@ class MemNode : public Node {
 private:
   bool _unaligned_access; // Unaligned access from unsafe
   bool _mismatched_access; // Mismatched access from unsafe: byte read in integer array for instance
+  bool _unsafe_access;     // Access of unsafe origin.
+  uint8_t _barrier_data;   // Bit field with barrier information
+
 protected:
 #ifdef ASSERT
   const TypePtr* _adr_type;     // What kind of memory is being addressed?
@@ -61,23 +64,36 @@ public:
                  unset          // The memory ordering is not set (used for testing)
   } MemOrd;
 protected:
-  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at )
-    : Node(c0,c1,c2   ), _unaligned_access(false), _mismatched_access(false) {
+  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at ) :
+      Node(c0,c1,c2),
+      _unaligned_access(false),
+      _mismatched_access(false),
+      _unsafe_access(false),
+      _barrier_data(0) {
     init_class_id(Class_Mem);
     debug_only(_adr_type=at; adr_type();)
   }
-  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3 )
-    : Node(c0,c1,c2,c3), _unaligned_access(false), _mismatched_access(false) {
+  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3 ) :
+      Node(c0,c1,c2,c3),
+      _unaligned_access(false),
+      _mismatched_access(false),
+      _unsafe_access(false),
+      _barrier_data(0) {
     init_class_id(Class_Mem);
     debug_only(_adr_type=at; adr_type();)
   }
-  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3, Node *c4)
-    : Node(c0,c1,c2,c3,c4), _unaligned_access(false), _mismatched_access(false) {
+  MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3, Node *c4) :
+      Node(c0,c1,c2,c3,c4),
+      _unaligned_access(false),
+      _mismatched_access(false),
+      _unsafe_access(false),
+      _barrier_data(0) {
     init_class_id(Class_Mem);
     debug_only(_adr_type=at; adr_type();)
   }
 
   virtual Node* find_previous_arraycopy(PhaseTransform* phase, Node* ld_alloc, Node*& mem, bool can_see_stored_value) const { return NULL; }
+  ArrayCopyNode* find_array_copy_clone(PhaseTransform* phase, Node* ld_alloc, Node* mem) const;
   static bool check_if_adr_maybe_raw(Node* adr);
 
 public:
@@ -124,6 +140,9 @@ public:
 #endif
   }
 
+  uint8_t barrier_data() { return _barrier_data; }
+  void set_barrier_data(uint8_t barrier_data) { _barrier_data = barrier_data; }
+
   // Search through memory states which precede this node (load or store).
   // Look for an exact match for the address, with no intervening
   // aliased stores.
@@ -137,6 +156,8 @@ public:
   bool is_unaligned_access() const { return _unaligned_access; }
   void set_mismatched_access() { _mismatched_access = true; }
   bool is_mismatched_access() const { return _mismatched_access; }
+  void set_unsafe_access() { _unsafe_access = true; }
+  bool is_unsafe_access() const { return _unsafe_access; }
 
 #ifndef PRODUCT
   static void dump_adr_type(const Node* mem, const TypePtr* adr_type, outputStream *st);
@@ -151,16 +172,15 @@ public:
   // Some loads (from unsafe) should be pinned: they don't depend only
   // on the dominating test.  The field _control_dependency below records
   // whether that node depends only on the dominating test.
-  // Methods used to build LoadNodes pass an argument of type enum
-  // ControlDependency instead of a boolean because those methods
-  // typically have multiple boolean parameters with default values:
-  // passing the wrong boolean to one of these parameters by mistake
-  // goes easily unnoticed. Using an enum, the compiler can check that
-  // the type of a value and the type of the parameter match.
+  // Pinned and UnknownControl are similar, but differ in that Pinned
+  // loads are not allowed to float across safepoints, whereas UnknownControl
+  // loads are allowed to do that. Therefore, Pinned is stricter.
   enum ControlDependency {
     Pinned,
+    UnknownControl,
     DependsOnlyOnTest
   };
+
 private:
   // LoadNode::hash() doesn't take the _control_dependency field
   // into account: If the graph already has a non-pinned LoadNode and
@@ -179,8 +199,10 @@ private:
   // this field.
   const MemOrd _mo;
 
+  AllocateNode* is_new_object_mark_load(PhaseGVN *phase) const;
+
 protected:
-  virtual uint cmp(const Node &n) const;
+  virtual bool cmp(const Node &n) const;
   virtual uint size_of() const; // Size is bigger
   // Should LoadNode::Ideal() attempt to remove control edges?
   virtual bool can_remove_control() const;
@@ -190,7 +212,7 @@ protected:
 public:
 
   LoadNode(Node *c, Node *mem, Node *adr, const TypePtr* at, const Type *rt, MemOrd mo, ControlDependency control_dependency)
-    : MemNode(c,mem,adr,at), _type(rt), _mo(mo), _control_dependency(control_dependency) {
+    : MemNode(c,mem,adr,at), _control_dependency(control_dependency), _mo(mo), _type(rt) {
     init_class_id(Class_Load);
   }
   inline bool is_unordered() const { return !is_acquire(); }
@@ -207,7 +229,8 @@ public:
   static Node* make(PhaseGVN& gvn, Node *c, Node *mem, Node *adr,
                     const TypePtr* at, const Type *rt, BasicType bt,
                     MemOrd mo, ControlDependency control_dependency = DependsOnlyOnTest,
-                    bool unaligned = false, bool mismatched = false);
+                    bool unaligned = false, bool mismatched = false, bool unsafe = false,
+                    uint8_t barrier_data = 0);
 
   virtual uint hash()   const;  // Check the type
 
@@ -225,7 +248,7 @@ public:
   Node* split_through_phi(PhaseGVN *phase);
 
   // Recover original value from boxed values
-  Node *eliminate_autobox(PhaseGVN *phase);
+  Node *eliminate_autobox(PhaseIterGVN *igvn);
 
   // Compute a new Type for this node.  Basically we just do the pre-check,
   // then call the virtual add() to set the type.
@@ -258,6 +281,12 @@ public:
 
   Node* convert_to_unsigned_load(PhaseGVN& gvn);
   Node* convert_to_signed_load(PhaseGVN& gvn);
+
+  bool  has_reinterpret_variant(const Type* rt);
+  Node* convert_to_reinterpret_load(PhaseGVN& gvn, const Type* rt);
+
+  void pin() { _control_dependency = Pinned; }
+  bool has_unknown_control_dependency() const { return _control_dependency == UnknownControl; }
 
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
@@ -370,7 +399,7 @@ public:
 // Load a long from memory
 class LoadLNode : public LoadNode {
   virtual uint hash() const { return LoadNode::hash() + _require_atomic_access; }
-  virtual uint cmp( const Node &n ) const {
+  virtual bool cmp( const Node &n ) const {
     return _require_atomic_access == ((LoadLNode&)n)._require_atomic_access
       && LoadNode::cmp(n);
   }
@@ -388,7 +417,7 @@ public:
   bool require_atomic_access() const { return _require_atomic_access; }
   static LoadLNode* make_atomic(Node* ctl, Node* mem, Node* adr, const TypePtr* adr_type,
                                 const Type* rt, MemOrd mo, ControlDependency control_dependency = DependsOnlyOnTest,
-                                bool unaligned = false, bool mismatched = false);
+                                bool unaligned = false, bool mismatched = false, bool unsafe = false, uint8_t barrier_data = 0);
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const {
     LoadNode::dump_spec(st);
@@ -422,7 +451,7 @@ public:
 // Load a double (64 bits) from memory
 class LoadDNode : public LoadNode {
   virtual uint hash() const { return LoadNode::hash() + _require_atomic_access; }
-  virtual uint cmp( const Node &n ) const {
+  virtual bool cmp( const Node &n ) const {
     return _require_atomic_access == ((LoadDNode&)n)._require_atomic_access
       && LoadNode::cmp(n);
   }
@@ -440,7 +469,7 @@ public:
   bool require_atomic_access() const { return _require_atomic_access; }
   static LoadDNode* make_atomic(Node* ctl, Node* mem, Node* adr, const TypePtr* adr_type,
                                 const Type* rt, MemOrd mo, ControlDependency control_dependency = DependsOnlyOnTest,
-                                bool unaligned = false, bool mismatched = false);
+                                bool unaligned = false, bool mismatched = false, bool unsafe = false, uint8_t barrier_data = 0);
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const {
     LoadNode::dump_spec(st);
@@ -532,7 +561,7 @@ private:
   // Needed for proper cloning.
   virtual uint size_of() const { return sizeof(*this); }
 protected:
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual bool depends_only_on_test() const { return false; }
 
   Node *Ideal_masked_input       (PhaseGVN *phase, uint mask);
@@ -607,6 +636,11 @@ public:
 
   // have all possible loads of the value stored been optimized away?
   bool value_never_loaded(PhaseTransform *phase) const;
+
+  bool  has_reinterpret_variant(const Type* vt);
+  Node* convert_to_reinterpret_store(PhaseGVN& gvn, Node* val, const Type* vt);
+
+  MemBarNode* trailing_membar() const;
 };
 
 //------------------------------StoreBNode-------------------------------------
@@ -645,7 +679,7 @@ public:
 // Store long to memory
 class StoreLNode : public StoreNode {
   virtual uint hash() const { return StoreNode::hash() + _require_atomic_access; }
-  virtual uint cmp( const Node &n ) const {
+  virtual bool cmp( const Node &n ) const {
     return _require_atomic_access == ((StoreLNode&)n)._require_atomic_access
       && StoreNode::cmp(n);
   }
@@ -681,7 +715,7 @@ public:
 // Store double to memory
 class StoreDNode : public StoreNode {
   virtual uint hash() const { return StoreNode::hash() + _require_atomic_access; }
-  virtual uint cmp( const Node &n ) const {
+  virtual bool cmp( const Node &n ) const {
     return _require_atomic_access == ((StoreDNode&)n)._require_atomic_access
       && StoreNode::cmp(n);
   }
@@ -741,7 +775,7 @@ public:
 class StoreCMNode : public StoreNode {
  private:
   virtual uint hash() const { return StoreNode::hash() + _oop_alias_idx; }
-  virtual uint cmp( const Node &n ) const {
+  virtual bool cmp( const Node &n ) const {
     return _oop_alias_idx == ((StoreCMNode&)n)._oop_alias_idx
       && StoreNode::cmp(n);
   }
@@ -805,6 +839,7 @@ class LoadStoreNode : public Node {
 private:
   const Type* const _type;      // What kind of value is loaded?
   const TypePtr* _adr_type;     // What kind of memory is being addressed?
+  uint8_t _barrier_data;        // Bit field with barrier information
   virtual uint size_of() const; // Size is bigger
 public:
   LoadStoreNode( Node *c, Node *mem, Node *adr, Node *val, const TypePtr* at, const Type* rt, uint required );
@@ -814,8 +849,13 @@ public:
   virtual const Type *bottom_type() const { return _type; }
   virtual uint ideal_reg() const;
   virtual const class TypePtr *adr_type() const { return _adr_type; }  // returns bottom_type of address
+  virtual const Type* Value(PhaseGVN* phase) const;
 
   bool result_not_used() const;
+  MemBarNode* trailing_membar() const;
+
+  uint8_t barrier_data() { return _barrier_data; }
+  void set_barrier_data(uint8_t barrier_data) { _barrier_data = barrier_data; }
 };
 
 class LoadStoreConditionalNode : public LoadStoreNode {
@@ -824,6 +864,7 @@ public:
     ExpectedIn = MemNode::ValueIn+1 // One more input than MemNode
   };
   LoadStoreConditionalNode(Node *c, Node *mem, Node *adr, Node *val, Node *ex);
+  virtual const Type* Value(PhaseGVN* phase) const;
 };
 
 //------------------------------StorePConditionalNode---------------------------
@@ -867,6 +908,7 @@ public:
   MemNode::MemOrd order() const {
     return _mem_ord;
   }
+  virtual uint size_of() const { return sizeof(*this); }
 };
 
 class CompareAndExchangeNode : public LoadStoreNode {
@@ -884,6 +926,7 @@ public:
   MemNode::MemOrd order() const {
     return _mem_ord;
   }
+  virtual uint size_of() const { return sizeof(*this); }
 };
 
 //------------------------------CompareAndSwapBNode---------------------------
@@ -1136,11 +1179,26 @@ public:
 // separate it from any following volatile-load.
 class MemBarNode: public MultiNode {
   virtual uint hash() const ;                  // { return NO_HASH; }
-  virtual uint cmp( const Node &n ) const ;    // Always fail, except on self
+  virtual bool cmp( const Node &n ) const ;    // Always fail, except on self
 
   virtual uint size_of() const { return sizeof(*this); }
   // Memory type this node is serializing.  Usually either rawptr or bottom.
   const TypePtr* _adr_type;
+
+  // How is this membar related to a nearby memory access?
+  enum {
+    Standalone,
+    TrailingLoad,
+    TrailingStore,
+    LeadingStore,
+    TrailingLoadStore,
+    LeadingLoadStore,
+    TrailingPartialArrayCopy
+  } _kind;
+
+#ifdef ASSERT
+  uint _pair_idx;
+#endif
 
 public:
   enum {
@@ -1159,6 +1217,26 @@ public:
   static MemBarNode* make(Compile* C, int opcode,
                           int alias_idx = Compile::AliasIdxBot,
                           Node* precedent = NULL);
+
+  MemBarNode* trailing_membar() const;
+  MemBarNode* leading_membar() const;
+
+  void set_trailing_load() { _kind = TrailingLoad; }
+  bool trailing_load() const { return _kind == TrailingLoad; }
+  bool trailing_store() const { return _kind == TrailingStore; }
+  bool leading_store() const { return _kind == LeadingStore; }
+  bool trailing_load_store() const { return _kind == TrailingLoadStore; }
+  bool leading_load_store() const { return _kind == LeadingLoadStore; }
+  bool trailing() const { return _kind == TrailingLoad || _kind == TrailingStore || _kind == TrailingLoadStore; }
+  bool leading() const { return _kind == LeadingStore || _kind == LeadingLoadStore; }
+  bool standalone() const { return _kind == Standalone; }
+  void set_trailing_partial_array_copy() { _kind = TrailingPartialArrayCopy; }
+  bool trailing_partial_array_copy() const { return _kind == TrailingPartialArrayCopy; }
+
+  static void set_store_pair(MemBarNode* leading, MemBarNode* trailing);
+  static void set_load_store_pair(MemBarNode* leading, MemBarNode* trailing);
+
+  void remove(PhaseIterGVN *igvn);
 };
 
 // "Acquire" - no following ref can move before (but earlier refs can
@@ -1259,6 +1337,26 @@ public:
   virtual int Opcode() const;
 };
 
+//------------------------------BlackholeNode----------------------------
+// Blackhole all arguments. This node would survive through the compiler
+// the effects on its arguments, and would be finally matched to nothing.
+class BlackholeNode : public MemBarNode {
+public:
+  BlackholeNode(Compile* C, int alias_idx, Node* precedent)
+    : MemBarNode(C, alias_idx, precedent) {}
+  virtual int   Opcode() const;
+  virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+  const RegMask &in_RegMask(uint idx) const {
+    // Fake the incoming arguments mask for blackholes: accept all registers
+    // and all stack slots. This would avoid any redundant register moves
+    // for blackhole inputs.
+    return RegMask::All;
+  }
+#ifndef PRODUCT
+  virtual void format(PhaseRegAlloc* ra, outputStream* st) const;
+#endif
+};
+
 // Isolation of object setup after an AllocateNode and before next safepoint.
 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
 class InitializeNode: public MemBarNode {
@@ -1322,11 +1420,11 @@ public:
 
   // See if this store can be captured; return offset where it initializes.
   // Return 0 if the store cannot be moved (any sort of problem).
-  intptr_t can_capture_store(StoreNode* st, PhaseTransform* phase, bool can_reshape);
+  intptr_t can_capture_store(StoreNode* st, PhaseGVN* phase, bool can_reshape);
 
   // Capture another store; reformat it to write my internal raw memory.
   // Return the captured copy, else NULL if there is some sort of problem.
-  Node* capture_store(StoreNode* st, intptr_t start, PhaseTransform* phase, bool can_reshape);
+  Node* capture_store(StoreNode* st, intptr_t start, PhaseGVN* phase, bool can_reshape);
 
   // Find captured store which corresponds to the range [start..start+size).
   // Return my own memory projection (meaning the initial zero bits)
@@ -1336,7 +1434,7 @@ public:
   // Called when the associated AllocateNode is expanded into CFG.
   Node* complete_stores(Node* rawctl, Node* rawmem, Node* rawptr,
                         intptr_t header_size, Node* size_in_bytes,
-                        PhaseGVN* phase);
+                        PhaseIterGVN* phase);
 
  private:
   void remove_extra_zeroes();
@@ -1349,7 +1447,7 @@ public:
 
   Node* make_raw_address(intptr_t offset, PhaseTransform* phase);
 
-  bool detect_init_independence(Node* n, int& count);
+  bool detect_init_independence(Node* value, PhaseGVN* phase);
 
   void coalesce_subword_stores(intptr_t header_size, Node* size_in_bytes,
                                PhaseGVN* phase);
@@ -1361,7 +1459,7 @@ public:
 // (See comment in memnode.cpp near MergeMemNode::MergeMemNode for semantics.)
 class MergeMemNode: public Node {
   virtual uint hash() const ;                  // { return NO_HASH; }
-  virtual uint cmp( const Node &n ) const ;    // Always fail, except on self
+  virtual bool cmp( const Node &n ) const ;    // Always fail, except on self
   friend class MergeMemStream;
   MergeMemNode(Node* def);  // clients use MergeMemNode::make
 
@@ -1593,6 +1691,42 @@ class MergeMemStream : public StackObj {
   }
 };
 
+// cachewb node for guaranteeing writeback of the cache line at a
+// given address to (non-volatile) RAM
+class CacheWBNode : public Node {
+public:
+  CacheWBNode(Node *ctrl, Node *mem, Node *addr) : Node(ctrl, mem, addr) {}
+  virtual int Opcode() const;
+  virtual uint ideal_reg() const { return NotAMachineReg; }
+  virtual uint match_edge(uint idx) const { return (idx == 2); }
+  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
+  virtual const Type *bottom_type() const { return Type::MEMORY; }
+};
+
+// cachewb pre sync node for ensuring that writebacks are serialised
+// relative to preceding or following stores
+class CacheWBPreSyncNode : public Node {
+public:
+  CacheWBPreSyncNode(Node *ctrl, Node *mem) : Node(ctrl, mem) {}
+  virtual int Opcode() const;
+  virtual uint ideal_reg() const { return NotAMachineReg; }
+  virtual uint match_edge(uint idx) const { return false; }
+  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
+  virtual const Type *bottom_type() const { return Type::MEMORY; }
+};
+
+// cachewb pre sync node for ensuring that writebacks are serialised
+// relative to preceding or following stores
+class CacheWBPostSyncNode : public Node {
+public:
+  CacheWBPostSyncNode(Node *ctrl, Node *mem) : Node(ctrl, mem) {}
+  virtual int Opcode() const;
+  virtual uint ideal_reg() const { return NotAMachineReg; }
+  virtual uint match_edge(uint idx) const { return false; }
+  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
+  virtual const Type *bottom_type() const { return Type::MEMORY; }
+};
+
 //------------------------------Prefetch---------------------------------------
 
 // Allocation prefetch which may fault, TLAB size have to be adjusted.
@@ -1605,4 +1739,4 @@ public:
   virtual const Type *bottom_type() const { return ( AllocatePrefetchStyle == 3 ) ? Type::MEMORY : Type::ABIO; }
 };
 
-#endif // SHARE_VM_OPTO_MEMNODE_HPP
+#endif // SHARE_OPTO_MEMNODE_HPP

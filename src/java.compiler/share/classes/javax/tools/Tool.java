@@ -81,7 +81,7 @@ public interface Tool {
     int run(@Nullable InputStream in, @Nullable OutputStream out, @Nullable OutputStream err, String... arguments);
 
     /**
-     * Returns the source versions of the Java&trade; programming language
+     * Returns the source versions of the Java programming language
      * supported by this tool.
      * @return a set of supported source versions
      */

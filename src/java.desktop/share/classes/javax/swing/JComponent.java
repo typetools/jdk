@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing;
 
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
@@ -31,38 +32,80 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.beans.*;
+import java.applet.Applet;
+import java.awt.AWTEvent;
+import java.awt.AWTKeyStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.FocusTraversalPolicy;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.beans.BeanProperty;
+import java.beans.JavaBean;
+import java.beans.PropertyChangeListener;
+import java.beans.Transient;
+import java.beans.VetoableChangeListener;
+import java.beans.VetoableChangeSupport;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectInputValidation;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Enumeration;
+import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Vector;
-import java.util.EventListener;
 import java.util.Set;
-
-import java.awt.*;
-import java.awt.event.*;
-
-import java.applet.Applet;
-
-import java.io.Serializable;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
-import java.io.ObjectInputValidation;
-import java.io.InvalidObjectException;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.border.*;
-import javax.swing.event.*;
-import javax.swing.plaf.*;
-import static javax.swing.ClientPropertyKey.*;
-import javax.accessibility.*;
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleComponent;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleExtendedComponent;
+import javax.accessibility.AccessibleKeyBinding;
+import javax.accessibility.AccessibleRole;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
+import javax.swing.border.AbstractBorder;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
+import javax.swing.event.EventListenerList;
+import javax.swing.plaf.ComponentUI;
 
 import sun.awt.AWTAccessor;
 import sun.awt.SunToolkit;
 import sun.swing.SwingAccessor;
 import sun.swing.SwingUtilities2;
+
+import static javax.swing.ClientPropertyKey.JComponent_ANCESTOR_NOTIFIER;
+import static javax.swing.ClientPropertyKey.JComponent_INPUT_VERIFIER;
+import static javax.swing.ClientPropertyKey.JComponent_TRANSFER_HANDLER;
 
 /**
  * The base class for all Swing components except top-level containers.
@@ -76,7 +119,7 @@ import sun.swing.SwingUtilities2;
  * that provide a place for other Swing components to paint themselves.
  * For an explanation of containment hierarchies, see
  * <a
- href="http://docs.oracle.com/javase/tutorial/uiswing/components/toplevel.html">Swing Components and the Containment Hierarchy</a>,
+ href="https://docs.oracle.com/javase/tutorial/uiswing/components/toplevel.html">Swing Components and the Containment Hierarchy</a>,
  * a section in <em>The Java Tutorial</em>.
  *
  * <p>
@@ -90,20 +133,20 @@ import sun.swing.SwingUtilities2;
  *     <em>UI delegate</em> -- an object that descends from
  *     {@link javax.swing.plaf.ComponentUI}.
  *     See <a
- * href="http://docs.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html">How
+ * href="https://docs.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html">How
  *     to Set the Look and Feel</a>
  *     in <em>The Java Tutorial</em>
  *     for more information.
  * <li>Comprehensive keystroke handling.
  *     See the document <a
- * href="http://docs.oracle.com/javase/tutorial/uiswing/misc/keybinding.html">How to Use Key Bindings</a>,
+ * href="https://docs.oracle.com/javase/tutorial/uiswing/misc/keybinding.html">How to Use Key Bindings</a>,
  *     an article in <em>The Java Tutorial</em>,
  *     for more information.
  * <li>Support for tool tips --
  *     short descriptions that pop up when the cursor lingers
  *     over a component.
  *     See <a
- * href="http://docs.oracle.com/javase/tutorial/uiswing/components/tooltip.html">How
+ * href="https://docs.oracle.com/javase/tutorial/uiswing/components/tooltip.html">How
  *     to Use Tool Tips</a>
  *     in <em>The Java Tutorial</em>
  *     for more information.
@@ -122,14 +165,14 @@ import sun.swing.SwingUtilities2;
  *     that includes double buffering and support for borders.
  *     For more information see <a
  * href="http://www.oracle.com/technetwork/java/painting-140037.html#swing">Painting</a> and
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/components/border.html">How
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/border.html">How
  *     to Use Borders</a>,
  *     both of which are sections in <em>The Java Tutorial</em>.
  * </ul>
  * For more information on these subjects, see the
  * {@link javax.swing Swing package description}
  * and <em>The Java Tutorial</em> section
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/components/jcomponent.html">The JComponent Class</a>.
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/jcomponent.html">The JComponent Class</a>.
  * <p>
  * <code>JComponent</code> and its subclasses document default values
  * for certain properties.  For example, <code>JTable</code> documents the
@@ -147,7 +190,7 @@ import sun.swing.SwingUtilities2;
  * <p>
  * In release 1.4, the focus subsystem was rearchitected.
  * For more information, see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
  * How to Use the Focus Subsystem</a>,
  * a section in <em>The Java Tutorial</em>.
  * <p>
@@ -161,7 +204,7 @@ import sun.swing.SwingUtilities2;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -565,7 +608,7 @@ public abstract class JComponent extends Container implements Serializable,
      * @see #setComponentPopupMenu
      * @since 1.5
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     public @Nullable JPopupMenu getComponentPopupMenu() {
 
         if(!getInheritsPopupMenu()) {
@@ -622,14 +665,17 @@ public abstract class JComponent extends Container implements Serializable,
 
 
     /**
-     * Resets the UI property to a value from the current look and feel.
-     * <code>JComponent</code> subclasses must override this method
+     * This method is called to update the UI property to a value from the
+     * current look and feel.
+     * {@code JComponent} subclasses must override this method
      * like this:
      * <pre>
      *   public void updateUI() {
      *      setUI((SliderUI)UIManager.getUI(this);
      *   }
      *  </pre>
+     *
+     * @implSpec The default implementation of this method does nothing.
      *
      * @see #setUI
      * @see UIManager#getLookAndFeel
@@ -1321,7 +1367,7 @@ public abstract class JComponent extends Container implements Serializable,
     /**
      * In release 1.4, the focus subsystem was rearchitected.
      * For more information, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      * <p>
@@ -1385,7 +1431,7 @@ public abstract class JComponent extends Container implements Serializable,
     /**
      * In release 1.4, the focus subsystem was rearchitected.
      * For more information, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      * <p>
@@ -1418,7 +1464,7 @@ public abstract class JComponent extends Container implements Serializable,
     /**
      * In release 1.4, the focus subsystem was rearchitected.
      * For more information, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      * <p>
@@ -1451,7 +1497,7 @@ public abstract class JComponent extends Container implements Serializable,
      * all, use the <code>setFocusable</code> method instead.
      * <p>
      * Please see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>,
      * for more information.
@@ -1470,7 +1516,7 @@ public abstract class JComponent extends Container implements Serializable,
      * get focus; otherwise returns <code>false</code>.
      * <p>
      * Please see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>,
      * for more information.
@@ -1496,7 +1542,7 @@ public abstract class JComponent extends Container implements Serializable,
      * its behavior is platform dependent. Instead we recommend the
      * use of {@link #requestFocusInWindow() requestFocusInWindow()}.
      * If you would like more information on focus, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      *
@@ -1519,7 +1565,7 @@ public abstract class JComponent extends Container implements Serializable,
      * use of {@link #requestFocusInWindow(boolean)
      * requestFocusInWindow(boolean)}.
      * If you would like more information on focus, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      *
@@ -1541,7 +1587,7 @@ public abstract class JComponent extends Container implements Serializable,
      * this method.
      * <p>
      * If you would like more information on focus, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      *
@@ -1562,7 +1608,7 @@ public abstract class JComponent extends Container implements Serializable,
      * this method.
      * <p>
      * If you would like more information on focus, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      *
@@ -2636,7 +2682,7 @@ public abstract class JComponent extends Container implements Serializable,
     /**
      * In release 1.4, the focus subsystem was rearchitected.
      * For more information, see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
      * How to Use the Focus Subsystem</a>,
      * a section in <em>The Java Tutorial</em>.
      * <p>
@@ -2817,6 +2863,8 @@ public abstract class JComponent extends Container implements Serializable,
      * potentially multiple lightweight applications running in a single VM)
      * can have their own setting. An applet can safely alter its default
      * locale because it will have no affect on other applets (or the browser).
+     * Passing {@code null} will reset the current locale back
+     * to VM's default locale.
      *
      * @param l the desired default <code>Locale</code> for new components.
      * @see #getDefaultLocale
@@ -2895,7 +2943,7 @@ public abstract class JComponent extends Container implements Serializable,
      *
      * @since 1.3
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     protected boolean processKeyBinding(KeyStroke ks, KeyEvent e,
                                         int condition, boolean pressed) {
         InputMap map = getInputMap(condition, false);
@@ -2924,7 +2972,7 @@ public abstract class JComponent extends Container implements Serializable,
      * @param pressed true if the key is pressed
      * @return true if there is a key binding for <code>e</code>
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "removal"})
     boolean processKeyBindings(KeyEvent e, boolean pressed) {
       if (!SwingUtilities.isValidKeyEventForKeyBindings(e)) {
           return false;
@@ -3015,7 +3063,7 @@ public abstract class JComponent extends Container implements Serializable,
      * Registers the text to display in a tool tip.
      * The text displays when the cursor lingers over the component.
      * <p>
-     * See <a href="http://docs.oracle.com/javase/tutorial/uiswing/components/tooltip.html">How to Use Tool Tips</a>
+     * See <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/tooltip.html">How to Use Tool Tips</a>
      * in <em>The Java Tutorial</em>
      * for further documentation.
      *
@@ -3236,7 +3284,7 @@ public abstract class JComponent extends Container implements Serializable,
      * default value for the system property is {@code false}.
      * <p>
      * Please see
-     * <a href="http://docs.oracle.com/javase/tutorial/uiswing/dnd/index.html">
+     * <a href="https://docs.oracle.com/javase/tutorial/uiswing/dnd/index.html">
      * How to Use Drag and Drop and Data Transfer</a>,
      * a section in <em>The Java Tutorial</em>, for more information.
      *
@@ -3469,7 +3517,7 @@ public abstract class JComponent extends Container implements Serializable,
     // This class is used by the KeyboardState class to provide a single
     // instance that can be stored in the AppContext.
     static final class IntVector {
-        int array[] = null;
+        int[] array = null;
         int count = 0;
         int capacity = 0;
 
@@ -3682,7 +3730,7 @@ public abstract class JComponent extends Container implements Serializable,
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      */
@@ -3718,6 +3766,11 @@ public abstract class JComponent extends Container implements Serializable,
          */
         protected class AccessibleContainerHandler
             implements ContainerListener {
+
+            /**
+             * Constructs an {@code AccessibleContainerHandler}.
+             */
+            protected AccessibleContainerHandler() {}
             public void componentAdded(ContainerEvent e) {
                 Component c = e.getChild();
                 if (c != null && c instanceof Accessible) {
@@ -3746,6 +3799,10 @@ public abstract class JComponent extends Container implements Serializable,
          */
         @Deprecated
         protected class AccessibleFocusHandler implements FocusListener {
+           /**
+            * Constructs an {@code AccessibleFocusHandler}.
+            */
+           protected AccessibleFocusHandler() {}
            public void focusGained(FocusEvent event) {
                if (accessibleContext != null) {
                     accessibleContext.firePropertyChange(
@@ -4473,7 +4530,7 @@ public abstract class JComponent extends Container implements Serializable,
      *          return value for this method
      * @see #getVisibleRect
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     static final void computeVisibleRect(Component c, Rectangle visibleRect) {
         Container p = c.getParent();
         Rectangle bounds = c.getBounds();
@@ -4642,7 +4699,7 @@ public abstract class JComponent extends Container implements Serializable,
      *          or <code>null</code> if not in any container
      */
     @BeanProperty(bound = false)
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     public @Nullable Container getTopLevelAncestor() {
         for(Container p = this; p != null; p = p.getParent()) {
             if(p instanceof Window || p instanceof Applet) {
@@ -5051,7 +5108,7 @@ public abstract class JComponent extends Container implements Serializable,
         this.paintingChild = paintingChild;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     void _paintImmediately(int x, int y, int w, int h) {
         Graphics g;
         Container c;
@@ -5516,6 +5573,7 @@ public abstract class JComponent extends Container implements Serializable,
      *
      * @param s  the <code>ObjectInputStream</code> from which to read
      */
+    @Serial
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException
     {
@@ -5583,6 +5641,7 @@ public abstract class JComponent extends Container implements Serializable,
      *
      * @param s the <code>ObjectOutputStream</code> in which to write
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         if (getUIClassID().equals(uiClassID)) {

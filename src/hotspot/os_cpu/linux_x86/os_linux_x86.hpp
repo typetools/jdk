@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,14 @@
  *
  */
 
-#ifndef OS_CPU_LINUX_X86_VM_OS_LINUX_X86_HPP
-#define OS_CPU_LINUX_X86_VM_OS_LINUX_X86_HPP
+#ifndef OS_CPU_LINUX_X86_OS_LINUX_X86_HPP
+#define OS_CPU_LINUX_X86_OS_LINUX_X86_HPP
 
   static void setup_fpu();
   static bool supports_sse();
+  static juint cpu_microcode_revision();
 
   static jlong rdtsc();
-
-  static bool is_allocatable(size_t bytes);
 
   // Used to register dynamic code cache area with the OS
   // Note: Currently only used in 64 bit Windows implementations
@@ -49,4 +48,4 @@
    */
   static void workaround_expand_exec_shield_cs_limit();
 
-#endif // OS_CPU_LINUX_X86_VM_OS_LINUX_X86_HPP
+#endif // OS_CPU_LINUX_X86_OS_LINUX_X86_HPP

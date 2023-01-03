@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -88,7 +88,7 @@ import sun.nio.ch.FileChannelImpl;
  * provides access to the file systems accessible to the Java virtual machine.
  * The {@link FileSystems} class defines how file system providers are located
  * and loaded. The default provider is typically a system-default provider but
- * may be overridden if the system property {@code
+ * may be overridden if the system property {@systemProperty
  * java.nio.file.spi.DefaultFileSystemProvider} is set. In that case, the
  * provider has a one argument constructor whose formal parameter type is {@code
  * FileSystemProvider}. All other providers have a zero argument constructor
@@ -125,6 +125,7 @@ public abstract @UsesObjectEquals class FileSystemProvider {
     private static boolean loadingProviders  = false;
 
     private static Void checkPermission() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkPermission(new RuntimePermission("fileSystemProvider"));
@@ -202,6 +203,7 @@ public abstract @UsesObjectEquals class FileSystemProvider {
                     }
                     loadingProviders = true;
 
+                    @SuppressWarnings("removal")
                     List<FileSystemProvider> list = AccessController
                         .doPrivileged(new PrivilegedAction<>() {
                             @Override
@@ -455,6 +457,10 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      *          if an unsupported option is specified
      * @throws  IOException
      *          if an I/O error occurs
+     * @throws  FileAlreadyExistsException
+     *          If a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          <i>(optional specific exception)</i>
      * @throws  SecurityException
      *          In the case of the default provider, and a security manager is
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
@@ -511,6 +517,11 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      * @throws  UnsupportedOperationException
      *          If this provider that does not support creating file channels,
      *          or an unsupported open option or file attribute is specified
+     * @throws  FileAlreadyExistsException
+     *          If a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          and the file is being opened for writing
+     *          <i>(optional specific exception)</i>
      * @throws  IOException
      *          If an I/O error occurs
      * @throws  SecurityException
@@ -559,6 +570,11 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      *          If this provider that does not support creating asynchronous file
      *          channels, or an unsupported open option or file attribute is
      *          specified
+     * @throws  FileAlreadyExistsException
+     *          If a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          and the file is being opened for writing
+     *          <i>(optional specific exception)</i>
      * @throws  IOException
      *          If an I/O error occurs
      * @throws  SecurityException
@@ -598,8 +614,9 @@ public abstract @UsesObjectEquals class FileSystemProvider {
      *          if an unsupported open option is specified or the array contains
      *          attributes that cannot be set atomically when creating the file
      * @throws  FileAlreadyExistsException
-     *          if a file of that name already exists and the {@link
+     *          If a file of that name already exists and the {@link
      *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          and the file is being opened for writing
      *          <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs

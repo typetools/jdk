@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,7 @@
  */
 
 #include "logging/log.hpp"
+#include "logging/logAsyncWriter.hpp"
 #include "logging/logConfiguration.hpp"
 #include "logging/logStream.hpp"
 #include "memory/resourceArea.hpp"
@@ -46,6 +47,7 @@ static inline bool file_exists(const char* filename) {
 }
 
 static inline void delete_file(const char* filename) {
+  AsyncLogWriter::flush();
   if (!file_exists(filename)) {
     return;
   }
@@ -88,6 +90,30 @@ static inline void init_log_file(const char* filename, const char* options = "")
   guarantee(success, "Failed to disable logging to file '%s'", filename);
 }
 
+static const char* tmp_dir = os::get_temp_directory();
+static const char* file_sep = os::file_separator();
+
+// Prepend filename with the temp directory and pid and return the result as a
+// resource allocated string.
+static inline char* prepend_temp_dir(const char* filename) {
+  size_t temp_file_len = strlen(tmp_dir) + strlen(file_sep) + strlen(filename) + 28;
+  char* temp_file = NEW_RESOURCE_ARRAY(char, temp_file_len);
+  int ret = jio_snprintf(temp_file, temp_file_len, "%s%spid%d.%s",
+                         tmp_dir, file_sep,
+                         os::current_process_id(), filename);
+  return temp_file;
+}
+
+// Prepend filename with specified prefix and the temp directory and return the
+// result as a malloc allocated string.  This is used by test_logFileOutput.cpp.
+static inline char* prepend_prefix_temp_dir(const char* prefix, const char* filename) {
+  size_t temp_file_len = strlen(prefix) + strlen(tmp_dir) + strlen(file_sep) + strlen(filename) + 1;
+  char* temp_file = (char*)os::malloc(temp_file_len, mtLogging);
+  int ret = jio_snprintf(temp_file, temp_file_len, "%s%s%s%s",
+                         prefix, tmp_dir, file_sep, filename);
+  return temp_file;
+}
+
 // Read a complete line from fp and return it as a resource allocated string.
 // Returns NULL on EOF.
 static inline char* read_line(FILE* fp) {
@@ -111,6 +137,7 @@ static inline char* read_line(FILE* fp) {
 }
 
 static bool file_contains_substrings_in_order(const char* filename, const char* substrs[]) {
+  AsyncLogWriter::flush();
   FILE* fp = fopen(filename, "r");
   assert(fp != NULL, "error opening file %s: %s", filename, strerror(errno));
 

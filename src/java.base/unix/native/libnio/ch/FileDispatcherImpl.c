@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,10 @@
 #include <fcntl.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#ifdef MACOSX
+#include <sys/mount.h>
+#include <sys/param.h>
+#endif
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 
@@ -167,9 +171,18 @@ Java_sun_nio_ch_FileDispatcherImpl_force0(JNIEnv *env, jobject this,
 
 #ifdef MACOSX
     result = fcntl(fd, F_FULLFSYNC);
-    if (result == -1 && errno == ENOTSUP) {
-        /* Try fsync() in case F_FULLSYUNC is not implemented on the file system. */
-        result = fsync(fd);
+    if (result == -1) {
+        struct statfs fbuf;
+        int errno_fcntl = errno;
+        if (fstatfs(fd, &fbuf) == 0) {
+            if ((fbuf.f_flags & MNT_LOCAL) == 0) {
+                /* Try fsync() in case file is not local. */
+                result = fsync(fd);
+            }
+        } else {
+            /* fstatfs() failed so restore errno from fcntl(). */
+            errno = errno_fcntl;
+        }
     }
 #else /* end MACOSX, begin not-MACOSX */
     if (md == JNI_FALSE) {
@@ -312,6 +325,14 @@ Java_sun_nio_ch_FileDispatcherImpl_preClose0(JNIEnv *env, jclass clazz, jobject 
 }
 
 JNIEXPORT void JNICALL
+Java_sun_nio_ch_FileDispatcherImpl_dup0(JNIEnv *env, jobject this, jobject fdo1, jobject fdo2)
+{
+    if (dup2(fdval(env, fdo1), fdval(env, fdo2)) < 0) {
+        JNU_ThrowIOExceptionWithLastError(env, "dup2 failed");
+    }
+}
+
+JNIEXPORT void JNICALL
 Java_sun_nio_ch_FileDispatcherImpl_closeIntFD(JNIEnv *env, jclass clazz, jint fd)
 {
     closeFileDescriptor(env, fd);
@@ -342,13 +363,13 @@ Java_sun_nio_ch_FileDispatcherImpl_setDirect0(JNIEnv *env, jclass clazz,
         JNU_ThrowIOExceptionWithLastError(env, "DirectIO setup failed");
         return result;
     }
-#elif F_NOCACHE
+#elif defined(F_NOCACHE)
     result = fcntl(fd, F_NOCACHE, 1);
     if (result == -1) {
         JNU_ThrowIOExceptionWithLastError(env, "DirectIO setup failed");
         return result;
     }
-#elif DIRECTIO_ON
+#elif defined(DIRECTIO_ON)
     result = directio(fd, DIRECTIO_ON);
     if (result == -1) {
         JNU_ThrowIOExceptionWithLastError(env, "DirectIO setup failed");
@@ -367,7 +388,7 @@ Java_sun_nio_ch_FileDispatcherImpl_setDirect0(JNIEnv *env, jclass clazz,
         result = (int)file_stat.f_frsize;
     }
 #else
-    result == -1;
+    result = -1;
 #endif
     return result;
 }

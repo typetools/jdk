@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,58 +25,124 @@
 
 package sun.awt.windows;
 
-import java.awt.peer.TaskbarPeer;
-import java.awt.*;
-import java.awt.im.InputMethodHighlight;
-import java.awt.im.spi.InputMethodDescriptor;
-import java.awt.image.*;
-import java.awt.peer.*;
+import java.awt.AWTEvent;
+import java.awt.AWTException;
+import java.awt.Button;
+import java.awt.Canvas;
+import java.awt.Checkbox;
+import java.awt.CheckboxMenuItem;
+import java.awt.Choice;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.FileDialog;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.JobAttributes;
+import java.awt.Label;
+import java.awt.List;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.PageAttributes;
+import java.awt.Panel;
+import java.awt.Point;
+import java.awt.PopupMenu;
+import java.awt.PrintJob;
+import java.awt.RenderingHints;
+import java.awt.ScrollPane;
+import java.awt.Scrollbar;
+import java.awt.SystemTray;
+import java.awt.Taskbar;
+import java.awt.TextArea;
+import java.awt.TextComponent;
+import java.awt.TextField;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.Window;
+import java.awt.datatransfer.Clipboard;
+import java.awt.dnd.DragGestureEvent;
+import java.awt.dnd.DragGestureListener;
+import java.awt.dnd.DragGestureRecognizer;
+import java.awt.dnd.DragSource;
+import java.awt.dnd.InvalidDnDOperationException;
+import java.awt.dnd.MouseDragGestureRecognizer;
+import java.awt.dnd.peer.DragSourceContextPeer;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.awt.datatransfer.Clipboard;
-import java.awt.TextComponent;
-import java.awt.TrayIcon;
+import java.awt.im.InputMethodHighlight;
+import java.awt.im.spi.InputMethodDescriptor;
+import java.awt.image.ColorModel;
+import java.awt.peer.ButtonPeer;
+import java.awt.peer.CanvasPeer;
+import java.awt.peer.CheckboxMenuItemPeer;
+import java.awt.peer.CheckboxPeer;
+import java.awt.peer.ChoicePeer;
+import java.awt.peer.DesktopPeer;
+import java.awt.peer.DialogPeer;
+import java.awt.peer.FileDialogPeer;
+import java.awt.peer.FontPeer;
+import java.awt.peer.FramePeer;
+import java.awt.peer.KeyboardFocusManagerPeer;
+import java.awt.peer.LabelPeer;
+import java.awt.peer.ListPeer;
+import java.awt.peer.MenuBarPeer;
+import java.awt.peer.MenuItemPeer;
+import java.awt.peer.MenuPeer;
+import java.awt.peer.MouseInfoPeer;
+import java.awt.peer.PanelPeer;
+import java.awt.peer.PopupMenuPeer;
+import java.awt.peer.RobotPeer;
+import java.awt.peer.ScrollPanePeer;
+import java.awt.peer.ScrollbarPeer;
+import java.awt.peer.SystemTrayPeer;
+import java.awt.peer.TaskbarPeer;
+import java.awt.peer.TextAreaPeer;
+import java.awt.peer.TextFieldPeer;
+import java.awt.peer.TrayIconPeer;
+import java.awt.peer.WindowPeer;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Hashtable;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import javax.swing.text.JTextComponent;
 
 import sun.awt.AWTAccessor;
-import sun.awt.AppContext;
 import sun.awt.AWTAutoShutdown;
 import sun.awt.AWTPermissions;
 import sun.awt.AppContext;
 import sun.awt.DisplayChangedListener;
 import sun.awt.LightweightFrame;
 import sun.awt.SunToolkit;
-import sun.awt.util.ThreadGroupUtils;
 import sun.awt.Win32GraphicsDevice;
 import sun.awt.Win32GraphicsEnvironment;
 import sun.awt.datatransfer.DataTransferer;
-import sun.java2d.d3d.D3DRenderQueue;
-import sun.java2d.opengl.OGLRenderQueue;
-
-import sun.print.PrintJob2D;
-
-import java.awt.dnd.DragSource;
-import java.awt.dnd.DragGestureListener;
-import java.awt.dnd.DragGestureEvent;
-import java.awt.dnd.DragGestureRecognizer;
-import java.awt.dnd.MouseDragGestureRecognizer;
-import java.awt.dnd.InvalidDnDOperationException;
-import java.awt.dnd.peer.DragSourceContextPeer;
-
-import java.util.Hashtable;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-
 import sun.awt.util.PerformanceLogger;
+import sun.awt.util.ThreadGroupUtils;
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
 import sun.font.SunFontManager;
+import sun.java2d.d3d.D3DRenderQueue;
+import sun.java2d.opengl.OGLRenderQueue;
+import sun.print.PrintJob2D;
 import sun.util.logging.PlatformLogger;
 
 public final class WToolkit extends SunToolkit implements Runnable {
@@ -107,6 +173,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
      */
     private static native void initIDs();
     private static boolean loaded = false;
+    @SuppressWarnings("removal")
     public static void loadLibraries() {
         if (!loaded) {
             java.security.AccessController.doPrivileged(
@@ -131,22 +198,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
         if (log.isLoggable(PlatformLogger.Level.FINE)) {
             log.fine("Win version: " + getWindowsVersion());
         }
-
-        AccessController.doPrivileged(
-            new PrivilegedAction <Void> ()
-        {
-            @Override
-            public Void run() {
-                String browserProp = System.getProperty("browser");
-                if (browserProp != null && browserProp.equals("sun.plugin")) {
-                    disableCustomPalette();
-                }
-                return null;
-            }
-        });
     }
-
-    private static native void disableCustomPalette();
 
     /*
      * NOTE: The following embedded*() methods are non-public API intended
@@ -224,6 +276,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
 
     private static native boolean startToolkitThread(Runnable thread, ThreadGroup rootThreadGroup);
 
+    @SuppressWarnings("removal")
     public WToolkit() {
         // Startup toolkit threads
         if (PerformanceLogger.loggingEnabled()) {
@@ -243,10 +296,13 @@ public final class WToolkit extends SunToolkit implements Runnable {
         ThreadGroup rootTG = AccessController.doPrivileged(
                 (PrivilegedAction<ThreadGroup>) ThreadGroupUtils::getRootThreadGroup);
         if (!startToolkitThread(this, rootTG)) {
-            String name = "AWT-Windows";
-            Thread toolkitThread = new Thread(rootTG, this, name, 0, false);
-            toolkitThread.setDaemon(true);
-            toolkitThread.start();
+            final String name = "AWT-Windows";
+            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+                Thread toolkitThread = new Thread(rootTG, this, name, 0, false);
+                toolkitThread.setDaemon(true);
+                toolkitThread.start();
+                return null;
+            });
         }
 
         try {
@@ -262,13 +318,18 @@ public final class WToolkit extends SunToolkit implements Runnable {
         // Enabled "live resizing" by default.  It remains controlled
         // by the native system though.
         setDynamicLayout(true);
-
-        areExtraMouseButtonsEnabled = Boolean.parseBoolean(System.getProperty("sun.awt.enableExtraMouseButtons", "true"));
-        //set system property if not yet assigned
-        System.setProperty("sun.awt.enableExtraMouseButtons", ""+areExtraMouseButtonsEnabled);
+        final String extraButtons = "sun.awt.enableExtraMouseButtons";
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+            areExtraMouseButtonsEnabled =
+                 Boolean.parseBoolean(System.getProperty(extraButtons, "true"));
+            //set system property if not yet assigned
+            System.setProperty(extraButtons, ""+areExtraMouseButtonsEnabled);
+            return null;
+        });
         setExtraMouseButtonsEnabledNative(areExtraMouseButtonsEnabled);
     }
 
+    @SuppressWarnings("removal")
     private void registerShutdownHook() {
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
             Thread shutdown = new Thread(
@@ -280,6 +341,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
         });
      }
 
+    @SuppressWarnings("removal")
     @Override
     public void run() {
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
@@ -494,11 +556,11 @@ public final class WToolkit extends SunToolkit implements Runnable {
     }
 
     @Override
-    public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
-        // (target is unused for now)
-        // Robot's don't need to go in the peer map since
-        // they're not Component's
-        return new WRobotPeer(screen);
+    public RobotPeer createRobot(GraphicsDevice screen) throws AWTException {
+        if (screen instanceof Win32GraphicsDevice) {
+            return new WRobotPeer();
+        }
+        return super.createRobot(screen);
     }
 
     public WEmbeddedFramePeer createEmbeddedFrame(WEmbeddedFrame target) {
@@ -605,9 +667,12 @@ public final class WToolkit extends SunToolkit implements Runnable {
     static ColorModel screenmodel;
 
     @Override
-    public Insets getScreenInsets(GraphicsConfiguration gc)
-    {
-        return getScreenInsets(((Win32GraphicsDevice) gc.getDevice()).getScreen());
+    public Insets getScreenInsets(final GraphicsConfiguration gc) {
+        GraphicsDevice gd = gc.getDevice();
+        if (!(gd instanceof Win32GraphicsDevice)) {
+            return super.getScreenInsets(gc);
+        }
+        return getScreenInsets(((Win32GraphicsDevice) gd).getScreen());
     }
 
     @Override
@@ -718,6 +783,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
 
     @Override
     public Clipboard getSystemClipboard() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPermission(AWTPermissions.ACCESS_CLIPBOARD_PERMISSION);
@@ -810,21 +876,34 @@ public final class WToolkit extends SunToolkit implements Runnable {
         }
     }
 
+    private static ExecutorService displayChangeExecutor;
+
     /*
      * Called from Toolkit native code when a WM_DISPLAYCHANGE occurs.
      * Have Win32GraphicsEnvironment execute the display change code on the
      * Event thread.
      */
     public static void displayChanged() {
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                Object lge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                if (lge instanceof DisplayChangedListener) {
-                    ((DisplayChangedListener) lge).displayChanged();
-                }
+        final Runnable runnable = () -> {
+            Object lge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            if (lge instanceof DisplayChangedListener) {
+                ((DisplayChangedListener) lge).displayChanged();
             }
-        });
+        };
+        if (AppContext.getAppContext() != null) {
+            // Common case, standalone application
+            EventQueue.invokeLater(runnable);
+        } else {
+            if (displayChangeExecutor == null) {
+                // No synchronization, called on the Toolkit thread only
+                displayChangeExecutor = Executors.newFixedThreadPool(1, r -> {
+                    Thread t = Executors.defaultThreadFactory().newThread(r);
+                    t.setDaemon(true);
+                    return t;
+                });
+            }
+            displayChangeExecutor.submit(runnable);
+        }
     }
 
     /**
@@ -1160,7 +1239,7 @@ public final class WToolkit extends SunToolkit implements Runnable {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override
-    public native boolean syncNativeQueue(final long timeout);
+    public native boolean syncNativeQueue(long timeout);
 
     @Override
     public boolean isDesktopSupported() {

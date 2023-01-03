@@ -123,10 +123,14 @@ public class RecursiveActionTest extends JSR166TestCase {
         assertNull(a.join());
         assertFalse(a.cancel(false));
         assertFalse(a.cancel(true));
+
+        Object v1 = null, v2 = null;
         try {
-            assertNull(a.get());
-            assertNull(a.get(randomTimeout(), randomTimeUnit()));
+            v1 = a.get();
+            v2 = a.get(randomTimeout(), randomTimeUnit());
         } catch (Throwable fail) { threadUnexpectedException(fail); }
+        assertNull(v1);
+        assertNull(v2);
     }
 
     void checkCancelled(RecursiveAction a) {
@@ -943,7 +947,7 @@ public class RecursiveActionTest extends JSR166TestCase {
                 FibAction f = new FibAction(8);
                 FibAction g = new FibAction(9);
                 FibAction h = new FibAction(7);
-                HashSet set = new HashSet();
+                HashSet<ForkJoinTask<?>> set = new HashSet<>();
                 set.add(f);
                 set.add(g);
                 set.add(h);
@@ -1041,7 +1045,7 @@ public class RecursiveActionTest extends JSR166TestCase {
                 FailingFibAction f = new FailingFibAction(8);
                 FibAction g = new FibAction(9);
                 FibAction h = new FibAction(7);
-                HashSet set = new HashSet();
+                HashSet<ForkJoinTask<?>> set = new HashSet<>();
                 set.add(f);
                 set.add(g);
                 set.add(h);

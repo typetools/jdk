@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@ package java.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * {@code StringJoiner} is used to construct a sequence of characters separated
@@ -67,6 +70,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 */
 @AnnotatedFor({"nullness"})
 public final class StringJoiner {
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     private final String prefix;
     private final String delimiter;
     private final String suffix;
@@ -81,8 +86,8 @@ public final class StringJoiner {
     private int len;
 
     /**
-     * When overriden by the user to be non-null via {@link setEmptyValue}, the
-     * string returned by toString() when no elements have yet been added.
+     * When overridden by the user to be non-null via {@link #setEmptyValue(CharSequence)},
+     * the string returned by toString() when no elements have yet been added.
      * When null, prefix + suffix is used as the empty value.
      */
     private String emptyValue;
@@ -129,6 +134,7 @@ public final class StringJoiner {
         this.prefix = prefix.toString();
         this.delimiter = delimiter.toString();
         this.suffix = suffix.toString();
+        checkAddLength(0, 0);
     }
 
     /**
@@ -151,12 +157,6 @@ public final class StringJoiner {
         return this;
     }
 
-    private static int getChars(String s, char[] chars, int start) {
-        int len = s.length();
-        s.getChars(0, len, chars, start);
-        return len;
-    }
-
     /**
      * Returns the current value, consisting of the {@code prefix}, the values
      * added so far separated by the {@code delimiter}, and the {@code suffix},
@@ -167,28 +167,15 @@ public final class StringJoiner {
      */
     @Override
     public String toString() {
-        final String[] elts = this.elts;
-        if (elts == null && emptyValue != null) {
-            return emptyValue;
-        }
         final int size = this.size;
-        final int addLen = prefix.length() + suffix.length();
-        if (addLen == 0) {
-            compactElts();
-            return size == 0 ? "" : elts[0];
-        }
-        final String delimiter = this.delimiter;
-        final char[] chars = new char[len + addLen];
-        int k = getChars(prefix, chars, 0);
-        if (size > 0) {
-            k += getChars(elts[0], chars, k);
-            for (int i = 1; i < size; i++) {
-                k += getChars(delimiter, chars, k);
-                k += getChars(elts[i], chars, k);
+        var elts = this.elts;
+        if (size == 0) {
+            if (emptyValue != null) {
+                return emptyValue;
             }
+            elts = EMPTY_STRING_ARRAY;
         }
-        k += getChars(suffix, chars, k);
-        return new String(chars);
+        return JLA.join(prefix, suffix, delimiter, elts, size);
     }
 
     /**
@@ -206,11 +193,20 @@ public final class StringJoiner {
         } else {
             if (size == elts.length)
                 elts = Arrays.copyOf(elts, 2 * size);
-            len += delimiter.length();
+            len = checkAddLength(len, delimiter.length());
         }
-        len += elt.length();
+        len = checkAddLength(len, elt.length());
         elts[size++] = elt;
         return this;
+    }
+
+    private int checkAddLength(int oldLen, int inc) {
+        long newLen = (long)oldLen + (long)inc;
+        long tmpLen = newLen + (long)prefix.length() + (long)suffix.length();
+        if (tmpLen != (int)tmpLen) {
+            throw new OutOfMemoryError("Requested array size exceeds VM limit");
+        }
+        return (int)newLen;
     }
 
     /**
@@ -234,7 +230,7 @@ public final class StringJoiner {
      */
     public StringJoiner merge(StringJoiner other) {
         Objects.requireNonNull(other);
-        if (other.elts == null) {
+        if (other.size == 0) {
             return this;
         }
         other.compactElts();
@@ -242,16 +238,11 @@ public final class StringJoiner {
     }
 
     private void compactElts() {
-        if (size > 1) {
-            final char[] chars = new char[len];
-            int i = 1, k = getChars(elts[0], chars, 0);
-            do {
-                k += getChars(delimiter, chars, k);
-                k += getChars(elts[i], chars, k);
-                elts[i] = null;
-            } while (++i < size);
+        int sz = size;
+        if (sz > 1) {
+            elts[0] = JLA.join("", "", delimiter, elts, sz);
+            Arrays.fill(elts, 1, sz, null);
             size = 1;
-            elts[0] = new String(chars);
         }
     }
 
@@ -269,4 +260,6 @@ public final class StringJoiner {
         return (size == 0 && emptyValue != null) ? emptyValue.length() :
             len + prefix.length() + suffix.length();
     }
+
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 }

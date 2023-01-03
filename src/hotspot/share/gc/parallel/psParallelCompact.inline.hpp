@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP
-#define SHARE_VM_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP
+#ifndef SHARE_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP
+#define SHARE_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP
+
+#include "gc/parallel/psParallelCompact.hpp"
 
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/parallel/parMarkBitMap.inline.hpp"
-#include "gc/parallel/psParallelCompact.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
@@ -112,11 +113,10 @@ inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
     assert(ParallelScavengeHeap::heap()->is_in(obj), "should be in heap");
 
-    oop new_obj = (oop)summary_data().calc_new_pointer(obj, cm);
-    assert(new_obj != NULL,                    // is forwarding ptr?
-           "should be forwarded");
-    // Just always do the update unconditionally?
-    if (new_obj != NULL) {
+    oop new_obj = cast_to_oop(summary_data().calc_new_pointer(obj, cm));
+    assert(new_obj != NULL, "non-null address for live objects");
+    // Is it actually relocated at all?
+    if (new_obj != obj) {
       assert(ParallelScavengeHeap::heap()->is_in_reserved(new_obj),
              "should be in object space");
       RawAccess<IS_NOT_NULL>::oop_store(p, new_obj);
@@ -124,12 +124,21 @@ inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
   }
 }
 
-template <typename T>
-void PSParallelCompact::AdjustPointerClosure::do_oop_work(T* p) {
-  adjust_pointer(p, _cm);
-}
+class PCAdjustPointerClosure: public BasicOopIterateClosure {
+public:
+  PCAdjustPointerClosure(ParCompactionManager* cm) {
+    verify_cm(cm);
+    _cm = cm;
+  }
+  template <typename T> void do_oop_nv(T* p) { PSParallelCompact::adjust_pointer(p, _cm); }
+  virtual void do_oop(oop* p)                { do_oop_nv(p); }
+  virtual void do_oop(narrowOop* p)          { do_oop_nv(p); }
 
-inline void PSParallelCompact::AdjustPointerClosure::do_oop(oop* p)       { do_oop_work(p); }
-inline void PSParallelCompact::AdjustPointerClosure::do_oop(narrowOop* p) { do_oop_work(p); }
+  virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
+private:
+  ParCompactionManager* _cm;
 
-#endif // SHARE_VM_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP
+  static void verify_cm(ParCompactionManager* cm) NOT_DEBUG_RETURN;
+};
+
+#endif // SHARE_GC_PARALLEL_PSPARALLELCOMPACT_INLINE_HPP

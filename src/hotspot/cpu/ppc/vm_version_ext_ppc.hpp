@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef CPU_PPC_VM_VM_VERSION_EXT_PPC_HPP
-#define CPU_PPC_VM_VM_VERSION_EXT_PPC_HPP
+#ifndef CPU_PPC_VM_VERSION_EXT_PPC_HPP
+#define CPU_PPC_VM_VERSION_EXT_PPC_HPP
 
+#include "runtime/vm_version.hpp"
 #include "utilities/macros.hpp"
-#include "vm_version_ppc.hpp"
 
 #define CPU_INFO        "cpu_info"
 #define CPU_TYPE        "fpu_type"
@@ -59,4 +59,4 @@ class VM_Version_Ext : public VM_Version {
   static const char* cpu_description(void);
 };
 
-#endif // CPU_PPC_VM_VM_VERSION_EXT_PPC_HPP
+#endif // CPU_PPC_VM_VERSION_EXT_PPC_HPP

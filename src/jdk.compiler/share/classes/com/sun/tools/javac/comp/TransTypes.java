@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,15 +25,11 @@
 
 package com.sun.tools.javac.comp;
 
-import java.util.*;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol.*;
-import com.sun.tools.javac.code.Type.IntersectionClassType;
-import com.sun.tools.javac.code.Types.FunctionDescriptorLookupError;
-import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
@@ -48,6 +44,7 @@ import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import static com.sun.tools.javac.comp.CompileStates.CompileState;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 
 /** This pass translates Generic Java to conventional Java.
  *
@@ -561,8 +558,37 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitCase(JCCase tree) {
-        tree.pat = translate(tree.pat, null);
+        tree.labels = translate(tree.labels, null);
         tree.stats = translate(tree.stats);
+        result = tree;
+    }
+
+    public void visitBindingPattern(JCBindingPattern tree) {
+        tree.var = translate(tree.var, null);
+        result = tree;
+    }
+
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        Type selsuper = types.supertype(tree.selector.type);
+        boolean enumSwitch = selsuper != null &&
+            selsuper.tsym == syms.enumSym;
+        Type target = enumSwitch ? erasure(tree.selector.type) : syms.intType;
+        tree.selector = translate(tree.selector, target);
+        tree.cases = translate(tree.cases);
+        tree.type = erasure(tree.type);
+        result = retype(tree, tree.type, pt);
+    }
+
+    @Override
+    public void visitParenthesizedPattern(JCParenthesizedPattern tree) {
+        tree.pattern = translate(tree.pattern, null);
+        result = tree;
+    }
+
+    @Override
+    public void visitGuardPattern(JCGuardPattern tree) {
+        tree.patt = translate(tree.patt, null);
+        tree.expr = translate(tree.expr, syms.booleanType);
         result = tree;
     }
 
@@ -603,6 +629,19 @@ public class TransTypes extends TreeTranslator {
     public void visitReturn(JCReturn tree) {
         if (!returnType.hasTag(VOID))
             tree.expr = translate(tree.expr, returnType);
+        result = tree;
+    }
+
+    @Override
+    public void visitBreak(JCBreak tree) {
+        result = tree;
+    }
+
+    @Override
+    public void visitYield(JCYield tree) {
+        tree.value = translate(tree.value, erasure(tree.value.type));
+        tree.value.type = erasure(tree.value.type);
+        tree.value = retype(tree.value, tree.value.type, pt);
         result = tree;
     }
 
@@ -737,7 +776,7 @@ public class TransTypes extends TreeTranslator {
             JCTypeCast typeCast = newExpression.hasTag(Tag.TYPECAST)
                 ? (JCTypeCast) newExpression
                 : null;
-            tree.expr = typeCast != null && types.isSameType(typeCast.type, originalTarget)
+            tree.expr = typeCast != null && types.isSameType(typeCast.type, tree.type)
                 ? typeCast.expr
                 : newExpression;
         }
@@ -750,12 +789,12 @@ public class TransTypes extends TreeTranslator {
                 }
             }
         }
-        result = tree;
+        result = retype(tree, tree.type, pt);
     }
 
     public void visitTypeTest(JCInstanceOf tree) {
         tree.expr = translate(tree.expr, null);
-        tree.clazz = translate(tree.clazz, null);
+        tree.pattern = translate(tree.pattern, null);
         result = tree;
     }
 

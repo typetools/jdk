@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2017, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016 SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,14 +24,17 @@
  */
 
 #include "precompiled.hpp"
+#include "compiler/oopMap.hpp"
 #include "interpreter/interpreter.hpp"
 #include "memory/resourceArea.hpp"
-#include "oops/markOop.hpp"
+#include "memory/universe.hpp"
+#include "oops/markWord.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/javaCalls.hpp"
 #include "runtime/monitorChunk.hpp"
+#include "runtime/os.inline.hpp"
 #include "runtime/signature.hpp"
 #include "runtime/stubCodeGenerator.hpp"
 #include "runtime/stubRoutines.hpp"
@@ -53,14 +56,124 @@ void RegisterMap::check_location_valid() {
 
 bool frame::safe_for_sender(JavaThread *thread) {
   bool safe = false;
-  address cursp = (address)sp();
-  address curfp = (address)fp();
-  if ((cursp != NULL && curfp != NULL &&
-      (cursp <= thread->stack_base() && cursp >= thread->stack_base() - thread->stack_size())) &&
-      (curfp <= thread->stack_base() && curfp >= thread->stack_base() - thread->stack_size())) {
-    safe = true;
+  address sp = (address)_sp;
+  address fp = (address)_fp;
+  address unextended_sp = (address)_unextended_sp;
+
+  // consider stack guards when trying to determine "safe" stack pointers
+  // sp must be within the usable part of the stack (not in guards)
+  if (!thread->is_in_usable_stack(sp)) {
+    return false;
   }
-  return safe;
+
+  // Unextended sp must be within the stack
+  if (!thread->is_in_full_stack_checked(unextended_sp)) {
+    return false;
+  }
+
+  // An fp must be within the stack and above (but not equal) sp.
+  bool fp_safe = thread->is_in_stack_range_excl(fp, sp);
+  // An interpreter fp must be within the stack and above (but not equal) sp.
+  // Moreover, it must be at least the size of the z_ijava_state structure.
+  bool fp_interp_safe = fp_safe && ((fp - sp) >= z_ijava_state_size);
+
+  // We know sp/unextended_sp are safe, only fp is questionable here
+
+  // If the current frame is known to the code cache then we can attempt to
+  // to construct the sender and do some validation of it. This goes a long way
+  // toward eliminating issues when we get in frame construction code
+
+  if (_cb != NULL ) {
+    // Entry frame checks
+    if (is_entry_frame()) {
+      // An entry frame must have a valid fp.
+      return fp_safe && is_entry_frame_valid(thread);
+    }
+
+    // Now check if the frame is complete and the test is
+    // reliable. Unfortunately we can only check frame completeness for
+    // runtime stubs. Other generic buffer blobs are more
+    // problematic so we just assume they are OK. Adapter blobs never have a
+    // complete frame and are never OK. nmethods should be OK on s390.
+    if (!_cb->is_frame_complete_at(_pc)) {
+      if (_cb->is_adapter_blob() || _cb->is_runtime_stub()) {
+        return false;
+      }
+    }
+
+    // Could just be some random pointer within the codeBlob.
+    if (!_cb->code_contains(_pc)) {
+      return false;
+    }
+
+    if (is_interpreted_frame() && !fp_interp_safe) {
+      return false;
+    }
+
+    z_abi_160* sender_abi = (z_abi_160*) fp;
+    intptr_t* sender_sp = (intptr_t*) sender_abi->callers_sp;
+    address   sender_pc = (address) sender_abi->return_pc;
+
+    // We must always be able to find a recognizable pc.
+    CodeBlob* sender_blob = CodeCache::find_blob_unsafe(sender_pc);
+    if (sender_blob == NULL) {
+      return false;
+    }
+
+    // Could be a zombie method
+    if (sender_blob->is_zombie() || sender_blob->is_unloaded()) {
+      return false;
+    }
+
+    // It should be safe to construct the sender though it might not be valid.
+
+    frame sender(sender_sp, sender_pc);
+
+    // Do we have a valid fp?
+    address sender_fp = (address) sender.fp();
+
+    // sender_fp must be within the stack and above (but not
+    // equal) current frame's fp.
+    if (!thread->is_in_stack_range_excl(sender_fp, fp)) {
+        return false;
+    }
+
+    // If the potential sender is the interpreter then we can do some more checking.
+    if (Interpreter::contains(sender_pc)) {
+      return sender.is_interpreted_frame_valid(thread);
+    }
+
+    // Could just be some random pointer within the codeBlob.
+    if (!sender.cb()->code_contains(sender_pc)) {
+      return false;
+    }
+
+    // We should never be able to see an adapter if the current frame is something from code cache.
+    if (sender_blob->is_adapter_blob()) {
+      return false;
+    }
+
+    if (sender.is_entry_frame()) {
+      return sender.is_entry_frame_valid(thread);
+    }
+
+    // Frame size is always greater than zero. If the sender frame size is zero or less,
+    // something is really weird and we better give up.
+    if (sender_blob->frame_size() <= 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Must be native-compiled frame. Since sender will try and use fp to find
+  // linkages it must be safe
+
+  if (!fp_safe) {
+    return false;
+  }
+
+  return true;
 }
 
 bool frame::is_interpreted_frame() const {
@@ -150,12 +263,12 @@ frame frame::sender(RegisterMap* map) const {
 }
 
 void frame::patch_pc(Thread* thread, address pc) {
+  assert(_cb == CodeCache::find_blob(pc), "unexpected pc");
   if (TracePcPatching) {
     tty->print_cr("patch_pc at address  " PTR_FORMAT " [" PTR_FORMAT " -> " PTR_FORMAT "] ",
                   p2i(&((address*) _sp)[-1]), p2i(((address*) _sp)[-1]), p2i(pc));
   }
   own_abi()->return_pc = (uint64_t)pc;
-  _cb = CodeCache::find_blob(pc);
   address original_pc = CompiledMethod::get_deopt_original_pc(this);
   if (original_pc != NULL) {
     assert(original_pc == _pc, "expected original to be stored before patching");
@@ -185,7 +298,7 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
     switch (type) {
       case T_OBJECT:
       case T_ARRAY: {
-        *oop_result = (oop) (void*) ijava_state()->oop_tmp;
+        *oop_result = cast_to_oop((void*) ijava_state()->oop_tmp);
         break;
       }
       // We use std/stfd to store the values.
@@ -206,7 +319,7 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
       case T_OBJECT:
       case T_ARRAY: {
        oop obj = *(oop*)tos_addr;
-       assert(obj == NULL || Universe::heap()->is_in(obj), "sanity check");
+       assert(Universe::is_in_heap_or_null(obj), "sanity check");
        *oop_result = obj;
        break;
       }
@@ -357,6 +470,7 @@ void frame::back_trace(outputStream* st, intptr_t* start_sp, intptr_t* top_pc, u
           // name
           Method* method = *(Method**)((address)current_fp + _z_ijava_state_neg(method));
           if (method) {
+            ResourceMark rm;
             if (method->is_synchronized()) st->print("synchronized ");
             if (method->is_static()) st->print("static ");
             if (method->is_native()) st->print("native ");
@@ -421,6 +535,7 @@ void frame::back_trace(outputStream* st, intptr_t* start_sp, intptr_t* top_pc, u
           // name
           Method* method = ((nmethod *)blob)->method();
           if (method) {
+            ResourceMark rm;
             method->name_and_sig_as_C_string(buf, sizeof(buf));
             st->print("%s ", buf);
           }

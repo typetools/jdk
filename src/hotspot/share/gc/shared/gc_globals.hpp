@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,8 @@
 #ifndef SHARE_GC_SHARED_GC_GLOBALS_HPP
 #define SHARE_GC_SHARED_GC_GLOBALS_HPP
 
+#include "runtime/globals_shared.hpp"
 #include "utilities/macros.hpp"
-#if INCLUDE_CMSGC
-#include "gc/cms/cms_globals.hpp"
-#endif
 #if INCLUDE_EPSILONGC
 #include "gc/epsilon/epsilon_globals.hpp"
 #endif
@@ -41,6 +39,9 @@
 #if INCLUDE_SERIALGC
 #include "gc/serial/serial_globals.hpp"
 #endif
+#if INCLUDE_SHENANDOAHGC
+#include "gc/shenandoah/shenandoah_globals.hpp"
+#endif
 #if INCLUDE_ZGC
 #include "gc/z/z_globals.hpp"
 #endif
@@ -49,117 +50,65 @@
                  develop_pd,                                                \
                  product,                                                   \
                  product_pd,                                                \
-                 diagnostic,                                                \
-                 diagnostic_pd,                                             \
-                 experimental,                                              \
                  notproduct,                                                \
-                 manageable,                                                \
-                 product_rw,                                                \
-                 lp64_product,                                              \
                  range,                                                     \
-                 constraint,                                                \
-                 writeable)                                                 \
-                                                                            \
-  CMSGC_ONLY(GC_CMS_FLAGS(                                                  \
-    develop,                                                                \
-    develop_pd,                                                             \
-    product,                                                                \
-    product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
-    notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
-    range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+                 constraint)                                                \
                                                                             \
   EPSILONGC_ONLY(GC_EPSILON_FLAGS(                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
     product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
     notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
     range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+    constraint))                                                            \
                                                                             \
   G1GC_ONLY(GC_G1_FLAGS(                                                    \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
     product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
     notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
     range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+    constraint))                                                            \
                                                                             \
   PARALLELGC_ONLY(GC_PARALLEL_FLAGS(                                        \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
     product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
     notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
     range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+    constraint))                                                            \
                                                                             \
   SERIALGC_ONLY(GC_SERIAL_FLAGS(                                            \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
     product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
     notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
     range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+    constraint))                                                            \
+                                                                            \
+  SHENANDOAHGC_ONLY(GC_SHENANDOAH_FLAGS(                                    \
+    develop,                                                                \
+    develop_pd,                                                             \
+    product,                                                                \
+    product_pd,                                                             \
+    notproduct,                                                             \
+    range,                                                                  \
+    constraint))                                                            \
                                                                             \
   ZGC_ONLY(GC_Z_FLAGS(                                                      \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
     product_pd,                                                             \
-    diagnostic,                                                             \
-    diagnostic_pd,                                                          \
-    experimental,                                                           \
     notproduct,                                                             \
-    manageable,                                                             \
-    product_rw,                                                             \
-    lp64_product,                                                           \
     range,                                                                  \
-    constraint,                                                             \
-    writeable))                                                             \
+    constraint))                                                            \
                                                                             \
   /* gc */                                                                  \
-                                                                            \
-  product(bool, UseConcMarkSweepGC, false,                                  \
-          "Use Concurrent Mark-Sweep GC in the old generation")             \
                                                                             \
   product(bool, UseSerialGC, false,                                         \
           "Use the Serial garbage collector")                               \
@@ -168,50 +117,38 @@
           "Use the Garbage-First garbage collector")                        \
                                                                             \
   product(bool, UseParallelGC, false,                                       \
-          "Use the Parallel Scavenge garbage collector")                    \
+          "Use the Parallel garbage collector.")                            \
                                                                             \
-  product(bool, UseParallelOldGC, false,                                    \
-          "Use the Parallel Old garbage collector")                         \
-                                                                            \
-  experimental(bool, UseEpsilonGC, false,                                   \
+  product(bool, UseEpsilonGC, false, EXPERIMENTAL,                          \
           "Use the Epsilon (no-op) garbage collector")                      \
                                                                             \
-  experimental(bool, UseZGC, false,                                         \
+  product(bool, UseZGC, false,                                              \
           "Use the Z garbage collector")                                    \
+                                                                            \
+  product(bool, UseShenandoahGC, false,                                     \
+          "Use the Shenandoah garbage collector")                           \
                                                                             \
   product(uint, ParallelGCThreads, 0,                                       \
           "Number of parallel threads parallel gc will use")                \
           constraint(ParallelGCThreadsConstraintFunc,AfterErgo)             \
-                                                                            \
-  diagnostic(bool, UseSemaphoreGCThreadsSynchronization, true,              \
-            "Use semaphore synchronization for the GC Threads, "            \
-            "instead of synchronization based on mutexes")                  \
                                                                             \
   product(bool, UseDynamicNumberOfGCThreads, true,                          \
           "Dynamically choose the number of threads up to a maximum of "    \
           "ParallelGCThreads parallel collectors will use for garbage "     \
           "collection work")                                                \
                                                                             \
-  diagnostic(bool, InjectGCWorkerCreationFailure, false,                    \
+  product(bool, InjectGCWorkerCreationFailure, false, DIAGNOSTIC,           \
              "Inject thread creation failures for "                         \
              "UseDynamicNumberOfGCThreads")                                 \
-                                                                            \
-  diagnostic(bool, ForceDynamicNumberOfGCThreads, false,                    \
-          "Force dynamic selection of the number of "                       \
-          "parallel threads parallel gc will use to aid debugging")         \
                                                                             \
   product(size_t, HeapSizePerGCThread, ScaleForWordSize(32*M),              \
           "Size of heap (bytes) per GC thread used in calculating the "     \
           "number of GC threads")                                           \
-          range((size_t)os::vm_page_size(), (size_t)max_uintx)              \
+          constraint(VMPageSizeConstraintFunc, AtParse)                     \
                                                                             \
   product(uint, ConcGCThreads, 0,                                           \
           "Number of threads concurrent gc will use")                       \
           constraint(ConcGCThreadsConstraintFunc,AfterErgo)                 \
-                                                                            \
-  product(uint, GCTaskTimeStampEntries, 200,                                \
-          "Number of time stamp entries per gc worker thread")              \
-          range(1, max_jint)                                                \
                                                                             \
   product(bool, AlwaysTenure, false,                                        \
           "Always tenure objects in eden (ParallelGC only)")                \
@@ -227,16 +164,12 @@
           "A System.gc() request invokes a concurrent collection; "         \
           "(effective only when using concurrent collectors)")              \
                                                                             \
-  product(bool, GCLockerInvokesConcurrent, false,                           \
-          "The exit of a JNI critical section necessitating a scavenge, "   \
-          "also kicks off a background concurrent collection")              \
-                                                                            \
   product(uintx, GCLockerEdenExpansionPercent, 5,                           \
           "How much the GC can expand the eden by while the GC locker "     \
           "is active (as a percentage)")                                    \
           range(0, 100)                                                     \
                                                                             \
-  diagnostic(uintx, GCLockerRetryAllocationCount, 2,                        \
+  product(uintx, GCLockerRetryAllocationCount, 2, DIAGNOSTIC,               \
           "Number of times to retry allocations when "                      \
           "blocked by the GC locker")                                       \
           range(0, max_uintx)                                               \
@@ -263,21 +196,13 @@
           "bigger than this")                                               \
           range(1, max_jint/3)                                              \
                                                                             \
-  product(uintx, OldPLABWeight, 50,                                         \
-          "Percentage (0-100) used to weight the current sample when "      \
-          "computing exponentially decaying average for resizing "          \
-          "OldPLABSize")                                                    \
-          range(0, 100)                                                     \
-                                                                            \
-  product(bool, ResizeOldPLAB, true,                                        \
-          "Dynamically resize (old gen) promotion LAB's")                   \
                                                                             \
   product(bool, AlwaysPreTouch, false,                                      \
           "Force all freshly committed pages to be pre-touched")            \
                                                                             \
-  product(size_t, PreTouchParallelChunkSize, 1 * G,                         \
+  product_pd(size_t, PreTouchParallelChunkSize,                             \
           "Per-thread chunk size for parallel memory pre-touch.")           \
-          range(1, SIZE_MAX / 2)                                            \
+          range(4*K, SIZE_MAX / 2)                                          \
                                                                             \
   /* where does the range max value of (max_jint - 1) come from? */         \
   product(size_t, MarkStackSizeMax, NOT_LP64(4*M) LP64_ONLY(512*M),         \
@@ -287,13 +212,7 @@
   product(size_t, MarkStackSize, NOT_LP64(32*K) LP64_ONLY(4*M),             \
           "Size of marking stack")                                          \
           constraint(MarkStackSizeConstraintFunc,AfterErgo)                 \
-                                                                            \
-  develop(bool, VerifyBlockOffsetArray, false,                              \
-          "Do (expensive) block offset array verification")                 \
-                                                                            \
-  diagnostic(bool, BlockOffsetArrayUseUnallocatedBlock, false,              \
-          "Maintain _unallocated_block in BlockOffsetArray "                \
-          "(currently applicable only to CMS collector)")                   \
+          range(1, (max_jint - 1))                                          \
                                                                             \
   product(intx, RefDiscoveryPolicy, 0,                                      \
           "Select type of reference discovery policy: "                     \
@@ -307,7 +226,7 @@
   product(bool, ParallelRefProcBalancingEnabled, true,                      \
           "Enable balancing of reference processing queues")                \
                                                                             \
-  experimental(size_t, ReferencesPerThread, 1000,                           \
+  product(size_t, ReferencesPerThread, 1000, EXPERIMENTAL,                  \
                "Ergonomically start one thread for this amount of "         \
                "references for reference processing if "                    \
                "ParallelRefProcEnabled is true. Specify 0 to disable and "  \
@@ -341,24 +260,23 @@
           "collection")                                                     \
                                                                             \
   develop(uintx, PromotionFailureALotCount, 1000,                           \
-          "Number of promotion failures occurring at PLAB "                 \
-          "refill attempts (ParNew) or promotion attempts "                 \
-          "(other young collectors)")                                       \
+          "Number of promotion failures occurring at PLAB promotion "       \
+          "attempts at young collectors")                                   \
                                                                             \
   develop(uintx, PromotionFailureALotInterval, 5,                           \
           "Total collections between promotion failures a lot")             \
                                                                             \
-  experimental(uintx, WorkStealingSleepMillis, 1,                           \
+  product(uintx, WorkStealingSleepMillis, 1, EXPERIMENTAL,                  \
           "Sleep time when sleep is used for yields")                       \
                                                                             \
-  experimental(uintx, WorkStealingYieldsBeforeSleep, 5000,                  \
+  product(uintx, WorkStealingYieldsBeforeSleep, 5000, EXPERIMENTAL,         \
           "Number of yields before a sleep is done during work stealing")   \
                                                                             \
-  experimental(uintx, WorkStealingHardSpins, 4096,                          \
+  product(uintx, WorkStealingHardSpins, 4096, EXPERIMENTAL,                 \
           "Number of iterations in a spin loop between checks on "          \
           "time out of hard spin")                                          \
                                                                             \
-  experimental(uintx, WorkStealingSpinToYieldRatio, 10,                     \
+  product(uintx, WorkStealingSpinToYieldRatio, 10, EXPERIMENTAL,            \
           "Ratio of hard spins to calls to yield")                          \
                                                                             \
   develop(uintx, ObjArrayMarkingStride, 2048,                               \
@@ -371,26 +289,6 @@
                                                                             \
   develop(uintx, MetadataAllocationFailALotInterval, 1000,                  \
           "Metadata allocation failure a lot interval")                     \
-                                                                            \
-  notproduct(bool, ExecuteInternalVMTests, false,                           \
-          "Enable execution of internal VM tests")                          \
-                                                                            \
-  notproduct(bool, VerboseInternalVMTests, false,                           \
-          "Turn on logging for internal VM tests.")                         \
-                                                                            \
-  product(bool, ExecutingUnitTests, false,                                  \
-          "Whether the JVM is running unit tests or not")                   \
-                                                                            \
-  product_pd(bool, UseTLAB, "Use thread-local object allocation")           \
-                                                                            \
-  product_pd(bool, ResizeTLAB,                                              \
-          "Dynamically resize TLAB size for threads")                       \
-                                                                            \
-  product(bool, ZeroTLAB, false,                                            \
-          "Zero out the newly created TLAB")                                \
-                                                                            \
-  product(bool, TLABStats, true,                                            \
-          "Provide more detailed and expensive TLAB statistics.")           \
                                                                             \
   product_pd(bool, NeverActAsServerClassMachine,                            \
           "Never act like a server-class machine")                          \
@@ -446,6 +344,7 @@
   develop(uintx, MaxVirtMemFraction, 2,                                     \
           "Maximum fraction (1/n) of virtual memory used for ergonomically "\
           "determining maximum heap size")                                  \
+          range(1, max_uintx)                                               \
                                                                             \
   product(bool, UseAdaptiveSizePolicy, true,                                \
           "Use adaptive generation sizing policies")                        \
@@ -461,9 +360,6 @@
                                                                             \
   product(bool, UseAdaptiveSizePolicyWithSystemGC, false,                   \
           "Include statistics from System.gc() for adaptive size policy")   \
-                                                                            \
-  product(bool, UseAdaptiveGCBoundary, false,                               \
-          "Allow young-old boundary to move")                               \
                                                                             \
   develop(intx, PSAdaptiveSizePolicyResizeVirtualSpaceAlot, -1,             \
           "Resize the virtual spaces of the young or old generations")      \
@@ -596,7 +492,7 @@
           "OutOfMemoryError is thrown (used with GCTimeLimit)")             \
           range(0, 100)                                                     \
                                                                             \
-  develop(uintx, AdaptiveSizePolicyGCTimeLimitThreshold, 5,                 \
+  develop(uintx, GCOverheadLimitThreshold, 5,                               \
           "Number of consecutive collections before gc time limit fires")   \
           range(1, max_uintx)                                               \
                                                                             \
@@ -612,58 +508,55 @@
           "How many fields ahead to prefetch in oop scan (<= 0 means off)") \
           range(-1, max_jint)                                               \
                                                                             \
-  diagnostic(bool, VerifyDuringStartup, false,                              \
+  product(bool, VerifyDuringStartup, false, DIAGNOSTIC,                     \
           "Verify memory system before executing any Java code "            \
           "during VM initialization")                                       \
                                                                             \
-  diagnostic(bool, VerifyBeforeExit, trueInDebug,                           \
+  product(bool, VerifyBeforeExit, trueInDebug, DIAGNOSTIC,                  \
           "Verify system before exiting")                                   \
                                                                             \
-  diagnostic(bool, VerifyBeforeGC, false,                                   \
+  product(bool, VerifyBeforeGC, false, DIAGNOSTIC,                          \
           "Verify memory system before GC")                                 \
                                                                             \
-  diagnostic(bool, VerifyAfterGC, false,                                    \
+  product(bool, VerifyAfterGC, false, DIAGNOSTIC,                           \
           "Verify memory system after GC")                                  \
                                                                             \
-  diagnostic(bool, VerifyDuringGC, false,                                   \
+  product(bool, VerifyDuringGC, false, DIAGNOSTIC,                          \
           "Verify memory system during GC (between phases)")                \
                                                                             \
-  diagnostic(ccstrlist, VerifyGCType, "",                                   \
+  product(bool, VerifyArchivedFields, trueInDebug, DIAGNOSTIC,              \
+          "Verify memory when archived oop fields are loaded from CDS)")    \
+                                                                            \
+  product(ccstrlist, VerifyGCType, "", DIAGNOSTIC,                          \
              "GC type(s) to verify when Verify*GC is enabled."              \
              "Available types are collector specific.")                     \
                                                                             \
-  diagnostic(ccstrlist, VerifySubSet, "",                                   \
+  product(ccstrlist, VerifySubSet, "", DIAGNOSTIC,                          \
           "Memory sub-systems to verify when Verify*GC flag(s) "            \
           "are enabled. One or more sub-systems can be specified "          \
           "in a comma separated string. Sub-systems are: "                  \
           "threads, heap, symbol_table, string_table, codecache, "          \
           "dictionary, classloader_data_graph, metaspace, jni_handles, "    \
-          "codecache_oops")                                                 \
+          "codecache_oops, resolved_method_table, stringdedup")             \
                                                                             \
-  diagnostic(bool, GCParallelVerificationEnabled, true,                     \
+  product(bool, GCParallelVerificationEnabled, true, DIAGNOSTIC,            \
           "Enable parallel memory system verification")                     \
                                                                             \
-  diagnostic(bool, DeferInitialCardMark, false,                             \
+  product(bool, DeferInitialCardMark, false, DIAGNOSTIC,                    \
           "When +ReduceInitialCardMarks, explicitly defer any that "        \
           "may arise from new_pre_store_barrier")                           \
                                                                             \
   product(bool, UseCondCardMark, false,                                     \
           "Check for already marked card before updating card table")       \
                                                                             \
-  diagnostic(bool, VerifyRememberedSets, false,                             \
+  product(bool, VerifyRememberedSets, false, DIAGNOSTIC,                    \
           "Verify GC remembered sets")                                      \
                                                                             \
-  diagnostic(bool, VerifyObjectStartArray, true,                            \
+  product(bool, VerifyObjectStartArray, true, DIAGNOSTIC,                   \
           "Verify GC object start array if verify before/after")            \
                                                                             \
   product(bool, DisableExplicitGC, false,                                   \
           "Ignore calls to System.gc()")                                    \
-                                                                            \
-  product(bool, BindGCTaskThreadsToCPUs, false,                             \
-          "Bind GCTaskThreads to CPUs if possible")                         \
-                                                                            \
-  product(bool, UseGCTaskAffinity, false,                                   \
-          "Use worker affinity when asking for GCTasks")                    \
                                                                             \
   product(bool, PrintGC, false,                                             \
           "Print message at garbage collection. "                           \
@@ -692,6 +585,10 @@
           "to move")                                                        \
                                                                             \
   /* gc parameters */                                                       \
+  product(size_t, MinHeapSize, 0,                                           \
+          "Minimum heap size (in bytes); zero means use ergonomics")        \
+          constraint(MinHeapSizeConstraintFunc,AfterErgo)                   \
+                                                                            \
   product(size_t, InitialHeapSize, 0,                                       \
           "Initial heap size (in bytes); zero means use ergonomics")        \
           constraint(InitialHeapSizeConstraintFunc,AfterErgo)               \
@@ -699,6 +596,10 @@
   product(size_t, MaxHeapSize, ScaleForWordSize(96*M),                      \
           "Maximum heap size (in bytes)")                                   \
           constraint(MaxHeapSizeConstraintFunc,AfterErgo)                   \
+                                                                            \
+  product(size_t, SoftMaxHeapSize, 0, MANAGEABLE,                           \
+          "Soft limit for maximum heap size (in bytes)")                    \
+          constraint(SoftMaxHeapSizeConstraintFunc,AfterMemoryInit)         \
                                                                             \
   product(size_t, OldSize, ScaleForWordSize(4*M),                           \
           "Initial tenured generation size (in bytes)")                     \
@@ -722,43 +623,6 @@
           "generation; zero means no maximum")                              \
           range(0, max_uintx)                                               \
                                                                             \
-  product(size_t, MinTLABSize, 2*K,                                         \
-          "Minimum allowed TLAB size (in bytes)")                           \
-          range(1, max_uintx/2)                                             \
-          constraint(MinTLABSizeConstraintFunc,AfterMemoryInit)             \
-                                                                            \
-  product(size_t, TLABSize, 0,                                              \
-          "Starting TLAB size (in bytes); zero means set ergonomically")    \
-          constraint(TLABSizeConstraintFunc,AfterMemoryInit)                \
-                                                                            \
-  product(size_t, YoungPLABSize, 4096,                                      \
-          "Size of young gen promotion LAB's (in HeapWords)")               \
-          constraint(YoungPLABSizeConstraintFunc,AfterMemoryInit)           \
-                                                                            \
-  product(size_t, OldPLABSize, 1024,                                        \
-          "Size of old gen promotion LAB's (in HeapWords), or Number "      \
-          "of blocks to attempt to claim when refilling CMS LAB's")         \
-          constraint(OldPLABSizeConstraintFunc,AfterMemoryInit)             \
-                                                                            \
-  product(uintx, TLABAllocationWeight, 35,                                  \
-          "Allocation averaging weight")                                    \
-          range(0, 100)                                                     \
-                                                                            \
-  /* Limit the lower bound of this flag to 1 as it is used  */              \
-  /* in a division expression.                              */              \
-  product(uintx, TLABWasteTargetPercent, 1,                                 \
-          "Percentage of Eden that can be wasted")                          \
-          range(1, 100)                                                     \
-                                                                            \
-  product(uintx, TLABRefillWasteFraction,    64,                            \
-          "Maximum TLAB waste at a refill (internal fragmentation)")        \
-          range(1, max_juint)                                               \
-                                                                            \
-  product(uintx, TLABWasteIncrement,    4,                                  \
-          "Increment allowed waste at slow allocation")                     \
-          range(0, max_jint)                                                \
-          constraint(TLABWasteIncrementConstraintFunc,AfterMemoryInit)      \
-                                                                            \
   product(uintx, SurvivorRatio, 8,                                          \
           "Ratio of eden/survivor space size")                              \
           range(1, max_uintx-2)                                             \
@@ -778,22 +642,22 @@
           "will retry before printing a warning")                           \
           range(0, max_uintx)                                               \
                                                                             \
-  diagnostic(uintx, VerifyGCStartAt,   0,                                   \
+  product(uintx, VerifyGCStartAt,   0, DIAGNOSTIC,                          \
           "GC invoke count where +VerifyBefore/AfterGC kicks in")           \
           range(0, max_uintx)                                               \
                                                                             \
-  diagnostic(intx, VerifyGCLevel,     0,                                    \
+  product(intx, VerifyGCLevel,     0, DIAGNOSTIC,                           \
           "Generation level at which to start +VerifyBefore/AfterGC")       \
           range(0, 1)                                                       \
                                                                             \
   product(uintx, MaxTenuringThreshold,    15,                               \
           "Maximum value for tenuring threshold")                           \
-          range(0, markOopDesc::max_age + 1)                                \
+          range(0, markWord::max_age + 1)                                   \
           constraint(MaxTenuringThresholdConstraintFunc,AfterErgo)          \
                                                                             \
   product(uintx, InitialTenuringThreshold,    7,                            \
           "Initial value for tenuring threshold")                           \
-          range(0, markOopDesc::max_age + 1)                                \
+          range(0, markWord::max_age + 1)                                   \
           constraint(InitialTenuringThresholdConstraintFunc,AfterErgo)      \
                                                                             \
   product(uintx, TargetSurvivorRatio,    50,                                \
@@ -804,11 +668,14 @@
           "Percentage (0-100) of the old gen allowed as dead wood. "        \
           "Serial mark sweep treats this as both the minimum and maximum "  \
           "value. "                                                         \
-          "CMS uses this value only if it falls back to mark sweep. "       \
           "Par compact uses a variable scale based on the density of the "  \
           "generation and treats this as the maximum value when the heap "  \
           "is either completely full or completely empty.  Par compact "    \
-          "also has a smaller default value; see arguments.cpp.")           \
+          "also has a smaller default value; see arguments.cpp. "           \
+          "G1 full gc treats this as an allowed garbage threshold to skip " \
+          "compaction of heap regions, i.e. if a heap region has less "     \
+          "garbage than this value, then the region will not be compacted"  \
+          "during G1 full GC.")                                             \
           range(0, 100)                                                     \
                                                                             \
   product(uint, MarkSweepAlwaysCompactCount,     4,                         \
@@ -823,5 +690,9 @@
           "Number of entries we will try to leave on the stack "            \
           "during parallel gc")                                             \
           range(0, max_juint)
+
+// end of GC_FLAGS
+
+DECLARE_FLAGS(GC_FLAGS)
 
 #endif // SHARE_GC_SHARED_GC_GLOBALS_HPP

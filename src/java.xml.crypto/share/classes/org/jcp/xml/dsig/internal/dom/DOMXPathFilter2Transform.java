@@ -28,24 +28,25 @@
  * ===========================================================================
  */
 /*
- * Portions copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id: DOMXPathFilter2Transform.java 1788465 2017-03-24 15:10:51Z coheigea $
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
-import javax.xml.crypto.*;
-import javax.xml.crypto.dsig.*;
-import javax.xml.crypto.dsig.spec.TransformParameterSpec;
-import javax.xml.crypto.dsig.spec.XPathType;
-import javax.xml.crypto.dsig.spec.XPathFilter2ParameterSpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.XMLCryptoContext;
+import javax.xml.crypto.XMLStructure;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import javax.xml.crypto.dsig.spec.XPathFilter2ParameterSpec;
+import javax.xml.crypto.dsig.spec.XPathType;
+
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -57,7 +58,6 @@ import org.w3c.dom.NamedNodeMap;
  */
 public final class DOMXPathFilter2Transform extends ApacheTransform {
 
-    @Override
     public void init(TransformParameterSpec params)
         throws InvalidAlgorithmParameterException
     {
@@ -70,7 +70,6 @@ public final class DOMXPathFilter2Transform extends ApacheTransform {
         this.params = params;
     }
 
-    @Override
     public void init(XMLStructure parent, XMLCryptoContext context)
         throws InvalidAlgorithmParameterException
     {
@@ -126,7 +125,6 @@ public final class DOMXPathFilter2Transform extends ApacheTransform {
         this.params = new XPathFilter2ParameterSpec(list);
     }
 
-    @Override
     public void marshalParams(XMLStructure parent, XMLCryptoContext context)
         throws MarshalException
     {

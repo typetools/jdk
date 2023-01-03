@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,7 @@
 #include "precompiled.hpp"
 #include "memory/allocation.hpp"
 #include "memory/allocation.inline.hpp"
-#include "memory/metaspaceShared.hpp"
 #include "memory/resourceArea.hpp"
-#include "memory/universe.hpp"
-#include "runtime/atomic.hpp"
 #include "runtime/os.hpp"
 #include "runtime/task.hpp"
 #include "runtime/threadCritical.hpp"
@@ -154,11 +151,6 @@ ChunkPool* ChunkPool::_tiny_pool   = NULL;
 
 void chunkpool_init() {
   ChunkPool::initialize();
-}
-
-void
-Chunk::clean_chunk_pool() {
-  ChunkPool::clean();
 }
 
 
@@ -318,7 +310,9 @@ void Arena::destruct_contents() {
   // reset size before chop to avoid a rare racing condition
   // that can have total arena memory exceed total chunk memory
   set_size_in_bytes(0);
-  _first->chop();
+  if (_first != NULL) {
+    _first->chop();
+  }
   reset();
 }
 
@@ -326,7 +320,7 @@ void Arena::destruct_contents() {
 // change the size
 void Arena::set_size_in_bytes(size_t size) {
   if (_size_in_bytes != size) {
-    long delta = (long)(size - size_in_bytes());
+    ssize_t delta = size - size_in_bytes();
     _size_in_bytes = size;
     MemTracker::record_arena_size_change(delta, _flags);
   }
@@ -335,7 +329,7 @@ void Arena::set_size_in_bytes(size_t size) {
 // Total of all Chunks in arena
 size_t Arena::used() const {
   size_t sum = _chunk->length() - (_max-_hwm); // Size leftover in this Chunk
-  register Chunk *k = _first;
+  Chunk *k = _first;
   while( k != _chunk) {         // Whilst have Chunks in a row
     sum += k->length();         // Total size of this Chunk
     k = k->next();              // Bump along to next Chunk
@@ -373,7 +367,14 @@ void* Arena::grow(size_t x, AllocFailType alloc_failmode) {
 
 // Reallocate storage in Arena.
 void *Arena::Arealloc(void* old_ptr, size_t old_size, size_t new_size, AllocFailType alloc_failmode) {
-  if (new_size == 0) return NULL;
+  if (new_size == 0) {
+    Afree(old_ptr, old_size); // like realloc(3)
+    return NULL;
+  }
+  if (old_ptr == NULL) {
+    assert(old_size == 0, "sanity");
+    return Amalloc(new_size, alloc_failmode); // as with realloc(3), a NULL old ptr is equivalent to malloc(3)
+  }
 #ifdef ASSERT
   if (UseMallocOnly) {
     // always allocate a new object  (otherwise we'll free this one twice)
@@ -475,10 +476,6 @@ void* Arena::internal_malloc_4(size_t x) {
 // Non-product code
 
 #ifndef PRODUCT
-
-julong Arena::_bytes_allocated = 0;
-
-void Arena::inc_bytes_allocated(size_t x) { inc_stat_counter(&_bytes_allocated, x); }
 
 // debugging code
 inline void Arena::free_all(char** start, char** end) {

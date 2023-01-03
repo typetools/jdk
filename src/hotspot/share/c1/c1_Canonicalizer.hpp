@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_CANONICALIZER_HPP
-#define SHARE_VM_C1_C1_CANONICALIZER_HPP
+#ifndef SHARE_C1_C1_CANONICALIZER_HPP
+#define SHARE_C1_C1_CANONICALIZER_HPP
 
 #include "c1/c1_Instruction.hpp"
 
@@ -75,7 +75,6 @@ class Canonicalizer: InstructionVisitor {
   virtual void do_LogicOp        (LogicOp*         x);
   virtual void do_CompareOp      (CompareOp*       x);
   virtual void do_IfOp           (IfOp*            x);
-  virtual void do_IfInstanceOf   (IfInstanceOf*    x);
   virtual void do_Convert        (Convert*         x);
   virtual void do_NullCheck      (NullCheck*       x);
   virtual void do_TypeCast       (TypeCast*        x);
@@ -116,4 +115,4 @@ class Canonicalizer: InstructionVisitor {
 #endif
 };
 
-#endif // SHARE_VM_C1_C1_CANONICALIZER_HPP
+#endif // SHARE_C1_C1_CANONICALIZER_HPP

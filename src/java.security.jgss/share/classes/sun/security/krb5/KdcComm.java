@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,8 +74,6 @@ public final class KdcComm {
 
     private static final boolean DEBUG = Krb5.DEBUG;
 
-    private static final String BAD_POLICY_KEY = "krb5.kdc.bad.policy";
-
     /**
      * What to do when a KDC is unavailable, specified in the
      * java.security file with key krb5.kdc.bad.policy.
@@ -97,10 +95,11 @@ public final class KdcComm {
      * Read global settings
      */
     public static void initStatic() {
+        @SuppressWarnings("removal")
         String value = AccessController.doPrivileged(
         new PrivilegedAction<String>() {
             public String run() {
-                return Security.getProperty(BAD_POLICY_KEY);
+                return Security.getProperty("krb5.kdc.bad.policy");
             }
         });
         if (value != null) {
@@ -120,7 +119,7 @@ public final class KdcComm {
                         // Ignored. Please note that tryLess is recognized and
                         // used, parameters using default values
                         if (DEBUG) {
-                            System.out.println("Invalid " + BAD_POLICY_KEY +
+                            System.out.println("Invalid krb5.kdc.bad.policy" +
                                     " parameter for tryLess: " +
                                     value + ", use default");
                         }
@@ -345,6 +344,7 @@ public final class KdcComm {
         KdcCommunication kdcCommunication =
             new KdcCommunication(kdc, port, useTCP, timeout, retries, obuf);
         try {
+            @SuppressWarnings("removal")
             byte[] ibuf = AccessController.doPrivileged(kdcCommunication);
             if (DEBUG) {
                 System.out.println(">>> KrbKdcReq send: #bytes read="
@@ -492,12 +492,12 @@ public final class KdcComm {
 
     /**
      * Maintains a KDC accessible list. Unavailable KDCs are put into a
-     * blacklist, when a KDC in the blacklist is available, it's removed
-     * from there. No insertion order in the blacklist.
+     * secondary KDC list. When a KDC in the secondary list is available,
+     * it is removed from there. No insertion order in the secondary KDC list.
      *
-     * There are two methods to deal with KDCs in the blacklist. 1. Only try
-     * them when there's no KDC not on the blacklist. 2. Still try them, but
-     * with lesser number of retries and smaller timeout value.
+     * There are two methods to deal with KDCs in the secondary KDC list.
+     * 1. Only try them when they are the only known KDCs.
+     * 2. Still try them, but with fewer retries and a smaller timeout value.
      */
     static class KdcAccessibility {
         // Known bad KDCs

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * Signals that one of the ObjectStreamExceptions was thrown during a
  * write operation.  Thrown during a read operation when one of the
@@ -33,28 +35,22 @@ package java.io;
  * field. The stream is reset to it's initial state and all references
  * to objects already deserialized are discarded.
  *
- * <p>As of release 1.4, this exception has been retrofitted to conform to
- * the general purpose exception-chaining mechanism.  The "exception causing
- * the abort" that is provided at construction time and
- * accessed via the public {@link #detail} field is now known as the
- * <i>cause</i>, and may be accessed via the {@link Throwable#getCause()}
- * method, as well as the aforementioned "legacy field."
- *
- * @author  unascribed
  * @since   1.1
  */
 public class WriteAbortedException extends ObjectStreamException {
+    @java.io.Serial
     private static final long serialVersionUID = -3326426625597282442L;
 
     /**
      * Exception that was caught while writing the ObjectStream.
      *
-     * <p>This field predates the general-purpose exception chaining facility.
-     * The {@link Throwable#getCause()} method is now the preferred means of
-     * obtaining this information.
+     * @deprecated This field predates the general-purpose exception
+     * chaining facility.  The {@link Throwable#getCause()} method is
+     * now the preferred means of obtaining this information.
      *
      * @serial
      */
+    @Deprecated(since="17")
     public Exception detail;
 
     /**
@@ -87,7 +83,8 @@ public class WriteAbortedException extends ObjectStreamException {
      *          which may be null.
      * @since   1.4
      */
-    public Throwable getCause() {
+    @Override
+    public @Nullable Throwable getCause() {
         return detail;
     }
 }

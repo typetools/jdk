@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,10 @@
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_ValueStack.hpp"
 #include "ci/ciInstance.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "runtime/os.hpp"
+#include "runtime/vm_version.hpp"
 
 void LIR_Assembler::patching_epilog(PatchingStub* patch, LIR_PatchCode patch_code, Register obj, CodeEmitInfo* info) {
   // We must have enough patching space so that call can be inserted.
@@ -99,9 +101,9 @@ PatchingStub::PatchID LIR_Assembler::patching_id(CodeEmitInfo* info) {
 
 
 LIR_Assembler::LIR_Assembler(Compilation* c):
-   _compilation(c)
- , _masm(c->masm())
+   _masm(c->masm())
  , _bs(BarrierSet::barrier_set())
+ , _compilation(c)
  , _frame_map(c->frame_map())
  , _current_block(NULL)
  , _pending_non_safepoint(NULL)
@@ -112,6 +114,9 @@ LIR_Assembler::LIR_Assembler(Compilation* c):
 
 
 LIR_Assembler::~LIR_Assembler() {
+  // The unwind handler label may be unnbound if this destructor is invoked because of a bail-out.
+  // Reset it here to avoid an assertion.
+  _unwind_handler_entry.reset();
 }
 
 
@@ -159,6 +164,9 @@ bool LIR_Assembler::needs_icache(ciMethod* method) const {
   return !method->is_static();
 }
 
+bool LIR_Assembler::needs_clinit_barrier_on_entry(ciMethod* method) const {
+  return VM_Version::supports_fast_class_init_checks() && method->needs_clinit_barrier();
+}
 
 int LIR_Assembler::code_offset() const {
   return _masm->offset();
@@ -443,10 +451,8 @@ void LIR_Assembler::emit_rtcall(LIR_OpRTCall* op) {
 void LIR_Assembler::emit_call(LIR_OpJavaCall* op) {
   verify_oop_map(op->info());
 
-  if (os::is_MP()) {
-    // must align calls sites, otherwise they can't be updated atomically on MP hardware
-    align_call(op->code());
-  }
+  // must align calls sites, otherwise they can't be updated atomically
+  align_call(op->code());
 
   // emit the static call stub stuff out of line
   emit_static_call_stub();
@@ -463,9 +469,6 @@ void LIR_Assembler::emit_call(LIR_OpJavaCall* op) {
   case lir_icvirtual_call:
     ic_call(op);
     break;
-  case lir_virtual_call:
-    vtable_call(op);
-    break;
   default:
     fatal("unexpected op code: %s", op->name());
     break;
@@ -477,9 +480,9 @@ void LIR_Assembler::emit_call(LIR_OpJavaCall* op) {
     compilation()->set_has_method_handle_invokes(true);
   }
 
-#if defined(X86) && defined(TIERED)
+#if defined(IA32) && defined(COMPILER2)
   // C2 leave fpu stack dirty clean it
-  if (UseSSE < 2) {
+  if (UseSSE < 2 && !CompilerConfig::is_c1_only_no_jvmci()) {
     int i;
     for ( i = 1; i <= 7 ; i++ ) {
       ffree(i);
@@ -488,7 +491,7 @@ void LIR_Assembler::emit_call(LIR_OpJavaCall* op) {
       ffree(0);
     }
   }
-#endif // X86 && TIERED
+#endif // IA32 && COMPILER2
 }
 
 
@@ -517,9 +520,15 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
       break;
     }
 
-    case lir_return:
-      return_op(op->in_opr());
+    case lir_return: {
+      assert(op->as_OpReturn() != NULL, "sanity");
+      LIR_OpReturn *ret_op = (LIR_OpReturn*)op;
+      return_op(ret_op->in_opr(), ret_op->stub());
+      if (ret_op->stub() != NULL) {
+        append_code_stub(ret_op->stub());
+      }
       break;
+    }
 
     case lir_safepoint:
       if (compilation()->debug_info_recorder()->last_pc_offset() == code_offset()) {
@@ -528,6 +537,7 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
       safepoint_poll(op->in_opr(), op->info());
       break;
 
+#ifdef IA32
     case lir_fxch:
       fxch(op->in_opr()->as_jint());
       break;
@@ -535,10 +545,7 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
     case lir_fld:
       fld(op->in_opr()->as_jint());
       break;
-
-    case lir_ffree:
-      ffree(op->in_opr()->as_jint());
-      break;
+#endif // IA32
 
     case lir_branch:
       break;
@@ -549,10 +556,6 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
 
     case lir_pop:
       pop(op->in_opr());
-      break;
-
-    case lir_neg:
-      negate(op->in_opr(), op->result_opr());
       break;
 
     case lir_leal:
@@ -574,16 +577,6 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
       monitor_address(op->in_opr()->as_constant_ptr()->as_jint(), op->result_opr());
       break;
 
-#ifdef SPARC
-    case lir_pack64:
-      pack64(op->in_opr(), op->result_opr());
-      break;
-
-    case lir_unpack64:
-      unpack64(op->in_opr(), op->result_opr());
-      break;
-#endif
-
     case lir_unwind:
       unwind_op(op->in_opr());
       break;
@@ -597,11 +590,6 @@ void LIR_Assembler::emit_op1(LIR_Op1* op) {
 
 void LIR_Assembler::emit_op0(LIR_Op0* op) {
   switch (op->code()) {
-    case lir_word_align: {
-      _masm->align(BytesPerWord);
-      break;
-    }
-
     case lir_nop:
       assert(op->info() == NULL, "not supported");
       _masm->nop();
@@ -609,10 +597,6 @@ void LIR_Assembler::emit_op0(LIR_Op0* op) {
 
     case lir_label:
       Unimplemented();
-      break;
-
-    case lir_build_frame:
-      build_frame();
       break;
 
     case lir_std_entry:
@@ -624,6 +608,9 @@ void LIR_Assembler::emit_op0(LIR_Op0* op) {
       }
       offsets()->set_value(CodeOffsets::Verified_Entry, _masm->offset());
       _masm->verified_entry();
+      if (needs_clinit_barrier_on_entry(compilation()->method())) {
+        clinit_barrier(compilation()->method());
+      }
       build_frame();
       offsets()->set_value(CodeOffsets::Frame_Complete, _masm->offset());
       break;
@@ -633,20 +620,14 @@ void LIR_Assembler::emit_op0(LIR_Op0* op) {
       osr_entry();
       break;
 
-    case lir_24bit_FPU:
-      set_24bit_FPU();
+#ifdef IA32
+    case lir_fpop_raw:
+      fpop();
       break;
-
-    case lir_reset_FPU:
-      reset_FPU();
-      break;
+#endif // IA32
 
     case lir_breakpoint:
       breakpoint();
-      break;
-
-    case lir_fpop_raw:
-      fpop();
       break;
 
     case lir_membar:
@@ -726,9 +707,7 @@ void LIR_Assembler::emit_op2(LIR_Op2* op) {
     case lir_add:
     case lir_sub:
     case lir_mul:
-    case lir_mul_strictfp:
     case lir_div:
-    case lir_div_strictfp:
     case lir_rem:
       assert(op->fpu_pop_count() < 2, "");
       arith_op(
@@ -745,6 +724,10 @@ void LIR_Assembler::emit_op2(LIR_Op2* op) {
     case lir_tan:
     case lir_log10:
       intrinsic_op(op->code(), op->in_opr1(), op->in_opr2(), op->result_opr(), op);
+      break;
+
+    case lir_neg:
+      negate(op->in_opr1(), op->result_opr(), op->in_opr2());
       break;
 
     case lir_logic_and:
@@ -779,6 +762,7 @@ void LIR_Assembler::build_frame() {
 
 
 void LIR_Assembler::roundfp_op(LIR_Opr src, LIR_Opr tmp, LIR_Opr dest, bool pop_fpu_stack) {
+  assert(strict_fp_requires_explicit_rounding, "not required");
   assert((src->is_single_fpu() && dest->is_single_stack()) ||
          (src->is_double_fpu() && dest->is_double_stack()),
          "round_fp: rounds register -> stack location");
@@ -844,11 +828,7 @@ void LIR_Assembler::verify_oop_map(CodeEmitInfo* info) {
         if (!r->is_stack()) {
           stringStream st;
           st.print("bad oop %s at %d", r->as_Register()->name(), _masm->offset());
-#ifdef SPARC
-          _masm->_verify_oop(r->as_Register(), os::strdup(st.as_string(), mtCompiler), __FILE__, __LINE__);
-#else
           _masm->verify_oop(r->as_Register());
-#endif
         } else {
           _masm->verify_stack_oop(r->reg2stack() * VMRegImpl::stack_slot_size);
         }

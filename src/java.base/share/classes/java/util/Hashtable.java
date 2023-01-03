@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -42,7 +43,7 @@ import java.io.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.BiFunction;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * This class implements a hash table, which maps keys to values. Any
@@ -186,6 +187,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     private transient int modCount = 0;
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = 1421746759512286392L;
 
     /**
@@ -194,7 +196,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *
      * @param      initialCapacity   the initial capacity of the hashtable.
      * @param      loadFactor        the load factor of the hashtable.
-     * @exception  IllegalArgumentException  if the initial capacity is less
+     * @throws     IllegalArgumentException  if the initial capacity is less
      *             than zero, or if the load factor is nonpositive.
      */
     public Hashtable(@NonNegative int initialCapacity, float loadFactor) {
@@ -216,7 +218,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * and default load factor (0.75).
      *
      * @param     initialCapacity   the initial capacity of the hashtable.
-     * @exception IllegalArgumentException if the initial capacity is less
+     * @throws    IllegalArgumentException if the initial capacity is less
      *              than zero.
      */
     public Hashtable(@NonNegative int initialCapacity) {
@@ -320,10 +322,10 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *             {@code value} argument in this hashtable as
      *             determined by the {@code equals} method;
      *             {@code false} otherwise.
-     * @exception  NullPointerException  if the value is {@code null}
+     * @throws     NullPointerException  if the value is {@code null}
      */
     @Pure
-    public synchronized boolean contains(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object value) {
+    public synchronized boolean contains(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
         if (value == null) {
             throw new NullPointerException();
         }
@@ -352,7 +354,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @since 1.2
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object value) {
+    public boolean containsValue(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
         return contains(value);
     }
 
@@ -368,7 +370,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public synchronized boolean containsKey(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object key) {
+    public synchronized boolean containsKey(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
         int index = (hash & 0x7FFFFFFF) % tab.length;
@@ -397,7 +399,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Pure
     @SuppressWarnings("unchecked")
-    public synchronized @Nullable V get(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied Object key) {
+    public synchronized @Nullable V get(@GuardSatisfied Hashtable<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
         int index = (hash & 0x7FFFFFFF) % tab.length;
@@ -486,7 +488,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @param      value   the value
      * @return     the previous value of the specified key in this hashtable,
      *             or {@code null} if it did not have one
-     * @exception  NullPointerException  if the key or value is
+     * @throws     NullPointerException  if the key or value is
      *               {@code null}
      * @see     Object#equals(Object)
      * @see     #get(Object)
@@ -525,7 +527,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *          or {@code null} if the key did not have a mapping
      * @throws  NullPointerException  if the key is {@code null}
      */
-    public synchronized @Nullable V remove(@GuardSatisfied Hashtable<K, V> this, Object key) {
+    public synchronized @Nullable V remove(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
         int index = (hash & 0x7FFFFFFF) % tab.length;
@@ -697,10 +699,10 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         public @NonNegative int size() {
             return count;
         }
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             return containsKey(o);
         }
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
             return Hashtable.this.remove(o) != null;
         }
         public void clear() {
@@ -741,10 +743,9 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return super.add(o);
         }
 
-        public boolean contains(Object o) {
-            if (!(o instanceof Map.Entry))
+        public boolean contains(@UnknownSignedness Object o) {
+            if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
-            Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
             Object key = entry.getKey();
             Entry<?,?>[] tab = table;
             int hash = key.hashCode();
@@ -756,10 +757,9 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return false;
         }
 
-        public boolean remove(Object o) {
-            if (!(o instanceof Map.Entry))
+        public boolean remove(@UnknownSignedness Object o) {
+            if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
-            Map.Entry<?,?> entry = (Map.Entry<?,?>) o;
             Object key = entry.getKey();
             Entry<?,?>[] tab = table;
             int hash = key.hashCode();
@@ -825,7 +825,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         public @NonNegative int size() {
             return count;
         }
-        public boolean contains(Object o) {
+        public boolean contains(@UnknownSignedness Object o) {
             return containsValue(o);
         }
         public void clear() {
@@ -849,9 +849,8 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         if (o == this)
             return true;
 
-        if (!(o instanceof Map))
+        if (!(o instanceof Map<?, ?> t))
             return false;
-        Map<?,?> t = (Map<?,?>) o;
         if (t.size() != size())
             return false;
 
@@ -915,7 +914,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
 
     @Override
     @Pure
-    public synchronized V getOrDefault(Object key, V defaultValue) {
+    public synchronized V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
         V result = get(key);
         return (null == result) ? defaultValue : result;
     }
@@ -987,7 +986,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     }
 
     @Override
-    public synchronized boolean remove(Object key, Object value) {
+    public synchronized boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         Objects.requireNonNull(value);
 
         Entry<?,?> tab[] = table;
@@ -1238,6 +1237,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *             for each key-value mapping represented by the Hashtable
      *             The key-value mappings are emitted in no particular order.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
             throws IOException {
         writeHashtable(s);
@@ -1291,6 +1291,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     /**
      * Reconstitute the Hashtable from a stream (i.e., deserialize it).
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
             throws IOException, ClassNotFoundException {
         readHashtable(s);
@@ -1428,9 +1429,8 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         public boolean equals(Object o) {
-            if (!(o instanceof Map.Entry))
+            if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
 
             return (key==null ? e.getKey()==null : key.equals(e.getKey())) &&
                (value==null ? e.getValue()==null : value.equals(e.getValue()));

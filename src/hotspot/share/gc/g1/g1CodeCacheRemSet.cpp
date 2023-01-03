@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@
 #include "memory/iterator.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "runtime/atomic.hpp"
+#include "services/memTracker.hpp"
 #include "utilities/hashtable.inline.hpp"
 #include "utilities/stack.inline.hpp"
 
@@ -43,14 +45,7 @@ size_t G1CodeRootSetTable::mem_size() {
 
 G1CodeRootSetTable::Entry* G1CodeRootSetTable::new_entry(nmethod* nm) {
   unsigned int hash = compute_hash(nm);
-  Entry* entry = (Entry*) new_entry_free_list();
-  if (entry == NULL) {
-    entry = (Entry*) NEW_C_HEAP_ARRAY2(char, entry_size(), mtGC, CURRENT_PC);
-  }
-  entry->set_next(NULL);
-  entry->set_hash(hash);
-  entry->set_literal(nm);
-  return entry;
+  return (Entry*)Hashtable<nmethod*, mtGC>::new_entry(hash, nm);
 }
 
 void G1CodeRootSetTable::remove_entry(Entry* e, Entry* previous) {
@@ -71,15 +66,10 @@ G1CodeRootSetTable::~G1CodeRootSetTable() {
       Entry* to_remove = e;
       // read next before freeing.
       e = e->next();
-      unlink_entry(to_remove);
-      FREE_C_HEAP_ARRAY(char, to_remove);
+      BasicHashtable<mtGC>::free_entry(to_remove);
     }
   }
   assert(number_of_entries() == 0, "should have removed all entries");
-  free_buckets();
-  for (BasicHashtableEntry<mtGC>* e = new_entry_free_list(); e != NULL; e = new_entry_free_list()) {
-    FREE_C_HEAP_ARRAY(char, e);
-  }
 }
 
 bool G1CodeRootSetTable::add(nmethod* nm) {
@@ -120,7 +110,6 @@ void G1CodeRootSetTable::copy_to(G1CodeRootSetTable* new_table) {
       new_table->add(e->literal());
     }
   }
-  new_table->copy_freelist(this);
 }
 
 void G1CodeRootSetTable::nmethods_do(CodeBlobClosure* blk) {
@@ -156,19 +145,19 @@ G1CodeRootSet::~G1CodeRootSet() {
 }
 
 G1CodeRootSetTable* G1CodeRootSet::load_acquire_table() {
-  return OrderAccess::load_acquire(&_table);
+  return Atomic::load_acquire(&_table);
 }
 
 void G1CodeRootSet::allocate_small_table() {
   G1CodeRootSetTable* temp = new G1CodeRootSetTable(SmallSize);
 
-  OrderAccess::release_store(&_table, temp);
+  Atomic::release_store(&_table, temp);
 }
 
 void G1CodeRootSetTable::purge_list_append(G1CodeRootSetTable* table) {
   for (;;) {
     table->_purge_next = _purge_list;
-    G1CodeRootSetTable* old = Atomic::cmpxchg(table, &_purge_list, table->_purge_next);
+    G1CodeRootSetTable* old = Atomic::cmpxchg(&_purge_list, table->_purge_next, table);
     if (old == table->_purge_next) {
       break;
     }
@@ -192,7 +181,7 @@ void G1CodeRootSet::move_to_large() {
 
   G1CodeRootSetTable::purge_list_append(_table);
 
-  OrderAccess::release_store(&_table, temp);
+  Atomic::release_store(&_table, temp);
 }
 
 void G1CodeRootSet::purge() {

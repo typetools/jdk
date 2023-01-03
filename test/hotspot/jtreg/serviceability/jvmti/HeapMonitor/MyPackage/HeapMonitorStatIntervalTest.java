@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2018, Google and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -28,6 +29,7 @@ package MyPackage;
  * @summary Verifies the JVMTI Heap Monitor sampling interval average.
  * @build Frame HeapMonitor
  * @compile HeapMonitorStatIntervalTest.java
+ * @requires vm.jvmti
  * @requires vm.compMode != "Xcomp"
  * @run main/othervm/native -agentlib:HeapMonitorTest MyPackage.HeapMonitorStatIntervalTest
  */
@@ -57,6 +59,9 @@ public class HeapMonitorStatIntervalTest {
     double errorPercentage = error / expectedCount * 100;
 
     boolean success = (errorPercentage < 10.0);
+    System.out.println("Interval: " + interval + ", throw if failure: " + throwIfFailure
+        + " - Expected count: " + expectedCount + ", allocationIterations: " + allocationIterations
+        + ", actualCount: " + actualCount + " -> " + success);
 
     if (!success && throwIfFailure) {
       throw new RuntimeException("Interval average over 10% for interval " + interval + " -> "
@@ -81,7 +86,7 @@ public class HeapMonitorStatIntervalTest {
   public static void main(String[] args) {
     int[] tab = {1024, 8192};
 
-    HeapMonitor.calculateAverageOneElementSize();
+    HeapMonitor.calculateOneElementSize();
 
     for (int intervalIdx = 0; intervalIdx < tab.length; intervalIdx++) {
       testInterval(tab[intervalIdx]);

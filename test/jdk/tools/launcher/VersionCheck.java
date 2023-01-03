@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,12 +33,11 @@
  */
 
 import java.io.File;
-import java.io.FileFilter;
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class VersionCheck extends TestHelper {
@@ -55,16 +54,14 @@ public class VersionCheck extends TestHelper {
         "jaccessinspector-32",
         "jaccesswalker",
         "jaccesswalker-32",
-        "jaotc",
         "javaw",
         "javaws",
         "jcontrol",
         "jmc",
         "jmc.ini",
         "jweblauncher",
-        "packager",
-        "ssvagent",
-        "unpack200",
+        "jpackage",
+        "ssvagent"
     };
 
     // tools that do not accept -version
@@ -75,7 +72,6 @@ public class VersionCheck extends TestHelper {
         "jaccessinspector-32",
         "jaccesswalker",
         "jaccesswalker-32",
-        "jaotc",
         "jar",
         "jarsigner",
         "java-rmi",
@@ -88,6 +84,7 @@ public class VersionCheck extends TestHelper {
         "jcontrol",
         "jdeprscan",
         "jdeps",
+        "jfr",
         "jimage",
         "jinfo",
         "jlink",
@@ -106,15 +103,11 @@ public class VersionCheck extends TestHelper {
         "kinit",
         "klist",
         "ktab",
-        "pack200",
-        "packager",
-        "rmic",
-        "rmid",
+        "jpackage",
         "rmiregistry",
         "serialver",
         "servertool",
-        "ssvagent",
-        "unpack200"
+        "ssvagent"
     };
 
     // expected reference strings
@@ -278,34 +271,6 @@ public class VersionCheck extends TestHelper {
             System.out.println("All Version string comparisons: PASS");
         } else {
             throw new AssertionError("VersionCheck failed: " + errorMessage);
-        }
-    }
-
-    static class ToolFilter implements FileFilter {
-        final Iterable<String> exclude;
-        protected ToolFilter(String... exclude) {
-            List<String> tlist = new ArrayList<>();
-            this.exclude = tlist;
-            for (String x : exclude) {
-                String str = x + ((isWindows) ? EXE_FILE_EXT : "");
-                tlist.add(str.toLowerCase());
-            }
-        }
-        @Override
-        public boolean accept(File pathname) {
-            if (!pathname.isFile() || !pathname.canExecute()) {
-                return false;
-            }
-            String name = pathname.getName().toLowerCase();
-            if (isWindows && !name.endsWith(EXE_FILE_EXT)) {
-                return false;
-            }
-            for (String x : exclude) {
-                if (name.endsWith(x)) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

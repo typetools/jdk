@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -84,6 +84,7 @@ public abstract class UNIXToolkit extends SunToolkit
     private BufferedImage tmpImage = null;
 
     public static int getDatatransferTimeout() {
+        @SuppressWarnings("removal")
         Integer dt = AccessController.doPrivileged(
                 new GetIntegerAction("sun.awt.datatransfer.timeout"));
         if (dt == null || dt <= 0) {
@@ -91,6 +92,25 @@ public abstract class UNIXToolkit extends SunToolkit
         } else {
             return dt;
         }
+    }
+
+    @Override
+    public String getDesktop() {
+        String gnome = "gnome";
+        @SuppressWarnings("removal")
+        String gsi = AccessController.doPrivileged(
+                        (PrivilegedAction<String>) ()
+                                -> System.getenv("GNOME_DESKTOP_SESSION_ID"));
+        if (gsi != null) {
+            return gnome;
+        }
+
+        @SuppressWarnings("removal")
+        String desktop = AccessController.doPrivileged(
+                (PrivilegedAction<String>) ()
+                        -> System.getenv("XDG_CURRENT_DESKTOP"));
+        return (desktop != null && desktop.toLowerCase().contains(gnome))
+                ? gnome : null;
     }
 
     /**
@@ -168,7 +188,7 @@ public abstract class UNIXToolkit extends SunToolkit
         }
 
         // We need to have at least gtk.icon.<stock_id>.<size>.<orientation>
-        String str[] = longname.split("\\.");
+        String[] str = longname.split("\\.");
         if (str.length != 5) {
             return null;
         }
@@ -379,6 +399,7 @@ public abstract class UNIXToolkit extends SunToolkit
     }
 
     public static GtkVersions getEnabledGtkVersion() {
+        @SuppressWarnings("removal")
         String version = AccessController.doPrivileged(
                 new GetPropertyAction("jdk.gtk.version"));
         if (version == null) {
@@ -395,6 +416,7 @@ public abstract class UNIXToolkit extends SunToolkit
         return GtkVersions.getVersion(get_gtk_version());
     }
 
+    @SuppressWarnings("removal")
     public static boolean isGtkVerbose() {
         return AccessController.doPrivileged((PrivilegedAction<Boolean>)()
                 -> Boolean.getBoolean("jdk.gtk.verbose"));

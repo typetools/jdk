@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,12 @@
 
 package com.sun.source.tree;
 
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Name;
 
 /**
- * A tree node for a class, interface, enum, or annotation
+ * A tree node for a class, interface, enum, record, or annotation
  * type declaration.
  *
  * For example:
@@ -42,7 +43,11 @@ import javax.lang.model.element.Name;
  *   }
  * </pre>
  *
- * @jls sections 8.1, 8.9, 9.1, and 9.6
+ * @jls 8.1 Class Declarations
+ * @jls 8.9 Enum Types
+ * @jls 8.10 Record Types
+ * @jls 9.1 Interface Declarations
+ * @jls 9.6 Annotation Types
  *
  * @author Peter von der Ah&eacute;
  * @author Jonathan Gibbons
@@ -80,6 +85,19 @@ public interface ClassTree extends StatementTree {
      * @return the interfaces
      */
     List<? extends Tree> getImplementsClause();
+
+    /**
+     * Returns the subclasses permitted by this type declaration.
+     *
+     * @implSpec this implementation returns an empty list
+     *
+     * @return the subclasses
+     *
+     * @since 17
+     */
+    default List<? extends Tree> getPermitsClause() {
+        return List.of();
+    }
 
     /**
      * Returns the members declared in this type declaration.

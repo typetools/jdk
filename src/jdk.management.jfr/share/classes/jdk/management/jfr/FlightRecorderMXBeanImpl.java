@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package jdk.management.jfr;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.AccessControlContext;
 import java.security.AccessController;
@@ -70,6 +71,7 @@ import jdk.jfr.FlightRecorderPermission;
 import jdk.jfr.Recording;
 import jdk.jfr.RecordingState;
 import jdk.jfr.internal.management.ManagementSupport;
+import jdk.jfr.internal.management.StreamManager;
 
 // Instantiated by service provider
 final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements FlightRecorderMXBean, NotificationEmitter {
@@ -78,8 +80,10 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         private final NotificationListener listener;
         private final NotificationFilter filter;
         private final Object handback;
+        @SuppressWarnings("removal")
         private final AccessControlContext context;
 
+        @SuppressWarnings("removal")
         public MXBeanListener(NotificationListener listener, NotificationFilter filter, Object handback) {
             this.context = AccessController.getContext();
             this.listener = listener;
@@ -87,6 +91,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
             this.handback = handback;
         }
 
+        @SuppressWarnings("removal")
         public void recordingStateChanged(Recording recording) {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override
@@ -105,7 +110,8 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
     private static final String OPTION_DISK = "disk";
     private static final String OPTION_DUMP_ON_EXIT = "dumpOnExit";
     private static final String OPTION_DURATION = "duration";
-    private static final List<String> OPTIONS = Arrays.asList(new String[] { OPTION_DUMP_ON_EXIT, OPTION_DURATION, OPTION_NAME, OPTION_MAX_AGE, OPTION_MAX_SIZE, OPTION_DISK, });
+    private static final String OPTION_DESTINATION = "destination";
+    private static final List<String> OPTIONS = Arrays.asList(new String[] { OPTION_DUMP_ON_EXIT, OPTION_DURATION, OPTION_NAME, OPTION_MAX_AGE, OPTION_MAX_SIZE, OPTION_DISK, OPTION_DESTINATION, });
     private final StreamManager streamHandler = new StreamManager();
     private final Map<Long, Object> changes = new ConcurrentHashMap<>();
     private final AtomicLong sequenceNumber = new AtomicLong();
@@ -145,6 +151,15 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         Instant starttime = MBeanUtils.parseTimestamp(s.get("startTime"), Instant.MIN);
         Instant endtime = MBeanUtils.parseTimestamp(s.get("endTime"), Instant.MAX);
         int blockSize = MBeanUtils.parseBlockSize(s.get("blockSize"), StreamManager.DEFAULT_BLOCK_SIZE);
+        String version = s.get("streamVersion");
+        if (version != null) {
+            if ("1.0".equals(version)) {
+                Recording r = getRecording(id);
+                return streamHandler.createOngoing(r, blockSize, starttime, endtime).getId();
+            }
+            throw new IllegalArgumentException("Unsupported stream version " + version);
+        }
+
         InputStream is = getExistingRecording(id).getStream(starttime, endtime);
         if (is == null) {
             throw new IOException("No recording data available");
@@ -182,6 +197,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
     @Override
     public List<EventTypeInfo> getEventTypes() {
         MBeanUtils.checkMonitor();
+        @SuppressWarnings("removal")
         List<EventType> eventTypes = AccessController.doPrivileged(new PrivilegedAction<List<EventType>>() {
             @Override
             public List<EventType> run() {
@@ -205,6 +221,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         getExistingRecording(recording).setSettings(values);
     }
 
+    @SuppressWarnings("removal")
     @Override
     public long newRecording() {
         MBeanUtils.checkControl();
@@ -283,6 +300,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         validateOption(ops, OPTION_MAX_AGE, MBeanUtils::duration);
         validateOption(ops, OPTION_MAX_SIZE, MBeanUtils::size);
         validateOption(ops, OPTION_DURATION, MBeanUtils::duration);
+        validateOption(ops, OPTION_DESTINATION, x -> MBeanUtils.destination(r, x));
 
         // All OK, now set them.atomically
         setOption(ops, OPTION_DUMP_ON_EXIT, "false", MBeanUtils::booleanValue, x -> r.setDumpOnExit(x));
@@ -291,6 +309,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         setOption(ops, OPTION_MAX_AGE, null, MBeanUtils::duration, x -> r.setMaxAge(x));
         setOption(ops, OPTION_MAX_SIZE, "0", MBeanUtils::size, x -> r.setMaxSize(x));
         setOption(ops, OPTION_DURATION, null, MBeanUtils::duration, x -> r.setDuration(x));
+        setOption(ops, OPTION_DESTINATION, null, x -> MBeanUtils.destination(r, x), x -> setOptionDestination(r, x));
     }
 
     @Override
@@ -305,6 +324,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         Long maxSize = r.getMaxSize();
         options.put(OPTION_MAX_SIZE, String.valueOf(maxSize == null ? "0" : maxSize.toString()));
         options.put(OPTION_DURATION, ManagementSupport.formatTimespan(r.getDuration(), " "));
+        options.put(OPTION_DESTINATION, ManagementSupport.getDestinationOriginalText(r));
         return options;
     }
 
@@ -349,6 +369,20 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         }
     }
 
+    private static void setOptionDestination(Recording recording, String destination){
+        try {
+            Path pathDestination = null;
+            if(destination != null){
+                pathDestination = Paths.get(destination);
+            }
+            recording.setDestination(pathDestination);
+        } catch (IOException e) {
+            IllegalArgumentException iae = new IllegalArgumentException("Not a valid destination " + destination);
+            iae.addSuppressed(e);
+            throw iae;
+        }
+    }
+
     private static <T, U> void validateOption(Map<String, String> options, String name, Function<String, U> validator) {
         try {
             String v = options.get(name);
@@ -361,6 +395,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         }
     }
 
+    @SuppressWarnings("removal")
     private FlightRecorder getRecorder() throws SecurityException {
         // Synchronize on some private object that is always available
         synchronized (streamHandler) {
@@ -384,6 +419,7 @@ final class FlightRecorderMXBeanImpl extends StandardEmitterMBean implements Fli
         return new MBeanNotificationInfo[] { info };
     }
 
+    @SuppressWarnings("removal")
     @Override
     public void addNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) {
         MXBeanListener mxbeanListener = new MXBeanListener(listener, filter, handback);

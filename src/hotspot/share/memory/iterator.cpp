@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,9 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/classLoaderDataGraph.hpp"
+#include "code/nmethod.hpp"
 #include "memory/iterator.inline.hpp"
-#include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
@@ -32,7 +33,7 @@
 DoNothingClosure do_nothing_cl;
 
 void CLDToOopClosure::do_cld(ClassLoaderData* cld) {
-  cld->oops_do(_oop_closure, _must_claim_cld);
+  cld->oops_do(_oop_closure, _cld_claim);
 }
 
 void ObjectToOopClosure::do_object(oop obj) {
@@ -59,7 +60,14 @@ void CodeBlobToOopClosure::do_code_blob(CodeBlob* cb) {
 
 void MarkingCodeBlobClosure::do_code_blob(CodeBlob* cb) {
   nmethod* nm = cb->as_nmethod_or_null();
-  if (nm != NULL && !nm->test_set_oops_do_mark()) {
+  if (nm != NULL && nm->oops_do_try_claim()) {
     do_nmethod(nm);
+  }
+}
+
+void CodeBlobToNMethodClosure::do_code_blob(CodeBlob* cb) {
+  nmethod* nm = cb->as_nmethod_or_null();
+  if (nm != NULL) {
+    _nm_cl->do_nmethod(nm);
   }
 }

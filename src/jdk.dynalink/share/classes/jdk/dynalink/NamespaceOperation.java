@@ -89,7 +89,7 @@ import java.util.Objects;
  *         .withNamespace(StandardNamespace.PROPERTY)
  *         .named("color");
  * </pre>
- * <h3>Operations on multiple namespaces</h3>
+ * <h2>Operations on multiple namespaces</h2>
  * If multiple namespaces are specified, the namespaces are treated as
  * alternatives to each other in order of preference. The semantics of
  * such operation is "first applicable".
@@ -246,7 +246,7 @@ public final class NamespaceOperation implements Operation {
     @Override
     public int hashCode() {
         return baseOperation.hashCode() + 31 * Arrays.hashCode(namespaces);
-    };
+    }
 
     /**
      * Returns the string representation of this namespace operation. Defined to

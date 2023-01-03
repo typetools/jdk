@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,30 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/z/c1/zBarrierSetC1.hpp"
-#include "gc/z/c2/zBarrierSetC2.hpp"
 #include "gc/z/zBarrierSet.hpp"
 #include "gc/z/zBarrierSetAssembler.hpp"
+#include "gc/z/zBarrierSetNMethod.hpp"
 #include "gc/z/zGlobals.hpp"
 #include "gc/z/zHeap.inline.hpp"
+#include "gc/z/zStackWatermark.hpp"
 #include "gc/z/zThreadLocalData.hpp"
 #include "runtime/thread.hpp"
+#include "utilities/macros.hpp"
+#ifdef COMPILER1
+#include "gc/z/c1/zBarrierSetC1.hpp"
+#endif
+#ifdef COMPILER2
+#include "gc/z/c2/zBarrierSetC2.hpp"
+#endif
+
+class ZBarrierSetC1;
+class ZBarrierSetC2;
 
 ZBarrierSet::ZBarrierSet() :
     BarrierSet(make_barrier_set_assembler<ZBarrierSetAssembler>(),
                make_barrier_set_c1<ZBarrierSetC1>(),
                make_barrier_set_c2<ZBarrierSetC2>(),
+               new ZBarrierSetNMethod(),
                BarrierSet::FakeRtti(BarrierSet::ZBarrierSet)) {}
 
 ZBarrierSetAssembler* ZBarrierSet::assembler() {
@@ -44,10 +55,9 @@ ZBarrierSetAssembler* ZBarrierSet::assembler() {
 
 bool ZBarrierSet::barrier_needed(DecoratorSet decorators, BasicType type) {
   assert((decorators & AS_RAW) == 0, "Unexpected decorator");
-  assert((decorators & AS_NO_KEEPALIVE) == 0, "Unexpected decorator");
   //assert((decorators & ON_UNKNOWN_OOP_REF) == 0, "Unexpected decorator");
 
-  if (type == T_OBJECT || type == T_ARRAY) {
+  if (is_reference_type(type)) {
     assert((decorators & (IN_HEAP | IN_NATIVE)) != 0, "Where is reference?");
     // Barrier needed even when IN_NATIVE, to allow concurrent scanning.
     return true;
@@ -67,12 +77,21 @@ void ZBarrierSet::on_thread_destroy(Thread* thread) {
   ZThreadLocalData::destroy(thread);
 }
 
-void ZBarrierSet::on_thread_attach(JavaThread* thread) {
+void ZBarrierSet::on_thread_attach(Thread* thread) {
   // Set thread local address bad mask
   ZThreadLocalData::set_address_bad_mask(thread, ZAddressBadMask);
+  if (thread->is_Java_thread()) {
+    JavaThread* const jt = thread->as_Java_thread();
+    StackWatermark* const watermark = new ZStackWatermark(jt);
+    StackWatermarkSet::add_watermark(jt, watermark);
+  }
 }
 
-void ZBarrierSet::on_thread_detach(JavaThread* thread) {
+void ZBarrierSet::on_thread_detach(Thread* thread) {
   // Flush and free any remaining mark stacks
   ZHeap::heap()->mark_flush_and_free(thread);
+}
+
+void ZBarrierSet::print_on(outputStream* st) const {
+  st->print_cr("ZBarrierSet");
 }

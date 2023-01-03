@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,6 +81,7 @@ import sun.awt.AWTPermissions;
 import sun.awt.AppContext;
 import sun.awt.HeadlessToolkit;
 import sun.awt.PeerEvent;
+import sun.awt.PlatformGraphicsInfo;
 import sun.awt.SunToolkit;
 
 /**
@@ -105,9 +106,9 @@ import sun.awt.SunToolkit;
  *
  * <li>Moving the focus from one component to another.
  * <br>For more information, see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html#transferTiming">Timing
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html#transferTiming">Timing
  * Focus Transfers</a>, a section in
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/">The Swing
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/">The Swing
  * Tutorial</a>.
  *
  * <li>Making a top-level container visible.
@@ -138,6 +139,11 @@ import sun.awt.SunToolkit;
  */
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class Toolkit {
+
+    /**
+     * Constructs a {@code Toolkit}.
+     */
+    protected Toolkit() {}
 
     // The following method is called by the private method
     // <code>updateSystemColors</code> in <code>SystemColor</code>.
@@ -394,6 +400,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * properties are set up properly before any classes dependent upon them
      * are initialized.
      */
+    @SuppressWarnings("removal")
     private static void initAssistiveTechnologies() {
 
         // Get accessibility properties
@@ -507,11 +514,16 @@ public abstract @UsesObjectEquals class Toolkit {
      * implementations of the AccessibilityProvider interface, not by the order
      * of provider names in the property list.  When a provider is found its
      * accessibility implementation will be started by calling the provider's
-     * activate method.  All errors are handled via an AWTError exception.
+     * activate method. If the list of assistive technology providers is the
+     * empty string or contains only
+     * {@linkplain Character#isWhitespace(int) white space} characters or
+     * {@code null} it is ignored. All other errors are handled via an AWTError
+     * exception.
      */
+    @SuppressWarnings("removal")
     private static void loadAssistiveTechnologies() {
         // Load any assistive technologies
-        if (atNames != null) {
+        if (atNames != null && !atNames.isBlank()) {
             ClassLoader cl = ClassLoader.getSystemClassLoader();
             Set<String> names = Arrays.stream(atNames.split(","))
                                       .map(String::trim)
@@ -555,7 +567,13 @@ public abstract @UsesObjectEquals class Toolkit {
      * {@code -Djavax.accessibility.assistive_technologies=MyServiceProvider}.
      * In addition to MyServiceProvider other service providers can be specified
      * using a comma separated list.  Service providers are loaded after the AWT
-     * toolkit is created. All errors are handled via an AWTError exception.
+     * toolkit is created.
+     * <p>
+     * If the list of assistive technology providers as provided through system
+     * property "{@systemProperty javax.accessibility.assistive_technologies}"
+     * is the empty string or contains only
+     * {@linkplain Character#isWhitespace(int) white space} characters it is
+     * ignored. All other errors are handled via an AWTError exception.
      * <p>
      * The names specified in the assistive_technologies property are used to query
      * each service provider implementation.  If the requested name matches the
@@ -576,43 +594,17 @@ public abstract @UsesObjectEquals class Toolkit {
      * specified.
      *
      * @return     the default toolkit.
-     * @exception  AWTError  if a toolkit could not be found, or
-     *                 if one could not be accessed or instantiated.
+     * @throws  AWTError in case of an error loading assistive technologies.
      * @see java.util.ServiceLoader
      * @see javax.accessibility.AccessibilityProvider
      */
     public static synchronized Toolkit getDefaultToolkit() {
         if (toolkit == null) {
-            java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction<Void>() {
-                public Void run() {
-                    Class<?> cls = null;
-                    String nm = System.getProperty("awt.toolkit");
-                    try {
-                        cls = Class.forName(nm);
-                    } catch (ClassNotFoundException e) {
-                        ClassLoader cl = ClassLoader.getSystemClassLoader();
-                        if (cl != null) {
-                            try {
-                                cls = cl.loadClass(nm);
-                            } catch (final ClassNotFoundException ignored) {
-                                throw new AWTError("Toolkit not found: " + nm);
-                            }
-                        }
-                    }
-                    try {
-                        if (cls != null) {
-                            toolkit = (Toolkit)cls.getConstructor().newInstance();
-                            if (GraphicsEnvironment.isHeadless()) {
-                                toolkit = new HeadlessToolkit(toolkit);
-                            }
-                        }
-                    } catch (final ReflectiveOperationException ignored) {
-                        throw new AWTError("Could not create Toolkit: " + nm);
-                    }
-                    return null;
-                }
-            });
+            toolkit = PlatformGraphicsInfo.createToolkit();
+            if (GraphicsEnvironment.isHeadless() &&
+                !(toolkit instanceof HeadlessToolkit)) {
+                toolkit = new HeadlessToolkit(toolkit);
+            }
             if (!GraphicsEnvironment.isHeadless()) {
                 loadAssistiveTechnologies();
             }
@@ -1391,6 +1383,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * directly.  -hung
      */
     private static boolean loaded = false;
+    @SuppressWarnings("removal")
     static void loadLibraries() {
         if (!loaded) {
             java.security.AccessController.doPrivileged(
@@ -1405,6 +1398,11 @@ public abstract @UsesObjectEquals class Toolkit {
     }
 
     static {
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
         AWTAccessor.setToolkitAccessor(
                 new AWTAccessor.ToolkitAccessor() {
                     @Override
@@ -1478,6 +1476,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @see     java.awt.AWTPermission
     */
     public final EventQueue getSystemEventQueue() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPermission(AWTPermissions.CHECK_AWT_EVENTQUEUE_PERMISSION);
@@ -1817,6 +1816,7 @@ public abstract @UsesObjectEquals class Toolkit {
         if (localL == null) {
             return;
         }
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
           security.checkPermission(AWTPermissions.ALL_AWT_EVENTS_PERMISSION);
@@ -1886,6 +1886,7 @@ public abstract @UsesObjectEquals class Toolkit {
         if (listener == null) {
             return;
         }
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPermission(AWTPermissions.ALL_AWT_EVENTS_PERMISSION);
@@ -1951,6 +1952,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @since 1.4
      */
     public AWTEventListener[] getAWTEventListeners() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPermission(AWTPermissions.ALL_AWT_EVENTS_PERMISSION);
@@ -2003,6 +2005,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @since 1.4
      */
     public AWTEventListener[] getAWTEventListeners(long eventMask) {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPermission(AWTPermissions.ALL_AWT_EVENTS_PERMISSION);
@@ -2225,6 +2228,9 @@ public abstract @UsesObjectEquals class Toolkit {
         }
     }
 
+    /**
+     * This is a utility class to support desktop properties.
+     */
     @SuppressWarnings("serial")
     private static class DesktopPropertyChangeSupport extends PropertyChangeSupport {
 

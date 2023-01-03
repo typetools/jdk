@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2007, 2008, 2011, 2015, Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,44 +23,53 @@
  *
  */
 
-#ifndef OS_CPU_LINUX_ZERO_VM_ATOMIC_LINUX_ZERO_HPP
-#define OS_CPU_LINUX_ZERO_VM_ATOMIC_LINUX_ZERO_HPP
+#ifndef OS_CPU_LINUX_ZERO_ATOMIC_LINUX_ZERO_HPP
+#define OS_CPU_LINUX_ZERO_ATOMIC_LINUX_ZERO_HPP
 
+#include "orderAccess_linux_zero.hpp"
 #include "runtime/os.hpp"
 
 // Implementation of class atomic
 
 template<size_t byte_size>
-struct Atomic::PlatformAdd
-  : Atomic::AddAndFetch<Atomic::PlatformAdd<byte_size> >
-{
-  template<typename I, typename D>
-  D add_and_fetch(I add_value, D volatile* dest, atomic_memory_order order) const;
+struct Atomic::PlatformAdd {
+  template<typename D, typename I>
+  D add_and_fetch(D volatile* dest, I add_value, atomic_memory_order order) const;
+
+  template<typename D, typename I>
+  D fetch_and_add(D volatile* dest, I add_value, atomic_memory_order order) const {
+    return add_and_fetch(dest, add_value, order) - add_value;
+  }
 };
 
 template<>
-template<typename I, typename D>
-inline D Atomic::PlatformAdd<4>::add_and_fetch(I add_value, D volatile* dest,
+template<typename D, typename I>
+inline D Atomic::PlatformAdd<4>::add_and_fetch(D volatile* dest, I add_value,
                                                atomic_memory_order order) const {
   STATIC_ASSERT(4 == sizeof(I));
   STATIC_ASSERT(4 == sizeof(D));
 
-  return __sync_add_and_fetch(dest, add_value);
+  D res = __atomic_add_fetch(dest, add_value, __ATOMIC_RELEASE);
+  FULL_MEM_BARRIER;
+  return res;
 }
 
 template<>
-template<typename I, typename D>
-inline D Atomic::PlatformAdd<8>::add_and_fetch(I add_value, D volatile* dest,
+template<typename D, typename I>
+inline D Atomic::PlatformAdd<8>::add_and_fetch(D volatile* dest, I add_value,
                                                atomic_memory_order order) const {
   STATIC_ASSERT(8 == sizeof(I));
   STATIC_ASSERT(8 == sizeof(D));
-  return __sync_add_and_fetch(dest, add_value);
+
+  D res = __atomic_add_fetch(dest, add_value, __ATOMIC_RELEASE);
+  FULL_MEM_BARRIER;
+  return res;
 }
 
 template<>
 template<typename T>
-inline T Atomic::PlatformXchg<4>::operator()(T exchange_value,
-                                             T volatile* dest,
+inline T Atomic::PlatformXchg<4>::operator()(T volatile* dest,
+                                             T exchange_value,
                                              atomic_memory_order order) const {
   STATIC_ASSERT(4 == sizeof(T));
   // __sync_lock_test_and_set is a bizarrely named atomic exchange
@@ -71,19 +80,20 @@ inline T Atomic::PlatformXchg<4>::operator()(T exchange_value,
   // All atomic operations are expected to be full memory barriers
   // (see atomic.hpp). However, __sync_lock_test_and_set is not
   // a full memory barrier, but an acquire barrier. Hence, this added
-  // barrier.
-  __sync_synchronize();
+  // barrier. Some platforms (notably ARM) have peculiarities with
+  // their barrier implementations, delegate it to OrderAccess.
+  OrderAccess::fence();
   return result;
 }
 
 template<>
 template<typename T>
-inline T Atomic::PlatformXchg<8>::operator()(T exchange_value,
-                                             T volatile* dest,
+inline T Atomic::PlatformXchg<8>::operator()(T volatile* dest,
+                                             T exchange_value,
                                              atomic_memory_order order) const {
   STATIC_ASSERT(8 == sizeof(T));
   T result = __sync_lock_test_and_set (dest, exchange_value);
-  __sync_synchronize();
+  OrderAccess::fence();
   return result;
 }
 
@@ -93,22 +103,34 @@ struct Atomic::PlatformCmpxchg<1> : Atomic::CmpxchgByteUsingInt {};
 
 template<>
 template<typename T>
-inline T Atomic::PlatformCmpxchg<4>::operator()(T exchange_value,
-                                                T volatile* dest,
+inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest,
                                                 T compare_value,
+                                                T exchange_value,
                                                 atomic_memory_order order) const {
   STATIC_ASSERT(4 == sizeof(T));
-  return __sync_val_compare_and_swap(dest, compare_value, exchange_value);
+
+  T value = compare_value;
+  FULL_MEM_BARRIER;
+  __atomic_compare_exchange(dest, &value, &exchange_value, /*weak*/false,
+                            __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+  FULL_MEM_BARRIER;
+  return value;
 }
 
 template<>
 template<typename T>
-inline T Atomic::PlatformCmpxchg<8>::operator()(T exchange_value,
-                                                T volatile* dest,
+inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
                                                 T compare_value,
+                                                T exchange_value,
                                                 atomic_memory_order order) const {
   STATIC_ASSERT(8 == sizeof(T));
-  return __sync_val_compare_and_swap(dest, compare_value, exchange_value);
+
+  FULL_MEM_BARRIER;
+  T value = compare_value;
+  __atomic_compare_exchange(dest, &value, &exchange_value, /*weak*/false,
+                            __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+  FULL_MEM_BARRIER;
+  return value;
 }
 
 template<>
@@ -122,10 +144,10 @@ inline T Atomic::PlatformLoad<8>::operator()(T const volatile* src) const {
 
 template<>
 template<typename T>
-inline void Atomic::PlatformStore<8>::operator()(T store_value,
-                                                 T volatile* dest) const {
+inline void Atomic::PlatformStore<8>::operator()(T volatile* dest,
+                                                 T store_value) const {
   STATIC_ASSERT(8 == sizeof(T));
   os::atomic_copy64(reinterpret_cast<const volatile int64_t*>(&store_value), reinterpret_cast<volatile int64_t*>(dest));
 }
 
-#endif // OS_CPU_LINUX_ZERO_VM_ATOMIC_LINUX_ZERO_HPP
+#endif // OS_CPU_LINUX_ZERO_ATOMIC_LINUX_ZERO_HPP

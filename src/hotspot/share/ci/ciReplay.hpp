@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CI_CIREPLAY_HPP
-#define SHARE_VM_CI_CIREPLAY_HPP
+#ifndef SHARE_CI_CIREPLAY_HPP
+#define SHARE_CI_CIREPLAY_HPP
 
 #include "ci/ciMethod.hpp"
 
@@ -116,7 +116,6 @@ class ciReplay {
   static void initialize(ciMethod* method);
 
   static bool is_loaded(Method* method);
-  static bool is_loaded(Klass* klass);
 
   static bool should_not_inline(ciMethod* method);
   static bool should_inline(void* data, ciMethod* method, int bci, int inline_depth);
@@ -125,4 +124,4 @@ class ciReplay {
 #endif
 };
 
-#endif // SHARE_VM_CI_CIREPLAY_HPP
+#endif // SHARE_CI_CIREPLAY_HPP

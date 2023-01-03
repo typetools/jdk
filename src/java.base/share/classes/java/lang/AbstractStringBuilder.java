@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,10 +38,12 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.math.FloatingDecimal;
+
 import java.util.Arrays;
 import java.util.Spliterator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
+import jdk.internal.util.ArraysSupport;
 
 import static java.lang.String.COMPACT_STRINGS;
 import static java.lang.String.UTF16;
@@ -82,10 +84,13 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      */
     int count;
 
+    private static final byte[] EMPTYVALUE = new byte[0];
+
     /**
      * This no-arg constructor is necessary for serialization of subclasses.
      */
     AbstractStringBuilder() {
+        value = EMPTYVALUE;
     }
 
     /**
@@ -102,6 +107,60 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
     }
 
     /**
+     * Constructs an AbstractStringBuilder that contains the same characters
+     * as the specified {@code String}. The initial capacity of
+     * the string builder is {@code 16} plus the length of the
+     * {@code String} argument.
+     *
+     * @param      str   the string to copy.
+     */
+    AbstractStringBuilder(String str) {
+        int length = str.length();
+        int capacity = (length < Integer.MAX_VALUE - 16)
+                ? length + 16 : Integer.MAX_VALUE;
+        final byte initCoder = str.coder();
+        coder = initCoder;
+        value = (initCoder == LATIN1)
+                ? new byte[capacity] : StringUTF16.newBytesFor(capacity);
+        append(str);
+    }
+
+    /**
+     * Constructs an AbstractStringBuilder that contains the same characters
+     * as the specified {@code CharSequence}. The initial capacity of
+     * the string builder is {@code 16} plus the length of the
+     * {@code CharSequence} argument.
+     *
+     * @param      seq   the sequence to copy.
+     */
+    AbstractStringBuilder(CharSequence seq) {
+        int length = seq.length();
+        if (length < 0) {
+            throw new NegativeArraySizeException("Negative length: " + length);
+        }
+        int capacity = (length < Integer.MAX_VALUE - 16)
+                ? length + 16 : Integer.MAX_VALUE;
+
+        final byte initCoder;
+        if (COMPACT_STRINGS) {
+            if (seq instanceof AbstractStringBuilder) {
+                initCoder = ((AbstractStringBuilder)seq).getCoder();
+            } else if (seq instanceof String) {
+                initCoder = ((String)seq).coder();
+            } else {
+                initCoder = LATIN1;
+            }
+        } else {
+            initCoder = UTF16;
+        }
+
+        coder = initCoder;
+        value = (initCoder == LATIN1)
+                ? new byte[capacity] : StringUTF16.newBytesFor(capacity);
+        append(seq);
+    }
+
+    /**
      * Compares the objects of two AbstractStringBuilder implementations lexicographically.
      *
      * @since 11
@@ -111,8 +170,8 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
             return 0;
         }
 
-        byte val1[] = value;
-        byte val2[] = another.value;
+        byte[] val1 = value;
+        byte[] val2 = another.value;
         int count1 = this.count;
         int count2 = another.count;
 
@@ -137,9 +196,9 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
     }
 
     /**
-     * Returns the current capacity. The capacity is the amount of storage
-     * available for newly inserted characters, beyond which an allocation
-     * will occur.
+     * Returns the current capacity. The capacity is the number of characters
+     * that can be stored (including already written characters), beyond which
+     * an allocation will occur.
      *
      * @return  the current capacity
      */
@@ -195,7 +254,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
 
     /**
      * Returns a capacity at least as large as the given minimum capacity.
-     * Returns the current capacity increased by the same amount + 2 if
+     * Returns the current capacity increased by the current length + 2 if
      * that suffices.
      * Will not return a capacity greater than
      * {@code (MAX_ARRAY_SIZE >> coder)} unless the given minimum capacity
@@ -206,26 +265,14 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      *         greater than (Integer.MAX_VALUE >> coder)
      */
     private int newCapacity(@NonNegative int minCapacity) {
-        // overflow-conscious code
-        int oldCapacity = value.length >> coder;
-        int newCapacity = (oldCapacity << 1) + 2;
-        if (newCapacity - minCapacity < 0) {
-            newCapacity = minCapacity;
+        int oldLength = value.length;
+        int newLength = minCapacity << coder;
+        int growth = newLength - oldLength;
+        int length = ArraysSupport.newLength(oldLength, growth, oldLength + (2 << coder));
+        if (length == Integer.MAX_VALUE) {
+            throw new OutOfMemoryError("Required length exceeds implementation limit");
         }
-        int SAFE_BOUND = MAX_ARRAY_SIZE >> coder;
-        return (newCapacity <= 0 || SAFE_BOUND - newCapacity < 0)
-            ? hugeCapacity(minCapacity)
-            : newCapacity;
-    }
-
-    private int hugeCapacity(int minCapacity) {
-        int SAFE_BOUND = MAX_ARRAY_SIZE >> coder;
-        int UNSAFE_BOUND = Integer.MAX_VALUE >> coder;
-        if (UNSAFE_BOUND - minCapacity < 0) { // overflow
-            throw new OutOfMemoryError();
-        }
-        return (minCapacity > SAFE_BOUND)
-            ? minCapacity : SAFE_BOUND;
+        return length >> coder;
     }
 
     /**
@@ -519,7 +566,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * @param   obj   an {@code Object}.
      * @return  a reference to this object.
      */
-    public AbstractStringBuilder append(Object obj) {
+    public AbstractStringBuilder append(@GuardSatisfied @Nullable Object obj) {
         return append(String.valueOf(obj));
     }
 
@@ -552,7 +599,12 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
         return this;
     }
 
-    // Documentation in subclasses because of synchro difference
+    /**
+     * Appends the specified {@code StringBuffer} to this sequence.
+     *
+     * @param   sb   the {@code StringBuffer} to append.
+     * @return  a reference to this object.
+     */
     public AbstractStringBuilder append(@Nullable StringBuffer sb) {
         return this.append((AbstractStringBuilder)sb);
     }
@@ -642,9 +694,14 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
         checkRange(start, end, s.length());
         int len = end - start;
         ensureCapacityInternal(count + len);
-        appendChars(s, start, end);
+        if (s instanceof String) {
+            appendChars((String)s, start, end);
+        } else {
+            appendChars(s, start, end);
+        }
         return this;
     }
+
 
     /**
      * Appends the string representation of the {@code char} array
@@ -691,7 +748,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      *         if {@code offset < 0} or {@code len < 0}
      *         or {@code offset+len > str.length}
      */
-    public AbstractStringBuilder append(char str[], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
+    public AbstractStringBuilder append(char[] str, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         int end = offset + len;
         checkRange(offset, end, str.length);
         ensureCapacityInternal(count + len);
@@ -985,12 +1042,12 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * <p> An invocation of this method of the form
      *
      * <pre>{@code
-     * sb.subSequence(begin,&nbsp;end)}</pre>
+     * sb.subSequence(begin, end)}</pre>
      *
      * behaves in exactly the same way as the invocation
      *
      * <pre>{@code
-     * sb.substring(begin,&nbsp;end)}</pre>
+     * sb.substring(begin, end)}</pre>
      *
      * This method is provided so that this class can
      * implement the {@link CharSequence} interface.
@@ -1003,7 +1060,6 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      *          if {@code start} or {@code end} are negative,
      *          if {@code end} is greater than {@code length()},
      *          or if {@code start} is greater than {@code end}
-     * @spec JSR-51
      */
     @Override
     public CharSequence subSequence(@NonNegative int start, @NonNegative int end) {
@@ -1089,7 +1145,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * @return     a reference to this object.
      * @throws     StringIndexOutOfBoundsException  if the offset is invalid.
      */
-    public AbstractStringBuilder insert(@NonNegative int offset, Object obj) {
+    public AbstractStringBuilder insert(@NonNegative int offset, @GuardSatisfied @Nullable Object obj) {
         return insert(offset, String.valueOf(obj));
     }
 
@@ -1196,9 +1252,6 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
         if (s == null) {
             s = "null";
         }
-        if (s instanceof String) {
-            return this.insert(dstOffset, (String)s);
-        }
         return this.insert(dstOffset, s, 0, s.length());
     }
 
@@ -1258,7 +1311,11 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
         ensureCapacityInternal(count + len);
         shift(dstOffset, len);
         count += len;
-        putCharsAt(dstOffset, s, start, end);
+        if (s instanceof String) {
+            putStringAt(dstOffset, (String) s, start, end);
+        } else {
+            putCharsAt(dstOffset, s, start, end);
+        }
         return this;
     }
 
@@ -1520,9 +1577,8 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
     public AbstractStringBuilder reverse() {
         byte[] val = this.value;
         int count = this.count;
-        int coder = this.coder;
         int n = count - 1;
-        if (COMPACT_STRINGS && coder == LATIN1) {
+        if (isLatin1()) {
             for (int j = (n-1) >> 1; j >= 0; j--) {
                 int k = n - j;
                 byte cj = val[j];
@@ -1611,7 +1667,7 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
      * @param dstBegin  the char index, not offset of byte[]
      * @param coder     the coder of dst[]
      */
-    void getBytes(byte dst[], int dstBegin, byte coder) {
+    void getBytes(byte[] dst, int dstBegin, byte coder) {
         if (this.coder == coder) {
             System.arraycopy(value, 0, dst, dstBegin << coder, count << coder);
         } else {        // this.coder == LATIN && coder == UTF16
@@ -1676,11 +1732,15 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
         }
     }
 
-    private final void putStringAt(int index, String str) {
+    private void putStringAt(int index, String str, int off, int end) {
         if (getCoder() != str.coder()) {
             inflate();
         }
-        str.getBytes(value, index, coder);
+        str.getBytes(value, off, index, coder, end - off);
+    }
+
+    private void putStringAt(int index, String str) {
+        putStringAt(index, str, 0, str.length());
     }
 
     private final void appendChars(char[] s, int off, int end) {
@@ -1703,6 +1763,35 @@ abstract @UsesObjectEquals class AbstractStringBuilder implements Appendable, Ch
             StringUTF16.putCharsSB(this.value, count, s, off, end);
         }
         this.count = count + end - off;
+    }
+
+    private final void appendChars(String s, int off, int end) {
+        if (isLatin1()) {
+            if (s.isLatin1()) {
+                System.arraycopy(s.value(), off, this.value, this.count, end - off);
+            } else {
+                // We might need to inflate, but do it as late as possible since
+                // the range of characters we're copying might all be latin1
+                byte[] val = this.value;
+                for (int i = off, j = count; i < end; i++) {
+                    char c = s.charAt(i);
+                    if (StringLatin1.canEncode(c)) {
+                        val[j++] = (byte) c;
+                    } else {
+                        count = j;
+                        inflate();
+                        System.arraycopy(s.value(), i << UTF16, this.value, j << UTF16, (end - i) << UTF16);
+                        count += end - i;
+                        return;
+                    }
+                }
+            }
+        } else if (s.isLatin1()) {
+            StringUTF16.putCharsSB(this.value, this.count, s, off, end);
+        } else { // both UTF16
+            System.arraycopy(s.value(), off << UTF16, this.value, this.count << UTF16, (end - off) << UTF16);
+        }
+        count += end - off;
     }
 
     private final void appendChars(CharSequence s, int off, int end) {

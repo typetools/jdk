@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package sun.invoke.util;
 
 import java.lang.reflect.Modifier;
 import static java.lang.reflect.Modifier.*;
-import java.util.Objects;
 import jdk.internal.reflect.Reflection;
 
 /**
@@ -39,6 +38,7 @@ public class VerifyAccess {
     private VerifyAccess() { }  // cannot instantiate
 
     private static final int UNCONDITIONAL_ALLOWED = java.lang.invoke.MethodHandles.Lookup.UNCONDITIONAL;
+    private static final int ORIGINAL_ALLOWED = java.lang.invoke.MethodHandles.Lookup.ORIGINAL;
     private static final int MODULE_ALLOWED = java.lang.invoke.MethodHandles.Lookup.MODULE;
     private static final int PACKAGE_ONLY = 0;
     private static final int PACKAGE_ALLOWED = java.lang.invoke.MethodHandles.Lookup.PACKAGE;
@@ -88,18 +88,20 @@ public class VerifyAccess {
      * @param defc the class in which the proposed member is actually defined
      * @param mods modifier flags for the proposed member
      * @param lookupClass the class for which the access check is being made
+     * @param prevLookupClass the class for which the access check is being made
+     * @param allowedModes allowed modes
      * @return true iff the accessing class can access such a member
      */
     public static boolean isMemberAccessible(Class<?> refc,  // symbolic ref class
                                              Class<?> defc,  // actual def class
                                              int      mods,  // actual member mods
                                              Class<?> lookupClass,
+                                             Class<?> prevLookupClass,
                                              int      allowedModes) {
         if (allowedModes == 0)  return false;
-        assert((allowedModes & PUBLIC) != 0 &&
-               (allowedModes & ~(ALL_ACCESS_MODES|PACKAGE_ALLOWED|MODULE_ALLOWED|UNCONDITIONAL_ALLOWED)) == 0);
+        assert((allowedModes & ~(ALL_ACCESS_MODES|PACKAGE_ALLOWED|MODULE_ALLOWED|UNCONDITIONAL_ALLOWED|ORIGINAL_ALLOWED)) == 0);
         // The symbolic reference class (refc) must always be fully verified.
-        if (!isClassAccessible(refc, lookupClass, allowedModes)) {
+        if (!isClassAccessible(refc, lookupClass, prevLookupClass, allowedModes)) {
             return false;
         }
         // Usually refc and defc are the same, but verify defc also in case they differ.
@@ -109,6 +111,7 @@ public class VerifyAccess {
 
         switch (mods & ALL_ACCESS_MODES) {
         case PUBLIC:
+            assert (allowedModes & PUBLIC) != 0 || (allowedModes & UNCONDITIONAL_ALLOWED) != 0;
             return true;  // already checked above
         case PROTECTED:
             assert !defc.isInterface(); // protected members aren't allowed in interfaces
@@ -175,14 +178,23 @@ public class VerifyAccess {
      * package that is exported to the module that contains D.
      * <li>C and D are members of the same runtime package.
      * </ul>
+     *
      * @param refc the symbolic reference class to which access is being checked (C)
      * @param lookupClass the class performing the lookup (D)
+     * @param prevLookupClass the class from which the lookup was teleported or null
+     * @param allowedModes allowed modes
      */
-    public static boolean isClassAccessible(Class<?> refc, Class<?> lookupClass,
+    public static boolean isClassAccessible(Class<?> refc,
+                                            Class<?> lookupClass,
+                                            Class<?> prevLookupClass,
                                             int allowedModes) {
         if (allowedModes == 0)  return false;
-        assert((allowedModes & PUBLIC) != 0 &&
-               (allowedModes & ~(ALL_ACCESS_MODES|PACKAGE_ALLOWED|MODULE_ALLOWED|UNCONDITIONAL_ALLOWED)) == 0);
+        assert((allowedModes & ~(ALL_ACCESS_MODES|PACKAGE_ALLOWED|MODULE_ALLOWED|UNCONDITIONAL_ALLOWED|ORIGINAL_ALLOWED)) == 0);
+
+        if ((allowedModes & PACKAGE_ALLOWED) != 0 &&
+            isSamePackage(lookupClass, refc))
+            return true;
+
         int mods = getClassModifiers(refc);
         if (isPublic(mods)) {
 
@@ -195,37 +207,62 @@ public class VerifyAccess {
                 return true;
             }
 
-            // trivially allow
-            if ((allowedModes & MODULE_ALLOWED) != 0 &&
-                (lookupModule == refModule))
+            // allow access to public types in all unconditionally exported packages
+            if ((allowedModes & UNCONDITIONAL_ALLOWED) != 0) {
+                return refModule.isExported(refc.getPackageName());
+            }
+
+            if (lookupModule == refModule && prevLookupClass == null) {
+                // allow access to all public types in lookupModule
+                if ((allowedModes & MODULE_ALLOWED) != 0)
+                    return true;
+
+                assert (allowedModes & PUBLIC) != 0;
+                return refModule.isExported(refc.getPackageName());
+            }
+
+            // cross-module access
+            // 1. refc is in different module from lookupModule, or
+            // 2. refc is in lookupModule and a different module from prevLookupModule
+            Module prevLookupModule = prevLookupClass != null ? prevLookupClass.getModule()
+                                                              : null;
+            assert refModule != lookupModule || refModule != prevLookupModule;
+            if (isModuleAccessible(refc, lookupModule, prevLookupModule))
                 return true;
 
-            // check readability when UNCONDITIONAL not allowed
-            if (((allowedModes & UNCONDITIONAL_ALLOWED) != 0)
-                || lookupModule.canRead(refModule)) {
-
-                // check that refc is in an exported package
-                if ((allowedModes & MODULE_ALLOWED) != 0) {
-                    if (refModule.isExported(refc.getPackageName(), lookupModule))
-                        return true;
-                } else {
-                    // exported unconditionally
-                    if (refModule.isExported(refc.getPackageName()))
-                        return true;
-                }
-
-                // not exported but allow access during VM initialization
-                // because java.base does not have its exports setup
-                if (!jdk.internal.misc.VM.isModuleSystemInited())
-                    return true;
-            }
+            // not exported but allow access during VM initialization
+            // because java.base does not have its exports setup
+            if (!jdk.internal.misc.VM.isModuleSystemInited())
+                return true;
 
             // public class not accessible to lookupClass
             return false;
         }
-        if ((allowedModes & PACKAGE_ALLOWED) != 0 &&
-            isSamePackage(lookupClass, refc))
-            return true;
+
+        return false;
+    }
+
+    /*
+     * Tests if a class or interface REFC is accessible to m1 and m2 where m2
+     * may be null.
+     *
+     * A class or interface REFC in m is accessible to m1 and m2 if and only if
+     * both m1 and m2 read m and m exports the package of REFC at least to
+     * both m1 and m2.
+     */
+    public static boolean isModuleAccessible(Class<?> refc,  Module m1, Module m2) {
+        Module refModule = refc.getModule();
+        assert refModule != m1 || refModule != m2;
+        int mods = getClassModifiers(refc);
+        if (isPublic(mods)) {
+            if (m1.canRead(refModule) && (m2 == null || m2.canRead(refModule))) {
+                String pn = refc.getPackageName();
+
+                // refc is exported package to at least both m1 and m2
+                if (refModule.isExported(pn, m1) && (m2 == null || refModule.isExported(pn, m2)))
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -285,6 +322,7 @@ public class VerifyAccess {
         // memoization.  And the caller never gets to look at the alternate type binding
         // ("res"), whether it exists or not.
         final String name = type.getName();
+        @SuppressWarnings("removal")
         Class<?> res = java.security.AccessController.doPrivileged(
                 new java.security.PrivilegedAction<>() {
                     public Class<?> run() {
@@ -337,7 +375,7 @@ public class VerifyAccess {
             return true;
         if (class1.getClassLoader() != class2.getClassLoader())
             return false;
-        return Objects.equals(class1.getPackageName(), class2.getPackageName());
+        return class1.getPackageName() == class2.getPackageName();
     }
 
     /**

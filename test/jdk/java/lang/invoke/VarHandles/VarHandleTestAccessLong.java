@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,6 +50,14 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
 
     long v;
 
+    static final long static_final_v2 = 0x0123456789ABCDEFL;
+
+    static long static_v2;
+
+    final long final_v2 = 0x0123456789ABCDEFL;
+
+    long v2;
+
     VarHandle vhFinalField;
 
     VarHandle vhField;
@@ -60,6 +68,41 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
 
     VarHandle vhArray;
 
+
+    VarHandle[] allocate(boolean same) {
+        List<VarHandle> vhs = new ArrayList<>();
+
+        String postfix = same ? "" : "2";
+        VarHandle vh;
+        try {
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessLong.class, "final_v" + postfix, long.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessLong.class, "v" + postfix, long.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessLong.class, "static_final_v" + postfix, long.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessLong.class, "static_v" + postfix, long.class);
+            vhs.add(vh);
+
+            if (same) {
+                vh = MethodHandles.arrayElementVarHandle(long[].class);
+            }
+            else {
+                vh = MethodHandles.arrayElementVarHandle(String[].class);
+            }
+            vhs.add(vh);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+        return vhs.toArray(new VarHandle[0]);
+    }
 
     @BeforeClass
     public void setup() throws Exception {
@@ -87,6 +130,26 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
         vhs.add(vhArray);
 
         return vhs.stream().map(tc -> new Object[]{tc}).toArray(Object[][]::new);
+    }
+
+    @Test
+    public void testEquals() {
+        VarHandle[] vhs1 = allocate(true);
+        VarHandle[] vhs2 = allocate(true);
+
+        for (int i = 0; i < vhs1.length; i++) {
+            for (int j = 0; j < vhs1.length; j++) {
+                if (i != j) {
+                    assertNotEquals(vhs1[i], vhs1[j]);
+                    assertNotEquals(vhs1[i], vhs2[j]);
+                }
+            }
+        }
+
+        VarHandle[] vhs3 = allocate(false);
+        for (int i = 0; i < vhs1.length; i++) {
+            assertNotEquals(vhs1[i], vhs3[i]);
+        }
     }
 
     @Test(dataProvider = "varHandlesProvider")
@@ -1167,127 +1230,127 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
         for (int i : new int[]{-1, Integer.MIN_VALUE, 10, 11, Integer.MAX_VALUE}) {
             final int ci = i;
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.get(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.set(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getVolatile(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setVolatile(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getAcquire(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setRelease(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getOpaque(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.compareAndSet(array, ci, 0x0123456789ABCDEFL, 0xCAFEBABECAFEBABEL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchange(array, ci, 0xCAFEBABECAFEBABEL, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchangeAcquire(array, ci, 0xCAFEBABECAFEBABEL, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchangeRelease(array, ci, 0xCAFEBABECAFEBABEL, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetPlain(array, ci, 0x0123456789ABCDEFL, 0xCAFEBABECAFEBABEL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSet(array, ci, 0x0123456789ABCDEFL, 0xCAFEBABECAFEBABEL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetAcquire(array, ci, 0x0123456789ABCDEFL, 0xCAFEBABECAFEBABEL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetRelease(array, ci, 0x0123456789ABCDEFL, 0xCAFEBABECAFEBABEL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSet(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSetAcquire(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSetRelease(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAdd(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAddAcquire(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAddRelease(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOr(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOrAcquire(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOrRelease(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAnd(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAndAcquire(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAndRelease(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXor(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXorAcquire(array, ci, 0x0123456789ABCDEFL);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXorRelease(array, ci, 0x0123456789ABCDEFL);
             });
         }

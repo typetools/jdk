@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,12 +29,18 @@
 #include "c1/c1_LIRAssembler.hpp"
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
+#include "classfile/javaClasses.hpp"
+#include "memory/universe.hpp"
 #include "nativeInst_arm.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "utilities/macros.hpp"
 #include "vmreg_arm.inline.hpp"
 
 #define __ ce->masm()->
+
+void C1SafepointPollStub::emit_code(LIR_Assembler* ce) {
+  ShouldNotReachHere();
+}
 
 void CounterOverflowStub::emit_code(LIR_Assembler* ce) {
   __ bind(_entry);
@@ -52,13 +58,13 @@ void CounterOverflowStub::emit_code(LIR_Assembler* ce) {
 
 
 RangeCheckStub::RangeCheckStub(CodeEmitInfo* info, LIR_Opr index, LIR_Opr array)
-  : _throw_index_out_of_bounds_exception(false), _index(index), _array(array) {
+  : _index(index), _array(array), _throw_index_out_of_bounds_exception(false) {
   assert(info != NULL, "must have info");
   _info = new CodeEmitInfo(info);
 }
 
 RangeCheckStub::RangeCheckStub(CodeEmitInfo* info, LIR_Opr index)
-  : _throw_index_out_of_bounds_exception(true), _index(index), _array(NULL) {
+  : _index(index), _array(NULL), _throw_index_out_of_bounds_exception(true) {
   assert(info != NULL, "must have info");
   _info = new CodeEmitInfo(info);
 }
@@ -67,9 +73,6 @@ void RangeCheckStub::emit_code(LIR_Assembler* ce) {
   __ bind(_entry);
 
   if (_info->deoptimize_on_exception()) {
-#ifdef AARCH64
-    __ NOT_TESTED();
-#endif
     __ call(Runtime1::entry_for(Runtime1::predicate_failed_trap_id), relocInfo::runtime_call_type);
     ce->add_call_info_here(_info);
     ce->verify_oop_map(_info);
@@ -86,9 +89,6 @@ void RangeCheckStub::emit_code(LIR_Assembler* ce) {
   }
 
   if (_throw_index_out_of_bounds_exception) {
-#ifdef AARCH64
-    __ NOT_TESTED();
-#endif
     __ call(Runtime1::entry_for(Runtime1::throw_index_exception_id), relocInfo::runtime_call_type);
   } else {
     __ str(_array->as_pointer_register(), Address(SP, BytesPerWord)); // ??? Correct offset? Correct instruction?
@@ -208,16 +208,12 @@ void MonitorEnterStub::emit_code(LIR_Assembler* ce) {
   const Register lock_reg = _lock_reg->as_pointer_register();
 
   ce->verify_reserved_argument_area_size(2);
-#ifdef AARCH64
-  __ stp(obj_reg, lock_reg, Address(SP));
-#else
   if (obj_reg < lock_reg) {
     __ stmia(SP, RegisterSet(obj_reg) | RegisterSet(lock_reg));
   } else {
     __ str(obj_reg, Address(SP));
     __ str(lock_reg, Address(SP, BytesPerWord));
   }
-#endif // AARCH64
 
   Runtime1::StubID enter_id = ce->compilation()->has_fpu_code() ?
                               Runtime1::monitorenter_id :
@@ -259,7 +255,7 @@ void PatchingStub::align_patch_site(MacroAssembler* masm) {
 }
 
 void PatchingStub::emit_code(LIR_Assembler* ce) {
-  const int patchable_instruction_offset = AARCH64_ONLY(NativeInstruction::instruction_size) NOT_AARCH64(0);
+  const int patchable_instruction_offset = 0;
 
   assert(NativeCall::instruction_size <= _bytes_to_copy && _bytes_to_copy <= 0xFF,
          "not enough room for call");
@@ -267,31 +263,17 @@ void PatchingStub::emit_code(LIR_Assembler* ce) {
   Label call_patch;
   bool is_load = (_id == load_klass_id) || (_id == load_mirror_id) || (_id == load_appendix_id);
 
-#ifdef AARCH64
-  assert(nativeInstruction_at(_pc_start)->is_nop(), "required for MT safe patching");
 
-  // Same alignment of reg2mem code and PatchingStub code. Required to make copied bind_literal() code properly aligned.
-  __ align(wordSize);
-#endif // AARCH64
-
-  if (is_load NOT_AARCH64(&& !VM_Version::supports_movw())) {
+  if (is_load && !VM_Version::supports_movw()) {
     address start = __ pc();
 
     // The following sequence duplicates code provided in MacroAssembler::patchable_mov_oop()
     // without creating relocation info entry.
-#ifdef AARCH64
-    // Extra nop for MT safe patching
-    __ nop();
-#endif // AARCH64
 
     assert((__ pc() - start) == patchable_instruction_offset, "should be");
-#ifdef AARCH64
-    __ ldr(_obj, __ pc());
-#else
     __ ldr(_obj, Address(PC));
     // Extra nop to handle case of large offset of oop placeholder (see NativeMovConstReg::set_data).
     __ nop();
-#endif // AARCH64
 
 #ifdef ASSERT
     for (int i = 0; i < _bytes_to_copy; i++) {
@@ -334,7 +316,7 @@ void PatchingStub::emit_code(LIR_Assembler* ce) {
 
     assert(_obj != noreg, "must be a valid register");
     // Rtemp should be OK in C1
-    __ ldr(Rtemp, Address(_obj, java_lang_Class::klass_offset_in_bytes()));
+    __ ldr(Rtemp, Address(_obj, java_lang_Class::klass_offset()));
     __ ldr(Rtemp, Address(Rtemp, InstanceKlass::init_thread_offset()));
     __ cmp(Rtemp, Rthread);
     __ b(call_patch, ne);
@@ -439,7 +421,7 @@ void ArrayCopyStub::emit_code(LIR_Assembler* ce) {
 
   VMRegPair args[5];
   BasicType signature[5] = { T_OBJECT, T_INT, T_OBJECT, T_INT, T_INT };
-  SharedRuntime::java_calling_convention(signature, args, 5, true);
+  SharedRuntime::java_calling_convention(signature, args, 5);
 
   Register r[5];
   r[0] = src()->as_pointer_register();

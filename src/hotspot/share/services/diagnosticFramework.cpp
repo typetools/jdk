@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -161,7 +161,7 @@ void DCmdParser::add_dcmd_option(GenDCmdArgument* arg) {
     o->set_next(arg);
   }
   arg->set_next(NULL);
-  Thread* THREAD = Thread::current();
+  JavaThread* THREAD = JavaThread::current(); // For exception macros.
   arg->init_value(THREAD);
   if (HAS_PENDING_EXCEPTION) {
     fatal("Initialization must be successful");
@@ -180,7 +180,7 @@ void DCmdParser::add_dcmd_argument(GenDCmdArgument* arg) {
     a->set_next(arg);
   }
   arg->set_next(NULL);
-  Thread* THREAD = Thread::current();
+  JavaThread* THREAD = JavaThread::current(); // For exception macros.
   arg->init_value(THREAD);
   if (HAS_PENDING_EXCEPTION) {
     fatal("Initialization must be successful");
@@ -437,9 +437,9 @@ GrowableArray<DCmdArgumentInfo*>* DCmdWithParser::argument_info_array() const {
 }
 
 void DCmdFactory::push_jmx_notification_request() {
-  MutexLockerEx ml(Service_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(Notification_lock, Mutex::_no_safepoint_check_flag);
   _has_pending_jmx_notification = true;
-  Service_lock->notify_all();
+  Notification_lock->notify_all();
 }
 
 void DCmdFactory::send_notification(TRAPS) {
@@ -455,7 +455,7 @@ void DCmdFactory::send_notification_internal(TRAPS) {
   HandleMark hm(THREAD);
   bool notif = false;
   {
-    MutexLockerEx ml(Service_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(THREAD, Notification_lock, Mutex::_no_safepoint_check_flag);
     notif = _has_pending_jmx_notification;
     _has_pending_jmx_notification = false;
   }
@@ -471,7 +471,7 @@ void DCmdFactory::send_notification_internal(TRAPS) {
             vmSymbols::getDiagnosticCommandMBean_signature(),
             CHECK);
 
-    instanceOop m = (instanceOop) result.get_jobject();
+    instanceOop m = (instanceOop) result.get_oop();
     instanceHandle dcmd_mbean_h(THREAD, m);
 
     if (!dcmd_mbean_h->is_a(k)) {
@@ -491,11 +491,10 @@ void DCmdFactory::send_notification_internal(TRAPS) {
   }
 }
 
-Mutex* DCmdFactory::_dcmdFactory_lock = new Mutex(Mutex::leaf, "DCmdFactory", true, Monitor::_safepoint_check_never);
 bool DCmdFactory::_send_jmx_notification = false;
 
 DCmdFactory* DCmdFactory::factory(DCmdSource source, const char* name, size_t len) {
-  MutexLockerEx ml(_dcmdFactory_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(DCmdFactory_lock, Mutex::_no_safepoint_check_flag);
   DCmdFactory* factory = _DCmdFactoryList;
   while (factory != NULL) {
     if (strlen(factory->name()) == len &&
@@ -512,7 +511,7 @@ DCmdFactory* DCmdFactory::factory(DCmdSource source, const char* name, size_t le
 }
 
 int DCmdFactory::register_DCmdFactory(DCmdFactory* factory) {
-  MutexLockerEx ml(_dcmdFactory_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(DCmdFactory_lock, Mutex::_no_safepoint_check_flag);
   factory->_next = _DCmdFactoryList;
   _DCmdFactoryList = factory;
   if (_send_jmx_notification && !factory->_hidden
@@ -537,7 +536,7 @@ DCmd* DCmdFactory::create_local_DCmd(DCmdSource source, CmdLine &line,
 }
 
 GrowableArray<const char*>* DCmdFactory::DCmd_list(DCmdSource source) {
-  MutexLockerEx ml(_dcmdFactory_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(DCmdFactory_lock, Mutex::_no_safepoint_check_flag);
   GrowableArray<const char*>* array = new GrowableArray<const char*>();
   DCmdFactory* factory = _DCmdFactoryList;
   while (factory != NULL) {
@@ -550,7 +549,7 @@ GrowableArray<const char*>* DCmdFactory::DCmd_list(DCmdSource source) {
 }
 
 GrowableArray<DCmdInfo*>* DCmdFactory::DCmdInfo_list(DCmdSource source ) {
-  MutexLockerEx ml(_dcmdFactory_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(DCmdFactory_lock, Mutex::_no_safepoint_check_flag);
   GrowableArray<DCmdInfo*>* array = new GrowableArray<DCmdInfo*>();
   DCmdFactory* factory = _DCmdFactoryList;
   while (factory != NULL) {

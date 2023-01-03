@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,8 +45,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import sun.net.dns.ResolverConfiguration;
+import sun.security.action.GetPropertyAction;
 import sun.security.krb5.internal.crypto.EType;
 import sun.security.krb5.internal.Krb5;
+import sun.security.util.SecurityProperties;
 
 /**
  * This class maintains key-value pairs of Kerberos configurable constants
@@ -54,6 +56,41 @@ import sun.security.krb5.internal.Krb5;
  */
 
 public class Config {
+
+    /**
+     * {@systemProperty sun.security.krb5.disableReferrals} property
+     * indicating whether or not cross-realm referrals (RFC 6806) are
+     * enabled.
+     */
+    public static final boolean DISABLE_REFERRALS;
+
+    /**
+     * {@systemProperty sun.security.krb5.maxReferrals} property
+     * indicating the maximum number of cross-realm referral
+     * hops allowed.
+     */
+    public static final int MAX_REFERRALS;
+
+    static {
+        String disableReferralsProp =
+                SecurityProperties.privilegedGetOverridable(
+                        "sun.security.krb5.disableReferrals");
+        if (disableReferralsProp != null) {
+            DISABLE_REFERRALS = "true".equalsIgnoreCase(disableReferralsProp);
+        } else {
+            DISABLE_REFERRALS = false;
+        }
+
+        int maxReferralsValue = 5;
+        String maxReferralsProp =
+                SecurityProperties.privilegedGetOverridable(
+                        "sun.security.krb5.maxReferrals");
+        try {
+            maxReferralsValue = Integer.parseInt(maxReferralsProp);
+        } catch (NumberFormatException e) {
+        }
+        MAX_REFERRALS = maxReferralsValue;
+    }
 
     /*
      * Only allow a single instance of Config.
@@ -117,29 +154,29 @@ public class Config {
         KdcComm.initStatic();
         EType.initStatic();
         Checksum.initStatic();
+        KrbAsReqBuilder.ReferralsState.initStatic();
     }
 
 
     private static boolean isMacosLionOrBetter() {
         // split the "10.x.y" version number
-        String osname = getProperty("os.name");
+        String osname = GetPropertyAction.privilegedGetProperty("os.name");
         if (!osname.contains("OS X")) {
             return false;
         }
 
-        String osVersion = getProperty("os.version");
+        String osVersion = GetPropertyAction.privilegedGetProperty("os.version");
         String[] fragments = osVersion.split("\\.");
-
-        // sanity check the "10." part of the version
-        if (!fragments[0].equals("10")) return false;
         if (fragments.length < 2) return false;
 
-        // check if Mac OS X 10.7(.y)
+        // check if Mac OS X 10.7(.y) or higher
         try {
+            int majorVers = Integer.parseInt(fragments[0]);
             int minorVers = Integer.parseInt(fragments[1]);
-            if (minorVers >= 7) return true;
+            if (majorVers > 10) return true;
+            if (majorVers == 10 && minorVers >= 7) return true;
         } catch (NumberFormatException e) {
-            // was not an integer
+            // were not integers
         }
 
         return false;
@@ -152,14 +189,16 @@ public class Config {
         /*
          * If either one system property is specified, we throw exception.
          */
-        String tmp = getProperty("java.security.krb5.kdc");
+        String tmp = GetPropertyAction
+                .privilegedGetProperty("java.security.krb5.kdc");
         if (tmp != null) {
             // The user can specify a list of kdc hosts separated by ":"
             defaultKDC = tmp.replace(':', ' ');
         } else {
             defaultKDC = null;
         }
-        defaultRealm = getProperty("java.security.krb5.realm");
+        defaultRealm = GetPropertyAction
+                .privilegedGetProperty("java.security.krb5.realm");
         if ((defaultKDC == null && defaultRealm != null) ||
             (defaultRealm == null && defaultKDC != null)) {
             throw new KrbException
@@ -404,7 +443,7 @@ public class Config {
             } catch (NumberFormatException e) {
                 if (DEBUG) {
                     System.out.println("Exception in getting value of " +
-                                       Arrays.toString(keys) + " " +
+                                       Arrays.toString(keys) + ": " +
                                        e.getMessage());
                     System.out.println("Setting " + Arrays.toString(keys) +
                                        " to minimum value");
@@ -629,6 +668,7 @@ public class Config {
      * @param fileName the configuration file
      * @return normalized lines
      */
+    @SuppressWarnings("removal")
     private List<String> loadConfigFile(final String fileName)
             throws IOException, KrbException {
 
@@ -818,11 +858,12 @@ public class Config {
      * The method returns null if it cannot find a Java config file.
      */
     private String getJavaFileName() {
-        String name = getProperty("java.security.krb5.conf");
+        String name = GetPropertyAction
+                .privilegedGetProperty("java.security.krb5.conf");
         if (name == null) {
-            name = getProperty("java.home") + File.separator +
-                                "conf" + File.separator + "security" +
-                                File.separator + "krb5.conf";
+            name = GetPropertyAction.privilegedGetProperty("java.home")
+                    + File.separator + "conf" + File.separator + "security"
+                    + File.separator + "krb5.conf";
             if (!fileExists(name)) {
                 name = null;
             }
@@ -852,7 +893,7 @@ public class Config {
      */
     private String getNativeFileName() {
         String name = null;
-        String osname = getProperty("os.name");
+        String osname = GetPropertyAction.privilegedGetProperty("os.name");
         if (osname.startsWith("Windows")) {
             try {
                 Credentials.ensureLoaded();
@@ -886,8 +927,6 @@ public class Config {
             if (name == null) {
                 name = "c:\\winnt\\krb5.ini";
             }
-        } else if (osname.startsWith("SunOS")) {
-            name =  "/etc/krb5/krb5.conf";
         } else if (osname.contains("OS X")) {
             name = findMacosConfigFile();
         } else {
@@ -899,13 +938,8 @@ public class Config {
         return name;
     }
 
-    private static String getProperty(String property) {
-        return java.security.AccessController.doPrivileged(
-                new sun.security.action.GetPropertyAction(property));
-    }
-
     private String findMacosConfigFile() {
-        String userHome = getProperty("user.home");
+        String userHome = GetPropertyAction.privilegedGetProperty("user.home");
         final String PREF_FILE = "/Library/Preferences/edu.mit.Kerberos";
         String userPrefs = userHome + PREF_FILE;
 
@@ -946,6 +980,9 @@ public class Config {
     public int[] defaultEtype(String configName) throws KrbException {
         String default_enctypes;
         default_enctypes = get("libdefaults", configName);
+        if (default_enctypes == null && !configName.equals("permitted_enctypes")) {
+            default_enctypes = get("libdefaults", "permitted_enctypes");
+        }
         int[] etype;
         if (default_enctypes == null) {
             if (DEBUG) {
@@ -1137,6 +1174,7 @@ public class Config {
      * @throws KrbException where no realm can be located
      * @return the default realm, always non null
      */
+    @SuppressWarnings("removal")
     public String getDefaultRealm() throws KrbException {
         if (defaultRealm != null) {
             return defaultRealm;
@@ -1181,6 +1219,7 @@ public class Config {
      * @throws KrbException if there's no way to find KDC for the realm
      * @return the list of KDCs separated by a space, always non null
      */
+    @SuppressWarnings("removal")
     public String getKDCList(String realm) throws KrbException {
         if (realm == null) {
             realm = getDefaultRealm();
@@ -1296,7 +1335,7 @@ public class Config {
     /**
      * Locate KDC using DNS
      *
-     * @param realm the realm for which the master KDC is desired
+     * @param realm the realm for which the primary KDC is desired
      * @return the KDC
      */
     private String getKDCFromDNS(String realm) throws KrbException {
@@ -1333,6 +1372,7 @@ public class Config {
         return kdcs;
     }
 
+    @SuppressWarnings("removal")
     private boolean fileExists(String name) {
         return java.security.AccessController.doPrivileged(
                                 new FileExistsAction(name));

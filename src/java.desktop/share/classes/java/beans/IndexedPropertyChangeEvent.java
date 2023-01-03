@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,18 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.beans;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
+import java.io.Serial;
+
 /**
  * An "IndexedPropertyChange" event gets delivered whenever a component that
- * conforms to the JavaBeans&trade; specification (a "bean") changes a bound
+ * conforms to the JavaBeans specification (a "bean") changes a bound
  * indexed property. This class is an extension of {@code PropertyChangeEvent}
  * but contains the index of the property that has changed.
  * <P>
@@ -48,8 +51,16 @@ import org.checkerframework.framework.qual.CFComment;
 @CFComment({"nullness: don't permit null property name, class documentation may ",
             "be a typo caused by cut-and-paste from PropertyChangeEvent"})
 public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
+
+    /**
+     * Use serialVersionUID from JDK 1.7 for interoperability.
+     */
+    @Serial
     private static final long serialVersionUID = -320227448495806870L;
 
+    /**
+     * The index of the property element that was changed.
+     */
     private int index;
 
     /**

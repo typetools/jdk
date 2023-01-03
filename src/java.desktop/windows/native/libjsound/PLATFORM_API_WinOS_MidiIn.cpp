@@ -39,14 +39,9 @@ extern "C" {
 #ifdef USE_ERROR
 #include <stdio.h>
 
-/* Use THIS_FILE when it is available. */
-#ifndef THIS_FILE
-    #define THIS_FILE __FILE__
-#endif
-
 #define MIDIIN_CHECK_ERROR { \
         if (err != MMSYSERR_NOERROR) \
-            ERROR3("MIDI IN Error in %s:%d : %s\n", THIS_FILE, __LINE__, MIDI_IN_GetErrorStr((INT32) err)); \
+            ERROR3("MIDI IN Error in %s:%d : %s\n", __FILE__, __LINE__, MIDI_IN_GetErrorStr((INT32) err)); \
     }
 #else
 #define MIDIIN_CHECK_ERROR
@@ -252,7 +247,7 @@ INT32 MIDI_IN_GetNumDevices() {
 }
 
 INT32 getMidiInCaps(INT32 deviceID, MIDIINCAPSW* caps, INT32* err) {
-    (*err) = midiInGetDevCapsW(deviceID, caps, sizeof(MIDIINCAPS));
+    (*err) = midiInGetDevCapsW(deviceID, caps, sizeof(MIDIINCAPSW));
     return ((*err) == MMSYSERR_NOERROR);
 }
 
@@ -260,6 +255,7 @@ INT32 MIDI_IN_GetDeviceName(INT32 deviceID, char *name, UINT32 nameLength) {
     MIDIINCAPSW midiInCaps;
     INT32 err;
 
+    memset(&midiInCaps, 0, sizeof(midiInCaps));
     if (getMidiInCaps(deviceID, &midiInCaps, &err)) {
         UnicodeToUTF8AndCopy(name, midiInCaps.szPname, nameLength);
         return MIDI_SUCCESS;
@@ -284,6 +280,7 @@ INT32 MIDI_IN_GetDeviceVersion(INT32 deviceID, char *name, UINT32 nameLength) {
     MIDIINCAPSW midiInCaps;
     INT32 err = MIDI_NOT_SUPPORTED;
 
+    memset(&midiInCaps, 0, sizeof(midiInCaps));
     if (getMidiInCaps(deviceID, &midiInCaps, &err) && (nameLength>7)) {
         sprintf(name, "%d.%d", (midiInCaps.vDriverVersion & 0xFF00) >> 8, midiInCaps.vDriverVersion & 0xFF);
         return MIDI_SUCCESS;

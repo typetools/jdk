@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,18 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP
-#define SHARE_VM_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP
+#ifndef SHARE_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP
+#define SHARE_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP
 
-#include "gc/g1/g1Allocator.hpp"
+#include "gc/g1/g1FullGCOopClosures.hpp"
+
+#include "gc/g1/g1Allocator.inline.hpp"
+#include "gc/g1/g1FullCollector.inline.hpp"
 #include "gc/g1/g1ConcurrentMarkBitMap.inline.hpp"
 #include "gc/g1/g1FullGCMarker.inline.hpp"
-#include "gc/g1/g1FullGCOopClosures.hpp"
 #include "gc/g1/heapRegionRemSet.hpp"
 #include "memory/iterator.inline.hpp"
+#include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
@@ -68,24 +71,25 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
 
   oop obj = CompressedOops::decode_not_null(heap_oop);
   assert(Universe::heap()->is_in(obj), "should be in heap");
-  if (G1ArchiveAllocator::is_archive_object(obj)) {
-    // We never forward archive objects.
+  if (!_collector->is_compacting(obj)) {
+    // We never forward objects in non-compacting regions so there is no need to
+    // process them further.
     return;
   }
 
   oop forwardee = obj->forwardee();
   if (forwardee == NULL) {
     // Not forwarded, return current reference.
-    assert(obj->mark_raw() == markOopDesc::prototype_for_object(obj) || // Correct mark
-           obj->mark_raw()->must_be_preserved(obj) || // Will be restored by PreservedMarksSet
-           (UseBiasedLocking && obj->has_bias_pattern_raw()), // Will be restored by BiasedLocking
+    assert(obj->mark() == markWord::prototype_for_klass(obj->klass()) || // Correct mark
+           obj->mark_must_be_preserved() || // Will be restored by PreservedMarksSet
+           (UseBiasedLocking && obj->has_bias_pattern()), // Will be restored by BiasedLocking
            "Must have correct prototype or be preserved, obj: " PTR_FORMAT ", mark: " PTR_FORMAT ", prototype: " PTR_FORMAT,
-           p2i(obj), p2i(obj->mark_raw()), p2i(markOopDesc::prototype_for_object(obj)));
+           p2i(obj), obj->mark().value(), markWord::prototype_for_klass(obj->klass()).value());
     return;
   }
 
   // Forwarded, just update.
-  assert(Universe::heap()->is_in_reserved(forwardee), "should be in object space");
+  assert(G1CollectedHeap::heap()->is_in_reserved(forwardee), "should be in object space");
   RawAccess<IS_NOT_NULL>::oop_store(p, forwardee);
 }
 
@@ -93,7 +97,7 @@ inline void G1AdjustClosure::do_oop(oop* p)       { do_oop_work(p); }
 inline void G1AdjustClosure::do_oop(narrowOop* p) { do_oop_work(p); }
 
 inline bool G1IsAliveClosure::do_object_b(oop p) {
-  return _bitmap->is_marked(p) || G1ArchiveAllocator::is_closed_archive_object(p);
+  return _bitmap->is_marked(p) || _collector->is_skip_marking(p);
 }
 
 template<typename T>
@@ -101,4 +105,4 @@ inline void G1FullKeepAliveClosure::do_oop_work(T* p) {
   _marker->mark_and_push(p);
 }
 
-#endif
+#endif // SHARE_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP

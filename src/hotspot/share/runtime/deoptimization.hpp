@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,27 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_DEOPTIMIZATION_HPP
-#define SHARE_VM_RUNTIME_DEOPTIMIZATION_HPP
+#ifndef SHARE_RUNTIME_DEOPTIMIZATION_HPP
+#define SHARE_RUNTIME_DEOPTIMIZATION_HPP
 
+#include "interpreter/bytecodes.hpp"
 #include "memory/allocation.hpp"
 #include "runtime/frame.hpp"
 
 class ProfileData;
 class vframeArray;
+class MonitorInfo;
 class MonitorValue;
 class ObjectValue;
+class AutoBoxObjectValue;
+class ScopeValue;
+class compiledVFrame;
+
+template<class E> class GrowableArray;
 
 class Deoptimization : AllStatic {
   friend class VMStructs;
+  friend class EscapeBarrier;
 
  public:
   // What condition caused the deoptimization?
@@ -67,6 +75,7 @@ class Deoptimization : AllStatic {
     // recorded per method
     Reason_unloaded,              // unloaded class or constant pool entry
     Reason_uninitialized,         // bad class state (uninitialized)
+    Reason_initialized,           // class has been fully initialized
     Reason_unreached,             // code is not reached, compiler
     Reason_unhandled,             // arbitrary compiler limitation
     Reason_constraint,            // arbitrary runtime constraint violated
@@ -127,41 +136,57 @@ class Deoptimization : AllStatic {
     Unpack_exception            = 1, // exception is pending
     Unpack_uncommon_trap        = 2, // redo last byte code (C2 only)
     Unpack_reexecute            = 3, // reexecute bytecode (C1 only)
-    Unpack_LIMIT                = 4
+    Unpack_none                 = 4, // not deoptimizing the frame, just reallocating/relocking for JVMTI
+    Unpack_LIMIT                = 5
   };
 
-  // Checks all compiled methods. Invalid methods are deleted and
-  // corresponding activations are deoptimized.
-  static int deoptimize_dependents();
+#if INCLUDE_JVMCI
+  // Can reconstruct virtualized unsafe large accesses to byte arrays.
+  static const int _support_large_access_byte_array_virtualization = 1;
+#endif
 
-  // Deoptimizes a frame lazily. nmethod gets patched deopt happens on return to the frame
-  static void deoptimize(JavaThread* thread, frame fr, RegisterMap *reg_map);
-  static void deoptimize(JavaThread* thread, frame fr, RegisterMap *reg_map, DeoptReason reason);
+  // Make all nmethods that are marked_for_deoptimization not_entrant and deoptimize any live
+  // activations using those nmethods.  If an nmethod is passed as an argument then it is
+  // marked_for_deoptimization and made not_entrant.  Otherwise a scan of the code cache is done to
+  // find all marked nmethods and they are made not_entrant.
+  static void deoptimize_all_marked(nmethod* nmethod_only = NULL);
+
+ private:
+  // Revoke biased locks at deopt.
+  static void revoke_from_deopt_handler(JavaThread* thread, frame fr, RegisterMap* map);
+
+  static void revoke_for_object_deoptimization(JavaThread* deoptee_thread, frame fr,
+                                               RegisterMap* map, JavaThread* thread);
+
+ public:
+  // Deoptimizes a frame lazily. Deopt happens on return to the frame.
+  static void deoptimize(JavaThread* thread, frame fr, DeoptReason reason = Reason_constraint);
 
 #if INCLUDE_JVMCI
   static address deoptimize_for_missing_exception_handler(CompiledMethod* cm);
 #endif
 
+  static oop get_cached_box(AutoBoxObjectValue* bv, frame* fr, RegisterMap* reg_map, TRAPS);
+
   private:
   // Does the actual work for deoptimizing a single frame
   static void deoptimize_single_frame(JavaThread* thread, frame fr, DeoptReason reason);
 
-  // Helper function to revoke biases of all monitors in frame if UseBiasedLocking
-  // is enabled
-  static void revoke_biases_of_monitors(JavaThread* thread, frame fr, RegisterMap* map);
-  // Helper function to revoke biases of all monitors in frames
-  // executing in a particular CodeBlob if UseBiasedLocking is enabled
-  static void revoke_biases_of_monitors(CodeBlob* cb);
-
 #if COMPILER2_OR_JVMCI
-JVMCI_ONLY(public:)
+  // Deoptimize objects, that is reallocate and relock them, just before they
+  // escape through JVMTI.  The given vframes cover one physical frame.
+  static bool deoptimize_objects_internal(JavaThread* thread, GrowableArray<compiledVFrame*>* chunk,
+                                          bool& realloc_failures);
+
+ public:
 
   // Support for restoring non-escaping objects
-  static bool realloc_objects(JavaThread* thread, frame* fr, GrowableArray<ScopeValue*>* objects, TRAPS);
+  static bool realloc_objects(JavaThread* thread, frame* fr, RegisterMap* reg_map, GrowableArray<ScopeValue*>* objects, TRAPS);
   static void reassign_type_array_elements(frame* fr, RegisterMap* reg_map, ObjectValue* sv, typeArrayOop obj, BasicType type);
   static void reassign_object_array_elements(frame* fr, RegisterMap* reg_map, ObjectValue* sv, objArrayOop obj);
   static void reassign_fields(frame* fr, RegisterMap* reg_map, GrowableArray<ScopeValue*>* objects, bool realloc_failures, bool skip_internal);
-  static void relock_objects(GrowableArray<MonitorInfo*>* monitors, JavaThread* thread, bool realloc_failures);
+  static bool relock_objects(JavaThread* thread, GrowableArray<MonitorInfo*>* monitors,
+                             JavaThread* deoptee_thread, frame& fr, int exec_mode, bool realloc_failures);
   static void pop_frames_failed_reallocs(JavaThread* thread, vframeArray* array);
   NOT_PRODUCT(static void print_objects(GrowableArray<ScopeValue*>* objects, bool realloc_failures);)
 #endif // COMPILER2_OR_JVMCI
@@ -248,7 +273,7 @@ JVMCI_ONLY(public:)
   // deoptimized frame.
   // @argument thread.     Thread where stub_frame resides.
   // @see OptoRuntime::deoptimization_fetch_unroll_info_C
-  static UnrollBlock* fetch_unroll_info(JavaThread* thread, int exec_mode);
+  static UnrollBlock* fetch_unroll_info(JavaThread* current, int exec_mode);
 
   //** Unpacks vframeArray onto execution stack
   // Called by assembly stub after execution has returned to
@@ -273,9 +298,9 @@ JVMCI_ONLY(public:)
 
   //** Performs an uncommon trap for compiled code.
   // The top most compiler frame is converted into interpreter frames
-  static UnrollBlock* uncommon_trap(JavaThread* thread, jint unloaded_class_index, jint exec_mode);
+  static UnrollBlock* uncommon_trap(JavaThread* current, jint unloaded_class_index, jint exec_mode);
   // Helper routine that enters the VM and may block
-  static void uncommon_trap_inner(JavaThread* thread, jint unloaded_class_index);
+  static void uncommon_trap_inner(JavaThread* current, jint unloaded_class_index);
 
   //** Deoptimizes the frame identified by id.
   // Only called from VMDeoptimizeFrame
@@ -415,7 +440,6 @@ JVMCI_ONLY(public:)
                                          int trap_request);
 
   static jint total_deoptimization_count();
-  static jint deoptimization_count(DeoptReason reason);
 
   // JVMTI PopFrame support
 
@@ -440,9 +464,8 @@ JVMCI_ONLY(public:)
                                                bool& ret_maybe_prior_recompile);
   // class loading support for uncommon trap
   static void load_class_by_index(const constantPoolHandle& constant_pool, int index, TRAPS);
-  static void load_class_by_index(const constantPoolHandle& constant_pool, int index);
 
-  static UnrollBlock* fetch_unroll_info_helper(JavaThread* thread, int exec_mode);
+  static UnrollBlock* fetch_unroll_info_helper(JavaThread* current, int exec_mode);
 
   static DeoptAction _unloaded_action; // == Action_reinterpret;
   static const char* _trap_reason_name[];
@@ -455,6 +478,7 @@ JVMCI_ONLY(public:)
   static void update_method_data_from_interpreter(MethodData* trap_mdo, int trap_bci, int reason);
 };
 
+
 class DeoptimizationMarker : StackObj {  // for profiling
   static bool _is_active;
 public:
@@ -463,4 +487,4 @@ public:
   static bool is_active() { return _is_active; }
 };
 
-#endif // SHARE_VM_RUNTIME_DEOPTIMIZATION_HPP
+#endif // SHARE_RUNTIME_DEOPTIMIZATION_HPP

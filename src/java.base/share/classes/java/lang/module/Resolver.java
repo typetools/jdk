@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@ package java.lang.module;
 import java.io.PrintStream;
 import java.lang.module.ModuleDescriptor.Provides;
 import java.lang.module.ModuleDescriptor.Requires.Modifier;
-import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +35,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import jdk.internal.module.ModuleHashes;
 import jdk.internal.module.ModuleReferenceImpl;
+import jdk.internal.module.ModuleResolution;
 import jdk.internal.module.ModuleTarget;
 
 /**
@@ -215,15 +216,32 @@ final class Resolver {
      * service-use relation.
      */
     Resolver bind() {
+        return bind(/*bindIncubatorModules*/true);
+    }
 
+    /**
+     * Augments the set of resolved modules with modules induced by the
+     * service-use relation.
+     *
+     * @param bindIncubatorModules true if incubator modules are candidates to
+     *        add to the module graph
+     */
+    Resolver bind(boolean bindIncubatorModules) {
         // Scan the finders for all available service provider modules. As
         // java.base uses services then the module finders will be scanned
         // anyway.
         Map<String, Set<ModuleReference>> availableProviders = new HashMap<>();
         for (ModuleReference mref : findAll()) {
             ModuleDescriptor descriptor = mref.descriptor();
-            if (!descriptor.provides().isEmpty()) {
 
+            boolean candidate;
+            if (!bindIncubatorModules && (mref instanceof ModuleReferenceImpl)) {
+                ModuleResolution mres = ((ModuleReferenceImpl) mref).moduleResolution();
+                candidate = (mres == null) || (mres.hasIncubatingWarning() == false);
+            } else {
+                candidate = true;
+            }
+            if (candidate && !descriptor.provides().isEmpty()) {
                 for (Provides provides :  descriptor.provides()) {
                     String sn = provides.service();
 
@@ -458,24 +476,16 @@ final class Resolver {
                     if (actualHash == null)
                         findFail("Unable to compute the hash of module %s", dn);
                     if (!Arrays.equals(recordedHash, actualHash)) {
+                        HexFormat hex = HexFormat.of();
                         findFail("Hash of %s (%s) differs to expected hash (%s)" +
-                                 " recorded in %s", dn, toHexString(actualHash),
-                                 toHexString(recordedHash), descriptor.name());
+                                 " recorded in %s", dn, hex.formatHex(actualHash),
+                                hex.formatHex(recordedHash), descriptor.name());
                     }
                 }
             }
 
         }
     }
-
-    private static String toHexString(byte[] ba) {
-        StringBuilder sb = new StringBuilder(ba.length * 2);
-        for (byte b: ba) {
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
-    }
-
 
     /**
      * Computes the readability graph for the modules in the given Configuration.
@@ -543,7 +553,7 @@ final class Resolver {
             for (ModuleDescriptor.Requires requires : descriptor.requires()) {
                 String dn = requires.name();
 
-                ResolvedModule m2 = null;
+                ResolvedModule m2;
                 ModuleReference mref2 = nameToReference.get(dn);
                 if (mref2 != null) {
                     // same configuration
@@ -554,6 +564,14 @@ final class Resolver {
                     if (m2 == null) {
                         assert requires.modifiers().contains(Modifier.STATIC);
                         continue;
+                    }
+
+                    // m2 is automatic module in parent configuration => m1 reads
+                    // all automatic modules that m2 reads.
+                    if (m2.descriptor().isAutomatic()) {
+                        m2.reads().stream()
+                                .filter(d -> d.descriptor().isAutomatic())
+                                .forEach(reads::add);
                     }
                 }
 
@@ -659,7 +677,7 @@ final class Resolver {
      * Checks the readability graph to ensure that
      * <ol>
      *   <li><p> A module does not read two or more modules with the same name.
-     *   This includes the case where a module reads another another with the
+     *   This includes the case where a module reads another module with the
      *   same name as itself. </p></li>
      *   <li><p> Two or more modules in the configuration don't export the same
      *   package to a module that reads both. This includes the case where a
@@ -821,9 +839,7 @@ final class Resolver {
      * Invokes the beforeFinder to find method to find the given module.
      */
     private ModuleReference findWithBeforeFinder(String mn) {
-
         return beforeFinder.find(mn).orElse(null);
-
     }
 
     /**

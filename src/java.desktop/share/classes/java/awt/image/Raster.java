@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -200,16 +200,29 @@ public @UsesObjectEquals class Raster {
      * @param location  the upper-left corner of the {@code Raster}
      * @return a WritableRaster object with the specified data type,
      *         width, height and number of bands.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
+     * @throws IllegalArgumentException if {@code dataType} is not
+     *         one of the supported data types
+     * @throws IllegalArgumentException if {@code bands} is less than 1
+     * @throws IllegalArgumentException if {@code w} and {@code h} are not
+     *         both > 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
      *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     *         {@code location.y + h} results in integer overflow
      */
     public static WritableRaster createInterleavedRaster(int dataType,
                                                          int w, int h,
                                                          int bands,
                                                          Point location) {
+        if (w <= 0 || h <= 0) {
+            throw new IllegalArgumentException("w and h must be > 0");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
         int[] bandOffsets = new int[bands];
         for (int i = 0; i < bands; i++) {
             bandOffsets[i] = i;
@@ -245,26 +258,57 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified data type,
      *         width, height, scanline stride, pixel stride and band
      *         offsets.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
-     *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE}, or
      *         {@code DataBuffer.TYPE_USHORT}.
+     * @throws IllegalArgumentException if {@code w} and {@code h} are not
+     *         both > 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
+     *         {@code location.x + w} or
+     *         {@code location.y + h} results in integer overflow
+     * @throws IllegalArgumentException if {@code scanlineStride}
+     *         is less than 0
+     * @throws IllegalArgumentException if {@code pixelStride} is less than 0
+     * @throws NullPointerException if {@code bandOffsets} is null
      */
     public static WritableRaster createInterleavedRaster(int dataType,
                                                          int w, int h,
                                                          int scanlineStride,
                                                          int pixelStride,
-                                                         int bandOffsets[],
+                                                         int[] bandOffsets,
                                                          Point location) {
         DataBuffer d;
 
+        if (w <= 0 || h <= 0) {
+            throw new IllegalArgumentException("w and h must be > 0");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
+        if (pixelStride < 0) {
+            throw new IllegalArgumentException("pixelStride is < 0");
+        }
+        if (scanlineStride < 0) {
+            throw new IllegalArgumentException("scanlineStride is < 0");
+        }
         int size = scanlineStride * (h - 1) + // fisrt (h - 1) scans
             pixelStride * w; // last scan
+
+        if (location == null) {
+            location = new Point(0, 0);
+        } else {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
 
         switch(dataType) {
         case DataBuffer.TYPE_BYTE:
@@ -302,11 +346,18 @@ public @UsesObjectEquals class Raster {
      * @param location  the upper-left corner of the {@code Raster}
      * @return a WritableRaster object with the specified data type,
      *         width, height and number of bands.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
+     * @throws IllegalArgumentException if {@code dataType} is not
+     *         one of the supported data types, which are
+     *         {@code DataBuffer.TYPE_BYTE},
+     *         {@code DataBuffer.TYPE_USHORT}
+     *         or {@code DataBuffer.TYPE_INT}
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if computing either
      *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     *         {@code location.y + h} results in integer overflow
      * @throws ArrayIndexOutOfBoundsException if {@code bands}
      *         is less than 1
      */
@@ -354,28 +405,41 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified data type,
      *         width, height, scanline stride, bank indices and band
      *         offsets.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
-     *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
      *         {@code DataBuffer.TYPE_USHORT}
      *         or {@code DataBuffer.TYPE_INT}
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if computing either
+     *         {@code location.x + w} or
+     *         {@code location.y + h} results in integer overflow
+     * @throws IllegalArgumentException if {@code scanlineStride}
+     *         is less than 0
      * @throws ArrayIndexOutOfBoundsException if {@code bankIndices}
-     *         or {@code bandOffsets} is {@code null}
+     *         is {@code null}
+     * @throws NullPointerException if {@code bandOffsets} is {@code null}
      */
     public static WritableRaster createBandedRaster(int dataType,
                                                     int w, int h,
                                                     int scanlineStride,
-                                                    int bankIndices[],
-                                                    int bandOffsets[],
+                                                    int[] bankIndices,
+                                                    int[] bandOffsets,
                                                     Point location) {
         DataBuffer d;
         int bands = bandOffsets.length;
 
+        if (w <= 0 || h <= 0) {
+             throw new IllegalArgumentException("w and h must be positive");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
         if (bankIndices == null) {
             throw new
                 ArrayIndexOutOfBoundsException("Bank indices array is null");
@@ -383,6 +447,14 @@ public @UsesObjectEquals class Raster {
         if (bandOffsets == null) {
             throw new
                 ArrayIndexOutOfBoundsException("Band offsets array is null");
+        }
+        if (location != null) {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new IllegalArgumentException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
         }
 
         // Figure out the #banks and the largest band offset
@@ -455,7 +527,7 @@ public @UsesObjectEquals class Raster {
      */
     public static WritableRaster createPackedRaster(int dataType,
                                                     int w, int h,
-                                                    int bandMasks[],
+                                                    int[] bandMasks,
                                                     Point location) {
         DataBuffer d;
 
@@ -616,32 +688,52 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified
      *         {@code DataBuffer}, width, height, scanline stride,
      *         pixel stride and band offsets.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
-     *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
      *         {@code DataBuffer.TYPE_USHORT}
+     * @throws NullPointerException if {@code dataBuffer} is null
+     * @throws IllegalArgumentException if {@code dataType} is not
+     *         one of the supported data types, which are
+     *         {@code DataBuffer.TYPE_BYTE}, or
+     *         {@code DataBuffer.TYPE_USHORT}.
      * @throws RasterFormatException if {@code dataBuffer} has more
      *         than one bank.
-     * @throws NullPointerException if {@code dataBuffer} is null
+     * @throws IllegalArgumentException if {@code w} and {@code h} are not
+     *         both > 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
+     *         {@code location.x + w} or
+     *         {@code location.y + h} results in integer overflow
+     * @throws IllegalArgumentException if {@code scanlineStride}
+     *         is less than 0
+     * @throws IllegalArgumentException if {@code pixelStride} is less than 0
+     * @throws NullPointerException if {@code bandOffsets} is null
+
      */
     public static WritableRaster createInterleavedRaster(DataBuffer dataBuffer,
                                                          int w, int h,
                                                          int scanlineStride,
                                                          int pixelStride,
-                                                         int bandOffsets[],
+                                                         int[] bandOffsets,
                                                          Point location)
     {
         if (dataBuffer == null) {
             throw new NullPointerException("DataBuffer cannot be null");
         }
+
         if (location == null) {
             location = new Point(0, 0);
+        } else {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
         }
+
         int dataType = dataBuffer.getDataType();
 
         PixelInterleavedSampleModel csm =
@@ -691,32 +783,45 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified
      *         {@code DataBuffer}, width, height, scanline stride,
      *         bank indices and band offsets.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
-     *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     * @throws NullPointerException if {@code dataBuffer} is null,
+     *         or {@code bankIndices} is null, or {@code bandOffsets} is null
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
      *         {@code DataBuffer.TYPE_USHORT}
-     *         or {@code DataBuffer.TYPE_INT}
-     * @throws NullPointerException if {@code dataBuffer} is null
+     *         or {@code DataBuffer.TYPE_INT},
+     *         or if {@code w} or {@code h} is less than or equal to zero,
+     *         or if the product of {@code w} and {@code h} is greater
+     *         than {@code Integer.MAX_VALUE}
+     *         or if {@code scanlineStride} is less than zero,
+     *         or if the length of {@code bankIndices} does not
+     *         equal the length of {@code bandOffsets}
+     * @throws RasterFormatException if computing either
+     *         {@code location.x + w} or
+     *         {@code location.y + h} results in integer overflow
      */
     public static WritableRaster createBandedRaster(DataBuffer dataBuffer,
                                                     int w, int h,
                                                     int scanlineStride,
-                                                    int bankIndices[],
-                                                    int bandOffsets[],
+                                                    int[] bankIndices,
+                                                    int[] bandOffsets,
                                                     Point location)
     {
         if (dataBuffer == null) {
             throw new NullPointerException("DataBuffer cannot be null");
         }
-        if (location == null) {
-           location = new Point(0,0);
+        if (bankIndices == null) {
+            throw new NullPointerException("bankIndices cannot be null");
         }
-        int dataType = dataBuffer.getDataType();
+        if (bandOffsets == null) {
+            throw new NullPointerException("bandOffsets cannot be null");
+        }
+        if (w <= 0 || h <= 0) {
+            throw new IllegalArgumentException("Width ("+w+") and height ("+h+") must be > 0");
+        }
+        if (scanlineStride < 0) {
+            throw new IllegalArgumentException("Scanline stride must be >= 0");
+        }
 
         int bands = bankIndices.length;
         if (bandOffsets.length != bands) {
@@ -724,6 +829,18 @@ public @UsesObjectEquals class Raster {
                                    "bankIndices.length != bandOffsets.length");
         }
 
+        if (location == null) {
+           location = new Point(0,0);
+        } else {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
+
+        int dataType = dataBuffer.getDataType();
         BandedSampleModel bsm =
             new BandedSampleModel(dataType, w, h,
                                   scanlineStride,
@@ -777,7 +894,7 @@ public @UsesObjectEquals class Raster {
      *         {@code location.x + w} or
      *         {@code location.y + h} results in integer
      *         overflow
-     * @throws IllegalArgumentException if {@code dataType} is not
+     * @throws IllegalArgumentException if {@code dataBuffer} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
      *         {@code DataBuffer.TYPE_USHORT}
@@ -789,7 +906,7 @@ public @UsesObjectEquals class Raster {
     public static WritableRaster createPackedRaster(DataBuffer dataBuffer,
                                                     int w, int h,
                                                     int scanlineStride,
-                                                    int bandMasks[],
+                                                    int[] bandMasks,
                                                     Point location)
     {
         if (dataBuffer == null) {
@@ -1402,7 +1519,7 @@ public @UsesObjectEquals class Raster {
     public Raster createChild(int parentX, int parentY,
                               int width, int height,
                               int childMinX, int childMinY,
-                              int bandList[]) {
+                              int[] bandList) {
         if (parentX < this.minX) {
             throw new RasterFormatException("parentX lies outside raster");
         }
@@ -1606,7 +1723,7 @@ public @UsesObjectEquals class Raster {
      * @throws ArrayIndexOutOfBoundsException if the coordinates are not
      * in bounds, or if iArray is too small to hold the output.
      */
-    public int[] getPixel(int x, int y, int iArray[]) {
+    public int[] getPixel(int x, int y, int[] iArray) {
         return sampleModel.getPixel(x - sampleModelTranslateX,
                                     y - sampleModelTranslateY,
                                     iArray, dataBuffer);
@@ -1626,7 +1743,7 @@ public @UsesObjectEquals class Raster {
      * @throws ArrayIndexOutOfBoundsException if the coordinates are not
      * in bounds, or if fArray is too small to hold the output.
      */
-    public float[] getPixel(int x, int y, float fArray[]) {
+    public float[] getPixel(int x, int y, float[] fArray) {
         return sampleModel.getPixel(x - sampleModelTranslateX,
                                     y - sampleModelTranslateY,
                                     fArray, dataBuffer);
@@ -1645,7 +1762,7 @@ public @UsesObjectEquals class Raster {
      * @throws ArrayIndexOutOfBoundsException if the coordinates are not
      * in bounds, or if dArray is too small to hold the output.
      */
-    public double[] getPixel(int x, int y, double dArray[]) {
+    public double[] getPixel(int x, int y, double[] dArray) {
         return sampleModel.getPixel(x - sampleModelTranslateX,
                                     y - sampleModelTranslateY,
                                     dArray, dataBuffer);
@@ -1667,7 +1784,7 @@ public @UsesObjectEquals class Raster {
      * @throws ArrayIndexOutOfBoundsException if the coordinates are not
      * in bounds, or if iArray is too small to hold the output.
      */
-    public int[] getPixels(int x, int y, int w, int h, int iArray[]) {
+    public int[] getPixels(int x, int y, int w, int h, int[] iArray) {
         return sampleModel.getPixels(x - sampleModelTranslateX,
                                      y - sampleModelTranslateY, w, h,
                                      iArray, dataBuffer);
@@ -1690,7 +1807,7 @@ public @UsesObjectEquals class Raster {
      * in bounds, or if fArray is too small to hold the output.
      */
     public float[] getPixels(int x, int y, int w, int h,
-                             float fArray[]) {
+                             float[] fArray) {
         return sampleModel.getPixels(x - sampleModelTranslateX,
                                      y - sampleModelTranslateY, w, h,
                                      fArray, dataBuffer);
@@ -1713,7 +1830,7 @@ public @UsesObjectEquals class Raster {
      * in bounds, or if dArray is too small to hold the output.
      */
     public double[] getPixels(int x, int y, int w, int h,
-                              double dArray[]) {
+                              double[] dArray) {
         return sampleModel.getPixels(x - sampleModelTranslateX,
                                      y - sampleModelTranslateY,
                                      w, h, dArray, dataBuffer);
@@ -1803,7 +1920,7 @@ public @UsesObjectEquals class Raster {
      * hold the output.
      */
     public int[] getSamples(int x, int y, int w, int h, int b,
-                            int iArray[]) {
+                            int[] iArray) {
         return sampleModel.getSamples(x - sampleModelTranslateX,
                                       y - sampleModelTranslateY,
                                       w, h, b, iArray,
@@ -1830,7 +1947,7 @@ public @UsesObjectEquals class Raster {
      * hold the output.
      */
     public float[] getSamples(int x, int y, int w, int h, int b,
-                              float fArray[]) {
+                              float[] fArray) {
         return sampleModel.getSamples(x - sampleModelTranslateX,
                                       y - sampleModelTranslateY,
                                       w, h, b, fArray, dataBuffer);
@@ -1856,7 +1973,7 @@ public @UsesObjectEquals class Raster {
      * hold the output.
      */
     public double[] getSamples(int x, int y, int w, int h, int b,
-                               double dArray[]) {
+                               double[] dArray) {
          return sampleModel.getSamples(x - sampleModelTranslateX,
                                        y - sampleModelTranslateY,
                                        w, h, b, dArray, dataBuffer);

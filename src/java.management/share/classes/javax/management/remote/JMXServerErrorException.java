@@ -26,6 +26,8 @@
 
 package javax.management.remote;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.IOException;
 
 // imports for javadoc
@@ -59,7 +61,7 @@ public class JMXServerErrorException extends IOException {
         cause = err;
     }
 
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -25,8 +25,8 @@
 
 // Major contributions by ML, AHa.
 
-#ifndef CPU_S390_VM_FRAME_S390_HPP
-#define CPU_S390_VM_FRAME_S390_HPP
+#ifndef CPU_S390_FRAME_S390_HPP
+#define CPU_S390_FRAME_S390_HPP
 
 #include "runtime/synchronizer.hpp"
 
@@ -444,11 +444,11 @@
 
   // NOTE: Stack pointer is now held in the base class, so remove it from here.
 
-  // Frame pointer for this frame.
-  intptr_t* _fp;
-
   // Needed by deoptimization.
   intptr_t* _unextended_sp;
+
+  // Frame pointer for this frame.
+  intptr_t* _fp;
 
  public:
 
@@ -491,9 +491,12 @@
   static int interpreter_frame_interpreterstate_size_in_bytes();
   static int interpreter_frame_monitor_size_in_bytes();
 
- private:
 
   // template interpreter state
+  inline z_ijava_state* ijava_state_unchecked() const;
+
+ private:
+
   inline z_ijava_state* ijava_state() const;
 
   // Where z_ijava_state.monitors is saved.
@@ -551,4 +554,4 @@
 
   static jint interpreter_frame_expression_stack_direction() { return -1; }
 
-#endif // CPU_S390_VM_FRAME_S390_HPP
+#endif // CPU_S390_FRAME_S390_HPP

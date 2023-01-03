@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,10 +38,11 @@ import sun.security.action.GetPropertyAction;
  * A utility class to share the static methods.
  */
 final class Utilities {
-    static final char[] hexDigits = "0123456789ABCDEF".toCharArray();
     private static final String indent = "  ";
     private static final Pattern lineBreakPatern =
                 Pattern.compile("\\r\\n|\\n|\\r");
+    private static final HexFormat HEX_FORMATTER =
+            HexFormat.of().withUpperCase();
 
     /**
      * Puts {@code hostname} into the {@code serverNames} list.
@@ -63,8 +64,8 @@ final class Utilities {
 
         int size = serverNames.size();
         List<SNIServerName> sniList = (size != 0) ?
-                new ArrayList<SNIServerName>(serverNames) :
-                new ArrayList<SNIServerName>(1);
+                new ArrayList<>(serverNames) :
+                new ArrayList<>(1);
 
         boolean reset = false;
         for (int i = 0; i < size; i++) {
@@ -149,7 +150,7 @@ final class Utilities {
     static String indent(String source, String prefix) {
         StringBuilder builder = new StringBuilder();
         if (source == null) {
-             builder.append("\n" + prefix + "<blank message>");
+             builder.append("\n").append(prefix).append("<blank message>");
         } else {
             String[] lines = lineBreakPatern.split(source);
             boolean isFirst = true;
@@ -166,15 +167,8 @@ final class Utilities {
         return builder.toString();
     }
 
-    static String toHexString(@UnknownSignedness byte b) {
-        return String.valueOf(hexDigits[(b >> 4) & 0x0F]) +
-                String.valueOf(hexDigits[b & 0x0F]);
-    }
-
     static String byte16HexString(int id) {
-        return "0x" +
-                hexDigits[(id >> 12) & 0x0F] + hexDigits[(id >> 8) & 0x0F] +
-                hexDigits[(id >> 4) & 0x0F] + hexDigits[id & 0x0F];
+        return "0x" + HEX_FORMATTER.toHexDigits((short)id);
     }
 
     static String toHexString(@PolySigned byte[] bytes) {
@@ -182,19 +176,7 @@ final class Utilities {
             return "";
         }
 
-        StringBuilder builder = new StringBuilder(bytes.length * 3);
-        boolean isFirst = true;
-        for (byte b : bytes) {
-            if (isFirst) {
-                isFirst = false;
-            } else {
-                builder.append(' ');
-            }
-
-            builder.append(hexDigits[(b >> 4) & 0x0F]);
-            builder.append(hexDigits[b & 0x0F]);
-        }
-        return builder.toString();
+        return HEX_FORMATTER.formatHex(bytes);
     }
 
     static String toHexString(@UnknownSignedness long lv) {
@@ -208,10 +190,8 @@ final class Utilities {
                 builder.append(' ');
             }
 
-            builder.append(hexDigits[(int)(lv & 0x0F)]);
-            lv >>>= 4;
-            builder.append(hexDigits[(int)(lv & 0x0F)]);
-            lv >>>= 4;
+            HEX_FORMATTER.toHexDigits(builder, (byte)lv);
+            lv >>>= 8;
         } while (lv != 0);
         builder.reverse();
 
@@ -233,5 +213,22 @@ final class Utilities {
             b = newarray;
         }
         return b;
+    }
+
+    static void reverseBytes(byte[] arr) {
+        int i = 0;
+        int j = arr.length - 1;
+
+        while (i < j) {
+            swap(arr, i, j);
+            i++;
+            j--;
+        }
+    }
+
+    private static void swap(byte[] arr, int i, int j) {
+        byte tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
     }
 }

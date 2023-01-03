@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,7 +56,7 @@ import java.util.logging.LoggingPermission;
  * @bug 8033661
  * @summary tests LogManager.updateConfiguration(Function) method
  * @run main/othervm SimpleUpdateConfigurationTest UNSECURE
- * @run main/othervm SimpleUpdateConfigurationTest SECURE
+ * @run main/othervm -Djava.security.manager=allow SimpleUpdateConfigurationTest SECURE
  * @author danielfuchs
  */
 public class SimpleUpdateConfigurationTest {
@@ -652,6 +652,8 @@ public class SimpleUpdateConfigurationTest {
 
     public static class SimplePolicy extends Policy {
 
+        static final Policy DEFAULT_POLICY = Policy.getPolicy();
+
         final Permissions basic;
         final Permissions control;
         final Permissions all;
@@ -690,7 +692,7 @@ public class SimpleUpdateConfigurationTest {
 
         @Override
         public boolean implies(ProtectionDomain domain, Permission permission) {
-            return getPermissions(domain).implies(permission);
+            return getPermissions(domain).implies(permission) || DEFAULT_POLICY.implies(domain, permission);
         }
 
         public PermissionCollection permissions() {

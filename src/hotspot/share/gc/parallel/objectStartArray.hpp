@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_HPP
-#define SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_HPP
+#ifndef SHARE_GC_PARALLEL_OBJECTSTARTARRAY_HPP
+#define SHARE_GC_PARALLEL_OBJECTSTARTARRAY_HPP
 
 #include "gc/parallel/psVirtualspace.hpp"
 #include "memory/allocation.hpp"
@@ -84,7 +84,7 @@ class ObjectStartArray : public CHeapObj<mtGC> {
   // Mapping that includes the derived offset.
   // If the block is clean, returns the last address in the covered region.
   // If the block is < index 0, returns the start of the covered region.
-  HeapWord* offset_addr_for_block (jbyte* p) const {
+  HeapWord* offset_addr_for_block(jbyte* p) const {
     // We have to do this before the assert
     if (p < _raw_base) {
       return _covered_region.start();
@@ -144,10 +144,7 @@ class ObjectStartArray : public CHeapObj<mtGC> {
   bool is_block_allocated(HeapWord* addr) {
     assert_covered_region_contains(addr);
     jbyte* block = block_for_addr(addr);
-    if (*block == clean_block)
-      return false;
-
-    return true;
+    return *block != clean_block;
   }
 
   // Return true if an object starts in the range of heap addresses.
@@ -156,4 +153,4 @@ class ObjectStartArray : public CHeapObj<mtGC> {
   bool object_starts_in_range(HeapWord* start_addr, HeapWord* end_addr) const;
 };
 
-#endif // SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_HPP
+#endif // SHARE_GC_PARALLEL_OBJECTSTARTARRAY_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,7 +52,9 @@ import sun.security.jca.GetInstance.Instance;
  * with two other parties, {@code doPhase} needs to be called twice,
  * the first time setting the {@code lastPhase} flag to
  * {@code false}, and the second time setting it to {@code true}.
- * There may be any number of parties involved in a key exchange.
+ * There may be any number of parties involved in a key exchange.  However,
+ * support for key exchanges with more than two parties is implementation
+ * specific or as specified by the standard key agreement algorithm.
  *
  * <p> Every implementation of the Java platform is required to support the
  * following standard {@code KeyAgreement} algorithm:
@@ -446,7 +448,7 @@ public class KeyAgreement {
      * has an incompatible algorithm type.
      */
     public final void init(Key key) throws InvalidKeyException {
-        init(key, JceSecurity.RANDOM);
+        init(key, JCAUtil.getDefSecureRandom());
     }
 
     /**
@@ -514,7 +516,7 @@ public class KeyAgreement {
     public final void init(Key key, AlgorithmParameterSpec params)
         throws InvalidKeyException, InvalidAlgorithmParameterException
     {
-        init(key, params, JceSecurity.RANDOM);
+        init(key, params, JCAUtil.getDefSecureRandom());
     }
 
     private String getProviderName() {
@@ -582,16 +584,22 @@ public class KeyAgreement {
     /**
      * Generates the shared secret and returns it in a new buffer.
      *
-     * <p>This method resets this {@code KeyAgreement} object, so that it
-     * can be reused for further key agreements. Unless this key agreement is
-     * reinitialized with one of the {@code init} methods, the same
-     * private information and algorithm parameters will be used for
-     * subsequent key agreements.
+     * <p>This method resets this {@code KeyAgreement} object to the state that
+     * it was in after the most recent call to one of the {@code init} methods.
+     * After a call to {@code generateSecret}, the object can be reused for
+     * further key agreement operations by calling {@code doPhase} to supply
+     * new keys, and then calling {@code generateSecret} to produce a new
+     * secret. In this case, the private information and algorithm parameters
+     * supplied to {@code init} will be used for multiple key agreement
+     * operations. The {@code init} method can be called after
+     * {@code generateSecret} to change the private information used in
+     * subsequent operations.
      *
      * @return the new buffer with the shared secret
      *
      * @exception IllegalStateException if this key agreement has not been
-     * completed yet
+     * initialized or if {@code doPhase} has not been called to supply the
+     * keys for all parties in the agreement
      */
     public final byte[] generateSecret() throws IllegalStateException {
         chooseFirstProvider();
@@ -606,11 +614,16 @@ public class KeyAgreement {
      * result, a {@code ShortBufferException} is thrown.
      * In this case, this call should be repeated with a larger output buffer.
      *
-     * <p>This method resets this {@code KeyAgreement} object, so that it
-     * can be reused for further key agreements. Unless this key agreement is
-     * reinitialized with one of the {@code init} methods, the same
-     * private information and algorithm parameters will be used for
-     * subsequent key agreements.
+     * <p>This method resets this {@code KeyAgreement} object to the state that
+     * it was in after the most recent call to one of the {@code init} methods.
+     * After a call to {@code generateSecret}, the object can be reused for
+     * further key agreement operations by calling {@code doPhase} to supply
+     * new keys, and then calling {@code generateSecret} to produce a new
+     * secret. In this case, the private information and algorithm parameters
+     * supplied to {@code init} will be used for multiple key agreement
+     * operations. The {@code init} method can be called after
+     * {@code generateSecret} to change the private information used in
+     * subsequent operations.
      *
      * @param sharedSecret the buffer for the shared secret
      * @param offset the offset in {@code sharedSecret} where the
@@ -619,7 +632,8 @@ public class KeyAgreement {
      * @return the number of bytes placed into {@code sharedSecret}
      *
      * @exception IllegalStateException if this key agreement has not been
-     * completed yet
+     * initialized or if {@code doPhase} has not been called to supply the
+     * keys for all parties in the agreement
      * @exception ShortBufferException if the given output buffer is too small
      * to hold the secret
      */
@@ -634,18 +648,24 @@ public class KeyAgreement {
      * Creates the shared secret and returns it as a {@code SecretKey}
      * object of the specified algorithm.
      *
-     * <p>This method resets this {@code KeyAgreement} object, so that it
-     * can be reused for further key agreements. Unless this key agreement is
-     * reinitialized with one of the {@code init} methods, the same
-     * private information and algorithm parameters will be used for
-     * subsequent key agreements.
+     * <p>This method resets this {@code KeyAgreement} object to the state that
+     * it was in after the most recent call to one of the {@code init} methods.
+     * After a call to {@code generateSecret}, the object can be reused for
+     * further key agreement operations by calling {@code doPhase} to supply
+     * new keys, and then calling {@code generateSecret} to produce a new
+     * secret. In this case, the private information and algorithm parameters
+     * supplied to {@code init} will be used for multiple key agreement
+     * operations. The {@code init} method can be called after
+     * {@code generateSecret} to change the private information used in
+     * subsequent operations.
      *
      * @param algorithm the requested secret-key algorithm
      *
      * @return the shared secret key
      *
      * @exception IllegalStateException if this key agreement has not been
-     * completed yet
+     * initialized or if {@code doPhase} has not been called to supply the
+     * keys for all parties in the agreement
      * @exception NoSuchAlgorithmException if the specified secret-key
      * algorithm is not available
      * @exception InvalidKeyException if the shared secret-key material cannot

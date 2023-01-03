@@ -96,6 +96,11 @@ public class BasicTableUI extends TableUI
      */
     private boolean isFileList = false;
 
+    /**
+     * Constructs a {@code BasicTableUI}.
+     */
+    public BasicTableUI() {}
+
 //
 //  Helper class for keyboard actions
 //
@@ -760,6 +765,11 @@ public class BasicTableUI extends TableUI
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
         // class calls into the Handler.
+        /**
+         * Constructs a {@code KeyHandler}.
+         */
+        public KeyHandler() {}
+
         public void keyPressed(KeyEvent e) {
             getHandler().keyPressed(e);
         }
@@ -786,6 +796,11 @@ public class BasicTableUI extends TableUI
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
         // class calls into the Handler.
+        /**
+         * Constructs a {@code FocusHandler}.
+         */
+        public FocusHandler() {}
+
         public void focusGained(FocusEvent e) {
             getHandler().focusGained(e);
         }
@@ -808,6 +823,11 @@ public class BasicTableUI extends TableUI
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
         // class calls into the Handler.
+        /**
+         * Constructs a {@code MouseInputHandler}.
+         */
+        public MouseInputHandler() {}
+
         public void mouseClicked(MouseEvent e) {
             getHandler().mouseClicked(e);
         }
@@ -1872,7 +1892,12 @@ public class BasicTableUI extends TableUI
             // and if there is any selected rows
             if (rMax != (table.getRowCount() - 1) &&
                     (table.getSelectedRow() == -1)) {
-                rMax = rMax - 1;
+                // Do not decrement rMax if rMax becomes
+                // less than or equal to rMin
+                // else cells will not be painted
+                if (rMax - rMin > 1) {
+                    rMax = rMax - 1;
+                }
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,17 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_MODREFBARRIERSET_INLINE_HPP
-#define SHARE_VM_GC_SHARED_MODREFBARRIERSET_INLINE_HPP
+#ifndef SHARE_GC_SHARED_MODREFBARRIERSET_INLINE_HPP
+#define SHARE_GC_SHARED_MODREFBARRIERSET_INLINE_HPP
+
+#include "gc/shared/modRefBarrierSet.hpp"
 
 #include "gc/shared/barrierSet.hpp"
-#include "gc/shared/modRefBarrierSet.hpp"
 #include "oops/compressedOops.inline.hpp"
-#include "oops/klass.inline.hpp"
 #include "oops/objArrayOop.hpp"
 #include "oops/oop.hpp"
+
+class Klass;
 
 // count is number of array elements being written
 void ModRefBarrierSet::write_ref_array(HeapWord* start, size_t count) {
@@ -67,10 +69,10 @@ oop_store_in_heap(T* addr, oop value) {
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
 inline oop ModRefBarrierSet::AccessBarrier<decorators, BarrierSetT>::
-oop_atomic_cmpxchg_in_heap(oop new_value, T* addr, oop compare_value) {
+oop_atomic_cmpxchg_in_heap(T* addr, oop compare_value, oop new_value) {
   BarrierSetT *bs = barrier_set_cast<BarrierSetT>(barrier_set());
   bs->template write_ref_field_pre<decorators>(addr);
-  oop result = Raw::oop_atomic_cmpxchg(new_value, addr, compare_value);
+  oop result = Raw::oop_atomic_cmpxchg(addr, compare_value, new_value);
   if (result == compare_value) {
     bs->template write_ref_field_post<decorators>(addr, new_value);
   }
@@ -80,10 +82,10 @@ oop_atomic_cmpxchg_in_heap(oop new_value, T* addr, oop compare_value) {
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
 inline oop ModRefBarrierSet::AccessBarrier<decorators, BarrierSetT>::
-oop_atomic_xchg_in_heap(oop new_value, T* addr) {
+oop_atomic_xchg_in_heap(T* addr, oop new_value) {
   BarrierSetT *bs = barrier_set_cast<BarrierSetT>(barrier_set());
   bs->template write_ref_field_pre<decorators>(addr);
-  oop result = Raw::oop_atomic_xchg(new_value, addr);
+  oop result = Raw::oop_atomic_xchg(addr, new_value);
   bs->template write_ref_field_post<decorators>(addr, new_value);
   return result;
 }
@@ -138,4 +140,4 @@ clone_in_heap(oop src, oop dst, size_t size) {
   bs->write_region(MemRegion((HeapWord*)(void*)dst, size));
 }
 
-#endif // SHARE_VM_GC_SHARED_MODREFBARRIERSET_INLINE_HPP
+#endif // SHARE_GC_SHARED_MODREFBARRIERSET_INLINE_HPP

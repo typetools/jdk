@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
-import java.security.AccessController;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -63,13 +62,7 @@ public final class NetworkInterface {
     private static final int defaultIndex; /* index of defaultInterface */
 
     static {
-        AccessController.doPrivileged(
-            new java.security.PrivilegedAction<>() {
-                public Void run() {
-                    System.loadLibrary("net");
-                    return null;
-                }
-            });
+        jdk.internal.loader.BootLoader.loadLibrary("net");
 
         init();
         defaultInterface = DefaultInterface.getDefault();
@@ -146,6 +139,7 @@ public final class NetworkInterface {
         InetAddress[] local_addrs = new InetAddress[addrs.length];
         boolean trusted = true;
 
+        @SuppressWarnings("removal")
         SecurityManager sec = System.getSecurityManager();
         if (sec != null) {
             try {
@@ -176,12 +170,13 @@ public final class NetworkInterface {
      * a SecurityException will be returned in the List.
      *
      * @return a {@code List} object with all or a subset of the
-     *         InterfaceAddresss of this network interface
+     *         InterfaceAddress of this network interface
      * @since 1.6
      */
     public java.util.List<InterfaceAddress> getInterfaceAddresses() {
         java.util.List<InterfaceAddress> lst = new java.util.ArrayList<>(1);
         if (bindings != null) {
+            @SuppressWarnings("removal")
             SecurityManager sec = System.getSecurityManager();
             for (int j=0; j<bindings.length; j++) {
                 try {
@@ -327,8 +322,19 @@ public final class NetworkInterface {
         if (addr == null) {
             throw new NullPointerException();
         }
-        if (!(addr instanceof Inet4Address || addr instanceof Inet6Address)) {
-            throw new IllegalArgumentException ("invalid address type");
+
+        if (addr.holder.family == InetAddress.IPv4) {
+            if (!(addr instanceof Inet4Address)) {
+                throw new IllegalArgumentException("invalid family type: "
+                        + addr.holder.family);
+            }
+        } else if (addr.holder.family == InetAddress.IPv6) {
+            if (!(addr instanceof Inet6Address)) {
+                throw new IllegalArgumentException("invalid family type: "
+                        + addr.holder.family);
+            }
+        } else {
+            throw new IllegalArgumentException("invalid address type: " + addr);
         }
         return getByInetAddress0(addr);
     }
@@ -343,7 +349,7 @@ public final class NetworkInterface {
      * {@link #getInetAddresses()} to obtain all IP addresses for this node
      *
      * @return an Enumeration of NetworkInterfaces found on this machine
-     * @exception  SocketException  if an I/O error occurs,
+     * @throws     SocketException  if an I/O error occurs,
      *             or if the platform does not have at least one configured
      *             network interface.
      * @see #networkInterfaces()
@@ -373,7 +379,7 @@ public final class NetworkInterface {
      * }</pre>
      *
      * @return a Stream of NetworkInterfaces found on this machine
-     * @exception  SocketException  if an I/O error occurs,
+     * @throws     SocketException  if an I/O error occurs,
      *             or if the platform does not have at least one configured
      *             network interface.
      * @since 9
@@ -386,6 +392,23 @@ public final class NetworkInterface {
         }  else {
             throw new SocketException("No network interfaces configured");
         }
+    }
+
+    /**
+     * Checks if the given address is bound to any of the interfaces on this
+     * machine.
+     *
+     * @param   addr
+     *          The {@code InetAddress} to search with.
+     * @return  true iff the addr parameter is currently bound to one of
+     *          the interfaces on this machine.
+     *
+     * @throws  SocketException
+     *          If an I/O error occurs.
+     */
+    /* package-private */ static boolean isBoundInetAddress(InetAddress addr)
+        throws SocketException {
+        return boundInetAddress0(addr);
     }
 
     private static <T> Enumeration<T> enumerationFromArray(T[] a) {
@@ -425,6 +448,9 @@ public final class NetworkInterface {
     private static native NetworkInterface getByIndex0(int index)
         throws SocketException;
 
+    private static native boolean boundInetAddress0(InetAddress addr)
+            throws SocketException;
+
     private static native NetworkInterface getByInetAddress0(InetAddress addr)
         throws SocketException;
 
@@ -432,7 +458,7 @@ public final class NetworkInterface {
      * Returns whether a network interface is up and running.
      *
      * @return  {@code true} if the interface is up and running.
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
 
@@ -444,7 +470,7 @@ public final class NetworkInterface {
      * Returns whether a network interface is a loopback interface.
      *
      * @return  {@code true} if the interface is a loopback interface.
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
 
@@ -459,7 +485,7 @@ public final class NetworkInterface {
      *
      * @return  {@code true} if the interface is a point to point
      *          interface.
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
 
@@ -471,7 +497,7 @@ public final class NetworkInterface {
      * Returns whether a network interface supports multicasting or not.
      *
      * @return  {@code true} if the interface supports Multicasting.
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
 
@@ -490,10 +516,11 @@ public final class NetworkInterface {
      *          manager is set and the caller does not have the permission
      *          NetPermission("getNetworkInformation")
      *
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
     public byte[] getHardwareAddress() throws SocketException {
+        @SuppressWarnings("removal")
         SecurityManager sec = System.getSecurityManager();
         if (sec != null) {
             try {
@@ -504,6 +531,9 @@ public final class NetworkInterface {
                     return null;
                 }
             }
+        }
+        if (isLoopback0(name, index)) {
+            return null;
         }
         for (InetAddress addr : addrs) {
             if (addr instanceof Inet4Address) {
@@ -517,7 +547,7 @@ public final class NetworkInterface {
      * Returns the Maximum Transmission Unit (MTU) of this interface.
      *
      * @return the value of the MTU for that interface.
-     * @exception       SocketException if an I/O error occurs.
+     * @throws          SocketException if an I/O error occurs.
      * @since 1.6
      */
     public int getMTU() throws SocketException {
@@ -555,7 +585,13 @@ public final class NetworkInterface {
      * as this object.
      * <p>
      * Two instances of {@code NetworkInterface} represent the same
-     * NetworkInterface if both name and addrs are the same for both.
+     * NetworkInterface if both the name and the set of {@code InetAddress}es
+     * bound to the interfaces are equal.
+     *
+     * @apiNote two {@code NetworkInterface} objects referring to the same
+     * underlying interface may not compare equal if the addresses
+     * of the underlying interface are being dynamically updated by
+     * the system.
      *
      * @param   obj   the object to compare against.
      * @return  {@code true} if the objects are the same;
@@ -565,10 +601,9 @@ public final class NetworkInterface {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (!(obj instanceof NetworkInterface)) {
+        if (!(obj instanceof NetworkInterface that)) {
             return false;
         }
-        NetworkInterface that = (NetworkInterface)obj;
         if (this.name != null ) {
             if (!this.name.equals(that.name)) {
                 return false;

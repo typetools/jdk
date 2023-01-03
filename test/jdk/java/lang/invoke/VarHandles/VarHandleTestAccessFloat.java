@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,6 +50,14 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
     float v;
 
+    static final float static_final_v2 = 1.0f;
+
+    static float static_v2;
+
+    final float final_v2 = 1.0f;
+
+    float v2;
+
     VarHandle vhFinalField;
 
     VarHandle vhField;
@@ -60,6 +68,41 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
     VarHandle vhArray;
 
+
+    VarHandle[] allocate(boolean same) {
+        List<VarHandle> vhs = new ArrayList<>();
+
+        String postfix = same ? "" : "2";
+        VarHandle vh;
+        try {
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessFloat.class, "final_v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessFloat.class, "v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessFloat.class, "static_final_v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessFloat.class, "static_v" + postfix, float.class);
+            vhs.add(vh);
+
+            if (same) {
+                vh = MethodHandles.arrayElementVarHandle(float[].class);
+            }
+            else {
+                vh = MethodHandles.arrayElementVarHandle(String[].class);
+            }
+            vhs.add(vh);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+        return vhs.toArray(new VarHandle[0]);
+    }
 
     @BeforeClass
     public void setup() throws Exception {
@@ -87,6 +130,26 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
         vhs.add(vhArray);
 
         return vhs.stream().map(tc -> new Object[]{tc}).toArray(Object[][]::new);
+    }
+
+    @Test
+    public void testEquals() {
+        VarHandle[] vhs1 = allocate(true);
+        VarHandle[] vhs2 = allocate(true);
+
+        for (int i = 0; i < vhs1.length; i++) {
+            for (int j = 0; j < vhs1.length; j++) {
+                if (i != j) {
+                    assertNotEquals(vhs1[i], vhs1[j]);
+                    assertNotEquals(vhs1[i], vhs2[j]);
+                }
+            }
+        }
+
+        VarHandle[] vhs3 = allocate(false);
+        for (int i = 0; i < vhs1.length; i++) {
+            assertNotEquals(vhs1[i], vhs3[i]);
+        }
     }
 
     @Test(dataProvider = "varHandlesProvider")
@@ -1093,91 +1156,91 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
         for (int i : new int[]{-1, Integer.MIN_VALUE, 10, 11, Integer.MAX_VALUE}) {
             final int ci = i;
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float x = (float) vh.get(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.set(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float x = (float) vh.getVolatile(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setVolatile(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float x = (float) vh.getAcquire(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setRelease(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float x = (float) vh.getOpaque(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.compareAndSet(array, ci, 1.0f, 2.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float r = (float) vh.compareAndExchange(array, ci, 2.0f, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float r = (float) vh.compareAndExchangeAcquire(array, ci, 2.0f, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float r = (float) vh.compareAndExchangeRelease(array, ci, 2.0f, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetPlain(array, ci, 1.0f, 2.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSet(array, ci, 1.0f, 2.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetAcquire(array, ci, 1.0f, 2.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetRelease(array, ci, 1.0f, 2.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndSet(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndSetAcquire(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndSetRelease(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndAdd(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndAddAcquire(array, ci, 1.0f);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 float o = (float) vh.getAndAddRelease(array, ci, 1.0f);
             });
 

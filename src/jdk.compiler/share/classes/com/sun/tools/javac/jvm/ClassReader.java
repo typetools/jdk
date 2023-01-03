@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntFunction;
 
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
@@ -55,8 +56,8 @@ import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.file.BaseFileManager;
 import com.sun.tools.javac.file.PathFileObject;
-import com.sun.tools.javac.jvm.ClassFile.NameAndType;
 import com.sun.tools.javac.jvm.ClassFile.Version;
+import com.sun.tools.javac.jvm.PoolConstant.NameAndType;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
@@ -100,18 +101,17 @@ public class ClassReader {
      */
     boolean verbose;
 
-    /** Switch: read constant pool and code sections. This switch is initially
-     *  set to false but can be turned on from outside.
-     */
-    public boolean readAllOfClassFile = false;
-
-    /** Switch: allow simplified varargs.
-     */
-    boolean allowSimplifiedVarargs;
-
     /** Switch: allow modules.
      */
     boolean allowModules;
+
+    /** Switch: allow sealed
+     */
+    boolean allowSealedTypes;
+
+    /** Switch: allow records
+     */
+    boolean allowRecords;
 
    /** Lint option: warn about classfile issues
      */
@@ -174,20 +174,15 @@ public class ClassReader {
 
     /** The buffer containing the currently read class file.
      */
-    byte[] buf = new byte[INITIAL_BUFFER_SIZE];
+    ByteBuffer buf = new ByteBuffer(INITIAL_BUFFER_SIZE);
 
     /** The current input pointer.
      */
     protected int bp;
 
-    /** The objects of the constant pool.
+    /** The pool reader.
      */
-    Object[] poolObj;
-
-    /** For every constant pool entry, an index into buf where the
-     *  defining section of the entry is found.
-     */
-    int[] poolIdx;
+    PoolReader poolReader;
 
     /** The major version number of the class file being read. */
     int majorVersion;
@@ -198,6 +193,11 @@ public class ClassReader {
      * names, as given in LocalVariableTable attributes.
      */
     int[] parameterNameIndices;
+
+    /**
+     * A table to hold the access flags of the method parameters.
+     */
+    int[] parameterAccessFlags;
 
     /**
      * A table to hold annotations for method parameters.
@@ -243,7 +243,7 @@ public class ClassReader {
     CompoundAnnotationProxy target;
 
     /**
-     * The prototype @Repetable Attribute.Compound if this class is an annotation annotated with
+     * The prototype @Repeatable Attribute.Compound if this class is an annotation annotated with
      * @Repeatable
      */
     CompoundAnnotationProxy repeatable;
@@ -276,8 +276,9 @@ public class ClassReader {
 
         Source source = Source.instance(context);
         preview = Preview.instance(context);
-        allowSimplifiedVarargs = Feature.SIMPLIFIED_VARARGS.allowedInSource(source);
         allowModules     = Feature.MODULES.allowedInSource(source);
+        allowRecords = Feature.RECORDS.allowedInSource(source);
+        allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -328,293 +329,28 @@ public class ClassReader {
     /** Read a character.
      */
     char nextChar() {
-        return (char)(((buf[bp++] & 0xFF) << 8) + (buf[bp++] & 0xFF));
+        char res = buf.getChar(bp);
+        bp += 2;
+        return res;
     }
 
     /** Read a byte.
      */
     int nextByte() {
-        return buf[bp++] & 0xFF;
+        return buf.getByte(bp++) & 0xFF;
     }
 
     /** Read an integer.
      */
     int nextInt() {
-        return
-            ((buf[bp++] & 0xFF) << 24) +
-            ((buf[bp++] & 0xFF) << 16) +
-            ((buf[bp++] & 0xFF) << 8) +
-            (buf[bp++] & 0xFF);
-    }
-
-    /** Extract a character at position bp from buf.
-     */
-    char getChar(int bp) {
-        return
-            (char)(((buf[bp] & 0xFF) << 8) + (buf[bp+1] & 0xFF));
-    }
-
-    /** Extract an integer at position bp from buf.
-     */
-    int getInt(int bp) {
-        return
-            ((buf[bp] & 0xFF) << 24) +
-            ((buf[bp+1] & 0xFF) << 16) +
-            ((buf[bp+2] & 0xFF) << 8) +
-            (buf[bp+3] & 0xFF);
-    }
-
-
-    /** Extract a long integer at position bp from buf.
-     */
-    long getLong(int bp) {
-        DataInputStream bufin =
-            new DataInputStream(new ByteArrayInputStream(buf, bp, 8));
-        try {
-            return bufin.readLong();
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    /** Extract a float at position bp from buf.
-     */
-    float getFloat(int bp) {
-        DataInputStream bufin =
-            new DataInputStream(new ByteArrayInputStream(buf, bp, 4));
-        try {
-            return bufin.readFloat();
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    /** Extract a double at position bp from buf.
-     */
-    double getDouble(int bp) {
-        DataInputStream bufin =
-            new DataInputStream(new ByteArrayInputStream(buf, bp, 8));
-        try {
-            return bufin.readDouble();
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
+        int res = buf.getInt(bp);
+        bp += 4;
+        return res;
     }
 
 /************************************************************************
  * Constant Pool Access
  ***********************************************************************/
-
-    /** Index all constant pool entries, writing their start addresses into
-     *  poolIdx.
-     */
-    void indexPool() {
-        poolIdx = new int[nextChar()];
-        poolObj = new Object[poolIdx.length];
-        int i = 1;
-        while (i < poolIdx.length) {
-            poolIdx[i++] = bp;
-            byte tag = buf[bp++];
-            switch (tag) {
-            case CONSTANT_Utf8: case CONSTANT_Unicode: {
-                int len = nextChar();
-                bp = bp + len;
-                break;
-            }
-            case CONSTANT_Class:
-            case CONSTANT_String:
-            case CONSTANT_MethodType:
-            case CONSTANT_Module:
-            case CONSTANT_Package:
-                bp = bp + 2;
-                break;
-            case CONSTANT_MethodHandle:
-                bp = bp + 3;
-                break;
-            case CONSTANT_Fieldref:
-            case CONSTANT_Methodref:
-            case CONSTANT_InterfaceMethodref:
-            case CONSTANT_NameandType:
-            case CONSTANT_Integer:
-            case CONSTANT_Float:
-            case CONSTANT_Dynamic:
-            case CONSTANT_InvokeDynamic:
-                bp = bp + 4;
-                break;
-            case CONSTANT_Long:
-            case CONSTANT_Double:
-                bp = bp + 8;
-                i++;
-                break;
-            default:
-                throw badClassFile("bad.const.pool.tag.at",
-                                   Byte.toString(tag),
-                                   Integer.toString(bp -1));
-            }
-        }
-    }
-
-    /** Read constant pool entry at start address i, use pool as a cache.
-     */
-    Object readPool(int i) {
-        Object result = poolObj[i];
-        if (result != null) return result;
-
-        int index = poolIdx[i];
-        if (index == 0) return null;
-
-        byte tag = buf[index];
-        switch (tag) {
-        case CONSTANT_Utf8:
-            poolObj[i] = names.fromUtf(buf, index + 3, getChar(index + 1));
-            break;
-        case CONSTANT_Unicode:
-            throw badClassFile("unicode.str.not.supported");
-        case CONSTANT_Class:
-            poolObj[i] = readClassOrType(getChar(index + 1));
-            break;
-        case CONSTANT_String:
-            // FIXME: (footprint) do not use toString here
-            poolObj[i] = readName(getChar(index + 1)).toString();
-            break;
-        case CONSTANT_Fieldref: {
-            ClassSymbol owner = readClassSymbol(getChar(index + 1));
-            NameAndType nt = readNameAndType(getChar(index + 3));
-            poolObj[i] = new VarSymbol(0, nt.name, nt.uniqueType.type, owner);
-            break;
-        }
-        case CONSTANT_Methodref:
-        case CONSTANT_InterfaceMethodref: {
-            ClassSymbol owner = readClassSymbol(getChar(index + 1));
-            NameAndType nt = readNameAndType(getChar(index + 3));
-            poolObj[i] = new MethodSymbol(0, nt.name, nt.uniqueType.type, owner);
-            break;
-        }
-        case CONSTANT_NameandType:
-            poolObj[i] = new NameAndType(
-                readName(getChar(index + 1)),
-                readType(getChar(index + 3)), types);
-            break;
-        case CONSTANT_Integer:
-            poolObj[i] = getInt(index + 1);
-            break;
-        case CONSTANT_Float:
-            poolObj[i] = Float.valueOf(getFloat(index + 1));
-            break;
-        case CONSTANT_Long:
-            poolObj[i] = Long.valueOf(getLong(index + 1));
-            break;
-        case CONSTANT_Double:
-            poolObj[i] = Double.valueOf(getDouble(index + 1));
-            break;
-        case CONSTANT_MethodHandle:
-            skipBytes(4);
-            break;
-        case CONSTANT_MethodType:
-            skipBytes(3);
-            break;
-        case CONSTANT_Dynamic:
-        case CONSTANT_InvokeDynamic:
-            skipBytes(5);
-            break;
-        case CONSTANT_Module:
-        case CONSTANT_Package:
-            // this is temporary for now: treat as a simple reference to the underlying Utf8.
-            poolObj[i] = readName(getChar(index + 1));
-            break;
-        default:
-            throw badClassFile("bad.const.pool.tag", Byte.toString(tag));
-        }
-        return poolObj[i];
-    }
-
-    /** Read signature and convert to type.
-     */
-    Type readType(int i) {
-        int index = poolIdx[i];
-        return sigToType(buf, index + 3, getChar(index + 1));
-    }
-
-    /** If name is an array type or class signature, return the
-     *  corresponding type; otherwise return a ClassSymbol with given name.
-     */
-    Object readClassOrType(int i) {
-        int index =  poolIdx[i];
-        int len = getChar(index + 1);
-        int start = index + 3;
-        Assert.check(buf[start] == '[' || buf[start + len - 1] != ';');
-        // by the above assertion, the following test can be
-        // simplified to (buf[start] == '[')
-        return (buf[start] == '[' || buf[start + len - 1] == ';')
-            ? (Object)sigToType(buf, start, len)
-            : (Object)enterClass(names.fromUtf(internalize(buf, start,
-                                                           len)));
-    }
-
-    /** Read signature and convert to type parameters.
-     */
-    List<Type> readTypeParams(int i) {
-        int index = poolIdx[i];
-        return sigToTypeParams(buf, index + 3, getChar(index + 1));
-    }
-
-    /** Read class entry.
-     */
-    ClassSymbol readClassSymbol(int i) {
-        Object obj = readPool(i);
-        if (obj != null && !(obj instanceof ClassSymbol))
-            throw badClassFile("bad.const.pool.entry",
-                               currentClassFile.toString(),
-                               "CONSTANT_Class_info", i);
-        return (ClassSymbol)obj;
-    }
-
-    Name readClassName(int i) {
-        int index = poolIdx[i];
-        if (index == 0) return null;
-        byte tag = buf[index];
-        if (tag != CONSTANT_Class) {
-            throw badClassFile("bad.const.pool.entry",
-                               currentClassFile.toString(),
-                               "CONSTANT_Class_info", i);
-        }
-        int nameIndex =  poolIdx[getChar(index + 1)];
-        int len = getChar(nameIndex + 1);
-        int start = nameIndex + 3;
-        if (buf[start] == '[' || buf[start + len - 1] == ';')
-            throw badClassFile("wrong class name"); //TODO: proper diagnostics
-        return names.fromUtf(internalize(buf, start, len));
-    }
-
-    /** Read name.
-     */
-    Name readName(int i) {
-        Object obj = readPool(i);
-        if (obj != null && !(obj instanceof Name))
-            throw badClassFile("bad.const.pool.entry",
-                               currentClassFile.toString(),
-                               "CONSTANT_Utf8_info or CONSTANT_String_info", i);
-        return (Name)obj;
-    }
-
-    /** Read name and type.
-     */
-    NameAndType readNameAndType(int i) {
-        Object obj = readPool(i);
-        if (obj != null && !(obj instanceof NameAndType))
-            throw badClassFile("bad.const.pool.entry",
-                               currentClassFile.toString(),
-                               "CONSTANT_NameAndType_info", i);
-        return (NameAndType)obj;
-    }
-
-    /** Read the name of a module.
-     * The name is stored in a CONSTANT_Module entry, in
-     * JVMS 4.2 binary form (using ".", not "/")
-     */
-    Name readModuleName(int i) {
-        return readName(i);
-    }
 
     /** Read module_flags.
      */
@@ -767,7 +503,7 @@ public class ClassReader {
             List<Type> argtypes = sigToTypes(')');
             Type restype = sigToType();
             List<Type> thrown = List.nil();
-            while (signature[sigp] == '^') {
+            while (sigp < siglimit && signature[sigp] == '^') {
                 sigp++;
                 thrown = thrown.prepend(sigToType());
             }
@@ -832,7 +568,7 @@ public class ClassReader {
                         public Type getEnclosingType() {
                             if (!completed) {
                                 completed = true;
-                                tsym.complete();
+                                tsym.apiComplete();
                                 Type enclosingType = tsym.type.getEnclosingType();
                                 if (enclosingType != Type.noType) {
                                     List<Type> typeArgs =
@@ -860,7 +596,7 @@ public class ClassReader {
                     };
                 switch (signature[sigp++]) {
                 case ';':
-                    if (sigp < signature.length && signature[sigp] == '.') {
+                    if (sigp < siglimit && signature[sigp] == '.') {
                         // support old-style GJC signatures
                         // The signature produced was
                         // Lfoo/Outer<Lfoo/X;>;.Lfoo/Outer$Inner<Lfoo/Y;>;
@@ -1054,7 +790,7 @@ public class ClassReader {
 
             new AttributeReader(names.Code, V45_3, MEMBER_ATTRIBUTE) {
                 protected void read(Symbol sym, int attrLen) {
-                    if (readAllOfClassFile || saveParameterNames)
+                    if (saveParameterNames)
                         ((MethodSymbol)sym).code = readCode(sym);
                     else
                         bp = bp + attrLen;
@@ -1063,7 +799,7 @@ public class ClassReader {
 
             new AttributeReader(names.ConstantValue, V45_3, MEMBER_ATTRIBUTE) {
                 protected void read(Symbol sym, int attrLen) {
-                    Object v = readPool(nextChar());
+                    Object v = poolReader.getConstant(nextChar());
                     // Ignore ConstantValue attribute if field not final.
                     if ((sym.flags() & FINAL) == 0) {
                         return;
@@ -1087,14 +823,17 @@ public class ClassReader {
                            checkType(var, Double.class, v);
                            break;
                        case CLASS:
-                           Assert.check(var.type.tsym == syms.stringType.tsym);
-                           checkType(var, String.class, v);
+                           if (var.type.tsym == syms.stringType.tsym) {
+                               checkType(var, String.class, v);
+                           } else {
+                               throw badClassFile("bad.constant.value.type", var.type);
+                           }
                            break;
                        default:
                            // ignore ConstantValue attribute if type is not primitive or String
                            return;
                     }
-                    if (v instanceof Integer && !var.type.getTag().checkRange((Integer) v)) {
+                    if (v instanceof Integer intVal && !var.type.getTag().checkRange(intVal)) {
                         throw badClassFile("bad.constant.range", v, var, var.type);
                     }
                     var.setData(v);
@@ -1120,7 +859,7 @@ public class ClassReader {
                     int nexceptions = nextChar();
                     List<Type> thrown = List.nil();
                     for (int j = 0; j < nexceptions; j++)
-                        thrown = thrown.prepend(readClassSymbol(nextChar()).type);
+                        thrown = thrown.prepend(poolReader.getClass(nextChar()).type);
                     if (sym.type.getThrownTypes().isEmpty())
                         sym.type.asMethodType().thrown = thrown.reverse();
                 }
@@ -1146,8 +885,8 @@ public class ClassReader {
                         // Parameter names are not explicitly identified as such,
                         // but all parameter name entries in the LocalVariableTable
                         // have a start_pc of 0.  Therefore, we record the name
-                        // indicies of all slots with a start_pc of zero in the
-                        // parameterNameIndicies array.
+                        // indices of all slots with a start_pc of zero in the
+                        // parameterNameIndices array.
                         // Note that this implicitly honors the JVMS spec that
                         // there may be more than one LocalVariableTable, and that
                         // there is no specified ordering for the entries.
@@ -1178,8 +917,8 @@ public class ClassReader {
             new AttributeReader(names.SourceFile, V45_3, CLASS_ATTRIBUTE) {
                 protected void read(Symbol sym, int attrLen) {
                     ClassSymbol c = (ClassSymbol) sym;
-                    Name n = readName(nextChar());
-                    c.sourcefile = new SourceFileObject(n, c.flatname);
+                    Name n = poolReader.getName(nextChar());
+                    c.sourcefile = new SourceFileObject(n);
                     // If the class is a toplevel class, originating from a Java source file,
                     // but the class name does not match the file name, then it is
                     // an auxiliary class.
@@ -1216,7 +955,8 @@ public class ClassReader {
                         try {
                             ClassType ct1 = (ClassType)c.type;
                             Assert.check(c == currentOwner);
-                            ct1.typarams_field = readTypeParams(nextChar());
+                            ct1.typarams_field = poolReader.getName(nextChar())
+                                    .map(ClassReader.this::sigToTypeParams);
                             ct1.supertype_field = sigToType();
                             ListBuffer<Type> is = new ListBuffer<>();
                             while (sigp != siglimit) is.append(sigToType());
@@ -1226,7 +966,7 @@ public class ClassReader {
                         }
                     } else {
                         List<Type> thrown = sym.type.getThrownTypes();
-                        sym.type = readType(nextChar());
+                        sym.type = poolReader.getType(nextChar());
                         //- System.err.println(" # " + sym.type);
                         if (sym.kind == MTH && sym.type.getThrownTypes().isEmpty())
                             sym.type.asMethodType().thrown = thrown;
@@ -1267,7 +1007,7 @@ public class ClassReader {
                 }
             },
 
-            // additional "legacy" v49 attributes, superceded by flags
+            // additional "legacy" v49 attributes, superseded by flags
 
             new AttributeReader(names.Annotation, V49, CLASS_OR_MEMBER_ATTRIBUTE) {
                 protected void read(Symbol sym, int attrLen) {
@@ -1320,6 +1060,7 @@ public class ClassReader {
                         sawMethodParameters = true;
                         int numEntries = nextByte();
                         parameterNameIndices = new int[numEntries];
+                        parameterAccessFlags = new int[numEntries];
                         haveParameterNameIndices = true;
                         int index = 0;
                         for (int i = 0; i < numEntries; i++) {
@@ -1328,7 +1069,9 @@ public class ClassReader {
                             if ((flags & (Flags.MANDATED | Flags.SYNTHETIC)) != 0) {
                                 continue;
                             }
-                            parameterNameIndices[index++] = nameIndex;
+                            parameterNameIndices[index] = nameIndex;
+                            parameterAccessFlags[index] = flags;
+                            index++;
                         }
                     }
                     bp = newbp;
@@ -1347,19 +1090,19 @@ public class ClassReader {
                         ModuleSymbol msym = (ModuleSymbol) sym.owner;
                         ListBuffer<Directive> directives = new ListBuffer<>();
 
-                        Name moduleName = readModuleName(nextChar());
+                        Name moduleName = poolReader.peekModuleName(nextChar(), names::fromUtf);
                         if (currentModule.name != moduleName) {
                             throw badClassFile("module.name.mismatch", moduleName, currentModule.name);
                         }
 
                         Set<ModuleFlags> moduleFlags = readModuleFlags(nextChar());
                         msym.flags.addAll(moduleFlags);
-                        msym.version = readName(nextChar());
+                        msym.version = optPoolEntry(nextChar(), poolReader::getName, null);
 
                         ListBuffer<RequiresDirective> requires = new ListBuffer<>();
                         int nrequires = nextChar();
                         for (int i = 0; i < nrequires; i++) {
-                            ModuleSymbol rsym = syms.enterModule(readModuleName(nextChar()));
+                            ModuleSymbol rsym = poolReader.getModule(nextChar());
                             Set<RequiresFlag> flags = readRequiresFlags(nextChar());
                             if (rsym == syms.java_base && majorVersion >= V54.major) {
                                 if (flags.contains(RequiresFlag.TRANSITIVE)) {
@@ -1378,8 +1121,7 @@ public class ClassReader {
                         ListBuffer<ExportsDirective> exports = new ListBuffer<>();
                         int nexports = nextChar();
                         for (int i = 0; i < nexports; i++) {
-                            Name n = readName(nextChar());
-                            PackageSymbol p = syms.enterPackage(currentModule, names.fromUtf(internalize(n)));
+                            PackageSymbol p = poolReader.getPackage(nextChar());
                             Set<ExportsFlag> flags = readExportsFlags(nextChar());
                             int nto = nextChar();
                             List<ModuleSymbol> to;
@@ -1388,7 +1130,7 @@ public class ClassReader {
                             } else {
                                 ListBuffer<ModuleSymbol> lb = new ListBuffer<>();
                                 for (int t = 0; t < nto; t++)
-                                    lb.append(syms.enterModule(readModuleName(nextChar())));
+                                    lb.append(poolReader.getModule(nextChar()));
                                 to = lb.toList();
                             }
                             exports.add(new ExportsDirective(p, to, flags));
@@ -1401,8 +1143,7 @@ public class ClassReader {
                             throw badClassFile("module.non.zero.opens", currentModule.name);
                         }
                         for (int i = 0; i < nopens; i++) {
-                            Name n = readName(nextChar());
-                            PackageSymbol p = syms.enterPackage(currentModule, names.fromUtf(internalize(n)));
+                            PackageSymbol p = poolReader.getPackage(nextChar());
                             Set<OpensFlag> flags = readOpensFlags(nextChar());
                             int nto = nextChar();
                             List<ModuleSymbol> to;
@@ -1411,7 +1152,7 @@ public class ClassReader {
                             } else {
                                 ListBuffer<ModuleSymbol> lb = new ListBuffer<>();
                                 for (int t = 0; t < nto; t++)
-                                    lb.append(syms.enterModule(readModuleName(nextChar())));
+                                    lb.append(poolReader.getModule(nextChar()));
                                 to = lb.toList();
                             }
                             opens.add(new OpensDirective(p, to, flags));
@@ -1424,7 +1165,7 @@ public class ClassReader {
                         ListBuffer<InterimUsesDirective> uses = new ListBuffer<>();
                         int nuses = nextChar();
                         for (int i = 0; i < nuses; i++) {
-                            Name srvc = readClassName(nextChar());
+                            Name srvc = poolReader.peekClassName(nextChar(), this::classNameMapper);
                             uses.add(new InterimUsesDirective(srvc));
                         }
                         interimUses = uses.toList();
@@ -1432,16 +1173,20 @@ public class ClassReader {
                         ListBuffer<InterimProvidesDirective> provides = new ListBuffer<>();
                         int nprovides = nextChar();
                         for (int p = 0; p < nprovides; p++) {
-                            Name srvc = readClassName(nextChar());
+                            Name srvc = poolReader.peekClassName(nextChar(), this::classNameMapper);
                             int nimpls = nextChar();
                             ListBuffer<Name> impls = new ListBuffer<>();
                             for (int i = 0; i < nimpls; i++) {
-                                impls.append(readClassName(nextChar()));
+                                impls.append(poolReader.peekClassName(nextChar(), this::classNameMapper));
                             provides.add(new InterimProvidesDirective(srvc, impls.toList()));
                             }
                         }
                         interimProvides = provides.toList();
                     }
+                }
+
+                private Name classNameMapper(byte[] arr, int offset, int length) {
+                    return names.fromUtf(ClassFile.internalize(arr, offset, length));
                 }
             },
 
@@ -1457,6 +1202,44 @@ public class ClassReader {
                     }
                 }
             },
+
+            new AttributeReader(names.Record, V58, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowRecords;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        sym.flags_field |= RECORD;
+                    }
+                    int componentCount = nextChar();
+                    ListBuffer<RecordComponent> components = new ListBuffer<>();
+                    for (int i = 0; i < componentCount; i++) {
+                        Name name = poolReader.getName(nextChar());
+                        Type type = poolReader.getType(nextChar());
+                        RecordComponent c = new RecordComponent(name, type, sym);
+                        readAttrs(c, AttributeKind.MEMBER);
+                        components.add(c);
+                    }
+                    ((ClassSymbol) sym).setRecordComponents(components.toList());
+                }
+            },
+            new AttributeReader(names.PermittedSubclasses, V59, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowSealedTypes;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        ListBuffer<Symbol> subtypes = new ListBuffer<>();
+                        int numberOfPermittedSubtypes = nextChar();
+                        for (int i = 0; i < numberOfPermittedSubtypes; i++) {
+                            subtypes.add(poolReader.getClass(nextChar()));
+                        }
+                        ((ClassSymbol)sym).permitted = subtypes.toList();
+                    }
+                }
+            },
         };
 
         for (AttributeReader r: readers)
@@ -1469,8 +1252,8 @@ public class ClassReader {
         // the scope specified by the attribute
         sym.owner.members().remove(sym);
         ClassSymbol self = (ClassSymbol)sym;
-        ClassSymbol c = readClassSymbol(nextChar());
-        NameAndType nt = readNameAndType(nextChar());
+        ClassSymbol c = poolReader.getClass(nextChar());
+        NameAndType nt = optPoolEntry(nextChar(), poolReader::getNameAndType, null);
 
         if (c.members_field == null || c.kind != TYP)
             throw badClassFile("bad.enclosing.class", self, c);
@@ -1507,6 +1290,10 @@ public class ClassReader {
 
     // See java.lang.Class
     private Name simpleBinaryName(Name self, Name enclosing) {
+        if (!self.startsWith(enclosing)) {
+            throw badClassFile("bad.enclosing.method", self);
+        }
+
         String simpleBinaryName = self.toString().substring(enclosing.toString().length());
         if (simpleBinaryName.length() < 1 || simpleBinaryName.charAt(0) != '$')
             throw badClassFile("bad.enclosing.method", self);
@@ -1521,7 +1308,7 @@ public class ClassReader {
         if (nt == null)
             return null;
 
-        MethodType type = nt.uniqueType.type.asMethodType();
+        MethodType type = nt.type.asMethodType();
 
         for (Symbol sym : scope.getSymbolsByName(nt.name)) {
             if (sym.kind == MTH && isSameBinaryType(sym.type.asMethodType(), type))
@@ -1534,15 +1321,15 @@ public class ClassReader {
         if ((flags & INTERFACE) != 0)
             // no enclosing instance
             return null;
-        if (nt.uniqueType.type.getParameterTypes().isEmpty())
+        if (nt.type.getParameterTypes().isEmpty())
             // no parameters
             return null;
 
         // A constructor of an inner class.
         // Remove the first argument (the enclosing instance)
-        nt.setType(new MethodType(nt.uniqueType.type.getParameterTypes().tail,
-                                 nt.uniqueType.type.getReturnType(),
-                                 nt.uniqueType.type.getThrownTypes(),
+        nt = new NameAndType(nt.name, new MethodType(nt.type.getParameterTypes().tail,
+                                 nt.type.getReturnType(),
+                                 nt.type.getThrownTypes(),
                                  syms.methodClass));
         // Try searching again
         return findMethod(nt, scope, flags);
@@ -1579,7 +1366,7 @@ public class ClassReader {
     void readAttrs(Symbol sym, AttributeKind kind) {
         char ac = nextChar();
         for (int i = 0; i < ac; i++) {
-            Name attrName = readName(nextChar());
+            Name attrName = poolReader.getName(nextChar());
             int attrLen = nextInt();
             AttributeReader r = attributeReaders.get(attrName);
             if (r != null && r.accepts(kind))
@@ -1644,19 +1431,21 @@ public class ClassReader {
         }
         ListBuffer<CompoundAnnotationProxy> proxies = new ListBuffer<>();
         for (CompoundAnnotationProxy proxy : annotations) {
-            if (proxy.type.tsym == syms.proprietaryType.tsym)
+            if (proxy.type.tsym.flatName() == syms.proprietaryType.tsym.flatName())
                 sym.flags_field |= PROPRIETARY;
-            else if (proxy.type.tsym == syms.profileType.tsym) {
+            else if (proxy.type.tsym.flatName() == syms.profileType.tsym.flatName()) {
                 if (profile != Profile.DEFAULT) {
                     for (Pair<Name, Attribute> v : proxy.values) {
-                        if (v.fst == names.value && v.snd instanceof Attribute.Constant) {
-                            Attribute.Constant c = (Attribute.Constant)v.snd;
-                            if (c.type == syms.intType && ((Integer)c.value) > profile.value) {
+                        if (v.fst == names.value && v.snd instanceof Attribute.Constant constant) {
+                            if (constant.type == syms.intType && ((Integer) constant.value) > profile.value) {
                                 sym.flags_field |= NOT_IN_PROFILE;
                             }
                         }
                     }
                 }
+            } else if (proxy.type.tsym.flatName() == syms.previewFeatureInternalType.tsym.flatName()) {
+                sym.flags_field |= PREVIEW_API;
+                setFlagIfAttributeTrue(proxy, sym, names.reflective, PREVIEW_REFLECTIVE);
             } else {
                 if (proxy.type.tsym == syms.annotationTargetType.tsym) {
                     target = proxy;
@@ -1664,25 +1453,31 @@ public class ClassReader {
                     repeatable = proxy;
                 } else if (proxy.type.tsym == syms.deprecatedType.tsym) {
                     sym.flags_field |= (DEPRECATED | DEPRECATED_ANNOTATION);
-                    for (Pair<Name, Attribute> v : proxy.values) {
-                        if (v.fst == names.forRemoval && v.snd instanceof Attribute.Constant) {
-                            Attribute.Constant c = (Attribute.Constant)v.snd;
-                            if (c.type == syms.booleanType && ((Integer)c.value) != 0) {
-                                sym.flags_field |= DEPRECATED_REMOVAL;
-                            }
-                        }
-                    }
+                    setFlagIfAttributeTrue(proxy, sym, names.forRemoval, DEPRECATED_REMOVAL);
+                }  else if (proxy.type.tsym == syms.previewFeatureType.tsym) {
+                    sym.flags_field |= PREVIEW_API;
+                    setFlagIfAttributeTrue(proxy, sym, names.reflective, PREVIEW_REFLECTIVE);
                 }
                 proxies.append(proxy);
             }
         }
         annotate.normal(new AnnotationCompleter(sym, proxies.toList()));
     }
+    //where:
+        private void setFlagIfAttributeTrue(CompoundAnnotationProxy proxy, Symbol sym, Name attribute, long flag) {
+            for (Pair<Name, Attribute> v : proxy.values) {
+                if (v.fst == attribute && v.snd instanceof Attribute.Constant constant) {
+                    if (constant.type == syms.booleanType && ((Integer) constant.value) != 0) {
+                        sym.flags_field |= flag;
+                    }
+                }
+            }
+        }
 
     /** Read parameter annotations.
      */
     void readParameterAnnotations(Symbol meth) {
-        int numParameters = buf[bp++] & 0xFF;
+        int numParameters = buf.getByte(bp++) & 0xFF;
         if (parameterAnnotations == null) {
             parameterAnnotations = new ParameterAnnotations[numParameters];
         } else if (parameterAnnotations.length != numParameters) {
@@ -1725,40 +1520,28 @@ public class ClassReader {
     }
 
     Type readTypeOrClassSymbol(int i) {
-        // support preliminary jsr175-format class files
-        if (buf[poolIdx[i]] == CONSTANT_Class)
-            return readClassSymbol(i).type;
-        return readTypeToProxy(i);
-    }
-    Type readEnumType(int i) {
-        // support preliminary jsr175-format class files
-        int index = poolIdx[i];
-        int length = getChar(index + 1);
-        if (buf[index + length + 2] != ';')
-            return enterClass(readName(i)).type;
         return readTypeToProxy(i);
     }
     Type readTypeToProxy(int i) {
         if (currentModule.module_info == currentOwner) {
-            int index = poolIdx[i];
-            return new ProxyType(Arrays.copyOfRange(buf, index + 3, index + 3 + getChar(index + 1)));
+            return new ProxyType(i);
         } else {
-            return readType(i);
+            return poolReader.getType(i);
         }
     }
 
     CompoundAnnotationProxy readCompoundAnnotation() {
         Type t;
         if (currentModule.module_info == currentOwner) {
-            int index = poolIdx[nextChar()];
-            t = new ProxyType(Arrays.copyOfRange(buf, index + 3, index + 3 + getChar(index + 1)));
+            int cpIndex = nextChar();
+            t = new ProxyType(cpIndex);
         } else {
             t = readTypeOrClassSymbol(nextChar());
         }
         int numFields = nextChar();
         ListBuffer<Pair<Name,Attribute>> pairs = new ListBuffer<>();
         for (int i=0; i<numFields; i++) {
-            Name name = readName(nextChar());
+            Name name = poolReader.getName(nextChar());
             Attribute value = readAttributeValue();
             pairs.append(new Pair<>(name, value));
         }
@@ -1971,29 +1754,40 @@ public class ClassReader {
 
     }
 
+    /**
+     * Helper function to read an optional pool entry (with given function); this is used while parsing
+     * InnerClasses and EnclosingMethod attributes, as well as when parsing supertype descriptor,
+     * as per JVMS.
+     */
+    <Z> Z optPoolEntry(int index, IntFunction<Z> poolFunc, Z defaultValue) {
+        return (index == 0) ?
+                defaultValue :
+                poolFunc.apply(index);
+    }
+
     Attribute readAttributeValue() {
-        char c = (char) buf[bp++];
+        char c = (char) buf.getByte(bp++);
         switch (c) {
         case 'B':
-            return new Attribute.Constant(syms.byteType, readPool(nextChar()));
+            return new Attribute.Constant(syms.byteType, poolReader.getConstant(nextChar()));
         case 'C':
-            return new Attribute.Constant(syms.charType, readPool(nextChar()));
+            return new Attribute.Constant(syms.charType, poolReader.getConstant(nextChar()));
         case 'D':
-            return new Attribute.Constant(syms.doubleType, readPool(nextChar()));
+            return new Attribute.Constant(syms.doubleType, poolReader.getConstant(nextChar()));
         case 'F':
-            return new Attribute.Constant(syms.floatType, readPool(nextChar()));
+            return new Attribute.Constant(syms.floatType, poolReader.getConstant(nextChar()));
         case 'I':
-            return new Attribute.Constant(syms.intType, readPool(nextChar()));
+            return new Attribute.Constant(syms.intType, poolReader.getConstant(nextChar()));
         case 'J':
-            return new Attribute.Constant(syms.longType, readPool(nextChar()));
+            return new Attribute.Constant(syms.longType, poolReader.getConstant(nextChar()));
         case 'S':
-            return new Attribute.Constant(syms.shortType, readPool(nextChar()));
+            return new Attribute.Constant(syms.shortType, poolReader.getConstant(nextChar()));
         case 'Z':
-            return new Attribute.Constant(syms.booleanType, readPool(nextChar()));
+            return new Attribute.Constant(syms.booleanType, poolReader.getConstant(nextChar()));
         case 's':
-            return new Attribute.Constant(syms.stringType, readPool(nextChar()).toString());
+            return new Attribute.Constant(syms.stringType, poolReader.getName(nextChar()).toString());
         case 'e':
-            return new EnumAttributeProxy(readEnumType(nextChar()), readName(nextChar()));
+            return new EnumAttributeProxy(readTypeToProxy(nextChar()), poolReader.getName(nextChar()));
         case 'c':
             return new ClassAttributeProxy(readTypeOrClassSymbol(nextChar()));
         case '[': {
@@ -2262,12 +2056,12 @@ public class ClassReader {
         }
 
         Type resolvePossibleProxyType(Type t) {
-            if (t instanceof ProxyType) {
+            if (t instanceof ProxyType proxyType) {
                 Assert.check(requestingOwner.owner.kind == MDL);
                 ModuleSymbol prevCurrentModule = currentModule;
                 currentModule = (ModuleSymbol) requestingOwner.owner;
                 try {
-                    return ((ProxyType) t).resolve();
+                    return proxyType.resolve();
                 } finally {
                     currentModule = prevCurrentModule;
                 }
@@ -2336,9 +2130,8 @@ public class ClassReader {
                     if (attr.type.tsym == syms.deprecatedType.tsym) {
                         sym.flags_field |= (DEPRECATED | DEPRECATED_ANNOTATION);
                         Attribute forRemoval = attr.member(names.forRemoval);
-                        if (forRemoval instanceof Attribute.Constant) {
-                            Attribute.Constant c = (Attribute.Constant) forRemoval;
-                            if (c.type == syms.booleanType && ((Integer) c.value) != 0) {
+                        if (forRemoval instanceof Attribute.Constant constant) {
+                            if (constant.type == syms.booleanType && ((Integer) constant.value) != 0) {
                                 sym.flags_field |= DEPRECATED_REMOVAL;
                             }
                         }
@@ -2402,8 +2195,8 @@ public class ClassReader {
      */
     VarSymbol readField() {
         long flags = adjustFieldFlags(nextChar());
-        Name name = readName(nextChar());
-        Type type = readType(nextChar());
+        Name name = poolReader.getName(nextChar());
+        Type type = poolReader.getType(nextChar());
         VarSymbol v = new VarSymbol(flags, name, type, currentOwner);
         readMemberAttrs(v);
         return v;
@@ -2413,8 +2206,8 @@ public class ClassReader {
      */
     MethodSymbol readMethod() {
         long flags = adjustMethodFlags(nextChar());
-        Name name = readName(nextChar());
-        Type type = readType(nextChar());
+        Name name = poolReader.getName(nextChar());
+        Type type = poolReader.getType(nextChar());
         if (currentOwner.isInterface() &&
                 (flags & ABSTRACT) == 0 && !name.equals(names.clinit)) {
             if (majorVersion > Version.V52.major ||
@@ -2430,6 +2223,7 @@ public class ClassReader {
                                    Integer.toString(minorVersion));
             }
         }
+        validateMethodType(name, type);
         if (name == names.init && currentOwner.hasOuterInstance()) {
             // Sometimes anonymous classes don't have an outer
             // instance, however, there is no reliable way to tell so
@@ -2457,6 +2251,7 @@ public class ClassReader {
         } finally {
             currentOwner = prevOwner;
         }
+        validateMethodType(name, m.type);
         setParameters(m, type);
 
         if ((flags & VARARGS) != 0) {
@@ -2470,7 +2265,17 @@ public class ClassReader {
         return m;
     }
 
+    void validateMethodType(Name name, Type t) {
+        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL)) ||
+            (name == names.init && !t.getReturnType().hasTag(TypeTag.VOID))) {
+            throw badClassFile("method.descriptor.invalid", name);
+        }
+    }
+
     private List<Type> adjustMethodParams(long flags, List<Type> args) {
+        if (args.isEmpty()) {
+            return args;
+        }
         boolean isVarargs = (flags & VARARGS) != 0;
         if (isVarargs) {
             Type varargsElem = args.last();
@@ -2555,14 +2360,12 @@ public class ClassReader {
                 firstParam += skip;
             }
         }
-        List<Name> paramNames = List.nil();
+        Set<Name> paramNames = new HashSet<>();
         ListBuffer<VarSymbol> params = new ListBuffer<>();
         int nameIndex = firstParam;
         int annotationIndex = 0;
         for (Type t: sym.type.getParameterTypes()) {
-            Name name = parameterName(nameIndex, paramNames);
-            paramNames = paramNames.prepend(name);
-            VarSymbol param = new VarSymbol(PARAMETER, name, t, sym);
+            VarSymbol param = parameter(nameIndex, t, sym, paramNames);
             params.append(param);
             if (parameterAnnotations != null) {
                 ParameterAnnotations annotations = parameterAnnotations[annotationIndex];
@@ -2581,24 +2384,35 @@ public class ClassReader {
         sym.params = params.toList();
         parameterAnnotations = null;
         parameterNameIndices = null;
+        parameterAccessFlags = null;
     }
 
 
     // Returns the name for the parameter at position 'index', either using
     // names read from the MethodParameters, or by synthesizing a name that
     // is not on the 'exclude' list.
-    private Name parameterName(int index, List<Name> exclude) {
+    private VarSymbol parameter(int index, Type t, MethodSymbol owner, Set<Name> exclude) {
+        long flags = PARAMETER;
+        Name argName;
+        if (parameterAccessFlags != null && index < parameterAccessFlags.length
+                && parameterAccessFlags[index] != 0) {
+            flags |= parameterAccessFlags[index];
+        }
         if (parameterNameIndices != null && index < parameterNameIndices.length
                 && parameterNameIndices[index] != 0) {
-            return readName(parameterNameIndices[index]);
+            argName = optPoolEntry(parameterNameIndices[index], poolReader::getName, names.empty);
+            flags |= NAME_FILLED;
+        } else {
+            String prefix = "arg";
+            while (true) {
+                argName = names.fromString(prefix + exclude.size());
+                if (!exclude.contains(argName))
+                    break;
+                prefix += "$";
+            }
         }
-        String prefix = "arg";
-        while (true) {
-            Name argName = names.fromString(prefix + exclude.size());
-            if (!exclude.contains(argName))
-                return argName;
-            prefix += "$";
-        }
+        exclude.add(argName);
+        return new ParamSymbol(flags, argName, t, owner);
     }
 
     /**
@@ -2647,8 +2461,6 @@ public class ClassReader {
     }
 
     protected ClassSymbol enterClass(Name name) {
-        if (syms.proprietaryType.tsym.flatName() == name)
-            return (ClassSymbol) syms.proprietaryType.tsym;
         return syms.enterClass(currentModule, name);
     }
 
@@ -2677,7 +2489,7 @@ public class ClassReader {
             if (c.owner.kind == PCK || c.owner.kind == ERR) c.flags_field = flags;
             // read own class name and check that it matches
             currentModule = c.packge().modle;
-            ClassSymbol self = readClassSymbol(nextChar());
+            ClassSymbol self = poolReader.getClass(nextChar());
             if (c != self) {
                 throw badClassFile("class.file.wrong.class",
                                    self.flatname);
@@ -2689,6 +2501,9 @@ public class ClassReader {
                         Integer.toString(minorVersion));
             }
             c.flags_field = flags;
+            if (c.owner.kind != MDL) {
+                throw badClassFile("module.info.definition.expected");
+            }
             currentModule = (ModuleSymbol) c.owner;
             int this_class = nextChar();
             // temp, no check on this_class
@@ -2706,9 +2521,8 @@ public class ClassReader {
         for (int i = 0; i < methodCount; i++) skipMember();
         readClassAttrs(c);
 
-        if (readAllOfClassFile) {
-            for (int i = 1; i < poolObj.length; i++) readPool(i);
-            c.pool = new Pool(poolObj.length, poolObj, types);
+        if (c.permitted != null && !c.permitted.isEmpty()) {
+            c.flags_field |= SEALED;
         }
 
         // reset and read rest of classinfo
@@ -2718,13 +2532,12 @@ public class ClassReader {
             throw badClassFile("module.info.invalid.super.class");
         }
         if (ct.supertype_field == null)
-            ct.supertype_field = (n == 0)
-                ? Type.noType
-                : readClassSymbol(n).erasure(types);
+            ct.supertype_field =
+                    optPoolEntry(n, idx -> poolReader.getClass(idx).erasure(types), Type.noType);
         n = nextChar();
         List<Type> is = List.nil();
         for (int i = 0; i < n; i++) {
-            Type _inter = readClassSymbol(nextChar()).erasure(types);
+            Type _inter = poolReader.getClass(nextChar()).erasure(types);
             is = is.prepend(_inter);
         }
         if (ct.interfaces_field == null)
@@ -2734,8 +2547,21 @@ public class ClassReader {
         for (int i = 0; i < fieldCount; i++) enterMember(c, readField());
         Assert.check(methodCount == nextChar());
         for (int i = 0; i < methodCount; i++) enterMember(c, readMethod());
-
+        if (c.isRecord()) {
+            for (RecordComponent rc: c.getRecordComponents()) {
+                rc.accessor = lookupMethod(c, rc.name, List.nil());
+            }
+        }
         typevars = typevars.leave();
+    }
+
+    private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
+        for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
+            if (types.isSameTypes(s.type.getParameterTypes(), argtypes)) {
+                return (MethodSymbol) s;
+            }
+        }
+        return null;
     }
 
     /** Read inner class info. For each inner/outer pair allocate a
@@ -2745,8 +2571,10 @@ public class ClassReader {
         int n = nextChar();
         for (int i = 0; i < n; i++) {
             nextChar(); // skip inner class symbol
-            ClassSymbol outer = readClassSymbol(nextChar());
-            Name name = readName(nextChar());
+            int outerIdx = nextChar();
+            int nameIdx = nextChar();
+            ClassSymbol outer = optPoolEntry(outerIdx, poolReader::getClass, null);
+            Name name = optPoolEntry(nameIdx, poolReader::getName, names.empty);
             if (name == null) name = names.empty;
             long flags = adjustClassFlags(nextChar());
             if (outer != null) { // we have a member class
@@ -2777,10 +2605,12 @@ public class ClassReader {
         majorVersion = nextChar();
         int maxMajor = Version.MAX().major;
         int maxMinor = Version.MAX().minor;
+        boolean previewClassFile =
+                minorVersion == ClassFile.PREVIEW_MINOR_VERSION;
         if (majorVersion > maxMajor ||
             majorVersion * 1000 + minorVersion <
             Version.MIN().major * 1000 + Version.MIN().minor) {
-            if (majorVersion == (maxMajor + 1))
+            if (majorVersion == (maxMajor + 1) && !previewClassFile)
                 log.warning(Warnings.BigMajorVersion(currentClassFile,
                                                      majorVersion,
                                                      maxMajor));
@@ -2792,7 +2622,7 @@ public class ClassReader {
                                    Integer.toString(maxMinor));
         }
 
-        if (minorVersion == ClassFile.PREVIEW_MINOR_VERSION) {
+        if (previewClassFile) {
             if (!preview.isEnabled()) {
                 log.error(preview.disabledError(currentClassFile, majorVersion));
             } else {
@@ -2800,7 +2630,8 @@ public class ClassReader {
             }
         }
 
-        indexPool();
+        poolReader = new PoolReader(this, names, syms);
+        bp = poolReader.readPool(buf, bp);
         if (signatureBuffer.length < bp) {
             int ns = Integer.highestOneBit(bp) << 1;
             signatureBuffer = new byte[ns];
@@ -2817,7 +2648,8 @@ public class ClassReader {
         repeatable = null;
         try {
             bp = 0;
-            buf = readInputStream(buf, c.classfile.openInputStream());
+            buf.reset();
+            buf.appendStream(c.classfile.openInputStream());
             readClassBuffer(c);
             if (!missingTypeVariables.isEmpty() && !foundTypeVariables.isEmpty()) {
                 List<Type> missing = missingTypeVariables;
@@ -2871,43 +2703,6 @@ public class ClassReader {
             filling = false;
         }
     }
-    // where
-        private static byte[] readInputStream(byte[] buf, InputStream s) throws IOException {
-            try {
-                buf = ensureCapacity(buf, s.available());
-                int r = s.read(buf);
-                int bp = 0;
-                while (r != -1) {
-                    bp += r;
-                    buf = ensureCapacity(buf, bp);
-                    r = s.read(buf, bp, buf.length - bp);
-                }
-                return buf;
-            } finally {
-                try {
-                    s.close();
-                } catch (IOException e) {
-                    /* Ignore any errors, as this stream may have already
-                     * thrown a related exception which is the one that
-                     * should be reported.
-                     */
-                }
-            }
-        }
-        /*
-         * ensureCapacity will increase the buffer as needed, taking note that
-         * the new buffer will always be greater than the needed and never
-         * exactly equal to the needed size or bp. If equal then the read (above)
-         * will infinitely loop as buf.length - bp == 0.
-         */
-        private static byte[] ensureCapacity(byte[] buf, int needed) {
-            if (buf.length <= needed) {
-                byte[] old = buf;
-                buf = new byte[Integer.highestOneBit(needed) << 1];
-                System.arraycopy(old, 0, buf, 0, old.length);
-            }
-            return buf;
-        }
 
     /** We can only read a single class file at a time; this
      *  flag keeps track of when we are currently reading a class
@@ -2954,11 +2749,9 @@ public class ClassReader {
         /** The file's name.
          */
         private final Name name;
-        private final Name flatname;
 
-        public SourceFileObject(Name name, Name flatname) {
+        public SourceFileObject(Name name) {
             this.name = name;
-            this.flatname = flatname;
         }
 
         @Override @DefinedBy(Api.COMPILER)
@@ -3040,12 +2833,8 @@ public class ClassReader {
         public boolean equals(Object other) {
             if (this == other)
                 return true;
-
-            if (!(other instanceof SourceFileObject))
-                return false;
-
-            SourceFileObject o = (SourceFileObject) other;
-            return name.equals(o.name);
+            return (other instanceof SourceFileObject sourceFileObject)
+                    && name.equals(sourceFileObject.name);
         }
 
         @Override
@@ -3085,7 +2874,7 @@ public class ClassReader {
                 }
             } catch (Exception e) {
                 throw new CompletionFailure(sym,
-                                            ClassReader.this.diagFactory.fragment(Fragments.ExceptionMessage(e.getMessage())),
+                                            () -> ClassReader.this.diagFactory.fragment(Fragments.ExceptionMessage(e.getMessage())),
                                             dcfh);
             }
 
@@ -3096,11 +2885,11 @@ public class ClassReader {
 
     private class ProxyType extends Type {
 
-        private final byte[] content;
+        private final Name name;
 
-        public ProxyType(byte[] content) {
+        public ProxyType(int index) {
             super(syms.noSymbol, TypeMetadata.EMPTY);
-            this.content = content;
+            this.name = poolReader.getName(index);
         }
 
         @Override
@@ -3114,7 +2903,7 @@ public class ClassReader {
         }
 
         public Type resolve() {
-            return sigToType(content, 0, content.length);
+            return name.map(ClassReader.this::sigToType);
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)

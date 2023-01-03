@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -174,9 +174,7 @@ public class CtwRunner {
         while (!done) {
             String[] cmd = cmd(classStart, classStop);
             try {
-                ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
-                        /* addTestVmAndJavaOptions = */ true,
-                        cmd);
+                ProcessBuilder pb = ProcessTools.createTestJvm(cmd);
                 String commandLine = pb.command()
                         .stream()
                         .collect(Collectors.joining(" "));
@@ -258,32 +256,49 @@ public class CtwRunner {
 
     private String[] cmd(long classStart, long classStop) {
         String phase = phaseName(classStart);
-        return new String[] {
-                "-Xbatch",
-                "-XX:-UseCounterDecay",
-                "-XX:-ShowMessageBoxOnError",
-                "-XX:+UnlockDiagnosticVMOptions",
-                // define phase start
-                "-DCompileTheWorldStartAt=" + classStart,
-                "-DCompileTheWorldStopAt=" + classStop,
-                // CTW library uses WhiteBox API
-                "-XX:+WhiteBoxAPI", "-Xbootclasspath/a:.",
-                // export jdk.internal packages used by CTW library
-                "--add-exports", "java.base/jdk.internal.jimage=ALL-UNNAMED",
-                "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED",
-                "--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED",
-                // enable diagnostic logging
-                "-XX:+LogCompilation",
-                // use phase specific log, hs_err and ciReplay files
-                String.format("-XX:LogFile=hotspot_%s_%%p.log", phase),
-                String.format("-XX:ErrorFile=hs_err_%s_%%p.log", phase),
-                String.format("-XX:ReplayDataFile=replay_%s_%%p.log", phase),
-                // MethodHandle MUST NOT be compiled
-                "-XX:CompileCommand=exclude,java/lang/invoke/MethodHandle.*",
-                // CTW entry point
-                CompileTheWorld.class.getName(),
-                target,
-        };
+        Path file = Paths.get(phase + ".cmd");
+        var rng = Utils.getRandomInstance();
+        try {
+            Files.write(file, List.of(
+                    "-Xbatch",
+                    "-XX:-UseCounterDecay",
+                    "-XX:-ShowMessageBoxOnError",
+                    "-XX:+UnlockDiagnosticVMOptions",
+                    // redirect VM output to cerr so it won't collide w/ ctw output
+                    "-XX:+DisplayVMOutputToStderr",
+                    // define phase start
+                    "-DCompileTheWorldStartAt=" + classStart,
+                    "-DCompileTheWorldStopAt=" + classStop,
+                    // CTW library uses WhiteBox API
+                    "-XX:+WhiteBoxAPI", "-Xbootclasspath/a:.",
+                    // export jdk.internal packages used by CTW library
+                    "--add-exports", "java.base/jdk.internal.jimage=ALL-UNNAMED",
+                    "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED",
+                    "--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED",
+                    "--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED",
+                    // enable diagnostic logging
+                    "-XX:+LogCompilation",
+                    // use phase specific log, hs_err and ciReplay files
+                    String.format("-XX:LogFile=hotspot_%s_%%p.log", phase),
+                    String.format("-XX:ErrorFile=hs_err_%s_%%p.log", phase),
+                    String.format("-XX:ReplayDataFile=replay_%s_%%p.log", phase),
+                    // MethodHandle MUST NOT be compiled
+                    "-XX:CompileCommand=exclude,java/lang/invoke/MethodHandle.*",
+                    // Stress* are c2-specific stress flags, so IgnoreUnrecognizedVMOptions is needed
+                    "-XX:+IgnoreUnrecognizedVMOptions",
+                    "-XX:+StressLCM",
+                    "-XX:+StressGCM",
+                    "-XX:+StressIGVN",
+                    "-XX:+StressCCP",
+                    // StressSeed is uint
+                    "-XX:StressSeed=" + Math.abs(rng.nextLong()),
+                    // CTW entry point
+                    CompileTheWorld.class.getName(),
+                    target));
+        } catch (IOException e) {
+            throw new Error("can't create " + file, e);
+        }
+        return new String[]{ "@" + file.toAbsolutePath() };
     }
 
     private String phaseName(long classStart) {

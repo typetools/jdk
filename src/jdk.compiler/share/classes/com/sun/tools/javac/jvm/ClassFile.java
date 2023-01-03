@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,6 @@
 
 package com.sun.tools.javac.jvm;
 
-import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Types;
-import com.sun.tools.javac.code.Types.UniqueType;
 import com.sun.tools.javac.util.Name;
 
 
@@ -67,45 +64,45 @@ import com.sun.tools.javac.util.Name;
  *  deletion without notice.</b> */
 public class ClassFile {
 
-    public final static int JAVA_MAGIC = 0xCAFEBABE;
+    public static final int JAVA_MAGIC = 0xCAFEBABE;
 
     // see Target
-    public final static int CONSTANT_Utf8 = 1;
-    public final static int CONSTANT_Unicode = 2;
-    public final static int CONSTANT_Integer = 3;
-    public final static int CONSTANT_Float = 4;
-    public final static int CONSTANT_Long = 5;
-    public final static int CONSTANT_Double = 6;
-    public final static int CONSTANT_Class = 7;
-    public final static int CONSTANT_String = 8;
-    public final static int CONSTANT_Fieldref = 9;
-    public final static int CONSTANT_Methodref = 10;
-    public final static int CONSTANT_InterfaceMethodref = 11;
-    public final static int CONSTANT_NameandType = 12;
-    public final static int CONSTANT_MethodHandle = 15;
-    public final static int CONSTANT_MethodType = 16;
-    public final static int CONSTANT_Dynamic = 17;
-    public final static int CONSTANT_InvokeDynamic = 18;
-    public final static int CONSTANT_Module = 19;
-    public final static int CONSTANT_Package = 20;
+    public static final int CONSTANT_Utf8 = 1;
+    public static final int CONSTANT_Unicode = 2;
+    public static final int CONSTANT_Integer = 3;
+    public static final int CONSTANT_Float = 4;
+    public static final int CONSTANT_Long = 5;
+    public static final int CONSTANT_Double = 6;
+    public static final int CONSTANT_Class = 7;
+    public static final int CONSTANT_String = 8;
+    public static final int CONSTANT_Fieldref = 9;
+    public static final int CONSTANT_Methodref = 10;
+    public static final int CONSTANT_InterfaceMethodref = 11;
+    public static final int CONSTANT_NameandType = 12;
+    public static final int CONSTANT_MethodHandle = 15;
+    public static final int CONSTANT_MethodType = 16;
+    public static final int CONSTANT_Dynamic = 17;
+    public static final int CONSTANT_InvokeDynamic = 18;
+    public static final int CONSTANT_Module = 19;
+    public static final int CONSTANT_Package = 20;
 
-    public final static int REF_getField = 1;
-    public final static int REF_getStatic = 2;
-    public final static int REF_putField = 3;
-    public final static int REF_putStatic = 4;
-    public final static int REF_invokeVirtual = 5;
-    public final static int REF_invokeStatic = 6;
-    public final static int REF_invokeSpecial = 7;
-    public final static int REF_newInvokeSpecial = 8;
-    public final static int REF_invokeInterface = 9;
+    public static final int REF_getField = 1;
+    public static final int REF_getStatic = 2;
+    public static final int REF_putField = 3;
+    public static final int REF_putStatic = 4;
+    public static final int REF_invokeVirtual = 5;
+    public static final int REF_invokeStatic = 6;
+    public static final int REF_invokeSpecial = 7;
+    public static final int REF_newInvokeSpecial = 8;
+    public static final int REF_invokeInterface = 9;
 
-    public final static int MAX_PARAMETERS = 0xff;
-    public final static int MAX_DIMENSIONS = 0xff;
-    public final static int MAX_CODE = 0xffff;
-    public final static int MAX_LOCALS = 0xffff;
-    public final static int MAX_STACK = 0xffff;
+    public static final int MAX_PARAMETERS = 0xff;
+    public static final int MAX_DIMENSIONS = 0xff;
+    public static final int MAX_CODE = 0xffff;
+    public static final int MAX_LOCALS = 0xffff;
+    public static final int MAX_STACK = 0xffff;
 
-    public final static int PREVIEW_MINOR_VERSION = 0xffff;
+    public static final int PREVIEW_MINOR_VERSION = 0xffff;
 
     public enum Version {
         V45_3(45, 3), // base level for all attributes
@@ -115,7 +112,13 @@ public class ClassFile {
         V52(52, 0),   // JDK 1.8: lambda, type annos, param names
         V53(53, 0),   // JDK 1.9: modules, indy string concat
         V54(54, 0),   // JDK 10
-        V55(55, 0);   // JDK 11: constant dynamic
+        V55(55, 0),   // JDK 11: constant dynamic, nest mates
+        V56(56, 0),   // JDK 12
+        V57(57, 0),   // JDK 13
+        V58(58, 0),   // JDK 14
+        V59(59, 0),   // JDK 15
+        V60(60, 0),   // JDK 16
+        V61(61, 0);   // JDK 17
         Version(int major, int minor) {
             this.major = major;
             this.minor = minor;
@@ -186,39 +189,5 @@ public class ClassFile {
      */
     public static byte[] externalize(Name name) {
         return externalize(name.getByteArray(), name.getByteOffset(), name.getByteLength());
-    }
-
-/************************************************************************
- * Name-and-type
- ***********************************************************************/
-
-    /** A class for the name-and-type signature of a method or field.
-     */
-    public static class NameAndType {
-        Name name;
-        UniqueType uniqueType;
-        Types types;
-
-        NameAndType(Name name, Type type, Types types) {
-            this.name = name;
-            this.uniqueType = new UniqueType(type, types);
-            this.types = types;
-        }
-
-        void setType(Type type) {
-            this.uniqueType = new UniqueType(type, types);
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            return (other instanceof NameAndType &&
-                    name == ((NameAndType) other).name &&
-                        uniqueType.equals(((NameAndType) other).uniqueType));
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode() * uniqueType.hashCode();
-        }
     }
 }

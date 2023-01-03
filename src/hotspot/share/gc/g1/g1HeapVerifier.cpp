@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,22 +23,22 @@
  */
 
 #include "precompiled.hpp"
+#include "code/nmethod.hpp"
 #include "gc/g1/g1Allocator.inline.hpp"
-#include "gc/g1/g1CollectedHeap.hpp"
 #include "gc/g1/g1CollectedHeap.inline.hpp"
 #include "gc/g1/g1ConcurrentMarkThread.hpp"
 #include "gc/g1/g1HeapVerifier.hpp"
 #include "gc/g1/g1Policy.hpp"
 #include "gc/g1/g1RemSet.hpp"
 #include "gc/g1/g1RootProcessor.hpp"
-#include "gc/g1/heapRegion.hpp"
 #include "gc/g1/heapRegion.inline.hpp"
 #include "gc/g1/heapRegionRemSet.hpp"
-#include "gc/g1/g1StringDedup.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
 #include "memory/iterator.inline.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
@@ -68,7 +68,8 @@ public:
       oop obj = CompressedOops::decode_not_null(heap_oop);
       if (_g1h->is_obj_dead_cond(obj, _vo)) {
         Log(gc, verify) log;
-        log.error("Root location " PTR_FORMAT " points to dead obj " PTR_FORMAT, p2i(p), p2i(obj));
+        log.error("Root location " PTR_FORMAT " points to dead obj " PTR_FORMAT " in region " HR_FORMAT,
+                  p2i(p), p2i(obj), HR_FORMAT_PARAMS(_g1h->heap_region_containing(obj)));
         ResourceMark rm;
         LogStream ls(log.error());
         obj->print_on(&ls);
@@ -127,7 +128,7 @@ class G1VerifyCodeRootOopClosure: public OopClosure {
 
 public:
   G1VerifyCodeRootOopClosure(G1CollectedHeap* g1h, OopClosure* root_cl, VerifyOption vo):
-    _g1h(g1h), _root_cl(root_cl), _vo(vo), _nm(NULL), _failures(false) {}
+    _g1h(g1h), _root_cl(root_cl), _nm(NULL), _vo(vo), _failures(false) {}
 
   void do_oop(oop* p) { do_oop_work(p); }
   void do_oop(narrowOop* p) { do_oop_work(p); }
@@ -170,10 +171,10 @@ class VerifyCLDClosure: public CLDClosure {
  public:
   VerifyCLDClosure(G1CollectedHeap* g1h, OopClosure* cl) : _young_ref_counter_closure(g1h), _oop_closure(cl) {}
   void do_cld(ClassLoaderData* cld) {
-    cld->oops_do(_oop_closure, false);
+    cld->oops_do(_oop_closure, ClassLoaderData::_claim_none);
 
     _young_ref_counter_closure.reset_count();
-    cld->oops_do(&_young_ref_counter_closure, false);
+    cld->oops_do(&_young_ref_counter_closure, ClassLoaderData::_claim_none);
     if (_young_ref_counter_closure.count() > 0) {
       guarantee(cld->has_modified_oops(), "CLD " PTR_FORMAT ", has young %d refs but is not dirty.", p2i(cld), _young_ref_counter_closure.count());
     }
@@ -239,8 +240,7 @@ public:
 class VerifyArchiveOopClosure: public BasicOopIterateClosure {
   HeapRegion* _hr;
 public:
-  VerifyArchiveOopClosure(HeapRegion *hr)
-    : _hr(hr) { }
+  VerifyArchiveOopClosure(HeapRegion *hr) : _hr(hr) { }
   void do_oop(narrowOop *p) { do_oop_work(p); }
   void do_oop(      oop *p) { do_oop_work(p); }
 
@@ -248,12 +248,12 @@ public:
     oop obj = RawAccess<>::oop_load(p);
 
     if (_hr->is_open_archive()) {
-      guarantee(obj == NULL || G1ArchiveAllocator::is_archive_object(obj),
+      guarantee(obj == NULL || G1CollectedHeap::heap()->heap_region_containing(obj)->is_archive(),
                 "Archive object at " PTR_FORMAT " references a non-archive object at " PTR_FORMAT,
                 p2i(p), p2i(obj));
     } else {
       assert(_hr->is_closed_archive(), "should be closed archive region");
-      guarantee(obj == NULL || G1ArchiveAllocator::is_closed_archive_object(obj),
+      guarantee(obj == NULL || G1CollectedHeap::heap()->heap_region_containing(obj)->is_closed_archive(),
                 "Archive object at " PTR_FORMAT " references a non-archive object at " PTR_FORMAT,
                 p2i(p), p2i(obj));
     }
@@ -274,11 +274,69 @@ public:
 };
 
 // Should be only used at CDS dump time
-class VerifyArchivePointerRegionClosure: public HeapRegionClosure {
-private:
-  G1CollectedHeap* _g1h;
+class VerifyReadyForArchivingRegionClosure : public HeapRegionClosure {
+  bool _seen_free;
+  bool _has_holes;
+  bool _has_unexpected_holes;
+  bool _has_humongous;
 public:
-  VerifyArchivePointerRegionClosure(G1CollectedHeap* g1h) { }
+  bool has_holes() {return _has_holes;}
+  bool has_unexpected_holes() {return _has_unexpected_holes;}
+  bool has_humongous() {return _has_humongous;}
+
+  VerifyReadyForArchivingRegionClosure() : HeapRegionClosure() {
+    _seen_free = false;
+    _has_holes = false;
+    _has_unexpected_holes = false;
+    _has_humongous = false;
+  }
+  virtual bool do_heap_region(HeapRegion* hr) {
+    const char* hole = "";
+
+    if (hr->is_free()) {
+      _seen_free = true;
+    } else {
+      if (_seen_free) {
+        _has_holes = true;
+        if (hr->is_humongous()) {
+          hole = " hole";
+        } else {
+          _has_unexpected_holes = true;
+          hole = " hole **** unexpected ****";
+        }
+      }
+    }
+    if (hr->is_humongous()) {
+      _has_humongous = true;
+    }
+    log_info(gc, region, cds)("HeapRegion " INTPTR_FORMAT " %s%s", p2i(hr->bottom()), hr->get_type_str(), hole);
+    return false;
+  }
+};
+
+// We want all used regions to be moved to the bottom-end of the heap, so we have
+// a contiguous range of free regions at the top end of the heap. This way, we can
+// avoid fragmentation while allocating the archive regions.
+//
+// Before calling this, a full GC should have been executed with a single worker thread,
+// so that no old regions would be moved to the middle of the heap.
+void G1HeapVerifier::verify_ready_for_archiving() {
+  VerifyReadyForArchivingRegionClosure cl;
+  G1CollectedHeap::heap()->heap_region_iterate(&cl);
+  if (cl.has_holes()) {
+    log_warning(gc, verify)("All free regions should be at the top end of the heap, but"
+                            " we found holes. This is probably caused by (unmovable) humongous"
+                            " allocations or active GCLocker, and may lead to fragmentation while"
+                            " writing archive heap memory regions.");
+  }
+  if (cl.has_humongous()) {
+    log_warning(gc, verify)("(Unmovable) humongous regions have been found and"
+                            " may lead to fragmentation while"
+                            " writing archive heap memory regions.");
+  }
+}
+
+class VerifyArchivePointerRegionClosure: public HeapRegionClosure {
   virtual bool do_heap_region(HeapRegion* r) {
    if (r->is_archive()) {
       VerifyObjectInArchiveRegionClosure verify_oop_pointers(r, false);
@@ -290,7 +348,7 @@ public:
 
 void G1HeapVerifier::verify_archive_regions() {
   G1CollectedHeap*  g1h = G1CollectedHeap::heap();
-  VerifyArchivePointerRegionClosure cl(NULL);
+  VerifyArchivePointerRegionClosure cl;
   g1h->heap_region_iterate(&cl);
 }
 
@@ -313,6 +371,7 @@ public:
   }
 
   bool do_heap_region(HeapRegion* r) {
+    guarantee(!r->has_index_in_opt_cset(), "Region %u still has opt collection set index %u", r->hrm_index(), r->index_in_opt_cset());
     guarantee(!r->is_young() || r->rem_set()->is_complete(), "Remembered set for Young region %u must be complete, is %s", r->hrm_index(), r->rem_set()->get_state_str());
     // Humongous and old regions regions might be of any state, so can't check here.
     guarantee(!r->is_free() || !r->rem_set()->is_tracked(), "Remembered set for free region %u must be untracked, is %s", r->hrm_index(), r->rem_set()->get_state_str());
@@ -390,7 +449,6 @@ public:
   }
 
   void work(uint worker_id) {
-    HandleMark hm;
     VerifyRegionClosure blk(true, _vo);
     _g1h->heap_region_par_iterate_from_worker_offset(&blk, &_hrclaimer, worker_id);
     if (blk.failures()) {
@@ -413,12 +471,8 @@ bool G1HeapVerifier::should_verify(G1VerifyType type) {
 }
 
 void G1HeapVerifier::verify(VerifyOption vo) {
-  if (!SafepointSynchronize::is_at_safepoint()) {
-    log_info(gc, verify)("Skipping verification. Not at safepoint.");
-  }
-
-  assert(Thread::current()->is_VM_thread(),
-         "Expected to be executed serially by the VM thread at this point");
+  assert_at_safepoint_on_vm_thread();
+  assert(Heap_lock->is_locked(), "heap must be locked");
 
   log_debug(gc, verify)("Roots");
   VerifyRootsClosure rootsCl(vo);
@@ -432,14 +486,12 @@ void G1HeapVerifier::verify(VerifyOption vo) {
 
   {
     G1RootProcessor root_processor(_g1h, 1);
-    root_processor.process_all_roots(&rootsCl,
-                                     &cldCl,
-                                     &blobsCl);
+    root_processor.process_all_roots(&rootsCl, &cldCl, &blobsCl);
   }
 
   bool failures = rootsCl.failures() || codeRootsCl.failures();
 
-  if (!_g1h->g1_policy()->collector_state()->in_full_gc()) {
+  if (!_g1h->policy()->collector_state()->in_full_gc()) {
     // If we're verifying during a full GC then the region sets
     // will have been torn down at the start of the GC. Therefore
     // verifying the region sets will fail. So we only verify
@@ -465,11 +517,6 @@ void G1HeapVerifier::verify(VerifyOption vo) {
     }
   }
 
-  if (G1StringDedup::is_enabled()) {
-    log_debug(gc, verify)("StrDedup");
-    G1StringDedup::verify();
-  }
-
   if (failures) {
     log_error(gc, verify)("Heap after failed verification (kind %d):", vo);
     // It helps to have the per-region information in the output to
@@ -488,19 +535,22 @@ void G1HeapVerifier::verify(VerifyOption vo) {
 class VerifyRegionListsClosure : public HeapRegionClosure {
 private:
   HeapRegionSet*   _old_set;
+  HeapRegionSet*   _archive_set;
   HeapRegionSet*   _humongous_set;
-  HeapRegionManager*   _hrm;
+  HeapRegionManager* _hrm;
 
 public:
   uint _old_count;
+  uint _archive_count;
   uint _humongous_count;
   uint _free_count;
 
   VerifyRegionListsClosure(HeapRegionSet* old_set,
+                           HeapRegionSet* archive_set,
                            HeapRegionSet* humongous_set,
                            HeapRegionManager* hrm) :
-    _old_set(old_set), _humongous_set(humongous_set), _hrm(hrm),
-    _old_count(), _humongous_count(), _free_count(){ }
+    _old_set(old_set), _archive_set(archive_set), _humongous_set(humongous_set), _hrm(hrm),
+    _old_count(), _archive_count(), _humongous_count(), _free_count(){ }
 
   bool do_heap_region(HeapRegion* hr) {
     if (hr->is_young()) {
@@ -511,6 +561,9 @@ public:
     } else if (hr->is_empty()) {
       assert(_hrm->is_free(hr), "Heap region %u is empty but not on the free list.", hr->hrm_index());
       _free_count++;
+    } else if (hr->is_archive()) {
+      assert(hr->containing_set() == _archive_set, "Heap region %u is archive but not in the archive set.", hr->hrm_index());
+      _archive_count++;
     } else if (hr->is_old()) {
       assert(hr->containing_set() == _old_set, "Heap region %u is old but not in the old set.", hr->hrm_index());
       _old_count++;
@@ -523,8 +576,9 @@ public:
     return false;
   }
 
-  void verify_counts(HeapRegionSet* old_set, HeapRegionSet* humongous_set, HeapRegionManager* free_list) {
+  void verify_counts(HeapRegionSet* old_set, HeapRegionSet* archive_set, HeapRegionSet* humongous_set, HeapRegionManager* free_list) {
     guarantee(old_set->length() == _old_count, "Old set count mismatch. Expected %u, actual %u.", old_set->length(), _old_count);
+    guarantee(archive_set->length() == _archive_count, "Archive set count mismatch. Expected %u, actual %u.", archive_set->length(), _archive_count);
     guarantee(humongous_set->length() == _humongous_count, "Hum set count mismatch. Expected %u, actual %u.", humongous_set->length(), _humongous_count);
     guarantee(free_list->num_free_regions() == _free_count, "Free list count mismatch. Expected %u, actual %u.", free_list->num_free_regions(), _free_count);
   }
@@ -539,9 +593,9 @@ void G1HeapVerifier::verify_region_sets() {
   // Finally, make sure that the region accounting in the lists is
   // consistent with what we see in the heap.
 
-  VerifyRegionListsClosure cl(&_g1h->_old_set, &_g1h->_humongous_set, &_g1h->_hrm);
+  VerifyRegionListsClosure cl(&_g1h->_old_set, &_g1h->_archive_set, &_g1h->_humongous_set, &_g1h->_hrm);
   _g1h->heap_region_iterate(&cl);
-  cl.verify_counts(&_g1h->_old_set, &_g1h->_humongous_set, &_g1h->_hrm);
+  cl.verify_counts(&_g1h->_old_set, &_g1h->_archive_set, &_g1h->_humongous_set, &_g1h->_hrm);
 }
 
 void G1HeapVerifier::prepare_for_verify() {
@@ -555,7 +609,6 @@ double G1HeapVerifier::verify(G1VerifyType type, VerifyOption vo, const char* ms
 
   if (should_verify(type) && _g1h->total_collections() >= VerifyGCStartAt) {
     double verify_start = os::elapsedTime();
-    HandleMark hm;  // Discard invalid handles created during verification
     prepare_for_verify();
     Universe::verify(vo, msg);
     verify_time_ms = (os::elapsedTime() - verify_start) * 1000;
@@ -567,14 +620,14 @@ double G1HeapVerifier::verify(G1VerifyType type, VerifyOption vo, const char* ms
 void G1HeapVerifier::verify_before_gc(G1VerifyType type) {
   if (VerifyBeforeGC) {
     double verify_time_ms = verify(type, VerifyOption_G1UsePrevMarking, "Before GC");
-    _g1h->g1_policy()->phase_times()->record_verify_before_time_ms(verify_time_ms);
+    _g1h->phase_times()->record_verify_before_time_ms(verify_time_ms);
   }
 }
 
 void G1HeapVerifier::verify_after_gc(G1VerifyType type) {
   if (VerifyAfterGC) {
     double verify_time_ms = verify(type, VerifyOption_G1UsePrevMarking, "After GC");
-    _g1h->g1_policy()->phase_times()->record_verify_after_time_ms(verify_time_ms);
+    _g1h->phase_times()->record_verify_after_time_ms(verify_time_ms);
   }
 }
 
@@ -717,53 +770,59 @@ void G1HeapVerifier::check_bitmaps(const char* caller) {
   guarantee(!cl.failures(), "bitmap verification");
 }
 
-class G1CheckCSetFastTableClosure : public HeapRegionClosure {
- private:
+class G1CheckRegionAttrTableClosure : public HeapRegionClosure {
+private:
   bool _failures;
- public:
-  G1CheckCSetFastTableClosure() : HeapRegionClosure(), _failures(false) { }
+
+public:
+  G1CheckRegionAttrTableClosure() : HeapRegionClosure(), _failures(false) { }
 
   virtual bool do_heap_region(HeapRegion* hr) {
     uint i = hr->hrm_index();
-    InCSetState cset_state = (InCSetState) G1CollectedHeap::heap()->_in_cset_fast_test.get_by_index(i);
+    G1HeapRegionAttr region_attr = (G1HeapRegionAttr) G1CollectedHeap::heap()->_region_attr.get_by_index(i);
     if (hr->is_humongous()) {
       if (hr->in_collection_set()) {
         log_error(gc, verify)("## humongous region %u in CSet", i);
         _failures = true;
         return true;
       }
-      if (cset_state.is_in_cset()) {
-        log_error(gc, verify)("## inconsistent cset state " CSETSTATE_FORMAT " for humongous region %u", cset_state.value(), i);
+      if (region_attr.is_in_cset()) {
+        log_error(gc, verify)("## inconsistent region attr type %s for humongous region %u", region_attr.get_type_str(), i);
         _failures = true;
         return true;
       }
-      if (hr->is_continues_humongous() && cset_state.is_humongous()) {
-        log_error(gc, verify)("## inconsistent cset state " CSETSTATE_FORMAT " for continues humongous region %u", cset_state.value(), i);
+      if (hr->is_continues_humongous() && region_attr.is_humongous()) {
+        log_error(gc, verify)("## inconsistent region attr type %s for continues humongous region %u", region_attr.get_type_str(), i);
         _failures = true;
         return true;
       }
     } else {
-      if (cset_state.is_humongous()) {
-        log_error(gc, verify)("## inconsistent cset state " CSETSTATE_FORMAT " for non-humongous region %u", cset_state.value(), i);
+      if (region_attr.is_humongous()) {
+        log_error(gc, verify)("## inconsistent region attr type %s for non-humongous region %u", region_attr.get_type_str(), i);
         _failures = true;
         return true;
       }
-      if (hr->in_collection_set() != cset_state.is_in_cset()) {
-        log_error(gc, verify)("## in CSet %d / cset state " CSETSTATE_FORMAT " inconsistency for region %u",
-                             hr->in_collection_set(), cset_state.value(), i);
+      if (hr->in_collection_set() != region_attr.is_in_cset()) {
+        log_error(gc, verify)("## in CSet %d / region attr type %s inconsistency for region %u",
+                             hr->in_collection_set(), region_attr.get_type_str(), i);
         _failures = true;
         return true;
       }
-      if (cset_state.is_in_cset()) {
-        if (hr->is_young() != (cset_state.is_young())) {
-          log_error(gc, verify)("## is_young %d / cset state " CSETSTATE_FORMAT " inconsistency for region %u",
-                               hr->is_young(), cset_state.value(), i);
+      if (region_attr.is_in_cset()) {
+        if (hr->is_archive()) {
+          log_error(gc, verify)("## is_archive in collection set for region %u", i);
           _failures = true;
           return true;
         }
-        if (hr->is_old() != (cset_state.is_old())) {
-          log_error(gc, verify)("## is_old %d / cset state " CSETSTATE_FORMAT " inconsistency for region %u",
-                               hr->is_old(), cset_state.value(), i);
+        if (hr->is_young() != (region_attr.is_young())) {
+          log_error(gc, verify)("## is_young %d / region attr type %s inconsistency for region %u",
+                               hr->is_young(), region_attr.get_type_str(), i);
+          _failures = true;
+          return true;
+        }
+        if (hr->is_old() != (region_attr.is_old())) {
+          log_error(gc, verify)("## is_old %d / region attr type %s inconsistency for region %u",
+                               hr->is_old(), region_attr.get_type_str(), i);
           _failures = true;
           return true;
         }
@@ -775,8 +834,8 @@ class G1CheckCSetFastTableClosure : public HeapRegionClosure {
   bool failures() const { return _failures; }
 };
 
-bool G1HeapVerifier::check_cset_fast_test() {
-  G1CheckCSetFastTableClosure cl;
+bool G1HeapVerifier::check_region_attr_table() {
+  G1CheckRegionAttrTableClosure cl;
   _g1h->_hrm.iterate(&cl);
   return !cl.failures();
 }

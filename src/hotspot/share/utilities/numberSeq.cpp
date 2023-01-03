@@ -41,9 +41,16 @@ void AbsSeq::add(double val) {
     _dvariance = 0.0;
   } else {
     // otherwise, calculate both
-    _davg = (1.0 - _alpha) * val + _alpha * _davg;
+    // Formula from "Incremental calculation of weighted mean and variance" by Tony Finch
+    // diff := x - mean
+    // incr := alpha * diff
+    // mean := mean + incr
+    // variance := (1 - alpha) * (variance + diff * incr)
+    // PDF available at https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf
     double diff = val - _davg;
-    _dvariance = (1.0 - _alpha) * diff * diff + _alpha * _dvariance;
+    double incr = _alpha * diff;
+    _davg += incr;
+    _dvariance = (1.0 - _alpha) * (_dvariance + diff * incr);
   }
 }
 
@@ -104,7 +111,7 @@ double AbsSeq::dsd() const {
 }
 
 NumberSeq::NumberSeq(double alpha) :
-  AbsSeq(alpha), _maximum(0.0), _last(0.0) {
+  AbsSeq(alpha), _last(0.0), _maximum(0.0) {
 }
 
 bool NumberSeq::check_nums(NumberSeq *total, int n, NumberSeq **parts) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,11 +26,11 @@
 
 #include "gc/shared/workgroup.hpp"
 
+class ThreadClosure;
+
 class ZRuntimeWorkers {
 private:
   WorkGang _workers;
-
-  uint nworkers() const;
 
 public:
   ZRuntimeWorkers();
@@ -38,7 +38,6 @@ public:
   WorkGang* workers();
 
   void threads_do(ThreadClosure* tc) const;
-  void print_threads_on(outputStream* st) const;
 };
 
 #endif // SHARE_GC_Z_ZRUNTIMEWORKERS_HPP

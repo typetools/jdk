@@ -133,8 +133,7 @@ import jdk.internal.misc.VM;
                 }
                 if (hook != null) hook.run();
             } catch (Throwable t) {
-                if (t instanceof ThreadDeath) {
-                    ThreadDeath td = (ThreadDeath)t;
+                if (t instanceof ThreadDeath td) {
                     throw td;
                 }
             }

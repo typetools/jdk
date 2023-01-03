@@ -524,8 +524,8 @@ public final class XDragSourceContextPeer
         updateTargetWindow(xmotion);
 
         if (dragProtocol != null) {
-            dragProtocol.sendMoveMessage(scaleDown(xmotion.get_x_root()),
-                                         scaleDown(xmotion.get_y_root()),
+            dragProtocol.sendMoveMessage(xmotion.get_x_root(),
+                                         xmotion.get_y_root(),
                                          sourceAction, sourceActions,
                                          xmotion.get_time());
         }
@@ -533,8 +533,8 @@ public final class XDragSourceContextPeer
 
     private void processDrop(XButtonEvent xbutton) {
         try {
-            dragProtocol.initiateDrop(scaleDown(xbutton.get_x_root()),
-                                      scaleDown(xbutton.get_y_root()),
+            dragProtocol.initiateDrop(xbutton.get_x_root(),
+                                      xbutton.get_y_root(),
                                       sourceAction, sourceActions,
                                       xbutton.get_time());
         } catch (XException e) {
@@ -653,7 +653,7 @@ public final class XDragSourceContextPeer
                     xmotion.set_y(xkey.get_y());
                     xmotion.set_x_root(xkey.get_x_root());
                     xmotion.set_y_root(xkey.get_y_root());
-                    xmotion.set_state((int)Native.getLong(XlibWrapper.larg7));
+                    xmotion.set_state(Native.getInt(XlibWrapper.larg7));
                     // we do not use this field, so it's unset for now
                     // xmotion.set_is_hint(???);
                     xmotion.set_same_screen(xkey.get_same_screen());

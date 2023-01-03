@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,13 +23,42 @@
  */
 #include "precompiled.hpp"
 
-#include "runtime/atomic.hpp"
 #include "services/mallocSiteTable.hpp"
 #include "services/mallocTracker.hpp"
 #include "services/mallocTracker.inline.hpp"
 #include "services/memTracker.hpp"
 
 size_t MallocMemorySummary::_snapshot[CALC_OBJ_SIZE_IN_TYPE(MallocMemorySnapshot, size_t)];
+
+#ifdef ASSERT
+void MemoryCounter::update_peak_count(size_t count) {
+  size_t peak_cnt = peak_count();
+  while (peak_cnt < count) {
+    size_t old_cnt = Atomic::cmpxchg(&_peak_count, peak_cnt, count, memory_order_relaxed);
+    if (old_cnt != peak_cnt) {
+      peak_cnt = old_cnt;
+    }
+  }
+}
+
+void MemoryCounter::update_peak_size(size_t sz) {
+  size_t peak_sz = peak_size();
+  while (peak_sz < sz) {
+    size_t old_sz = Atomic::cmpxchg(&_peak_size, peak_sz, sz, memory_order_relaxed);
+    if (old_sz != peak_sz) {
+      peak_sz = old_sz;
+    }
+  }
+}
+
+size_t MemoryCounter::peak_count() const {
+  return Atomic::load(&_peak_count);
+}
+
+size_t MemoryCounter::peak_size() const {
+  return Atomic::load(&_peak_size);
+}
+#endif
 
 // Total malloc'd memory amount
 size_t MallocMemorySnapshot::total() const {
@@ -119,6 +148,7 @@ bool MallocTracker::transition(NMT_TrackingLevel from, NMT_TrackingLevel to) {
 // Record a malloc memory allocation
 void* MallocTracker::record_malloc(void* malloc_base, size_t size, MEMFLAGS flags,
   const NativeCallStack& stack, NMT_TrackingLevel level) {
+  assert(level != NMT_off, "precondition");
   void*         memblock;      // the address for user data
   MallocHeader* header = NULL;
 
@@ -127,10 +157,6 @@ void* MallocTracker::record_malloc(void* malloc_base, size_t size, MEMFLAGS flag
   }
 
   // Uses placement global new operator to initialize malloc header
-
-  if (level == NMT_off) {
-    return malloc_base;
-  }
 
   header = ::new (malloc_base)MallocHeader(size, flags, stack, level);
   memblock = (void*)((char*)malloc_base + sizeof(MallocHeader));
@@ -151,15 +177,8 @@ void* MallocTracker::record_malloc(void* malloc_base, size_t size, MEMFLAGS flag
 }
 
 void* MallocTracker::record_free(void* memblock) {
-  // Never turned on
-  if (MemTracker::tracking_level() == NMT_off ||
-      memblock == NULL) {
-    return memblock;
-  }
+  assert(MemTracker::tracking_level() != NMT_off && memblock != NULL, "precondition");
   MallocHeader* header = malloc_header(memblock);
   header->release();
-
   return (void*)header;
 }
-
-

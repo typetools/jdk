@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,15 +34,14 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * Unchecked exception thrown to indicate a syntax error in a
  * regular-expression pattern.
  *
- * @author  unascribed
  * @since 1.4
- * @spec JSR-51
  */
 
 @AnnotatedFor({"lock", "nullness"})
 public class PatternSyntaxException
     extends IllegalArgumentException
 {
+    @java.io.Serial
     private static final long serialVersionUID = -3864639126226059218L;
 
     private final String desc;

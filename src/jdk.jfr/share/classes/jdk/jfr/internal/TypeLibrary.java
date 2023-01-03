@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,10 +49,10 @@ import java.util.stream.Stream;
 
 import jdk.jfr.AnnotationElement;
 import jdk.jfr.Description;
-import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.MetadataDefinition;
 import jdk.jfr.Name;
+import jdk.jfr.SettingControl;
 import jdk.jfr.SettingDescriptor;
 import jdk.jfr.Timespan;
 import jdk.jfr.Timestamp;
@@ -61,6 +61,7 @@ import jdk.jfr.ValueDescriptor;
 public final class TypeLibrary {
 
     private static TypeLibrary instance;
+    private static boolean implicitFieldTypes;
     private static final Map<Long, Type> types = new LinkedHashMap<>(100);
     static final ValueDescriptor DURATION_FIELD = createDurationField();
     static final ValueDescriptor THREAD_FIELD = createThreadField();
@@ -69,14 +70,14 @@ public final class TypeLibrary {
 
     private TypeLibrary(List<Type> jvmTypes) {
         visitReachable(jvmTypes, t -> !types.containsKey(t.getId()), t -> types.put(t.getId(), t));
-        if (LogTag.JFR_SYSTEM_METADATA.shouldLog(LogLevel.INFO.level)) {
+        if (Logger.shouldLog(LogTag.JFR_SYSTEM_METADATA, LogLevel.INFO)) {
             Stream<Type> s = types.values().stream().sorted((x, y) -> Long.compare(x.getId(), y.getId()));
             s.forEach(t -> t.log("Added", LogTag.JFR_SYSTEM_METADATA, LogLevel.INFO));
         }
     }
 
     private static ValueDescriptor createStartTimeField() {
-        List<AnnotationElement> annos = createStandardAnnotations("Start Time", null);
+        var annos = createStandardAnnotations("Start Time", null);
         annos.add(new jdk.jfr.AnnotationElement(Timestamp.class, Timestamp.TICKS));
         return PrivateAccess.getInstance().newValueDescriptor(EventInstrumentation.FIELD_START_TIME, Type.LONG, annos, 0, false,
                 EventInstrumentation.FIELD_START_TIME);
@@ -84,22 +85,19 @@ public final class TypeLibrary {
     }
 
     private static ValueDescriptor createStackTraceField() {
-        List<AnnotationElement> annos = new ArrayList<>();
-        annos = createStandardAnnotations("Stack Trace", "Stack Trace starting from the method the event was committed in");
+        var annos = createStandardAnnotations("Stack Trace", "Stack Trace starting from the method the event was committed in");
         return PrivateAccess.getInstance().newValueDescriptor(EventInstrumentation.FIELD_STACK_TRACE, Type.STACK_TRACE, annos, 0, true,
                 EventInstrumentation.FIELD_STACK_TRACE);
     }
 
     private static ValueDescriptor createThreadField() {
-        List<AnnotationElement> annos = new ArrayList<>();
-        annos = createStandardAnnotations("Event Thread", "Thread in which event was committed in");
+        var annos = createStandardAnnotations("Event Thread", "Thread in which event was committed in");
         return PrivateAccess.getInstance().newValueDescriptor(EventInstrumentation.FIELD_EVENT_THREAD, Type.THREAD, annos, 0, true,
                 EventInstrumentation.FIELD_EVENT_THREAD);
     }
 
     private static ValueDescriptor createDurationField() {
-        List<AnnotationElement> annos = new ArrayList<>();
-        annos = createStandardAnnotations("Duration", null);
+        var annos = createStandardAnnotations("Duration", null);
         annos.add(new jdk.jfr.AnnotationElement(Timespan.class, Timespan.TICKS));
         return PrivateAccess.getInstance().newValueDescriptor(EventInstrumentation.FIELD_DURATION, Type.LONG, annos, 0, false, EventInstrumentation.FIELD_DURATION);
     }
@@ -109,7 +107,7 @@ public final class TypeLibrary {
             if (instance == null) {
                 List<Type> jvmTypes;
                 try {
-                    jvmTypes = MetadataHandler.createTypes();
+                    jvmTypes = MetadataLoader.createTypes();
                     Collections.sort(jvmTypes, (a,b) -> Long.compare(a.getId(), b.getId()));
                 } catch (IOException e) {
                     throw new Error("JFR: Could not read metadata");
@@ -139,7 +137,6 @@ public final class TypeLibrary {
                         aes.add(ae);
                     }
                 }
-                aes.trimToSize();
                 type.setAnnotations(aes);
             }
             return getType(a);
@@ -166,7 +163,7 @@ public final class TypeLibrary {
         try {
             m = annotation.getClass().getMethod(methodName, new Class<?>[0]);
         } catch (NoSuchMethodException e1) {
-            throw (Error) new InternalError("Could not loacate method " + methodName + " in annotation " + annotation.getClass().getName());
+            throw (Error) new InternalError("Could not locate method " + methodName + " in annotation " + annotation.getClass().getName());
         }
         SecuritySupport.setAccessible(m);
         try {
@@ -240,11 +237,11 @@ public final class TypeLibrary {
         // STRUCT
         String superType = null;
         boolean eventType = false;
-        if (Event.class.isAssignableFrom(clazz)) {
+        if (jdk.internal.event.Event.class.isAssignableFrom(clazz)) {
             superType = Type.SUPER_TYPE_EVENT;
             eventType= true;
         }
-        if (Control.class.isAssignableFrom(clazz)) {
+        if (SettingControl.class.isAssignableFrom(clazz)) {
             superType = Type.SUPER_TYPE_SETTING;
         }
 
@@ -316,10 +313,13 @@ public final class TypeLibrary {
 
     // By convention all events have these fields.
     static void addImplicitFields(Type type, boolean requestable, boolean hasDuration, boolean hasThread, boolean hasStackTrace, boolean hasCutoff) {
-        createAnnotationType(Timespan.class);
-        createAnnotationType(Timestamp.class);
-        createAnnotationType(Label.class);
-        defineType(long.class, null,false);
+        if (!implicitFieldTypes) {
+            createAnnotationType(Timespan.class);
+            createAnnotationType(Timestamp.class);
+            createAnnotationType(Label.class);
+            defineType(long.class, null, false);
+            implicitFieldTypes = true;
+        }
         addFields(type, requestable, hasDuration, hasThread, hasStackTrace, hasCutoff);
     }
 
@@ -408,12 +408,13 @@ public final class TypeLibrary {
     // Purpose of this method is to mark types that are reachable
     // from registered event types. Those types that are not reachable can
     // safely be removed
+    // Returns true if type was removed
     public boolean clearUnregistered() {
         Logger.log(LogTag.JFR_METADATA, LogLevel.TRACE, "Cleaning out obsolete metadata");
         List<Type> registered = new ArrayList<>();
         for (Type type : types.values()) {
-            if (type instanceof PlatformEventType) {
-                if (((PlatformEventType) type).isRegistered()) {
+            if (type instanceof PlatformEventType pType) {
+                if (pType.isRegistered()) {
                     registered.add(type);
                 }
             }
@@ -423,7 +424,7 @@ public final class TypeLibrary {
         for (Type type :  types.values()) {
             if (type.getRemove() && !Type.isDefinedByJVM(type.getId())) {
                 removeIds.add(type.getId());
-                if (LogTag.JFR_METADATA.shouldLog(LogLevel.TRACE.level)) {
+                if (Logger.shouldLog(LogTag.JFR_METADATA, LogLevel.TRACE)) {
                     Logger.log(LogTag.JFR_METADATA, LogLevel.TRACE, "Removed obsolete metadata " + type.getName());
                 }
             }
@@ -465,8 +466,7 @@ public final class TypeLibrary {
                     typeQ.add(PrivateAccess.getInstance().getType(v));
                     visitAnnotations(typeQ, v.getAnnotationElements());
                 }
-                if (type instanceof PlatformEventType) {
-                    PlatformEventType pe = (PlatformEventType) type;
+                if (type instanceof PlatformEventType pe) {
                     for (SettingDescriptor s : pe.getAllSettings()) {
                         typeQ.add(PrivateAccess.getInstance().getType(s));
                         visitAnnotations(typeQ, s.getAnnotationElements());
@@ -488,5 +488,9 @@ public final class TypeLibrary {
             }
             aQ.addAll(ae.getAnnotationElements());
         }
+    }
+
+    public void removeType(long id) {
+        types.remove(id);
     }
 }

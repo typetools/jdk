@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,21 +22,27 @@
  *
  */
 
-#ifndef CPU_X86_VM_VM_VERSION_EXT_X86_HPP
-#define CPU_X86_VM_VM_VERSION_EXT_X86_HPP
+#ifndef CPU_X86_VM_VERSION_EXT_X86_HPP
+#define CPU_X86_VM_VERSION_EXT_X86_HPP
 
+#include "runtime/vm_version.hpp"
 #include "utilities/macros.hpp"
-#include "vm_version_x86.hpp"
 
 class VM_Version_Ext : public VM_Version {
+
+  enum {
+    ExtendedFamilyIdLength_INTEL = 16,
+    ExtendedFamilyIdLength_AMD   = 24
+  };
+
  private:
   static const size_t      VENDOR_LENGTH;
   static const size_t      CPU_EBS_MAX_LENGTH;
   static const size_t      CPU_TYPE_DESC_BUF_SIZE;
   static const size_t      CPU_DETAILED_DESC_BUF_SIZE;
 
-  static const char* const _family_id_intel[];
-  static const char* const _family_id_amd[];
+  static const char* const _family_id_intel[ExtendedFamilyIdLength_INTEL];
+  static const char* const _family_id_amd[ExtendedFamilyIdLength_AMD];
   static const char* const _brand_id[];
   static const char* const _model_id_pentium_pro[];
 
@@ -49,7 +55,7 @@ class VM_Version_Ext : public VM_Version {
   static int               _no_of_cores;
   static int               _no_of_packages;
   static char*             _cpu_brand_string;
-  static jlong             _max_qualified_cpu_frequency;
+  static int64_t           _max_qualified_cpu_frequency;
 
   static const char* cpu_family_description(void);
   static const char* cpu_model_description(void);
@@ -66,7 +72,7 @@ class VM_Version_Ext : public VM_Version {
   // Returns bytes written excluding termninating null byte.
   static size_t cpu_write_support_string(char* const buf, size_t buf_len);
   static void resolve_cpu_information_details(void);
-  static jlong max_qualified_cpu_freq_from_brand_string(void);
+  static int64_t max_qualified_cpu_freq_from_brand_string(void);
 
  public:
   // Offsets for cpuid asm stub brand string
@@ -87,7 +93,7 @@ class VM_Version_Ext : public VM_Version {
   static int number_of_cores(void);
   static int number_of_sockets(void);
 
-  static jlong maximum_qualified_cpu_frequency(void);
+  static int64_t maximum_qualified_cpu_frequency(void);
 
   static bool supports_tscinv_ext(void);
 
@@ -97,4 +103,4 @@ class VM_Version_Ext : public VM_Version {
   static void initialize();
 };
 
-#endif // CPU_X86_VM_VM_VERSION_EXT_X86_HPP
+#endif // CPU_X86_VM_VERSION_EXT_X86_HPP

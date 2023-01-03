@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,9 +46,9 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import java.security.AccessControlContext;
-import java.security.ProtectionDomain;
-import jdk.internal.misc.SharedSecrets;
-import jdk.internal.misc.JavaSecurityAccess;
+
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.access.JavaSecurityAccess;
 
 import sun.awt.AWTAccessor;
 
@@ -75,7 +75,7 @@ import sun.awt.AWTAccessor;
  * of the transfer, and <code>setForeground</code> for the target of a transfer.
  * <p>
  * Please see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/dnd/index.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/dnd/index.html">
  * How to Use Drag and Drop and Data Transfer</a>,
  * a section in <em>The Java Tutorial</em>, for more information.
  *
@@ -379,7 +379,7 @@ public class TransferHandler implements Serializable {
          * for the transfer - which must represent a drop. This is applicable to
          * those components that automatically
          * show the drop location when appropriate during a drag and drop
-         * operation). By default, the drop location is shown only when the
+         * operation. By default, the drop location is shown only when the
          * {@code TransferHandler} has said it can accept the import represented
          * by this {@code TransferSupport}. With this method you can force the
          * drop location to always be shown, or always not be shown.
@@ -1067,7 +1067,7 @@ public class TransferHandler implements Serializable {
         } catch (IntrospectionException ex) {
             return null;
         }
-        PropertyDescriptor props[] = bi.getPropertyDescriptors();
+        PropertyDescriptor[] props = bi.getPropertyDescriptors();
         for (int i=0; i < props.length; i++) {
             if (propertyName.equals(props[i].getName())) {
                 Method reader = props[i].getReadMethod();
@@ -1714,8 +1714,11 @@ public class TransferHandler implements Serializable {
                 }
             };
 
+            @SuppressWarnings("removal")
             final AccessControlContext stack = AccessController.getContext();
+            @SuppressWarnings("removal")
             final AccessControlContext srcAcc = AWTAccessor.getComponentAccessor().getAccessControlContext((Component)src);
+            @SuppressWarnings("removal")
             final AccessControlContext eventAcc = AWTAccessor.getAWTEventAccessor().getAccessControlContext(e);
 
                 if (srcAcc == null) {

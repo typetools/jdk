@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.CharBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.Objects;
 
 /**
@@ -71,7 +72,7 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * effect.
      *
      * <p> While the stream is open, the {@code read()}, {@code read(char[])},
-     * {@code read(char[], int, int)}, {@code read(Charbuffer)}, {@code
+     * {@code read(char[], int, int)}, {@code read(CharBuffer)}, {@code
      * ready()}, {@code skip(long)}, and {@code transferTo()} methods all
      * behave as if end of stream has been reached. After the stream has been
      * closed, these methods all throw {@code IOException}.
@@ -192,13 +193,27 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * @throws java.nio.ReadOnlyBufferException if target is a read only buffer
      * @since 1.5
      */
-    public @GTENegativeOne int read(@GuardSatisfied Reader this, java.nio.CharBuffer target) throws IOException {
-        int len = target.remaining();
-        char[] cbuf = new char[len];
-        int n = read(cbuf, 0, len);
-        if (n > 0)
-            target.put(cbuf, 0, n);
-        return n;
+    public @GTENegativeOne int read(@GuardSatisfied Reader this, CharBuffer target) throws IOException {
+        if (target.isReadOnly())
+            throw new ReadOnlyBufferException();
+
+        int nread;
+        if (target.hasArray()) {
+            char[] cbuf = target.array();
+            int pos = target.position();
+            int rem = Math.max(target.limit() - pos, 0);
+            int off = target.arrayOffset() + pos;
+            nread = this.read(cbuf, off, rem);
+            if (nread > 0)
+                target.position(pos + nread);
+        } else {
+            int len = target.remaining();
+            char[] cbuf = new char[len];
+            nread = read(cbuf, 0, len);
+            if (nread > 0)
+                target.put(cbuf, 0, nread);
+        }
+        return nread;
     }
 
     /**
@@ -212,10 +227,10 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      *             ({@code 0x00-0xffff}), or -1 if the end of the stream has
      *             been reached
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public @GTENegativeOne int read(@GuardSatisfied Reader this) throws IOException {
-        char cb[] = new char[1];
+        char[] cb = new char[1];
         if (read(cb, 0, 1) == -1)
             return -1;
         else
@@ -226,15 +241,21 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * Reads characters into an array.  This method will block until some input
      * is available, an I/O error occurs, or the end of the stream is reached.
      *
+     * <p> If the length of {@code cbuf} is zero, then no characters are read
+     * and {@code 0} is returned; otherwise, there is an attempt to read at
+     * least one character.  If no character is available because the stream is
+     * at its end, the value {@code -1} is returned; otherwise, at least one
+     * character is read and stored into {@code cbuf}.
+     *
      * @param       cbuf  Destination buffer
      *
      * @return      The number of characters read, or -1
      *              if the end of the stream
      *              has been reached
      *
-     * @exception   IOException  If an I/O error occurs
+     * @throws      IOException  If an I/O error occurs
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied Reader this, char cbuf[]) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied Reader this, char[] cbuf) throws IOException {
         return read(cbuf, 0, cbuf.length);
     }
 
@@ -243,6 +264,12 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * until some input is available, an I/O error occurs, or the end of the
      * stream is reached.
      *
+     * <p> If {@code len} is zero, then no characters are read and {@code 0} is
+     * returned; otherwise, there is an attempt to read at least one character.
+     * If no character is available because the stream is at its end, the value
+     * {@code -1} is returned; otherwise, at least one character is read and
+     * stored into {@code cbuf}.
+     *
      * @param      cbuf  Destination buffer
      * @param      off   Offset at which to start storing characters
      * @param      len   Maximum number of characters to read
@@ -250,29 +277,31 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * @return     The number of characters read, or -1 if the end of the
      *             stream has been reached
      *
-     * @exception  IOException  If an I/O error occurs
-     * @exception  IndexOutOfBoundsException
+     * @throws     IndexOutOfBoundsException
      *             If {@code off} is negative, or {@code len} is negative,
      *             or {@code len} is greater than {@code cbuf.length - off}
+     * @throws     IOException  If an I/O error occurs
      */
-    public abstract @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied Reader this, char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException;
+    public abstract @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied Reader this, char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException;
 
     /** Maximum skip-buffer size */
     private static final int maxSkipBufferSize = 8192;
 
     /** Skip buffer, null until allocated */
-    private char skipBuffer[] = null;
+    private char[] skipBuffer = null;
 
     /**
      * Skips characters.  This method will block until some characters are
      * available, an I/O error occurs, or the end of the stream is reached.
+     * If the stream is already at its end before this method is invoked,
+     * then no characters are skipped and zero is returned.
      *
      * @param  n  The number of characters to skip
      *
      * @return    The number of characters actually skipped
      *
-     * @exception  IllegalArgumentException  If <code>n</code> is negative.
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IllegalArgumentException  If {@code n} is negative.
+     * @throws     IOException  If an I/O error occurs
      */
     public @NonNegative long skip(@GuardSatisfied Reader this, @NonNegative long n) throws IOException {
         if (n < 0L)
@@ -299,7 +328,7 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * false otherwise.  Note that returning false does not guarantee that the
      * next read will block.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public boolean ready() throws IOException {
         return false;
@@ -326,7 +355,7 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      *                         reading this many characters, attempting to
      *                         reset the stream may fail.
      *
-     * @exception  IOException  If the stream does not support mark(),
+     * @throws     IOException  If the stream does not support mark(),
      *                          or if some other I/O error occurs
      */
     public void mark(@GuardSatisfied Reader this, @NonNegative int readAheadLimit) throws IOException {
@@ -341,7 +370,7 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * character-input streams support the reset() operation, and some support
      * reset() without supporting mark().
      *
-     * @exception  IOException  If the stream has not been marked,
+     * @throws     IOException  If the stream has not been marked,
      *                          or if the mark has been invalidated,
      *                          or if the stream does not support reset(),
      *                          or if some other I/O error occurs
@@ -356,7 +385,7 @@ public abstract @UsesObjectEquals class Reader implements Readable, Closeable {
      * mark(), reset(), or skip() invocations will throw an IOException.
      * Closing a previously closed stream has no effect.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
      public abstract void close(@GuardSatisfied Reader this) throws IOException;
 

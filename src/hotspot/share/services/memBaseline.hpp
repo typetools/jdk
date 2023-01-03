@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_MEM_BASELINE_HPP
-#define SHARE_VM_SERVICES_MEM_BASELINE_HPP
+#ifndef SHARE_SERVICES_MEMBASELINE_HPP
+#define SHARE_SERVICES_MEMBASELINE_HPP
 
 #if INCLUDE_NMT
 
+#include "memory/metaspaceStats.hpp"
 #include "runtime/mutex.hpp"
 #include "services/mallocSiteTable.hpp"
 #include "services/mallocTracker.hpp"
@@ -43,9 +44,6 @@ typedef LinkedListIterator<ReservedMemoryRegion>         VirtualMemoryAllocation
  */
 class MemBaseline {
  public:
-  enum BaselineThreshold {
-    SIZE_THRESHOLD = K        // Only allocation size over this threshold will be baselined.
-  };
 
   enum BaselineType {
     Not_baselined,
@@ -64,7 +62,7 @@ class MemBaseline {
   // Summary information
   MallocMemorySnapshot   _malloc_memory_snapshot;
   VirtualMemorySnapshot  _virtual_memory_snapshot;
-  MetaspaceSnapshot      _metaspace_snapshot;
+  MetaspaceCombinedStats _metaspace_stats;
 
   size_t                 _instance_class_count;
   size_t                 _array_class_count;
@@ -88,8 +86,8 @@ class MemBaseline {
  public:
   // create a memory baseline
   MemBaseline():
-    _baseline_type(Not_baselined),
-    _instance_class_count(0), _array_class_count(0) {
+    _instance_class_count(0), _array_class_count(0),
+    _baseline_type(Not_baselined) {
   }
 
   bool baseline(bool summaryOnly = true);
@@ -104,8 +102,8 @@ class MemBaseline {
     return &_virtual_memory_snapshot;
   }
 
-  MetaspaceSnapshot* metaspace_snapshot() {
-    return &_metaspace_snapshot;
+  const MetaspaceCombinedStats& metaspace_stats() const {
+    return _metaspace_stats;
   }
 
   MallocSiteIterator malloc_sites(SortingOrder order);
@@ -216,4 +214,4 @@ class MemBaseline {
 
 #endif // INCLUDE_NMT
 
-#endif // SHARE_VM_SERVICES_MEM_BASELINE_HPP
+#endif // SHARE_SERVICES_MEMBASELINE_HPP

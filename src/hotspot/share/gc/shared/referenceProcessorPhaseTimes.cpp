@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
 #include "memory/allocation.inline.hpp"
+#include "memory/resourceArea.hpp"
+#include "runtime/atomic.hpp"
 
 #define ASSERT_REF_TYPE(ref_type) assert((ref_type) >= REF_SOFT && (ref_type) <= REF_PHANTOM, \
                                          "Invariant (%d)", (int)ref_type)
@@ -162,9 +164,8 @@ RefProcPhaseTimeTracker::~RefProcPhaseTimeTracker() {
 }
 
 RefProcTotalPhaseTimesTracker::RefProcTotalPhaseTimesTracker(ReferenceProcessor::RefProcPhases phase_number,
-                                                             ReferenceProcessorPhaseTimes* phase_times,
-                                                             ReferenceProcessor* rp) :
-  _rp(rp), RefProcPhaseTimeBaseTracker(phase_enum_2_phase_string(phase_number), phase_number, phase_times) {
+                                                             ReferenceProcessorPhaseTimes* phase_times) :
+  RefProcPhaseTimeBaseTracker(phase_enum_2_phase_string(phase_number), phase_number, phase_times) {
 }
 
 RefProcTotalPhaseTimesTracker::~RefProcTotalPhaseTimesTracker() {
@@ -173,12 +174,12 @@ RefProcTotalPhaseTimesTracker::~RefProcTotalPhaseTimesTracker() {
 }
 
 ReferenceProcessorPhaseTimes::ReferenceProcessorPhaseTimes(GCTimer* gc_timer, uint max_gc_threads) :
-  _gc_timer(gc_timer), _processing_is_mt(false) {
+  _processing_is_mt(false), _gc_timer(gc_timer) {
 
   for (uint i = 0; i < ReferenceProcessor::RefSubPhaseMax; i++) {
-    _sub_phases_worker_time_sec[i] = new WorkerDataArray<double>(max_gc_threads, SubPhasesParWorkTitle[i]);
+    _sub_phases_worker_time_sec[i] = new WorkerDataArray<double>(NULL, SubPhasesParWorkTitle[i], max_gc_threads);
   }
-  _phase2_worker_time_sec = new WorkerDataArray<double>(max_gc_threads, Phase2ParWorkTitle);
+  _phase2_worker_time_sec = new WorkerDataArray<double>(NULL, Phase2ParWorkTitle, max_gc_threads);
 
   reset();
 }
@@ -246,7 +247,7 @@ void ReferenceProcessorPhaseTimes::set_sub_phase_total_phase_time_ms(ReferencePr
 
 void ReferenceProcessorPhaseTimes::add_ref_cleared(ReferenceType ref_type, size_t count) {
   ASSERT_REF_TYPE(ref_type);
-  Atomic::add(count, &_ref_cleared[ref_type_2_index(ref_type)]);
+  Atomic::add(&_ref_cleared[ref_type_2_index(ref_type)], count);
 }
 
 void ReferenceProcessorPhaseTimes::set_ref_discovered(ReferenceType ref_type, size_t count) {

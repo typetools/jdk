@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -313,27 +313,6 @@ static int ParseLocale(JNIEnv* env, int cat, char ** std_language, char ** std_s
         }
 #endif
 
-#ifdef __solaris__
-        if (strcmp(p,"eucJP") == 0) {
-            /* For Solaris use customized vendor defined character
-             * customized EUC-JP converter
-             */
-            *std_encoding = "eucJP-open";
-        } else if (strcmp(p, "Big5") == 0 || strcmp(p, "BIG5") == 0) {
-            /*
-             * Remap the encoding string to Big5_Solaris which augments
-             * the default converter for Solaris Big5 locales to include
-             * seven additional ideographic characters beyond those included
-             * in the Java "Big5" converter.
-             */
-            *std_encoding = "Big5_Solaris";
-        } else if (strcmp(p, "Big5-HKSCS") == 0) {
-            /*
-             * Solaris uses HKSCS2001
-             */
-            *std_encoding = "Big5-HKSCS-2001";
-        }
-#endif
 #ifdef MACOSX
         /*
          * For the case on MacOS X where encoding is set to US-ASCII, but we
@@ -348,8 +327,14 @@ static int ParseLocale(JNIEnv* env, int cat, char ** std_language, char ** std_s
          * file to correctly read UTF-8 files using the default encoding (see
          * 8011194).
          */
-        if (strcmp(p,"US-ASCII") == 0 && getenv("LANG") == NULL &&
-            getenv("LC_ALL") == NULL && getenv("LC_CTYPE") == NULL) {
+        const char* env_lang = getenv("LANG");
+        const char* env_lc_all = getenv("LC_ALL");
+        const char* env_lc_ctype = getenv("LC_CTYPE");
+
+        if (strcmp(p,"US-ASCII") == 0 &&
+            (env_lang == NULL || strlen(env_lang) == 0) &&
+            (env_lc_all == NULL || strlen(env_lc_all) == 0) &&
+            (env_lc_ctype == NULL || strlen(env_lc_ctype) == 0)) {
             *std_encoding = "UTF-8";
         }
 #endif
@@ -385,32 +370,8 @@ GetJavaProperties(JNIEnv *env)
     }
 #endif /* MACOSX */
 
-    /* Printing properties */
-#ifdef MACOSX
-    sprops.printerJob = "sun.lwawt.macosx.CPrinterJob";
-#else
-    sprops.printerJob = "sun.print.PSPrinterJob";
-#endif
-
     /* patches/service packs installed */
-    sprops.patch_level = "unknown";
-
-    /* Java 2D/AWT properties */
-#ifdef MACOSX
-    // Always the same GraphicsEnvironment and Toolkit on Mac OS X
-    sprops.graphics_env = "sun.awt.CGraphicsEnvironment";
-    sprops.awt_toolkit = "sun.lwawt.macosx.LWCToolkit";
-
-    // check if we're in a GUI login session and set java.awt.headless=true if not
-    sprops.awt_headless = isInAquaSession() ? NULL : "true";
-#else
-    sprops.graphics_env = "sun.awt.X11GraphicsEnvironment";
-    sprops.awt_toolkit = "sun.awt.X11.XToolkit";
-#endif
-
-    /* This is used only for debugging of font problems. */
-    v = getenv("JAVA2D_FONTPATH");
-    sprops.font_dir = v ? v : NULL;
+    sprops.patch_level = NULL;      // leave it undefined
 
 #ifdef SI_ISALIST
     /* supported instruction sets */
@@ -457,13 +418,6 @@ GetJavaProperties(JNIEnv *env)
 #endif /* MACOSX */
 
         sprops.os_arch = ARCHPROPNAME;
-
-        if (getenv("GNOME_DESKTOP_SESSION_ID") != NULL) {
-            sprops.desktop = "gnome";
-        }
-        else {
-            sprops.desktop = NULL;
-        }
     }
 
     /* ABI property (optional) */
@@ -482,19 +436,15 @@ GetJavaProperties(JNIEnv *env)
                     &(sprops.format_variant),
                     &(sprops.encoding))) {
         ParseLocale(env, LC_MESSAGES,
-                    &(sprops.language),
-                    &(sprops.script),
-                    &(sprops.country),
-                    &(sprops.variant),
+                    &(sprops.display_language),
+                    &(sprops.display_script),
+                    &(sprops.display_country),
+                    &(sprops.display_variant),
                     NULL);
     } else {
-        sprops.language = "en";
+        sprops.display_language = "en";
         sprops.encoding = "ISO8859-1";
     }
-    sprops.display_language = sprops.language;
-    sprops.display_script = sprops.script;
-    sprops.display_country = sprops.country;
-    sprops.display_variant = sprops.variant;
 
     /* ParseLocale failed with OOME */
     JNU_CHECK_EXCEPTION_RETURN(env, NULL);
@@ -504,6 +454,12 @@ GetJavaProperties(JNIEnv *env)
 #else
     sprops.sun_jnu_encoding = sprops.encoding;
 #endif
+    if (isatty(STDOUT_FILENO) == 1) {
+        sprops.sun_stdout_encoding = sprops.encoding;
+    }
+    if (isatty(STDERR_FILENO) == 1) {
+        sprops.sun_stderr_encoding = sprops.encoding;
+    }
 
 #ifdef _ALLBSD_SOURCE
 #if BYTE_ORDER == _LITTLE_ENDIAN
@@ -537,18 +493,12 @@ GetJavaProperties(JNIEnv *env)
         }
     }
 
-    /* User TIMEZONE */
-    {
-        /*
-         * We defer setting up timezone until it's actually necessary.
-         * Refer to TimeZone.getDefault(). However, the system
-         * property is necessary to be able to be set by the command
-         * line interface -D. Here temporarily set a null string to
-         * timezone.
-         */
-        tzset();        /* for compatibility */
-        sprops.timezone = "";
-    }
+    /* User TIMEZONE
+     * We defer setting up timezone until it's actually necessary.
+     * Refer to TimeZone.getDefault(). The system property
+     * is able to be set by the command line interface -Duser.timezone.
+     */
+    tzset();        /* for compatibility */
 
     /* Current directory */
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,10 +39,12 @@ public class ZGlobals {
     public static byte ZPageTypeMedium;
     public static byte ZPageTypeLarge;
 
+    // Granule size shift
+    public static long ZGranuleSizeShift;
+
     // Page size shifts
     public static long ZPageSizeSmallShift;
     public static long ZPageSizeMediumShift;
-    public static long ZPageSizeMinShift;
 
     // Object alignment shifts
     public static int  ZObjectAlignmentMediumShift;
@@ -53,10 +55,7 @@ public class ZGlobals {
 
     // Pointer part of address
     public static long ZAddressOffsetBits;
-    public static long ZAddressOffsetMask;
-
-    // Address space start/end/size
-    public static long ZAddressSpaceStart;
+    public static long ZAddressOffsetMax;
 
     static {
         VM.registerVMInitializedObserver((o, d) -> initialize(VM.getVM().getTypeDataBase()));
@@ -73,9 +72,10 @@ public class ZGlobals {
         ZPageTypeMedium = db.lookupIntConstant("ZPageTypeMedium").byteValue();
         ZPageTypeLarge = db.lookupIntConstant("ZPageTypeLarge").byteValue();
 
+        ZGranuleSizeShift = db.lookupLongConstant("ZGranuleSizeShift").longValue();
+
         ZPageSizeSmallShift = db.lookupLongConstant("ZPageSizeSmallShift").longValue();
         ZPageSizeMediumShift = db.lookupLongConstant("ZPageSizeMediumShift").longValue();
-        ZPageSizeMinShift = db.lookupLongConstant("ZPageSizeMinShift").longValue();
 
         ZObjectAlignmentMediumShift = db.lookupIntConstant("ZObjectAlignmentMediumShift").intValue();
         ZObjectAlignmentLargeShift = db.lookupIntConstant("ZObjectAlignmentLargeShift").intValue();;
@@ -83,9 +83,7 @@ public class ZGlobals {
         ZAddressOffsetShift = db.lookupLongConstant("ZAddressOffsetShift").longValue();
 
         ZAddressOffsetBits = db.lookupLongConstant("ZAddressOffsetBits").longValue();
-        ZAddressOffsetMask = db.lookupLongConstant("ZAddressOffsetMask").longValue();
-
-        ZAddressSpaceStart = db.lookupLongConstant("ZAddressSpaceStart").longValue();
+        ZAddressOffsetMax  = db.lookupLongConstant("ZAddressOffsetMax").longValue();
     }
 
     private static ZGlobalsForVMStructs instance() {
@@ -94,6 +92,22 @@ public class ZGlobals {
 
     public static int ZGlobalPhase() {
         return instance().ZGlobalPhase();
+    }
+
+    public static int ZGlobalSeqNum() {
+        return instance().ZGlobalSeqNum();
+    }
+
+    public static long ZAddressOffsetMask() {
+        return instance().ZAddressOffsetMask();
+    }
+
+    public static long ZAddressMetadataMask() {
+        return instance().ZAddressMetadataMask();
+    }
+
+    public static long ZAddressMetadataFinalizable() {
+        return instance().ZAddressMetadataFinalizable();
     }
 
     public static long ZAddressGoodMask() {

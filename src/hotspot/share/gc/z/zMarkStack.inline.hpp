@@ -25,6 +25,7 @@
 #define SHARE_GC_Z_ZMARKSTACK_INLINE_HPP
 
 #include "gc/z/zMarkStack.hpp"
+
 #include "utilities/debug.hpp"
 #include "runtime/atomic.hpp"
 
@@ -114,14 +115,14 @@ inline bool ZStackList<T>::is_empty() const {
 }
 
 template <typename T>
-inline void ZStackList<T>::push_atomic(T* stack) {
+inline void ZStackList<T>::push(T* stack) {
   T* vstack = _head;
   uint32_t version = 0;
 
   for (;;) {
     decode_versioned_pointer(vstack, stack->next_addr(), &version);
     T* const new_vstack = encode_versioned_pointer(stack, version + 1);
-    T* const prev_vstack = Atomic::cmpxchg(new_vstack, &_head, vstack);
+    T* const prev_vstack = Atomic::cmpxchg(&_head, vstack, new_vstack);
     if (prev_vstack == vstack) {
       // Success
       break;
@@ -133,7 +134,7 @@ inline void ZStackList<T>::push_atomic(T* stack) {
 }
 
 template <typename T>
-inline T* ZStackList<T>::pop_atomic() {
+inline T* ZStackList<T>::pop() {
   T* vstack = _head;
   T* stack = NULL;
   uint32_t version = 0;
@@ -145,7 +146,7 @@ inline T* ZStackList<T>::pop_atomic() {
     }
 
     T* const new_vstack = encode_versioned_pointer(stack->next(), version + 1);
-    T* const prev_vstack = Atomic::cmpxchg(new_vstack, &_head, vstack);
+    T* const prev_vstack = Atomic::cmpxchg(&_head, vstack, new_vstack);
     if (prev_vstack == vstack) {
       // Success
       return stack;
@@ -154,6 +155,11 @@ inline T* ZStackList<T>::pop_atomic() {
     // Retry
     vstack = prev_vstack;
   }
+}
+
+template <typename T>
+inline void ZStackList<T>::clear() {
+  _head = encode_versioned_pointer(NULL, 0);
 }
 
 inline bool ZMarkStripe::is_empty() const {
@@ -168,20 +174,20 @@ inline void ZMarkStripe::publish_stack(ZMarkStack* stack, bool publish) {
   // contention between mutators and GC workers as much as possible, while
   // still allowing GC workers to help out and steal work from each other.
   if (publish) {
-    _published.push_atomic(stack);
+    _published.push(stack);
   } else {
-    _overflowed.push_atomic(stack);
+    _overflowed.push(stack);
   }
 }
 
 inline ZMarkStack* ZMarkStripe::steal_stack() {
   // Steal overflowed stacks first, then published stacks
-  ZMarkStack* const stack = _overflowed.pop_atomic();
+  ZMarkStack* const stack = _overflowed.pop();
   if (stack != NULL) {
     return stack;
   }
 
-  return _published.pop_atomic();
+  return _published.pop();
 }
 
 inline size_t ZMarkStripeSet::nstripes() const {
@@ -217,6 +223,17 @@ inline void ZMarkThreadLocalStacks::install(ZMarkStripeSet* stripes,
   ZMarkStack** const stackp = &_stacks[stripes->stripe_id(stripe)];
   assert(*stackp == NULL, "Should be empty");
   *stackp = stack;
+}
+
+inline ZMarkStack* ZMarkThreadLocalStacks::steal(ZMarkStripeSet* stripes,
+                                                 ZMarkStripe* stripe) {
+  ZMarkStack** const stackp = &_stacks[stripes->stripe_id(stripe)];
+  ZMarkStack* const stack = *stackp;
+  if (stack != NULL) {
+    *stackp = NULL;
+  }
+
+  return stack;
 }
 
 inline bool ZMarkThreadLocalStacks::push(ZMarkStackAllocator* allocator,

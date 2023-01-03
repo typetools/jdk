@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -146,10 +147,12 @@ import java.io.Serializable;
  * passed to a static factory method result in {@code IllegalArgumentException}.
  * <li>The iteration order of mappings is unspecified and is subject to change.
  * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
- * Callers should make no assumptions about the identity of the returned instances.
- * Factories are free to create new instances or reuse existing ones. Therefore,
- * identity-sensitive operations on these instances (reference equality ({@code ==}),
- * identity hash code, and synchronization) are unreliable and should be avoided.
+ * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+ * as interchangeable and should not use them for synchronization, or
+ * unpredictable behavior may occur. For example, in a future release,
+ * synchronization may fail. Callers should make no assumptions
+ * about the identity of the returned instances. Factories are free to
+ * create new instances or reuse existing ones.
  * <li>They are serialized as specified on the
  * <a href="{@docRoot}/serialized-form.html#java.util.CollSer">Serialized Form</a>
  * page.
@@ -211,9 +214,10 @@ public interface Map<K, V> {
      *         does not permit null keys
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
+    @CFComment("nullness: key is not @Nullable because this map might not permit null values")
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
+    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
     /**
      * Returns {@code true} if this map maps one or more keys to the
@@ -234,7 +238,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object value);
+    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -263,7 +267,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
+    @Nullable V get(@GuardSatisfied Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
 
     // Modification Operations
 
@@ -325,7 +329,8 @@ public interface Map<K, V> {
      *         map does not permit null keys
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @Nullable V remove(@GuardSatisfied Map<K, V> this, Object key);
+    @CFComment("nullness: key is not @Nullable because this map might not permit null values")
+    @Nullable V remove(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
 
     // Bulk Operations
@@ -419,14 +424,33 @@ public interface Map<K, V> {
     Set<Map.Entry<@KeyFor({"this"}) K, V>> entrySet(@GuardSatisfied Map<K, V> this);
 
     /**
-     * A map entry (key-value pair).  The {@code Map.entrySet} method returns
-     * a collection-view of the map, whose elements are of this class.  The
-     * <i>only</i> way to obtain a reference to a map entry is from the
-     * iterator of this collection-view.  These {@code Map.Entry} objects are
-     * valid <i>only</i> for the duration of the iteration; more formally,
-     * the behavior of a map entry is undefined if the backing map has been
-     * modified after the entry was returned by the iterator, except through
-     * the {@code setValue} operation on the map entry.
+     * A map entry (key-value pair). The Entry may be unmodifiable, or the
+     * value may be modifiable if the optional {@code setValue} method is
+     * implemented. The Entry may be independent of any map, or it may represent
+     * an entry of the entry-set view of a map.
+     * <p>
+     * Instances of the {@code Map.Entry} interface may be obtained by iterating
+     * the entry-set view of a map. These instances maintain a connection to the
+     * original, backing map. This connection to the backing map is valid
+     * <i>only</i> for the duration of iteration over the entry-set view.
+     * During iteration of the entry-set view, if supported by the backing map,
+     * a change to a {@code Map.Entry}'s value via the
+     * {@link Map.Entry#setValue setValue} method will be visible in the backing map.
+     * The behavior of such a {@code Map.Entry} instance is undefined outside of
+     * iteration of the map's entry-set view. It is also undefined if the backing
+     * map has been modified after the {@code Map.Entry} was returned by the
+     * iterator, except through the {@code Map.Entry.setValue} method. In particular,
+     * a change to the value of a mapping in the backing map might or might not be
+     * visible in the corresponding {@code Map.Entry} element of the entry-set view.
+     *
+     * @apiNote
+     * It is possible to create a {@code Map.Entry} instance that is disconnected
+     * from a backing map by using the {@link Map.Entry#copyOf copyOf} method. For example,
+     * the following creates a snapshot of a map's entries that is guaranteed not to
+     * change even if the original map is modified:
+     * <pre> {@code
+     * var entries = map.entrySet().stream().map(Map.Entry::copyOf).toList()
+     * }</pre>
      *
      * @see Map#entrySet()
      * @since 1.2
@@ -594,6 +618,37 @@ public interface Map<K, V> {
             return (Comparator<Map.Entry<K, V>> & Serializable)
                 (c1, c2) -> cmp.compare(c1.getValue(), c2.getValue());
         }
+
+        /**
+         * Returns a copy of the given {@code Map.Entry}. The returned instance is not
+         * associated with any map. The returned instance has the same characteristics
+         * as instances returned by the {@link Map#entry Map::entry} method.
+         *
+         * @apiNote
+         * An instance obtained from a map's entry-set view has a connection to that map.
+         * The {@code copyOf}  method may be used to create a {@code Map.Entry} instance,
+         * containing the same key and value, that is independent of any map.
+         *
+         * @implNote
+         * If the given entry was obtained from a call to {@code copyOf} or {@code Map::entry},
+         * calling {@code copyOf} will generally not create another copy.
+         *
+         * @param <K> the type of the key
+         * @param <V> the type of the value
+         * @param e the entry to be copied
+         * @return a map entry equal to the given entry
+         * @throws NullPointerException if e is null or if either of its key or value is null
+         * @since 17
+         */
+        @SuppressWarnings("unchecked")
+        public static <K, V> Map.Entry<K, V> copyOf(Map.Entry<? extends K, ? extends V> e) {
+            Objects.requireNonNull(e);
+            if (e instanceof KeyValueHolder) {
+                return (Map.Entry<K, V>) e;
+            } else {
+                return Map.entry(e.getKey(), e.getValue());
+            }
+        }
     }
 
     // Comparison and hashing
@@ -652,7 +707,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @Pure
-    default V getOrDefault(Object key, V defaultValue) {
+    default V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
         V v;
         return (((v = get(key)) != null) || containsKey(key))
             ? v
@@ -770,8 +825,7 @@ public interface Map<K, V> {
      * {@code null}, else returns the current value.
      *
      * @implSpec
-     * The default implementation is equivalent to, for this {@code
-     * map}:
+     * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
      * V v = map.get(key);
@@ -851,8 +905,9 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default boolean remove(Object key, Object value) {
-        Object curValue = get(key);
+    @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
+    default boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+        Object curValue = (key);
         if (!Objects.equals(curValue, value) ||
             (curValue == null && !containsKey(key))) {
             return false;
@@ -869,7 +924,7 @@ public interface Map<K, V> {
      * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
-     * if (map.containsKey(key) && Objects.equals(map.get(key), value)) {
+     * if (map.containsKey(key) && Objects.equals(map.get(key), oldValue)) {
      *     map.put(key, newValue);
      *     return true;
      * } else
@@ -1147,23 +1202,17 @@ public interface Map<K, V> {
      *
      * @implSpec
      * The default implementation is equivalent to performing the following
-     * steps for this {@code map}, then returning the current value or
-     * {@code null} if absent:
+     * steps for this {@code map}:
      *
      * <pre> {@code
      * V oldValue = map.get(key);
      * V newValue = remappingFunction.apply(key, oldValue);
-     * if (oldValue != null) {
-     *    if (newValue != null)
-     *       map.put(key, newValue);
-     *    else
-     *       map.remove(key);
-     * } else {
-     *    if (newValue != null)
-     *       map.put(key, newValue);
-     *    else
-     *       return null;
+     * if (newValue != null) {
+     *     map.put(key, newValue);
+     * } else if (oldValue != null || map.containsKey(key)) {
+     *     map.remove(key);
      * }
+     * return newValue;
      * }</pre>
      *
      * <p>The default implementation makes no guarantees about detecting if the
@@ -1300,9 +1349,10 @@ public interface Map<K, V> {
      *         null
      * @since 1.8
      */
-    // It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A
-    // remappingFunction that returns null is is probably rare, and these annotations accommodate
-    // the majority of uses that don't return null.
+    @CFComment({
+        "It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A",
+        "remappingFunction that returns null is is probably rare, and these annotations accommodate",
+        "the majority of uses that don't return null."})
     default @PolyNull V merge(K key, @NonNull V value,
             BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
@@ -1328,8 +1378,9 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     static <K, V> Map<K, V> of() {
-        return ImmutableCollections.emptyMap();
+        return (Map<K,V>) ImmutableCollections.EMPTY_MAP;
     }
 
     /**
@@ -1646,7 +1697,9 @@ public interface Map<K, V> {
     @SuppressWarnings("varargs")
     static <K, V> Map<K, V> ofEntries(Entry<? extends K, ? extends V>... entries) {
         if (entries.length == 0) { // implicit null check of entries array
-            return ImmutableCollections.emptyMap();
+            @SuppressWarnings("unchecked")
+            var map = (Map<K,V>) ImmutableCollections.EMPTY_MAP;
+            return map;
         } else if (entries.length == 1) {
             // implicit null check of the array slot
             return new ImmutableCollections.Map1<>(entries[0].getKey(),
@@ -1676,10 +1729,12 @@ public interface Map<K, V> {
      * on a returned {@code Entry} result in {@code UnsupportedOperationException}.
      * <li>They are not serializable.
      * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
-     * Callers should make no assumptions about the identity of the returned instances.
-     * This method is free to create new instances or reuse existing ones. Therefore,
-     * identity-sensitive operations on these instances (reference equality ({@code ==}),
-     * identity hash code, and synchronization) are unreliable and should be avoided.
+     * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+     * as interchangeable and should not use them for synchronization, or
+     * unpredictable behavior may occur. For example, in a future release,
+     * synchronization may fail. Callers should make no assumptions
+     * about the identity of the returned instances. This method is free to
+     * create new instances or reuse existing ones.
      * </ul>
      *
      * @apiNote

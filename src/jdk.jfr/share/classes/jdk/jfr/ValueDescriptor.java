@@ -26,7 +26,6 @@
 package jdk.jfr;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -131,7 +130,7 @@ public final class ValueDescriptor {
      *         doesn't have {@code FlightRecorderPermission("registerEvent")}
      */
     public ValueDescriptor(Class<?> type, String name, List<AnnotationElement> annotations) {
-        this(type, name, new ArrayList<>(annotations), false);
+        this(type, name, List.copyOf(annotations), false);
     }
 
 
@@ -289,9 +288,9 @@ public final class ValueDescriptor {
      */
     public List<ValueDescriptor> getFields() {
         if (type.isSimpleType()) {
-            return Collections.emptyList();
+            return List.of();
         }
-        return Collections.unmodifiableList(type.getFields());
+        return type.getFields();
     }
 
     // package private

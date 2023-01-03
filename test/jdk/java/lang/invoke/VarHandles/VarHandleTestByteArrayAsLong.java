@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,9 +24,9 @@
 /*
  * @test
  * @bug 8154556
- * @run testng/othervm -Diters=20000 -XX:TieredStopAtLevel=1 VarHandleTestByteArrayAsLong
- * @run testng/othervm -Diters=20000                         VarHandleTestByteArrayAsLong
- * @run testng/othervm -Diters=20000 -XX:-TieredCompilation  VarHandleTestByteArrayAsLong
+ * @run testng/othervm/timeout=360 -Diters=20000 -XX:TieredStopAtLevel=1 VarHandleTestByteArrayAsLong
+ * @run testng/othervm/timeout=360 -Diters=20000                         VarHandleTestByteArrayAsLong
+ * @run testng/othervm/timeout=360 -Diters=20000 -XX:-TieredCompilation  VarHandleTestByteArrayAsLong
  */
 
 import org.testng.annotations.DataProvider;
@@ -54,25 +54,56 @@ public class VarHandleTestByteArrayAsLong extends VarHandleBaseByteArrayTest {
 
 
     @Override
-    public void setupVarHandleSources() {
+    public List<VarHandleSource> setupVarHandleSources(boolean same) {
         // Combinations of VarHandle byte[] or ByteBuffer
-        vhss = new ArrayList<>();
-        for (MemoryMode endianess : Arrays.asList(MemoryMode.BIG_ENDIAN, MemoryMode.LITTLE_ENDIAN)) {
+        List<VarHandleSource> vhss = new ArrayList<>();
+        for (MemoryMode endianess : List.of(MemoryMode.BIG_ENDIAN, MemoryMode.LITTLE_ENDIAN)) {
 
             ByteOrder bo = endianess == MemoryMode.BIG_ENDIAN
                     ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+
+            Class<?> arrayType;
+            if (same) {
+                arrayType = long[].class;
+            }
+            else {
+                arrayType = int[].class;
+            }
             VarHandleSource aeh = new VarHandleSource(
-                    MethodHandles.byteArrayViewVarHandle(long[].class, bo),
+                    MethodHandles.byteArrayViewVarHandle(arrayType, bo),
                     endianess, MemoryMode.READ_WRITE);
             vhss.add(aeh);
 
             VarHandleSource bbh = new VarHandleSource(
-                    MethodHandles.byteBufferViewVarHandle(long[].class, bo),
+                    MethodHandles.byteBufferViewVarHandle(arrayType, bo),
                     endianess, MemoryMode.READ_WRITE);
             vhss.add(bbh);
         }
+        return vhss;
     }
 
+    @Test
+    public void testEquals() {
+        VarHandle[] vhs1 = setupVarHandleSources(true).stream().
+            map(vhs -> vhs.s).toArray(VarHandle[]::new);
+        VarHandle[] vhs2 = setupVarHandleSources(true).stream().
+            map(vhs -> vhs.s).toArray(VarHandle[]::new);
+
+        for (int i = 0; i < vhs1.length; i++) {
+            for (int j = 0; j < vhs1.length; j++) {
+                if (i != j) {
+                    assertNotEquals(vhs1[i], vhs1[j]);
+                    assertNotEquals(vhs1[i], vhs2[j]);
+                }
+            }
+        }
+
+        VarHandle[] vhs3 = setupVarHandleSources(false).stream().
+            map(vhs -> vhs.s).toArray(VarHandle[]::new);
+        for (int i = 0; i < vhs1.length; i++) {
+            assertNotEquals(vhs1[i], vhs3[i]);
+        }
+    }
 
     @Test(dataProvider = "varHandlesProvider")
     public void testIsAccessModeSupported(VarHandleSource vhs) {
@@ -598,127 +629,127 @@ public class VarHandleTestByteArrayAsLong extends VarHandleBaseByteArrayTest {
         for (int i : new int[]{-1, Integer.MIN_VALUE, length, length + 1, Integer.MAX_VALUE}) {
             final int ci = i;
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.get(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.set(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getVolatile(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getAcquire(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long x = (long) vh.getOpaque(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setVolatile(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setRelease(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.compareAndSet(array, ci, VALUE_1, VALUE_2);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchange(array, ci, VALUE_2, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchangeAcquire(array, ci, VALUE_2, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long r = (long) vh.compareAndExchangeRelease(array, ci, VALUE_2, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetPlain(array, ci, VALUE_1, VALUE_2);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSet(array, ci, VALUE_1, VALUE_2);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetAcquire(array, ci, VALUE_1, VALUE_2);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetRelease(array, ci, VALUE_1, VALUE_2);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSet(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSetAcquire(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndSetRelease(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAdd(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAddAcquire(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndAddRelease(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOr(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOrAcquire(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseOrRelease(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAnd(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAndAcquire(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseAndRelease(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXor(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXorAcquire(array, ci, VALUE_1);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 long o = (long) vh.getAndBitwiseXorRelease(array, ci, VALUE_1);
             });
 

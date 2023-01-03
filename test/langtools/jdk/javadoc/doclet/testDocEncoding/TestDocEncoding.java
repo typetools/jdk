@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,14 +30,15 @@
  * @bug      8000743
  * @summary  Run tests on -docencoding to see if the value is
              used for stylesheet as well.
- * @author   jayashree viswanathan
- * @library  ../lib
+ * @library  ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build    JavadocTester
+ * @build    javadoc.tester.*
  * @run main TestDocEncoding
  */
 
 import java.nio.charset.Charset;
+
+import javadoc.tester.JavadocTester;
 
 public class TestDocEncoding extends JavadocTester {
 
@@ -47,7 +48,7 @@ public class TestDocEncoding extends JavadocTester {
     }
 
     @Test
-    void test() {
+    public void test() {
         javadoc("-d", "out",
                 "-docencoding", "Cp930",
                 "-sourcepath", testSrc,
@@ -56,15 +57,17 @@ public class TestDocEncoding extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("stylesheet.css", true,
-                "body {\n"
-                + "    background-color:#ffffff;");
+                """
+                    body {
+                        background-color:#ffffff;""");
 
         // reset the charset, for a negative test, that the -docencoding
         // was effective and that the output is not in UTF-8.
         charset = Charset.forName("UTF-8");
         checkOutput("stylesheet.css", false,
-                "body {\n"
-                + "    background-color:#ffffff;");
+                """
+                    body {
+                        background-color:#ffffff;""");
     }
 }
 

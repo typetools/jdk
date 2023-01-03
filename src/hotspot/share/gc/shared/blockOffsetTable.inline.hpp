@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP
-#define SHARE_VM_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP
+#ifndef SHARE_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP
+#define SHARE_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP
 
 #include "gc/shared/blockOffsetTable.hpp"
+
 #include "gc/shared/space.hpp"
 #include "runtime/safepoint.hpp"
 
@@ -70,30 +71,4 @@ inline void BlockOffsetSharedArray::check_reducing_assertion(bool reducing) {
             ParGCRareEvent_lock->owned_by_self()), "Crack");
 }
 
-//////////////////////////////////////////////////////////////////////////
-// BlockOffsetArrayNonContigSpace inlines
-//////////////////////////////////////////////////////////////////////////
-inline void BlockOffsetArrayNonContigSpace::freed(HeapWord* blk,
-                                                  size_t size) {
-  freed(blk, blk + size);
-}
-
-inline void BlockOffsetArrayNonContigSpace::freed(HeapWord* blk_start,
-                                                  HeapWord* blk_end) {
-  // Verify that the BOT shows [blk_start, blk_end) to be one block.
-  verify_single_block(blk_start, blk_end);
-  // adjust _unallocated_block upward or downward
-  // as appropriate
-  if (BlockOffsetArrayUseUnallocatedBlock) {
-    assert(_unallocated_block <= _end,
-           "Inconsistent value for _unallocated_block");
-    if (blk_end >= _unallocated_block && blk_start <= _unallocated_block) {
-      // CMS-specific note: a block abutting _unallocated_block to
-      // its left is being freed, a new block is being added or
-      // we are resetting following a compaction
-      _unallocated_block = blk_start;
-    }
-  }
-}
-
-#endif // SHARE_VM_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP
+#endif // SHARE_GC_SHARED_BLOCKOFFSETTABLE_INLINE_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,18 +33,25 @@ import static jdk.test.lib.Asserts.fail;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import jdk.jfr.AnnotationElement;
 import jdk.jfr.EventType;
 import jdk.jfr.Recording;
 import jdk.jfr.SettingDescriptor;
+import jdk.jfr.Timespan;
+import jdk.jfr.Timestamp;
 import jdk.jfr.ValueDescriptor;
 import jdk.jfr.consumer.RecordingFile;
 import jdk.test.lib.Asserts;
 import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
+import jdk.jfr.consumer.RecordedFrame;
+import jdk.jfr.consumer.RecordedMethod;
 import jdk.jfr.consumer.RecordedObject;
+import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordedThreadGroup;
 
@@ -183,6 +190,49 @@ public class Events {
         assertThread(assertField(event, structName).notNull().getValue(), thread);
     }
 
+    public static void assertDuration(RecordedEvent event, String name, Duration duration) {
+        assertEquals(event.getDuration(name), duration);
+    }
+
+    public static void assertInstant(RecordedEvent event, String name, Instant instant) {
+        assertEquals(event.getInstant(name), instant);
+    }
+
+    public static void assertMissingValue(RecordedEvent event, String name) {
+       ValueDescriptor v =  event.getEventType().getField(name);
+       if (v.getAnnotation(Timespan.class) != null) {
+           Duration d = event.getDuration(name);
+           assertTrue(d.getSeconds() == Long.MIN_VALUE && d.getNano() == 0);
+           return;
+       }
+       if (v.getAnnotation(Timestamp.class) != null) {
+           Instant instant = event.getInstant(name);
+           assertTrue(instant.equals(Instant.MIN));
+           return;
+       }
+       if (v.getTypeName().equals("double")) {
+           double d = event.getDouble(name);
+           assertTrue(Double.isNaN(d) || d == Double.NEGATIVE_INFINITY);
+           return;
+       }
+       if (v.getTypeName().equals("float")) {
+           float f = event.getFloat(name);
+           assertTrue(Float.isNaN(f) || f == Float.NEGATIVE_INFINITY);
+           return;
+       }
+       if (v.getTypeName().equals("int")) {
+           int i = event.getInt(name);
+           assertTrue(i == Integer.MIN_VALUE);
+           return;
+       }
+       if (v.getTypeName().equals("long")) {
+           assertEquals(event.getLong(name), Long.MIN_VALUE);
+           return;
+       }
+       Object o = event.getValue(name);
+       Asserts.assertNull(o);
+    }
+
     private static void assertThread(RecordedThread eventThread, Thread thread) {
         assertNotNull(eventThread, "Thread in event was null");
         assertEquals(eventThread.getJavaThreadId(), thread.getId(), "Wrong thread id");
@@ -315,5 +365,22 @@ public class Events {
             }
         }
         return false;
+    }
+
+    public static void assertFrame(RecordedEvent event, Class<?> expectedClass, String expectedMethodName) {
+        RecordedStackTrace stackTrace = event.getStackTrace();
+        Asserts.assertNotNull(stackTrace, "Missing stack trace");
+        for (RecordedFrame frame : stackTrace.getFrames()) {
+            if (frame.isJavaFrame()) {
+                RecordedMethod method = frame.getMethod();
+                RecordedClass type = method.getType();
+                if (expectedClass.getName().equals(type.getName())) {
+                    if (expectedMethodName.equals(method.getName())) {
+                        return;
+                    }
+                }
+            }
+        }
+        Asserts.fail("Expected " + expectedClass.getName() + "::"+ expectedMethodName + " in stack trace");
     }
 }

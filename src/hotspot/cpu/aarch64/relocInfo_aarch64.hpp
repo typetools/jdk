@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,16 +23,16 @@
  *
  */
 
-#ifndef CPU_AARCH64_VM_RELOCINFO_AARCH64_HPP
-#define CPU_AARCH64_VM_RELOCINFO_AARCH64_HPP
+#ifndef CPU_AARCH64_RELOCINFO_AARCH64_HPP
+#define CPU_AARCH64_RELOCINFO_AARCH64_HPP
 
   // machine-dependent parts of class relocInfo
  private:
   enum {
     // Relocations are byte-aligned.
     offset_unit        =  1,
-    // We don't use format().
-    format_width       =  0
+    // Must be at least 1 for RelocInfo::narrow_oop_in_const.
+    format_width       =  1
   };
 
  public:
@@ -41,4 +41,4 @@
   // listed in the oop section.
   static bool mustIterateImmediateOopsInCode() { return false; }
 
-#endif // CPU_AARCH64_VM_RELOCINFO_AARCH64_HPP
+#endif // CPU_AARCH64_RELOCINFO_AARCH64_HPP

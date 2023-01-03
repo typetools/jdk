@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_OS_PERF_HPP
-#define SHARE_VM_RUNTIME_OS_PERF_HPP
+#ifndef SHARE_RUNTIME_OS_PERF_HPP
+#define SHARE_RUNTIME_OS_PERF_HPP
 
 #include "memory/allocation.hpp"
+#include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
 #define FUNCTIONALITY_NOT_IMPLEMENTED -8
@@ -41,12 +42,8 @@ class EnvironmentVariable : public CHeapObj<mtInternal> {
   }
 
   ~EnvironmentVariable() {
-    if (_key != NULL) {
-      FREE_C_HEAP_ARRAY(char, _key);
-    }
-    if (_value != NULL) {
-      FREE_C_HEAP_ARRAY(char, _value);
-    }
+    FREE_C_HEAP_ARRAY(char, _key);
+    FREE_C_HEAP_ARRAY(char, _value);
   }
 
   EnvironmentVariable(char* key, char* value) {
@@ -181,15 +178,9 @@ class SystemProcess : public CHeapObj<mtInternal> {
   }
 
   virtual ~SystemProcess(void) {
-    if (_name != NULL) {
-      FREE_C_HEAP_ARRAY(char, _name);
-    }
-    if (_path != NULL) {
-      FREE_C_HEAP_ARRAY(char, _path);
-    }
-    if (_command_line != NULL) {
-      FREE_C_HEAP_ARRAY(char, _command_line);
-    }
+    FREE_C_HEAP_ARRAY(char, _name);
+    FREE_C_HEAP_ARRAY(char, _path);
+    FREE_C_HEAP_ARRAY(char, _command_line);
   }
 };
 
@@ -200,9 +191,8 @@ class NetworkInterface : public ResourceObj {
   uint64_t _bytes_out;
   NetworkInterface* _next;
 
-  NetworkInterface(); // no impl
-  NetworkInterface(const NetworkInterface& rhs); // no impl
-  NetworkInterface& operator=(const NetworkInterface& rhs); // no impl
+  NONCOPYABLE(NetworkInterface);
+
  public:
   NetworkInterface(const char* name, uint64_t bytes_in, uint64_t bytes_out, NetworkInterface* next) :
   _name(NULL),
@@ -278,8 +268,8 @@ class NetworkPerformanceInterface : public CHeapObj<mtInternal> {
  private:
   class NetworkPerformance;
   NetworkPerformance* _impl;
-  NetworkPerformanceInterface(const NetworkPerformanceInterface& rhs); // no impl
-  NetworkPerformanceInterface& operator=(const NetworkPerformanceInterface& rhs); // no impl
+  NONCOPYABLE(NetworkPerformanceInterface);
+
  public:
   NetworkPerformanceInterface();
   bool initialize();
@@ -287,4 +277,4 @@ class NetworkPerformanceInterface : public CHeapObj<mtInternal> {
   int network_utilization(NetworkInterface** network_interfaces) const;
 };
 
-#endif // SHARE_VM_RUNTIME_OS_PERF_HPP
+#endif // SHARE_RUNTIME_OS_PERF_HPP

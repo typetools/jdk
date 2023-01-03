@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,8 +33,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLPermission;
 import java.security.AccessControlContext;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -76,10 +78,12 @@ final class Exchange<T> {
     // used to record possible cancellation raised before the exchImpl
     // has been established.
     private volatile IOException failed;
+    @SuppressWarnings("removal")
     final AccessControlContext acc;
     final MultiExchange<T> multi;
     final Executor parentExecutor;
-    boolean upgrading; // to HTTP/2
+    volatile boolean upgrading; // to HTTP/2
+    volatile boolean upgraded;  // to HTTP/2
     final PushGroup<T> pushGroup;
     final String dbgTag;
 
@@ -101,7 +105,7 @@ final class Exchange<T> {
     /* If different AccessControlContext to be used  */
     Exchange(HttpRequestImpl request,
              MultiExchange<T> multi,
-             AccessControlContext acc)
+             @SuppressWarnings("removal") AccessControlContext acc)
     {
         this.request = request;
         this.acc = acc;
@@ -125,6 +129,10 @@ final class Exchange<T> {
         return request;
     }
 
+    public Optional<Duration> remainingConnectTimeout() {
+        return multi.remainingConnectTimeout();
+    }
+
     HttpClientImpl client() {
         return client;
     }
@@ -133,12 +141,15 @@ final class Exchange<T> {
     // exchange so that it can be aborted/timed out mid setup.
     static final class ConnectionAborter {
         private volatile HttpConnection connection;
+        private volatile boolean closeRequested;
 
         void connection(HttpConnection connection) {
             this.connection = connection;
+            if (closeRequested) closeConnection();
         }
 
         void closeConnection() {
+            closeRequested = true;
             HttpConnection connection = this.connection;
             this.connection = null;
             if (connection != null) {
@@ -149,6 +160,18 @@ final class Exchange<T> {
                 }
             }
         }
+
+        void disable() {
+            connection = null;
+            closeRequested = false;
+        }
+    }
+
+    // Called for 204 response - when no body is permitted
+    // This is actually only needed for HTTP/1.1 in order
+    // to return the connection to the pool (or close it)
+    void nullBody(HttpResponse<T> resp, Throwable t) {
+        exchImpl.nullBody(resp, t);
     }
 
     public CompletableFuture<T> readBodyAsync(HttpResponse.BodyHandler<T> handler) {
@@ -265,6 +288,30 @@ final class Exchange<T> {
         }
     }
 
+    <T> CompletableFuture<T> checkCancelled(CompletableFuture<T> cf, HttpConnection connection) {
+        return cf.handle((r,t) -> {
+            if (t == null) {
+                if (multi.requestCancelled()) {
+                    // if upgraded, we don't close the connection.
+                    // cancelling will be handled by the HTTP/2 exchange
+                    // in its own time.
+                    if (!upgraded) {
+                        t = getCancelCause();
+                        if (t == null) t = new IOException("Request cancelled");
+                        if (debug.on()) debug.log("exchange cancelled during connect: " + t);
+                        try {
+                            connection.close();
+                        } catch (Throwable x) {
+                            if (debug.on()) debug.log("Failed to close connection", x);
+                        }
+                        return MinimalFuture.<T>failedFuture(t);
+                    }
+                }
+            }
+            return cf;
+        }).thenCompose(Function.identity());
+    }
+
     public void h2Upgrade() {
         upgrading = true;
         request.setH2Upgrade(client.client2());
@@ -286,7 +333,10 @@ final class Exchange<T> {
         Throwable t = getCancelCause();
         checkCancelled();
         if (t != null) {
-            return MinimalFuture.failedFuture(t);
+            if (debug.on()) {
+                debug.log("exchange was cancelled: returned failed cf (%s)", String.valueOf(t));
+            }
+            return exchangeCF = MinimalFuture.failedFuture(t);
         }
 
         CompletableFuture<? extends ExchangeImpl<T>> cf, res;
@@ -468,11 +518,14 @@ final class Exchange<T> {
                     debug.log("Ignored body");
                     // we pass e::getBuffer to allow the ByteBuffers to accumulate
                     // while we build the Http2Connection
+                    ex.upgraded();
+                    upgraded = true;
                     return Http2Connection.createAsync(e.connection(),
                                                  client.client2(),
                                                  this, e::drainLeftOverBytes)
                         .thenCompose((Http2Connection c) -> {
                             boolean cached = c.offerConnection();
+                            if (cached) connectionAborter.disable();
                             Stream<T> s = c.getStream(1);
 
                             if (s == null) {
@@ -507,11 +560,12 @@ final class Exchange<T> {
                             }
                             // Check whether the HTTP/1.1 was cancelled.
                             if (t == null) t = e.getCancelCause();
-                            // if HTTP/1.1 exchange was timed out, don't
-                            // try to go further.
-                            if (t instanceof HttpTimeoutException) {
-                                 s.cancelImpl(t);
-                                 return MinimalFuture.failedFuture(t);
+                            // if HTTP/1.1 exchange was timed out, or the request
+                            // was cancelled don't try to go further.
+                            if (t instanceof HttpTimeoutException || multi.requestCancelled()) {
+                                if (t == null) t = new IOException("Request cancelled");
+                                s.cancelImpl(t);
+                                return MinimalFuture.failedFuture(t);
                             }
                             if (debug.on())
                                 debug.log("Getting response async %s", s);
@@ -568,6 +622,7 @@ final class Exchange<T> {
      */
     private SecurityException checkPermissions() {
         String method = request.method();
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm == null || method.equals("CONNECT")) {
             // tunneling will have a null acc, which is fine. The proxy
@@ -585,6 +640,19 @@ final class Exchange<T> {
         } catch (SecurityException e) {
             return e;
         }
+        String hostHeader = userHeaders.firstValue("Host").orElse(null);
+        if (hostHeader != null && !hostHeader.equalsIgnoreCase(u.getHost())) {
+            // user has set a Host header different to request URI
+            // must check that for URLPermission also
+            URI u1 = replaceHostInURI(u, hostHeader);
+            URLPermission p1 = permissionForServer(u1, method, userHeaders.map());
+            try {
+                assert acc != null;
+                sm.checkPermission(p1, acc);
+            } catch (SecurityException e) {
+                return e;
+            }
+        }
         ProxySelector ps = client.proxySelector();
         if (ps != null) {
             if (!method.equals("CONNECT")) {
@@ -600,6 +668,15 @@ final class Exchange<T> {
             }
         }
         return null;
+    }
+
+    private static URI replaceHostInURI(URI u, String hostPort) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(u.getScheme())
+                .append("://")
+                .append(hostPort)
+                .append(u.getRawPath());
+        return URI.create(sb.toString());
     }
 
     HttpClient.Version version() {

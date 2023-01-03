@@ -134,6 +134,11 @@ public class BasicProgressBarUI extends ProgressBarUI {
     private int maxPosition = 0; //maximum X (horiz) or Y box location
 
     /**
+     * Constructs a {@code BasicProgressBarUI}.
+     */
+    public BasicProgressBarUI() {}
+
+    /**
      * Returns a new instance of {@code BasicProgressBarUI}.
      *
      * @param x a component
@@ -874,7 +879,7 @@ public class BasicProgressBarUI extends ProgressBarUI {
                                                       progressString);
 
         if (progressBar.getOrientation() == JProgressBar.HORIZONTAL) {
-            return new Point(x + Math.round(width/2 - stringWidth/2),
+            return new Point(x + (int)Math.round(width/2.0 - stringWidth/2.0),
                              y + ((height +
                                  fontSizer.getAscent() -
                                  fontSizer.getLeading() -
@@ -882,7 +887,7 @@ public class BasicProgressBarUI extends ProgressBarUI {
         } else { // VERTICAL
             return new Point(x + ((width - fontSizer.getAscent() +
                     fontSizer.getLeading() + fontSizer.getDescent()) / 2),
-                    y + Math.round(height/2 - stringWidth/2));
+                    y + (int)Math.round(height/2.0 - stringWidth/2.0));
         }
     }
 
@@ -1288,6 +1293,11 @@ public class BasicProgressBarUI extends ProgressBarUI {
      * Instantiate it only within subclasses of {@code BasicProgressBarUI}.
      */
     public class ChangeHandler implements ChangeListener {
+        /**
+         * Constructs a {@code ChangeHandler}.
+         */
+        public ChangeHandler() {}
+
         // NOTE: This class exists only for backward compatibility. All
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this

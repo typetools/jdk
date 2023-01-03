@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,13 @@
  * @summary Test to make sure that there is no difference in the output
  * when specifying packages on the command line and specifying individual
  * classes.
- * @author jamieh
- * @library ../lib
+ * @library ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build JavadocTester
+ * @build javadoc.tester.*
  * @run main TestCmndLineClass
  */
+
+import javadoc.tester.JavadocTester;
 
 public class TestCmndLineClass extends JavadocTester {
 
@@ -42,7 +43,7 @@ public class TestCmndLineClass extends JavadocTester {
     }
 
     @Test
-    void test() {
+    public void test() {
         String outdir1 = "out-1";
         String outdir2 = "out-2";
 

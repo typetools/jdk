@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,19 +28,15 @@
 #include "gc/shared/cardTable.hpp"
 #include "gc/shared/cardTableBarrierSet.hpp"
 #include "gc/shared/cardTableBarrierSetAssembler.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "interpreter/interp_masm.hpp"
 
 #define __ masm->
-
 
 void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
 
   BarrierSet* bs = BarrierSet::barrier_set();
   assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
-
-  CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-  CardTable* ct = ctbs->card_table();
-  assert(sizeof(*ct->byte_map_base()) == sizeof(jbyte), "adjust this code");
 
   __ lsr(obj, obj, CardTable::card_shift);
 
@@ -50,42 +46,35 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 
   if (UseCondCardMark) {
     Label L_already_dirty;
-    __ membar(Assembler::StoreLoad);
     __ ldrb(rscratch2,  Address(obj, rscratch1));
     __ cbz(rscratch2, L_already_dirty);
     __ strb(zr, Address(obj, rscratch1));
     __ bind(L_already_dirty);
   } else {
-    if (ct->scanned_concurrently()) {
-      __ membar(Assembler::StoreStore);
-    }
     __ strb(zr, Address(obj, rscratch1));
   }
 }
 
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
-                                                                    Register start, Register end, Register scratch, RegSet saved_regs) {
-  BarrierSet* bs = BarrierSet::barrier_set();
-  CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-  CardTable* ct = ctbs->card_table();
-  assert(sizeof(*ct->byte_map_base()) == sizeof(jbyte), "adjust this code");
+                                                                    Register start, Register count, Register scratch, RegSet saved_regs) {
+  Label L_loop, L_done;
+  const Register end = count;
 
-  Label L_loop;
+  __ cbz(count, L_done); // zero count - nothing to do
 
+  __ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+  __ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
   __ lsr(start, start, CardTable::card_shift);
   __ lsr(end, end, CardTable::card_shift);
-  __ sub(end, end, start); // number of bytes to copy
+  __ sub(count, end, start); // number of bytes to copy
 
-  const Register count = end; // 'end' register contains bytes count now
   __ load_byte_map_base(scratch);
   __ add(start, start, scratch);
-  if (ct->scanned_concurrently()) {
-    __ membar(__ StoreStore);
-  }
   __ bind(L_loop);
   __ strb(zr, Address(start, count));
   __ subs(count, count, 1);
   __ br(Assembler::GE, L_loop);
+  __ bind(L_done);
 }
 
 void CardTableBarrierSetAssembler::oop_store_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,

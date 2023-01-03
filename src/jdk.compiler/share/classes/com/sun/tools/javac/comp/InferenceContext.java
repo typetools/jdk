@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,8 +30,10 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.ArrayType;
@@ -49,7 +51,6 @@ import com.sun.tools.javac.comp.Infer.InferenceException;
 import com.sun.tools.javac.comp.Infer.InferenceStep;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
-import com.sun.tools.javac.util.Filter;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Warner;
@@ -146,11 +147,11 @@ public class InferenceContext {
 
     /* Returns the corresponding inference variables.
      */
-    private List<Type> filterVars(Filter<UndetVar> fu) {
+    private List<Type> filterVars(Predicate<UndetVar> fu) {
         ListBuffer<Type> res = new ListBuffer<>();
         for (Type t : undetvars) {
             UndetVar uv = (UndetVar)t;
-            if (fu.accepts(uv)) {
+            if (fu.test(uv)) {
                 res.append(uv.qtype);
             }
         }
@@ -366,9 +367,11 @@ public class InferenceContext {
         for (Type t : minContext.inferencevars) {
             //add listener that forwards notifications to original context
             minContext.addFreeTypeListener(List.of(t), (inferenceContext) -> {
-                ((UndetVar)asUndetVar(t)).setInst(inferenceContext.asInstType(t));
-                infer.doIncorporation(inferenceContext, warn);
-                solve(List.from(rv.minMap.get(t)), warn);
+                Type instType = inferenceContext.asInstType(t);
+                for (Type eq : rv.minMap.get(t)) {
+                    ((UndetVar)asUndetVar(eq)).setInst(instType);
+                }
+                infer.doIncorporation(this, warn);
                 notifyChange();
             });
         }
@@ -385,9 +388,9 @@ public class InferenceContext {
 
     class ReachabilityVisitor extends Types.UnaryVisitor<Void> {
 
-        Set<Type> equiv = new HashSet<>();
-        Set<Type> min = new HashSet<>();
-        Map<Type, Set<Type>> minMap = new HashMap<>();
+        Set<Type> equiv = new LinkedHashSet<>();
+        Set<Type> min = new LinkedHashSet<>();
+        Map<Type, Set<Type>> minMap = new LinkedHashMap<>();
 
         void scan(List<Type> roots) {
             roots.stream().forEach(this::visit);
@@ -401,7 +404,7 @@ public class InferenceContext {
         @Override
         public Void visitUndetVar(UndetVar t, Void _unused) {
             if (min.add(t.qtype)) {
-                Set<Type> deps = minMap.getOrDefault(t.qtype, new HashSet<>(Collections.singleton(t.qtype)));
+                Set<Type> deps = minMap.getOrDefault(t.qtype, new LinkedHashSet<>(Collections.singleton(t.qtype)));
                 for (InferenceBound boundKind : InferenceBound.values()) {
                     for (Type b : t.getBounds(boundKind)) {
                         Type undet = asUndetVar(b);

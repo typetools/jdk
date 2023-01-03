@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
  * questions.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
@@ -44,15 +45,6 @@ static int isLetter(char c) {
     return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z'));
 }
 
-char pathSeparator() {
-    return ';';
-}
-
-/* filename are case insensitive on windows */
-int filenameStrcmp(const char* s1, const char* s2) {
-    return strcasecmp(s1, s2);
-}
-
 char* basePath(const char* path) {
     char* pos = strchr(path, slash);
     char* last = NULL;
@@ -66,6 +58,10 @@ char* basePath(const char* path) {
     } else {
         int len = (int)(last - path);
         char* str = (char*)malloc(len+1);
+        if (str == NULL) {
+            fprintf(stderr, "OOM error in native tmp buffer allocation");
+            return NULL;
+        }
         if (len > 0) {
             memcpy(str, path, len);
         }
@@ -135,6 +131,10 @@ static char* normalizePath(const char* path, int len, int off) {
     if (off < 3) off = 0;       /* Avoid fencepost cases with UNC pathnames */
 
     sb = (char*)malloc(len+1);
+    if (sb == NULL) {
+        fprintf(stderr, "OOM error in native tmp buffer allocation");
+        return NULL;
+    }
     sbLen = 0;
 
     if (off == 0) {
@@ -261,11 +261,19 @@ char* resolve(const char* parent, const char* child) {
 
     if (child[childStart] == slash) {
         theChars = (char*)malloc(len+1);
+        if (theChars == NULL) {
+            fprintf(stderr, "OOM error in native tmp buffer allocation");
+            return NULL;
+        }
         memcpy(theChars, parent, parentEnd);
         memcpy(theChars+parentEnd, child+childStart, (cn-childStart));
         theChars[len] = '\0';
     } else {
         theChars = (char*)malloc(len+2);
+        if (theChars == NULL) {
+            fprintf(stderr, "OOM error in native tmp buffer allocation");
+            return NULL;
+        }
         memcpy(theChars, parent, parentEnd);
         theChars[parentEnd] = slash;
         memcpy(theChars+parentEnd+1, child+childStart, (cn-childStart));
@@ -320,10 +328,12 @@ char* fromURIPath(const char* path) {
         return (char*)path;
     } else {
         char* p = (char*)malloc(len+1);
-        if (p != NULL) {
-            memcpy(p, path+start, len);
-            p[len] = '\0';
+        if (p == NULL) {
+            fprintf(stderr, "OOM error in native tmp buffer allocation");
+            return NULL;
         }
+        memcpy(p, path+start, len);
+        p[len] = '\0';
         return p;
     }
 }

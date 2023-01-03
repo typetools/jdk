@@ -843,7 +843,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -882,11 +882,10 @@ public class DefaultEditorKit extends EditorKit {
                         isPrintableMask = ((SunToolkit)tk).isPrintableCharacterModifiersMask(mod);
                     }
 
-                    if (isPrintableMask) {
-                        char c = content.charAt(0);
-                        if ((c >= 0x20) && (c != 0x7F)) {
-                            target.replaceSelection(content);
-                        }
+                    char c = content.charAt(0);
+                    if ((isPrintableMask && (c >= 0x20) && (c != 0x7F)) ||
+                        (!isPrintableMask && (c >= 0x200C) && (c <= 0x200D))) {
+                        target.replaceSelection(content);
                     }
                 }
             }
@@ -903,7 +902,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -952,7 +951,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -995,7 +994,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -1277,7 +1276,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -1314,7 +1313,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -1352,7 +1351,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *
@@ -1388,7 +1387,7 @@ public class DefaultEditorKit extends EditorKit {
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      *

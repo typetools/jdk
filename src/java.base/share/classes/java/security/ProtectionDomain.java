@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
-import jdk.internal.misc.JavaSecurityAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaSecurityAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.security.action.GetPropertyAction;
 import sun.security.provider.PolicyFile;
 import sun.security.util.Debug;
@@ -79,6 +79,7 @@ public @UsesObjectEquals class ProtectionDomain {
         private JavaSecurityAccessImpl() {
         }
 
+        @SuppressWarnings("removal")
         @Override
         public <T> T doIntersectionPrivilege(
                 PrivilegedAction<T> action,
@@ -94,6 +95,7 @@ public @UsesObjectEquals class ProtectionDomain {
             );
         }
 
+        @SuppressWarnings("removal")
         @Override
         public <T> T doIntersectionPrivilege(
                 PrivilegedAction<T> action,
@@ -103,10 +105,11 @@ public @UsesObjectEquals class ProtectionDomain {
         }
 
         @Override
-        public ProtectionDomain[] getProtectDomains(AccessControlContext context) {
+        public ProtectionDomain[] getProtectDomains(@SuppressWarnings("removal") AccessControlContext context) {
             return context.getContext();
         }
 
+        @SuppressWarnings("removal")
         private static AccessControlContext getCombinedACC(
             AccessControlContext context, AccessControlContext stack) {
             AccessControlContext acc =
@@ -316,6 +319,7 @@ public @UsesObjectEquals class ProtectionDomain {
      *
      * @return true if {@code perm} is implied by this ProtectionDomain.
      */
+    @SuppressWarnings("removal")
     public boolean implies(Permission perm) {
 
         if (hasAllPerm) {
@@ -370,6 +374,7 @@ public @UsesObjectEquals class ProtectionDomain {
         boolean p2Calculated = false;
 
         if (!staticPermissions) {
+            @SuppressWarnings("removal")
             Policy policy = Policy.getPolicyNoCheck();
             if (policy instanceof PolicyFile) {
                 // The PolicyFile implementation supports compatibility
@@ -401,11 +406,6 @@ public @UsesObjectEquals class ProtectionDomain {
         return false;
     }
 
-    // called by the VM -- do not remove
-    boolean impliesCreateAccessControlContext() {
-        return implies(SecurityConstants.CREATE_ACC_PERMISSION);
-    }
-
     /**
      * Convert a ProtectionDomain to a String.
      */
@@ -428,6 +428,7 @@ public @UsesObjectEquals class ProtectionDomain {
 
         // Check if policy is set; we don't want to load
         // the policy prematurely here
+        @SuppressWarnings("removal")
         PermissionCollection pc = Policy.isSet() && seeAllp() ?
                                       mergePermissions():
                                       getPermissions();
@@ -461,6 +462,7 @@ public @UsesObjectEquals class ProtectionDomain {
      *          debug is null,
      *          caller has Policy.getPolicy permission
      */
+    @SuppressWarnings("removal")
     private static boolean seeAllp() {
         SecurityManager sm = System.getSecurityManager();
 
@@ -490,6 +492,7 @@ public @UsesObjectEquals class ProtectionDomain {
         if (staticPermissions)
             return permissions;
 
+        @SuppressWarnings("removal")
         PermissionCollection perms =
             java.security.AccessController.doPrivileged
             (new java.security.PrivilegedAction<>() {
@@ -578,6 +581,6 @@ public @UsesObjectEquals class ProtectionDomain {
     /**
      * Used for storing ProtectionDomains as keys in a Map.
      */
-    final class Key {}
+    static final class Key {}
 
 }

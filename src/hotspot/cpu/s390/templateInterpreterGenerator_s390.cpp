@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016, 2018, SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "classfile/javaClasses.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "interpreter/abstractInterpreter.hpp"
 #include "interpreter/bytecodeHistogram.hpp"
@@ -34,12 +35,14 @@
 #include "interpreter/templateInterpreterGenerator.hpp"
 #include "interpreter/templateTable.hpp"
 #include "oops/arrayOop.hpp"
+#include "oops/methodData.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/arguments.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.inline.hpp"
+#include "runtime/jniHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "runtime/synchronizer.hpp"
@@ -88,8 +91,8 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
   //
   // On entry:
   //   Z_ARG1  - intptr_t*       Address of java argument list in memory.
-  //   Z_state - cppInterpreter* Address of interpreter state for
-  //                               this method
+  //   Z_state - zeroInterpreter* Address of interpreter state for
+  //                              this method
   //   Z_method
   //
   // On exit (just before return instruction):
@@ -502,8 +505,7 @@ address TemplateInterpreterGenerator::generate_Reference_get_entry(void) {
   Label     slow_path;
   address   entry = __ pc();
 
-  const int referent_offset = java_lang_ref_Reference::referent_offset;
-  guarantee(referent_offset > 0, "referent offset not initialized");
+  const int referent_offset = java_lang_ref_Reference::referent_offset();
 
   BLOCK_COMMENT("Reference_get {");
 
@@ -724,7 +726,7 @@ address TemplateInterpreterGenerator::generate_safept_entry_for (TosState state,
 //
 // Z_ARG2: method (see generate_fixed_frame())
 //
-void TemplateInterpreterGenerator::generate_counter_incr(Label* overflow, Label* profile_method, Label* profile_method_continue) {
+void TemplateInterpreterGenerator::generate_counter_incr(Label* overflow) {
   Label done;
   Register method = Z_ARG2; // Generate_fixed_frame() copies Z_method into Z_ARG2.
   Register m_counters = Z_ARG4;
@@ -733,68 +735,35 @@ void TemplateInterpreterGenerator::generate_counter_incr(Label* overflow, Label*
 
   // Note: In tiered we increment either counters in method or in MDO depending
   // if we are profiling or not.
-  if (TieredCompilation) {
-    int increment = InvocationCounter::count_increment;
-    if (ProfileInterpreter) {
-      NearLabel no_mdo;
-      Register mdo = m_counters;
-      // Are we profiling?
-      __ load_and_test_long(mdo, method2_(method, method_data));
-      __ branch_optimized(Assembler::bcondZero, no_mdo);
-      // Increment counter in the MDO.
-      const Address mdo_invocation_counter(mdo, MethodData::invocation_counter_offset() +
-                                           InvocationCounter::counter_offset());
-      const Address mask(mdo, MethodData::invoke_mask_offset());
-      __ increment_mask_and_jump(mdo_invocation_counter, increment, mask,
-                                 Z_R1_scratch, false, Assembler::bcondZero,
-                                 overflow);
-      __ z_bru(done);
-      __ bind(no_mdo);
-    }
-
-    // Increment counter in MethodCounters.
-    const Address invocation_counter(m_counters,
-                                     MethodCounters::invocation_counter_offset() +
-                                     InvocationCounter::counter_offset());
-    // Get address of MethodCounters object.
-    __ get_method_counters(method, m_counters, done);
-    const Address mask(m_counters, MethodCounters::invoke_mask_offset());
-    __ increment_mask_and_jump(invocation_counter,
-                               increment, mask,
+  int increment = InvocationCounter::count_increment;
+  if (ProfileInterpreter) {
+    NearLabel no_mdo;
+    Register mdo = m_counters;
+    // Are we profiling?
+    __ load_and_test_long(mdo, method2_(method, method_data));
+    __ branch_optimized(Assembler::bcondZero, no_mdo);
+    // Increment counter in the MDO.
+    const Address mdo_invocation_counter(mdo, MethodData::invocation_counter_offset() +
+                                         InvocationCounter::counter_offset());
+    const Address mask(mdo, MethodData::invoke_mask_offset());
+    __ increment_mask_and_jump(mdo_invocation_counter, increment, mask,
                                Z_R1_scratch, false, Assembler::bcondZero,
                                overflow);
-  } else {
-    Register counter_sum = Z_ARG3; // The result of this piece of code.
-    Register tmp         = Z_R1_scratch;
-#ifdef ASSERT
-    {
-      NearLabel ok;
-      __ get_method(tmp);
-      __ compare64_and_branch(method, tmp, Assembler::bcondEqual, ok);
-      __ z_illtrap(0x66);
-      __ bind(ok);
-    }
-#endif
-
-    // Get address of MethodCounters object.
-    __ get_method_counters(method, m_counters, done);
-    // Update standard invocation counters.
-    __ increment_invocation_counter(m_counters, counter_sum);
-    if (ProfileInterpreter) {
-      __ add2mem_32(Address(m_counters, MethodCounters::interpreter_invocation_counter_offset()), 1, tmp);
-      if (profile_method != NULL) {
-        const Address profile_limit(m_counters, MethodCounters::interpreter_profile_limit_offset());
-        __ z_cl(counter_sum, profile_limit);
-        __ branch_optimized(Assembler::bcondLow, *profile_method_continue);
-        // If no method data exists, go to profile_method.
-        __ test_method_data_pointer(tmp, *profile_method);
-      }
-    }
-
-    const Address invocation_limit(m_counters, MethodCounters::interpreter_invocation_limit_offset());
-    __ z_cl(counter_sum, invocation_limit);
-    __ branch_optimized(Assembler::bcondNotLow, *overflow);
+    __ z_bru(done);
+    __ bind(no_mdo);
   }
+
+  // Increment counter in MethodCounters.
+  const Address invocation_counter(m_counters,
+                                   MethodCounters::invocation_counter_offset() +
+                                   InvocationCounter::counter_offset());
+  // Get address of MethodCounters object.
+  __ get_method_counters(method, m_counters, done);
+  const Address mask(m_counters, MethodCounters::invoke_mask_offset());
+  __ increment_mask_and_jump(invocation_counter,
+                             increment, mask,
+                             Z_R1_scratch, false, Assembler::bcondZero,
+                             overflow);
 
   __ bind(done);
 
@@ -821,7 +790,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(Register frame_
   const int page_size = os::vm_page_size();
   NearLabel after_frame_check;
 
-  BLOCK_COMMENT("counter_overflow {");
+  BLOCK_COMMENT("stack_overflow_check {");
 
   assert_different_registers(frame_size, tmp1);
 
@@ -856,7 +825,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(Register frame_
 
   // Compute the beginning of the protected zone minus the requested frame size.
   __ z_sgr(tmp1, tmp2);
-  __ add2reg(tmp1, JavaThread::stack_guard_zone_size());
+  __ add2reg(tmp1, StackOverflow::stack_guard_zone_size());
 
   // Add in the size of the frame (which is the same as subtracting it from the
   // SP, which would take another register.
@@ -883,7 +852,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(Register frame_
   // If you get to here, then there is enough stack space.
   __ bind(after_frame_check);
 
-  BLOCK_COMMENT("} counter_overflow");
+  BLOCK_COMMENT("} stack_overflow_check");
 }
 
 // Allocate monitor and lock method (asm interpreter).
@@ -927,7 +896,9 @@ void TemplateInterpreterGenerator::lock_method(void) {
     __ bind(static_method);
 
     // Lock the java mirror.
-    __ load_mirror(object, method);
+    // Load mirror from interpreter frame.
+    __ z_lg(object, _z_ijava_state_neg(mirror), Z_fp);
+
 #ifdef ASSERT
     {
       NearLabel L;
@@ -991,20 +962,20 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   // Allocate space for locals other than the parameters, the
   // interpreter state, monitors, and the expression stack.
 
-  const Register local_count     = Z_ARG5;
-  const Register fp              = Z_tmp_2;
+  const Register local_count  = Z_ARG5;
+  const Register fp           = Z_tmp_2;
+  const Register const_method = Z_ARG1;
 
   BLOCK_COMMENT("generate_fixed_frame {");
-
   {
   // local registers
   const Register top_frame_size  = Z_ARG2;
   const Register sp_after_resize = Z_ARG3;
   const Register max_stack       = Z_ARG4;
 
-  // local_count = method->constMethod->max_locals();
-  __ z_lg(Z_R1_scratch, Address(Z_method, Method::const_offset()));
-  __ z_llgh(local_count, Address(Z_R1_scratch, ConstMethod::size_of_locals_offset()));
+  __ z_lg(const_method, Address(Z_method, Method::const_offset()));
+  __ z_llgh(max_stack, Address(const_method, ConstMethod::size_of_parameters_offset()));
+  __ z_sllg(Z_locals /*parameter_count bytes*/, max_stack /*parameter_count*/, LogBytesPerWord);
 
   if (native_call) {
     // If we're calling a native method, we replace max_stack (which is
@@ -1024,9 +995,6 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
     // area, so we need to allocate at least that much even though we're
     // going to throw it away.
     //
-
-    __ z_lg(Z_R1_scratch, Address(Z_method, Method::const_offset()));
-    __ z_llgh(max_stack,  Address(Z_R1_scratch, ConstMethod::size_of_parameters_offset()));
     __ add2reg(max_stack, 2);
 
     NearLabel passing_args_on_stack;
@@ -1042,14 +1010,14 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
     __ bind(passing_args_on_stack);
   } else {
     // !native_call
-    __ z_lg(max_stack, method_(const));
+    // local_count = method->constMethod->max_locals();
+    __ z_llgh(local_count, Address(const_method, ConstMethod::size_of_locals_offset()));
 
     // Calculate number of non-parameter locals (in slots):
-    __ z_lg(Z_R1_scratch, Address(Z_method, Method::const_offset()));
-    __ z_sh(local_count, Address(Z_R1_scratch, ConstMethod::size_of_parameters_offset()));
+    __ z_sgr(local_count, max_stack);
 
     // max_stack = method->max_stack();
-    __ z_llgh(max_stack, Address(max_stack, ConstMethod::max_stack_offset()));
+    __ z_llgh(max_stack, Address(const_method, ConstMethod::max_stack_offset()));
     // max_stack in bytes
     __ z_sllg(max_stack, max_stack, LogBytesPerWord);
   }
@@ -1089,14 +1057,15 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   // delta = PARENT_IJAVA_FRAME_ABI + (locals_count - params_count)
 
   __ add2reg(sp_after_resize, (Interpreter::stackElementSize) - (frame::z_parent_ijava_frame_abi_size), Z_esp);
-  __ z_sllg(Z_R0_scratch, local_count, LogBytesPerWord); // Params have already been subtracted from local_count.
-  __ z_slgr(sp_after_resize, Z_R0_scratch);
+  if (!native_call) {
+    __ z_sllg(Z_R0_scratch, local_count, LogBytesPerWord); // Params have already been subtracted from local_count.
+    __ z_slgr(sp_after_resize, Z_R0_scratch);
+  }
 
   // top_frame_size = TOP_IJAVA_FRAME_ABI + max_stack + size of interpreter state
   __ add2reg(top_frame_size,
              frame::z_top_ijava_frame_abi_size +
-             frame::z_ijava_state_size +
-             frame::interpreter_frame_monitor_size() * wordSize,
+             frame::z_ijava_state_size,
              max_stack);
 
   if (!native_call) {
@@ -1104,7 +1073,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
     // Native calls don't need the stack size check since they have no
     // expression stack and the arguments are already on the stack and
     // we only add a handful of words to the stack.
-    Register frame_size = max_stack; // Reuse the regiser for max_stack.
+    Register frame_size = max_stack; // Reuse the register for max_stack.
     __ z_lgr(frame_size, Z_SP);
     __ z_sgr(frame_size, sp_after_resize);
     __ z_agr(frame_size, top_frame_size);
@@ -1136,13 +1105,12 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
 #endif
 
   // Save sender SP from F1 (i.e. before it was potentially modified by an
-  // adapter) into F0's interpreter state. We us it as well to revert
+  // adapter) into F0's interpreter state. We use it as well to revert
   // resizing the frame above.
   __ z_stg(Z_R10, _z_ijava_state_neg(sender_sp), fp);
 
-  // Load cp cache and save it at the and of this block.
-  __ z_lg(Z_R1_scratch, Address(Z_method,    Method::const_offset()));
-  __ z_lg(Z_R1_scratch, Address(Z_R1_scratch, ConstMethod::constants_offset()));
+  // Load cp cache and save it at the end of this block.
+  __ z_lg(Z_R1_scratch, Address(const_method, ConstMethod::constants_offset()));
   __ z_lg(Z_R1_scratch, Address(Z_R1_scratch, ConstantPool::cache_offset_in_bytes()));
 
   // z_ijava_state->method = method;
@@ -1152,10 +1120,6 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   // parameters on top of caller's expression stack.
   // Tos points past last Java argument.
 
-  __ z_lg(Z_locals, Address(Z_method, Method::const_offset()));
-  __ z_llgh(Z_locals /*parameter_count words*/,
-            Address(Z_locals, ConstMethod::size_of_parameters_offset()));
-  __ z_sllg(Z_locals /*parameter_count bytes*/, Z_locals /*parameter_count*/, LogBytesPerWord);
   __ z_agr(Z_locals, Z_esp);
   // z_ijava_state->locals - i*BytesPerWord points to i-th Java local (i starts at 0)
   // z_ijava_state->locals = Z_esp + parameter_count bytes
@@ -1183,8 +1147,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   if (native_call) {
     __ clear_reg(Z_bcp); // Must initialize. Will get written into frame where GC reads it.
   } else {
-    __ z_lg(Z_bcp, method_(const));
-    __ add2reg(Z_bcp, in_bytes(ConstMethod::codes_offset()));
+    __ add2reg(Z_bcp, in_bytes(ConstMethod::codes_offset()), const_method);
   }
   __ z_stg(Z_bcp, _z_ijava_state_neg(bcp), fp);
 
@@ -1202,62 +1165,21 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   __ z_stg(Z_R1_scratch, _z_ijava_state_neg(cpoolCache), fp);
 
   // Get mirror and store it in the frame as GC root for this Method*.
-  __ load_mirror(Z_R1_scratch, Z_method);
+  __ load_mirror_from_const_method(Z_R1_scratch, const_method);
   __ z_stg(Z_R1_scratch, _z_ijava_state_neg(mirror), fp);
 
   BLOCK_COMMENT("} generate_fixed_frame: initialize interpreter state");
 
   //=============================================================================
   if (!native_call) {
-    // Fill locals with 0x0s.
-    NearLabel locals_zeroed;
-    NearLabel doXC;
-
     // Local_count is already num_locals_slots - num_param_slots.
-    __ compare64_and_branch(local_count, (intptr_t)0L, Assembler::bcondNotHigh, locals_zeroed);
-
-    // Advance local_addr to point behind locals (creates positive incr. in loop).
-    __ z_lg(Z_R1_scratch, Address(Z_method, Method::const_offset()));
-    __ z_llgh(Z_R0_scratch, Address(Z_R1_scratch, ConstMethod::size_of_locals_offset()));
-    __ add2reg(Z_R0_scratch, -1);
-
-    __ z_lgr(local_addr/*locals*/, Z_locals);
+    // Start of locals: local_addr = Z_locals - locals size + 1 slot
+    __ z_llgh(Z_R0_scratch, Address(const_method, ConstMethod::size_of_locals_offset()));
+    __ add2reg(local_addr, BytesPerWord, Z_locals);
     __ z_sllg(Z_R0_scratch, Z_R0_scratch, LogBytesPerWord);
-    __ z_sllg(local_count, local_count, LogBytesPerWord); // Local_count are non param locals.
     __ z_sgr(local_addr, Z_R0_scratch);
 
-    if (VM_Version::has_Prefetch()) {
-      __ z_pfd(0x02, 0, Z_R0, local_addr);
-      __ z_pfd(0x02, 256, Z_R0, local_addr);
-    }
-
-    // Can't optimise for Z10 using "compare and branch" (immediate value is too big).
-    __ z_cghi(local_count, 256);
-    __ z_brnh(doXC);
-
-    // MVCLE: Initialize if quite a lot locals.
-    //  __ bind(doMVCLE);
-    __ z_lgr(Z_R0_scratch, local_addr);
-    __ z_lgr(Z_R1_scratch, local_count);
-    __ clear_reg(Z_ARG2);        // Src len of MVCLE is zero.
-
-    __ MacroAssembler::move_long_ext(Z_R0_scratch, Z_ARG1, 0);
-    __ z_bru(locals_zeroed);
-
-    Label  XC_template;
-    __ bind(XC_template);
-    __ z_xc(0, 0, local_addr, 0, local_addr);
-
-    __ bind(doXC);
-    __ z_bctgr(local_count, Z_R0);                  // Get #bytes-1 for EXECUTE.
-    if (VM_Version::has_ExecuteExtensions()) {
-      __ z_exrl(local_count, XC_template);          // Execute XC with variable length.
-    } else {
-      __ z_larl(Z_R1_scratch, XC_template);
-      __ z_ex(local_count, 0, Z_R0, Z_R1_scratch);  // Execute XC with variable length.
-    }
-
-    __ bind(locals_zeroed);
+    __ Clear_Array(local_count, local_addr, Z_ARG2);
   }
 
   }
@@ -1449,7 +1371,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // Increment invocation count and check for overflow.
   NearLabel invocation_counter_overflow;
   if (inc_counter) {
-    generate_counter_incr(&invocation_counter_overflow, NULL, NULL);
+    generate_counter_incr(&invocation_counter_overflow);
   }
 
   Label continue_after_compile;
@@ -1530,8 +1452,8 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     Label method_is_not_static;
     __ testbit(method2_(Rmethod, access_flags), JVM_ACC_STATIC_BIT);
     __ z_bfalse(method_is_not_static);
-    // Get mirror.
-    __ load_mirror(Z_R1, Rmethod);
+    // Load mirror from interpreter frame.
+    __ z_lg(Z_R1, _z_ijava_state_neg(mirror), Z_fp);
     // z_ijava_state.oop_temp = pool_holder->klass_part()->java_mirror();
     __ z_stg(Z_R1, oop_tmp_offset, Z_fp);
     // Pass handle to mirror as 2nd argument to JNI method.
@@ -1598,15 +1520,8 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // synchronization is progress, and escapes.
 
   __ set_thread_state(_thread_in_native_trans);
-  if (UseMembar) {
-    __ z_fence();
-  } else {
-    // Write serialization page so VM thread can do a pseudo remote
-    // membar. We use the current thread pointer to calculate a thread
-    // specific offset to write to within the page. This minimizes bus
-    // traffic due to cache line collision.
-    __ serialize_memory(Z_thread, Z_R1, Z_R0);
-  }
+  __ z_fence();
+
   // Now before we return to java we must look for a current safepoint
   // (a new safepoint can not start since we entered native_trans).
   // We must check here because a current safepoint could be modifying
@@ -1828,14 +1743,9 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   // Note: checking for negative value instead of overflow so we have a 'sticky'
   // overflow test (may be of importance as soon as we have true MT/MP).
   NearLabel invocation_counter_overflow;
-  NearLabel profile_method;
-  NearLabel profile_method_continue;
   NearLabel Lcontinue;
   if (inc_counter) {
-    generate_counter_incr(&invocation_counter_overflow, &profile_method, &profile_method_continue);
-    if (ProfileInterpreter) {
-      __ bind(profile_method_continue);
-    }
+    generate_counter_incr(&invocation_counter_overflow);
   }
   __ bind(Lcontinue);
 
@@ -1880,15 +1790,6 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   // Invocation counter overflow.
   if (inc_counter) {
-    if (ProfileInterpreter) {
-      // We have decided to profile this method in the interpreter.
-      __ bind(profile_method);
-
-      __ call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::profile_method));
-      __ set_method_data_pointer_for_bcp();
-      __ z_bru(profile_method_continue);
-    }
-
     // Handle invocation counter overflow.
     __ bind(invocation_counter_overflow);
     generate_counter_overflow(Lcontinue);
@@ -2119,13 +2020,11 @@ void TemplateInterpreterGenerator::bang_stack_shadow_pages(bool native_call) {
   // Bang each page in the shadow zone. We can't assume it's been done for
   // an interpreter frame with greater than a page of locals, so each page
   // needs to be checked. Only true for non-native. For native, we only bang the last page.
-  if (UseStackBanging) {
-    const int page_size      = os::vm_page_size();
-    const int n_shadow_pages = (int)(JavaThread::stack_shadow_zone_size()/page_size);
-    const int start_page_num = native_call ? n_shadow_pages : 1;
-    for (int pages = start_page_num; pages <= n_shadow_pages; pages++) {
-      __ bang_stack_with_offset(pages*page_size);
-    }
+  const int page_size      = os::vm_page_size();
+  const int n_shadow_pages = (int)(StackOverflow::stack_shadow_zone_size()/page_size);
+  const int start_page_num = native_call ? n_shadow_pages : 1;
+  for (int pages = start_page_num; pages <= n_shadow_pages; pages++) {
+    __ bang_stack_with_offset(pages*page_size);
   }
 }
 

@@ -1,8 +1,8 @@
 /*
  * @test /nodynamiccopyright/
- * @bug 8004832 8020556 8002154
+ * @bug 8004832 8020556 8002154 8200432 8177280
  * @summary Add new doclint package
- * @modules jdk.compiler/com.sun.tools.doclint
+ * @modules jdk.javadoc/jdk.javadoc.internal.doclint
  * @build DocLintTester
  * @run main DocLintTester -Xmsgs:-reference ReferenceTest.java
  * @run main DocLintTester -ref ReferenceTest.out ReferenceTest.java
@@ -59,9 +59,21 @@ public class ReferenceTest {
     /**
      * {@link java.util.List<String>}
      * {@link java.util.List<String>#equals}
+     * {@link not.Found<String>}
      * @see java.util.List<String>
      * @see java.util.List<String>#equals
+     * @see not.Found<String>
      */
     public void invalid_type_args() { }
+
+    /**
+     * {@link java.lang.String[]}
+     * {@link java.lang.String[]#equals}
+     * {@link not.Found[]}
+     * @see java.lang.String[]
+     * @see java.lang.String[]#equals
+     * @see not.Found[]
+     */
+    public void invalid_array_types() { }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,19 +24,18 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "code/codeBlob.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "memory/resourceArea.hpp"
 #include "prims/jniFastGetField.hpp"
 #include "prims/jvm_misc.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "runtime/safepoint.hpp"
 
 #define __ masm->
 
 #define BUFFER_SIZE 30*wordSize
-
-// Instead of issuing lfence for LoadLoad barrier, we create data dependency
-// between loads, which is more efficient than lfence.
 
 // Common register usage:
 // rax/xmm0: result
@@ -44,11 +43,10 @@
 // c_rarg1:    obj
 // c_rarg2:    jfield id
 
-static const Register rtmp          = r8;
-static const Register robj          = r9;
-static const Register rcounter      = r10;
-static const Register roffset       = r11;
-static const Register rcounter_addr = r11;
+static const Register rtmp     = rax; // r8 == c_rarg2 on Windows
+static const Register robj     = r9;
+static const Register roffset  = r10;
+static const Register rcounter = r11;
 
 // Warning: do not use rip relative addressing after the first counter load
 // since that may scratch r10!
@@ -77,11 +75,13 @@ address JNI_FastGetField::generate_fast_get_int_field0(BasicType type) {
   __ mov   (robj, c_rarg1);
   __ testb (rcounter, 1);
   __ jcc (Assembler::notZero, slow);
-  if (os::is_MP()) {
-    __ xorptr(robj, rcounter);
-    __ xorptr(robj, rcounter);                   // obj, since
-                                                // robj ^ rcounter ^ rcounter == robj
-                                                // robj is data dependent on rcounter.
+
+  if (JvmtiExport::can_post_field_access()) {
+    // Check to see if a field access watch has been set before we
+    // take the fast path.
+    assert_different_registers(rscratch1, robj, rcounter); // cmp32 clobbers rscratch1!
+    __ cmp32(ExternalAddress((address) JvmtiExport::get_field_access_count_addr()), 0);
+    __ jcc(Assembler::notZero, slow);
   }
 
   __ mov   (roffset, c_rarg2);
@@ -104,15 +104,7 @@ address JNI_FastGetField::generate_fast_get_int_field0(BasicType type) {
     default:        ShouldNotReachHere();
   }
 
-  if (os::is_MP()) {
-    __ lea(rcounter_addr, counter);
-    // ca is data dependent on rax.
-    __ xorptr(rcounter_addr, rax);
-    __ xorptr(rcounter_addr, rax);
-    __ cmpl (rcounter, Address(rcounter_addr, 0));
-  } else {
-    __ cmp32 (rcounter, counter);
-  }
+  __ cmp32 (rcounter, counter);
   __ jcc (Assembler::notEqual, slow);
 
   __ ret (0);
@@ -181,11 +173,12 @@ address JNI_FastGetField::generate_fast_get_float_field0(BasicType type) {
   __ mov   (robj, c_rarg1);
   __ testb (rcounter, 1);
   __ jcc (Assembler::notZero, slow);
-  if (os::is_MP()) {
-    __ xorptr(robj, rcounter);
-    __ xorptr(robj, rcounter);                   // obj, since
-                                                // robj ^ rcounter ^ rcounter == robj
-                                                // robj is data dependent on rcounter.
+
+  if (JvmtiExport::can_post_field_access()) {
+    // Check to see if a field access watch has been set before we
+    // take the fast path.
+    __ cmp32(ExternalAddress((address) JvmtiExport::get_field_access_count_addr()), 0);
+    __ jcc(Assembler::notZero, slow);
   }
 
   // Both robj and rtmp are clobbered by try_resolve_jobject_in_native.
@@ -203,17 +196,7 @@ address JNI_FastGetField::generate_fast_get_float_field0(BasicType type) {
     case T_DOUBLE: __ movdbl (xmm0, Address(robj, roffset, Address::times_1)); break;
     default:        ShouldNotReachHere();
   }
-
-  if (os::is_MP()) {
-    __ lea(rcounter_addr, counter);
-    __ movdq (rax, xmm0);
-    // counter address is data dependent on xmm0.
-    __ xorptr(rcounter_addr, rax);
-    __ xorptr(rcounter_addr, rax);
-    __ cmpl (rcounter, Address(rcounter_addr, 0));
-  } else {
-    __ cmp32 (rcounter, counter);
-  }
+  __ cmp32 (rcounter, counter);
   __ jcc (Assembler::notEqual, slow);
 
   __ ret (0);

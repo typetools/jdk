@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,12 +34,13 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
+import jdk.internal.vm.annotation.Stable;
 import sun.reflect.annotation.ExceptionProxy;
 import sun.reflect.annotation.TypeNotPresentExceptionProxy;
 import sun.reflect.generics.repository.MethodRepository;
@@ -77,6 +78,7 @@ import java.util.StringJoiner;
 @AnnotatedFor({"interning", "lock", "nullness"})
 @SuppressWarnings({"rawtypes"})
 public final class Method extends Executable {
+    @Stable
     private Class<?>            clazz;
     private int                 slot;
     // This is guaranteed to be interned by the VM in the 1.4
@@ -85,6 +87,7 @@ public final class Method extends Executable {
     private Class<?>            returnType;
     private Class<?>[]          parameterTypes;
     private Class<?>[]          exceptionTypes;
+    @Stable
     private int                 modifiers;
     // Generics and annotations support
     private transient String              signature;
@@ -124,9 +127,7 @@ public final class Method extends Executable {
     }
 
     /**
-     * Package-private constructor used by ReflectAccess to enable
-     * instantiation of these objects in Java code from the java.lang
-     * package via sun.reflect.LangReflectAccess.
+     * Package-private constructor
      */
     Method(Class<?> declaringClass,
            String name,
@@ -244,6 +245,7 @@ public final class Method extends Executable {
 
     /**
      * {@inheritDoc}
+     * @jls 8.4.3 Method Modifiers
      */
     @Override
     public int getModifiers() {
@@ -254,6 +256,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      * @throws GenericSignatureFormatError {@inheritDoc}
      * @since 1.5
+     * @jls 8.4.4 Generic Methods
      */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -281,7 +284,7 @@ public final class Method extends Executable {
      *
      * <p>If the return type is a parameterized type,
      * the {@code Type} object returned must accurately reflect
-     * the actual type parameters used in the source code.
+     * the actual type arguments used in the source code.
      *
      * <p>If the return type is a type variable or a parameterized type, it
      * is created. Otherwise, it is resolved.
@@ -291,11 +294,11 @@ public final class Method extends Executable {
      * @throws GenericSignatureFormatError
      *     if the generic method signature does not conform to the format
      *     specified in
-     *     <cite>The Java&trade; Virtual Machine Specification</cite>
+     *     <cite>The Java Virtual Machine Specification</cite>
      * @throws TypeNotPresentException if the underlying method's
-     *     return type refers to a non-existent type declaration
+     *     return type refers to a non-existent class or interface declaration
      * @throws MalformedParameterizedTypeException if the
-     *     underlying method's return typed refers to a parameterized
+     *     underlying method's return type refers to a parameterized
      *     type that cannot be instantiated for any reason
      * @since 1.5
      */
@@ -371,8 +374,7 @@ public final class Method extends Executable {
      */
     @Pure
     public boolean equals(@GuardSatisfied Method this, @GuardSatisfied @Nullable Object obj) {
-        if (obj != null && obj instanceof Method) {
-            Method other = (Method)obj;
+        if (obj instanceof Method other) {
             if ((getDeclaringClass() == other.getDeclaringClass())
                 && (getName() == other.getName())) {
                 if (!returnType.equals(other.getReturnType()))
@@ -418,8 +420,8 @@ public final class Method extends Executable {
      * @return a string describing this {@code Method}
      *
      * @jls 8.4.3 Method Modifiers
-     * @jls 9.4   Method Declarations
-     * @jls 9.6.1 Annotation Type Elements
+     * @jls 9.4 Method Declarations
+     * @jls 9.6.1 Annotation Interface Elements
      */
     @SideEffectFree
     public String toString(@GuardSatisfied Method this) {
@@ -438,24 +440,24 @@ public final class Method extends Executable {
 
     @Override
     String toShortString() {
-        StringBuilder sb = new StringBuilder("method ");
-        sb.append(getDeclaringClass().getTypeName()).append('.');
-        sb.append(getName());
-        sb.append('(');
-        StringJoiner sj = new StringJoiner(",");
+        return "method " + getDeclaringClass().getTypeName() +
+                '.' + toShortSignature();
+    }
+
+    String toShortSignature() {
+        StringJoiner sj = new StringJoiner(",", getName() + "(", ")");
         for (Class<?> parameterType : getParameterTypes()) {
             sj.add(parameterType.getTypeName());
         }
-        sb.append(sj);
-        sb.append(')');
-        return sb.toString();
+        return sj.toString();
     }
 
     /**
-     * Returns a string describing this {@code Method}, including
-     * type parameters.  The string is formatted as the method access
+     * Returns a string describing this {@code Method}, including type
+     * parameters.  The string is formatted as the method access
      * modifiers, if any, followed by an angle-bracketed
      * comma-separated list of the method's type parameters, if any,
+     * including informative bounds of the type parameters, if any,
      * followed by the method's generic return type, followed by a
      * space, followed by the class declaring the method, followed by
      * a period, followed by the method name, followed by a
@@ -489,8 +491,8 @@ public final class Method extends Executable {
      * @since 1.5
      *
      * @jls 8.4.3 Method Modifiers
-     * @jls 9.4   Method Declarations
-     * @jls 9.6.1 Annotation Type Elements
+     * @jls 9.4 Method Declarations
+     * @jls 9.6.1 Annotation Interface Elements
      */
     @Override
     public String toGenericString() {
@@ -521,7 +523,7 @@ public final class Method extends Executable {
      *
      * <p>If the underlying method is an instance method, it is invoked
      * using dynamic method lookup as documented in The Java Language
-     * Specification, section 15.12.4.4; in particular,
+     * Specification, section {@jls 15.12.4.4}; in particular,
      * overriding based on the runtime type of the target object may occur.
      *
      * <p>If the underlying method is static, the class that declared
@@ -542,10 +544,10 @@ public final class Method extends Executable {
      * this object on {@code obj} with parameters
      * {@code args}
      *
-     * @exception IllegalAccessException    if this {@code Method} object
+     * @throws    IllegalAccessException    if this {@code Method} object
      *              is enforcing Java language access control and the underlying
      *              method is inaccessible.
-     * @exception IllegalArgumentException  if the method is an
+     * @throws    IllegalArgumentException  if the method is an
      *              instance method and the specified object argument
      *              is not an instance of the class or interface
      *              declaring the underlying method (or of a subclass
@@ -555,11 +557,11 @@ public final class Method extends Executable {
      *              after possible unwrapping, a parameter value
      *              cannot be converted to the corresponding formal
      *              parameter type by a method invocation conversion.
-     * @exception InvocationTargetException if the underlying method
+     * @throws    InvocationTargetException if the underlying method
      *              throws an exception.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the method is an instance method.
-     * @exception ExceptionInInitializerError if the initialization
+     * @throws    ExceptionInInitializerError if the initialization
      * provoked by this method fails.
      */
     @CFComment({"lock/nullness: The method being invoked might be one that requires non-null",
@@ -570,7 +572,7 @@ public final class Method extends Executable {
     @Invoke
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public @Nullable Object invoke(Object obj, Object... args)
         throws IllegalAccessException, IllegalArgumentException,
            InvocationTargetException
@@ -589,12 +591,47 @@ public final class Method extends Executable {
     }
 
     /**
-     * Returns {@code true} if this method is a bridge
-     * method; returns {@code false} otherwise.
+     * {@return {@code true} if this method is a bridge
+     * method; returns {@code false} otherwise}
      *
-     * @return true if and only if this method is a bridge
-     * method as defined by the Java Language Specification.
+     * @apiNote
+     * A bridge method is a {@linkplain isSynthetic synthetic} method
+     * created by a Java compiler alongside a method originating from
+     * the source code. Bridge methods are used by Java compilers in
+     * various circumstances to span differences in Java programming
+     * language semantics and JVM semantics.
+     *
+     * <p>One example use of bridge methods is as a technique for a
+     * Java compiler to support <i>covariant overrides</i>, where a
+     * subclass overrides a method and gives the new method a more
+     * specific return type than the method in the superclass.  While
+     * the Java language specification forbids a class declaring two
+     * methods with the same parameter types but a different return
+     * type, the virtual machine does not. A common case where
+     * covariant overrides are used is for a {@link
+     * java.lang.Cloneable Cloneable} class where the {@link
+     * Object#clone() clone} method inherited from {@code
+     * java.lang.Object} is overridden and declared to return the type
+     * of the class. For example, {@code Object} declares
+     * <pre>{@code protected Object clone() throws CloneNotSupportedException {...}}</pre>
+     * and {@code EnumSet<E>} declares its language-level {@linkplain
+     * java.util.EnumSet#clone() covariant override}
+     * <pre>{@code public EnumSet<E> clone() {...}}</pre>
+     * If this technique was being used, the resulting class file for
+     * {@code EnumSet} would have two {@code clone} methods, one
+     * returning {@code EnumSet<E>} and the second a bridge method
+     * returning {@code Object}. The bridge method is a JVM-level
+     * override of {@code Object.clone()}.  The body of the {@code
+     * clone} bridge method calls its non-bridge counterpart and
+     * returns its result.
      * @since 1.5
+     *
+     * @jls 8.4.8.3 Requirements in Overriding and Hiding
+     * @jls 15.12.4.5 Create Frame, Synchronize, Transfer Control
+     * @jvms 4.6 Methods
+     * @see <a
+     * href="{@docRoot}/java.base/java/lang/reflect/package-summary.html#LanguageJvmModel">Java
+     * programming language and JVM modeling in core reflection</a>
      */
     @Pure
     public boolean isBridge(@GuardSatisfied Method this) {
@@ -604,6 +641,7 @@ public final class Method extends Executable {
     /**
      * {@inheritDoc}
      * @since 1.5
+     * @jls 8.4.1 Formal Parameters
      */
     @Pure
     @Override
@@ -614,6 +652,10 @@ public final class Method extends Executable {
     /**
      * {@inheritDoc}
      * @jls 13.1 The Form of a Binary
+     * @jvms 4.6 Methods
+     * @see <a
+     * href="{@docRoot}/java.base/java/lang/reflect/package-summary.html#LanguageJvmModel">Java
+     * programming language and JVM modeling in core reflection</a>
      * @since 1.5
      */
     @Pure
@@ -627,12 +669,12 @@ public final class Method extends Executable {
      * method; returns {@code false} otherwise.
      *
      * A default method is a public non-abstract instance method, that
-     * is, a non-static method with a body, declared in an interface
-     * type.
+     * is, a non-static method with a body, declared in an interface.
      *
      * @return true if and only if this method is a default
      * method as defined by the Java Language Specification.
      * @since 1.8
+     * @jls 9.4 Method Declarations
      */
     public boolean isDefault() {
         // Default methods are public non-abstract instance methods
@@ -690,6 +732,7 @@ public final class Method extends Executable {
      *     {@link Class} and no definition can be found for the
      *     default class value.
      * @since  1.5
+     * @jls 9.6.2 Defaults for Annotation Type Elements
      */
     public @Nullable Object getDefaultValue() {
         if  (annotationDefault == null)
@@ -702,8 +745,7 @@ public final class Method extends Executable {
                 getConstantPool(getDeclaringClass()),
             getDeclaringClass());
         if (result instanceof ExceptionProxy) {
-            if (result instanceof TypeNotPresentExceptionProxy) {
-                TypeNotPresentExceptionProxy proxy = (TypeNotPresentExceptionProxy)result;
+            if (result instanceof TypeNotPresentExceptionProxy proxy) {
                 throw new TypeNotPresentException(proxy.typeName(), proxy.getCause());
             }
             throw new AnnotationFormatError("Invalid default: " + this);
@@ -713,9 +755,10 @@ public final class Method extends Executable {
 
     /**
      * {@inheritDoc}
-     * @throws NullPointerException  {@inheritDoc}
+     * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
+    @Override
     public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
     }
@@ -724,6 +767,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      * @since 1.5
      */
+    @Override
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
     }
@@ -747,7 +791,7 @@ public final class Method extends Executable {
     }
 
     @Override
-    boolean handleParameterNumberMismatch(int resultLength, int numParameters) {
+    boolean handleParameterNumberMismatch(int resultLength, Class<?>[] parameterTypes) {
         throw new AnnotationFormatError("Parameter annotations don't match number of parameters");
     }
 }

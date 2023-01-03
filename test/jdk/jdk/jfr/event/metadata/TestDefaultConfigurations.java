@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -173,6 +171,13 @@ public class TestDefaultConfigurations {
         insertSetting(doc, EventNames.ActiveRecording, "threshold", "0 ns");
         insertSetting(doc, EventNames.JavaExceptionThrow, "threshold", "0 ns");
         insertSetting(doc, EventNames.JavaErrorThrow, "threshold", "0 ns");
+        insertSetting(doc, EventNames.SecurityProperty, "threshold", "0 ns");
+        insertSetting(doc, EventNames.TLSHandshake, "threshold", "0 ns");
+        insertSetting(doc, EventNames.X509Certificate, "threshold", "0 ns");
+        insertSetting(doc, EventNames.X509Validation, "threshold", "0 ns");
+        insertSetting(doc, EventNames.ProcessStart, "threshold", "0 ns");
+        insertSetting(doc, EventNames.Deserialization, "threshold", "0 ns");
+
         return doc;
     }
 

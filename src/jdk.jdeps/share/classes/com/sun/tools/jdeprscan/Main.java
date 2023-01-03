@@ -45,6 +45,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Queue;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.jar.JarEntry;
@@ -106,7 +108,10 @@ public class Main implements DiagnosticListener<JavaFileObject> {
     // Keep these updated manually until there's a compiler API
     // that allows querying of supported releases.
     final Set<String> releasesWithoutForRemoval = Set.of("6", "7", "8");
-    final Set<String> releasesWithForRemoval = Set.of("9", "10", "11");
+    final Set<String> releasesWithForRemoval = // "9", "10", "11", ...
+        IntStream.rangeClosed(9, Runtime.version().feature())
+        .mapToObj(Integer::toString)
+        .collect(Collectors.toUnmodifiableSet());
 
     final Set<String> validReleases;
     {
@@ -161,7 +166,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
             if (forRemoval) {
                 deprList = proc.getDeprecations().stream()
                                .filter(DeprData::isForRemoval)
-                               .collect(toList());
+                               .toList();
             } else {
                 deprList = proc.getDeprecations();
             }
@@ -185,7 +190,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
                      .filter(name -> !name.endsWith("module-info.class"))
                      .map(s -> s.replaceAll("\\.class$", ""))
                      .map(s -> s.replace(File.separatorChar, '.'))
-                     .collect(toList()));
+                     .toList());
     }
 
     /**
@@ -222,7 +227,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
                      .filter(name -> !name.endsWith("module-info.class"))
                      .map(s -> s.replaceAll("\\.class$", ""))
                      .map(this::convertModularFileName)
-                     .collect(toList()));
+                     .toList());
     }
 
     /**
@@ -401,7 +406,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
                 types.values().stream()
                      .flatMap(List::stream)
                      .map(TypeElement::toString)
-                     .collect(toList()));
+                     .toList());
         } else {
             JDKPlatformProvider pp = new JDKPlatformProvider();
             if (StreamSupport.stream(pp.getSupportedPlatformNames().spliterator(),
@@ -496,7 +501,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
         String dir = null;
         String jar = null;
         String jdkHome = null;
-        String release = "11";
+        String release = Integer.toString(Runtime.version().feature());
         List<String> loadClasses = new ArrayList<>();
         String csvFile = null;
 
@@ -672,7 +677,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
                 DeprDB db = DeprDB.loadFromList(deprList);
                 List<String> cp = classPath.stream()
                                            .map(File::toString)
-                                           .collect(toList());
+                                           .toList();
                 Scan scan = new Scan(out, err, cp, db, verbose);
 
                 for (String a : args) {

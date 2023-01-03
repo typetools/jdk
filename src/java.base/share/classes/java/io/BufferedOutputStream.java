@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,7 +74,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      *
      * @param   out    the underlying output stream.
      * @param   size   the buffer size.
-     * @exception IllegalArgumentException if size &lt;= 0.
+     * @throws  IllegalArgumentException if size &lt;= 0.
      */
     public @MustCallAlias BufferedOutputStream(@MustCallAlias OutputStream out, @Positive int size) {
         super(out);
@@ -96,7 +96,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      * Writes the specified byte to this buffered output stream.
      *
      * @param      b   the byte to be written.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      */
     @Override
     public synchronized void write(@PolySigned int b) throws IOException {
@@ -107,20 +107,20 @@ public class BufferedOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Writes <code>len</code> bytes from the specified byte array
-     * starting at offset <code>off</code> to this buffered output stream.
+     * Writes {@code len} bytes from the specified byte array
+     * starting at offset {@code off} to this buffered output stream.
      *
      * <p> Ordinarily this method stores bytes from the given array into this
      * stream's buffer, flushing the buffer to the underlying output stream as
      * needed.  If the requested length is at least as large as this stream's
      * buffer, however, then this method will flush the buffer and write the
      * bytes directly to the underlying output stream.  Thus redundant
-     * <code>BufferedOutputStream</code>s will not copy data unnecessarily.
+     * {@code BufferedOutputStream}s will not copy data unnecessarily.
      *
      * @param      b     the data.
      * @param      off   the start offset in the data.
      * @param      len   the number of bytes to write.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      */
     @Override
     public synchronized void write(@PolySigned byte b[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
@@ -143,7 +143,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      * Flushes this buffered output stream. This forces any buffered
      * output bytes to be written out to the underlying output stream.
      *
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterOutputStream#out
      */
     @Override

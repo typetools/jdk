@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,7 +54,6 @@ import java.util.Objects;
  * following standard {@code AlgorithmParameters} algorithms:
  * <ul>
  * <li>{@code AES}</li>
- * <li>{@code DES}</li>
  * <li>{@code DESede}</li>
  * <li>{@code DiffieHellman}</li>
  * <li>{@code DSA}</li>
@@ -213,7 +212,7 @@ public @UsesObjectEquals class AlgorithmParameters {
         throws NoSuchAlgorithmException, NoSuchProviderException
     {
         Objects.requireNonNull(algorithm, "null algorithm name");
-        if (provider == null || provider.length() == 0)
+        if (provider == null || provider.isEmpty())
             throw new IllegalArgumentException("missing provider");
         Object[] objs = Security.getImpl(algorithm, "AlgorithmParameters",
                                          provider);
@@ -286,7 +285,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @param paramSpec the parameter specification.
      *
-     * @exception InvalidParameterSpecException if the given parameter
+     * @throws    InvalidParameterSpecException if the given parameter
      * specification is inappropriate for the initialization of this parameter
      * object, or if this parameter object has already been initialized.
      */
@@ -307,7 +306,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @param params the encoded parameters.
      *
-     * @exception IOException on decoding errors, or if this parameter object
+     * @throws    IOException on decoding errors, or if this parameter object
      * has already been initialized.
      */
     public final void init(byte[] params) throws IOException {
@@ -329,7 +328,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @param format the name of the decoding scheme.
      *
-     * @exception IOException on decoding errors, or if this parameter object
+     * @throws    IOException on decoding errors, or if this parameter object
      * has already been initialized.
      */
     public final void init(byte[] params, String format) throws IOException {
@@ -353,7 +352,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @return the parameter specification.
      *
-     * @exception InvalidParameterSpecException if the requested parameter
+     * @throws    InvalidParameterSpecException if the requested parameter
      * specification is inappropriate for this parameter object, or if this
      * parameter object has not been initialized.
      */
@@ -374,7 +373,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @return the parameters encoded using their primary encoding format.
      *
-     * @exception IOException on encoding errors, or if this parameter object
+     * @throws    IOException on encoding errors, or if this parameter object
      * has not been initialized.
      */
     public final byte[] getEncoded() throws IOException
@@ -396,7 +395,7 @@ public @UsesObjectEquals class AlgorithmParameters {
      *
      * @return the parameters encoded using the specified encoding scheme.
      *
-     * @exception IOException on encoding errors, or if this parameter object
+     * @throws    IOException on encoding errors, or if this parameter object
      * has not been initialized.
      */
     public final byte[] getEncoded(String format) throws IOException

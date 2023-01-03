@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,8 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 /**
  * A token representing the registration of a {@link SelectableChannel} with a
@@ -76,7 +77,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  *
  * <p> This class defines all known operation-set bits, but precisely which
  * bits are supported by a given channel depends upon the type of the channel.
- * Each subclass of {@link SelectableChannel} defines an {@link
+ * Each subclass of {@link SelectableChannel} defines a {@link
  * SelectableChannel#validOps() validOps()} method which returns a set
  * identifying just those operations that are supported by the channel.  An
  * attempt to set or test an operation-set bit that is not supported by a key's
@@ -294,7 +295,7 @@ public abstract @UsesObjectEquals class SelectionKey {
      * {@code OP_READ} at the start of a <a
      * href="Selector.html#selop">selection operation</a>.  If the selector
      * detects that the corresponding channel is ready for reading, has reached
-     * end-of-stream, has been remotely shut down for further reading, or has
+     * end-of-stream, has been remotely shut down for further writing, or has
      * an error pending, then it will add {@code OP_READ} to the key's
      * ready-operation set.  </p>
      */
@@ -307,7 +308,7 @@ public abstract @UsesObjectEquals class SelectionKey {
      * {@code OP_WRITE} at the start of a <a
      * href="Selector.html#selop">selection operation</a>.  If the selector
      * detects that the corresponding channel is ready for writing, has been
-     * remotely shut down for further writing, or has an error pending, then it
+     * remotely shut down for further reading, or has an error pending, then it
      * will add {@code OP_WRITE} to the key's ready set.  </p>
      */
     public static final int OP_WRITE = 1 << 2;
@@ -350,7 +351,7 @@ public abstract @UsesObjectEquals class SelectionKey {
      * method always returns {@code false}.  </p>
      *
      * @return  {@code true} if, and only if,
-                {@code readyOps() & OP_READ} is nonzero
+     *          {@code readyOps() & OP_READ} is nonzero
      *
      * @throws  CancelledKeyException
      *          If this key has been cancelled
@@ -433,12 +434,16 @@ public abstract @UsesObjectEquals class SelectionKey {
 
     // -- Attachments --
 
+    private static final VarHandle ATTACHMENT;
+    static {
+        try {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            ATTACHMENT = l.findVarHandle(SelectionKey.class, "attachment", Object.class);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+    }
     private volatile Object attachment;
-
-    private static final AtomicReferenceFieldUpdater<SelectionKey,Object>
-        attachmentUpdater = AtomicReferenceFieldUpdater.newUpdater(
-            SelectionKey.class, Object.class, "attachment"
-        );
 
     /**
      * Attaches the given object to this key.
@@ -455,7 +460,7 @@ public abstract @UsesObjectEquals class SelectionKey {
      *          otherwise {@code null}
      */
     public final Object attach(Object ob) {
-        return attachmentUpdater.getAndSet(this, ob);
+        return ATTACHMENT.getAndSet(this, ob);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_MEM_TRACKER_HPP
-#define SHARE_VM_SERVICES_MEM_TRACKER_HPP
+#ifndef SHARE_SERVICES_MEMTRACKER_HPP
+#define SHARE_SERVICES_MEMTRACKER_HPP
 
 #include "services/nmtCommon.hpp"
 #include "utilities/nativeCallStack.hpp"
@@ -59,15 +59,16 @@ class MemTracker : AllStatic {
   static inline size_t malloc_header_size(NMT_TrackingLevel level) { return 0; }
   static inline size_t malloc_header_size(void* memblock) { return 0; }
   static inline void* malloc_base(void* memblock) { return memblock; }
-  static inline void* record_free(void* memblock) { return memblock; }
+  static inline void* record_free(void* memblock, NMT_TrackingLevel level) { return memblock; }
 
   static inline void record_new_arena(MEMFLAGS flag) { }
   static inline void record_arena_free(MEMFLAGS flag) { }
-  static inline void record_arena_size_change(int diff, MEMFLAGS flag) { }
+  static inline void record_arena_size_change(ssize_t diff, MEMFLAGS flag) { }
   static inline void record_virtual_memory_reserve(void* addr, size_t size, const NativeCallStack& stack,
                        MEMFLAGS flag = mtNone) { }
   static inline void record_virtual_memory_reserve_and_commit(void* addr, size_t size,
     const NativeCallStack& stack, MEMFLAGS flag = mtNone) { }
+  static inline void record_virtual_memory_split_reserved(void* addr, size_t size, size_t split) { }
   static inline void record_virtual_memory_commit(void* addr, size_t size, const NativeCallStack& stack) { }
   static inline void record_virtual_memory_type(void* addr, MEMFLAGS flag) { }
   static inline void record_thread_stack(void* addr, size_t size) { }
@@ -79,19 +80,18 @@ class MemTracker : AllStatic {
 
 #else
 
+#include "runtime/mutexLocker.hpp"
 #include "runtime/threadCritical.hpp"
 #include "services/mallocTracker.hpp"
+#include "services/threadStackTracker.hpp"
 #include "services/virtualMemoryTracker.hpp"
 
-extern volatile bool NMT_stack_walkable;
-
-#define CURRENT_PC ((MemTracker::tracking_level() == NMT_detail && NMT_stack_walkable) ? \
-                    NativeCallStack(0, true) : NativeCallStack::empty_stack())
-#define CALLER_PC  ((MemTracker::tracking_level() == NMT_detail && NMT_stack_walkable) ?  \
-                    NativeCallStack(1, true) : NativeCallStack::empty_stack())
+#define CURRENT_PC ((MemTracker::tracking_level() == NMT_detail) ? \
+                    NativeCallStack(0) : NativeCallStack::empty_stack())
+#define CALLER_PC  ((MemTracker::tracking_level() == NMT_detail) ?  \
+                    NativeCallStack(1) : NativeCallStack::empty_stack())
 
 class MemBaseline;
-class Mutex;
 
 // Tracker is used for guarding 'release' semantics of virtual memory operation, to avoid
 // the other thread obtains and records the same region that is just 'released' by current
@@ -156,7 +156,10 @@ class MemTracker : AllStatic {
 
   static inline void* record_malloc(void* mem_base, size_t size, MEMFLAGS flag,
     const NativeCallStack& stack, NMT_TrackingLevel level) {
-    return MallocTracker::record_malloc(mem_base, size, flag, stack, level);
+    if (level != NMT_off) {
+      return MallocTracker::record_malloc(mem_base, size, flag, stack, level);
+    }
+    return mem_base;
   }
 
   static inline size_t malloc_header_size(NMT_TrackingLevel level) {
@@ -176,7 +179,11 @@ class MemTracker : AllStatic {
   static void* malloc_base(void* memblock);
 
   // Record malloc free and return malloc base address
-  static inline void* record_free(void* memblock) {
+  static inline void* record_free(void* memblock, NMT_TrackingLevel level) {
+    // Never turned on
+    if (level == NMT_off || memblock == NULL) {
+      return memblock;
+    }
     return MallocTracker::record_free(memblock);
   }
 
@@ -195,7 +202,7 @@ class MemTracker : AllStatic {
 
   // Record arena size change. Arena size is the size of all arena
   // chuncks that backing up the arena.
-  static inline void record_arena_size_change(int diff, MEMFLAGS flag) {
+  static inline void record_arena_size_change(ssize_t diff, MEMFLAGS flag) {
     if (tracking_level() < NMT_summary) return;
     MallocTracker::record_arena_size_change(diff, flag);
   }
@@ -232,6 +239,22 @@ class MemTracker : AllStatic {
     }
   }
 
+  // Given an existing memory mapping registered with NMT and a splitting
+  //  address, split the mapping in two. The memory region is supposed to
+  //  be fully uncommitted.
+  //
+  // The two new memory regions will be both registered under stack and
+  //  memory flags of the original region.
+  static inline void record_virtual_memory_split_reserved(void* addr, size_t size, size_t split) {
+    if (tracking_level() < NMT_summary) return;
+    if (addr != NULL) {
+      ThreadCritical tc;
+      // Recheck to avoid potential racing during NMT shutdown
+      if (tracking_level() < NMT_summary) return;
+      VirtualMemoryTracker::split_reserved_region((address)addr, size, split);
+    }
+  }
+
   static inline void record_virtual_memory_type(void* addr, MEMFLAGS flag) {
     if (tracking_level() < NMT_summary) return;
     if (addr != NULL) {
@@ -241,51 +264,33 @@ class MemTracker : AllStatic {
     }
   }
 
-#ifdef _AIX
-  // See JDK-8202772 - temporarily disable thread stack tracking on AIX.
-  static inline void record_thread_stack(void* addr, size_t size) {}
-  static inline void release_thread_stack(void* addr, size_t size) {}
-#else
-  static inline void record_thread_stack(void* addr, size_t size) {
+  static void record_thread_stack(void* addr, size_t size) {
     if (tracking_level() < NMT_summary) return;
     if (addr != NULL) {
-      // uses thread stack malloc slot for book keeping number of threads
-      MallocMemorySummary::record_malloc(0, mtThreadStack);
-      record_virtual_memory_reserve(addr, size, CALLER_PC, mtThreadStack);
+      ThreadStackTracker::new_thread_stack((address)addr, size, CALLER_PC);
     }
   }
 
   static inline void release_thread_stack(void* addr, size_t size) {
     if (tracking_level() < NMT_summary) return;
     if (addr != NULL) {
-      // uses thread stack malloc slot for book keeping number of threads
-      MallocMemorySummary::record_free(0, mtThreadStack);
-      ThreadCritical tc;
-      if (tracking_level() < NMT_summary) return;
-      VirtualMemoryTracker::remove_released_region((address)addr, size);
+      ThreadStackTracker::delete_thread_stack((address)addr, size);
     }
   }
-#endif
 
   // Query lock is used to synchronize the access to tracking data.
   // So far, it is only used by JCmd query, but it may be used by
   // other tools.
-  static inline Mutex* query_lock() { return _query_lock; }
-
-  // Make a final report or report for hs_err file.
-  static void error_report(outputStream* output) {
-    if (tracking_level() >= NMT_summary) {
-      report(true, output);  // just print summary for error case.
-    }
-   }
-
-  static void final_report(outputStream* output) {
-    NMT_TrackingLevel level = tracking_level();
-    if (level >= NMT_summary) {
-      report(level == NMT_summary, output);
-    }
+  static inline Mutex* query_lock() {
+    assert(NMTQuery_lock != NULL, "not initialized!");
+    return NMTQuery_lock;
   }
 
+  // Report during error reporting.
+  static void error_report(outputStream* output);
+
+  // Report when handling PrintNMTStatistics before VM shutdown.
+  static void final_report(outputStream* output);
 
   // Stored baseline
   static inline MemBaseline& get_baseline() {
@@ -300,7 +305,7 @@ class MemTracker : AllStatic {
 
  private:
   static NMT_TrackingLevel init_tracking_level();
-  static void report(bool summary_only, outputStream* output);
+  static void report(bool summary_only, outputStream* output, size_t scale);
 
  private:
   // Tracking level
@@ -318,4 +323,4 @@ class MemTracker : AllStatic {
 
 #endif // INCLUDE_NMT
 
-#endif // SHARE_VM_SERVICES_MEM_TRACKER_HPP
+#endif // SHARE_SERVICES_MEMTRACKER_HPP

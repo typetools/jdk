@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,25 +23,26 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/systemDictionary.hpp"
 #include "code/codeCache.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/g1/g1CollectedHeap.hpp"
-#include "gc/g1/g1CollectorPolicy.hpp"
-#include "gc/g1/g1FullCollector.hpp"
+#include "gc/g1/g1FullCollector.inline.hpp"
 #include "gc/g1/g1FullGCAdjustTask.hpp"
 #include "gc/g1/g1FullGCCompactTask.hpp"
 #include "gc/g1/g1FullGCMarker.inline.hpp"
 #include "gc/g1/g1FullGCMarkTask.hpp"
 #include "gc/g1/g1FullGCPrepareTask.hpp"
-#include "gc/g1/g1FullGCReferenceProcessorExecutor.hpp"
 #include "gc/g1/g1FullGCScope.hpp"
 #include "gc/g1/g1OopClosures.hpp"
 #include "gc/g1/g1Policy.hpp"
-#include "gc/g1/g1StringDedup.hpp"
-#include "gc/shared/adaptiveSizePolicy.hpp"
+#include "gc/g1/g1RegionMarkStatsCache.inline.hpp"
 #include "gc/shared/gcTraceTime.inline.hpp"
 #include "gc/shared/preservedMarks.hpp"
 #include "gc/shared/referenceProcessor.hpp"
-#include "gc/shared/weakProcessor.hpp"
+#include "gc/shared/verifyOption.hpp"
+#include "gc/shared/weakProcessor.inline.hpp"
+#include "gc/shared/workerPolicy.hpp"
 #include "logging/log.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/handles.inline.hpp"
@@ -88,44 +89,60 @@ uint G1FullCollector::calc_active_workers() {
   uint waste_worker_count = MAX2((max_wasted_regions_allowed * 2) , 1u);
   uint heap_waste_worker_limit = MIN2(waste_worker_count, max_worker_count);
 
-  // Also consider HeapSizePerGCThread by calling AdaptiveSizePolicy to calculate
+  // Also consider HeapSizePerGCThread by calling WorkerPolicy to calculate
   // the number of workers.
   uint current_active_workers = heap->workers()->active_workers();
-  uint adaptive_worker_limit = AdaptiveSizePolicy::calc_active_workers(max_worker_count, current_active_workers, 0);
+  uint active_worker_limit = WorkerPolicy::calc_active_workers(max_worker_count, current_active_workers, 0);
+
+  // Finally consider the amount of used regions.
+  uint used_worker_limit = heap->num_used_regions();
+  assert(used_worker_limit > 0, "Should never have zero used regions.");
 
   // Update active workers to the lower of the limits.
-  uint worker_count = MIN2(heap_waste_worker_limit, adaptive_worker_limit);
-  log_debug(gc, task)("Requesting %u active workers for full compaction (waste limited workers: %u, adaptive workers: %u)",
-                      worker_count, heap_waste_worker_limit, adaptive_worker_limit);
+  uint worker_count = MIN3(heap_waste_worker_limit, active_worker_limit, used_worker_limit);
+  log_debug(gc, task)("Requesting %u active workers for full compaction (waste limited workers: %u, "
+                      "adaptive workers: %u, used limited workers: %u)",
+                      worker_count, heap_waste_worker_limit, active_worker_limit, used_worker_limit);
   worker_count = heap->workers()->update_active_workers(worker_count);
   log_info(gc, task)("Using %u workers of %u for full compaction", worker_count, max_worker_count);
 
   return worker_count;
 }
 
-G1FullCollector::G1FullCollector(G1CollectedHeap* heap, GCMemoryManager* memory_manager, bool explicit_gc, bool clear_soft_refs) :
+G1FullCollector::G1FullCollector(G1CollectedHeap* heap,
+                                 bool explicit_gc,
+                                 bool clear_soft_refs,
+                                 bool do_maximum_compaction) :
     _heap(heap),
-    _scope(memory_manager, explicit_gc, clear_soft_refs),
+    _scope(heap->g1mm(), explicit_gc, clear_soft_refs, do_maximum_compaction),
     _num_workers(calc_active_workers()),
     _oop_queue_set(_num_workers),
     _array_queue_set(_num_workers),
     _preserved_marks_set(true),
     _serial_compaction_point(),
-    _is_alive(heap->concurrent_mark()->next_mark_bitmap()),
+    _is_alive(this, heap->concurrent_mark()->next_mark_bitmap()),
     _is_alive_mutator(heap->ref_processor_stw(), &_is_alive),
     _always_subject_to_discovery(),
-    _is_subject_mutator(heap->ref_processor_stw(), &_always_subject_to_discovery) {
+    _is_subject_mutator(heap->ref_processor_stw(), &_always_subject_to_discovery),
+    _region_attr_table() {
   assert(SafepointSynchronize::is_at_safepoint(), "must be at a safepoint");
 
   _preserved_marks_set.init(_num_workers);
   _markers = NEW_C_HEAP_ARRAY(G1FullGCMarker*, _num_workers, mtGC);
   _compaction_points = NEW_C_HEAP_ARRAY(G1FullGCCompactionPoint*, _num_workers, mtGC);
+
+  _live_stats = NEW_C_HEAP_ARRAY(G1RegionMarkStats, _heap->max_regions(), mtGC);
+  for (uint j = 0; j < heap->max_regions(); j++) {
+    _live_stats[j].clear();
+  }
+
   for (uint i = 0; i < _num_workers; i++) {
-    _markers[i] = new G1FullGCMarker(i, _preserved_marks_set.get(i), mark_bitmap());
+    _markers[i] = new G1FullGCMarker(this, i, _preserved_marks_set.get(i), _live_stats);
     _compaction_points[i] = new G1FullGCCompactionPoint();
     _oop_queue_set.register_queue(i, marker(i)->oop_stack());
     _array_queue_set.register_queue(i, marker(i)->objarray_stack());
   }
+  _region_attr_table.initialize(heap->reserved(), HeapRegion::GrainBytes);
 }
 
 G1FullCollector::~G1FullCollector() {
@@ -135,10 +152,24 @@ G1FullCollector::~G1FullCollector() {
   }
   FREE_C_HEAP_ARRAY(G1FullGCMarker*, _markers);
   FREE_C_HEAP_ARRAY(G1FullGCCompactionPoint*, _compaction_points);
+  FREE_C_HEAP_ARRAY(G1RegionMarkStats, _live_stats);
 }
 
+class PrepareRegionsClosure : public HeapRegionClosure {
+  G1FullCollector* _collector;
+
+public:
+  PrepareRegionsClosure(G1FullCollector* collector) : _collector(collector) { }
+
+  bool do_heap_region(HeapRegion* hr) {
+    G1CollectedHeap::heap()->prepare_region_for_full_compaction(hr);
+    _collector->before_marking_update_attribute_table(hr);
+    return false;
+  }
+};
+
 void G1FullCollector::prepare_collection() {
-  _heap->g1_policy()->record_full_collection_start();
+  _heap->policy()->record_full_collection_start();
 
   _heap->print_heap_before_gc();
   _heap->print_heap_regions();
@@ -149,12 +180,11 @@ void G1FullCollector::prepare_collection() {
   _heap->gc_prologue(true);
   _heap->prepare_heap_for_full_collection();
 
+  PrepareRegionsClosure cl(this);
+  _heap->heap_region_iterate(&cl);
+
   reference_processor()->enable_discovery();
   reference_processor()->setup_policy(scope()->should_clear_soft_refs());
-
-  // When collecting the permanent generation Method*s may be moving,
-  // so we either have to flush all bcp data or convert it into bci.
-  CodeCache::gc_prologue();
 
   // We should save the marks of the currently locked biased monitors.
   // The marking doesn't preserve the marks of biased objects.
@@ -187,12 +217,14 @@ void G1FullCollector::complete_collection() {
   update_derived_pointers();
 
   BiasedLocking::restore_marks();
-  CodeCache::gc_epilogue();
-  JvmtiExport::gc_epilogue();
+
+  _heap->concurrent_mark()->swap_mark_bitmaps();
+  // Prepare the bitmap for the next (potentially concurrent) marking.
+  _heap->concurrent_mark()->clear_next_bitmap(_heap->workers());
 
   _heap->prepare_heap_for_mutators();
 
-  _heap->g1_policy()->record_full_collection_end();
+  _heap->policy()->record_full_collection_end();
   _heap->gc_epilogue(true);
 
   _heap->verify_after_full_collection();
@@ -200,22 +232,67 @@ void G1FullCollector::complete_collection() {
   _heap->print_heap_after_full_collection(scope()->heap_transition());
 }
 
+void G1FullCollector::before_marking_update_attribute_table(HeapRegion* hr) {
+  if (hr->is_free()) {
+    // Set as Invalid by default.
+    _region_attr_table.verify_is_invalid(hr->hrm_index());
+  } else if (hr->is_closed_archive()) {
+    _region_attr_table.set_skip_marking(hr->hrm_index());
+  } else if (hr->is_pinned()) {
+    _region_attr_table.set_skip_compacting(hr->hrm_index());
+  } else {
+    // Everything else should be compacted.
+    _region_attr_table.set_compacting(hr->hrm_index());
+  }
+}
+
+class G1FullGCRefProcProxyTask : public RefProcProxyTask {
+  G1FullCollector& _collector;
+
+public:
+  G1FullGCRefProcProxyTask(G1FullCollector &collector, uint max_workers)
+    : RefProcProxyTask("G1FullGCRefProcProxyTask", max_workers),
+      _collector(collector) {}
+
+  void work(uint worker_id) override {
+    assert(worker_id < _max_workers, "sanity");
+    G1IsAliveClosure is_alive(&_collector);
+    uint index = (_tm == RefProcThreadModel::Single) ? 0 : worker_id;
+    G1FullKeepAliveClosure keep_alive(_collector.marker(index));
+    G1FollowStackClosure* complete_gc = _collector.marker(index)->stack_closure();
+    _rp_task->rp_work(worker_id, &is_alive, &keep_alive, complete_gc);
+  }
+};
+
 void G1FullCollector::phase1_mark_live_objects() {
   // Recursively traverse all live objects and mark them.
   GCTraceTime(Info, gc, phases) info("Phase 1: Mark live objects", scope()->timer());
 
-  // Do the actual marking.
-  G1FullGCMarkTask marking_task(this);
-  run_task(&marking_task);
+  {
+    // Do the actual marking.
+    G1FullGCMarkTask marking_task(this);
+    run_task(&marking_task);
+  }
 
-  // Process references discovered during marking.
-  G1FullGCReferenceProcessingExecutor reference_processing(this);
-  reference_processing.execute(scope()->timer(), scope()->tracer());
+  {
+    uint old_active_mt_degree = reference_processor()->num_queues();
+    reference_processor()->set_active_mt_degree(workers());
+    GCTraceTime(Debug, gc, phases) debug("Phase 1: Reference Processing", scope()->timer());
+    // Process reference objects found during marking.
+    ReferenceProcessorPhaseTimes pt(scope()->timer(), reference_processor()->max_num_queues());
+    G1FullGCRefProcProxyTask task(*this, reference_processor()->max_num_queues());
+    const ReferenceProcessorStats& stats = reference_processor()->process_discovered_references(task, pt);
+    scope()->tracer()->report_gc_reference_stats(stats);
+    pt.print_all_references();
+    assert(marker(0)->oop_stack()->is_empty(), "Should be no oops on the stack");
+
+    reference_processor()->set_active_mt_degree(old_active_mt_degree);
+  }
 
   // Weak oops cleanup.
   {
-    GCTraceTime(Debug, gc, phases) trace("Phase 1: Weak Processing", scope()->timer());
-    WeakProcessor::weak_oops_do(&_is_alive, &do_nothing_cl);
+    GCTraceTime(Debug, gc, phases) debug("Phase 1: Weak Processing", scope()->timer());
+    WeakProcessor::weak_oops_do(_heap->workers(), &_is_alive, &do_nothing_cl, 1);
   }
 
   // Class unloading and cleanup.
@@ -224,10 +301,6 @@ void G1FullCollector::phase1_mark_live_objects() {
     // Unload classes and purge the SystemDictionary.
     bool purged_class = SystemDictionary::do_unloading(scope()->timer());
     _heap->complete_cleaning(&_is_alive, purged_class);
-  } else {
-    GCTraceTime(Debug, gc, phases) debug("Phase 1: String and Symbol Tables Cleanup", scope()->timer());
-    // If no class unloading just clean out strings and symbols.
-    _heap->partial_cleaning(&_is_alive, true, true, G1StringDedup::is_enabled());
   }
 
   scope()->tracer()->report_object_count_after_gc(&_is_alive);
@@ -265,8 +338,7 @@ void G1FullCollector::phase4_do_compaction() {
 }
 
 void G1FullCollector::restore_marks() {
-  SharedRestorePreservedMarksTaskExecutor task_executor(_heap->workers());
-  _preserved_marks_set.restore(&task_executor);
+  _preserved_marks_set.restore(_heap->workers());
   _preserved_marks_set.reclaim();
 }
 
@@ -280,7 +352,6 @@ void G1FullCollector::verify_after_marking() {
     return;
   }
 
-  HandleMark hm;  // handle scope
 #if COMPILER2_OR_JVMCI
   DerivedPointerTableDeactivate dpt_deact;
 #endif
@@ -288,13 +359,13 @@ void G1FullCollector::verify_after_marking() {
   // Note: we can verify only the heap here. When an object is
   // marked, the previous value of the mark word (including
   // identity hash values, ages, etc) is preserved, and the mark
-  // word is set to markOop::marked_value - effectively removing
+  // word is set to markWord::marked_value - effectively removing
   // any hash values from the mark word. These hash values are
   // used when verifying the dictionaries and so removing them
   // from the mark word can make verification of the dictionaries
   // fail. At the end of the GC, the original mark word values
   // (including hash values) are restored to the appropriate
   // objects.
-  GCTraceTime(Info, gc, verify)("Verifying During GC (full)");
+  GCTraceTime(Info, gc, verify) tm("Verifying During GC (full)");
   _heap->verify(VerifyOption_G1UseFullMarking);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  /*
  * @test
  * @bug 8159377
- * @library /lib/testlibrary
+ * @library /test/lib
  * @summary Tests ObjectFilter on default agent
  * @author Harsha Wardhana B
  * @modules java.management
- * @build jdk.testlibrary.* DefaultAgentFilterTest
+ * @build DefaultAgentFilterTest
  * @run main/othervm/timeout=600 -XX:+UsePerfData DefaultAgentFilterTest
  */
 import java.io.EOFException;
@@ -54,8 +54,8 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import jdk.testlibrary.ProcessTools;
-import jdk.testlibrary.Utils;
+import jdk.test.lib.process.ProcessTools;
+import jdk.test.lib.Utils;
 
 public class DefaultAgentFilterTest {
 
@@ -238,7 +238,7 @@ public class DefaultAgentFilterTest {
         boolean retry = false;
         do {
             try {
-                // blacklist String
+                // filter DefaultAgentFilterTest$MyTestObject
                 testDefaultAgent("mgmt1.properties");
                 System.out.println("----\tTest FAILED !!");
                 throw new RuntimeException("---" + DefaultAgentFilterTest.class.getName() + " - No exception reported");
@@ -264,7 +264,7 @@ public class DefaultAgentFilterTest {
         retry = false;
         do {
             try {
-                // blacklist non-existent class
+                // filter non-existent class
                 testDefaultAgent("mgmt2.properties");
                 System.out.println("----\tTest PASSED !!");
             } catch (Exception ex) {

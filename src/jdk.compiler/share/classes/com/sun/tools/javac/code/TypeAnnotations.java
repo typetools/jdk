@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 import javax.tools.JavaFileObject;
 
-import com.sun.tools.javac.code.Attribute.Array;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
@@ -155,11 +154,11 @@ public class TypeAnnotations {
         }
 
         Attribute atValue = atTarget.member(names.value);
-        if (!(atValue instanceof Attribute.Array)) {
+        if (!(atValue instanceof Attribute.Array arrayVal)) {
             return null;
         }
 
-        List<Attribute> targets = ((Array)atValue).getValue();
+        List<Attribute> targets = arrayVal.getValue();
         if (targets.stream().anyMatch(a -> !(a instanceof Attribute.Enum))) {
             return null;
         }
@@ -169,9 +168,12 @@ public class TypeAnnotations {
 
     /**
      * Determine whether an annotation is a declaration annotation,
-     * a type annotation, or both.
+     * a type annotation, or both (or none, i.e a non-annotation masquerading as one).
      */
     public AnnotationType annotationTargetType(Attribute.Compound a, Symbol s) {
+        if (!a.type.tsym.isAnnotationType()) {
+            return AnnotationType.NONE;
+        }
         List<Attribute> targets = annotationTargets(a.type.tsym);
         return (targets == null) ?
                 AnnotationType.DECLARATION :
@@ -197,7 +199,7 @@ public class TypeAnnotations {
         if (e.value.name == names.TYPE) {
             if (s.kind == TYP)
                 return AnnotationType.DECLARATION;
-        } else if (e.value.name == names.FIELD) {
+        } else if (e.value.name == names.FIELD || e.value.name == names.RECORD_COMPONENT) {
             if (s.kind == VAR &&
                     s.owner.kind != MTH)
                 return AnnotationType.DECLARATION;
@@ -319,6 +321,8 @@ public class TypeAnnotations {
                         onlyTypeAnnos.append(ta);
                         break;
                     }
+                    case NONE: // Error signaled already, just drop the non-annotation.
+                        break;
                 }
             }
 
@@ -384,23 +388,28 @@ public class TypeAnnotations {
             if (sym.getKind() == ElementKind.PARAMETER ||
                 sym.getKind() == ElementKind.LOCAL_VARIABLE ||
                 sym.getKind() == ElementKind.RESOURCE_VARIABLE ||
-                sym.getKind() == ElementKind.EXCEPTION_PARAMETER) {
-                // Make sure all type annotations from the symbol are also
-                // on the owner. If the owner is an initializer block, propagate
-                // to the type.
-                final long ownerFlags = sym.owner.flags();
-                if ((ownerFlags & Flags.BLOCK) != 0) {
-                    // Store init and clinit type annotations with the ClassSymbol
-                    // to allow output in Gen.normalizeDefs.
-                    ClassSymbol cs = (ClassSymbol) sym.owner.owner;
-                    if ((ownerFlags & Flags.STATIC) != 0) {
-                        cs.appendClassInitTypeAttributes(typeAnnotations);
-                    } else {
-                        cs.appendInitTypeAttributes(typeAnnotations);
-                    }
+                sym.getKind() == ElementKind.EXCEPTION_PARAMETER ||
+                sym.getKind() == ElementKind.BINDING_VARIABLE) {
+                appendTypeAnnotationsToOwner(sym, typeAnnotations);
+            }
+        }
+
+        private void appendTypeAnnotationsToOwner(Symbol sym, List<Attribute.TypeCompound> typeAnnotations) {
+            // Make sure all type annotations from the symbol are also
+            // on the owner. If the owner is an initializer block, propagate
+            // to the type.
+            final long ownerFlags = sym.owner.flags();
+            if ((ownerFlags & Flags.BLOCK) != 0) {
+                // Store init and clinit type annotations with the ClassSymbol
+                // to allow output in Gen.normalizeDefs.
+                ClassSymbol cs = (ClassSymbol) sym.owner.owner;
+                if ((ownerFlags & Flags.STATIC) != 0) {
+                    cs.appendClassInitTypeAttributes(typeAnnotations);
                 } else {
-                    sym.owner.appendUniqueTypeAttributes(sym.getRawTypeAttributes());
+                    cs.appendInitTypeAttributes(typeAnnotations);
                 }
+            } else {
+                sym.owner.appendUniqueTypeAttributes(typeAnnotations);
             }
         }
 
@@ -421,6 +430,10 @@ public class TypeAnnotations {
         {
             if (annotations.isEmpty()) {
                 return type;
+            }
+            // All annotations share the same position
+            for (TypeCompound tc : annotations) {
+                Assert.check(tc.position == pos);
             }
 
             if (type.hasTag(TypeTag.ARRAY))
@@ -517,10 +530,7 @@ public class TypeAnnotations {
                 if (depth.nonEmpty()) {
                     // Only need to change the annotation positions
                     // if they are on an enclosed type.
-                    // All annotations share the same position; modify the first one.
-                    Attribute.TypeCompound a = annotations.get(0);
-                    TypeAnnotationPosition p = a.position;
-                    p.location = p.location.appendList(depth.toList());
+                    pos.location = pos.location.appendList(depth.toList());
                 }
 
                 Type ret = typeWithAnnotations(type, enclTy, annotations);
@@ -538,6 +548,9 @@ public class TypeAnnotations {
          */
         private Type rewriteArrayType(ArrayType type, List<TypeCompound> annotations, TypeAnnotationPosition pos) {
             ArrayType tomodify = new ArrayType(type);
+            if (type.isVarargs()) {
+                tomodify = tomodify.makeVarargs();
+            }
             ArrayType res = tomodify;
 
             List<TypePathEntry> loc = List.nil();
@@ -578,11 +591,7 @@ public class TypeAnnotations {
             tomodify.elemtype = elemType;
 
             // Update positions
-            for (TypeCompound tc : annotations) {
-                if (tc.position == null)
-                    tc.position = pos;
-                tc.position.location = loc;
-            }
+            pos.location = loc;
 
             return res;
         }
@@ -764,6 +773,7 @@ public class TypeAnnotations {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (((JCClassDecl)frame).extending == tree) {
                         return TypeAnnotationPosition
                             .classExtends(location.toList(), currentLambda,
@@ -942,11 +952,12 @@ public class TypeAnnotations {
                     }
 
                 case VARIABLE:
-                    VarSymbol v = ((JCVariableDecl)frame).sym;
+                    VarSymbol v = ((JCVariableDecl) frame).sym;
                     if (v.getKind() != ElementKind.FIELD) {
-                        v.owner.appendUniqueTypeAttributes(v.getRawTypeAttributes());
+                        appendTypeAnnotationsToOwner(v, v.getRawTypeAttributes());
                     }
                     switch (v.getKind()) {
+                        case BINDING_VARIABLE:
                         case LOCAL_VARIABLE:
                             return TypeAnnotationPosition
                                 .localVariable(location.toList(), currentLambda,
@@ -1120,6 +1131,9 @@ public class TypeAnnotations {
                 scan(tree.implementing);
             }
             scan(tree.defs);
+            if (tree.sym.isRecord()) {
+                tree.sym.getRecordComponents().stream().forEach(rc -> scan(rc.accessorMeth));
+            }
         }
 
         /**
@@ -1209,7 +1223,9 @@ public class TypeAnnotations {
                                 .methodParameter(tree, i, param.vartype.pos);
                         push(param);
                         try {
-                            separateAnnotationsKinds(param.vartype, param.sym.type, param.sym, pos);
+                            if (!param.declaredUsingVar()) {
+                                separateAnnotationsKinds(param.vartype, param.sym.type, param.sym, pos);
+                            }
                         } finally {
                             pop();
                         }
@@ -1247,9 +1263,14 @@ public class TypeAnnotations {
                 final TypeAnnotationPosition pos =
                     TypeAnnotationPosition.localVariable(currentLambda,
                                                          tree.pos);
-                if (!tree.isImplicitlyTyped()) {
+                if (!tree.declaredUsingVar()) {
                     separateAnnotationsKinds(tree.vartype, tree.sym.type, tree.sym, pos);
                 }
+            } else if (tree.sym.getKind() == ElementKind.BINDING_VARIABLE) {
+                final TypeAnnotationPosition pos =
+                    TypeAnnotationPosition.localVariable(currentLambda,
+                                                         tree.pos);
+                separateAnnotationsKinds(tree.vartype, tree.sym.type, tree.sym, pos);
             } else if (tree.sym.getKind() == ElementKind.EXCEPTION_PARAMETER) {
                 final TypeAnnotationPosition pos =
                     TypeAnnotationPosition.exceptionParameter(currentLambda,
@@ -1264,7 +1285,7 @@ public class TypeAnnotations {
                 // No type annotations can occur here.
             } else {
                 // There is nothing else in a variable declaration that needs separation.
-                Assert.error("Unhandled variable kind");
+                Assert.error("Unhandled variable kind: " + tree.sym.getKind());
             }
 
             scan(tree.mods);
@@ -1297,15 +1318,26 @@ public class TypeAnnotations {
             super.visitTypeParameter(tree);
         }
 
-        private void copyNewClassAnnotationsToOwner(JCNewClass tree) {
+        private void propagateNewClassAnnotationsToOwner(JCNewClass tree) {
             Symbol sym = tree.def.sym;
-            final TypeAnnotationPosition pos =
-                TypeAnnotationPosition.newObj(tree.pos);
-            ListBuffer<Attribute.TypeCompound> newattrs = new ListBuffer<>();
+            // The anonymous class' synthetic class declaration is itself an inner class,
+            // so the type path is one INNER_TYPE entry deeper than that of the
+            // lexically enclosing class.
+            List<TypePathEntry> depth =
+                    locateNestedTypes(sym.owner.enclClass().type, new ListBuffer<>())
+                            .append(TypePathEntry.INNER_TYPE).toList();
+            TypeAnnotationPosition pos =
+                    TypeAnnotationPosition.newObj(depth, /* currentLambda= */ null, tree.pos);
 
+            ListBuffer<Attribute.TypeCompound> newattrs = new ListBuffer<>();
+            List<TypePathEntry> expectedLocation =
+                    locateNestedTypes(tree.clazz.type, new ListBuffer<>()).toList();
             for (Attribute.TypeCompound old : sym.getRawTypeAttributes()) {
-                newattrs.append(new Attribute.TypeCompound(old.type, old.values,
-                                                           pos));
+                // Only propagate type annotations from the top-level supertype,
+                // (including if the supertype is an inner class).
+                if (old.position.location.equals(expectedLocation)) {
+                    newattrs.append(new Attribute.TypeCompound(old.type, old.values, pos));
+                }
             }
 
             sym.owner.appendUniqueTypeAttributes(newattrs.toList());
@@ -1313,27 +1345,8 @@ public class TypeAnnotations {
 
         @Override
         public void visitNewClass(JCNewClass tree) {
-            if (tree.def != null &&
-                    !tree.def.mods.annotations.isEmpty()) {
-                JCClassDecl classdecl = tree.def;
-                TypeAnnotationPosition pos;
-
-                if (classdecl.extending == tree.clazz) {
-                    pos = TypeAnnotationPosition.classExtends(tree.pos);
-                } else if (classdecl.implementing.contains(tree.clazz)) {
-                    final int index = classdecl.implementing.indexOf(tree.clazz);
-                    pos = TypeAnnotationPosition.classExtends(index, tree.pos);
-                } else {
-                    // In contrast to CLASS elsewhere, typarams cannot occur here.
-                    throw new AssertionError("Could not determine position of tree " + tree);
-                }
-                Type before = classdecl.sym.type;
-                separateAnnotationsKinds(classdecl, tree.clazz.type, classdecl.sym, pos);
-                copyNewClassAnnotationsToOwner(tree);
-                // classdecl.sym.type now contains an annotated type, which
-                // is not what we want there.
-                // TODO: should we put this type somewhere in the superclass/interface?
-                classdecl.sym.type = before;
+            if (tree.def != null && tree.def.sym != null) {
+                propagateNewClassAnnotationsToOwner(tree);
             }
 
             scan(tree.encl);
@@ -1397,16 +1410,6 @@ public class TypeAnnotations {
                 }
             }
             scan(tree.elems);
-        }
-
-
-        private void findTypeCompoundPosition(JCTree tree, JCTree frame, List<Attribute.TypeCompound> annotations) {
-            if (!annotations.isEmpty()) {
-                final TypeAnnotationPosition p =
-                        resolveFrame(tree, frame, frames, currentLambda, 0, new ListBuffer<>());
-                for (TypeCompound tc : annotations)
-                    tc.position = p;
-            }
         }
 
         private void findPosition(JCTree tree, JCTree frame, List<JCAnnotation> annotations) {

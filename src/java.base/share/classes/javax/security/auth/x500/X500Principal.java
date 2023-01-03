@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,6 +72,7 @@ import sun.security.util.*;
 @AnnotatedFor({"interning"})
 public final class X500Principal implements Principal, java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = -500463348111345721L;
 
     /**
@@ -504,7 +505,11 @@ public final class X500Principal implements Principal, java.io.Serializable {
      * @serialData this {@code X500Principal} is serialized
      *          by writing out its DER-encoded form
      *          (the value of {@code getEncoded} is serialized).
+     *
+     * @param  s the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws IOException {
         s.writeObject(thisX500Name.getEncodedInternal());
@@ -512,7 +517,13 @@ public final class X500Principal implements Principal, java.io.Serializable {
 
     /**
      * Reads this object from a stream (i.e., deserializes it).
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws NotActiveException if serialization is not active
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException,
                java.io.NotActiveException,

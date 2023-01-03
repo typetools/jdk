@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_MODULEENTRY_HPP
-#define SHARE_VM_CLASSFILE_MODULEENTRY_HPP
+#ifndef SHARE_CLASSFILE_MODULEENTRY_HPP
+#define SHARE_CLASSFILE_MODULEENTRY_HPP
 
 #include "jni.h"
-#include "classfile/classLoaderData.hpp"
-#include "classfile/vmSymbols.hpp"
 #include "oops/oopHandle.hpp"
 #include "oops/symbol.hpp"
-#include "runtime/jniHandles.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/hashtable.hpp"
@@ -47,6 +44,9 @@
 #define JAVA_BASE_NAME "java.base"
 #define JAVA_BASE_NAME_LEN 9
 
+template <class T> class Array;
+class ClassLoaderData;
+class MetaspaceClosure;
 class ModuleClosure;
 
 // A ModuleEntry describes a module that has been defined by a call to JVM_DefineModule.
@@ -63,25 +63,28 @@ class ModuleClosure;
 class ModuleEntry : public HashtableEntry<Symbol*, mtModule> {
 private:
   OopHandle _module;                   // java.lang.Module
-  OopHandle _pd;                       // java.security.ProtectionDomain, cached
+  OopHandle _shared_pd;                // java.security.ProtectionDomain, cached
                                        // for shared classes from this module
   ClassLoaderData* _loader_data;
   GrowableArray<ModuleEntry*>* _reads; // list of modules that are readable by this module
   Symbol* _version;                    // module version number
   Symbol* _location;                   // module location
+  CDS_ONLY(int _shared_path_index;)    // >=0 if classes in this module are in CDS archive
   bool _can_read_all_unnamed;
   bool _has_default_read_edges;        // JVMTI redefine/retransform support
   bool _must_walk_reads;               // walk module's reads list at GC safepoints to purge out dead modules
   bool _is_open;                       // whether the packages in the module are all unqualifiedly exported
   bool _is_patched;                    // whether the module is patched via --patch-module
+  CDS_JAVA_HEAP_ONLY(int _archived_module_index;)
+
   JFR_ONLY(DEFINE_TRACE_ID_FIELD;)
   enum {MODULE_READS_SIZE = 101};      // Initial size of list of modules that the module can read.
 
 public:
   void init() {
-    _module = NULL;
+    _module = OopHandle();
+    _shared_pd = OopHandle();
     _loader_data = NULL;
-    _pd = NULL;
     _reads = NULL;
     _version = NULL;
     _location = NULL;
@@ -90,6 +93,7 @@ public:
     _must_walk_reads = false;
     _is_patched = false;
     _is_open = false;
+    CDS_ONLY(_shared_path_index = -1);
   }
 
   Symbol*          name() const                        { return literal(); }
@@ -108,11 +112,7 @@ public:
   void             set_shared_protection_domain(ClassLoaderData *loader_data, Handle pd);
 
   ClassLoaderData* loader_data() const                 { return _loader_data; }
-
-  void set_loader_data(ClassLoaderData* cld) {
-    assert(!cld->is_anonymous(), "Unexpected anonymous class loader data");
-    _loader_data = cld;
-  }
+  void set_loader_data(ClassLoaderData* cld);
 
   Symbol*          version() const                     { return _version; }
   void             set_version(Symbol* version);
@@ -154,6 +154,7 @@ public:
 
   void set_is_patched() {
       _is_patched = true;
+      CDS_ONLY(_shared_path_index = -1); // Mark all shared classes in this module invisible.
   }
   bool is_patched() {
       return _is_patched;
@@ -182,7 +183,22 @@ public:
   void print(outputStream* st = tty);
   void verify();
 
+  CDS_ONLY(int shared_path_index() { return _shared_path_index;})
+
   JFR_ONLY(DEFINE_TRACE_ID_METHODS;)
+
+#if INCLUDE_CDS_JAVA_HEAP
+  void iterate_symbols(MetaspaceClosure* closure);
+  ModuleEntry* allocate_archived_entry() const;
+  void init_as_archived_entry();
+  void init_archived_oops();
+  static ModuleEntry* get_archived_entry(ModuleEntry* orig_entry);
+  static Array<ModuleEntry*>* write_growable_array(GrowableArray<ModuleEntry*>* array);
+  static GrowableArray<ModuleEntry*>* restore_growable_array(Array<ModuleEntry*>* archived_array);
+  void load_from_archive(ClassLoaderData* loader_data);
+  void restore_archived_oops(ClassLoaderData* loader_data);
+  void clear_archived_oops();
+#endif
 };
 
 // Iterator interface
@@ -236,14 +252,14 @@ public:
     return (ModuleEntry*)Hashtable<Symbol*, mtModule>::bucket(i);
   }
 
-  // Create module in loader's module entry table, if already exists then
-  // return null.  Assume Module_lock has been locked by caller.
-  ModuleEntry* locked_create_entry_or_null(Handle module_handle,
-                                           bool is_open,
-                                           Symbol* module_name,
-                                           Symbol* module_version,
-                                           Symbol* module_location,
-                                           ClassLoaderData* loader_data);
+  // Create module in loader's module entry table.  Assume Module_lock
+  // has been locked by caller.
+  ModuleEntry* locked_create_entry(Handle module_handle,
+                                   bool is_open,
+                                   Symbol* module_name,
+                                   Symbol* module_version,
+                                   Symbol* module_location,
+                                   ClassLoaderData* loader_data);
 
   // Only lookup module within loader's module entry table.  The table read is lock-free.
   ModuleEntry* lookup_only(Symbol* name);
@@ -253,7 +269,10 @@ public:
 
   // Special handling for java.base
   static ModuleEntry* javabase_moduleEntry()                   { return _javabase_module; }
-  static void set_javabase_moduleEntry(ModuleEntry* java_base) { _javabase_module = java_base; }
+  static void set_javabase_moduleEntry(ModuleEntry* java_base) {
+    assert(_javabase_module == NULL, "_javabase_module is already defined");
+    _javabase_module = java_base;
+  }
 
   static bool javabase_defined() { return ((_javabase_module != NULL) &&
                                            (_javabase_module->module() != NULL)); }
@@ -262,6 +281,17 @@ public:
 
   void print(outputStream* st = tty);
   void verify();
+
+#if INCLUDE_CDS_JAVA_HEAP
+  void iterate_symbols(MetaspaceClosure* closure);
+  Array<ModuleEntry*>* allocate_archived_entries();
+  void init_archived_entries(Array<ModuleEntry*>* archived_modules);
+  void init_archived_oops(Array<ModuleEntry*>* archived_modules);
+  void load_archived_entries(ClassLoaderData* loader_data,
+                             Array<ModuleEntry*>* archived_modules);
+  void restore_archived_oops(ClassLoaderData* loader_data,
+                             Array<ModuleEntry*>* archived_modules);
+#endif
 };
 
-#endif // SHARE_VM_CLASSFILE_MODULEENTRY_HPP
+#endif // SHARE_CLASSFILE_MODULEENTRY_HPP

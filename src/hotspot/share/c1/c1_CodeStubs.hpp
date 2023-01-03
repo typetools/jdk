@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_CODESTUBS_HPP
-#define SHARE_VM_C1_C1_CODESTUBS_HPP
+#ifndef SHARE_C1_C1_CODESTUBS_HPP
+#define SHARE_C1_C1_CODESTUBS_HPP
 
 #include "c1/c1_FrameMap.hpp"
 #include "c1/c1_IR.hpp"
@@ -89,6 +89,28 @@ class CodeStubList: public GrowableArray<CodeStub*> {
   }
 };
 
+class C1SafepointPollStub: public CodeStub {
+ private:
+  uintptr_t _safepoint_offset;
+
+ public:
+  C1SafepointPollStub() :
+      _safepoint_offset(0) {
+  }
+
+  uintptr_t safepoint_offset() { return _safepoint_offset; }
+  void set_safepoint_offset(uintptr_t safepoint_offset) { _safepoint_offset = safepoint_offset; }
+
+  virtual void emit_code(LIR_Assembler* e);
+  virtual void visit(LIR_OpVisitState* visitor) {
+    // don't pass in the code emit info since it's processed in the fast path
+    visitor->do_slow_case();
+  }
+#ifndef PRODUCT
+  virtual void print_name(outputStream* out) const { out->print("C1SafepointPollStub"); }
+#endif // PRODUCT
+};
+
 class CounterOverflowStub: public CodeStub {
  private:
   CodeEmitInfo* _info;
@@ -123,6 +145,7 @@ class ConversionStub: public CodeStub {
  public:
   ConversionStub(Bytecodes::Code bytecode, LIR_Opr input, LIR_Opr result)
     : _bytecode(bytecode), _input(input), _result(result) {
+    NOT_IA32( ShouldNotReachHere(); ) // used only on x86-32
   }
 
   Bytecodes::Code bytecode() { return _bytecode; }
@@ -218,7 +241,7 @@ class ImplicitNullCheckStub: public CodeStub {
 
  public:
   ImplicitNullCheckStub(int offset, CodeEmitInfo* info)
-    : _offset(offset), _info(info) {
+    : _info(info), _offset(offset) {
   }
   virtual void emit_code(LIR_Assembler* e);
   virtual CodeEmitInfo* info() const             { return _info; }
@@ -382,7 +405,7 @@ class PatchingStub: public CodeStub {
   Label         _patch_site_continuation;
   Register      _obj;
   CodeEmitInfo* _info;
-  int           _index;  // index of the patchable oop or Klass* in nmethod oop or metadata table if needed
+  int           _index;  // index of the patchable oop or Klass* in nmethod or metadata table if needed
   static int    _patch_info_offset;
 
   void align_patch_site(MacroAssembler* masm);
@@ -394,11 +417,9 @@ class PatchingStub: public CodeStub {
       _id(id)
     , _info(NULL)
     , _index(index) {
-    if (os::is_MP()) {
-      // force alignment of patch sites on MP hardware so we
-      // can guarantee atomic writes to the patch site.
-      align_patch_site(masm);
-    }
+    // force alignment of patch sites so we
+    // can guarantee atomic writes to the patch site.
+    align_patch_site(masm);
     _pc_start = masm->pc();
     masm->bind(_patch_site_entry);
   }
@@ -411,7 +432,7 @@ class PatchingStub: public CodeStub {
     if (_id == PatchingStub::access_field_id) {
       // embed a fixed offset to handle long patches which need to be offset by a word.
       // the patching code will just add the field offset field to this offset so
-      // that we can refernce either the high or low word of a double word field.
+      // that we can reference either the high or low word of a double word field.
       int field_offset = 0;
       switch (patch_code) {
       case lir_patch_low:         field_offset = lo_word_offset_in_bytes; break;
@@ -421,6 +442,8 @@ class PatchingStub: public CodeStub {
       }
       NativeMovRegMem* n_move = nativeMovRegMem_at(pc_start());
       n_move->set_offset(field_offset);
+      // Copy will never get executed, so only copy the part which is required for patching.
+      _bytes_to_copy = MAX2(n_move->num_bytes_to_end_of_patch(), (int)NativeGeneralJump::instruction_size);
     } else if (_id == load_klass_id || _id == load_mirror_id || _id == load_appendix_id) {
       assert(_obj != noreg, "must have register object for load_klass/load_mirror");
 #ifdef ASSERT
@@ -479,7 +502,7 @@ class SimpleExceptionStub: public CodeStub {
 
  public:
   SimpleExceptionStub(Runtime1::StubID stub, LIR_Opr obj, CodeEmitInfo* info):
-    _obj(obj), _info(info), _stub(stub) {
+    _obj(obj), _stub(stub), _info(info) {
   }
 
   void set_obj(LIR_Opr obj) {
@@ -538,4 +561,4 @@ class ArrayCopyStub: public CodeStub {
 #endif // PRODUCT
 };
 
-#endif // SHARE_VM_C1_C1_CODESTUBS_HPP
+#endif // SHARE_C1_C1_CODESTUBS_HPP

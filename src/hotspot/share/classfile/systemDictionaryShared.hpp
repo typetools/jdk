@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,15 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
-#define SHARE_VM_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
+#ifndef SHARE_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
+#define SHARE_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
 
-#include "oops/klass.hpp"
-#include "classfile/dictionary.hpp"
+#include "cds/filemap.hpp"
+#include "classfile/classLoaderData.hpp"
+#include "classfile/packageEntry.hpp"
 #include "classfile/systemDictionary.hpp"
-#include "memory/filemap.hpp"
+#include "oops/klass.hpp"
+#include "oops/oopHandle.hpp"
 
 
 /*===============================================================================
@@ -36,13 +38,12 @@
     Handling of the classes in the AppCDS archive
 
     To ensure safety and to simplify the implementation, archived classes are
-    "segregated" into several types. The following rules describe how they
+    "segregated" into 2 types. The following rules describe how they
     are stored and looked up.
 
 [1] Category of archived classes
 
-    There are 3 disjoint groups of classes stored in the AppCDS archive. They are
-    categorized as by their SharedDictionaryEntry::loader_type()
+    There are 2 disjoint groups of classes stored in the AppCDS archive:
 
     BUILTIN:              These classes may be defined ONLY by the BOOT/PLATFORM/APP
                           loaders.
@@ -83,127 +84,76 @@
     Bar id: 3 super: 0 interfaces: 1 source: /foo.jar
 
 
-[3] Identifying the loader_type of archived classes in the shared dictionary
-
-    Each archived Klass* C is associated with a SharedDictionaryEntry* E
+[3] Identifying the category of archived classes
 
     BUILTIN:              (C->shared_classpath_index() >= 0)
-    UNREGISTERED:         (C->shared_classpath_index() <  0)
+    UNREGISTERED:         (C->shared_classpath_index() == UNREGISTERED_INDEX (-9999))
 
 [4] Lookup of archived classes at run time:
 
     (a) BUILTIN loaders:
 
-        Search the shared directory for a BUILTIN class with a matching name.
+        search _builtin_dictionary
 
     (b) UNREGISTERED loaders:
 
-        The search originates with SystemDictionaryShared::lookup_from_stream().
-
-        Search the shared directory for a UNREGISTERED class with a matching
-        (name, clsfile_len, clsfile_crc32) tuple.
+        search _unregistered_dictionary for an entry that matches the
+        (name, clsfile_len, clsfile_crc32).
 
 ===============================================================================*/
 #define UNREGISTERED_INDEX -9999
 
+class BootstrapInfo;
 class ClassFileStream;
+class Dictionary;
+class DumpTimeSharedClassInfo;
+class DumpTimeSharedClassTable;
+class LambdaProxyClassDictionary;
+class RunTimeSharedClassInfo;
+class RunTimeSharedDictionary;
 
-// Archived classes need extra information not needed by traditionally loaded classes.
-// To keep footprint small, we add these in the dictionary entry instead of the InstanceKlass.
-class SharedDictionaryEntry : public DictionaryEntry {
+class SharedClassLoadingMark {
+ private:
+  Thread* THREAD;
+  InstanceKlass* _klass;
+ public:
+  SharedClassLoadingMark(Thread* current, InstanceKlass* ik) : THREAD(current), _klass(ik) {}
+  ~SharedClassLoadingMark() {
+    assert(THREAD != NULL, "Current thread is NULL");
+    assert(_klass != NULL, "InstanceKlass is NULL");
+    if (HAS_PENDING_EXCEPTION) {
+      if (_klass->is_shared()) {
+        _klass->set_shared_loading_failed();
+      }
+    }
+  }
+};
 
+class SystemDictionaryShared: public SystemDictionary {
+  friend class ExcludeDumpTimeSharedClasses;
 public:
-  enum LoaderType {
-    LT_BUILTIN,
-    LT_UNREGISTERED
-  };
-
   enum {
     FROM_FIELD_IS_PROTECTED = 1 << 0,
     FROM_IS_ARRAY           = 1 << 1,
     FROM_IS_OBJECT          = 1 << 2
   };
 
-  int             _id;
-  int             _clsfile_size;
-  int             _clsfile_crc32;
-  void*           _verifier_constraints; // FIXME - use a union here to avoid type casting??
-  void*           _verifier_constraint_flags;
-
-  // See "Identifying the loader_type of archived classes" comments above.
-  LoaderType loader_type() const {
-    Klass* k = (Klass*)literal();
-
-    if ((k->shared_classpath_index() != UNREGISTERED_INDEX)) {
-      return LT_BUILTIN;
-    } else {
-      return LT_UNREGISTERED;
-    }
-  }
-
-  SharedDictionaryEntry* next() {
-    return (SharedDictionaryEntry*)(DictionaryEntry::next());
-  }
-
-  bool is_builtin() const {
-    return loader_type() == LT_BUILTIN;
-  }
-  bool is_unregistered() const {
-    return loader_type() == LT_UNREGISTERED;
-  }
-
-  void add_verification_constraint(Symbol* name,
-         Symbol* from_name, bool from_field_is_protected, bool from_is_array, bool from_is_object);
-  int finalize_verification_constraints();
-  void check_verification_constraints(InstanceKlass* klass, TRAPS);
-  void metaspace_pointers_do(MetaspaceClosure* it) NOT_CDS_RETURN;
-};
-
-class SharedDictionary : public Dictionary {
-  SharedDictionaryEntry* get_entry_for_builtin_loader(const Symbol* name) const;
-  SharedDictionaryEntry* get_entry_for_unregistered_loader(const Symbol* name,
-                                                           int clsfile_size,
-                                                           int clsfile_crc32) const;
-
-  // Convenience functions
-  SharedDictionaryEntry* bucket(int index) const {
-    return (SharedDictionaryEntry*)(Dictionary::bucket(index));
-  }
-
-public:
-  SharedDictionaryEntry* find_entry_for(Klass* klass);
-  void finalize_verification_constraints();
-
-  bool add_non_builtin_klass(const Symbol* class_name,
-                             ClassLoaderData* loader_data,
-                             InstanceKlass* obj);
-
-  void update_entry(Klass* klass, int id);
-
-  Klass* find_class_for_builtin_loader(const Symbol* name) const;
-  Klass* find_class_for_unregistered_loader(const Symbol* name,
-                                            int clsfile_size,
-                                            int clsfile_crc32) const;
-  bool class_exists_for_unregistered_loader(const Symbol* name) {
-    return (get_entry_for_unregistered_loader(name, -1, -1) != NULL);
-  }
-};
-
-class SystemDictionaryShared: public SystemDictionary {
 private:
   // These _shared_xxxs arrays are used to initialize the java.lang.Package and
   // java.security.ProtectionDomain objects associated with each shared class.
   //
   // See SystemDictionaryShared::init_security_info for more info.
-  static objArrayOop _shared_protection_domains;
-  static objArrayOop _shared_jar_urls;
-  static objArrayOop _shared_jar_manifests;
+  static OopHandle _shared_protection_domains;
+  static OopHandle _shared_jar_urls;
+  static OopHandle _shared_jar_manifests;
 
   static InstanceKlass* load_shared_class_for_builtin_loader(
                                                Symbol* class_name,
                                                Handle class_loader,
                                                TRAPS);
   static Handle get_package_name(Symbol*  class_name, TRAPS);
+
+  static PackageEntry* get_package_entry_from_class(InstanceKlass* ik, Handle class_loader);
 
 
   // Package handling:
@@ -238,10 +188,6 @@ private:
                                     Handle manifest,
                                     Handle url,
                                     TRAPS);
-  static void define_shared_package(Symbol* class_name,
-                                    Handle class_loader,
-                                    ModuleEntry* mod_entry,
-                                    TRAPS);
 
   static Handle get_shared_jar_manifest(int shared_path_index, TRAPS);
   static Handle get_shared_jar_url(int shared_path_index, TRAPS);
@@ -253,15 +199,8 @@ private:
                                              TRAPS);
   static Handle get_shared_protection_domain(Handle class_loader,
                                              ModuleEntry* mod, TRAPS);
-  static Handle init_security_info(Handle class_loader, InstanceKlass* ik, TRAPS);
 
-  static void atomic_set_array_index(objArrayOop array, int index, oop o) {
-    // Benign race condition:  array.obj_at(index) may already be filled in.
-    // The important thing here is that all threads pick up the same result.
-    // It doesn't matter which racing thread wins, as long as only one
-    // result is used by all threads, and all future queries.
-    array->atomic_compare_exchange_oop(index, o, NULL);
-  }
+  static void atomic_set_array_index(OopHandle array, int index, oop o);
 
   static oop shared_protection_domain(int index);
   static void atomic_set_shared_protection_domain(int index, oop pd) {
@@ -282,9 +221,38 @@ private:
                                  InstanceKlass *ik,
                                  Handle class_loader,
                                  Handle protection_domain,
+                                 const ClassFileStream* cfs,
                                  TRAPS);
+  static DumpTimeSharedClassInfo* find_or_allocate_info_for(InstanceKlass* k);
+  static DumpTimeSharedClassInfo* find_or_allocate_info_for_locked(InstanceKlass* k);
+  static void write_dictionary(RunTimeSharedDictionary* dictionary,
+                               bool is_builtin);
+  static void write_lambda_proxy_class_dictionary(LambdaProxyClassDictionary* dictionary);
+  static bool is_jfr_event_class(InstanceKlass *k);
+  static bool is_registered_lambda_proxy_class(InstanceKlass* ik);
+  static bool warn_excluded(InstanceKlass* k, const char* reason);
+  static bool check_for_exclusion_impl(InstanceKlass* k);
+
+  static bool _dump_in_progress;
+  DEBUG_ONLY(static bool _no_class_loading_should_happen;)
+  static void print_on(const char* prefix,
+                       RunTimeSharedDictionary* builtin_dictionary,
+                       RunTimeSharedDictionary* unregistered_dictionary,
+                       LambdaProxyClassDictionary* lambda_dictionary,
+                       outputStream* st) NOT_CDS_RETURN;
 
 public:
+  static bool is_hidden_lambda_proxy(InstanceKlass* ik);
+  static bool is_early_klass(InstanceKlass* k);   // Was k loaded while JvmtiExport::is_early_phase()==true
+  static Handle init_security_info(Handle class_loader, InstanceKlass* ik, PackageEntry* pkg_entry, TRAPS);
+  static InstanceKlass* find_builtin_class(Symbol* class_name);
+
+  static const RunTimeSharedClassInfo* find_record(RunTimeSharedDictionary* static_dict,
+                                                   RunTimeSharedDictionary* dynamic_dict,
+                                                   Symbol* name);
+
+  static bool has_platform_or_app_classes();
+
   // Called by PLATFORM/APP loader only
   static InstanceKlass* find_or_load_shared_class(Symbol* class_name,
                                                Handle class_loader,
@@ -292,68 +260,25 @@ public:
 
 
   static void allocate_shared_data_arrays(int size, TRAPS);
-  static void oops_do(OopClosure* f);
-  static void roots_oops_do(OopClosure* f) {
-    oops_do(f);
-  }
 
   // Check if sharing is supported for the class loader.
   static bool is_sharing_possible(ClassLoaderData* loader_data);
-  static bool is_shared_class_visible_for_classloader(InstanceKlass* ik,
-                                                      Handle class_loader,
-                                                      const char* pkg_string,
-                                                      Symbol* pkg_name,
-                                                      PackageEntry* pkg_entry,
-                                                      ModuleEntry* mod_entry,
-                                                      TRAPS);
-  static PackageEntry* get_package_entry(Symbol* pkg,
-                                         ClassLoaderData *loader_data) {
-    if (loader_data != NULL) {
-      PackageEntryTable* pkgEntryTable = loader_data->packages();
-      return pkgEntryTable->lookup_only(pkg);
-    }
-    return NULL;
+
+  static bool add_unregistered_class(Thread* current, InstanceKlass* k);
+  static InstanceKlass* lookup_super_for_unregistered_class(Symbol* class_name,
+                                                            Symbol* super_name,  bool is_superclass);
+
+  static void init_dumptime_info(InstanceKlass* k) NOT_CDS_RETURN;
+  static void remove_dumptime_info(InstanceKlass* k) NOT_CDS_RETURN;
+
+  static Dictionary* boot_loader_dictionary() {
+    return ClassLoaderData::the_null_class_loader_data()->dictionary();
   }
 
-  static bool add_non_builtin_klass(Symbol* class_name, ClassLoaderData* loader_data,
-                                    InstanceKlass* k, TRAPS);
-  static Klass* dump_time_resolve_super_or_fail(Symbol* child_name,
-                                                Symbol* class_name,
-                                                Handle class_loader,
-                                                Handle protection_domain,
-                                                bool is_superclass,
-                                                TRAPS);
+  static void update_shared_entry(InstanceKlass* klass, int id);
+  static void set_shared_class_misc_info(InstanceKlass* k, ClassFileStream* cfs);
 
-  static size_t dictionary_entry_size() {
-    return (DumpSharedSpaces) ? sizeof(SharedDictionaryEntry) : sizeof(DictionaryEntry);
-  }
-  static void init_shared_dictionary_entry(Klass* k, DictionaryEntry* entry) NOT_CDS_RETURN;
-  static bool is_builtin(DictionaryEntry* ent) {
-    // Can't use virtual function is_builtin because DictionaryEntry doesn't initialize
-    // vtable because it's not constructed properly.
-    SharedDictionaryEntry* entry = (SharedDictionaryEntry*)ent;
-    return entry->is_builtin();
-  }
-
-  // For convenient access to the SharedDictionaryEntry's of the archived classes.
-  static SharedDictionary* shared_dictionary() {
-    assert(!DumpSharedSpaces, "not for dumping");
-    return (SharedDictionary*)SystemDictionary::shared_dictionary();
-  }
-
-  static SharedDictionary* boot_loader_dictionary() {
-    return (SharedDictionary*)ClassLoaderData::the_null_class_loader_data()->dictionary();
-  }
-
-  static void update_shared_entry(Klass* klass, int id) {
-    assert(DumpSharedSpaces, "sanity");
-    assert((SharedDictionary*)(klass->class_loader_data()->dictionary()) != NULL, "sanity");
-    ((SharedDictionary*)(klass->class_loader_data()->dictionary()))->update_entry(klass, id);
-  }
-
-  static void set_shared_class_misc_info(Klass* k, ClassFileStream* cfs);
-
-  static InstanceKlass* lookup_from_stream(const Symbol* class_name,
+  static InstanceKlass* lookup_from_stream(Symbol* class_name,
                                            Handle class_loader,
                                            Handle protection_domain,
                                            const ClassFileStream* st,
@@ -367,12 +292,88 @@ public:
   // ensures that you cannot load a shared class if its super type(s) are changed. However,
   // we need an additional check to ensure that the verification_constraints did not change
   // between dump time and runtime.
-  static bool add_verification_constraint(Klass* k, Symbol* name,
+  static bool add_verification_constraint(InstanceKlass* k, Symbol* name,
                   Symbol* from_name, bool from_field_is_protected,
                   bool from_is_array, bool from_is_object) NOT_CDS_RETURN_(false);
-  static void finalize_verification_constraints() NOT_CDS_RETURN;
   static void check_verification_constraints(InstanceKlass* klass,
-                                              TRAPS) NOT_CDS_RETURN;
+                                             TRAPS) NOT_CDS_RETURN;
+  static void set_class_has_failed_verification(InstanceKlass* ik) NOT_CDS_RETURN;
+  static bool has_class_failed_verification(InstanceKlass* ik) NOT_CDS_RETURN_(false);
+  static void add_lambda_proxy_class(InstanceKlass* caller_ik,
+                                     InstanceKlass* lambda_ik,
+                                     Symbol* invoked_name,
+                                     Symbol* invoked_type,
+                                     Symbol* method_type,
+                                     Method* member_method,
+                                     Symbol* instantiated_method_type, TRAPS) NOT_CDS_RETURN;
+  static InstanceKlass* get_shared_lambda_proxy_class(InstanceKlass* caller_ik,
+                                                      Symbol* invoked_name,
+                                                      Symbol* invoked_type,
+                                                      Symbol* method_type,
+                                                      Method* member_method,
+                                                      Symbol* instantiated_method_type) NOT_CDS_RETURN_(NULL);
+  static InstanceKlass* get_shared_nest_host(InstanceKlass* lambda_ik) NOT_CDS_RETURN_(NULL);
+  static InstanceKlass* prepare_shared_lambda_proxy_class(InstanceKlass* lambda_ik,
+                                                          InstanceKlass* caller_ik, TRAPS) NOT_CDS_RETURN_(NULL);
+  static bool check_linking_constraints(Thread* current, InstanceKlass* klass) NOT_CDS_RETURN_(false);
+  static void record_linking_constraint(Symbol* name, InstanceKlass* klass,
+                                     Handle loader1, Handle loader2) NOT_CDS_RETURN;
+  static bool is_builtin(InstanceKlass* k) {
+    return (k->shared_classpath_index() != UNREGISTERED_INDEX);
+  }
+  static void check_excluded_classes();
+  static bool check_for_exclusion(InstanceKlass* k, DumpTimeSharedClassInfo* info);
+  static void validate_before_archiving(InstanceKlass* k);
+  static bool is_excluded_class(InstanceKlass* k);
+  static void set_excluded(InstanceKlass* k);
+  static void dumptime_classes_do(class MetaspaceClosure* it);
+  static size_t estimate_size_for_archive();
+  static void write_to_archive(bool is_static_archive = true);
+  static void adjust_lambda_proxy_class_dictionary();
+  static void serialize_dictionary_headers(class SerializeClosure* soc,
+                                           bool is_static_archive = true);
+  static void serialize_vm_classes(class SerializeClosure* soc);
+  static void print() { return print_on(tty); }
+  static void print_on(outputStream* st) NOT_CDS_RETURN;
+  static void print_shared_archive(outputStream* st, bool is_static = true) NOT_CDS_RETURN;
+  static void print_table_statistics(outputStream* st) NOT_CDS_RETURN;
+  static bool empty_dumptime_table() NOT_CDS_RETURN_(true);
+  static void start_dumping() NOT_CDS_RETURN;
+  static Handle create_jar_manifest(const char* man, size_t size, TRAPS) NOT_CDS_RETURN_(Handle());
+  static bool is_supported_invokedynamic(BootstrapInfo* bsi) NOT_CDS_RETURN_(false);
+
+  DEBUG_ONLY(static bool no_class_loading_should_happen() {return _no_class_loading_should_happen;})
+
+#ifdef ASSERT
+  class NoClassLoadingMark: public StackObj {
+  public:
+    NoClassLoadingMark() {
+      assert(!_no_class_loading_should_happen, "must not be nested");
+      _no_class_loading_should_happen = true;
+    }
+    ~NoClassLoadingMark() {
+      _no_class_loading_should_happen = false;
+    }
+  };
+#endif
+
+  template <typename T>
+  static unsigned int hash_for_shared_dictionary_quick(T* ptr) {
+    assert(MetaspaceObj::is_shared((const MetaspaceObj*)ptr), "must be");
+    assert(ptr > (T*)SharedBaseAddress, "must be");
+    uintx offset = uintx(ptr) - uintx(SharedBaseAddress);
+    return primitive_hash<uintx>(offset);
+  }
+
+  static unsigned int hash_for_shared_dictionary(address ptr);
+
+#if INCLUDE_CDS_JAVA_HEAP
+private:
+  static void update_archived_mirror_native_pointers_for(RunTimeSharedDictionary* dict);
+  static void update_archived_mirror_native_pointers_for(LambdaProxyClassDictionary* dict);
+public:
+  static void update_archived_mirror_native_pointers() NOT_CDS_RETURN;
+#endif
 };
 
-#endif // SHARE_VM_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
+#endif // SHARE_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP

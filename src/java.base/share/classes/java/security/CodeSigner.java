@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,7 @@ import java.security.cert.CertPath;
 
 public final class CodeSigner implements Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = 6819288105193937581L;
 
     /**
@@ -53,7 +54,7 @@ public final class CodeSigner implements Serializable {
      */
     private CertPath signerCertPath;
 
-    /*
+    /**
      * The signature timestamp.
      *
      * @serial
@@ -133,10 +134,9 @@ public final class CodeSigner implements Serializable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (obj == null || (!(obj instanceof CodeSigner))) {
+        if (obj == null || (!(obj instanceof CodeSigner that))) {
             return false;
         }
-        CodeSigner that = (CodeSigner)obj;
 
         if (this == that) {
             return true;
@@ -172,7 +172,15 @@ public final class CodeSigner implements Serializable {
         return sb.toString();
     }
 
-    // Explicitly reset hash code value to -1
+    /**
+     * Restores the state of this object from the stream, and explicitly
+     * resets hash code value to -1.
+     *
+     * @param  ois the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
+     */
+    @java.io.Serial
     private void readObject(ObjectInputStream ois)
         throws IOException, ClassNotFoundException {
      ois.defaultReadObject();

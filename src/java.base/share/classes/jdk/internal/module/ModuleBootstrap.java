@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,18 +42,19 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.JavaLangModuleAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
-import jdk.internal.misc.JavaLangAccess;
-import jdk.internal.misc.JavaLangModuleAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.loader.ClassLoaders;
+import jdk.internal.misc.CDS;
 import jdk.internal.perf.PerfCounter;
 
 /**
@@ -86,8 +87,8 @@ public final class ModuleBootstrap {
     private static final String ALL_MODULE_PATH = "ALL-MODULE-PATH";
 
     // access to java.lang/module
-    private static final JavaLangModuleAccess JLMA
-        = SharedSecrets.getJavaLangModuleAccess();
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+    private static final JavaLangModuleAccess JLMA = SharedSecrets.getJavaLangModuleAccess();
 
     // The ModulePatcher for the initial configuration
     private static final ModulePatcher patcher = initModulePatcher();
@@ -134,20 +135,56 @@ public final class ModuleBootstrap {
     }
 
     /**
-     * Initialize the module system, returning the boot layer.
+     * Returns true if the archived boot layer can be used. The system properties
+     * are checked in the order that they are used by boot2.
+     */
+    private static boolean canUseArchivedBootLayer() {
+        return getProperty("jdk.module.upgrade.path") == null &&
+               getProperty("jdk.module.path") == null &&
+               getProperty("jdk.module.patch.0") == null &&       // --patch-module
+               getProperty("jdk.module.main") == null &&          // --module
+               getProperty("jdk.module.addmods.0") == null  &&    // --add-modules
+               getProperty("jdk.module.limitmods") == null &&     // --limit-modules
+               getProperty("jdk.module.addreads.0") == null &&    // --add-reads
+               getProperty("jdk.module.addexports.0") == null &&  // --add-exports
+               getProperty("jdk.module.addopens.0") == null;      // --add-opens
+    }
+
+    /**
+     * Initialize the module system, returning the boot layer. The boot layer
+     * is obtained from the CDS archive if possible, otherwise it is generated
+     * from the module graph.
      *
      * @see java.lang.System#initPhase2(boolean, boolean)
      */
-    public static ModuleLayer boot() throws Exception {
+    public static ModuleLayer boot() {
+        Counters.start();
 
+        ModuleLayer bootLayer;
+        ArchivedBootLayer archivedBootLayer = ArchivedBootLayer.get();
+        if (archivedBootLayer != null) {
+            assert canUseArchivedBootLayer();
+            bootLayer = archivedBootLayer.bootLayer();
+            BootLoader.getUnnamedModule(); // trigger <clinit> of BootLoader.
+            CDS.defineArchivedModules(ClassLoaders.platformClassLoader(), ClassLoaders.appClassLoader());
+
+            // assume boot layer has at least one module providing a service
+            // that is mapped to the application class loader.
+            JLA.bindToLoader(bootLayer, ClassLoaders.appClassLoader());
+        } else {
+            bootLayer = boot2();
+        }
+
+        Counters.publish("jdk.module.boot.totalTime");
+        return bootLayer;
+    }
+
+    private static ModuleLayer boot2() {
         // Step 0: Command line options
-
-        long t0 = System.nanoTime();
 
         ModuleFinder upgradeModulePath = finderFor("jdk.module.upgrade.path");
         ModuleFinder appModulePath = finderFor("jdk.module.path");
         boolean isPatched = patcher.hasPatches();
-
         String mainModule = System.getProperty("jdk.module.main");
         Set<String> addModules = addModules();
         Set<String> limitModules = limitModules();
@@ -157,6 +194,7 @@ public final class ModuleBootstrap {
         if (trace != null && Boolean.parseBoolean(trace))
             traceOutput = System.out;
 
+        Counters.add("jdk.module.boot.0.commandLineTime");
 
         // Step 1: The observable system modules, either all system modules
         // or the system modules pre-generated for the initial module (the
@@ -164,42 +202,61 @@ public final class ModuleBootstrap {
         // are pre-generated for the initial module then resolution can be
         // skipped.
 
-        long t1 = System.nanoTime();
-
         SystemModules systemModules = null;
         ModuleFinder systemModuleFinder;
 
         boolean haveModulePath = (appModulePath != null || upgradeModulePath != null);
         boolean needResolution = true;
+        boolean canArchive = false;
+        boolean hasSplitPackages;
+        boolean hasIncubatorModules;
 
-        if (!haveModulePath && addModules.isEmpty() && limitModules.isEmpty()) {
-            systemModules = SystemModuleFinders.systemModules(mainModule);
-            if (systemModules != null && !isPatched && (traceOutput == null)) {
-                needResolution = false;
-            }
-        }
-        if (systemModules == null) {
-            // all system modules are observable
-            systemModules = SystemModuleFinders.allSystemModules();
-        }
-        if (systemModules != null) {
-            // images build
-            systemModuleFinder = SystemModuleFinders.of(systemModules);
+        // If the java heap was archived at CDS dump time and the environment
+        // at dump time matches the current environment then use the archived
+        // system modules and finder.
+        ArchivedModuleGraph archivedModuleGraph = ArchivedModuleGraph.get(mainModule);
+        if (archivedModuleGraph != null
+                && !haveModulePath
+                && addModules.isEmpty()
+                && limitModules.isEmpty()
+                && !isPatched) {
+            systemModuleFinder = archivedModuleGraph.finder();
+            hasSplitPackages = archivedModuleGraph.hasSplitPackages();
+            hasIncubatorModules = archivedModuleGraph.hasIncubatorModules();
+            needResolution = (traceOutput != null);
         } else {
-            // exploded build or testing
-            systemModules = new ExplodedSystemModules();
-            systemModuleFinder = SystemModuleFinders.ofSystem();
+            if (!haveModulePath && addModules.isEmpty() && limitModules.isEmpty()) {
+                systemModules = SystemModuleFinders.systemModules(mainModule);
+                if (systemModules != null && !isPatched) {
+                    needResolution = (traceOutput != null);
+                    canArchive = true;
+                }
+            }
+            if (systemModules == null) {
+                // all system modules are observable
+                systemModules = SystemModuleFinders.allSystemModules();
+            }
+            if (systemModules != null) {
+                // images build
+                systemModuleFinder = SystemModuleFinders.of(systemModules);
+            } else {
+                // exploded build or testing
+                systemModules = new ExplodedSystemModules();
+                systemModuleFinder = SystemModuleFinders.ofSystem();
+            }
+
+            hasSplitPackages = systemModules.hasSplitPackages();
+            hasIncubatorModules = systemModules.hasIncubatorModules();
+            // not using the archived module graph - avoid accidental use
+            archivedModuleGraph = null;
         }
 
-        Counters.add("jdk.module.boot.1.systemModulesTime", t1);
-
+        Counters.add("jdk.module.boot.1.systemModulesTime");
 
         // Step 2: Define and load java.base. This patches all classes loaded
         // to date so that they are members of java.base. Once java.base is
         // loaded then resources in java.base are available for error messages
         // needed from here on.
-
-        long t2 = System.nanoTime();
 
         ModuleReference base = systemModuleFinder.find(JAVA_BASE).orElse(null);
         if (base == null)
@@ -208,10 +265,9 @@ public final class ModuleBootstrap {
         if (baseUri == null)
             throw new InternalError(JAVA_BASE + " does not have a location");
         BootLoader.loadModule(base);
-        Modules.defineModule(null, base.descriptor(), baseUri);
 
-        Counters.add("jdk.module.boot.2.defineBaseTime", t2);
-
+        Module baseModule = Modules.defineModule(null, base.descriptor(), baseUri);
+        JLA.addEnableNativeAccess(baseModule);
 
         // Step 2a: Scan all modules when --validate-modules specified
 
@@ -222,11 +278,10 @@ public final class ModuleBootstrap {
             }
         }
 
+        Counters.add("jdk.module.boot.2.defineBaseTime");
 
         // Step 3: If resolution is needed then create the module finder and
         // the set of root modules to resolve.
-
-        long t3 = System.nanoTime();
 
         ModuleFinder savedModuleFinder = null;
         ModuleFinder finder;
@@ -317,21 +372,23 @@ public final class ModuleBootstrap {
             roots = null;
         }
 
-        Counters.add("jdk.module.boot.3.optionsAndRootsTime", t3);
+        Counters.add("jdk.module.boot.3.optionsAndRootsTime");
 
         // Step 4: Resolve the root modules, with service binding, to create
         // the configuration for the boot layer. If resolution is not needed
         // then create the configuration for the boot layer from the
         // readability graph created at link time.
 
-        long t4 = System.nanoTime();
-
         Configuration cf;
         if (needResolution) {
-            cf = JLMA.resolveAndBind(finder, roots, traceOutput);
+            cf = Modules.newBootLayerConfiguration(finder, roots, traceOutput);
         } else {
-            Map<String, Set<String>> map = systemModules.moduleReads();
-            cf = JLMA.newConfiguration(systemModuleFinder, map);
+            if (archivedModuleGraph != null) {
+                cf = archivedModuleGraph.configuration();
+            } else {
+                Map<String, Set<String>> map = systemModules.moduleReads();
+                cf = JLMA.newConfiguration(systemModuleFinder, map);
+            }
         }
 
         // check that modules specified to --patch-module are resolved
@@ -342,8 +399,7 @@ public final class ModuleBootstrap {
                     .forEach(mn -> warnUnknownModule(PATCH_MODULE, mn));
         }
 
-        Counters.add("jdk.module.boot.4.resolveTime", t4);
-
+        Counters.add("jdk.module.boot.4.resolveTime");
 
         // Step 5: Map the modules in the configuration to class loaders.
         // The static configuration provides the mapping of standard and JDK
@@ -352,10 +408,13 @@ public final class ModuleBootstrap {
         // application module path) are defined to the application class
         // loader.
 
-        long t5 = System.nanoTime();
-
         // mapping of modules to class loaders
-        Function<String, ClassLoader> clf = ModuleLoaderMap.mappingFunction(cf);
+        Function<String, ClassLoader> clf;
+        if (archivedModuleGraph != null) {
+            clf = archivedModuleGraph.classLoaderFunction();
+        } else {
+            clf = ModuleLoaderMap.mappingFunction(cf);
+        }
 
         // check that all modules to be mapped to the boot loader will be
         // loaded from the runtime image
@@ -375,36 +434,34 @@ public final class ModuleBootstrap {
         }
 
         // check for split packages in the modules mapped to the built-in loaders
-        if (systemModules.hasSplitPackages() || isPatched || haveModulePath) {
+        if (hasSplitPackages || isPatched || haveModulePath) {
             checkSplitPackages(cf, clf);
         }
 
         // load/register the modules with the built-in class loaders
         loadModules(cf, clf);
-
-        Counters.add("jdk.module.boot.5.loadModulesTime", t5);
-
+        Counters.add("jdk.module.boot.5.loadModulesTime");
 
         // Step 6: Define all modules to the VM
 
-        long t6 = System.nanoTime();
         ModuleLayer bootLayer = ModuleLayer.empty().defineModules(cf, clf);
-        Counters.add("jdk.module.boot.6.layerCreateTime", t6);
-
+        Counters.add("jdk.module.boot.6.layerCreateTime");
 
         // Step 7: Miscellaneous
 
         // check incubating status
-        if (systemModules.hasIncubatorModules() || haveModulePath) {
+        if (hasIncubatorModules || haveModulePath) {
             checkIncubatingStatus(cf);
         }
 
-        // --add-reads, --add-exports/--add-opens, and --illegal-access
-        long t7 = System.nanoTime();
+        // --add-reads, --add-exports/--add-opens
         addExtraReads(bootLayer);
         boolean extraExportsOrOpens = addExtraExportsAndOpens(bootLayer);
-        addIllegalAccess(upgradeModulePath, systemModules, bootLayer, extraExportsOrOpens);
-        Counters.add("jdk.module.boot.7.adjustModulesTime", t7);
+
+        // add enable native access
+        addEnableNativeAccess(bootLayer);
+
+        Counters.add("jdk.module.boot.7.adjustModulesTime");
 
         // save module finders for later use
         if (savedModuleFinder != null) {
@@ -413,9 +470,18 @@ public final class ModuleBootstrap {
                 limitedFinder = new SafeModuleFinder(finder);
         }
 
-        // total time to initialize
-        Counters.add("jdk.module.boot.totalTime", t0);
-        Counters.publish();
+        // Archive module graph and boot layer can be archived at CDS dump time.
+        // Only allow the unnamed module case for now.
+        if (canArchive && (mainModule == null)) {
+            ArchivedModuleGraph.archive(hasSplitPackages,
+                                        hasIncubatorModules,
+                                        systemModuleFinder,
+                                        cf,
+                                        clf);
+            if (!hasSplitPackages && !hasIncubatorModules) {
+                ArchivedBootLayer.archive(bootLayer);
+            }
+        }
 
         return bootLayer;
     }
@@ -545,12 +611,13 @@ public final class ModuleBootstrap {
         // the system property is removed after decoding
         String value = getAndRemoveProperty(prefix + index);
         if (value == null) {
-            return Collections.emptySet();
+            return Set.of();
         } else {
             Set<String> modules = new HashSet<>();
             while (value != null) {
                 for (String s : value.split(",")) {
-                    if (s.length() > 0) modules.add(s);
+                    if (!s.isEmpty())
+                        modules.add(s);
                 }
                 index++;
                 value = getAndRemoveProperty(prefix + index);
@@ -565,7 +632,7 @@ public final class ModuleBootstrap {
     private static Set<String> limitModules() {
         String value = getAndRemoveProperty("jdk.module.limitmods");
         if (value == null) {
-            return Collections.emptySet();
+            return Set.of();
         } else {
             Set<String> names = new HashSet<>();
             for (String name : value.split(",")) {
@@ -701,106 +768,49 @@ public final class ModuleBootstrap {
                         Modules.addExports(m, pn, other);
                     }
                 }
-
             }
         }
     }
 
     /**
-     * Process the --illegal-access option (and its default) to open packages
-     * of system modules in the boot layer to code in unnamed modules.
+     * Process the --enable-native-access option to grant access to restricted methods to selected modules.
      */
-    private static void addIllegalAccess(ModuleFinder upgradeModulePath,
-                                         SystemModules systemModules,
-                                         ModuleLayer bootLayer,
-                                         boolean extraExportsOrOpens) {
-        String value = getAndRemoveProperty("jdk.module.illegalAccess");
-        IllegalAccessLogger.Mode mode = IllegalAccessLogger.Mode.ONESHOT;
-        if (value != null) {
-            switch (value) {
-                case "deny":
-                    return;
-                case "permit":
-                    break;
-                case "warn":
-                    mode = IllegalAccessLogger.Mode.WARN;
-                    break;
-                case "debug":
-                    mode = IllegalAccessLogger.Mode.DEBUG;
-                    break;
-                default:
-                    fail("Value specified to --illegal-access not recognized:"
-                            + " '" + value + "'");
-                    return;
-            }
-        }
-        IllegalAccessLogger.Builder builder
-            = new IllegalAccessLogger.Builder(mode, System.err);
-
-        Map<String, Set<String>> map1 = systemModules.concealedPackagesToOpen();
-        Map<String, Set<String>> map2 = systemModules.exportedPackagesToOpen();
-        if (map1.isEmpty() && map2.isEmpty()) {
-            // need to generate (exploded build)
-            IllegalAccessMaps maps = IllegalAccessMaps.generate(limitedFinder());
-            map1 = maps.concealedPackagesToOpen();
-            map2 = maps.exportedPackagesToOpen();
-        }
-
-        // open specific packages in the system modules
-        for (Module m : bootLayer.modules()) {
-            ModuleDescriptor descriptor = m.getDescriptor();
-            String name = m.getName();
-
-            // skip open modules
-            if (descriptor.isOpen()) {
-                continue;
-            }
-
-            // skip modules loaded from the upgrade module path
-            if (upgradeModulePath != null
-                && upgradeModulePath.find(name).isPresent()) {
-                continue;
-            }
-
-            Set<String> concealedPackages = map1.getOrDefault(name, Set.of());
-            Set<String> exportedPackages = map2.getOrDefault(name, Set.of());
-
-            // refresh the set of concealed and exported packages if needed
-            if (extraExportsOrOpens) {
-                concealedPackages = new HashSet<>(concealedPackages);
-                exportedPackages = new HashSet<>(exportedPackages);
-                Iterator<String> iterator = concealedPackages.iterator();
-                while (iterator.hasNext()) {
-                    String pn = iterator.next();
-                    if (m.isExported(pn, BootLoader.getUnnamedModule())) {
-                        // concealed package is exported to ALL-UNNAMED
-                        iterator.remove();
-                        exportedPackages.add(pn);
-                    }
-                }
-                iterator = exportedPackages.iterator();
-                while (iterator.hasNext()) {
-                    String pn = iterator.next();
-                    if (m.isOpen(pn, BootLoader.getUnnamedModule())) {
-                        // exported package is opened to ALL-UNNAMED
-                        iterator.remove();
-                    }
+    private static void addEnableNativeAccess(ModuleLayer layer) {
+        for (String name : decodeEnableNativeAccess()) {
+            if (name.equals("ALL-UNNAMED")) {
+                JLA.addEnableNativeAccessAllUnnamed();
+            } else {
+                Optional<Module> module = layer.findModule(name);
+                if (module.isPresent()) {
+                    JLA.addEnableNativeAccess(module.get());
+                } else {
+                    warnUnknownModule(ENABLE_NATIVE_ACCESS, name);
                 }
             }
-
-            // log reflective access to all types in concealed packages
-            builder.logAccessToConcealedPackages(m, concealedPackages);
-
-            // log reflective access to non-public members/types in exported packages
-            builder.logAccessToExportedPackages(m, exportedPackages);
-
-            // open the packages to unnamed modules
-            JavaLangAccess jla = SharedSecrets.getJavaLangAccess();
-            jla.addOpensToAllUnnamed(m, concat(concealedPackages.iterator(),
-                                               exportedPackages.iterator()));
         }
+    }
 
-        builder.complete();
+    /**
+     * Returns the set of module names specified by --enable-native-access options.
+     */
+    private static Set<String> decodeEnableNativeAccess() {
+        String prefix = "jdk.module.enable.native.access.";
+        int index = 0;
+        // the system property is removed after decoding
+        String value = getAndRemoveProperty(prefix + index);
+        Set<String> modules = new HashSet<>();
+        if (value == null) {
+            return modules;
+        }
+        while (value != null) {
+            for (String s : value.split(",")) {
+                if (!s.isEmpty())
+                    modules.add(s);
+            }
+            index++;
+            value = getAndRemoveProperty(prefix + index);
+        }
+        return modules;
     }
 
     /**
@@ -817,7 +827,7 @@ public final class ModuleBootstrap {
         // the system property is removed after decoding
         String value = getAndRemoveProperty(prefix + index);
         if (value == null)
-            return Collections.emptyMap();
+            return Map.of();
 
         Map<String, List<String>> map = new HashMap<>();
 
@@ -842,7 +852,7 @@ public final class ModuleBootstrap {
             List<String> values = map.computeIfAbsent(key, k -> new ArrayList<>());
             int ntargets = 0;
             for (String s : rhs.split(regex)) {
-                if (s.length() > 0) {
+                if (!s.isEmpty()) {
                     values.add(s);
                     ntargets++;
                 }
@@ -865,11 +875,19 @@ public final class ModuleBootstrap {
         return decode(prefix, ",", true);
     }
 
+
+    /**
+     * Gets the named system property
+     */
+    private static String getProperty(String key) {
+        return System.getProperty(key);
+    }
+
     /**
      * Gets and remove the named system property
      */
     private static String getAndRemoveProperty(String key) {
-        return (String)System.getProperties().remove(key);
+        return (String) System.getProperties().remove(key);
     }
 
     /**
@@ -918,7 +936,7 @@ public final class ModuleBootstrap {
     private static final String ADD_OPENS    = "--add-opens";
     private static final String ADD_READS    = "--add-reads";
     private static final String PATCH_MODULE = "--patch-module";
-
+    private static final String ENABLE_NATIVE_ACCESS = "--enable-native-access";
 
     /*
      * Returns the command-line option name corresponds to the specified
@@ -939,25 +957,6 @@ public final class ModuleBootstrap {
             default:
                 throw new IllegalArgumentException(prefix);
         }
-    }
-
-    /**
-     * Returns an iterator that yields all elements of the first iterator
-     * followed by all the elements of the second iterator.
-     */
-    static <T> Iterator<T> concat(Iterator<T> iterator1, Iterator<T> iterator2) {
-        return new Iterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return iterator1.hasNext() || iterator2.hasNext();
-            }
-            @Override
-            public T next() {
-                if (iterator1.hasNext()) return iterator1.next();
-                if (iterator2.hasNext()) return iterator2.next();
-                throw new NoSuchElementException();
-            }
-        };
     }
 
     /**
@@ -995,6 +994,9 @@ public final class ModuleBootstrap {
         private static final boolean PUBLISH_COUNTERS;
         private static final boolean PRINT_COUNTERS;
         private static Map<String, Long> counters;
+        private static long startTime;
+        private static long previousTime;
+
         static {
             String s = System.getProperty("jdk.module.boot.usePerfData");
             if (s == null) {
@@ -1008,27 +1010,44 @@ public final class ModuleBootstrap {
         }
 
         /**
-         * Add a counter
+         * Start counting time.
          */
-        static void add(String name, long start) {
-            if (PUBLISH_COUNTERS || PRINT_COUNTERS) {
-                counters.put(name, (System.nanoTime() - start));
+        static void start() {
+            if (PUBLISH_COUNTERS) {
+                startTime = previousTime = System.nanoTime();
+            }
+        }
+
+        /**
+         * Add a counter - storing the time difference between now and the
+         * previous add or the start.
+         */
+        static void add(String name) {
+            if (PUBLISH_COUNTERS) {
+                long current = System.nanoTime();
+                long elapsed = current - previousTime;
+                previousTime = current;
+                counters.put(name, elapsed);
             }
         }
 
         /**
          * Publish the counters to the instrumentation buffer or stdout.
          */
-        static void publish() {
-            if (PUBLISH_COUNTERS || PRINT_COUNTERS) {
+        static void publish(String totalTimeName) {
+            if (PUBLISH_COUNTERS) {
+                long currentTime = System.nanoTime();
                 for (Map.Entry<String, Long> e : counters.entrySet()) {
                     String name = e.getKey();
                     long value = e.getValue();
-                    if (PUBLISH_COUNTERS)
-                        PerfCounter.newPerfCounter(name).set(value);
+                    PerfCounter.newPerfCounter(name).set(value);
                     if (PRINT_COUNTERS)
                         System.out.println(name + " = " + value);
                 }
+                long elapsedTotal = currentTime - startTime;
+                PerfCounter.newPerfCounter(totalTimeName).set(elapsedTotal);
+                if (PRINT_COUNTERS)
+                    System.out.println(totalTimeName + " = " + elapsedTotal);
             }
         }
     }

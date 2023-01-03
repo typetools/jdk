@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -85,6 +85,11 @@ import java.util.Objects;
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class URLDecoder {
 
+    /**
+     * Do not call.
+     */
+    private URLDecoder() {}
+
     // The platform default encoding
     static String dfltEncName = URLEncoder.dfltEncName;
 
@@ -137,7 +142,7 @@ public @UsesObjectEquals class URLDecoder {
      * @since 1.4
      */
     public static String decode(String s, String enc) throws UnsupportedEncodingException {
-        if (enc.length() == 0) {
+        if (enc.isEmpty()) {
             throw new UnsupportedEncodingException ("URLDecoder: empty string enc parameter");
         }
 

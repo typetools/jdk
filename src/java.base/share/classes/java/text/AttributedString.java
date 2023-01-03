@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -91,7 +91,7 @@ public class AttributedString {
 
             text = buffer.toString();
 
-            if (text.length() > 0) {
+            if (!text.isEmpty()) {
                 // Determine the runs, creating a new run when the attributes
                 // differ.
                 int offset = 0;
@@ -123,7 +123,7 @@ public class AttributedString {
     /**
      * Constructs an AttributedString instance with the given text.
      * @param text The text for this attributed string.
-     * @exception NullPointerException if <code>text</code> is null.
+     * @throws    NullPointerException if {@code text} is null.
      */
     public AttributedString(String text) {
         if (text == null) {
@@ -136,9 +136,9 @@ public class AttributedString {
      * Constructs an AttributedString instance with the given text and attributes.
      * @param text The text for this attributed string.
      * @param attributes The attributes that apply to the entire string.
-     * @exception NullPointerException if <code>text</code> or
-     *            <code>attributes</code> is null.
-     * @exception IllegalArgumentException if the text has length 0
+     * @throws    NullPointerException if {@code text} or
+     *            {@code attributes} is null.
+     * @throws    IllegalArgumentException if the text has length 0
      * and the attributes parameter is not an empty Map (attributes
      * cannot be applied to a 0-length range).
      */
@@ -150,7 +150,7 @@ public class AttributedString {
         }
         this.text = text;
 
-        if (text.length() == 0) {
+        if (text.isEmpty()) {
             if (attributes.isEmpty())
                 return;
             throw new IllegalArgumentException("Can't add attribute to 0-length text");
@@ -177,7 +177,7 @@ public class AttributedString {
      * Constructs an AttributedString instance with the given attributed
      * text represented by AttributedCharacterIterator.
      * @param text The text for this attributed string.
-     * @exception NullPointerException if <code>text</code> is null.
+     * @throws    NullPointerException if {@code text} is null.
      */
     public AttributedString(AttributedCharacterIterator text) {
         // If performance is critical, this constructor should be
@@ -198,8 +198,8 @@ public class AttributedString {
      * @param beginIndex Index of the first character of the range.
      * @param endIndex Index of the character following the last character
      * of the range.
-     * @exception NullPointerException if <code>text</code> is null.
-     * @exception IllegalArgumentException if the subrange given by
+     * @throws    NullPointerException if {@code text} is null.
+     * @throws    IllegalArgumentException if the subrange given by
      * beginIndex and endIndex is out of the text range.
      * @see java.text.Annotation
      */
@@ -226,8 +226,8 @@ public class AttributedString {
      * @param attributes Specifies attributes to be extracted
      * from the text. If null is specified, all available attributes will
      * be used.
-     * @exception NullPointerException if <code>text</code> is null.
-     * @exception IllegalArgumentException if the subrange given by
+     * @throws    NullPointerException if {@code text} is null.
+     * @throws    IllegalArgumentException if the subrange given by
      * beginIndex and endIndex is out of the text range.
      * @see java.text.Annotation
      */
@@ -313,8 +313,8 @@ public class AttributedString {
      * Adds an attribute to the entire string.
      * @param attribute the attribute key
      * @param value the value of the attribute; may be null
-     * @exception NullPointerException if <code>attribute</code> is null.
-     * @exception IllegalArgumentException if the AttributedString has length 0
+     * @throws    NullPointerException if {@code attribute} is null.
+     * @throws    IllegalArgumentException if the AttributedString has length 0
      * (attributes cannot be applied to a 0-length range).
      */
     public void addAttribute(Attribute attribute, Object value) {
@@ -337,8 +337,8 @@ public class AttributedString {
      * @param value The value of the attribute. May be null.
      * @param beginIndex Index of the first character of the range.
      * @param endIndex Index of the character following the last character of the range.
-     * @exception NullPointerException if <code>attribute</code> is null.
-     * @exception IllegalArgumentException if beginIndex is less than 0, endIndex is
+     * @throws    NullPointerException if {@code attribute} is null.
+     * @throws    IllegalArgumentException if beginIndex is less than 0, endIndex is
      * greater than the length of the string, or beginIndex and endIndex together don't
      * define a non-empty subrange of the string.
      */
@@ -362,8 +362,8 @@ public class AttributedString {
      * @param beginIndex Index of the first character of the range.
      * @param endIndex Index of the character following the last
      * character of the range.
-     * @exception NullPointerException if <code>attributes</code> is null.
-     * @exception IllegalArgumentException if beginIndex is less than
+     * @throws    NullPointerException if {@code attributes} is null.
+     * @throws    IllegalArgumentException if beginIndex is less than
      * 0, endIndex is greater than the length of the string, or
      * beginIndex and endIndex together don't define a non-empty
      * subrange of the string and the attributes parameter is not an
@@ -586,7 +586,7 @@ public class AttributedString {
      * @param beginIndex the index of the first character
      * @param endIndex the index of the character following the last character
      * @return an iterator providing access to the text and its attributes
-     * @exception IllegalArgumentException if beginIndex is less than 0,
+     * @throws    IllegalArgumentException if beginIndex is less than 0,
      * endIndex is greater than the length of the string, or beginIndex is
      * greater than endIndex.
      */
@@ -782,11 +782,9 @@ public class AttributedString {
             if (this == obj) {
                 return true;
             }
-            if (!(obj instanceof AttributedStringIterator)) {
+            if (!(obj instanceof AttributedStringIterator that)) {
                 return false;
             }
-
-            AttributedStringIterator that = (AttributedStringIterator) obj;
 
             if (AttributedString.this != that.getString())
                 return false;
@@ -1104,12 +1102,10 @@ class AttributeEntry implements Map.Entry<Attribute,Object> {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof AttributeEntry)) {
+        if (!(o instanceof AttributeEntry other)) {
             return false;
         }
-        AttributeEntry other = (AttributeEntry) o;
-        return other.key.equals(key) &&
-            (value == null ? other.value == null : other.value.equals(value));
+        return other.key.equals(key) && Objects.equals(other.value, value);
     }
 
     public Attribute getKey() {

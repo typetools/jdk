@@ -91,9 +91,10 @@ private static CallSite bootstrapDynamic(MethodHandles.Lookup caller, String nam
 abstract
 public @UsesObjectEquals class CallSite {
 
-    // The actual payload of this call site:
+    // The actual payload of this call site.
+    // Can be modified using {@link MethodHandleNatives#setCallSiteTargetNormal} or {@link MethodHandleNatives#setCallSiteTargetVolatile}.
     /*package-private*/
-    MethodHandle target;    // Note: This field is known to the JVM.  Do not change.
+    final MethodHandle target;  // Note: This field is known to the JVM.
 
     /**
      * Make a blank call site object with the given method type.
@@ -133,11 +134,11 @@ public @UsesObjectEquals class CallSite {
      */
     /*package-private*/
     CallSite(MethodType targetType, MethodHandle createTargetHook) throws Throwable {
-        this(targetType);
+        this(targetType); // need to initialize target to make CallSite.type() work in createTargetHook
         ConstantCallSite selfCCS = (ConstantCallSite) this;
         MethodHandle boundTarget = (MethodHandle) createTargetHook.invokeWithArguments(selfCCS);
-        checkTargetChange(this.target, boundTarget);
-        this.target = boundTarget;
+        setTargetNormal(boundTarget); // ConstantCallSite doesn't publish CallSite.target
+        UNSAFE.storeStoreFence(); // barrier between target and isFrozen updates
     }
 
     /**
@@ -194,11 +195,12 @@ public @UsesObjectEquals class CallSite {
      */
     public abstract void setTarget(MethodHandle newTarget);
 
-    void checkTargetChange(MethodHandle oldTarget, MethodHandle newTarget) {
-        MethodType oldType = oldTarget.type();
+    private void checkTargetChange(MethodHandle newTarget) {
+        MethodType oldType = target.type(); // target is always present
         MethodType newType = newTarget.type();  // null check!
-        if (!newType.equals(oldType))
+        if (newType != oldType) {
             throw wrongTargetType(newTarget, oldType);
+        }
     }
 
     private static WrongMethodTypeException wrongTargetType(MethodHandle target, MethodType type) {
@@ -221,7 +223,8 @@ public @UsesObjectEquals class CallSite {
      */
     public abstract MethodHandle dynamicInvoker();
 
-    /*non-public*/ MethodHandle makeDynamicInvoker() {
+    /*package-private*/
+    MethodHandle makeDynamicInvoker() {
         MethodHandle getTarget = getTargetHandle().bindArgumentL(0, this);
         MethodHandle invoker = MethodHandles.exactInvoker(this.type());
         return MethodHandles.foldArguments(invoker, getTarget);
@@ -286,19 +289,24 @@ public @UsesObjectEquals class CallSite {
     }
 
     /*package-private*/
-    void setTargetNormal(MethodHandle newTarget) {
+    final void setTargetNormal(MethodHandle newTarget) {
+        checkTargetChange(newTarget);
         MethodHandleNatives.setCallSiteTargetNormal(this, newTarget);
     }
+
     /*package-private*/
-    MethodHandle getTargetVolatile() {
-        return (MethodHandle) UNSAFE.getObjectVolatile(this, getTargetOffset());
+    final MethodHandle getTargetVolatile() {
+        return (MethodHandle) UNSAFE.getReferenceVolatile(this, getTargetOffset());
     }
+
     /*package-private*/
-    void setTargetVolatile(MethodHandle newTarget) {
+    final void setTargetVolatile(MethodHandle newTarget) {
+        checkTargetChange(newTarget);
         MethodHandleNatives.setCallSiteTargetVolatile(this, newTarget);
     }
 
     // this implements the upcall from the JVM, MethodHandleNatives.linkCallSite:
+    /*package-private*/
     static CallSite makeSite(MethodHandle bootstrapMethod,
                              // Callee information:
                              String name, MethodType type,

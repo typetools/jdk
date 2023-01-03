@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,7 +52,7 @@ class VMConnection {
 
     private final Connector connector;
     private final Map<String, com.sun.jdi.connect.Connector.Argument> connectorArgs;
-    private final int traceFlags;
+    private int traceFlags;
 
     synchronized void notifyOutputComplete() {
         outputCompleteCount++;
@@ -78,7 +78,8 @@ class VMConnection {
         return null;
     }
 
-    private Map <String, com.sun.jdi.connect.Connector.Argument> parseConnectorArgs(Connector connector, String argString) {
+    private Map <String, com.sun.jdi.connect.Connector.Argument>
+            parseConnectorArgs(Connector connector, String argString, String extraOptions) {
         Map<String, com.sun.jdi.connect.Connector.Argument> arguments = connector.defaultArguments();
 
         /*
@@ -121,9 +122,19 @@ class VMConnection {
              */
             if (name.equals("options")) {
                 StringBuilder sb = new StringBuilder();
+                if (extraOptions != null) {
+                    sb.append(extraOptions).append(" ");
+                    // set extraOptions to null to avoid appending it again
+                    extraOptions = null;
+                }
                 for (String s : splitStringAtNonEnclosedWhiteSpace(value)) {
+                    boolean wasEnclosed = false;
                     while (isEnclosed(s, "\"") || isEnclosed(s, "'")) {
+                        wasEnclosed = true;
                         s = s.substring(1, s.length() - 1);
+                    }
+                    if (wasEnclosed && hasWhitespace(s)) {
+                        s = "\"" + s + "\"";
                     }
                     sb.append(s);
                     sb.append(" ");
@@ -150,7 +161,24 @@ class VMConnection {
             throw new IllegalArgumentException
                 (MessageOutput.format("Illegal connector argument", argString));
         }
+        if (extraOptions != null) {
+            // there was no "options" specified in argString
+            Connector.Argument argument = arguments.get("options");
+            if (argument != null) {
+                argument.setValue(extraOptions);
+            }
+        }
         return arguments;
+    }
+
+    private static boolean hasWhitespace(String string) {
+        int length = string.length();
+        for (int i = 0; i < length; i++) {
+            if (Character.isWhitespace(string.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isEnclosed(String value, String enclosingChar) {
@@ -299,7 +327,7 @@ class VMConnection {
         return (pos + 1 == arr.length);
     }
 
-    VMConnection(String connectSpec, int traceFlags) {
+    VMConnection(String connectSpec, int traceFlags, String extraOptions) {
         String nameString;
         String argString;
         int index = connectSpec.indexOf(':');
@@ -317,8 +345,19 @@ class VMConnection {
                 (MessageOutput.format("No connector named:", nameString));
         }
 
-        connectorArgs = parseConnectorArgs(connector, argString);
+        connectorArgs = parseConnectorArgs(connector, argString, extraOptions);
         this.traceFlags = traceFlags;
+    }
+
+    public void setTraceFlags(int flags) {
+        this.traceFlags = flags;
+        /*
+         * If vm is not connected now, then vm.setDebugTraceMode() will
+         * be called when it is connected.
+         */
+        if (vm != null) {
+            vm.setDebugTraceMode(flags);
+        }
     }
 
     synchronized VirtualMachine open() {
@@ -446,11 +485,10 @@ class VMConnection {
                                                       //   printDirect()
             }
         } catch (IOException ex) {
-            String s = ex.getMessage();
-            if (!s.startsWith("Bad file number")) {
+            if (!ex.getMessage().equalsIgnoreCase("stream closed")) {
                   throw ex;
             }
-            // else we got a Bad file number IOException which just means
+            // else we got a "Stream closed" IOException which just means
             // that the debuggee has gone away.  We'll just treat it the
             // same as if we got an EOF.
         }

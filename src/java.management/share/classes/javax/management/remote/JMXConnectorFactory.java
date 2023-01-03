@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -137,7 +137,7 @@ import sun.reflect.misc.ReflectUtil;
  * <code>MalformedURLException</code> if there is none.  An
  * implementation may choose to find providers by other means.  For
  * example, it may support <a
- * href="{@docRoot}/java/util/ServiceLoader.html#developing-service-providers">service providers</a>,
+ * href="{@docRoot}/java.base/java/util/ServiceLoader.html#developing-service-providers">service providers</a>,
  * where the service interface is <code>JMXConnectorProvider</code>.</p>
  *
  * <p>Every implementation must support the RMI connector protocol with
@@ -378,6 +378,7 @@ public class JMXConnectorFactory {
         return provider.newJMXConnector(serviceURL, fixedenv);
     }
 
+    @SuppressWarnings("removal")
     private static String resolvePkgs(Map<String, ?> env)
             throws JMXProviderException {
 
@@ -405,7 +406,7 @@ public class JMXConnectorFactory {
         }
 
         final String pkgs = (String) pkgsObject;
-        if (pkgs.trim().equals(""))
+        if (pkgs.trim().isEmpty())
             return null;
 
         // pkgs may not contain an empty element
@@ -446,6 +447,7 @@ public class JMXConnectorFactory {
         return instance;
     }
 
+    @SuppressWarnings("removal")
     private static ClassLoader wrap(final ClassLoader parent) {
         return parent != null ? AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
             @Override

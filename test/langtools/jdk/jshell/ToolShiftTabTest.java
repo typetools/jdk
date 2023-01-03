@@ -26,6 +26,7 @@
  * @bug 8166334 8188894
  * @summary test shift-tab shortcuts "fixes"
  * @modules
+ *     jdk.jshell/jdk.internal.jshell.tool:open
  *     jdk.jshell/jdk.internal.jshell.tool.resources:open
  *     jdk.jshell/jdk.jshell:open
  * @build UITesting
@@ -126,7 +127,7 @@ public class ToolShiftTabTest extends UITesting {
         doRunTest((inputSink, out) -> {
             inputSink.write("123");
             inputSink.write(FIX + "z");
-            waitOutput(out, "Unexpected character after Shift-Tab");
+            waitOutput(out, "Unexpected character after Shift\\+Tab");
         });
     }
 }

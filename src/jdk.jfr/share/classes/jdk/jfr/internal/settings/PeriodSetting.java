@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,6 @@ import jdk.jfr.Label;
 import jdk.jfr.MetadataDefinition;
 import jdk.jfr.Name;
 import jdk.jfr.internal.PlatformEventType;
-import jdk.jfr.internal.Control;
 import jdk.jfr.internal.Type;
 import jdk.jfr.internal.Utils;
 
@@ -41,7 +40,7 @@ import jdk.jfr.internal.Utils;
 @Label("Period")
 @Description("Record event at interval")
 @Name(Type.SETTINGS_PREFIX + "Period")
-public final class PeriodSetting extends Control {
+public final class PeriodSetting extends JDKSettingControl {
     private static final long typeId = Type.getTypeId(PeriodSetting.class);
 
     public static final String EVERY_CHUNK = "everyChunk";
@@ -51,17 +50,17 @@ public final class PeriodSetting extends Control {
     private final PlatformEventType eventType;
     private String value = EVERY_CHUNK;
 
-    public PeriodSetting(PlatformEventType eventType, String defaultValue) {
-        super(defaultValue);
+    public PeriodSetting(PlatformEventType eventType) {
         this.eventType = Objects.requireNonNull(eventType);
     }
 
     @Override
     public String combine(Set<String> values) {
-        long min = Long.MAX_VALUE;
+
         boolean beginChunk = false;
         boolean endChunk = false;
-        String text = EVERY_CHUNK;
+        Long min = null;
+        String text = null;
         for (String value : values) {
             switch (value) {
             case EVERY_CHUNK:
@@ -75,14 +74,21 @@ public final class PeriodSetting extends Control {
                 endChunk = true;
                 break;
             default:
-                long l = Utils.parseTimespan(value);
-                if (l < min) {
+                long l = Utils.parseTimespanWithInfinity(value);
+                // Always accept first specified value
+                if (min == null) {
                     text = value;
                     min = l;
+                } else {
+                    if (l < min) {
+                        text = value;
+                        min = l;
+                    }
                 }
             }
         }
-        if (min != Long.MAX_VALUE) {
+        // A specified interval trumps *_CHUNK
+        if (min != null) {
             return text;
         }
         if (beginChunk && !endChunk) {
@@ -91,7 +97,7 @@ public final class PeriodSetting extends Control {
         if (!beginChunk && endChunk) {
             return END_CHUNK;
         }
-        return text;
+        return EVERY_CHUNK; // also default
     }
 
     @Override
@@ -107,7 +113,12 @@ public final class PeriodSetting extends Control {
             eventType.setPeriod(0, false, true);
             break;
         default:
-            eventType.setPeriod(Utils.parseTimespan(value) / 1_000_000, false, false);
+            long nanos = Utils.parseTimespanWithInfinity(value);
+            if (nanos != Long.MAX_VALUE) {
+                eventType.setPeriod(nanos / 1_000_000, false, false);
+            } else {
+                eventType.setPeriod(Long.MAX_VALUE, false, false);
+            }
         }
         this.value = value;
     }

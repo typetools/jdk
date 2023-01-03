@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -278,6 +278,12 @@ public abstract class FileChannel
      *          support creating file channels, or an unsupported open option is
      *          specified, or the array contains an attribute that cannot be set
      *          atomically when creating the file
+     * @throws  FileAlreadyExistsException
+     *          If a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          and the file is being opened for writing
+     *          <i>(<a href="../file/package-summary.html#optspecex">optional
+     *          specific exception</a>)</i>
      * @throws  IOException
      *          If an I/O error occurs
      * @throws  SecurityException
@@ -327,6 +333,12 @@ public abstract class FileChannel
      *          If the {@code path} is associated with a provider that does not
      *          support creating file channels, or an unsupported open option is
      *          specified
+     * @throws  FileAlreadyExistsException
+     *          If a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          and the file is being opened for writing
+     *          <i>(<a href="../file/package-summary.html#optspecex">optional
+     *          specific exception</a>)</i>
      * @throws  IOException
      *          If an I/O error occurs
      * @throws  SecurityException
@@ -650,7 +662,8 @@ public abstract class FileChannel
      * number of bytes will be transferred if the source channel has fewer than
      * {@code count} bytes remaining, or if the source channel is non-blocking
      * and has fewer than {@code count} bytes immediately available in its
-     * input buffer.
+     * input buffer. No bytes are transferred, and zero is returned, if the
+     * source has reached end-of-stream.
      *
      * <p> This method does not modify this channel's position.  If the given
      * position is greater than the file's current size then no bytes are
@@ -727,7 +740,7 @@ public abstract class FileChannel
      *          size
      *
      * @throws  IllegalArgumentException
-     *          If the position is negative
+     *          If the position is negative or the buffer is read-only
      *
      * @throws  NonReadableChannelException
      *          If this channel was not opened for reading
@@ -799,7 +812,7 @@ public abstract class FileChannel
     // -- Memory-mapped buffers --
 
     /**
-     * A typesafe enumeration for file-mapping modes.
+     * A file-mapping mode.
      *
      * @since 1.4
      *
@@ -827,6 +840,12 @@ public abstract class FileChannel
 
         private final String name;
 
+        /**
+         * Constructs an instance of this class. This constructor may be used
+         * by code in java.base to create file mapping modes beyond the file
+         * mapping modes defined here.
+         * @param name the name of the map mode
+         */
         private MapMode(String name) {
             this.name = name;
         }
@@ -845,8 +864,8 @@ public abstract class FileChannel
     /**
      * Maps a region of this channel's file directly into memory.
      *
-     * <p> A region of a file may be mapped into memory in one of three modes:
-     * </p>
+     * <p> The {@code mode} parameter specifies how the region of the file is
+     * mapped and may be one of the following modes:
      *
      * <ul>
      *
@@ -866,6 +885,8 @@ public abstract class FileChannel
      *   MapMode#PRIVATE MapMode.PRIVATE}) </p></li>
      *
      * </ul>
+     *
+     * <p> An implementation may support additional map modes.
      *
      * <p> For a read-only mapping, this channel must have been opened for
      * reading; for a read/write or private mapping, this channel must have
@@ -900,7 +921,8 @@ public abstract class FileChannel
      *         MapMode#READ_WRITE READ_WRITE}, or {@link MapMode#PRIVATE
      *         PRIVATE} defined in the {@link MapMode} class, according to
      *         whether the file is to be mapped read-only, read/write, or
-     *         privately (copy-on-write), respectively
+     *         privately (copy-on-write), respectively, or an implementation
+     *         specific map mode
      *
      * @param  position
      *         The position within the file at which the mapped region
@@ -913,16 +935,21 @@ public abstract class FileChannel
      * @return  The mapped byte buffer
      *
      * @throws NonReadableChannelException
-     *         If the {@code mode} is {@link MapMode#READ_ONLY READ_ONLY} but
-     *         this channel was not opened for reading
+     *         If the {@code mode} is {@link MapMode#READ_ONLY READ_ONLY} or
+     *         an implementation specific map mode requiring read access
+     *         but this channel was not opened for reading
      *
      * @throws NonWritableChannelException
-     *         If the {@code mode} is {@link MapMode#READ_WRITE READ_WRITE} or
-     *         {@link MapMode#PRIVATE PRIVATE} but this channel was not opened
-     *         for both reading and writing
+     *         If the {@code mode} is {@link MapMode#READ_WRITE READ_WRITE}.
+     *         {@link MapMode#PRIVATE PRIVATE} or an implementation specific
+     *         map mode requiring write access but this channel was not
+     *         opened for both reading and writing
      *
      * @throws IllegalArgumentException
      *         If the preconditions on the parameters do not hold
+     *
+     * @throws UnsupportedOperationException
+     *         If an unsupported map mode is specified
      *
      * @throws IOException
      *         If some other I/O error occurs
@@ -930,8 +957,7 @@ public abstract class FileChannel
      * @see java.nio.channels.FileChannel.MapMode
      * @see java.nio.MappedByteBuffer
      */
-    public abstract MappedByteBuffer map(MapMode mode,
-                                         @NonNegative long position, @NonNegative long size)
+    public abstract MappedByteBuffer map(MapMode mode, @NonNegative long position, @NonNegative long size)
         throws IOException;
 
 

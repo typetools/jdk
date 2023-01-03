@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -208,7 +208,7 @@ class XWindowPeer extends XPanelPeer implements WindowPeer,
 
     protected String getWMName() {
         String name = target.getName();
-        if (name == null || name.trim().equals("")) {
+        if (name == null || name.trim().isEmpty()) {
             name = " ";
         }
         return name;
@@ -675,7 +675,7 @@ class XWindowPeer extends XPanelPeer implements WindowPeer,
         int largestAmt = 0;
         int curScreenNum = ((X11GraphicsDevice)getGraphicsConfiguration().getDevice()).getScreen();
         int newScreenNum = 0;
-        GraphicsDevice gds[] = XToolkit.localEnv.getScreenDevices();
+        GraphicsDevice[] gds = XToolkit.localEnv.getScreenDevices();
         GraphicsConfiguration newGC = null;
         Rectangle screenBounds;
 
@@ -1338,6 +1338,7 @@ class XWindowPeer extends XPanelPeer implements WindowPeer,
             return;
         }
 
+        @SuppressWarnings("removal")
         final String desktopStartupId = AccessController.doPrivileged(new PrivilegedAction<String>() {
             public String run() {
                 return XToolkit.getEnv("DESKTOP_STARTUP_ID");

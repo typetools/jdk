@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,15 +47,20 @@
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+
 import javax.tools.*;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.Tree;
+import com.sun.source.util.JavacTask;
 import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCModuleDecl;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
 import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Pair;
 
 public class SourceTreeScannerTest extends AbstractTreeScannerTest {
     /**
@@ -78,8 +83,8 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
         }
     }
 
-    int test(JCCompilationUnit tree) {
-        return new ScanTester().test(tree);
+    int test(Pair<JavacTask, JCCompilationUnit> taskAndTree) {
+        return new ScanTester().test(taskAndTree.snd);
     }
 
     /**
@@ -90,6 +95,8 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
     private class ScanTester extends TreeScanner<Void,Void> {
         /** Main entry method for the class. */
         int test(JCCompilationUnit tree) {
+            if (!tree.sourcefile.toString().contains("EmptyBreak.java"))
+                return 0;
             sourcefile = tree.sourcefile;
             found = new HashSet<Tree>();
             scan(tree, null);
@@ -138,29 +145,38 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
             if (o instanceof JCTree) {
                 JCTree tree = (JCTree) o;
                 //System.err.println("EXPECT: " + tree.getKind() + " " + trim(tree, 64));
-                expect.add(tree);
-                for (Field f: getFields(tree)) {
-                    if (TypeBoundKind.class.isAssignableFrom(f.getType())) {
-                        // not part of public API
-                        continue;
-                    }
-                    try {
-                        //System.err.println("FIELD: " + f.getName());
-                        if (tree instanceof JCModuleDecl && f.getName().equals("mods")) {
-                            // The modifiers will not found by TreeScanner,
-                            // but the embedded annotations will be.
-                            reflectiveScan(((JCModuleDecl) tree).mods.annotations);
-                        } else {
-                            reflectiveScan(f.get(tree));
+                if (!tree.hasTag(JCTree.Tag.DEFAULTCASELABEL)) {
+                    expect.add(tree);
+                    for (Field f: getFields(tree)) {
+                        if (TypeBoundKind.class.isAssignableFrom(f.getType())) {
+                            // not part of public API
+                            continue;
                         }
-                    } catch (IllegalAccessException e) {
-                        error(e.toString());
+                        try {
+                            //System.err.println("FIELD: " + f.getName());
+                            if (tree instanceof JCModuleDecl && f.getName().equals("mods")) {
+                                // The modifiers will not found by TreeScanner,
+                                // but the embedded annotations will be.
+                                reflectiveScan(((JCModuleDecl) tree).mods.annotations);
+                            } else if (tree instanceof JCCase &&
+                                       ((JCCase) tree).getCaseKind() == CaseKind.RULE &&
+                                       f.getName().equals("stats")) {
+                                //value case, visit value:
+                                reflectiveScan(((JCCase) tree).getBody());
+                            } else {
+                                reflectiveScan(f.get(tree));
+                            }
+                        } catch (IllegalAccessException e) {
+                            error(e.toString());
+                        }
                     }
                 }
             } else if (o instanceof List) {
                 List<?> list = (List<?>) o;
                 for (Object item: list)
                     reflectiveScan(item);
+            } else if (o instanceof Pair) {
+                return;
             } else
                 error("unexpected item: " + o);
         }

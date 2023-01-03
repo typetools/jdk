@@ -28,7 +28,7 @@
 #include "gc/g1/heapRegion.inline.hpp"
 #include "gc/shared/referenceProcessor.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
-#include "runtime/vm_operations.hpp"
+#include "runtime/vmOperations.hpp"
 #include "runtime/vmThread.hpp"
 #include "unittest.hpp"
 
@@ -45,7 +45,7 @@ public:
 
   virtual size_t apply(oop object) {
     _count++;
-    ensure_marked((HeapWord*) object);
+    ensure_marked(cast_from_oop<HeapWord*>(object));
     // Must return positive size to advance the iteration.
     return MinObjAlignment;
   }

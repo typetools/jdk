@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since 1.6
  */
 @AnnotatedFor({"interning"})
+@SuppressWarnings("removal")
 public @UsesObjectEquals class URIParameter implements
         Policy.Parameters, javax.security.auth.login.Configuration.Parameters {
 
@@ -47,7 +48,7 @@ public @UsesObjectEquals class URIParameter implements
      *
      * @param uri the URI pointing to the data.
      *
-     * @exception NullPointerException if the specified URI is null.
+     * @throws    NullPointerException if the specified URI is null.
      */
     public URIParameter(java.net.URI uri) {
         if (uri == null) {

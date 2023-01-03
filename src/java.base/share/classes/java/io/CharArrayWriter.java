@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -48,9 +49,9 @@ import java.util.Arrays;
  * @author      Herb Jellinek
  * @since       1.1
  */
-@AnnotatedFor({"lock", "nullness", "index"})
-public
-class CharArrayWriter extends Writer {
+@AnnotatedFor({"index", "lock", "mustcall", "nullness"})
+@InheritableMustCall({})
+public class CharArrayWriter extends Writer {
     /**
      * The buffer where data is stored.
      */
@@ -71,8 +72,8 @@ class CharArrayWriter extends Writer {
     /**
      * Creates a new CharArrayWriter with the specified initial size.
      *
-     * @param initialSize  an int specifying the initial buffer size.
-     * @exception IllegalArgumentException if initialSize is negative
+     * @param  initialSize  an int specifying the initial buffer size.
+     * @throws IllegalArgumentException if initialSize is negative
      */
     public CharArrayWriter(@NonNegative int initialSize) {
         if (initialSize < 0) {
@@ -289,6 +290,8 @@ class CharArrayWriter extends Writer {
 
     /**
      * Flush the stream.
+     *
+     * <p> The {@code flush} method of {@code CharArrayWriter} does nothing.
      */
     public void flush() { }
 

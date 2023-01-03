@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
-import sun.net.idn.StringPrep;
-import sun.net.idn.Punycode;
-import sun.text.normalizer.UCharacterIterator;
+import jdk.internal.icu.impl.Punycode;
+import jdk.internal.icu.text.StringPrep;
+import jdk.internal.icu.text.UCharacterIterator;
 
 /**
  * Provides methods to convert internationalized domain names (IDNs) between
@@ -76,6 +76,7 @@ import sun.text.normalizer.UCharacterIterator;
  *
  */
 @AnnotatedFor({"interning"})
+@SuppressWarnings("removal")
 public final @UsesObjectEquals class IDN {
     /**
      * Flag to allow processing of unassigned code points
@@ -230,7 +231,7 @@ public final @UsesObjectEquals class IDN {
         InputStream stream = null;
 
         try {
-            final String IDN_PROFILE = "uidna.spp";
+            final String IDN_PROFILE = "/sun/net/idn/uidna.spp";
             if (System.getSecurityManager() != null) {
                 stream = AccessController.doPrivileged(new PrivilegedAction<>() {
                     public InputStream run() {
@@ -411,7 +412,7 @@ public final @UsesObjectEquals class IDN {
     // 26-letter Latin alphabet <A-Z a-z>, the digits <0-9>, and the hyphen
     // <->.
     // Non LDH refers to characters in the ASCII range, but which are not
-    // letters, digits or the hypen.
+    // letters, digits or the hyphen.
     //
     // non-LDH = 0..0x2C, 0x2E..0x2F, 0x3A..0x40, 0x5B..0x60, 0x7B..0x7F
     //

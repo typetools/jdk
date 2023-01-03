@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -18,7 +18,7 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 9406+5 USA
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import javax.crypto.BadPaddingException;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLProtocolException;
 import sun.security.ssl.SSLCipher.SSLReadCipher;
 
 /**
@@ -58,7 +59,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public void close() throws IOException {
         if (!isClosed) {
             super.close();
         }
@@ -91,7 +92,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
     }
 
     @Override
-    Plaintext acquirePlaintext() {
+    Plaintext acquirePlaintext() throws SSLProtocolException {
         if (reassembler != null) {
             return reassembler.acquirePlaintext();
         }
@@ -114,7 +115,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
         }
     }
 
-    Plaintext[] decode(ByteBuffer packet) {
+    Plaintext[] decode(ByteBuffer packet) throws SSLProtocolException {
         if (isClosed) {
             return null;
         }
@@ -346,7 +347,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
     private static HandshakeFragment parseHandshakeMessage(
             byte contentType, byte majorVersion, byte minorVersion,
             byte[] recordEnS, int recordEpoch, long recordSeq,
-            ByteBuffer plaintextFragment) {
+            ByteBuffer plaintextFragment) throws SSLProtocolException {
 
         int remaining = plaintextFragment.remaining();
         if (remaining < handshakeHeaderSize) {
@@ -359,11 +360,33 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
             return null;
         }
 
+        // Fail fast for unknown handshake message.
         byte handshakeType = plaintextFragment.get();       // pos: 0
+        if (!SSLHandshake.isKnown(handshakeType)) {
+            if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                SSLLogger.fine("Discard invalid record: " +
+                        "unknown handshake type size, Handshake.msg_type = " +
+                        (handshakeType & 0xFF));
+            }
+
+            // invalid, discard this record [section 4.1.2.7, RFC 6347]
+            return null;
+        }
+
         int messageLength =
                 ((plaintextFragment.get() & 0xFF) << 16) |
                 ((plaintextFragment.get() & 0xFF) << 8) |
                  (plaintextFragment.get() & 0xFF);          // pos: 1-3
+
+        if (messageLength > SSLConfiguration.maxHandshakeMessageSize) {
+            throw new SSLProtocolException(
+                    "The size of the handshake message ("
+                    + messageLength
+                    + ") exceeds the maximum allowed size ("
+                    + SSLConfiguration.maxHandshakeMessageSize
+                    + ")");
+        }
+
         int messageSeq =
                 ((plaintextFragment.get() & 0xFF) << 8) |
                  (plaintextFragment.get() & 0xFF);          // pos: 4/5
@@ -956,7 +979,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
                     (needToCheckFlight && !flightIsReady()));
         }
 
-        Plaintext acquirePlaintext() {
+        Plaintext acquirePlaintext() throws SSLProtocolException {
             if (bufferedFragments.isEmpty()) {
                 if (SSLLogger.isOn && SSLLogger.isOn("verbose")) {
                     SSLLogger.fine("No received handshake messages");
@@ -1068,7 +1091,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
             needToCheckFlight = false;
         }
 
-        private Plaintext acquireCachedMessage() {
+        private Plaintext acquireCachedMessage() throws SSLProtocolException {
             RecordFragment rFrag = bufferedFragments.first();
             if (readEpoch != rFrag.recordEpoch) {
                 if (readEpoch > rFrag.recordEpoch) {
@@ -1095,7 +1118,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
             bufferedFragments.remove(rFrag);    // popup the fragment
 
             ByteBuffer fragment = ByteBuffer.wrap(rFrag.fragment);
-            ByteBuffer plaintextFragment = null;
+            ByteBuffer plaintextFragment;
             try {
                 Plaintext plaintext = readCipher.decrypt(
                         rFrag.contentType, fragment, rFrag.recordEnS);

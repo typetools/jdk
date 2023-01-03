@@ -37,14 +37,9 @@
 #ifdef USE_ERROR
 #include <stdio.h>
 
-/* Use THIS_FILE when it is available. */
-#ifndef THIS_FILE
-    #define THIS_FILE __FILE__
-#endif
-
 #define MIDIOUT_CHECK_ERROR  { \
         if (err != MMSYSERR_NOERROR) \
-            ERROR3("MIDI OUT Error in %s:%d : %s\n", THIS_FILE, __LINE__, MIDI_OUT_GetErrorStr((INT32) err)); \
+            ERROR3("MIDI OUT Error in %s:%d : %s\n", __FILE__, __LINE__, MIDI_OUT_GetErrorStr((INT32) err)); \
         }
 #else
 #define MIDIOUT_CHECK_ERROR
@@ -70,12 +65,13 @@ INT32 MIDI_OUT_GetNumDevices() {
 
 
 INT32 getMidiOutCaps(INT32 deviceID, MIDIOUTCAPSW* caps, INT32* err) {
+    UINT_PTR id;
     if (deviceID == 0) {
-        deviceID = MIDI_MAPPER;
+        id = MIDI_MAPPER;
     } else {
-        deviceID--;
+        id = (UINT_PTR)(deviceID-1);
     }
-    (*err) = (INT32) midiOutGetDevCapsW(deviceID, caps, sizeof(MIDIOUTCAPS));
+    (*err) = (INT32) midiOutGetDevCapsW(id, caps, sizeof(MIDIOUTCAPSW));
     return ((*err) == MMSYSERR_NOERROR);
 }
 
@@ -84,6 +80,7 @@ INT32 MIDI_OUT_GetDeviceName(INT32 deviceID, char *name, UINT32 nameLength) {
     MIDIOUTCAPSW midiOutCaps;
     INT32 err;
 
+    memset(&midiOutCaps, 0, sizeof(midiOutCaps));
     if (getMidiOutCaps(deviceID, &midiOutCaps, &err)) {
         UnicodeToUTF8AndCopy(name, midiOutCaps.szPname, nameLength);
         return MIDI_SUCCESS;
@@ -103,6 +100,7 @@ INT32 MIDI_OUT_GetDeviceDescription(INT32 deviceID, char *name, UINT32 nameLengt
     char *desc;
     INT32 err;
 
+    memset(&midiOutCaps, 0, sizeof(midiOutCaps));
     if (getMidiOutCaps(deviceID, &midiOutCaps, &err)) {
         int tech = (int)midiOutCaps.wTechnology;
         switch(tech) {
@@ -139,6 +137,7 @@ INT32 MIDI_OUT_GetDeviceVersion(INT32 deviceID, char *name, UINT32 nameLength) {
     MIDIOUTCAPSW midiOutCaps;
     INT32 err;
 
+    memset(&midiOutCaps, 0, sizeof(midiOutCaps));
     if (getMidiOutCaps(deviceID, &midiOutCaps, &err) && nameLength>7) {
         sprintf(name, "%d.%d", (midiOutCaps.vDriverVersion & 0xFF00) >> 8, midiOutCaps.vDriverVersion & 0xFF);
         return MIDI_SUCCESS;

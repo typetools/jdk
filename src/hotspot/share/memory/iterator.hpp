@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_MEMORY_ITERATOR_HPP
-#define SHARE_VM_MEMORY_ITERATOR_HPP
+#ifndef SHARE_MEMORY_ITERATOR_HPP
+#define SHARE_MEMORY_ITERATOR_HPP
 
 #include "memory/allocation.hpp"
 #include "memory/memRegion.hpp"
@@ -36,10 +36,18 @@ class DataLayout;
 class KlassClosure;
 class ClassLoaderData;
 class Symbol;
+class Metadata;
+class Thread;
 
 // The following classes are C++ `closures` for iterating over objects, roots and spaces
 
 class Closure : public StackObj { };
+
+// Thread iterator
+class ThreadClosure {
+ public:
+  virtual void do_thread(Thread* thread) = 0;
+};
 
 // OopClosure is used for iterating through references to Java objects.
 class OopClosure : public Closure {
@@ -94,14 +102,6 @@ class OopIterateClosure : public OopClosure {
   virtual bool do_metadata() = 0;
   virtual void do_klass(Klass* k) = 0;
   virtual void do_cld(ClassLoaderData* cld) = 0;
-
-#ifdef ASSERT
-  // Default verification of each visited oop field.
-  template <typename T> void verify(T* p);
-
-  // Can be used by subclasses to turn off the default verification of oop fields.
-  virtual bool should_verify_oops() { return true; }
-#endif
 };
 
 // An OopIterateClosure that can be used when there's no need to visit the Metadata.
@@ -124,29 +124,51 @@ class CLDClosure : public Closure {
   virtual void do_cld(ClassLoaderData* cld) = 0;
 };
 
+class MetadataClosure : public Closure {
+ public:
+  virtual void do_metadata(Metadata* md) = 0;
+};
+
 
 class CLDToOopClosure : public CLDClosure {
   OopClosure*       _oop_closure;
-  bool              _must_claim_cld;
+  int               _cld_claim;
 
  public:
-  CLDToOopClosure(OopClosure* oop_closure, bool must_claim_cld = true) :
+  CLDToOopClosure(OopClosure* oop_closure,
+                  int cld_claim) :
       _oop_closure(oop_closure),
-      _must_claim_cld(must_claim_cld) {}
+      _cld_claim(cld_claim) {}
 
   void do_cld(ClassLoaderData* cld);
+};
+
+template <int claim>
+class ClaimingCLDToOopClosure : public CLDToOopClosure {
+public:
+  ClaimingCLDToOopClosure(OopClosure* cl) : CLDToOopClosure(cl, claim) {}
+};
+
+class ClaimMetadataVisitingOopIterateClosure : public OopIterateClosure {
+ protected:
+  const int _claim;
+
+ public:
+  ClaimMetadataVisitingOopIterateClosure(int claim, ReferenceDiscoverer* rd = NULL) :
+      OopIterateClosure(rd),
+      _claim(claim) { }
+
+  virtual bool do_metadata() { return true; }
+  virtual void do_klass(Klass* k);
+  virtual void do_cld(ClassLoaderData* cld);
 };
 
 // The base class for all concurrent marking closures,
 // that participates in class unloading.
 // It's used to proxy through the metadata to the oops defined in them.
-class MetadataVisitingOopIterateClosure: public OopIterateClosure {
+class MetadataVisitingOopIterateClosure: public ClaimMetadataVisitingOopIterateClosure {
  public:
-  MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd = NULL) : OopIterateClosure(rd) { }
-
-  virtual bool do_metadata() { return true; }
-  virtual void do_klass(Klass* k);
-  virtual void do_cld(ClassLoaderData* cld);
+  MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd = NULL);
 };
 
 // ObjectClosure is used for iterating through an object space
@@ -180,34 +202,6 @@ class ObjectToOopClosure: public ObjectClosure {
 public:
   void do_object(oop obj);
   ObjectToOopClosure(OopIterateClosure* cl) : _cl(cl) {}
-};
-
-// A version of ObjectClosure that is expected to be robust
-// in the face of possibly uninitialized objects.
-class ObjectClosureCareful : public ObjectClosure {
- public:
-  virtual size_t do_object_careful_m(oop p, MemRegion mr) = 0;
-  virtual size_t do_object_careful(oop p) = 0;
-};
-
-// The following are used in CompactibleFreeListSpace and
-// ConcurrentMarkSweepGeneration.
-
-// Blk closure (abstract class)
-class BlkClosure : public StackObj {
- public:
-  virtual size_t do_blk(HeapWord* addr) = 0;
-};
-
-// A version of BlkClosure that is expected to be robust
-// in the face of possibly uninitialized objects.
-class BlkClosureCareful : public BlkClosure {
- public:
-  size_t do_blk(HeapWord* addr) {
-    guarantee(false, "call do_blk_careful instead");
-    return 0;
-  }
-  virtual size_t do_blk_careful(HeapWord* addr) = 0;
 };
 
 // SpaceClosure is used for iterating over spaces
@@ -262,6 +256,20 @@ class MarkingCodeBlobClosure : public CodeBlobToOopClosure {
   virtual void do_code_blob(CodeBlob* cb);
 };
 
+class NMethodClosure : public Closure {
+ public:
+  virtual void do_nmethod(nmethod* n) = 0;
+};
+
+class CodeBlobToNMethodClosure : public CodeBlobClosure {
+  NMethodClosure* const _nm_cl;
+
+ public:
+  CodeBlobToNMethodClosure(NMethodClosure* nm_cl) : _nm_cl(nm_cl) {}
+
+  virtual void do_code_blob(CodeBlob* cb);
+};
+
 // MonitorClosure is used for iterating over monitors in the monitors cache
 
 class ObjectMonitor;
@@ -310,6 +318,9 @@ public:
   // Read/write the 32-bit unsigned integer pointed to by p.
   virtual void do_u4(u4* p) = 0;
 
+  // Read/write the bool pointed to by p.
+  virtual void do_bool(bool* p) = 0;
+
   // Read/write the region specified.
   virtual void do_region(u_char* start, size_t size) = 0;
 
@@ -343,11 +354,16 @@ class SymbolClosure : public StackObj {
   }
 };
 
+template <typename E>
+class CompareClosure : public Closure {
+public:
+    virtual int do_compare(const E&, const E&) = 0;
+};
+
 // Dispatches to the non-virtual functions if OopClosureType has
 // a concrete implementation, otherwise a virtual call is taken.
 class Devirtualizer {
  public:
-  template <typename OopClosureType, typename T> static void do_oop_no_verify(OopClosureType* closure, T* p);
   template <typename OopClosureType, typename T> static void do_oop(OopClosureType* closure, T* p);
   template <typename OopClosureType>             static void do_klass(OopClosureType* closure, Klass* k);
   template <typename OopClosureType>             static void do_cld(OopClosureType* closure, ClassLoaderData* cld);
@@ -361,4 +377,4 @@ class OopIteratorClosureDispatch {
   template <typename OopClosureType> static void oop_oop_iterate_backwards(OopClosureType* cl, oop obj, Klass* klass);
 };
 
-#endif // SHARE_VM_MEMORY_ITERATOR_HPP
+#endif // SHARE_MEMORY_ITERATOR_HPP

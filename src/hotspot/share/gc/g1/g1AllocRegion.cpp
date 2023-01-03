@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 #include "gc/g1/g1AllocRegion.inline.hpp"
 #include "gc/g1/g1EvacStats.inline.hpp"
 #include "gc/g1/g1CollectedHeap.inline.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
 #include "memory/resourceArea.hpp"
@@ -250,15 +251,19 @@ void G1AllocRegion::trace(const char* str, size_t min_word_size, size_t desired_
 #endif // PRODUCT
 
 G1AllocRegion::G1AllocRegion(const char* name,
-                             bool bot_updates)
-  : _name(name), _bot_updates(bot_updates),
-    _alloc_region(NULL), _count(0),
-    _used_bytes_before(0) { }
-
+                             bool bot_updates,
+                             uint node_index)
+  : _alloc_region(NULL),
+    _count(0),
+    _used_bytes_before(0),
+    _bot_updates(bot_updates),
+    _name(name),
+    _node_index(node_index)
+ { }
 
 HeapRegion* MutatorAllocRegion::allocate_new_region(size_t word_size,
                                                     bool force) {
-  return _g1h->new_mutator_alloc_region(word_size, force);
+  return _g1h->new_mutator_alloc_region(word_size, force, _node_index);
 }
 
 void MutatorAllocRegion::retire_region(HeapRegion* alloc_region,
@@ -345,7 +350,7 @@ HeapRegion* MutatorAllocRegion::release() {
 HeapRegion* G1GCAllocRegion::allocate_new_region(size_t word_size,
                                                  bool force) {
   assert(!force, "not supported for GC alloc regions");
-  return _g1h->new_gc_alloc_region(word_size, _purpose);
+  return _g1h->new_gc_alloc_region(word_size, _purpose, _node_index);
 }
 
 void G1GCAllocRegion::retire_region(HeapRegion* alloc_region,

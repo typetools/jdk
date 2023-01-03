@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -325,9 +327,10 @@ public abstract class Arc2D extends RectangularShape {
                                          (float) w, (float) h);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 9130893014586380278L;
 
         /**
@@ -336,6 +339,8 @@ public abstract class Arc2D extends RectangularShape {
          * indicating the arc type of this {@code Arc2D}
          * instance.
          *
+         * @param  s the {@code ObjectOutputStream} to write
+         * @throws IOException if an I/O error occurs
          * @serialData
          * <ol>
          * <li>The default serializable fields.
@@ -344,6 +349,7 @@ public abstract class Arc2D extends RectangularShape {
          * {@link #OPEN}, {@link #CHORD}, or {@link #PIE}.
          * </ol>
          */
+        @Serial
         private void writeObject(java.io.ObjectOutputStream s)
             throws java.io.IOException
         {
@@ -358,6 +364,10 @@ public abstract class Arc2D extends RectangularShape {
          * indicating the arc type of this {@code Arc2D}
          * instance.
          *
+         * @param  s the {@code ObjectInputStream} to read
+         * @throws ClassNotFoundException if the class of a serialized object
+         *         could not be found
+         * @throws IOException if an I/O error occurs
          * @serialData
          * <ol>
          * <li>The default serializable fields.
@@ -366,6 +376,7 @@ public abstract class Arc2D extends RectangularShape {
          * {@link #OPEN}, {@link #CHORD}, or {@link #PIE}.
          * </ol>
          */
+        @Serial
         private void readObject(java.io.ObjectInputStream s)
             throws java.lang.ClassNotFoundException, java.io.IOException
         {
@@ -617,9 +628,10 @@ public abstract class Arc2D extends RectangularShape {
             return new Rectangle2D.Double(x, y, w, h);
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 728264085846882001L;
 
         /**
@@ -628,6 +640,8 @@ public abstract class Arc2D extends RectangularShape {
          * indicating the arc type of this {@code Arc2D}
          * instance.
          *
+         * @param  s the {@code ObjectOutputStream} to write
+         * @throws IOException if an I/O error occurs
          * @serialData
          * <ol>
          * <li>The default serializable fields.
@@ -636,6 +650,7 @@ public abstract class Arc2D extends RectangularShape {
          * {@link #OPEN}, {@link #CHORD}, or {@link #PIE}.
          * </ol>
          */
+        @Serial
         private void writeObject(java.io.ObjectOutputStream s)
             throws java.io.IOException
         {
@@ -650,6 +665,10 @@ public abstract class Arc2D extends RectangularShape {
          * indicating the arc type of this {@code Arc2D}
          * instance.
          *
+         * @param  s the {@code ObjectInputStream} to read
+         * @throws ClassNotFoundException if the class of a serialized object
+         *         could not be found
+         * @throws IOException if an I/O error occurs
          * @serialData
          * <ol>
          * <li>The default serializable fields.
@@ -658,6 +677,7 @@ public abstract class Arc2D extends RectangularShape {
          * {@link #OPEN}, {@link #CHORD}, or {@link #PIE}.
          * </ol>
          */
+        @Serial
         private void readObject(java.io.ObjectInputStream s)
             throws java.lang.ClassNotFoundException, java.io.IOException
         {

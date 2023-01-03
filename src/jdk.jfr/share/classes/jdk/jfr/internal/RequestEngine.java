@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,23 +30,27 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+import jdk.jfr.Event;
+import jdk.jfr.EventType;
 
 public final class RequestEngine {
 
-    private final static JVM jvm = JVM.getJVM();
+    private static final JVM jvm = JVM.getJVM();
 
-    final static class RequestHook {
+    static final class RequestHook {
         private final Runnable hook;
         private final PlatformEventType type;
+        @SuppressWarnings("removal")
         private final AccessControlContext accessControllerContext;
         private long delta;
 
         // Java events
-        private RequestHook(AccessControlContext acc, PlatformEventType eventType, Runnable hook) {
+        private RequestHook(@SuppressWarnings("removal") AccessControlContext acc, PlatformEventType eventType, Runnable hook) {
             this.hook = hook;
             this.type = eventType;
             this.accessControllerContext = acc;
@@ -60,27 +64,36 @@ public final class RequestEngine {
         private void execute() {
             try {
                 if (accessControllerContext == null) { // native
-                    jvm.emitEvent(type.getId(), JVM.counterTime(), 0);
-                    Logger.log(LogTag.JFR_SYSTEM_EVENT, LogLevel.DEBUG, ()-> "Executed periodic hook for " + type.getLogName());
+                    if (type.isJDK()) {
+                        hook.run();
+                    } else {
+                        jvm.emitEvent(type.getId(), JVM.counterTime(), 0);
+                    }
+                    if (Logger.shouldLog(LogTag.JFR_SYSTEM, LogLevel.DEBUG)) {
+                        Logger.log(LogTag.JFR_SYSTEM, LogLevel.DEBUG, "Executed periodic hook for " + type.getLogName());
+                    }
                 } else {
                     executeSecure();
                 }
             } catch (Throwable e) {
                 // Prevent malicious user to propagate exception callback in the wrong context
-                Logger.log(LogTag.JFR_SYSTEM_EVENT, LogLevel.WARN, "Exception occured during execution of period hook for " + type.getLogName());
+                Logger.log(LogTag.JFR_SYSTEM, LogLevel.WARN, "Exception occurred during execution of period hook for " + type.getLogName());
             }
         }
 
+        @SuppressWarnings("removal")
         private void executeSecure() {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override
                 public Void run() {
                     try {
                         hook.run();
-                        Logger.log(LogTag.JFR_EVENT, LogLevel.DEBUG, ()-> "Executed periodic hook for " + type.getLogName());
+                        if (Logger.shouldLog(LogTag.JFR_EVENT, LogLevel.DEBUG)) {
+                            Logger.log(LogTag.JFR_EVENT, LogLevel.DEBUG, "Executed periodic hook for " + type.getLogName());
+                        }
                     } catch (Throwable t) {
                         // Prevent malicious user to propagate exception callback in the wrong context
-                        Logger.log(LogTag.JFR_EVENT, LogLevel.WARN, "Exception occured during execution of period hook for " + type.getLogName());
+                        Logger.log(LogTag.JFR_EVENT, LogLevel.WARN, "Exception occurred during execution of period hook for " + type.getLogName());
                     }
                     return null;
                 }
@@ -88,14 +101,17 @@ public final class RequestEngine {
         }
     }
 
-    private final static List<RequestHook> entries = new CopyOnWriteArrayList<>();
+    private static final List<RequestHook> entries = new CopyOnWriteArrayList<>();
     private static long lastTimeMillis;
+    private static long flushInterval = Long.MAX_VALUE;
+    private static long streamDelta;
 
-    // Insertion takes O(2*n), could be O(1) with HashMap, but
-    // thinking is that CopyOnWriteArrayList is faster
-    // to iterate over, which will happen more over time.
-    public static void addHook(AccessControlContext acc, PlatformEventType type, Runnable hook) {
+    public static void addHook(@SuppressWarnings("removal") AccessControlContext acc, PlatformEventType type, Runnable hook) {
         Objects.requireNonNull(acc);
+        addHookInternal(acc, type, hook);
+    }
+
+    private static void addHookInternal(@SuppressWarnings("removal") AccessControlContext acc, PlatformEventType type, Runnable hook) {
         RequestHook he = new RequestHook(acc, type, hook);
         for (RequestHook e : entries) {
             if (e.hook == hook) {
@@ -103,16 +119,30 @@ public final class RequestEngine {
             }
         }
         he.type.setEventHook(true);
+        // Insertion takes O(2*n), could be O(1) with HashMap, but
+        // thinking is that CopyOnWriteArrayList is faster
+        // to iterate over, which will happen more over time.
         entries.add(he);
         logHook("Added", type);
     }
 
+    public static void addTrustedJDKHook(Class<? extends Event> eventClass, Runnable runnable) {
+        if (eventClass.getClassLoader() != null) {
+            throw new SecurityException("Hook can only be registered for event classes that are loaded by the bootstrap class loader");
+        }
+        if (runnable.getClass().getClassLoader() != null) {
+            throw new SecurityException("Runnable hook class must be loaded by the bootstrap class loader");
+        }
+        EventType eType = MetadataRepository.getInstance().getEventType(eventClass);
+        PlatformEventType pType = PrivateAccess.getInstance().getPlatformEventType(eType);
+        addHookInternal(null, pType, runnable);
+    }
 
     private static void logHook(String action, PlatformEventType type) {
-        if (type.isJDK() || type.isJVM()) {
-            Logger.log(LogTag.JFR_SYSTEM_EVENT, LogLevel.INFO, action + " periodic hook for " + type.getLogName());
+        if (type.isSystem()) {
+            Logger.log(LogTag.JFR_SYSTEM, LogLevel.INFO, action + " periodic hook for " + type.getLogName());
         } else {
-            Logger.log(LogTag.JFR_EVENT, LogLevel.INFO, action + " periodic hook for " + type.getLogName());
+            Logger.log(LogTag.JFR, LogLevel.INFO, action + " periodic hook for " + type.getLogName());
         }
     }
 
@@ -188,7 +218,9 @@ public final class RequestEngine {
             lastTimeMillis = now;
             return 0;
         }
-        for (RequestHook he : entries) {
+        Iterator<RequestHook> hookIterator = entries.iterator();
+        while(hookIterator.hasNext()) {
+            RequestHook he = hookIterator.next();
             long left = 0;
             PlatformEventType es = he.type;
             // Not enabled, skip.
@@ -207,13 +239,12 @@ public final class RequestEngine {
                 // for wait > period
                 r_delta = 0;
                 he.execute();
-                ;
             }
 
             // calculate time left
             left = (r_period - r_delta);
 
-            /**
+            /*
              * nothing outside checks that a period is >= 0, so left can end up
              * negative here. ex. (r_period =(-1)) - (r_delta = 0) if it is,
              * handle it.
@@ -229,7 +260,40 @@ public final class RequestEngine {
                 min = left;
             }
         }
+        // Flush should happen after all periodic events has been emitted
+        // Repeat of the above algorithm, but using the stream interval.
+        if (flushInterval != Long.MAX_VALUE) {
+            long r_period = flushInterval;
+            long r_delta = streamDelta;
+            r_delta += delta;
+            if (r_delta >= r_period) {
+                r_delta = 0;
+                MetadataRepository.getInstance().flush();
+                Utils.notifyFlush();
+            }
+            long left = (r_period - r_delta);
+            if (left < 0) {
+                left = 0;
+            }
+            streamDelta = r_delta;
+            if (min == 0 || left < min) {
+                min = left;
+            }
+        }
+
         lastTimeMillis = now;
         return min;
+    }
+
+    static void setFlushInterval(long millis) {
+        // Don't accept shorter interval than 1 s.
+        long interval = millis < 1000 ? 1000 : millis;
+        boolean needNotify = interval < flushInterval;
+        flushInterval = interval;
+        if (needNotify) {
+            synchronized (JVM.FILE_DELTA_CHANGE) {
+                JVM.FILE_DELTA_CHANGE.notifyAll();
+            }
+        }
     }
 }

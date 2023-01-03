@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2009, 2014, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2009, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,21 @@
 # Shell script for generating an IDEA project from a given list of modules
 
 usage() {
-      echo "usage: $0 [-h|--help] [-v|--verbose] [-o|--output <path>] [modules]+"
+      echo "Usage: $0 [-h|--help] [-q|--quiet] [-a|--absolute-paths] [-o|--output <path>] [modules...]"
+      echo "    -h | --help"
+      echo "    -q | --quiet
+        No stdout output"
+      echo "    -a | --absolute-paths
+        Use absolute paths to this jdk, so that generated .idea
+        project files can be moved independently of jdk sources"
+      echo "    -o | --output <path>
+        Where .idea directory with project files will be generated
+        (e.g. using '-o .' will place project files in './.idea')
+        Default: $TOPLEVEL_DIR"
+      echo "    [modules...]
+        Generate project modules for specific java modules
+        (e.g. 'java.base java.desktop')
+        Default: all existing modules (java.* and jdk.*)"
       exit 1
 }
 
@@ -33,10 +47,12 @@ SCRIPT_DIR=`dirname $0`
 #assume TOP is the dir from which the script has been called
 TOP=`pwd`
 cd $SCRIPT_DIR; SCRIPT_DIR=`pwd`
+cd .. ; TOPLEVEL_DIR=`pwd`
 cd $TOP;
 
-IDEA_OUTPUT=$TOP/.idea
-VERBOSE="false"
+IDEA_OUTPUT=$TOPLEVEL_DIR/.idea
+VERBOSE=true
+ABSOLUTE_PATHS=false
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -44,12 +60,16 @@ do
       usage
       ;;
 
-    -v | --vebose )
-      VERBOSE="true"
+    -q | --quiet )
+      VERBOSE=false
+      ;;
+
+    -a | --absolute-paths )
+      ABSOLUTE_PATHS=true
       ;;
 
     -o | --output )
-      IDEA_OUTPUT=$2
+      IDEA_OUTPUT=$2/.idea
       shift
       ;;
 
@@ -64,180 +84,180 @@ do
   shift
 done
 
-mkdir $IDEA_OUTPUT || exit 1
+mkdir -p $IDEA_OUTPUT || exit 1
 cd $IDEA_OUTPUT; IDEA_OUTPUT=`pwd`
+cd ..; IDEA_OUTPUT_PARENT=`pwd`
 
-MAKE_DIR="$SCRIPT_DIR/../make"
-IDEA_MAKE="$MAKE_DIR/idea"
+MAKE_DIR="$TOPLEVEL_DIR/make"
+IDEA_MAKE="$MAKE_DIR/ide/idea/jdk"
 IDEA_TEMPLATE="$IDEA_MAKE/template"
 
-cp -r "$IDEA_TEMPLATE"/* "$IDEA_OUTPUT"
+cp -rn "$IDEA_TEMPLATE"/* "$IDEA_OUTPUT"
 
-#init template variables
-for file in `ls -p $IDEA_TEMPLATE | grep -v /`; do
-	VAR_SUFFIX=`echo $file | cut -d'.' -f1 | tr [:lower:] [:upper:]`
-    eval "$VAR_SUFFIX"_TEMPLATE="$IDEA_TEMPLATE"/$file
-	eval IDEA_"$VAR_SUFFIX"="$IDEA_OUTPUT"/$file
-done
-
-#override template variables
+#override template
 if [ -d "$TEMPLATES_OVERRIDE" ] ; then
     for file in `ls -p "$TEMPLATES_OVERRIDE" | grep -v /`; do
         cp "$TEMPLATES_OVERRIDE"/$file "$IDEA_OUTPUT"/
-    	VAR_SUFFIX=`echo $file | cut -d'.' -f1 | tr [:lower:] [:upper:]`
-        eval "$VAR_SUFFIX"_TEMPLATE="$TEMPLATES_OVERRIDE"/$file
     done
 fi
 
-if [ "$VERBOSE" = "true" ] ; then
-  echo "output dir: $IDEA_OUTPUT"
-  echo "idea template dir: $IDEA_TEMPLATE"
+if [ "$VERBOSE" = true ] ; then
+  echo "Will generate IDEA project files in \"$IDEA_OUTPUT\" for project \"$TOPLEVEL_DIR\""
 fi
 
-if [ ! -f "$JDK_TEMPLATE" ] ; then
-  echo "FATAL: cannot find $JDK_TEMPLATE" >&2; exit 1
-fi
-
-if [ ! -f "$ANT_TEMPLATE" ] ; then
-  echo "FATAL: cannot find $ANT_TEMPLATE" >&2; exit 1
-fi
-
-cd $TOP ; make -f "$IDEA_MAKE/idea.gmk" -I $MAKE_DIR/.. idea MAKEOVERRIDES= OUT=$IDEA_OUTPUT/env.cfg MODULES="$*" || exit 1
+cd $TOP ; make -f "$IDEA_MAKE/idea.gmk" -I "$TOPLEVEL_DIR" idea \
+    MAKEOVERRIDES= IDEA_OUTPUT_PARENT="$IDEA_OUTPUT_PARENT" OUT="$IDEA_OUTPUT/env.cfg" MODULES="$*" || exit 1
 cd $SCRIPT_DIR
 
 . $IDEA_OUTPUT/env.cfg
 
-# Expect MODULE_ROOTS, MODULE_NAMES, BOOT_JDK & SPEC to be set
-if [ "x$MODULE_ROOTS" = "x" ] ; then
-  echo "FATAL: MODULE_ROOTS is empty" >&2; exit 1
+# Expect MODULES, MODULE_NAMES, RELATIVE_PROJECT_DIR, RELATIVE_BUILD_DIR to be set
+if [ "xMODULES" = "x" ] ; then
+  echo "FATAL: MODULES is empty" >&2; exit 1
 fi
 
 if [ "x$MODULE_NAMES" = "x" ] ; then
   echo "FATAL: MODULE_NAMES is empty" >&2; exit 1
 fi
 
-if [ "x$BOOT_JDK" = "x" ] ; then
-  echo "FATAL: BOOT_JDK is empty" >&2; exit 1
+if [ "x$RELATIVE_PROJECT_DIR" = "x" ] ; then
+  echo "FATAL: RELATIVE_PROJECT_DIR is empty" >&2; exit 1
 fi
 
-if [ "x$SPEC" = "x" ] ; then
-  echo "FATAL: SPEC is empty" >&2; exit 1
+if [ "x$RELATIVE_BUILD_DIR" = "x" ] ; then
+  echo "FATAL: RELATIVE_BUILD_DIR is empty" >&2; exit 1
 fi
 
-SOURCE_FOLDER="      <sourceFolder url=\"file://\$MODULE_DIR\$/####\" isTestSource=\"false\" />"
-SOURCE_FOLDERS_DONE="false"
-
-addSourceFolder() {
-  root=$@
-  relativePath="`echo "$root" | sed -e s@"$TOP/\(.*$\)"@"\1"@`"
-  folder="`echo "$SOURCE_FOLDER" | sed -e s@"\(.*/\)####\(.*\)"@"\1$relativePath\2"@`"
-  printf "%s\n" "$folder" >> $IDEA_JDK
-}
-
-### Generate project iml
-
-rm -f $IDEA_JDK
-while IFS= read -r line
-do
-  if echo "$line" | egrep "^ .* <sourceFolder.*####" > /dev/null ; then
-    if [ "$SOURCE_FOLDERS_DONE" = "false" ] ; then
-      SOURCE_FOLDERS_DONE="true"
-      for root in $MODULE_ROOTS; do
-         addSourceFolder $root
-      done
-    fi
-  else
-    printf "%s\n" "$line" >> $IDEA_JDK
-  fi
-done < "$JDK_TEMPLATE"
-
-
-MODULE_NAME="        <property name=\"module.name\" value=\"####\" />"
-
-addModuleName() {
-  mn="`echo "$MODULE_NAME" | sed -e s@"\(.*\)####\(.*\)"@"\1$MODULE_NAMES\2"@`"
-  printf "%s\n" "$mn" >> $IDEA_ANT
-}
-
-BUILD_DIR="        <property name=\"build.target.dir\" value=\"####\" />"
-
-addBuildDir() {
-  DIR=`dirname $SPEC`
-  mn="`echo "$BUILD_DIR" | sed -e s@"\(.*\)####\(.*\)"@"\1$DIR\2"@`"
-  printf "%s\n" "$mn" >> $IDEA_ANT
-}
-
-### Generate ant.xml
-
-rm -f $IDEA_ANT
-while IFS= read -r line
-do
-  if echo "$line" | egrep "^ .* <property name=\"module.name\"" > /dev/null ; then
-    addModuleName
-  elif echo "$line" | egrep "^ .* <property name=\"build.target.dir\"" > /dev/null ; then
-    addBuildDir
-  else
-    printf "%s\n" "$line" >> $IDEA_ANT
-  fi
-done < "$ANT_TEMPLATE"
-
-### Generate misc.xml
-
-rm -f $IDEA_MISC
-
-JTREG_HOME="    <path>####</path>"
-
-IMAGES_DIR="    <jre alt=\"true\" value=\"####\" />"
-
-addImagesDir() {
-  DIR=`dirname $SPEC`/images/jdk
-  mn="`echo "$IMAGES_DIR" | sed -e s@"\(.*\)####\(.*\)"@"\1$DIR\2"@`"
-  printf "%s\n" "$mn" >> $IDEA_MISC
-}
-
-addJtregHome() {
-  DIR=`dirname $SPEC`
-  mn="`echo "$JTREG_HOME" | sed -e s@"\(.*\)####\(.*\)"@"\1$JT_HOME\2"@`"
-  printf "%s\n" "$mn" >> $IDEA_MISC
-}
-
-rm -f $MISC_ANT
-while IFS= read -r line
-do
-  if echo "$line" | egrep "^ .*<path>jtreg_home</path>" > /dev/null ; then
-	addJtregHome
-  elif echo "$line" | egrep "^ .*<jre alt=\"true\" value=\"images_jdk\"" > /dev/null ; then
-    addImagesDir
-  else
-    printf "%s\n" "$line" >> $IDEA_MISC
-  fi
-done < "$MISC_TEMPLATE"
-
-### Compile the custom Logger
-
-CLASSES=$IDEA_OUTPUT/classes
-
-if [ "x$ANT_HOME" = "x" ] ; then
-   # try some common locations, before giving up
-   if [ -f "/usr/share/ant/lib/ant.jar" ] ; then
-     ANT_HOME="/usr/share/ant"
-   elif [ -f "/usr/local/Cellar/ant/1.9.4/libexec/lib/ant.jar" ] ; then
-     ANT_HOME="/usr/local/Cellar/ant/1.9.4/libexec"
-   else
-     echo "FATAL: cannot find ant. Try setting ANT_HOME." >&2; exit 1
-   fi
+if [ -d "$TOPLEVEL_DIR/.hg" ] ; then
+    VCS_TYPE="hg4idea"
 fi
-CP=$ANT_HOME/lib/ant.jar
-rm -rf $CLASSES; mkdir $CLASSES
 
-if [ "x$CYGPATH" = "x" ] ; then ## CYGPATH may be set in env.cfg
-  JAVAC_SOURCE_FILE=$IDEA_OUTPUT/src/idea/JdkIdeaAntLogger.java
-  JAVAC_CLASSES=$CLASSES
-  JAVAC_CP=$CP
+if [ -d "$TOPLEVEL_DIR/.git" ] ; then
+    VCS_TYPE="Git"
+fi
+
+if [ "$ABSOLUTE_PATHS" = true ] ; then
+  if [ "x$PATHTOOL" != "x" ]; then
+    PROJECT_DIR="`$PATHTOOL -am $TOPLEVEL_DIR`"
+  else
+    PROJECT_DIR="$TOPLEVEL_DIR"
+  fi
+  MODULE_DIR="$PROJECT_DIR"
+  cd "$TOPLEVEL_DIR" && cd "$RELATIVE_BUILD_DIR" && BUILD_DIR="`pwd`"
 else
-  JAVAC_SOURCE_FILE=`cygpath -am $IDEA_OUTPUT/src/idea/JdkIdeaAntLogger.java`
-  JAVAC_CLASSES=`cygpath -am $CLASSES`
-  JAVAC_CP=`cygpath -am $CP`
+  if [ "$RELATIVE_PROJECT_DIR" = "." ] ; then
+    PROJECT_DIR=""
+  else
+    PROJECT_DIR="/$RELATIVE_PROJECT_DIR"
+  fi
+  MODULE_DIR="\$MODULE_DIR\$$PROJECT_DIR"
+  PROJECT_DIR="\$PROJECT_DIR\$$PROJECT_DIR"
+  BUILD_DIR="\$PROJECT_DIR\$/$RELATIVE_BUILD_DIR"
+fi
+if [ "$VERBOSE" = true ] ; then
+  echo "Project root: $PROJECT_DIR"
+  echo "Generating IDEA project files..."
 fi
 
-$BOOT_JDK/bin/javac -d $JAVAC_CLASSES -cp $JAVAC_CP $JAVAC_SOURCE_FILE
+### Replace template variables
+
+NUM_REPLACEMENTS=0
+
+replace_template_file() {
+    for i in $(seq 1 $NUM_REPLACEMENTS); do
+      eval "sed \"s|\${FROM${i}}|\${TO${i}}|g\" $1 > $1.tmp"
+      mv $1.tmp $1
+    done
+}
+
+replace_template_dir() {
+    for f in `find $1 -type f` ; do
+        replace_template_file $f
+    done
+}
+
+add_replacement() {
+    NUM_REPLACEMENTS=`expr $NUM_REPLACEMENTS + 1`
+    eval FROM$NUM_REPLACEMENTS='$1'
+    eval TO$NUM_REPLACEMENTS='$2'
+}
+
+add_replacement "###PROJECT_DIR###" "$PROJECT_DIR"
+add_replacement "###MODULE_DIR###" "$MODULE_DIR"
+add_replacement "###MODULE_NAMES###" "$MODULE_NAMES"
+add_replacement "###VCS_TYPE###" "$VCS_TYPE"
+add_replacement "###BUILD_DIR###" "$BUILD_DIR"
+if [ "x$PATHTOOL" != "x" ]; then
+  add_replacement "###BASH_RUNNER_PREFIX###" "\$PROJECT_DIR\$/.idea/bash.bat"
+else
+  add_replacement "###BASH_RUNNER_PREFIX###" ""
+fi
+if [ "x$PATHTOOL" != "x" ]; then
+    if [ "x$JT_HOME" = "x" ]; then
+      add_replacement "###JTREG_HOME###" ""
+    else
+      add_replacement "###JTREG_HOME###" "`$PATHTOOL -am $JT_HOME`"
+    fi
+else
+    add_replacement "###JTREG_HOME###" "$JT_HOME"
+fi
+
+MODULE_IMLS=""
+TEST_MODULE_DEPENDENCIES=""
+for module in $MODULE_NAMES; do
+    MODULE_IMLS="$MODULE_IMLS<module fileurl=\"file://\$PROJECT_DIR$/.idea/$module.iml\" filepath=\"\$PROJECT_DIR$/.idea/$module.iml\" /> "
+    TEST_MODULE_DEPENDENCIES="$TEST_MODULE_DEPENDENCIES<orderEntry type=\"module\" module-name=\"$module\" scope=\"TEST\" /> "
+done
+add_replacement "###MODULE_IMLS###" "$MODULE_IMLS"
+add_replacement "###TEST_MODULE_DEPENDENCIES###" "$TEST_MODULE_DEPENDENCIES"
+
+replace_template_dir "$IDEA_OUTPUT"
+
+### Generate module project files
+
+if [ "$VERBOSE" = true ] ; then
+    echo "Generating project modules:"
+  fi
+(
+DEFAULT_IFS="$IFS"
+IFS='#'
+for value in $MODULES; do
+  (
+  eval "$value"
+  if [ "$VERBOSE" = true ] ; then
+    echo "    $module"
+  fi
+  add_replacement "###MODULE_CONTENT###" "src/$module"
+  SOURCE_DIRS=""
+  IFS=' '
+  for dir in $moduleSrcDirs; do
+    case $dir in # Exclude generated sources to avoid module-info conflicts, see https://youtrack.jetbrains.com/issue/IDEA-185108
+      "src/"*) SOURCE_DIRS="$SOURCE_DIRS<sourceFolder url=\"file://$MODULE_DIR/$dir\" isTestSource=\"false\" /> "
+    esac
+  done
+  add_replacement "###SOURCE_DIRS###" "$SOURCE_DIRS"
+  DEPENDENCIES=""
+  for dep in $moduleDependencies; do
+    case $MODULE_NAMES in # Exclude skipped modules from dependencies
+      *"$dep"*) DEPENDENCIES="$DEPENDENCIES<orderEntry type=\"module\" module-name=\"$dep\" /> "
+    esac
+  done
+  add_replacement "###DEPENDENCIES###" "$DEPENDENCIES"
+  cp "$IDEA_OUTPUT/module.iml" "$IDEA_OUTPUT/$module.iml"
+  IFS="$DEFAULT_IFS"
+  replace_template_file "$IDEA_OUTPUT/$module.iml"
+  )
+done
+)
+rm "$IDEA_OUTPUT/module.iml"
+
+### Create shell script runner for Windows
+
+if [ "x$PATHTOOL" != "x" ]; then
+  echo "@echo off" > "$IDEA_OUTPUT/bash.bat"
+  if [ "x$WSL_DISTRO_NAME" != "x" ] ; then
+    echo "wsl -d $WSL_DISTRO_NAME --cd \"%cd%\" -e %*" >> "$IDEA_OUTPUT/bash.bat"
+  else
+    echo "$WINENV_ROOT\bin\bash.exe -l -c \"cd %CD:\=/%/ && %*\"" >> "$IDEA_OUTPUT/bash.bat"
+  fi
+fi

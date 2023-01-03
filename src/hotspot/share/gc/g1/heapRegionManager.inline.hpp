@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,18 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_HEAPREGIONMANAGER_INLINE_HPP
-#define SHARE_VM_GC_G1_HEAPREGIONMANAGER_INLINE_HPP
+#ifndef SHARE_GC_G1_HEAPREGIONMANAGER_INLINE_HPP
+#define SHARE_GC_G1_HEAPREGIONMANAGER_INLINE_HPP
 
-#include "gc/g1/heapRegion.hpp"
 #include "gc/g1/heapRegionManager.hpp"
+
+#include "gc/g1/g1CommittedRegionMap.inline.hpp"
+#include "gc/g1/heapRegion.hpp"
 #include "gc/g1/heapRegionSet.inline.hpp"
+
+inline bool HeapRegionManager::is_available(uint region) const {
+  return _committed_map.active(region);
+}
 
 inline HeapRegion* HeapRegionManager::addr_to_region(HeapWord* addr) const {
   assert(addr < heap_end(),
@@ -47,12 +53,22 @@ inline HeapRegion* HeapRegionManager::at(uint index) const {
   return hr;
 }
 
+inline HeapRegion* HeapRegionManager::at_or_null(uint index) const {
+  if (!is_available(index)) {
+    return NULL;
+  }
+  HeapRegion* hr = _regions.get_by_index(index);
+  assert(hr != NULL, "All available regions must have a HeapRegion but index %u has not.", index);
+  assert(hr->hrm_index() == index, "sanity");
+  return hr;
+}
+
 inline HeapRegion* HeapRegionManager::next_region_in_humongous(HeapRegion* hr) const {
   uint index = hr->hrm_index();
   assert(is_available(index), "pre-condition");
   assert(hr->is_humongous(), "next_region_in_humongous should only be called for a humongous region.");
   index++;
-  if (index < max_length() && is_available(index) && at(index)->is_continues_humongous()) {
+  if (index < reserved_length() && is_available(index) && at(index)->is_continues_humongous()) {
     return at(index);
   } else {
     return NULL;
@@ -63,8 +79,10 @@ inline void HeapRegionManager::insert_into_free_list(HeapRegion* hr) {
   _free_list.add_ordered(hr);
 }
 
-inline void HeapRegionManager::allocate_free_regions_starting_at(uint first, uint num_regions) {
-  _free_list.remove_starting_at(at(first), num_regions);
+inline HeapRegion* HeapRegionManager::allocate_free_regions_starting_at(uint first, uint num_regions) {
+  HeapRegion* start = at(first);
+  _free_list.remove_starting_at(start, num_regions);
+  return start;
 }
 
-#endif // SHARE_VM_GC_G1_HEAPREGIONMANAGER_INLINE_HPP
+#endif // SHARE_GC_G1_HEAPREGIONMANAGER_INLINE_HPP

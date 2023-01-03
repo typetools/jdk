@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 @AnnotatedFor({"index", "interning", "lock", "nullness"})
 public @UsesObjectEquals class EventObject implements java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = 5516075349620653480L;
 
     /**

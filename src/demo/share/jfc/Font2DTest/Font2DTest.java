@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,7 +67,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.EnumSet;
 import java.util.StringTokenizer;
 import java.util.BitSet;
 import javax.swing.*;
@@ -101,8 +100,8 @@ public final class Font2DTest extends JPanel
     private final ChoiceV2 transformMenu;
     private final ChoiceV2 transformMenuG2;
     private final ChoiceV2 methodsMenu;
-    private final JComboBox antiAliasMenu;
-    private final JComboBox fracMetricsMenu;
+    private final JComboBox<FontPanel.AAValues> antiAliasMenu;
+    private final JComboBox<FontPanel.FMValues> fracMetricsMenu;
 
     private final JSlider contrastSlider;
 
@@ -116,16 +115,16 @@ public final class Font2DTest extends JPanel
     private JTextArea userTextArea;
     private JDialog printDialog;
     private JDialog fontInfoDialog;
-    private LabelV2 fontInfos[] = new LabelV2[2];
+    private LabelV2[] fontInfos = new LabelV2[2];
     private JFileChooser filePromptDialog = null;
 
     private ButtonGroup printCBGroup;
-    private JRadioButton printModeCBs[] = new JRadioButton[3];
+    private JRadioButton[] printModeCBs = new JRadioButton[3];
 
     /// Status bar
     private final LabelV2 statusBar;
 
-    private int fontStyles [] = {Font.PLAIN, Font.BOLD, Font.ITALIC, Font.BOLD | Font.ITALIC};
+    private int[] fontStyles  = {Font.PLAIN, Font.BOLD, Font.ITALIC, Font.BOLD | Font.ITALIC};
 
     /// Text filename
     private String tFileName;
@@ -151,10 +150,10 @@ public final class Font2DTest extends JPanel
         methodsMenu = new ChoiceV2( this );
 
         antiAliasMenu =
-            new JComboBox(EnumSet.allOf(FontPanel.AAValues.class).toArray());
+            new JComboBox<>(FontPanel.AAValues.values());
         antiAliasMenu.addActionListener(this);
         fracMetricsMenu =
-            new JComboBox(EnumSet.allOf(FontPanel.FMValues.class).toArray());
+            new JComboBox<>(FontPanel.FMValues.values());
         fracMetricsMenu.addActionListener(this);
 
         contrastSlider = new JSlider(JSlider.HORIZONTAL, 100, 250,
@@ -289,7 +288,7 @@ public final class Font2DTest extends JPanel
 
         parent.setJMenuBar( mb );
 
-        String fontList[] =
+        String[] fontList =
           GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
 
         for ( int i = 0; i < fontList.length; i++ )
@@ -359,7 +358,7 @@ public final class Font2DTest extends JPanel
         userTextDialog.pack();
         userTextDialog.addWindowListener( new WindowAdapter() {
             public void windowClosing( WindowEvent e ) {
-                userTextDialog.hide();
+                userTextDialog.setVisible(false);
             }
         });
 
@@ -385,7 +384,7 @@ public final class Font2DTest extends JPanel
         printDialog.setResizable( false );
         printDialog.addWindowListener( new WindowAdapter() {
             public void windowClosing( WindowEvent e ) {
-                printDialog.hide();
+                printDialog.setVisible(false);
             }
         });
         printDialog.getContentPane().setLayout( new GridLayout( printModeCBs.length + 2, 1 ));
@@ -402,7 +401,7 @@ public final class Font2DTest extends JPanel
         fontInfoDialog.setResizable( false );
         fontInfoDialog.addWindowListener( new WindowAdapter() {
             public void windowClosing( WindowEvent e ) {
-                fontInfoDialog.hide();
+                fontInfoDialog.setVisible(false);
                 showFontInfoCBMI.setState( false );
             }
         });
@@ -422,7 +421,7 @@ public final class Font2DTest extends JPanel
     /// RangeMenu object signals using this function
     /// when Unicode range has been changed and text needs to be redrawn
     public void fireRangeChanged() {
-        int range[] = rm.getSelectedRange();
+        int[] range = rm.getSelectedRange();
         fp.setTextToDraw( fp.RANGE_TEXT, range, null, null );
         if(canDisplayCheck) {
             setupFontList(range[0], range[1]);
@@ -445,7 +444,7 @@ public final class Font2DTest extends JPanel
     /// Updates the information about the selected font
     public void fireUpdateFontInfo() {
         if ( showFontInfoCBMI.getState() ) {
-            String infos[] = fp.getFontInfo();
+            String[] infos = fp.getFontInfo();
             for ( int i = 0; i < fontInfos.length; i++ )
               fontInfos[i].setText( infos[i] );
             fontInfoDialog.pack();
@@ -467,7 +466,7 @@ public final class Font2DTest extends JPanel
         int style = fontStyles[styleMenu.getSelectedIndex()];
         Font f;
         for (int i = 0; i < listCount; i++) {
-            String fontName = (String)fontMenu.getItemAt(i);
+            String fontName = fontMenu.getItemAt(i);
             f = new Font(fontName, style, size);
             if ((rm.getSelectedIndex() != RangeMenu.SURROGATES_AREA_INDEX) &&
                 canDisplayRange(f, rangeStart, rangeEnd)) {
@@ -533,7 +532,7 @@ public final class Font2DTest extends JPanel
     private String[] parseUserText( String orig ) {
         int length = orig.length();
         StringTokenizer perLine = new StringTokenizer( orig, "\n" );
-        String textLines[] = new String[ perLine.countTokens() ];
+        String[] textLines = new String[ perLine.countTokens() ];
         int lineNumber = 0;
 
         while ( perLine.hasMoreElements() ) {
@@ -583,14 +582,15 @@ public final class Font2DTest extends JPanel
     /// Then breaks the text into String array, delimited at every line break
     private void readTextFile( String fileName ) {
         try {
-            String fileText, textLines[];
+            String fileText;
+            String[] textLines;
             BufferedInputStream bis =
               new BufferedInputStream( new FileInputStream( fileName ));
             int numBytes = bis.available();
             if (numBytes == 0) {
                 throw new Exception("Text file " + fileName + " is empty");
             }
-            byte byteData[] = new byte[ numBytes ];
+            byte[] byteData = new byte[ numBytes ];
             bis.read( byteData, 0, numBytes );
             bis.close();
 
@@ -648,7 +648,7 @@ public final class Font2DTest extends JPanel
             BufferedOutputStream bos =
               new BufferedOutputStream( new FileOutputStream( fileName ));
             /// Prepend title and the option that is only obtainable here
-            int range[] = rm.getSelectedRange();
+            int[] range = rm.getSelectedRange();
             String completeOptions =
               ( "Font2DTest Option File\n" +
                 displayGridCBMI.getState() + "\n" +
@@ -656,7 +656,7 @@ public final class Font2DTest extends JPanel
                 showFontInfoCBMI.getState() + "\n" +
                 rm.getSelectedItem() + "\n" +
                 range[0] + "\n" + range[1] + "\n" + curOptions + tFileName);
-            byte toBeWritten[] = completeOptions.getBytes( "UTF-16" );
+            byte[] toBeWritten = completeOptions.getBytes( "UTF-16" );
             bos.write( toBeWritten, 0, toBeWritten.length );
             bos.close();
         }
@@ -672,9 +672,9 @@ public final class Font2DTest extends JPanel
 
         /// Set the visibility of User Text dialog
         if ( selectedText == fp.USER_TEXT )
-          userTextDialog.show();
+          userTextDialog.setVisible(true);
         else
-          userTextDialog.hide();
+          userTextDialog.setVisible(false);
         /// Change the visibility/status/availability of Print JDialog buttons
         printModeCBs[ fp.ONE_PAGE ].setSelected( true );
         if ( selectedText == fp.FILE_TEXT || selectedText == fp.USER_TEXT ) {
@@ -714,7 +714,7 @@ public final class Font2DTest extends JPanel
             BufferedInputStream bis =
               new BufferedInputStream( new FileInputStream( fileName ));
             int numBytes = bis.available();
-            byte byteData[] = new byte[ numBytes ];
+            byte[] byteData = new byte[ numBytes ];
             bis.read( byteData, 0, numBytes );
             bis.close();
             if ( numBytes < 2 ||
@@ -744,7 +744,7 @@ public final class Font2DTest extends JPanel
             int antialiasOpt = Integer.parseInt(perLine.nextToken());
             int fractionalOpt = Integer.parseInt(perLine.nextToken());
             int lcdContrast = Integer.parseInt(perLine.nextToken());
-            String userTextOpt[] = { "Font2DTest!" };
+            String[] userTextOpt = { "Font2DTest!" };
             String dialogEntry = "Font2DTest!";
             if (textToUseOpt == fp.USER_TEXT )  {
                 int numLines = perLine.countTokens(), lineNumber = 0;
@@ -792,10 +792,10 @@ public final class Font2DTest extends JPanel
                             lcdContrast, userTextOpt );
             if ( showFontInfoOpt ) {
                 fireUpdateFontInfo();
-                fontInfoDialog.show();
+                fontInfoDialog.setVisible(true);
             }
             else
-              fontInfoDialog.hide();
+              fontInfoDialog.setVisible(false);
         }
         catch ( Exception ex ) {
             fireChangeStatus( "ERROR: Failed to Load Options File; See Stack Trace", true );
@@ -818,7 +818,7 @@ public final class Font2DTest extends JPanel
                 }
             });
             f.pack();
-            f.show();
+            f.setVisible(true);
         }
         catch ( Exception ex ) {
             fireChangeStatus( "ERROR: Failed to Load PNG File; See Stack Trace", true );
@@ -860,7 +860,7 @@ public final class Font2DTest extends JPanel
             else if ( itemName.equals( "Page Setup..." ))
               fp.doPageSetup();
             else if ( itemName.equals( "Print..." ))
-              printDialog.show();
+              printDialog.setVisible(true);
             else if ( itemName.equals( "Close" ))
               parent.dispose();
             else if ( itemName.equals( "Exit" ))
@@ -892,19 +892,19 @@ public final class Font2DTest extends JPanel
             if ( itemName.equals( "Print" )) {
                 for ( int i = 0; i < printModeCBs.length; i++ )
                   if ( printModeCBs[i].isSelected() ) {
-                      printDialog.hide();
+                      printDialog.setVisible(false);
                       fp.doPrint( i );
                   }
             }
             else if ( itemName.equals( "Cancel" ))
-              printDialog.hide();
+              printDialog.setVisible(false);
             /// Update button from Usert Text JDialog...
             else if ( itemName.equals( "Update" ))
               fp.setTextToDraw( fp.USER_TEXT, null,
                                 parseUserText( userTextArea.getText() ), null );
         }
         else if ( source instanceof JComboBox ) {
-            JComboBox c = (JComboBox) source;
+            JComboBox<?> c = (JComboBox<?>) source;
 
             /// RangeMenu handles actions by itself and then calls fireRangeChanged,
             /// so it is not listed or handled here
@@ -995,10 +995,10 @@ public final class Font2DTest extends JPanel
             else if ( cbmi == showFontInfoCBMI ) {
                 if ( showFontInfoCBMI.getState() ) {
                     fireUpdateFontInfo();
-                    fontInfoDialog.show();
+                    fontInfoDialog.setVisible(true);
                 }
                 else
-                  fontInfoDialog.hide();
+                  fontInfoDialog.setVisible(false);
             }
         }
     }
@@ -1016,7 +1016,7 @@ public final class Font2DTest extends JPanel
     }
 
     /// Main function
-    public static void main(String argv[]) {
+    public static void main(String[] argv) {
 
         if(argv.length > 0) {
             if(argv[0].equalsIgnoreCase("-disablecandisplaycheck") ||
@@ -1038,7 +1038,7 @@ public final class Font2DTest extends JPanel
 
         f.getContentPane().add( f2dt );
         f.pack();
-        f.show();
+        f.setVisible(true);
     }
 
     /// Inner class definitions...
@@ -1069,7 +1069,7 @@ public final class Font2DTest extends JPanel
         }
     }
 
-    private final class ChoiceV2 extends JComboBox {
+    private final class ChoiceV2 extends JComboBox<String> {
 
         private BitSet bitSet = null;
 
@@ -1140,7 +1140,7 @@ public final class Font2DTest extends JPanel
             this.choice = choice;
         }
 
-        public Component getListCellRendererComponent(JList list,
+        public Component getListCellRendererComponent(JList<?> list,
                                                       Object value,
                                                       int index,
                                                       boolean isSelected,

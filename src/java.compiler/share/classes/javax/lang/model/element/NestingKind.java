@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,24 +83,27 @@ package javax.lang.model.element;
  */
 public enum NestingKind {
     /**
-     * A top-level type, not contained within another type.
+     * A top-level class or interface, not contained within another
+     * class or interface.
      */
     TOP_LEVEL,
 
     /**
-     * A type that is a named member of another type.
-     * @jls 8.5 Member Type Declarations
+     * A class or interface that is a named member of another class or
+     * interface.
+     * @jls 8.5 Member Class and Interface Declarations
      */
     MEMBER,
 
     /**
-     * A named type declared within a construct other than a type.
+     * A named class or interface declared within a construct other
+     * than a class or interface.
      * @jls 14.3 Local Class Declarations
      */
     LOCAL,
 
     /**
-     * A type without a name.
+     * A class without a name.
      * @jls 15.9.5 Anonymous Class Declarations
      */
     ANONYMOUS;
@@ -111,7 +114,7 @@ public enum NestingKind {
      * More specifically, an <i>inner</i> type element is any nested type element that
      * is not {@linkplain Modifier#STATIC static}.
      * @return whether or not the constant is nested
-     * @jls 14.3 Inner Classes and Enclosing Instances
+     * @jls 14.3 Local Class Declarations
      */
     public boolean isNested() {
         return this != TOP_LEVEL;

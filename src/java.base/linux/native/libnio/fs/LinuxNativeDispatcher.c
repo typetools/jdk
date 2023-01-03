@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,16 +36,6 @@
 
 #include "sun_nio_fs_LinuxNativeDispatcher.h"
 
-typedef size_t fgetxattr_func(int fd, const char* name, void* value, size_t size);
-typedef int fsetxattr_func(int fd, const char* name, void* value, size_t size, int flags);
-typedef int fremovexattr_func(int fd, const char* name);
-typedef int flistxattr_func(int fd, char* list, size_t size);
-
-fgetxattr_func* my_fgetxattr_func = NULL;
-fsetxattr_func* my_fsetxattr_func = NULL;
-fremovexattr_func* my_fremovexattr_func = NULL;
-flistxattr_func* my_flistxattr_func = NULL;
-
 static jfieldID entry_name;
 static jfieldID entry_dir;
 static jfieldID entry_fstype;
@@ -62,11 +52,6 @@ static void throwUnixException(JNIEnv* env, int errnum) {
 JNIEXPORT void JNICALL
 Java_sun_nio_fs_LinuxNativeDispatcher_init(JNIEnv *env, jclass clazz)
 {
-    my_fgetxattr_func = (fgetxattr_func*)dlsym(RTLD_DEFAULT, "fgetxattr");
-    my_fsetxattr_func = (fsetxattr_func*)dlsym(RTLD_DEFAULT, "fsetxattr");
-    my_fremovexattr_func = (fremovexattr_func*)dlsym(RTLD_DEFAULT, "fremovexattr");
-    my_flistxattr_func = (flistxattr_func*)dlsym(RTLD_DEFAULT, "flistxattr");
-
     clazz = (*env)->FindClass(env, "sun/nio/fs/UnixMountEntry");
     CHECK_NULL(clazz);
     entry_name = (*env)->GetFieldID(env, clazz, "name", "[B");
@@ -77,78 +62,6 @@ Java_sun_nio_fs_LinuxNativeDispatcher_init(JNIEnv *env, jclass clazz)
     CHECK_NULL(entry_fstype);
     entry_options = (*env)->GetFieldID(env, clazz, "opts", "[B");
     CHECK_NULL(entry_options);
-}
-
-JNIEXPORT jint JNICALL
-Java_sun_nio_fs_LinuxNativeDispatcher_fgetxattr0(JNIEnv* env, jclass clazz,
-    jint fd, jlong nameAddress, jlong valueAddress, jint valueLen)
-{
-    size_t res = -1;
-    const char* name = jlong_to_ptr(nameAddress);
-    void* value = jlong_to_ptr(valueAddress);
-
-    if (my_fgetxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fgetxattr_func)(fd, name, value, valueLen);
-    }
-    if (res == (size_t)-1)
-        throwUnixException(env, errno);
-    return (jint)res;
-}
-
-JNIEXPORT void JNICALL
-Java_sun_nio_fs_LinuxNativeDispatcher_fsetxattr0(JNIEnv* env, jclass clazz,
-    jint fd, jlong nameAddress, jlong valueAddress, jint valueLen)
-{
-    int res = -1;
-    const char* name = jlong_to_ptr(nameAddress);
-    void* value = jlong_to_ptr(valueAddress);
-
-    if (my_fsetxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fsetxattr_func)(fd, name, value, valueLen, 0);
-    }
-    if (res == -1)
-        throwUnixException(env, errno);
-}
-
-JNIEXPORT void JNICALL
-Java_sun_nio_fs_LinuxNativeDispatcher_fremovexattr0(JNIEnv* env, jclass clazz,
-    jint fd, jlong nameAddress)
-{
-    int res = -1;
-    const char* name = jlong_to_ptr(nameAddress);
-
-    if (my_fremovexattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fremovexattr_func)(fd, name);
-    }
-    if (res == -1)
-        throwUnixException(env, errno);
-}
-
-JNIEXPORT jint JNICALL
-Java_sun_nio_fs_LinuxNativeDispatcher_flistxattr(JNIEnv* env, jclass clazz,
-    jint fd, jlong listAddress, jint size)
-{
-    size_t res = -1;
-    char* list = jlong_to_ptr(listAddress);
-
-    if (my_flistxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_flistxattr_func)(fd, list, (size_t)size);
-    }
-    if (res == (size_t)-1)
-        throwUnixException(env, errno);
-    return (jint)res;
 }
 
 JNIEXPORT jlong JNICALL
@@ -169,12 +82,11 @@ Java_sun_nio_fs_LinuxNativeDispatcher_setmntent0(JNIEnv* env, jclass this, jlong
 }
 
 JNIEXPORT jint JNICALL
-Java_sun_nio_fs_LinuxNativeDispatcher_getmntent(JNIEnv* env, jclass this,
-    jlong value, jobject entry)
+Java_sun_nio_fs_LinuxNativeDispatcher_getmntent0(JNIEnv* env, jclass this,
+    jlong value, jobject entry, jlong buffer, jint bufLen)
 {
     struct mntent ent;
-    char buf[1024];
-    int buflen = sizeof(buf);
+    char * buf = (char*)jlong_to_ptr(buffer);
     struct mntent* m;
     FILE* fp = jlong_to_ptr(value);
     jsize len;
@@ -184,7 +96,7 @@ Java_sun_nio_fs_LinuxNativeDispatcher_getmntent(JNIEnv* env, jclass this,
     char* fstype;
     char* options;
 
-    m = getmntent_r(fp, &ent, (char*)&buf, buflen);
+    m = getmntent_r(fp, &ent, buf, (int)bufLen);
     if (m == NULL)
         return -1;
     name = m->mnt_fsname;

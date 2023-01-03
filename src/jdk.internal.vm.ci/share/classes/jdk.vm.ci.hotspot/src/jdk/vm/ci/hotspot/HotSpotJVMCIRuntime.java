@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,31 +23,39 @@
 package jdk.vm.ci.hotspot;
 
 import static jdk.vm.ci.common.InitTimer.timer;
+import static jdk.vm.ci.hotspot.HotSpotJVMCICompilerFactory.CompilationLevelAdjustment.None;
+import static jdk.vm.ci.services.Services.IS_BUILDING_NATIVE_IMAGE;
+import static jdk.vm.ci.services.Services.IS_IN_NATIVE_IMAGE;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.module.ModuleDescriptor.Requires;
+import java.io.Serializable;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Formatter;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 
-import jdk.internal.misc.VM;
 import jdk.internal.misc.Unsafe;
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.code.CompilationRequest;
 import jdk.vm.ci.code.CompilationRequestResult;
 import jdk.vm.ci.code.CompiledCode;
 import jdk.vm.ci.code.InstalledCode;
 import jdk.vm.ci.common.InitTimer;
 import jdk.vm.ci.common.JVMCIError;
-import jdk.vm.ci.hotspot.HotSpotJVMCICompilerFactory.CompilationLevel;
+import jdk.vm.ci.common.NativeImageReinitialize;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaType;
@@ -61,39 +69,158 @@ import jdk.vm.ci.services.JVMCIServiceLocator;
 
 /**
  * HotSpot implementation of a JVMCI runtime.
- *
- * The initialization of this class is very fragile since it's initialized both through
- * {@link JVMCI#initialize()} or through calling {@link HotSpotJVMCIRuntime#runtime()} and
- * {@link HotSpotJVMCIRuntime#runtime()} is also called by {@link JVMCI#initialize()}. So this class
- * can't have a static initializer and any required initialization must be done as part of
- * {@link #runtime()}. This allows the initialization to funnel back through
- * {@link JVMCI#initialize()} without deadlocking.
  */
 public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
 
-    @SuppressWarnings("try")
-    static class DelayedInit {
-        private static final HotSpotJVMCIRuntime instance;
+    /**
+     * Singleton instance lazily initialized via double-checked locking.
+     */
+    @NativeImageReinitialize private static volatile HotSpotJVMCIRuntime instance;
 
-        static {
-            try (InitTimer t = timer("HotSpotJVMCIRuntime.<init>")) {
-                instance = new HotSpotJVMCIRuntime();
+    private HotSpotResolvedObjectTypeImpl javaLangObject;
+    private HotSpotResolvedObjectTypeImpl javaLangInvokeMethodHandle;
+    private HotSpotResolvedObjectTypeImpl constantCallSiteType;
+    private HotSpotResolvedObjectTypeImpl callSiteType;
+    private HotSpotResolvedObjectTypeImpl javaLangString;
+    private HotSpotResolvedObjectTypeImpl javaLangClass;
+    private HotSpotResolvedObjectTypeImpl throwableType;
+    private HotSpotResolvedObjectTypeImpl serializableType;
+    private HotSpotResolvedObjectTypeImpl cloneableType;
+    private HotSpotResolvedObjectTypeImpl enumType;
 
-                // Can only do eager initialization of the JVMCI compiler
-                // once the singleton instance is available.
-                if (instance.config.getFlag("EagerJVMCI", Boolean.class)) {
-                    instance.getCompiler();
-                }
-            }
+    HotSpotResolvedObjectTypeImpl getJavaLangObject() {
+        if (javaLangObject == null) {
+            javaLangObject = (HotSpotResolvedObjectTypeImpl) fromClass(Object.class);
         }
+        return javaLangObject;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangString() {
+        if (javaLangString == null) {
+            javaLangString = (HotSpotResolvedObjectTypeImpl) fromClass(String.class);
+        }
+        return javaLangString;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangClass() {
+        if (javaLangClass == null) {
+            javaLangClass = (HotSpotResolvedObjectTypeImpl) fromClass(Class.class);
+        }
+        return javaLangClass;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangCloneable() {
+        if (cloneableType == null) {
+            cloneableType = (HotSpotResolvedObjectTypeImpl) fromClass(Cloneable.class);
+        }
+        return cloneableType;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangSerializable() {
+        if (serializableType == null) {
+            serializableType = (HotSpotResolvedObjectTypeImpl) fromClass(Serializable.class);
+        }
+        return serializableType;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangThrowable() {
+        if (throwableType == null) {
+            throwableType = (HotSpotResolvedObjectTypeImpl) fromClass(Throwable.class);
+        }
+        return throwableType;
+    }
+
+    HotSpotResolvedObjectTypeImpl getJavaLangEnum() {
+        if (enumType == null) {
+            enumType = (HotSpotResolvedObjectTypeImpl) fromClass(Enum.class);
+        }
+        return enumType;
+    }
+
+    HotSpotResolvedObjectTypeImpl getConstantCallSite() {
+        if (constantCallSiteType == null) {
+            constantCallSiteType = (HotSpotResolvedObjectTypeImpl) fromClass(ConstantCallSite.class);
+        }
+        return constantCallSiteType;
+    }
+
+    HotSpotResolvedObjectTypeImpl getCallSite() {
+        if (callSiteType == null) {
+            callSiteType = (HotSpotResolvedObjectTypeImpl) fromClass(CallSite.class);
+        }
+        return callSiteType;
+    }
+
+    HotSpotResolvedObjectType getMethodHandleClass() {
+        if (javaLangInvokeMethodHandle == null) {
+            javaLangInvokeMethodHandle = (HotSpotResolvedObjectTypeImpl) fromClass(MethodHandle.class);
+        }
+        return javaLangInvokeMethodHandle;
     }
 
     /**
      * Gets the singleton {@link HotSpotJVMCIRuntime} object.
      */
+    @VMEntryPoint
+    @SuppressWarnings("try")
     public static HotSpotJVMCIRuntime runtime() {
-        JVMCI.initialize();
-        return DelayedInit.instance;
+        HotSpotJVMCIRuntime result = instance;
+        if (result == null) {
+            // Synchronize on JVMCI.class to avoid deadlock
+            // between the two JVMCI initialization paths:
+            // HotSpotJVMCIRuntime.runtime() and JVMCI.getRuntime().
+            synchronized (JVMCI.class) {
+                result = instance;
+                if (result == null) {
+                    try (InitTimer t = timer("HotSpotJVMCIRuntime.<init>")) {
+                        instance = result = new HotSpotJVMCIRuntime();
+
+                        // Can only do eager initialization of the JVMCI compiler
+                        // once the singleton instance is available.
+                        if (result.config.getFlag("EagerJVMCI", Boolean.class)) {
+                            result.getCompiler();
+                        }
+                    }
+                    // Ensures JVMCIRuntime::_HotSpotJVMCIRuntime_instance is
+                    // initialized.
+                    JVMCI.getRuntime();
+                }
+                // Make sure all the primitive box caches are populated (required to properly
+                // materialize boxed primitives
+                // during deoptimization).
+                Boolean.valueOf(false);
+                Byte.valueOf((byte) 0);
+                Short.valueOf((short) 0);
+                Character.valueOf((char) 0);
+                Integer.valueOf(0);
+                Long.valueOf(0);
+            }
+        }
+        return result;
+    }
+
+    @VMEntryPoint
+    static Throwable decodeThrowable(String encodedThrowable) throws Throwable {
+        return TranslatedException.decodeThrowable(encodedThrowable);
+    }
+
+    @VMEntryPoint
+    static String encodeThrowable(Throwable throwable) throws Throwable {
+        return TranslatedException.encodeThrowable(throwable);
+    }
+
+    @VMEntryPoint
+    static String callToString(Object o) {
+        return o.toString();
+    }
+
+    /**
+     * Set of recognized {@code "jvmci.*"} system properties. Entries not associated with an
+     * {@link Option} have this object as their value.
+     */
+    static final Map<String, Object> options = new HashMap<>();
+    static {
+        options.put("jvmci.class.path.append", options);
     }
 
     /**
@@ -102,16 +229,18 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     public enum Option {
         // @formatter:off
         Compiler(String.class, null, "Selects the system compiler. This must match the getCompilerName() value returned " +
-                                     "by a jdk.vm.ci.runtime.JVMCICompilerFactory provider. " +
-                                     "An empty string or the value \"null\" selects a compiler " +
-                                     "that will raise an exception upon receiving a compilation request."),
+                "by a jdk.vm.ci.runtime.JVMCICompilerFactory provider. " +
+                "An empty string or the value \"null\" selects a compiler " +
+                "that will raise an exception upon receiving a compilation request."),
         // Note: The following one is not used (see InitTimer.ENABLED). It is added here
         // so that -XX:+JVMCIPrintProperties shows the option.
         InitTimer(Boolean.class, false, "Specifies if initialization timing is enabled."),
         PrintConfig(Boolean.class, false, "Prints VM configuration available via JVMCI."),
+        AuditHandles(Boolean.class, false, "Record stack trace along with scoped foreign object reference wrappers " +
+                "to debug issue with a wrapper being used after its scope has closed."),
         TraceMethodDataFilter(String.class, null,
-                        "Enables tracing of profiling info when read by JVMCI.",
-                        "Empty value: trace all methods",
+                "Enables tracing of profiling info when read by JVMCI.",
+                "Empty value: trace all methods",
                         "Non-empty value: trace methods whose fully qualified name contains the value."),
         UseProfilingInformation(Boolean.class, true, "");
         // @formatter:on
@@ -122,43 +251,50 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         private static final String JVMCI_OPTION_PROPERTY_PREFIX = "jvmci.";
 
         /**
-         * Marker for uninitialized flags.
+         * Sentinel for value initialized to {@code null} since {@code null} means uninitialized.
          */
-        private static final String UNINITIALIZED = "UNINITIALIZED";
+        private static final String NULL_VALUE = "NULL";
 
         private final Class<?> type;
-        private Object value;
+        @NativeImageReinitialize private Object value;
         private final Object defaultValue;
-        private boolean isDefault;
+        private boolean isDefault = true;
         private final String[] helpLines;
 
         Option(Class<?> type, Object defaultValue, String... helpLines) {
             assert Character.isUpperCase(name().charAt(0)) : "Option name must start with upper-case letter: " + name();
             this.type = type;
-            this.value = UNINITIALIZED;
             this.defaultValue = defaultValue;
             this.helpLines = helpLines;
+            Object existing = options.put(getPropertyName(), this);
+            assert existing == null : getPropertyName();
+        }
+
+        @SuppressFBWarnings(value = "ES_COMPARING_STRINGS_WITH_EQ", justification = "sentinel must be String since it's a static final in an enum")
+        private void init(String propertyValue) {
+            assert value == null : "cannot re-initialize " + name();
+            if (propertyValue == null) {
+                this.value = defaultValue == null ? NULL_VALUE : defaultValue;
+                this.isDefault = true;
+            } else {
+                if (type == Boolean.class) {
+                    this.value = Boolean.parseBoolean(propertyValue);
+                } else if (type == String.class) {
+                    this.value = propertyValue;
+                } else {
+                    throw new JVMCIError("Unexpected option type " + type);
+                }
+                this.isDefault = false;
+            }
         }
 
         @SuppressFBWarnings(value = "ES_COMPARING_STRINGS_WITH_EQ", justification = "sentinel must be String since it's a static final in an enum")
         private Object getValue() {
-            if (value == UNINITIALIZED) {
-                String propertyValue = VM.getSavedProperty(getPropertyName());
-                if (propertyValue == null) {
-                    this.value = defaultValue;
-                    this.isDefault = true;
-                } else {
-                    if (type == Boolean.class) {
-                        this.value = Boolean.parseBoolean(propertyValue);
-                    } else if (type == String.class) {
-                        this.value = propertyValue;
-                    } else {
-                        throw new JVMCIError("Unexpected option type " + type);
-                    }
-                    this.isDefault = false;
-                }
-                // Saved properties should not be interned - let's be sure
-                assert value != UNINITIALIZED;
+            if (value == NULL_VALUE) {
+                return null;
+            }
+            if (value == null) {
+                return defaultValue;
             }
             return value;
         }
@@ -221,16 +357,93 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
                 }
             }
         }
+
+        /**
+         * Compute string similarity based on Dice's coefficient.
+         *
+         * Ported from str_similar() in globals.cpp.
+         */
+        static float stringSimiliarity(String str1, String str2) {
+            int hit = 0;
+            for (int i = 0; i < str1.length() - 1; ++i) {
+                for (int j = 0; j < str2.length() - 1; ++j) {
+                    if ((str1.charAt(i) == str2.charAt(j)) && (str1.charAt(i + 1) == str2.charAt(j + 1))) {
+                        ++hit;
+                        break;
+                    }
+                }
+            }
+            return 2.0f * hit / (str1.length() + str2.length());
+        }
+
+        private static final float FUZZY_MATCH_THRESHOLD = 0.7F;
+
+        /**
+         * Parses all system properties starting with {@value #JVMCI_OPTION_PROPERTY_PREFIX} and
+         * initializes the options based on their values.
+         *
+         * @param runtime
+         */
+        static void parse(HotSpotJVMCIRuntime runtime) {
+            Map<String, String> savedProps = jdk.vm.ci.services.Services.getSavedProperties();
+            for (Map.Entry<String, String> e : savedProps.entrySet()) {
+                String name = e.getKey();
+                if (name.startsWith(Option.JVMCI_OPTION_PROPERTY_PREFIX)) {
+                    Object value = options.get(name);
+                    if (value == null) {
+                        List<String> matches = new ArrayList<>();
+                        for (String pn : options.keySet()) {
+                            float score = stringSimiliarity(pn, name);
+                            if (score >= FUZZY_MATCH_THRESHOLD) {
+                                matches.add(pn);
+                            }
+                        }
+                        Formatter msg = new Formatter();
+                        msg.format("Error parsing JVMCI options: Could not find option %s", name);
+                        if (!matches.isEmpty()) {
+                            msg.format("%nDid you mean one of the following?");
+                            for (String match : matches) {
+                                msg.format("%n    %s=<value>", match);
+                            }
+                        }
+                        msg.format("%nError: A fatal exception has occurred. Program will exit.%n");
+                        runtime.exitHotSpotWithMessage(1, msg.toString());
+                    } else if (value instanceof Option) {
+                        Option option = (Option) value;
+                        option.init(e.getValue());
+                    }
+                }
+            }
+        }
     }
 
-    static HotSpotJVMCIBackendFactory findFactory(String architecture) {
-        for (HotSpotJVMCIBackendFactory factory : ServiceLoader.load(HotSpotJVMCIBackendFactory.class, ClassLoader.getSystemClassLoader())) {
+    private static HotSpotJVMCIBackendFactory findFactory(String architecture) {
+        Iterable<HotSpotJVMCIBackendFactory> factories = getHotSpotJVMCIBackendFactories();
+        assert factories != null : "sanity";
+        for (HotSpotJVMCIBackendFactory factory : factories) {
             if (factory.getArchitecture().equalsIgnoreCase(architecture)) {
                 return factory;
             }
         }
 
         throw new JVMCIError("No JVMCI runtime available for the %s architecture", architecture);
+    }
+
+    private static volatile List<HotSpotJVMCIBackendFactory> cachedHotSpotJVMCIBackendFactories;
+
+    @SuppressFBWarnings(value = "LI_LAZY_INIT_UPDATE_STATIC", justification = "not sure about this")
+    private static Iterable<HotSpotJVMCIBackendFactory> getHotSpotJVMCIBackendFactories() {
+        if (IS_IN_NATIVE_IMAGE || cachedHotSpotJVMCIBackendFactories != null) {
+            return cachedHotSpotJVMCIBackendFactories;
+        }
+        Iterable<HotSpotJVMCIBackendFactory> result = ServiceLoader.load(HotSpotJVMCIBackendFactory.class, ClassLoader.getSystemClassLoader());
+        if (IS_BUILDING_NATIVE_IMAGE) {
+            cachedHotSpotJVMCIBackendFactories = new ArrayList<>();
+            for (HotSpotJVMCIBackendFactory factory : result) {
+                cachedHotSpotJVMCIBackendFactories.add(factory);
+            }
+        }
+        return result;
     }
 
     /**
@@ -249,13 +462,44 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     private final JVMCICompilerFactory compilerFactory;
     private final HotSpotJVMCICompilerFactory hsCompilerFactory;
     private volatile JVMCICompiler compiler;
-    protected final HotSpotJVMCIMetaAccessContext metaAccessContext;
+    protected final HotSpotJVMCIReflection reflection;
+
+    @NativeImageReinitialize private volatile boolean creatingCompiler;
 
     /**
-     * Stores the result of {@link HotSpotJVMCICompilerFactory#getCompilationLevelAdjustment} so
-     * that it can be read from the VM.
+     * Cache for speeding up {@link #fromClass(Class)}.
      */
-    @SuppressWarnings("unused") private final int compilationLevelAdjustment;
+    @NativeImageReinitialize private volatile ClassValue<WeakReferenceHolder<HotSpotResolvedJavaType>> resolvedJavaType;
+
+    /**
+     * To avoid calling ClassValue.remove to refresh the weak reference, which under certain
+     * circumstances can lead to an infinite loop, we use a permanent holder with a mutable field
+     * that we refresh.
+     */
+    private static class WeakReferenceHolder<T> {
+        private volatile WeakReference<T> ref;
+
+        WeakReferenceHolder(T value) {
+            set(value);
+        }
+
+        void set(T value) {
+            ref = new WeakReference<>(value);
+        }
+
+        T get() {
+            return ref.get();
+        }
+    }
+
+    @NativeImageReinitialize private HashMap<Long, WeakReference<ResolvedJavaType>> resolvedJavaTypes;
+
+    /**
+     * Stores the value set by {@link #excludeFromJVMCICompilation(Module...)} so that it can be
+     * read from the VM.
+     */
+    @SuppressWarnings("unused")//
+    @NativeImageReinitialize private Module[] excludeFromJVMCICompilation;
 
     private final Map<Class<? extends Architecture>, JVMCIBackend> backends = new HashMap<>();
 
@@ -281,6 +525,19 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
             config = new HotSpotVMConfig(configStore);
         }
 
+        reflection = IS_IN_NATIVE_IMAGE ? new SharedLibraryJVMCIReflection() : new HotSpotJDKReflection();
+
+        PrintStream vmLogStream = null;
+        if (IS_IN_NATIVE_IMAGE) {
+            // Redirect System.out and System.err to HotSpot's TTY stream
+            vmLogStream = new PrintStream(getLogStream());
+            System.setOut(vmLogStream);
+            System.setErr(vmLogStream);
+        }
+
+        // Initialize the Option values.
+        Option.parse(this);
+
         String hostArchitecture = config.getHostArchitectureName();
 
         HotSpotJVMCIBackendFactory factory;
@@ -292,40 +549,100 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
             hostBackend = registerBackend(factory.createJVMCIBackend(this, null));
         }
 
-        metaAccessContext = new HotSpotJVMCIMetaAccessContext();
-
-        compilerFactory = HotSpotJVMCICompilerConfig.getCompilerFactory();
+        compilerFactory = HotSpotJVMCICompilerConfig.getCompilerFactory(this);
         if (compilerFactory instanceof HotSpotJVMCICompilerFactory) {
             hsCompilerFactory = (HotSpotJVMCICompilerFactory) compilerFactory;
-            switch (hsCompilerFactory.getCompilationLevelAdjustment()) {
-                case None:
-                    compilationLevelAdjustment = config.compLevelAdjustmentNone;
-                    break;
-                case ByHolder:
-                    compilationLevelAdjustment = config.compLevelAdjustmentByHolder;
-                    break;
-                case ByFullSignature:
-                    compilationLevelAdjustment = config.compLevelAdjustmentByFullSignature;
-                    break;
-                default:
-                    compilationLevelAdjustment = config.compLevelAdjustmentNone;
-                    break;
+            if (hsCompilerFactory.getCompilationLevelAdjustment() != None) {
+                String name = HotSpotJVMCICompilerFactory.class.getName();
+                String msg = String.format("%s.getCompilationLevelAdjustment() is no longer supported. " +
+                                "Use %s.excludeFromJVMCICompilation() instead.", name, name);
+                throw new UnsupportedOperationException(msg);
             }
         } else {
             hsCompilerFactory = null;
-            compilationLevelAdjustment = config.compLevelAdjustmentNone;
         }
 
         if (config.getFlag("JVMCIPrintProperties", Boolean.class)) {
-            PrintStream out = new PrintStream(getLogStream());
-            Option.printProperties(out);
-            compilerFactory.printProperties(out);
+            if (vmLogStream == null) {
+                vmLogStream = new PrintStream(getLogStream());
+            }
+            Option.printProperties(vmLogStream);
+            compilerFactory.printProperties(vmLogStream);
             System.exit(0);
         }
 
         if (Option.PrintConfig.getBoolean()) {
-            printConfig(configStore, compilerToVm);
+            configStore.printConfig(this);
         }
+    }
+
+    HotSpotResolvedJavaType createClass(Class<?> javaClass) {
+        if (javaClass.isPrimitive()) {
+            return HotSpotResolvedPrimitiveType.forKind(JavaKind.fromJavaClass(javaClass));
+        }
+        if (IS_IN_NATIVE_IMAGE) {
+            try {
+                return compilerToVm.lookupType(javaClass.getName().replace('.', '/'), null, true);
+            } catch (ClassNotFoundException e) {
+                throw new JVMCIError(e);
+            }
+        }
+        return compilerToVm.lookupClass(javaClass);
+    }
+
+    private HotSpotResolvedJavaType fromClass0(Class<?> javaClass) {
+        if (resolvedJavaType == null) {
+            synchronized (this) {
+                if (resolvedJavaType == null) {
+                    resolvedJavaType = new ClassValue<>() {
+                        @Override
+                        protected WeakReferenceHolder<HotSpotResolvedJavaType> computeValue(Class<?> type) {
+                            return new WeakReferenceHolder<>(createClass(type));
+                        }
+                    };
+                }
+            }
+        }
+
+        WeakReferenceHolder<HotSpotResolvedJavaType> ref = resolvedJavaType.get(javaClass);
+        HotSpotResolvedJavaType javaType = ref.get();
+        if (javaType == null) {
+            /*
+             * If the referent has become null, create a new value and update cached weak reference.
+             */
+            javaType = createClass(javaClass);
+            ref.set(javaType);
+        }
+        return javaType;
+    }
+
+    /**
+     * Gets the JVMCI mirror for a {@link Class} object.
+     *
+     * @return the {@link ResolvedJavaType} corresponding to {@code javaClass}
+     */
+    HotSpotResolvedJavaType fromClass(Class<?> javaClass) {
+        if (javaClass == null) {
+            return null;
+        }
+        return fromClass0(javaClass);
+    }
+
+    synchronized HotSpotResolvedObjectTypeImpl fromMetaspace(long klassPointer, String signature) {
+        if (resolvedJavaTypes == null) {
+            resolvedJavaTypes = new HashMap<>();
+        }
+        assert klassPointer != 0;
+        WeakReference<ResolvedJavaType> klassReference = resolvedJavaTypes.get(klassPointer);
+        HotSpotResolvedObjectTypeImpl javaType = null;
+        if (klassReference != null) {
+            javaType = (HotSpotResolvedObjectTypeImpl) klassReference.get();
+        }
+        if (javaType == null) {
+            javaType = new HotSpotResolvedObjectTypeImpl(klassPointer, signature);
+            resolvedJavaTypes.put(klassPointer, new WeakReference<>(javaType));
+        }
+        return javaType;
     }
 
     private JVMCIBackend registerBackend(JVMCIBackend backend) {
@@ -333,10 +650,6 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         JVMCIBackend oldValue = backends.put(arch, backend);
         assert oldValue == null : "cannot overwrite existing backend for architecture " + arch.getSimpleName();
         return backend;
-    }
-
-    ResolvedJavaType fromClass(Class<?> javaClass) {
-        return metaAccessContext.fromClass(javaClass);
     }
 
     public HotSpotVMConfigStore getConfigStore() {
@@ -351,8 +664,9 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return compilerToVm;
     }
 
-    // Non-volatile since multi-initialization is harmless
-    private Predicate<ResolvedJavaType> intrinsificationTrustPredicate;
+    HotSpotJVMCIReflection getReflection() {
+        return reflection;
+    }
 
     /**
      * Gets a predicate that determines if a given type can be considered trusted for the purpose of
@@ -362,47 +676,17 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      *            compiler.
      */
     public Predicate<ResolvedJavaType> getIntrinsificationTrustPredicate(Class<?>... compilerLeafClasses) {
-        if (intrinsificationTrustPredicate == null) {
-            intrinsificationTrustPredicate = new Predicate<ResolvedJavaType>() {
-                    @Override
-                    public boolean test(ResolvedJavaType type) {
-                        if (type instanceof HotSpotResolvedJavaType) {
-                            Class<?> mirror = getMirror((HotSpotResolvedJavaType) type);
-                            Module module = mirror.getModule();
-                            return getTrustedModules().contains(module);
-                        } else {
-                            return false;
-                        }
-                    }
-
-                    private volatile Set<Module> trustedModules;
-
-                    private Set<Module> getTrustedModules() {
-                        Set<Module> modules = trustedModules;
-                        if (modules == null) {
-                            modules = new HashSet<>();
-                            for (Class<?> compilerConfiguration : compilerLeafClasses) {
-                                Module compilerConfigurationModule = compilerConfiguration.getModule();
-                                if (compilerConfigurationModule.getDescriptor().isAutomatic()) {
-                                    throw new IllegalArgumentException(String.format("The module '%s' defining the Graal compiler configuration class '%s' must not be an automatic module",
-                                                                                     compilerConfigurationModule.getName(), compilerConfiguration.getClass().getName()));
-                                }
-                                modules.add(compilerConfigurationModule);
-                                for (Requires require : compilerConfigurationModule.getDescriptor().requires()) {
-                                    for (Module module : compilerConfigurationModule.getLayer().modules()) {
-                                        if (module.getName().equals(require.name())) {
-                                            modules.add(module);
-                                        }
-                                    }
-                                }
-                            }
-                            trustedModules = modules;
-                        }
-                        return modules;
-                    }
-                };
-        }
-        return intrinsificationTrustPredicate;
+        return new Predicate<>() {
+            @Override
+            public boolean test(ResolvedJavaType type) {
+                if (type instanceof HotSpotResolvedObjectTypeImpl) {
+                    HotSpotResolvedObjectTypeImpl hsType = (HotSpotResolvedObjectTypeImpl) type;
+                    return compilerToVm.isTrustedForIntrinsics(hsType);
+                } else {
+                    return false;
+                }
+            }
+        };
     }
 
     /**
@@ -414,7 +698,28 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      *         instances
      */
     public Class<?> getMirror(ResolvedJavaType type) {
-        return ((HotSpotResolvedJavaType) type).mirror();
+        if (type instanceof HotSpotResolvedJavaType && reflection instanceof HotSpotJDKReflection) {
+            return ((HotSpotJDKReflection) reflection).getMirror((HotSpotResolvedJavaType) type);
+        }
+        return null;
+    }
+
+    static class ErrorCreatingCompiler implements JVMCICompiler {
+        private final RuntimeException t;
+
+        ErrorCreatingCompiler(RuntimeException t) {
+            this.t = t;
+        }
+
+        @Override
+        public CompilationRequestResult compileMethod(CompilationRequest request) {
+            throw t;
+        }
+
+        @Override
+        public boolean isGCSupported(int gcIdentifier) {
+            return false;
+        }
     }
 
     @Override
@@ -422,9 +727,20 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         if (compiler == null) {
             synchronized (this) {
                 if (compiler == null) {
-                    compiler = compilerFactory.createCompiler(this);
+                    assert !creatingCompiler : "recursive compiler creation";
+                    creatingCompiler = true;
+                    try {
+                        compiler = compilerFactory.createCompiler(this);
+                    } catch (RuntimeException t) {
+                        compiler = new ErrorCreatingCompiler(t);
+                    } finally {
+                        creatingCompiler = false;
+                    }
                 }
             }
+        }
+        if (compiler instanceof ErrorCreatingCompiler) {
+            throw ((ErrorCreatingCompiler) compiler).t;
         }
         return compiler;
     }
@@ -444,19 +760,23 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      */
     public JavaType lookupType(String name, HotSpotResolvedObjectType accessingType, boolean resolve) {
         Objects.requireNonNull(accessingType, "cannot resolve type without an accessing class");
+        return lookupTypeInternal(name, accessingType, resolve);
+    }
+
+    JavaType lookupTypeInternal(String name, HotSpotResolvedObjectType accessingType, boolean resolve) {
         // If the name represents a primitive type we can short-circuit the lookup.
         if (name.length() == 1) {
             JavaKind kind = JavaKind.fromPrimitiveOrVoidTypeChar(name.charAt(0));
-            return fromClass(kind.toJavaClass());
+            return HotSpotResolvedPrimitiveType.forKind(kind);
         }
 
         // Resolve non-primitive types in the VM.
         HotSpotResolvedObjectTypeImpl hsAccessingType = (HotSpotResolvedObjectTypeImpl) accessingType;
         try {
-            final HotSpotResolvedObjectTypeImpl klass = compilerToVm.lookupType(name, hsAccessingType.mirror(), resolve);
+            final HotSpotResolvedJavaType klass = compilerToVm.lookupType(name, hsAccessingType, resolve);
 
             if (klass == null) {
-                assert resolve == false;
+                assert resolve == false : name;
                 return UnresolvedJavaType.create(name);
             }
             return klass;
@@ -480,48 +800,11 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return Collections.unmodifiableMap(backends);
     }
 
-    /**
-     * Called from the VM.
-     */
-    @SuppressWarnings({"unused"})
-    private int adjustCompilationLevel(Class<?> declaringClass, String name, String signature, boolean isOsr, int level) {
-        CompilationLevel curLevel;
-        if (level == config.compilationLevelNone) {
-            curLevel = CompilationLevel.None;
-        } else if (level == config.compilationLevelSimple) {
-            curLevel = CompilationLevel.Simple;
-        } else if (level == config.compilationLevelLimitedProfile) {
-            curLevel = CompilationLevel.LimitedProfile;
-        } else if (level == config.compilationLevelFullProfile) {
-            curLevel = CompilationLevel.FullProfile;
-        } else if (level == config.compilationLevelFullOptimization) {
-            curLevel = CompilationLevel.FullOptimization;
-        } else {
-            throw JVMCIError.shouldNotReachHere();
-        }
-
-        switch (hsCompilerFactory.adjustCompilationLevel(declaringClass, name, signature, isOsr, curLevel)) {
-            case None:
-                return config.compilationLevelNone;
-            case Simple:
-                return config.compilationLevelSimple;
-            case LimitedProfile:
-                return config.compilationLevelLimitedProfile;
-            case FullProfile:
-                return config.compilationLevelFullProfile;
-            case FullOptimization:
-                return config.compilationLevelFullOptimization;
-            default:
-                return level;
-        }
-    }
-
-    /**
-     * Called from the VM.
-     */
-    @SuppressWarnings({"unused"})
-    private HotSpotCompilationRequestResult compileMethod(HotSpotResolvedJavaMethod method, int entryBCI, long jvmciEnv, int id) {
-        CompilationRequestResult result = getCompiler().compileMethod(new HotSpotCompilationRequest(method, entryBCI, jvmciEnv, id));
+    @SuppressWarnings("try")
+    @VMEntryPoint
+    private HotSpotCompilationRequestResult compileMethod(HotSpotResolvedJavaMethod method, int entryBCI, long compileState, int id) {
+        HotSpotCompilationRequest request = new HotSpotCompilationRequest(method, entryBCI, compileState, id);
+        CompilationRequestResult result = getCompiler().compileMethod(request);
         assert result != null : "compileMethod must always return something";
         HotSpotCompilationRequestResult hsResult;
         if (result instanceof HotSpotCompilationRequestResult) {
@@ -536,28 +819,41 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
                 hsResult = HotSpotCompilationRequestResult.success(inlinedBytecodes);
             }
         }
-
         return hsResult;
     }
 
+    @SuppressWarnings("try")
+    @VMEntryPoint
+    private boolean isGCSupported(int gcIdentifier) {
+        return getCompiler().isGCSupported(gcIdentifier);
+    }
+
+    /**
+     * Guard to ensure shut down actions are performed at most once.
+     */
+    private boolean isShutdown;
+
     /**
      * Shuts down the runtime.
-     *
-     * Called from the VM.
      */
-    @SuppressWarnings({"unused"})
-    private void shutdown() throws Exception {
-        for (HotSpotVMEventListener vmEventListener : getVmEventListeners()) {
-            vmEventListener.notifyShutdown();
+    @VMEntryPoint
+    private synchronized void shutdown() throws Exception {
+        if (!isShutdown) {
+            isShutdown = true;
+            // Cleaners are normally only processed when a new Cleaner is
+            // instantiated so process all remaining cleaners now.
+            Cleaner.clean();
+
+            for (HotSpotVMEventListener vmEventListener : getVmEventListeners()) {
+                vmEventListener.notifyShutdown();
+            }
         }
     }
 
     /**
      * Notify on completion of a bootstrap.
-     *
-     * Called from the VM.
      */
-    @SuppressWarnings({"unused"})
+    @VMEntryPoint
     private void bootstrapFinished() throws Exception {
         for (HotSpotVMEventListener vmEventListener : getVmEventListeners()) {
             vmEventListener.notifyBootstrapFinished();
@@ -577,39 +873,60 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         }
     }
 
-    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING", justification = "no localization here please!")
-    private static void printConfigLine(CompilerToVM vm, String format, Object... args) {
-        String line = String.format(format, args);
-        byte[] lineBytes = line.getBytes();
-        vm.writeDebugOutput(lineBytes, 0, lineBytes.length);
-        vm.flushDebugOutput();
+    /**
+     * Writes {@code length} bytes from {@code bytes} starting at offset {@code offset} to HotSpot's
+     * log stream.
+     *
+     * @param flush specifies if the log stream should be flushed after writing
+     * @param canThrow specifies if an error in the {@code bytes}, {@code offset} or {@code length}
+     *            arguments should result in an exception or a negative return value. If
+     *            {@code false}, this call will not perform any heap allocation
+     * @return 0 on success, -1 if {@code bytes == null && !canThrow}, -2 if {@code !canThrow} and
+     *         copying would cause access of data outside array bounds
+     * @throws NullPointerException if {@code bytes == null}
+     * @throws IndexOutOfBoundsException if copying would cause access of data outside array bounds
+     */
+    public int writeDebugOutput(byte[] bytes, int offset, int length, boolean flush, boolean canThrow) {
+        return writeDebugOutput0(compilerToVm, bytes, offset, length, flush, canThrow);
     }
 
-    private static void printConfig(HotSpotVMConfigStore store, CompilerToVM vm) {
-        TreeMap<String, VMField> fields = new TreeMap<>(store.getFields());
-        for (VMField field : fields.values()) {
-            if (!field.isStatic()) {
-                printConfigLine(vm, "[vmconfig:instance field] %s %s {offset=%d[0x%x]}%n", field.type, field.name, field.offset, field.offset);
-            } else {
-                String value = field.value == null ? "null" : field.value instanceof Boolean ? field.value.toString() : String.format("%d[0x%x]", field.value, field.value);
-                printConfigLine(vm, "[vmconfig:static field] %s %s = %s {address=0x%x}%n", field.type, field.name, value, field.address);
+    /**
+     * @see #writeDebugOutput
+     */
+    static int writeDebugOutput0(CompilerToVM vm, byte[] bytes, int offset, int length, boolean flush, boolean canThrow) {
+        if (bytes == null) {
+            if (!canThrow) {
+                return -1;
+            }
+            throw new NullPointerException();
+        }
+        if (offset < 0 || length < 0 || offset + length > bytes.length) {
+            if (!canThrow) {
+                return -2;
+            }
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        if (length <= 8) {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes, offset, length);
+            if (length != 8) {
+                ByteBuffer buffer8 = ByteBuffer.allocate(8);
+                buffer8.put(buffer);
+                buffer8.position(8);
+                buffer = buffer8;
+            }
+            buffer.order(ByteOrder.nativeOrder());
+            vm.writeDebugOutput(buffer.getLong(0), length, flush);
+        } else {
+            Unsafe unsafe = UnsafeAccess.UNSAFE;
+            long buffer = unsafe.allocateMemory(length);
+            try {
+                unsafe.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, buffer, length);
+                vm.writeDebugOutput(buffer, length, flush);
+            } finally {
+                unsafe.freeMemory(buffer);
             }
         }
-        TreeMap<String, VMFlag> flags = new TreeMap<>(store.getFlags());
-        for (VMFlag flag : flags.values()) {
-            printConfigLine(vm, "[vmconfig:flag] %s %s = %s%n", flag.type, flag.name, flag.value);
-        }
-        TreeMap<String, Long> addresses = new TreeMap<>(store.getAddresses());
-        for (Map.Entry<String, Long> e : addresses.entrySet()) {
-            printConfigLine(vm, "[vmconfig:address] %s = %d[0x%x]%n", e.getKey(), e.getValue(), e.getValue());
-        }
-        TreeMap<String, Long> constants = new TreeMap<>(store.getConstants());
-        for (Map.Entry<String, Long> e : constants.entrySet()) {
-            printConfigLine(vm, "[vmconfig:constant] %s = %d[0x%x]%n", e.getKey(), e.getValue(), e.getValue());
-        }
-        for (VMIntrinsicMethod e : store.getIntrinsics()) {
-            printConfigLine(vm, "[vmconfig:intrinsic] %d = %s.%s %s%n", e.id, e.declaringClass, e.name, e.descriptor);
-        }
+        return 0;
     }
 
     /**
@@ -627,7 +944,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
                 } else if (len == 0) {
                     return;
                 }
-                compilerToVm.writeDebugOutput(b, off, len);
+                writeDebugOutput(b, off, len, false, true);
             }
 
             @Override
@@ -650,6 +967,26 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     }
 
     /**
+     * @return the current number of per thread counters. May be set through
+     *         {@code -XX:JVMCICompilerSize=} command line option or the
+     *         {@link #setCountersSize(int)} call.
+     */
+    public int getCountersSize() {
+        return compilerToVm.getCountersSize();
+    }
+
+    /**
+     * Attempt to enlarge the number of per thread counters available. Requires a safepoint so
+     * resizing should be rare to avoid performance effects.
+     *
+     * @param newSize
+     * @return false if the resizing failed
+     */
+    public boolean setCountersSize(int newSize) {
+        return compilerToVm.setCountersSize(newSize);
+    }
+
+    /**
      * The offset from the origin of an array to the first element.
      *
      * @return the offset in bytes
@@ -657,23 +994,23 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     public int getArrayBaseOffset(JavaKind kind) {
         switch (kind) {
             case Boolean:
-                return Unsafe.ARRAY_BOOLEAN_BASE_OFFSET;
+                return compilerToVm.ARRAY_BOOLEAN_BASE_OFFSET;
             case Byte:
-                return Unsafe.ARRAY_BYTE_BASE_OFFSET;
+                return compilerToVm.ARRAY_BYTE_BASE_OFFSET;
             case Char:
-                return Unsafe.ARRAY_CHAR_BASE_OFFSET;
+                return compilerToVm.ARRAY_CHAR_BASE_OFFSET;
             case Short:
-                return Unsafe.ARRAY_SHORT_BASE_OFFSET;
+                return compilerToVm.ARRAY_SHORT_BASE_OFFSET;
             case Int:
-                return Unsafe.ARRAY_INT_BASE_OFFSET;
+                return compilerToVm.ARRAY_INT_BASE_OFFSET;
             case Long:
-                return Unsafe.ARRAY_LONG_BASE_OFFSET;
+                return compilerToVm.ARRAY_LONG_BASE_OFFSET;
             case Float:
-                return Unsafe.ARRAY_FLOAT_BASE_OFFSET;
+                return compilerToVm.ARRAY_FLOAT_BASE_OFFSET;
             case Double:
-                return Unsafe.ARRAY_DOUBLE_BASE_OFFSET;
+                return compilerToVm.ARRAY_DOUBLE_BASE_OFFSET;
             case Object:
-                return Unsafe.ARRAY_OBJECT_BASE_OFFSET;
+                return compilerToVm.ARRAY_OBJECT_BASE_OFFSET;
             default:
                 throw new JVMCIError("%s", kind);
         }
@@ -688,23 +1025,23 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     public int getArrayIndexScale(JavaKind kind) {
         switch (kind) {
             case Boolean:
-                return Unsafe.ARRAY_BOOLEAN_INDEX_SCALE;
+                return compilerToVm.ARRAY_BOOLEAN_INDEX_SCALE;
             case Byte:
-                return Unsafe.ARRAY_BYTE_INDEX_SCALE;
+                return compilerToVm.ARRAY_BYTE_INDEX_SCALE;
             case Char:
-                return Unsafe.ARRAY_CHAR_INDEX_SCALE;
+                return compilerToVm.ARRAY_CHAR_INDEX_SCALE;
             case Short:
-                return Unsafe.ARRAY_SHORT_INDEX_SCALE;
+                return compilerToVm.ARRAY_SHORT_INDEX_SCALE;
             case Int:
-                return Unsafe.ARRAY_INT_INDEX_SCALE;
+                return compilerToVm.ARRAY_INT_INDEX_SCALE;
             case Long:
-                return Unsafe.ARRAY_LONG_INDEX_SCALE;
+                return compilerToVm.ARRAY_LONG_INDEX_SCALE;
             case Float:
-                return Unsafe.ARRAY_FLOAT_INDEX_SCALE;
+                return compilerToVm.ARRAY_FLOAT_INDEX_SCALE;
             case Double:
-                return Unsafe.ARRAY_DOUBLE_INDEX_SCALE;
+                return compilerToVm.ARRAY_DOUBLE_INDEX_SCALE;
             case Object:
-                return Unsafe.ARRAY_OBJECT_INDEX_SCALE;
+                return compilerToVm.ARRAY_OBJECT_INDEX_SCALE;
             default:
                 throw new JVMCIError("%s", kind);
 
@@ -712,10 +1049,10 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     }
 
     /**
-     * Links each native method in {@code clazz} to an implementation in the JVMCI SVM library.
+     * Links each native method in {@code clazz} to an implementation in the JVMCI shared library.
      * <p>
      * A use case for this is a JVMCI compiler implementation that offers an API to Java code
-     * executing in HotSpot to exercise functionality (mostly) in the JVMCI SVM library. For
+     * executing in HotSpot to exercise functionality (mostly) in the JVMCI shared library. For
      * example:
      *
      * <pre>
@@ -740,26 +1077,167 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * }
      * </pre>
      *
-     * The implementation of the native {@code JCompile.compile0} method would be in the SVM library
-     * that contains the bulk of the JVMCI compiler. The {@code JCompile.compile0} implementation
-     * will be exported as the following JNI-compliant symbol:
+     * The implementation of the native {@code JCompile.compile0} method would be in the JVMCI
+     * shared library that contains the JVMCI compiler. The {@code JCompile.compile0} implementation
+     * must be exported as the following JNI-compatible symbol:
      *
      * <pre>
      * Java_com_jcompile_JCompile_compile0
      * </pre>
      *
-     * How the JVMCI compiler SVM library is built is outside the scope of this document.
+     * @see "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/design.html#resolving_native_method_names"
+     * @see "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/invocation.html#creating_the_vm"
+     * @see "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/invocation.html#invocation_api_functions"
      *
-     * @see "https://docs.oracle.com/javase/10/docs/specs/jni/design.html#resolving-native-method-names"
+     *
+     * @return info about the Java VM in the JVMCI shared library {@code JavaVM*}. The info is
+     *         encoded in a long array as follows:
+     *
+     *         <pre>
+     *     long[] info = {
+     *         javaVM, // the {@code JavaVM*} value
+     *         javaVM->functions->reserved0,
+     *         javaVM->functions->reserved1,
+     *         javaVM->functions->reserved2
+     *     }
+     *         </pre>
      *
      * @throws NullPointerException if {@code clazz == null}
-     * @throws IllegalArgumentException if the current execution context is SVM or if {@code clazz}
-     *             is {@link Class#isPrimitive()}
-     * @throws UnsatisfiedLinkError if the JVMCI SVM library is not available, a native method in
-     *             {@code clazz} is already linked or the SVM JVMCI library does not contain a
-     *             JNI-compliant symbol for a native method in {@code clazz}
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws IllegalStateException if the current execution context is the JVMCI shared library
+     * @throws IllegalArgumentException if {@code clazz} is {@link Class#isPrimitive()}
+     * @throws UnsatisfiedLinkError if there's a problem linking a native method in {@code clazz}
+     *             (no matching JNI symbol or the native method is already linked to a different
+     *             address)
      */
-    public void registerNativeMethods(Class<?> clazz) {
-        throw new UnsatisfiedLinkError("SVM library is not available");
+    public long[] registerNativeMethods(Class<?> clazz) {
+        return compilerToVm.registerNativeMethods(clazz);
+    }
+
+    /**
+     * Creates or retrieves an object in the peer runtime that mirrors {@code obj}. The types whose
+     * objects can be translated are:
+     * <ul>
+     * <li>{@link HotSpotResolvedJavaMethodImpl},</li>
+     * <li>{@link HotSpotResolvedObjectTypeImpl},</li>
+     * <li>{@link HotSpotResolvedPrimitiveType},</li>
+     * <li>{@link IndirectHotSpotObjectConstantImpl},</li>
+     * <li>{@link DirectHotSpotObjectConstantImpl} and</li>
+     * <li>{@link HotSpotNmethod}</li>
+     * </ul>
+     *
+     * This mechanism can be used to pass and return values between the HotSpot and JVMCI shared
+     * library runtimes. In the receiving runtime, the value can be converted back to an object with
+     * {@link #unhand(Class, long)}.
+     *
+     * @param obj an object for which an equivalent instance in the peer runtime is requested
+     * @return a JNI global reference to the mirror of {@code obj} in the peer runtime
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws IllegalArgumentException if {@code obj} is not of a translatable type
+     *
+     * @see "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/design.html#global_and_local_references"
+     */
+    public long translate(Object obj) {
+        return compilerToVm.translate(obj);
+    }
+
+    /**
+     * Dereferences and returns the object referred to by the JNI global reference {@code handle}.
+     * The global reference is deleted prior to returning. Any further use of {@code handle} is
+     * invalid.
+     *
+     * @param handle a JNI global reference to an object in the current runtime
+     * @return the object referred to by {@code handle}
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws ClassCastException if the returned object cannot be cast to {@code type}
+     *
+     * @see "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/design.html#global_and_local_references"
+     *
+     */
+    public <T> T unhand(Class<T> type, long handle) {
+        return type.cast(compilerToVm.unhand(handle));
+    }
+
+    /**
+     * Determines if the current thread is attached to the peer runtime.
+     *
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws IllegalStateException if the peer runtime has not been initialized
+     */
+    public boolean isCurrentThreadAttached() {
+        return compilerToVm.isCurrentThreadAttached();
+    }
+
+    /**
+     * Gets the address of the HotSpot {@code JavaThread} C++ object for the current thread. This
+     * will return {@code 0} if called from an unattached JVMCI shared library thread.
+     */
+    public long getCurrentJavaThread() {
+        return compilerToVm.getCurrentJavaThread();
+    }
+
+    /**
+     * Ensures the current thread is attached to the peer runtime.
+     *
+     * @param asDaemon if the thread is not yet attached, should it be attached as a daemon
+     * @return {@code true} if this call attached the current thread, {@code false} if the current
+     *         thread was already attached
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws IllegalStateException if the peer runtime has not been initialized or there is an
+     *             error while trying to attach the thread
+     * @throws ArrayIndexOutOfBoundsException if {@code javaVMInfo} is non-null and is shorter than
+     *             the length of the array returned by {@link #registerNativeMethods}
+     */
+    public boolean attachCurrentThread(boolean asDaemon) {
+        byte[] name = IS_IN_NATIVE_IMAGE ? Thread.currentThread().getName().getBytes() : null;
+        return compilerToVm.attachCurrentThread(name, asDaemon);
+    }
+
+    /**
+     * Detaches the current thread from the peer runtime.
+     *
+     * @throws UnsupportedOperationException if the JVMCI shared library is not enabled (i.e.
+     *             {@code -XX:-UseJVMCINativeLibrary})
+     * @throws IllegalStateException if the peer runtime has not been initialized or if the current
+     *             thread is not attached or if there is an error while trying to detach the thread
+     */
+    public void detachCurrentThread() {
+        compilerToVm.detachCurrentThread();
+    }
+
+    /**
+     * Informs HotSpot that no method whose module is in {@code modules} is to be compiled with
+     * {@link #compileMethod}.
+     *
+     * @param modules the set of modules containing JVMCI compiler classes
+     */
+    public void excludeFromJVMCICompilation(Module... modules) {
+        this.excludeFromJVMCICompilation = modules.clone();
+    }
+
+    /**
+     * Calls {@link System#exit(int)} in HotSpot's runtime.
+     */
+    public void exitHotSpot(int status) {
+        if (!IS_IN_NATIVE_IMAGE) {
+            System.exit(status);
+        }
+        compilerToVm.callSystemExit(status);
+    }
+
+    /**
+     * Writes a message to HotSpot's log stream and then calls {@link System#exit(int)} in HotSpot's
+     * runtime.
+     */
+    JVMCIError exitHotSpotWithMessage(int status, String format, Object... args) {
+        byte[] messageBytes = String.format(format, args).getBytes();
+        writeDebugOutput(messageBytes, 0, messageBytes.length, true, true);
+        exitHotSpot(status);
+        throw JVMCIError.shouldNotReachHere();
     }
 }

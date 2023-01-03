@@ -32,16 +32,15 @@ import com.sun.org.apache.bcel.internal.ExceptionConst;
  *
  * <PRE>Stack: ..., objectref, [arg1, [arg2 ...]] -&gt; ...</PRE>
  *
- * @version $Id: INVOKEVIRTUAL.java 1747278 2016-06-07 17:28:43Z britter $
  * @see
- * <a href="http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokevirtual">
+ * <a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokevirtual">
  * The invokevirtual instruction in The Java Virtual Machine Specification</a>
  */
 public class INVOKEVIRTUAL extends InvokeInstruction {
 
     /**
-     * Empty constructor needed for the Class.newInstance() statement in
-     * Instruction.readInstruction(). Not to be used otherwise.
+     * Empty constructor needed for Instruction.readInstruction.
+     * Not to be used otherwise.
      */
     INVOKEVIRTUAL() {
     }

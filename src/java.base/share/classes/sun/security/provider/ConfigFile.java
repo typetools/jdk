@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,6 +45,8 @@ import javax.security.auth.login.ConfigurationSpi;
 import sun.security.util.Debug;
 import sun.security.util.PropertyExpander;
 import sun.security.util.ResourcesMgr;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class represents a default implementation for
@@ -157,6 +159,7 @@ public final class ConfigFile extends Configuration {
             }
         }
 
+        @SuppressWarnings("removal")
         public Spi(final Configuration.Parameters params) throws IOException {
 
             // call in a doPrivileged
@@ -325,7 +328,7 @@ public final class ConfigFile extends Configuration {
                           throws IOException {
 
             try (InputStreamReader isr
-                    = new InputStreamReader(getInputStream(config), "UTF-8")) {
+                    = new InputStreamReader(getInputStream(config), UTF_8)) {
                 readConfig(isr, newConfig);
             } catch (FileNotFoundException fnfe) {
                 if (debugConfig != null) {
@@ -378,6 +381,7 @@ public final class ConfigFile extends Configuration {
          * @throws SecurityException if the caller does not have permission
          *                           to refresh the Configuration.
          */
+        @SuppressWarnings("removal")
         @Override
         public synchronized void engineRefresh() {
 
@@ -626,7 +630,7 @@ public final class ConfigFile extends Configuration {
                     return url.openStream();
                 } catch (Exception e) {
                     String file = url.getPath();
-                    if (url.getHost().length() > 0) {  // For Windows UNC
+                    if (!url.getHost().isEmpty()) {  // For Windows UNC
                         file = "//" + url.getHost() + file;
                     }
                     if (debugConfig != null) {
@@ -651,7 +655,7 @@ public final class ConfigFile extends Configuration {
                 return value;
             }
             String s = PropertyExpander.expand(value);
-            if (s == null || s.length() == 0) {
+            if (s == null || s.isEmpty()) {
                 throw ioException(
                     "Configuration.Error.Line.line.system.property.value.expanded.to.empty.value",
                     linenum, value);

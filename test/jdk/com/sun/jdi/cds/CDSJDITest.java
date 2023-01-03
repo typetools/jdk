@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,8 @@
  * Helper superclass for launching JDI tests out of the CDS archive.
 */
 
-import jdk.testlibrary.OutputAnalyzer;
-import jdk.testlibrary.ProcessTools;
+import jdk.test.lib.process.OutputAnalyzer;
+import jdk.test.lib.process.ProcessTools;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ public class CDSJDITest {
             // These first three properties are setup by jtreg, and must be passed
             // to the JDI test subprocess because it needs them in order to
             // pass them to the subprocess it will create for the debuggee. This
-            // is how the JPRT -javaopts are passed to the debggee. See
+            // is how the -javaopts are passed to the debuggee. See
             // VMConnection.getDebuggeeVMOptions().
             getPropOpt("test.classes"),
             getPropOpt("test.java.opts"),
@@ -61,7 +61,7 @@ public class CDSJDITest {
             // pass them as JVM arguments to the debuggee process it creates.
             "-Xbootclasspath/a:" + appJar,
             "-XX:+UnlockDiagnosticVMOptions",
-            "-XX:+TraceClassPaths",
+            "-Xlog:class+path=info",
             "-XX:SharedArchiveFile=./SharedArchiveFile.jsa",
             "-Xshare:on",
             "-showversion"
@@ -72,7 +72,7 @@ public class CDSJDITest {
             "-Xbootclasspath/a:" + appJar,
             "-XX:+UnlockDiagnosticVMOptions", "-XX:SharedArchiveFile=./SharedArchiveFile.jsa",
             "-XX:ExtraSharedClassListFile=" + jarClasslistFile.getPath(),
-            "-Xshare:dump");
+            "-Xshare:dump", "-Xlog:cds");
         OutputAnalyzer outputDump = executeAndLog(pb, "exec");
         for (String jarClass : jarClasses) {
             outputDump.shouldNotContain("Cannot find " + jarClass);
@@ -81,7 +81,7 @@ public class CDSJDITest {
         outputDump.shouldHaveExitValue(0);
 
         // Run the test specified JDI test
-        pb = ProcessTools.createJavaProcessBuilder(true, testArgs);
+        pb = ProcessTools.createTestJvm(testArgs);
         OutputAnalyzer outputRun = executeAndLog(pb, "exec");
         try {
             outputRun.shouldContain("sharing");

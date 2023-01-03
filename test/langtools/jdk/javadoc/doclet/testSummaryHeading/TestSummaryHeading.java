@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,13 @@
  * @summary  Document a class that does not have any methods to document.  The
  *           "Method Summary" heading should still show up since the class
  *           inherits methods.
- * @author   jamieh
- * @library  ../lib
+ * @library  ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build    JavadocTester
+ * @build    javadoc.tester.*
  * @run main TestSummaryHeading
  */
+
+import javadoc.tester.JavadocTester;
 
 public class TestSummaryHeading extends JavadocTester {
 
@@ -42,13 +43,13 @@ public class TestSummaryHeading extends JavadocTester {
     }
 
     @Test
-    void test() {
+    public void test() {
         javadoc("-d", "out",
                 "-sourcepath", testSrc,
                 testSrc("C.java"));
         checkExit(Exit.OK);
 
         checkOutput("C.html", true,
-                "<h3>Method Summary</h3>");
+                "<h2>Method Summary</h2>");
     }
 }

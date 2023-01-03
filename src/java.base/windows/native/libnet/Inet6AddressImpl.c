@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -240,7 +240,7 @@ cleanupAndReturn:
 /*
  * Class:     java_net_Inet6AddressImpl
  * Method:    getHostByAddr
- * Signature: (I)Ljava/lang/String;
+ * Signature: ([B)Ljava/lang/String;
  *
  * Theoretically the UnknownHostException could be enriched with gai error
  * information. But as it is silently ignored anyway, there's no need for this.
@@ -396,7 +396,7 @@ ping6(JNIEnv *env, HANDLE hIcmpFile, SOCKETADDRESS *sa,
     ReplyBuffer = (VOID *)malloc(ReplySize);
     if (ReplyBuffer == NULL) {
         IcmpCloseHandle(hIcmpFile);
-        NET_ThrowNew(env, WSAGetLastError(), "Unable to allocate memory");
+        NET_ThrowNew(env, -1, "Unable to allocate memory");
         return JNI_FALSE;
     }
 
@@ -435,7 +435,7 @@ ping6(JNIEnv *env, HANDLE hIcmpFile, SOCKETADDRESS *sa,
 /*
  * Class:     java_net_Inet6AddressImpl
  * Method:    isReachable0
- * Signature: ([bII[bI)Z
+ * Signature: ([BII[BII)Z
  */
 JNIEXPORT jboolean JNICALL
 Java_java_net_Inet6AddressImpl_isReachable0(JNIEnv *env, jobject this,

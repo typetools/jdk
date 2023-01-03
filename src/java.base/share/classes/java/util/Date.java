@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -90,12 +90,12 @@ import sun.util.calendar.ZoneInfo;
  * <i>not</i> adjusted for leap seconds. An interesting source of
  * further information is the United States Naval Observatory (USNO):
  * <blockquote><pre>
- *     <a href="http://www.usno.navy.mil/USNO">http://www.usno.navy.mil/USNO</a>
+ *     <a href="https://www.usno.navy.mil/USNO">https://www.usno.navy.mil/USNO</a>
  * </pre></blockquote>
  * <p>
  * and the material regarding "Systems of Time" at:
  * <blockquote><pre>
- *     <a href="http://www.usno.navy.mil/USNO/time/master-clock/systems-of-time">http://www.usno.navy.mil/USNO/time/master-clock/systems-of-time</a>
+ *     <a href="https://www.usno.navy.mil/USNO/time/master-clock/systems-of-time">https://www.usno.navy.mil/USNO/time/master-clock/systems-of-time</a>
  * </pre></blockquote>
  * <p>
  * which has descriptions of various different time systems including
@@ -161,6 +161,7 @@ public class Date
      * interoperability with JDK1.1. The Date was modified to write
      * and read only the UTC time.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 7523967970034938905L;
 
     /**
@@ -917,7 +918,7 @@ public class Date
      *            represented by this {@code Date} object is strictly
      *            earlier than the instant represented by {@code when};
      *          {@code false} otherwise.
-     * @exception NullPointerException if {@code when} is null.
+     * @throws    NullPointerException if {@code when} is null.
      */
     public boolean before(@GuardSatisfied Date this, Date when) {
         return getMillisOf(this) < getMillisOf(when);
@@ -931,7 +932,7 @@ public class Date
      *          by this {@code Date} object is strictly later than the
      *          instant represented by {@code when};
      *          {@code false} otherwise.
-     * @exception NullPointerException if {@code when} is null.
+     * @throws    NullPointerException if {@code when} is null.
      */
     public boolean after(@GuardSatisfied Date this, Date when) {
         return getMillisOf(this) > getMillisOf(when);
@@ -981,7 +982,7 @@ public class Date
      *          is before the Date argument; and a value greater than
      *      {@code 0} if this Date is after the Date argument.
      * @since   1.2
-     * @exception NullPointerException if {@code anotherDate} is null.
+     * @throws    NullPointerException if {@code anotherDate} is null.
      */
     @Pure
     public int compareTo(@GuardSatisfied Date this, @GuardSatisfied Date anotherDate) {
@@ -1330,6 +1331,7 @@ public class Date
      *             is emitted (long).  This represents the offset from
      *             January 1, 1970, 00:00:00 GMT in milliseconds.
      */
+    @java.io.Serial
     private void writeObject(ObjectOutputStream s)
          throws IOException
     {
@@ -1340,6 +1342,7 @@ public class Date
     /**
      * Reconstitute this object from a stream (i.e., deserialize it).
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s)
          throws IOException, ClassNotFoundException
     {
@@ -1362,8 +1365,8 @@ public class Date
      * @param instant  the instant to convert
      * @return a {@code Date} representing the same point on the time-line as
      *  the provided instant
-     * @exception NullPointerException if {@code instant} is null.
-     * @exception IllegalArgumentException if the instant is too large to
+     * @throws    NullPointerException if {@code instant} is null.
+     * @throws    IllegalArgumentException if the instant is too large to
      *  represent as a {@code Date}
      * @since 1.8
      */

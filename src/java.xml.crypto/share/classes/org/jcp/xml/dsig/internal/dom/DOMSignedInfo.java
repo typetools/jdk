@@ -21,10 +21,7 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id: DOMSignedInfo.java 1820179 2018-01-04 19:09:52Z mullan $
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
@@ -35,7 +32,9 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import javax.xml.crypto.*;
+import javax.xml.crypto.dom.DOMCryptoContext;
 import javax.xml.crypto.dsig.*;
+import javax.xml.crypto.dsig.spec.RSAPSSParameterSpec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,10 +42,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.security.Provider;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.util.*;
 
+import com.sun.org.apache.xml.internal.security.algorithms.implementations.SignatureBaseRSA;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import com.sun.org.apache.xml.internal.security.utils.UnsyncBufferedOutputStream;
+import com.sun.org.apache.xml.internal.security.utils.XMLUtils;
 
 /**
  * DOM-based implementation of SignedInfo.
@@ -61,6 +67,7 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
     private CanonicalizationMethod canonicalizationMethod;
     private SignatureMethod signatureMethod;
     private String id;
+    private Document ownerDoc;
     private Element localSiElem;
     private InputStream canonData;
 
@@ -129,6 +136,7 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
     public DOMSignedInfo(Element siElem, XMLCryptoContext context, Provider provider)
         throws MarshalException {
         localSiElem = siElem;
+        ownerDoc = siElem.getOwnerDocument();
 
         // get Id attribute, if specified
         id = DOMUtils.getAttributeValue(siElem, "Id");
@@ -154,6 +162,33 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
                 "It is forbidden to use algorithm " + signatureMethodAlgorithm +
                 " when secure validation is enabled"
             );
+        }
+        if (secVal && signatureMethod instanceof DOMRSAPSSSignatureMethod.RSAPSS) {
+            AlgorithmParameterSpec spec = signatureMethod.getParameterSpec();
+            if (spec instanceof RSAPSSParameterSpec) {
+                try {
+                    PSSParameterSpec pspec = ((RSAPSSParameterSpec) spec).getPSSParameterSpec();
+                    String da = SignatureBaseRSA.SignatureRSASSAPSS.DigestAlgorithm
+                            .fromDigestAlgorithm(pspec.getDigestAlgorithm()).getXmlDigestAlgorithm();
+                    if (Policy.restrictAlg(da)) {
+                        throw new MarshalException(
+                                "It is forbidden to use algorithm " + da + " in PSS when secure validation is enabled"
+                        );
+                    }
+                    AlgorithmParameterSpec mspec = pspec.getMGFParameters();
+                    if (mspec instanceof MGF1ParameterSpec) {
+                        String da2 = SignatureBaseRSA.SignatureRSASSAPSS.DigestAlgorithm
+                                .fromDigestAlgorithm(((MGF1ParameterSpec) mspec).getDigestAlgorithm()).getXmlDigestAlgorithm();
+                        if (Policy.restrictAlg(da2)) {
+                            throw new MarshalException(
+                                    "It is forbidden to use algorithm " + da2 + " in MGF1 when secure validation is enabled"
+                            );
+                        }
+                    }
+                } catch (com.sun.org.apache.xml.internal.security.signature.XMLSignatureException e) {
+                    // Unknown digest algorithm. Ignored.
+                }
+            }
         }
 
         // unmarshal References
@@ -181,27 +216,22 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
         references = Collections.unmodifiableList(refList);
     }
 
-    @Override
     public CanonicalizationMethod getCanonicalizationMethod() {
         return canonicalizationMethod;
     }
 
-    @Override
     public SignatureMethod getSignatureMethod() {
         return signatureMethod;
     }
 
-    @Override
     public String getId() {
         return id;
     }
 
-    @Override
     public List<Reference> getReferences() {
         return references;
     }
 
-    @Override
     public InputStream getCanonicalizedData() {
         return canonData;
     }
@@ -229,7 +259,7 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
                     sb.append((char)signedInfoBytes[i]);
                 }
                 LOG.debug(sb.toString());
-                LOG.debug("Data to be signed/verified:" + Base64.getMimeEncoder().encodeToString(signedInfoBytes));
+                LOG.debug("Data to be signed/verified:" + XMLUtils.encodeToString(signedInfoBytes));
             }
 
             this.canonData = new ByteArrayInputStream(signedInfoBytes);
@@ -242,32 +272,31 @@ public final class DOMSignedInfo extends DOMStructure implements SignedInfo {
     }
 
     @Override
-    public void marshal(XmlWriter xwriter, String dsPrefix, XMLCryptoContext context)
+    public void marshal(Node parent, String dsPrefix, DOMCryptoContext context)
         throws MarshalException
     {
-        xwriter.writeStartElement(dsPrefix, "SignedInfo", XMLSignature.XMLNS);
-        XMLStructure siStruct = xwriter.getCurrentNodeAsStructure();
-        localSiElem = (Element) ((javax.xml.crypto.dom.DOMStructure) siStruct).getNode();
-
-        // append Id attribute
-        xwriter.writeIdAttribute("", "", "Id", id);
+        ownerDoc = DOMUtils.getOwnerDocument(parent);
+        Element siElem = DOMUtils.createElement(ownerDoc, "SignedInfo",
+                                                XMLSignature.XMLNS, dsPrefix);
 
         // create and append CanonicalizationMethod element
         DOMCanonicalizationMethod dcm =
             (DOMCanonicalizationMethod)canonicalizationMethod;
-        dcm.marshal(xwriter, dsPrefix, context);
+        dcm.marshal(siElem, dsPrefix, context);
 
         // create and append SignatureMethod element
-        ((AbstractDOMSignatureMethod)signatureMethod).marshal(xwriter, dsPrefix);
+        ((DOMStructure)signatureMethod).marshal(siElem, dsPrefix, context);
 
         // create and append Reference elements
         for (Reference reference : references) {
-            // TODO - either suppress warning here, or figure out how to get rid of the cast.
-            DOMReference domRef = (DOMReference)reference;
-            domRef.marshal(xwriter, dsPrefix, context);
+            ((DOMReference)reference).marshal(siElem, dsPrefix, context);
         }
 
-        xwriter.writeEndElement(); // "SignedInfo"
+        // append Id attribute
+        DOMUtils.setAttributeID(siElem, "Id", id);
+
+        parent.appendChild(siElem);
+        localSiElem = siElem;
     }
 
     @Override

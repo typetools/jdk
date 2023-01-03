@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016, 2017 SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_S390_VM_ASSEMBLER_S390_HPP
-#define CPU_S390_VM_ASSEMBLER_S390_HPP
+#ifndef CPU_S390_ASSEMBLER_S390_HPP
+#define CPU_S390_ASSEMBLER_S390_HPP
 
 #undef  LUCY_DBG
 
@@ -206,18 +206,11 @@ class Address {
     if (roc.is_constant()) _disp += roc.as_constant(); else _index = roc.as_register();
   }
 
-#ifdef ASSERT
-  // ByteSize is only a class when ASSERT is defined, otherwise it's an int.
   Address(Register base, ByteSize disp) :
-    _base(base),
-    _index(noreg),
-    _disp(in_bytes(disp)) {}
+    Address(base, in_bytes(disp)) {}
 
   Address(Register base, Register index, ByteSize disp) :
-    _base(base),
-    _index(index),
-    _disp(in_bytes(disp)) {}
-#endif
+    Address(base, index, in_bytes(disp)) {}
 
   // Aborts if disp is a register and base and index are set already.
   Address plus_disp(RegisterOrConstant disp) const {
@@ -351,14 +344,6 @@ class AddressLiteral {
     : _address((address) addr),
       _rspec(rspec_from_rtype(rtype, (address) addr)) {}
 
-  AddressLiteral(oop addr, relocInfo::relocType rtype = relocInfo::none)
-    : _address((address) addr),
-      _rspec(rspec_from_rtype(rtype, (address) addr)) {}
-
-  AddressLiteral(oop* addr, relocInfo::relocType rtype = relocInfo::none)
-    : _address((address) addr),
-      _rspec(rspec_from_rtype(rtype, (address) addr)) {}
-
   AddressLiteral(float* addr, relocInfo::relocType rtype = relocInfo::none)
     : _address((address) addr),
       _rspec(rspec_from_rtype(rtype, (address) addr)) {}
@@ -390,7 +375,6 @@ class ExternalAddress: public AddressLiteral {
 
  public:
   ExternalAddress(address target) : AddressLiteral(target, reloc_for_target(          target)) {}
-  ExternalAddress(oop*    target) : AddressLiteral(target, reloc_for_target((address) target)) {}
 };
 
 // Argument is an abstraction used to represent an outgoing actual
@@ -1344,6 +1328,10 @@ class Assembler : public AbstractAssembler {
 #define CKSM_ZOPC   (unsigned  int)(0xb2 << 24 | 0x41 << 16)     // checksum. This is NOT CRC32
 #define KM_ZOPC     (unsigned  int)(0xb9 << 24 | 0x2e << 16)     // cipher
 #define KMC_ZOPC    (unsigned  int)(0xb9 << 24 | 0x2f << 16)     // cipher
+#define KMA_ZOPC    (unsigned  int)(0xb9 << 24 | 0x29 << 16)     // cipher
+#define KMF_ZOPC    (unsigned  int)(0xb9 << 24 | 0x2a << 16)     // cipher
+#define KMCTR_ZOPC  (unsigned  int)(0xb9 << 24 | 0x2d << 16)     // cipher
+#define KMO_ZOPC    (unsigned  int)(0xb9 << 24 | 0x2b << 16)     // cipher
 #define KIMD_ZOPC   (unsigned  int)(0xb9 << 24 | 0x3e << 16)     // SHA (msg digest)
 #define KLMD_ZOPC   (unsigned  int)(0xb9 << 24 | 0x3f << 16)     // SHA (msg digest)
 #define KMAC_ZOPC   (unsigned  int)(0xb9 << 24 | 0x1e << 16)     // Message Authentication Code
@@ -1442,8 +1430,11 @@ class Assembler : public AbstractAssembler {
     bcondNotPositive =  bcondNotHigh,
     bcondNotOrdered  =  1,  // float comparisons
     bcondOrdered     = 14,  // float comparisons
-    bcondLowOrNotOrdered  =  bcondLow|bcondNotOrdered,  // float comparisons
-    bcondHighOrNotOrdered =  bcondHigh|bcondNotOrdered, // float comparisons
+    bcondLowOrNotOrdered  =  bcondLow  | bcondNotOrdered,  // float comparisons
+    bcondHighOrNotOrdered =  bcondHigh | bcondNotOrdered,  // float comparisons
+    bcondNotLowOrNotOrdered   =  bcondNotLow   | bcondNotOrdered,  // float comparisons
+    bcondNotHighOrNotOrdered  =  bcondNotHigh  | bcondNotOrdered,  // float comparisons
+    bcondNotEqualOrNotOrdered =  bcondNotEqual | bcondNotOrdered,  // float comparisons
     // unsigned arithmetic calculation instructions
     // Mask bit#0 is not used by these instructions.
     // There is no indication of overflow for these instr.
@@ -1528,16 +1519,16 @@ class Assembler : public AbstractAssembler {
   //-----------------------------------------------
 
   // Calculate length of instruction.
-  static int instr_len(unsigned char *instr);
+  static unsigned int instr_len(unsigned char *instr);
 
   // Longest instructions are 6 bytes on z/Architecture.
-  static int instr_maxlen() { return 6; }
+  static unsigned int instr_maxlen() { return 6; }
 
   // Average instruction is 4 bytes on z/Architecture (just a guess).
-  static int instr_avglen() { return 4; }
+  static unsigned int instr_avglen() { return 4; }
 
   // Shortest instructions are 2 bytes on z/Architecture.
-  static int instr_minlen() { return 2; }
+  static unsigned int instr_minlen() { return 2; }
 
   // Move instruction at pc right-justified into passed long int.
   // Return instr len in bytes as function result.
@@ -2389,12 +2380,16 @@ class Assembler : public AbstractAssembler {
   // Complex CISC instructions
   // ==========================
 
-  inline void z_cksm(Register r1, Register r2);                       // checksum. This is NOT CRC32
-  inline void z_km(  Register r1, Register r2);                       // cipher message
-  inline void z_kmc( Register r1, Register r2);                       // cipher message with chaining
-  inline void z_kimd(Register r1, Register r2);                       // msg digest (SHA)
-  inline void z_klmd(Register r1, Register r2);                       // msg digest (SHA)
-  inline void z_kmac(Register r1, Register r2);                       // msg authentication code
+  inline void z_cksm( Register r1, Register r2);                       // checksum. This is NOT CRC32
+  inline void z_km(   Register r1, Register r2);                       // cipher message
+  inline void z_kmc(  Register r1, Register r2);                       // cipher message with chaining
+  inline void z_kma(  Register r1, Register r3, Register r2);          // cipher message with authentication
+  inline void z_kmf(  Register r1, Register r2);                       // cipher message with cipher feedback
+  inline void z_kmctr(Register r1, Register r3, Register r2);          // cipher message with counter
+  inline void z_kmo(  Register r1, Register r2);                       // cipher message with output feedback
+  inline void z_kimd( Register r1, Register r2);                       // msg digest (SHA)
+  inline void z_klmd( Register r1, Register r2);                       // msg digest (SHA)
+  inline void z_kmac( Register r1, Register r2);                       // msg authentication code
 
   inline void z_ex(Register r1, int64_t d2, Register x2, Register b2);// execute
   inline void z_exrl(Register r1, int64_t i2);                        // execute relative long         -- z10
@@ -3030,8 +3025,8 @@ class Assembler : public AbstractAssembler {
   inline void z_bvat(Label& L);   // all true
   inline void z_bvnt(Label& L);   // not all true (mixed or all false)
   inline void z_bvmix(Label& L);  // mixed true and false
-  inline void z_bvaf(Label& L);   // not all false (mixed or all true)
-  inline void z_bvnf(Label& L);   // all false
+  inline void z_bvnf(Label& L);   // not all false (mixed or all true)
+  inline void z_bvaf(Label& L);   // all false
 
   inline void z_brno( Label& L);
 
@@ -3281,4 +3276,4 @@ class Assembler : public AbstractAssembler {
 
 };
 
-#endif // CPU_S390_VM_ASSEMBLER_S390_HPP
+#endif // CPU_S390_ASSEMBLER_S390_HPP

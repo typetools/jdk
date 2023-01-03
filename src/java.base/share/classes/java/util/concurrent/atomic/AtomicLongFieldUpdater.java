@@ -43,7 +43,6 @@ import java.lang.reflect.Modifier;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Objects;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import jdk.internal.misc.Unsafe;
@@ -128,9 +127,9 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
      * other calls to {@code compareAndSet} and {@code set}, but not
      * necessarily with respect to other changes in the field.
      *
-     * <p><a href="package-summary.html#weakCompareAndSet">May fail
-     * spuriously and does not provide ordering guarantees</a>, so is
-     * only rarely an appropriate alternative to {@code compareAndSet}.
+     * <p>This operation may fail spuriously and does not provide
+     * ordering guarantees, so is only rarely an appropriate
+     * alternative to {@code compareAndSet}.
      *
      * @param obj An object whose field to conditionally set
      * @param expect the expected value
@@ -389,6 +388,7 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
         /** class holding the field */
         private final Class<T> tclass;
 
+        @SuppressWarnings("removal")
         CASUpdater(final Class<T> tclass, final String fieldName,
                    final Class<?> caller) {
             final Field field;
@@ -530,6 +530,7 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
         /** class holding the field */
         private final Class<T> tclass;
 
+        @SuppressWarnings("removal")
         LockedUpdater(final Class<T> tclass, final String fieldName,
                       final Class<?> caller) {
             final Field field;
@@ -660,6 +661,6 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
      */
     static boolean isSamePackage(Class<?> class1, Class<?> class2) {
         return class1.getClassLoader() == class2.getClassLoader()
-               && Objects.equals(class1.getPackageName(), class2.getPackageName());
+               && class1.getPackageName() == class2.getPackageName();
     }
 }

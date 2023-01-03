@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@ default: all
 include $(SPEC)
 include MakeBase.gmk
 include JavaCompilation.gmk
-include SetupJavaCompilers.gmk
 include Modules.gmk
 
 ################################################################################
@@ -49,6 +48,14 @@ $(BUILDTOOLS_OUTPUTDIR)/gensrc/%.interim/module-info.java: \
 TARGETS += $(patsubst %, $(BUILDTOOLS_OUTPUTDIR)/gensrc/%/module-info.java, \
     $(INTERIM_LANGTOOLS_MODULES))
 
+$(eval $(call SetupCopyFiles, COPY_PREVIEW_FEATURES, \
+    FILES := $(TOPDIR)/src/java.base/share/classes/jdk/internal/javac/PreviewFeature.java \
+        $(TOPDIR)/src/java.base/share/classes/jdk/internal/javac/NoPreview.java, \
+    DEST := $(BUILDTOOLS_OUTPUTDIR)/gensrc/java.base.interim/jdk/internal/javac/, \
+))
+
+TARGETS += $(COPY_PREVIEW_FEATURES)
+
 ################################################################################
 # Setup the rules to build interim langtools, which is compiled by the boot
 # javac and can be run on the boot jdk. This will be used to compile the rest of
@@ -56,11 +63,14 @@ TARGETS += $(patsubst %, $(BUILDTOOLS_OUTPUTDIR)/gensrc/%/module-info.java, \
 # would require the source files to be copied into directories named after the
 # actual interim modules.
 
+## DON'T PUT COMMAS within this macro definition, as in
+#          --add-exports java.base/org.checkerframework.checker.builder.qual=java.compiler.interim,jdk.compiler.interim \
+
 # Param 1 - Name of module to compile
 define SetupInterimModule
   $$(eval $$(call SetupJavaCompilation, BUILD_$1.interim, \
-      SETUP := BOOT_JAVAC, \
-      DISABLE_SJAVAC := true, \
+      COMPILER := bootjdk, \
+      TARGET_RELEASE := $$(TARGET_RELEASE_BOOTJDK), \
       SRC := $(BUILDTOOLS_OUTPUTDIR)/gensrc/$1.interim \
           $$(wildcard $(SUPPORT_OUTPUTDIR)/gensrc/$1) \
           $(TOPDIR)/src/$1/share/classes, \
@@ -68,27 +78,23 @@ define SetupInterimModule
       EXCLUDE_FILES := $(TOPDIR)/src/$1/share/classes/module-info.java \
           Standard.java, \
       EXTRA_FILES := $(BUILDTOOLS_OUTPUTDIR)/gensrc/$1.interim/module-info.java, \
-      COPY := .gif .png .xml .css .js javax.tools.JavaCompilerTool, \
+      COPY := .gif .png .xml .css .js .js.template .txt javax.tools.JavaCompilerTool, \
       BIN := $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules/$1.interim, \
-      ADD_JAVAC_FLAGS := --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
-          -J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
-          --patch-module $1.interim=$(TOPDIR)/checker-qual.jar \
+      DISABLED_WARNINGS := module options, \
+      JAVAC_FLAGS := \
+          --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
+          -cp $(TOPDIR)/checker-qual.jar \
+          --add-reads $1.interim=ALL-UNNAMED \
           $$(INTERIM_LANGTOOLS_ADD_EXPORTS) \
-          -Xlint:-module, \
+          --patch-module java.base=$(BUILDTOOLS_OUTPUTDIR)/gensrc/java.base.interim \
+          --add-exports java.base/jdk.internal.javac=java.compiler.interim \
+          --add-exports java.base/jdk.internal.javac=jdk.compiler.interim, \
   ))
 
   $1_DEPS_INTERIM := $$(addsuffix .interim, $$(filter \
       $$(INTERIM_LANGTOOLS_BASE_MODULES), $$(call FindTransitiveDepsForModule, $1)))
 
-  $$(BUILD_$1.interim): $$(foreach d, $$($1_DEPS_INTERIM), $$(BUILD_$$d))
+  $$(BUILD_$1.interim): $$(foreach d, $$($1_DEPS_INTERIM), $$(BUILD_$$d)) $(COPY_PREVIEW_FEATURES)
 
   TARGETS += $$(BUILD_$1.interim)
 endef

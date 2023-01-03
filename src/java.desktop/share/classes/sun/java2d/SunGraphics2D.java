@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,82 +25,81 @@
 
 package sun.java2d;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.RenderingHints.Key;
-import java.awt.geom.Area;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
-import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
-import java.awt.image.RenderedImage;
-import java.awt.image.renderable.RenderableImage;
-import java.awt.image.renderable.RenderContext;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
-import java.awt.Image;
-import java.awt.Composite;
 import java.awt.Color;
-import java.awt.image.ColorModel;
-import java.awt.GraphicsConfiguration;
-import java.awt.Paint;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.Image;
 import java.awt.LinearGradientPaint;
+import java.awt.Paint;
 import java.awt.RadialGradientPaint;
-import java.awt.TexturePaint;
-import java.awt.geom.Rectangle2D;
-import java.awt.geom.PathIterator;
-import java.awt.geom.GeneralPath;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.RenderingHints.Key;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.FontMetrics;
-import java.awt.Rectangle;
-import java.text.AttributedCharacterIterator;
-import java.awt.Font;
-import java.awt.image.ImageObserver;
+import java.awt.TexturePaint;
 import java.awt.Transparency;
+import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ColorModel;
+import java.awt.image.ImageObserver;
+import java.awt.image.MultiResolutionImage;
+import java.awt.image.Raster;
+import java.awt.image.RenderedImage;
+import java.awt.image.VolatileImage;
+import java.awt.image.WritableRaster;
+import java.awt.image.renderable.RenderContext;
+import java.awt.image.renderable.RenderableImage;
+import java.lang.annotation.Native;
+import java.text.AttributedCharacterIterator;
+import java.util.Iterator;
+import java.util.Map;
 
-import sun.awt.image.SurfaceManager;
-import sun.font.FontDesignMetrics;
-import sun.font.FontUtilities;
-import sun.java2d.pipe.PixelDrawPipe;
-import sun.java2d.pipe.PixelFillPipe;
-import sun.java2d.pipe.ShapeDrawPipe;
-import sun.java2d.pipe.ValidatePipe;
-import sun.java2d.pipe.ShapeSpanIterator;
-import sun.java2d.pipe.Region;
-import sun.java2d.pipe.TextPipe;
-import sun.java2d.pipe.DrawImagePipe;
-import sun.java2d.pipe.LoopPipe;
-import sun.java2d.loops.FontInfo;
-import sun.java2d.loops.RenderLoops;
-import sun.java2d.loops.CompositeType;
-import sun.java2d.loops.SurfaceType;
-import sun.java2d.loops.Blit;
-import sun.java2d.loops.MaskFill;
-import java.awt.font.FontRenderContext;
-import sun.java2d.loops.XORComposite;
 import sun.awt.ConstrainableGraphics;
 import sun.awt.SunHints;
+import sun.awt.image.MultiResolutionToolkitImage;
+import sun.awt.image.SurfaceManager;
+import sun.awt.image.ToolkitImage;
 import sun.awt.util.PerformanceLogger;
-import java.util.Map;
-import java.util.Iterator;
-
-import java.lang.annotation.Native;
-import java.awt.image.MultiResolutionImage;
+import sun.font.FontDesignMetrics;
+import sun.font.FontUtilities;
+import sun.java2d.loops.Blit;
+import sun.java2d.loops.CompositeType;
+import sun.java2d.loops.FontInfo;
+import sun.java2d.loops.MaskFill;
+import sun.java2d.loops.RenderLoops;
+import sun.java2d.loops.SurfaceType;
+import sun.java2d.loops.XORComposite;
+import sun.java2d.pipe.DrawImagePipe;
+import sun.java2d.pipe.LoopPipe;
+import sun.java2d.pipe.PixelDrawPipe;
+import sun.java2d.pipe.PixelFillPipe;
+import sun.java2d.pipe.Region;
+import sun.java2d.pipe.ShapeDrawPipe;
+import sun.java2d.pipe.ShapeSpanIterator;
+import sun.java2d.pipe.TextPipe;
+import sun.java2d.pipe.ValidatePipe;
 
 import static java.awt.geom.AffineTransform.TYPE_FLIP;
 import static java.awt.geom.AffineTransform.TYPE_MASK_SCALE;
 import static java.awt.geom.AffineTransform.TYPE_TRANSLATION;
-import java.awt.image.VolatileImage;
-import sun.awt.image.MultiResolutionToolkitImage;
-import sun.awt.image.ToolkitImage;
 
 /**
  * This is a the master Graphics2D superclass for all of the Sun
@@ -667,6 +666,9 @@ public final class SunGraphics2D
             }
         }
 
+        info.nonInvertibleTx =
+            (Math.abs(textAt.getDeterminant()) <= Double.MIN_VALUE);
+
         info.font2D = FontUtilities.getFont2D(font);
 
         int fmhint = fractionalMetricsHint;
@@ -770,6 +772,11 @@ public final class SunGraphics2D
                         aahint == SunHints.INTVAL_TEXT_ANTIALIAS_LCD_HRGB;
                 }
             }
+        }
+        if (FontUtilities.isMacOSX14 &&
+            (aahint == SunHints.INTVAL_TEXT_ANTIALIAS_OFF))
+        {
+             aahint =  SunHints.INTVAL_TEXT_ANTIALIAS_ON;
         }
         info.aaHint = aahint;
         info.fontStrike = info.font2D.getStrike(font, devAt, textAt,
@@ -1361,9 +1368,7 @@ public final class SunGraphics2D
         interpolationHint = -1;
         interpolationType = AffineTransformOp.TYPE_NEAREST_NEIGHBOR;
         boolean customHintPresent = false;
-        Iterator<?> iter = hints.keySet().iterator();
-        while (iter.hasNext()) {
-            Object key = iter.next();
+        for (Object key : hints.keySet()) {
             if (key == SunHints.KEY_RENDERING ||
                 key == SunHints.KEY_ANTIALIASING ||
                 key == SunHints.KEY_TEXT_ANTIALIASING ||
@@ -1392,9 +1397,7 @@ public final class SunGraphics2D
      */
     public void addRenderingHints(Map<?,?> hints) {
         boolean customHintPresent = false;
-        Iterator<?> iter = hints.keySet().iterator();
-        while (iter.hasNext()) {
-            Object key = iter.next();
+        for (Object key : hints.keySet()) {
             if (key == SunHints.KEY_RENDERING ||
                 key == SunHints.KEY_ANTIALIASING ||
                 key == SunHints.KEY_TEXT_ANTIALIASING ||
@@ -1858,7 +1861,7 @@ public final class SunGraphics2D
             // optimal test for most transforms and so the conservative
             // answer should not cause too much extra work.
 
-            double d[] = {
+            double[] d = {
                 x, y,
                 x+width, y,
                 x, y+height,
@@ -1905,7 +1908,7 @@ public final class SunGraphics2D
             clipRegion = devClip.getIntersection((Rectangle2D) usrClip);
         } else {
             PathIterator cpi = usrClip.getPathIterator(null);
-            int box[] = new int[4];
+            int[] box = new int[4];
             ShapeSpanIterator sr = LoopPipe.getFillSSI(this);
             try {
                 sr.setOutputArea(devClip);
@@ -1992,7 +1995,7 @@ public final class SunGraphics2D
             (tx.getType() & NON_RECTILINEAR_TRANSFORM_MASK) == 0)
         {
             Rectangle2D rect = (Rectangle2D) clip;
-            double matrix[] = new double[4];
+            double[] matrix = new double[4];
             matrix[0] = rect.getX();
             matrix[1] = rect.getY();
             matrix[2] = matrix[0] + rect.getWidth();
@@ -2351,7 +2354,7 @@ public final class SunGraphics2D
         }
     }
 
-    public void drawPolyline(int xPoints[], int yPoints[], int nPoints) {
+    public void drawPolyline(int[] xPoints, int[] yPoints, int nPoints) {
         try {
             drawpipe.drawPolyline(this, xPoints, yPoints, nPoints);
         } catch (InvalidPipeException e) {
@@ -2368,7 +2371,7 @@ public final class SunGraphics2D
         }
     }
 
-    public void drawPolygon(int xPoints[], int yPoints[], int nPoints) {
+    public void drawPolygon(int[] xPoints, int[] yPoints, int nPoints) {
         try {
             drawpipe.drawPolygon(this, xPoints, yPoints, nPoints);
         } catch (InvalidPipeException e) {
@@ -2385,7 +2388,7 @@ public final class SunGraphics2D
         }
     }
 
-    public void fillPolygon(int xPoints[], int yPoints[], int nPoints) {
+    public void fillPolygon(int[] xPoints, int[] yPoints, int nPoints) {
         try {
             fillpipe.fillPolygon(this, xPoints, yPoints, nPoints);
         } catch (InvalidPipeException e) {
@@ -2586,7 +2589,7 @@ public final class SunGraphics2D
 
         Rectangle result = null;
         try {
-            double p[] = new double[8];
+            double[] p = new double[8];
             p[0] = p[2] = compClip.getLoX();
             p[4] = p[6] = compClip.getHiX();
             p[1] = p[5] = compClip.getLoY();
@@ -3016,12 +3019,13 @@ public final class SunGraphics2D
         }
     }
 
-    public void drawChars(char data[], int offset, int length, int x, int y) {
+    public void drawChars(char[] data, int offset, int length, int x, int y) {
 
         if (data == null) {
             throw new NullPointerException("char data is null");
         }
-        if (offset < 0 || length < 0 || offset + length > data.length) {
+        if (offset < 0 || length < 0 || offset + length < length ||
+            offset + length > data.length) {
             throw new ArrayIndexOutOfBoundsException("bad offset/length");
         }
         if (font.hasLayoutAttributes()) {
@@ -3049,15 +3053,16 @@ public final class SunGraphics2D
         }
     }
 
-    public void drawBytes(byte data[], int offset, int length, int x, int y) {
+    public void drawBytes(byte[] data, int offset, int length, int x, int y) {
         if (data == null) {
             throw new NullPointerException("byte data is null");
         }
-        if (offset < 0 || length < 0 || offset + length > data.length) {
+        if (offset < 0 || length < 0 || offset + length < length ||
+            offset + length > data.length) {
             throw new ArrayIndexOutOfBoundsException("bad offset/length");
         }
         /* Byte data is interpreted as 8-bit ASCII. Re-use drawChars loops */
-        char chData[] = new char[length];
+        char[] chData = new char[length];
         for (int i = length; i-- > 0; ) {
             chData[i] = (char)(data[i+offset] & 0xff);
         }
@@ -3092,90 +3097,100 @@ public final class SunGraphics2D
                                    int sx1, int sy1, int sx2, int sy2,
                                    Color bgcolor, ImageObserver observer,
                                    AffineTransform xform) {
+        try {
+            if (img instanceof VolatileImage) {
+                final SurfaceData sd = SurfaceManager.getManager(img)
+                        .getPrimarySurfaceData();
+                final double scaleX = sd.getDefaultScaleX();
+                final double scaleY = sd.getDefaultScaleY();
+                if (scaleX == 1 && scaleY == 1) {
+                    return null;
+                }
+                sx1 = Region.clipRound(sx1 * scaleX);
+                sx2 = Region.clipRound(sx2 * scaleX);
+                sy1 = Region.clipRound(sy1 * scaleY);
+                sy2 = Region.clipRound(sy2 * scaleY);
 
-        if (img instanceof VolatileImage) {
-            final SurfaceData sd = SurfaceManager.getManager(img)
-                    .getPrimarySurfaceData();
-            final double scaleX = sd.getDefaultScaleX();
-            final double scaleY = sd.getDefaultScaleY();
-            if (scaleX == 1 && scaleY == 1) {
-                return null;
-            }
-            sx1 = Region.clipRound(sx1 * scaleX);
-            sx2 = Region.clipRound(sx2 * scaleX);
-            sy1 = Region.clipRound(sy1 * scaleY);
-            sy2 = Region.clipRound(sy2 * scaleY);
+                AffineTransform tx = null;
+                if (xform != null) {
+                    tx = new AffineTransform(transform);
+                    transform(xform);
+                }
+                boolean result = scaleImage(img, dx1, dy1, dx2, dy2,
+                                            sx1, sy1, sx2, sy2,
+                                            bgcolor, observer);
+                if (tx != null) {
+                    transform.setTransform(tx);
+                    invalidateTransform();
+                }
+                return result;
+            } else if (img instanceof MultiResolutionImage) {
+                // get scaled destination image size
 
-            AffineTransform tx = null;
-            if (xform != null) {
-                tx = new AffineTransform(transform);
-                transform(xform);
-            }
-            boolean result = scaleImage(img, dx1, dy1, dx2, dy2,
-                                        sx1, sy1, sx2, sy2,
-                                        bgcolor, observer);
-            if (tx != null) {
-                transform.setTransform(tx);
-                invalidateTransform();
-            }
-            return result;
-        } else if (img instanceof MultiResolutionImage) {
-            // get scaled destination image size
+                int width = img.getWidth(observer);
+                int height = img.getHeight(observer);
 
-            int width = img.getWidth(observer);
-            int height = img.getHeight(observer);
+                MultiResolutionImage mrImage = (MultiResolutionImage) img;
+                Image resolutionVariant = getResolutionVariant(mrImage, width, height,
+                                                               dx1, dy1, dx2, dy2,
+                                                               sx1, sy1, sx2, sy2,
+                                                               xform);
 
-            MultiResolutionImage mrImage = (MultiResolutionImage) img;
-            Image resolutionVariant = getResolutionVariant(mrImage, width, height,
-                                                           dx1, dy1, dx2, dy2,
-                                                           sx1, sy1, sx2, sy2,
-                                                           xform);
+                if (resolutionVariant != img && resolutionVariant != null) {
+                    // recalculate source region for the resolution variant
 
-            if (resolutionVariant != img && resolutionVariant != null) {
-                // recalculate source region for the resolution variant
+                    ImageObserver rvObserver = MultiResolutionToolkitImage.
+                            getResolutionVariantObserver(img, observer,
+                                    width, height, -1, -1);
 
-                ImageObserver rvObserver = MultiResolutionToolkitImage.
-                        getResolutionVariantObserver(img, observer,
-                                width, height, -1, -1);
+                    int rvWidth = resolutionVariant.getWidth(rvObserver);
+                    int rvHeight = resolutionVariant.getHeight(rvObserver);
 
-                int rvWidth = resolutionVariant.getWidth(rvObserver);
-                int rvHeight = resolutionVariant.getHeight(rvObserver);
-
-                if (0 < width && 0 < height && 0 < rvWidth && 0 < rvHeight) {
-
-                    double widthScale = ((double) rvWidth) / width;
-                    double heightScale = ((double) rvHeight) / height;
-
-                    if (resolutionVariant instanceof VolatileImage) {
-                        SurfaceData sd = SurfaceManager
-                                .getManager(resolutionVariant)
-                                .getPrimarySurfaceData();
-                        widthScale *= sd.getDefaultScaleX();
-                        heightScale *= sd.getDefaultScaleY();
+                    if (rvWidth < 0 || rvHeight < 0) {
+                        // The resolution variant is not loaded yet, try to use default resolution
+                        resolutionVariant = mrImage.getResolutionVariant(width, height);
+                        rvWidth = resolutionVariant.getWidth(rvObserver);
+                        rvHeight = resolutionVariant.getHeight(rvObserver);
                     }
 
-                    sx1 = Region.clipScale(sx1, widthScale);
-                    sy1 = Region.clipScale(sy1, heightScale);
-                    sx2 = Region.clipScale(sx2, widthScale);
-                    sy2 = Region.clipScale(sy2, heightScale);
+                    if (0 < width && 0 < height && 0 < rvWidth && 0 < rvHeight) {
 
-                    observer = rvObserver;
-                    img = resolutionVariant;
+                        double widthScale = ((double) rvWidth) / width;
+                        double heightScale = ((double) rvHeight) / height;
 
-                    if (xform != null) {
-                        assert dx1 == 0 && dy1 == 0;
-                        assert dx2 == img.getWidth(observer);
-                        assert dy2 == img.getHeight(observer);
-                        AffineTransform renderTX = new AffineTransform(xform);
-                        renderTX.scale(1 / widthScale, 1 / heightScale);
-                        return transformImage(img, renderTX, observer);
+                        if (resolutionVariant instanceof VolatileImage) {
+                            SurfaceData sd = SurfaceManager
+                                    .getManager(resolutionVariant)
+                                    .getPrimarySurfaceData();
+                            widthScale *= sd.getDefaultScaleX();
+                            heightScale *= sd.getDefaultScaleY();
+                        }
+
+                        sx1 = Region.clipScale(sx1, widthScale);
+                        sy1 = Region.clipScale(sy1, heightScale);
+                        sx2 = Region.clipScale(sx2, widthScale);
+                        sy2 = Region.clipScale(sy2, heightScale);
+
+                        observer = rvObserver;
+                        img = resolutionVariant;
+
+                        if (xform != null) {
+                            assert dx1 == 0 && dy1 == 0;
+                            AffineTransform renderTX = new AffineTransform(xform);
+                            renderTX.scale(1 / widthScale, 1 / heightScale);
+                            return transformImage(img, renderTX, observer);
+                        }
+
+                        return scaleImage(img, dx1, dy1, dx2, dy2,
+                                          sx1, sy1, sx2, sy2,
+                                          bgcolor, observer);
+                    } else {
+                        return false; // Image variant is not initialized yet
                     }
-
-                    return scaleImage(img, dx1, dy1, dx2, dy2,
-                                      sx1, sy1, sx2, sy2,
-                                      bgcolor, observer);
                 }
             }
+        } catch (InvalidPipeException e) {
+            return false;
         }
         return null;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,15 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_METHODDATA_INLINE_HPP
-#define SHARE_VM_OOPS_METHODDATA_INLINE_HPP
+#ifndef SHARE_OOPS_METHODDATA_INLINE_HPP
+#define SHARE_OOPS_METHODDATA_INLINE_HPP
 
 #include "oops/methodData.hpp"
-#include "runtime/orderAccess.hpp"
+
+#include "runtime/atomic.hpp"
 
 inline void DataLayout::release_set_cell_at(int index, intptr_t value) {
-  OrderAccess::release_store(&_cells[index], value);
+  Atomic::release_store(&_cells[index], value);
 }
 
 inline void ProfileData::release_set_intptr_at(int index, intptr_t value) {
@@ -52,4 +53,4 @@ inline void RetData::release_set_bci(uint row, int bci) {
   release_set_int_at(bci0_offset + row * ret_row_cell_count, bci);
 }
 
-#endif // SHARE_VM_OOPS_METHODDATA_INLINE_HPP
+#endif // SHARE_OOPS_METHODDATA_INLINE_HPP

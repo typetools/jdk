@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,10 +32,18 @@ import java.util.Date;
 import jdk.test.lib.Utils;
 import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.process.ProcessTools;
-
+import jtreg.SkippedException;
 
 // This class contains common test utilities for testing CDS
 public class CDSTestUtils {
+    public static final String MSG_RANGE_NOT_WITHIN_HEAP =
+        "UseSharedSpaces: Unable to allocate region, range is not within java heap.";
+    public static final String MSG_RANGE_ALREADT_IN_USE =
+        "Unable to allocate region, java heap range is already in use.";
+    public static final String MSG_DYNAMIC_NOT_SUPPORTED =
+        "DynamicDumpSharedSpaces is unsupported when base CDS archive is not loaded";
+    public static final boolean DYNAMIC_DUMP = Boolean.getBoolean("test.dynamic.cds.archive");
+
     public interface Checker {
         public void check(OutputAnalyzer output) throws Exception;
     }
@@ -75,21 +83,21 @@ public class CDSTestUtils {
      *
      * Instead, the test case should be written as
      *
-     *      CCDSTestUtils.run(args).assertNormalExit("Hi");
+     *      CDSTestUtils.run(args).assertNormalExit("Hi");
      *
      * EXAMPLES/HOWTO
      *
      * 1. For simple substring matching:
      *
-     *      CCDSTestUtils.run(args).assertNormalExit("Hi");
-     *      CCDSTestUtils.run(args).assertNormalExit("a", "b", "x");
-     *      CCDSTestUtils.run(args).assertAbnormalExit("failure 1", "failure2");
+     *      CDSTestUtils.run(args).assertNormalExit("Hi");
+     *      CDSTestUtils.run(args).assertNormalExit("a", "b", "x");
+     *      CDSTestUtils.run(args).assertAbnormalExit("failure 1", "failure2");
      *
      * 2. For more complex output matching: using Lambda expressions
      *
-     *      CCDSTestUtils.run(args)
+     *      CDSTestUtils.run(args)
      *         .assertNormalExit(output -> output.shouldNotContain("this should not be printed");
-     *      CCDSTestUtils.run(args)
+     *      CDSTestUtils.run(args)
      *         .assertAbnormalExit(output -> {
      *             output.shouldNotContain("this should not be printed");
      *             output.shouldHaveExitValue(123);
@@ -97,13 +105,13 @@ public class CDSTestUtils {
      *
      * 3. Chaining several checks:
      *
-     *      CCDSTestUtils.run(args)
+     *      CDSTestUtils.run(args)
      *         .assertNormalExit(output -> output.shouldNotContain("this should not be printed")
      *         .assertNormalExit("should have this", "should have that");
      *
      * 4. [Rare use case] if a test sometimes exit normally, and sometimes abnormally:
      *
-     *      CCDSTestUtils.run(args)
+     *      CDSTestUtils.run(args)
      *         .ifNormalExit("ths string is printed when exiting with 0")
      *         .ifAbNormalExit("ths string is printed when exiting with 1");
      *
@@ -114,17 +122,14 @@ public class CDSTestUtils {
     public static class Result {
         private final OutputAnalyzer output;
         private final CDSOptions options;
-        private final boolean hasMappingFailure;
-        private final boolean hasAbnormalExit;
         private final boolean hasNormalExit;
         private final String CDS_DISABLED = "warning: CDS is disabled when the";
 
         public Result(CDSOptions opts, OutputAnalyzer out) throws Exception {
-            options = opts;
-            output = out;
-            hasMappingFailure = CDSTestUtils.checkCommonExecExceptions(output);
-            hasAbnormalExit   = (!hasMappingFailure) && (output.getExitValue() != 0);
-            hasNormalExit     = (!hasMappingFailure) && (output.getExitValue() == 0);
+            checkMappingFailure(out);
+            this.options = opts;
+            this.output = out;
+            hasNormalExit = (output.getExitValue() == 0);
 
             if (hasNormalExit) {
                 if ("on".equals(options.xShareMode) &&
@@ -138,30 +143,22 @@ public class CDSTestUtils {
         }
 
         public Result assertNormalExit(Checker checker) throws Exception {
-            if (!hasMappingFailure) {
-                checker.check(output);
-                output.shouldHaveExitValue(0);
-            }
+            checker.check(output);
+            output.shouldHaveExitValue(0);
             return this;
         }
 
         public Result assertAbnormalExit(Checker checker) throws Exception {
-            if (!hasMappingFailure) {
-                checker.check(output);
-                output.shouldNotHaveExitValue(0);
-            }
+            checker.check(output);
+            output.shouldNotHaveExitValue(0);
             return this;
         }
 
         // When {--limit-modules, --patch-module, and/or --upgrade-module-path}
         // are specified, CDS is silently disabled for both -Xshare:auto and -Xshare:on.
         public Result assertSilentlyDisabledCDS(Checker checker) throws Exception {
-            if (hasMappingFailure) {
-                throw new RuntimeException("Unexpected mapping failure");
-            }
             // this comes from a JVM warning message.
             output.shouldContain(CDS_DISABLED);
-
             checker.check(output);
             return this;
         }
@@ -181,49 +178,50 @@ public class CDSTestUtils {
         }
 
         public Result ifAbnormalExit(Checker checker) throws Exception {
-            if (hasAbnormalExit) {
+            if (!hasNormalExit) {
                 checker.check(output);
             }
             return this;
         }
 
         public Result ifNoMappingFailure(Checker checker) throws Exception {
-            if (!hasMappingFailure) {
-                checker.check(output);
-            }
+            checker.check(output);
             return this;
         }
 
 
         public Result assertNormalExit(String... matches) throws Exception {
-            if (!hasMappingFailure) {
-                checkMatches(output, matches);
-                output.shouldHaveExitValue(0);
-            }
+            checkMatches(output, matches);
+            output.shouldHaveExitValue(0);
             return this;
         }
 
         public Result assertAbnormalExit(String... matches) throws Exception {
-            if (!hasMappingFailure) {
-                checkMatches(output, matches);
-                output.shouldNotHaveExitValue(0);
-            }
-
+            checkMatches(output, matches);
+            output.shouldNotHaveExitValue(0);
             return this;
         }
     }
 
-    // Specify this property to copy sdandard output of the child test process to
-    // the parent/main stdout of the test.
-    // By default such output is logged into a file, and is copied into the main stdout.
-    public static final boolean CopyChildStdoutToMainStdout =
-        Boolean.valueOf(System.getProperty("test.cds.copy.child.stdout", "true"));
+    // A number to be included in the filename of the stdout and the stderr output file.
+    static int logCounter = 0;
+
+    private static int getNextLogCounter() {
+        return logCounter++;
+    }
+
+    // By default, stdout of child processes are logged in files such as
+    // <testname>-0000-exec.stdout. If you want to also include the stdout
+    // inside jtr files, you can override this in the jtreg command line like
+    // "jtreg -Dtest.cds.copy.child.stdout=true ...."
+    public static final boolean copyChildStdoutToMainStdout =
+        Boolean.getBoolean("test.cds.copy.child.stdout");
 
     // This property is passed to child test processes
     public static final String TestTimeoutFactor = System.getProperty("test.timeout.factor", "1.0");
 
     public static final String UnableToMapMsg =
-        "Unable to map shared archive: test did not complete; assumed PASS";
+        "Unable to map shared archive: test did not complete";
 
     // Create bootstrap CDS archive,
     // use extra JVM command line args as a prefix.
@@ -249,21 +247,33 @@ public class CDSTestUtils {
         cmd.add("-Xlog:cds,cds+hashtables");
         if (opts.archiveName == null)
             opts.archiveName = getDefaultArchiveName();
-        cmd.add("-XX:SharedArchiveFile=./" + opts.archiveName);
+        cmd.add("-XX:SharedArchiveFile=" + opts.archiveName);
+
+        if (opts.classList != null) {
+            File classListFile = makeClassList(opts.classList);
+            cmd.add("-XX:ExtraSharedClassListFile=" + classListFile.getPath());
+        }
 
         for (String s : opts.suffix) cmd.add(s);
 
         String[] cmdLine = cmd.toArray(new String[cmd.size()]);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(true, cmdLine);
+        ProcessBuilder pb = ProcessTools.createTestJvm(cmdLine);
         return executeAndLog(pb, "dump");
     }
 
+    public static boolean isDynamicArchive() {
+        return DYNAMIC_DUMP;
+    }
 
     // check result of 'dump-the-archive' operation, that is "-Xshare:dump"
     public static OutputAnalyzer checkDump(OutputAnalyzer output, String... extraMatches)
         throws Exception {
 
-        output.shouldContain("Loading classes to share");
+        if (!DYNAMIC_DUMP) {
+            output.shouldContain("Loading classes to share");
+        } else {
+            output.shouldContain("Written dynamic archive 0x");
+        }
         output.shouldHaveExitValue(0);
 
         for (String match : extraMatches) {
@@ -273,6 +283,12 @@ public class CDSTestUtils {
         return output;
     }
 
+    // check result of dumping base archive
+    public static OutputAnalyzer checkBaseDump(OutputAnalyzer output) throws Exception {
+        output.shouldContain("Loading classes to share");
+        output.shouldHaveExitValue(0);
+        return output;
+    }
 
     // A commonly used convenience methods to create an archive and check the results
     // Creates an archive and checks for errors
@@ -295,16 +311,13 @@ public class CDSTestUtils {
     // of exceptions and common errors.
     // Exception e argument - an exception to be re-thrown if none of the common
     // exceptions match. Pass null if you wish not to re-throw any exception.
-    public static boolean checkCommonExecExceptions(OutputAnalyzer output, Exception e)
+    public static void checkCommonExecExceptions(OutputAnalyzer output, Exception e)
         throws Exception {
-        if (output.getStdout().contains("http://bugreport.java.com/bugreport/crash.jsp")) {
+        if (output.getStdout().contains("https://bugreport.java.com/bugreport/crash.jsp")) {
             throw new RuntimeException("Hotspot crashed");
         }
         if (output.getStdout().contains("TEST FAILED")) {
             throw new RuntimeException("Test Failed");
-        }
-        if (output.getOutput().contains("shared class paths mismatch")) {
-//            throw new RuntimeException("shared class paths mismatch");
         }
         if (output.getOutput().contains("Unable to unmap shared space")) {
             throw new RuntimeException("Unable to unmap shared space");
@@ -314,18 +327,16 @@ public class CDSTestUtils {
         // at given address. This behavior is platform-specific, machine config-specific
         // and can be random (see ASLR).
         if (isUnableToMap(output)) {
-            System.out.println(UnableToMapMsg);
-            return true;
+            throw new SkippedException(UnableToMapMsg);
         }
 
         if (e != null) {
             throw e;
         }
-        return false;
     }
 
-    public static boolean checkCommonExecExceptions(OutputAnalyzer output) throws Exception {
-        return checkCommonExecExceptions(output, null);
+    public static void checkCommonExecExceptions(OutputAnalyzer output) throws Exception {
+        checkCommonExecExceptions(output, null);
     }
 
 
@@ -342,20 +353,18 @@ public class CDSTestUtils {
     // could also improve usability in the field.
     public static boolean isUnableToMap(OutputAnalyzer output) {
         String outStr = output.getOutput();
-        if ((output.getExitValue() == 1) && (
-            outStr.contains("Unable to reserve shared space at required address") ||
-            outStr.contains("Unable to map ReadOnly shared space at required address") ||
-            outStr.contains("Unable to map ReadWrite shared space at required address") ||
-            outStr.contains("Unable to map MiscData shared space at required address") ||
-            outStr.contains("Unable to map MiscCode shared space at required address") ||
-            outStr.contains("Unable to map OptionalData shared space at required address") ||
-            outStr.contains("Could not allocate metaspace at a compatible address") ||
-            outStr.contains("UseSharedSpaces: Unable to allocate region, range is not within java heap") ))
-        {
+        if ((output.getExitValue() == 1) &&
+            (outStr.contains(MSG_RANGE_NOT_WITHIN_HEAP) || outStr.contains(MSG_DYNAMIC_NOT_SUPPORTED))) {
             return true;
         }
 
         return false;
+    }
+
+    public static void checkMappingFailure(OutputAnalyzer out) throws SkippedException {
+        if (isUnableToMap(out)) {
+            throw new SkippedException(UnableToMapMsg);
+        }
     }
 
     public static Result run(String... cliPrefix) throws Exception {
@@ -367,6 +376,18 @@ public class CDSTestUtils {
 
     public static Result run(CDSOptions opts) throws Exception {
         return new Result(opts, runWithArchive(opts));
+    }
+
+    // Dump a classlist using the -XX:DumpLoadedClassList option.
+    public static Result dumpClassList(String classListName, String... cli)
+        throws Exception {
+        CDSOptions opts = (new CDSOptions())
+            .setUseVersion(false)
+            .setXShareMode("auto")
+            .addPrefix("-XX:DumpLoadedClassList=" + classListName)
+            .addSuffix(cli);
+        Result res = run(opts).assertNormalExit();
+        return res;
     }
 
     // Execute JVM with CDS archive, specify command line args suffix
@@ -390,9 +411,11 @@ public class CDSTestUtils {
         cmd.add("-Xshare:" + opts.xShareMode);
         cmd.add("-Dtest.timeout.factor=" + TestTimeoutFactor);
 
-        if (opts.archiveName == null)
-            opts.archiveName = getDefaultArchiveName();
-        cmd.add("-XX:SharedArchiveFile=" + opts.archiveName);
+        if (!opts.useSystemArchive) {
+            if (opts.archiveName == null)
+                opts.archiveName = getDefaultArchiveName();
+            cmd.add("-XX:SharedArchiveFile=" + opts.archiveName);
+        }
 
         if (opts.useVersion)
             cmd.add("-version");
@@ -400,7 +423,7 @@ public class CDSTestUtils {
         for (String s : opts.suffix) cmd.add(s);
 
         String[] cmdLine = cmd.toArray(new String[cmd.size()]);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(true, cmdLine);
+        ProcessBuilder pb = ProcessTools.createTestJvm(cmdLine);
         return executeAndLog(pb, "exec");
     }
 
@@ -446,8 +469,7 @@ public class CDSTestUtils {
                                              int expectedExitValue,
                                              String... extraMatches) throws Exception {
         if (isUnableToMap(output)) {
-            System.out.println(UnableToMapMsg);
-            return output;
+            throw new SkippedException(UnableToMapMsg);
         }
 
         output.shouldHaveExitValue(expectedExitValue);
@@ -463,11 +485,25 @@ public class CDSTestUtils {
         return output;
     }
 
+    private static final String outputDir;
+    private static final File outputDirAsFile;
+
+    static {
+        outputDir = System.getProperty("user.dir", ".");
+        outputDirAsFile = new File(outputDir);
+    }
+
+    public static String getOutputDir() {
+        return outputDir;
+    }
+
+    public static File getOutputDirAsFile() {
+        return outputDirAsFile;
+    }
 
     // get the file object for the test artifact
     public static File getTestArtifact(String name, boolean checkExistence) {
-        File dir = new File(System.getProperty("test.classes", "."));
-        File file = new File(dir, name);
+        File file = new File(outputDirAsFile, name);
 
         if (checkExistence && !file.exists()) {
             throw new RuntimeException("Cannot find " + file.getPath());
@@ -480,7 +516,7 @@ public class CDSTestUtils {
     // create file containing the specified class list
     public static File makeClassList(String classes[])
         throws Exception {
-        return makeClassList(getTestName() + "-", classes);
+        return makeClassList(testName + "-", classes);
     }
 
     // create file containing the specified class list
@@ -510,18 +546,7 @@ public class CDSTestUtils {
         }
     }
 
-
-    // Optimization for getting a test name.
-    // Test name does not change during execution of the test,
-    // but getTestName() uses stack walking hence it is expensive.
-    // Therefore cache it and reuse it.
-    private static String testName;
-    public static String getTestName() {
-        if (testName == null) {
-            testName = Utils.getTestName();
-        }
-        return testName;
-    }
+    private static String testName = Utils.TEST_NAME.replace('/', '.');
 
     private static final SimpleDateFormat timeStampFormat =
         new SimpleDateFormat("HH'h'mm'm'ss's'SSS");
@@ -530,7 +555,7 @@ public class CDSTestUtils {
 
     // Call this method to start new archive with new unique name
     public static void startNewArchiveName() {
-        defaultArchiveName = getTestName() +
+        defaultArchiveName = testName +
             timeStampFormat.format(new Date()) + ".jsa";
     }
 
@@ -541,14 +566,16 @@ public class CDSTestUtils {
 
     // ===================== FILE ACCESS convenience methods
     public static File getOutputFile(String name) {
-        File dir = new File(System.getProperty("test.classes", "."));
-        return new File(dir, getTestName() + "-" + name);
+        return new File(outputDirAsFile, testName + "-" + name);
+    }
+
+    public static String getOutputFileName(String name) {
+        return getOutputFile(name).getName();
     }
 
 
     public static File getOutputSourceFile(String name) {
-        File dir = new File(System.getProperty("test.classes", "."));
-        return new File(dir, name);
+        return new File(outputDirAsFile, name);
     }
 
 
@@ -562,13 +589,20 @@ public class CDSTestUtils {
     public static OutputAnalyzer executeAndLog(ProcessBuilder pb, String logName) throws Exception {
         long started = System.currentTimeMillis();
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
+        String logFileNameStem =
+            String.format("%04d", getNextLogCounter()) + "-" + logName;
 
-        writeFile(getOutputFile(logName + ".stdout"), output.getStdout());
-        writeFile(getOutputFile(logName + ".stderr"), output.getStderr());
+        File stdout = getOutputFile(logFileNameStem + ".stdout");
+        File stderr = getOutputFile(logFileNameStem + ".stderr");
+
+        writeFile(stdout, output.getStdout());
+        writeFile(stderr, output.getStderr());
         System.out.println("[ELAPSED: " + (System.currentTimeMillis() - started) + " ms]");
+        System.out.println("[logging stdout to " + stdout + "]");
+        System.out.println("[logging stderr to " + stderr + "]");
         System.out.println("[STDERR]\n" + output.getStderr());
 
-        if (CopyChildStdoutToMainStdout)
+        if (copyChildStdoutToMainStdout)
             System.out.println("[STDOUT]\n" + output.getStdout());
 
         return output;
@@ -581,5 +615,65 @@ public class CDSTestUtils {
         ps.print(content);
         ps.close();
         fos.close();
+    }
+
+    // Format a line that defines an extra symbol in the file specify by -XX:SharedArchiveConfigFile=<file>
+    public static String formatArchiveConfigSymbol(String symbol) {
+        int refCount = -1; // This is always -1 in the current HotSpot implementation.
+        if (isAsciiPrintable(symbol)) {
+            return symbol.length() + " " + refCount + ": " + symbol;
+        } else {
+            StringBuilder sb = new StringBuilder();
+            int utf8_length = escapeArchiveConfigString(sb, symbol);
+            return utf8_length + " " + refCount + ": " + sb.toString();
+        }
+    }
+
+    // This method generates the same format as HashtableTextDump::put_utf8() in HotSpot,
+    // to be used by -XX:SharedArchiveConfigFile=<file>.
+    private static int escapeArchiveConfigString(StringBuilder sb, String s) {
+        byte arr[];
+        try {
+            arr = s.getBytes("UTF8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            throw new RuntimeException("Unexpected", e);
+        }
+        for (int i = 0; i < arr.length; i++) {
+            char ch = (char)(arr[i] & 0xff);
+            if (isAsciiPrintable(ch)) {
+                sb.append(ch);
+            } else if (ch == '\t') {
+                sb.append("\\t");
+            } else if (ch == '\r') {
+                sb.append("\\r");
+            } else if (ch == '\n') {
+                sb.append("\\n");
+            } else if (ch == '\\') {
+                sb.append("\\\\");
+            } else {
+                String hex = Integer.toHexString(ch);
+                if (ch < 16) {
+                    sb.append("\\x0");
+                } else {
+                    sb.append("\\x");
+                }
+                sb.append(hex);
+            }
+        }
+
+        return arr.length;
+    }
+
+    private static boolean isAsciiPrintable(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (!isAsciiPrintable(s.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isAsciiPrintable(char ch) {
+        return ch >= 32 && ch < 127;
     }
 }

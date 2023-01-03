@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,19 +26,21 @@
 package sun.net.www.protocol.http;
 
 import java.io.*;
-import java.net.URL;
-import java.net.ProtocolException;
 import java.net.PasswordAuthentication;
-import java.util.Arrays;
-import java.util.Random;
-
-import sun.net.www.HeaderParser;
-import sun.net.NetProperties;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.security.AccessController;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
-import java.security.AccessController;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Random;
+
+import sun.net.NetProperties;
+import sun.net.www.HeaderParser;
+import sun.nio.cs.ISO_8859_1;
+
 import static sun.net.www.protocol.http.HttpURLConnection.HTTP_CONNECT;
 
 /**
@@ -50,6 +52,7 @@ import static sun.net.www.protocol.http.HttpURLConnection.HTTP_CONNECT;
 
 class DigestAuthentication extends AuthenticationInfo {
 
+    @java.io.Serial
     private static final long serialVersionUID = 100L;
 
     private String authMethod;
@@ -61,6 +64,7 @@ class DigestAuthentication extends AuthenticationInfo {
     private static final boolean delimCompatFlag;
 
     static {
+        @SuppressWarnings("removal")
         Boolean b = AccessController.doPrivileged(
             new PrivilegedAction<>() {
                 public Boolean run() {
@@ -75,6 +79,9 @@ class DigestAuthentication extends AuthenticationInfo {
     // One instance of these may be shared among several DigestAuthentication
     // instances as a result of a single authorization (for multiple domains)
 
+    // There don't appear to be any blocking IO calls performed from
+    // within the synchronized code blocks in the Parameters class, so there don't
+    // seem to be any need to migrate it to using java.util.concurrent.locks
     static class Parameters implements java.io.Serializable {
         private static final long serialVersionUID = -3584543755194526252L;
 
@@ -279,7 +286,7 @@ class DigestAuthentication extends AuthenticationInfo {
         if (s == null || !s.equals("true"))
             return false;
         String newNonce = p.findValue ("nonce");
-        if (newNonce == null || "".equals(newNonce)) {
+        if (newNonce == null || newNonce.isEmpty()) {
             return false;
         }
         params.setNonce (newNonce);
@@ -295,6 +302,10 @@ class DigestAuthentication extends AuthenticationInfo {
      */
     @Override
     public boolean setHeaders(HttpURLConnection conn, HeaderParser p, String raw) {
+        // no need to synchronize here:
+        //   already locked by s.n.w.p.h.HttpURLConnection
+        assert conn.isLockHeldByCurrentThread();
+
         params.setNonce (p.findValue("nonce"));
         params.setOpaque (p.findValue("opaque"));
         params.setQop (p.findValue("qop"));
@@ -323,7 +334,7 @@ class DigestAuthentication extends AuthenticationInfo {
                         + authMethod.substring(1).toLowerCase();
         }
         String algorithm = p.findValue("algorithm");
-        if (algorithm == null || "".equals(algorithm)) {
+        if (algorithm == null || algorithm.isEmpty()) {
             algorithm = "MD5";  // The default, accoriding to rfc2069
         }
         params.setAlgorithm (algorithm);
@@ -451,7 +462,7 @@ class DigestAuthentication extends AuthenticationInfo {
             }
             /* Check if there is a nextnonce field */
             String nextnonce = p.findValue ("nextnonce");
-            if (nextnonce != null && ! "".equals(nextnonce)) {
+            if (nextnonce != null && !nextnonce.isEmpty()) {
                 params.setNonce (nextnonce);
             }
 
@@ -520,11 +531,7 @@ class DigestAuthentication extends AuthenticationInfo {
     };
 
     private String encode(String src, char[] passwd, MessageDigest md) {
-        try {
-            md.update(src.getBytes("ISO-8859-1"));
-        } catch (java.io.UnsupportedEncodingException uee) {
-            assert false;
-        }
+        md.update(src.getBytes(ISO_8859_1.INSTANCE));
         if (passwd != null) {
             byte[] passwdBytes = new byte[passwd.length];
             for (int i=0; i<passwd.length; i++)

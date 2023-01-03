@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,19 +31,18 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Thrown if the Java Virtual Machine cannot find an appropriate
- * native-language definition of a method declared <code>native</code>.
+ * native-language definition of a method declared {@code native}.
  *
- * @author unascribed
  * @see     java.lang.Runtime
  * @since   1.0
  */
 @AnnotatedFor({"nullness"})
-public
-class UnsatisfiedLinkError extends LinkageError {
+public class UnsatisfiedLinkError extends LinkageError {
+    @java.io.Serial
     private static final long serialVersionUID = -4019343241616879428L;
 
     /**
-     * Constructs an <code>UnsatisfiedLinkError</code> with no detail message.
+     * Constructs an {@code UnsatisfiedLinkError} with no detail message.
      */
     @SideEffectFree
     public UnsatisfiedLinkError() {
@@ -51,7 +50,7 @@ class UnsatisfiedLinkError extends LinkageError {
     }
 
     /**
-     * Constructs an <code>UnsatisfiedLinkError</code> with the
+     * Constructs an {@code UnsatisfiedLinkError} with the
      * specified detail message.
      *
      * @param   s   the detail message.

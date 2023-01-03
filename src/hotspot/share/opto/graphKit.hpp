@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_GRAPHKIT_HPP
-#define SHARE_VM_OPTO_GRAPHKIT_HPP
+#ifndef SHARE_OPTO_GRAPHKIT_HPP
+#define SHARE_OPTO_GRAPHKIT_HPP
 
 #include "ci/ciEnv.hpp"
 #include "ci/ciMethodData.hpp"
@@ -103,6 +103,13 @@ class GraphKit : public Phase {
   // Create or find a constant node
   Node* intcon(jint con)        const { return _gvn.intcon(con); }
   Node* longcon(jlong con)      const { return _gvn.longcon(con); }
+  Node* integercon(jlong con, BasicType bt)   const {
+    if (bt == T_INT) {
+      return intcon(checked_cast<jint>(con));
+    }
+    assert(bt == T_LONG, "basic type not an int or long");
+    return longcon(con);
+  }
   Node* makecon(const Type *t)  const { return _gvn.makecon(t); }
   Node* zerocon(BasicType bt)   const { return _gvn.zerocon(bt); }
   // (See also macro MakeConX in type.hpp, which uses intcon or longcon.)
@@ -386,6 +393,11 @@ class GraphKit : public Phase {
   // Check the null_seen bit.
   bool seems_never_null(Node* obj, ciProfileData* data, bool& speculating);
 
+  void guard_klass_being_initialized(Node* klass);
+  void guard_init_thread(Node* klass);
+
+  void clinit_barrier(ciInstanceKlass* ik, ciMethod* context);
+
   // Check for unique class for receiver at call
   ciKlass* profile_has_unique_klass() {
     ciCallProfile profile = method()->call_profile_at_bci(bci());
@@ -518,27 +530,27 @@ class GraphKit : public Phase {
   Node* make_load(Node* ctl, Node* adr, const Type* t, BasicType bt,
                   MemNode::MemOrd mo, LoadNode::ControlDependency control_dependency = LoadNode::DependsOnlyOnTest,
                   bool require_atomic_access = false, bool unaligned = false,
-                  bool mismatched = false) {
+                  bool mismatched = false, bool unsafe = false, uint8_t barrier_data = 0) {
     // This version computes alias_index from bottom_type
     return make_load(ctl, adr, t, bt, adr->bottom_type()->is_ptr(),
                      mo, control_dependency, require_atomic_access,
-                     unaligned, mismatched);
+                     unaligned, mismatched, unsafe, barrier_data);
   }
   Node* make_load(Node* ctl, Node* adr, const Type* t, BasicType bt, const TypePtr* adr_type,
                   MemNode::MemOrd mo, LoadNode::ControlDependency control_dependency = LoadNode::DependsOnlyOnTest,
                   bool require_atomic_access = false, bool unaligned = false,
-                  bool mismatched = false) {
+                  bool mismatched = false, bool unsafe = false, uint8_t barrier_data = 0) {
     // This version computes alias_index from an address type
     assert(adr_type != NULL, "use other make_load factory");
     return make_load(ctl, adr, t, bt, C->get_alias_index(adr_type),
                      mo, control_dependency, require_atomic_access,
-                     unaligned, mismatched);
+                     unaligned, mismatched, unsafe, barrier_data);
   }
   // This is the base version which is given an alias index.
   Node* make_load(Node* ctl, Node* adr, const Type* t, BasicType bt, int adr_idx,
                   MemNode::MemOrd mo, LoadNode::ControlDependency control_dependency = LoadNode::DependsOnlyOnTest,
                   bool require_atomic_access = false, bool unaligned = false,
-                  bool mismatched = false);
+                  bool mismatched = false, bool unsafe = false, uint8_t barrier_data = 0);
 
   // Create & transform a StoreNode and store the effect into the
   // parser's memory state.
@@ -553,13 +565,14 @@ class GraphKit : public Phase {
                         MemNode::MemOrd mo,
                         bool require_atomic_access = false,
                         bool unaligned = false,
-                        bool mismatched = false) {
+                        bool mismatched = false,
+                        bool unsafe = false) {
     // This version computes alias_index from an address type
     assert(adr_type != NULL, "use other store_to_memory factory");
     return store_to_memory(ctl, adr, val, bt,
                            C->get_alias_index(adr_type),
                            mo, require_atomic_access,
-                           unaligned, mismatched);
+                           unaligned, mismatched, unsafe);
   }
   // This is the base version which is given alias index
   // Return the new StoreXNode
@@ -568,12 +581,12 @@ class GraphKit : public Phase {
                         MemNode::MemOrd,
                         bool require_atomic_access = false,
                         bool unaligned = false,
-                        bool mismatched = false);
+                        bool mismatched = false,
+                        bool unsafe = false);
 
   // Perform decorated accesses
 
-  Node* access_store_at(Node* ctl,
-                        Node* obj,   // containing obj
+  Node* access_store_at(Node* obj,   // containing obj
                         Node* adr,   // actual adress to store val at
                         const TypePtr* adr_type,
                         Node* val,
@@ -582,14 +595,18 @@ class GraphKit : public Phase {
                         DecoratorSet decorators);
 
   Node* access_load_at(Node* obj,   // containing obj
-                       Node* adr,   // actual adress to store val at
+                       Node* adr,   // actual adress to load val at
                        const TypePtr* adr_type,
                        const Type* val_type,
                        BasicType bt,
                        DecoratorSet decorators);
 
-  Node* access_atomic_cmpxchg_val_at(Node* ctl,
-                                     Node* obj,
+  Node* access_load(Node* adr,   // actual adress to load val at
+                    const Type* val_type,
+                    BasicType bt,
+                    DecoratorSet decorators);
+
+  Node* access_atomic_cmpxchg_val_at(Node* obj,
                                      Node* adr,
                                      const TypePtr* adr_type,
                                      int alias_idx,
@@ -599,8 +616,7 @@ class GraphKit : public Phase {
                                      BasicType bt,
                                      DecoratorSet decorators);
 
-  Node* access_atomic_cmpxchg_bool_at(Node* ctl,
-                                      Node* obj,
+  Node* access_atomic_cmpxchg_bool_at(Node* obj,
                                       Node* adr,
                                       const TypePtr* adr_type,
                                       int alias_idx,
@@ -610,8 +626,7 @@ class GraphKit : public Phase {
                                       BasicType bt,
                                       DecoratorSet decorators);
 
-  Node* access_atomic_xchg_at(Node* ctl,
-                              Node* obj,
+  Node* access_atomic_xchg_at(Node* obj,
                               Node* adr,
                               const TypePtr* adr_type,
                               int alias_idx,
@@ -620,8 +635,7 @@ class GraphKit : public Phase {
                               BasicType bt,
                               DecoratorSet decorators);
 
-  Node* access_atomic_add_at(Node* ctl,
-                             Node* obj,
+  Node* access_atomic_add_at(Node* obj,
                              Node* adr,
                              const TypePtr* adr_type,
                              int alias_idx,
@@ -630,7 +644,7 @@ class GraphKit : public Phase {
                              BasicType bt,
                              DecoratorSet decorators);
 
-  void access_clone(Node* ctl, Node* src, Node* dst, Node* size, bool is_array);
+  void access_clone(Node* src, Node* dst, Node* size, bool is_array);
 
   // Return addressing for an array element.
   Node* array_element_address(Node* ary, Node* idx, BasicType elembt,
@@ -688,7 +702,7 @@ class GraphKit : public Phase {
   // Finish up a java call that was started by set_edges_for_java_call.
   // Call add_exception on any throw arising from the call.
   // Return the call result (transformed).
-  Node* set_results_for_java_call(CallJavaNode* call, bool separate_io_proj = false);
+  Node* set_results_for_java_call(CallJavaNode* call, bool separate_io_proj = false, bool deoptimize = false);
 
   // Similar to set_edges_for_java_call, but simplified for runtime calls.
   void  set_predefined_output_for_runtime_call(Node* call) {
@@ -697,7 +711,7 @@ class GraphKit : public Phase {
   void  set_predefined_output_for_runtime_call(Node* call,
                                                Node* keep_mem,
                                                const TypePtr* hook_mem);
-  Node* set_predefined_input_for_runtime_call(SafePointNode* call);
+  Node* set_predefined_input_for_runtime_call(SafePointNode* call, Node* narrow_mem = NULL);
 
   // Replace the call with the current state of the kit.  Requires
   // that the call was generated with separate io_projs so that
@@ -749,6 +763,10 @@ class GraphKit : public Phase {
     return C->too_many_recompiles(method(), bci(), reason);
   }
 
+  bool too_many_traps_or_recompiles(Deoptimization::DeoptReason reason) {
+      return C->too_many_traps_or_recompiles(method(), bci(), reason);
+  }
+
   // Returns the object (if any) which was created the moment before.
   Node* just_allocated_object(Node* current_control);
 
@@ -759,7 +777,6 @@ class GraphKit : public Phase {
   public:
   // Helper function to round double arguments before a call
   void round_double_arguments(ciMethod* dest_method);
-  void round_double_result(ciMethod* dest_method);
 
   // rounding for strict float precision conformance
   Node* precision_rounding(Node* n);
@@ -780,6 +797,12 @@ class GraphKit : public Phase {
                           Node* parm2 = NULL, Node* parm3 = NULL,
                           Node* parm4 = NULL, Node* parm5 = NULL,
                           Node* parm6 = NULL, Node* parm7 = NULL);
+
+  Node* sign_extend_byte(Node* in);
+  Node* sign_extend_short(Node* in);
+
+  Node* make_native_call(address call_addr, const TypeFunc* call_type, uint nargs, ciNativeEntryPoint* nep);
+
   enum {  // flag values for make_runtime_call
     RC_NO_FP = 1,               // CallLeafNoFPNode
     RC_NO_IO = 2,               // do not hook IO edges
@@ -787,6 +810,7 @@ class GraphKit : public Phase {
     RC_MUST_THROW = 8,          // flag passed to add_safepoint_edges
     RC_NARROW_MEM = 16,         // input memory is same as output
     RC_UNCOMMON = 32,           // freq. expected to be like uncommon trap
+    RC_VECTOR = 64,             // CallLeafVectorNode
     RC_LEAF = 0                 // null value:  no flags set
   };
 
@@ -814,19 +838,17 @@ class GraphKit : public Phase {
   Node* gen_checkcast( Node *subobj, Node* superkls,
                        Node* *failure_control = NULL );
 
-  Node* gen_subtype_check(Node* subklass, Node* superklass) {
-    MergeMemNode* mem = merged_memory();
-    Node* ctrl = control();
-    Node* n = Phase::gen_subtype_check(subklass, superklass, &ctrl, mem, &_gvn);
-    set_control(ctrl);
-    return n;
-  }
+  Node* gen_subtype_check(Node* obj, Node* superklass);
 
   // Exact type check used for predicted calls and casts.
   // Rewrites (*casted_receiver) to be casted to the stronger type.
   // (Caller is responsible for doing replace_in_map.)
   Node* type_check_receiver(Node* receiver, ciKlass* klass, float prob,
                             Node* *casted_receiver);
+
+  // Inexact type check used for predicted calls.
+  Node* subtype_check_receiver(Node* receiver, ciKlass* klass,
+                               Node** casted_receiver);
 
   // implementation of object creation
   Node* set_output_for_allocation(AllocateNode* alloc,
@@ -842,11 +864,11 @@ class GraphKit : public Phase {
                   bool deoptimize_on_exception = false);
 
   // java.lang.String helpers
-  Node* load_String_length(Node* ctrl, Node* str);
-  Node* load_String_value(Node* ctrl, Node* str);
-  Node* load_String_coder(Node* ctrl, Node* str);
-  void store_String_value(Node* ctrl, Node* str, Node* value);
-  void store_String_coder(Node* ctrl, Node* str, Node* value);
+  Node* load_String_length(Node* str, bool set_ctrl);
+  Node* load_String_value(Node* str, bool set_ctrl);
+  Node* load_String_coder(Node* str, bool set_ctrl);
+  void store_String_value(Node* str, Node* value);
+  void store_String_coder(Node* str, Node* value);
   Node* capture_memory(const TypePtr* src_type, const TypePtr* dst_type);
   Node* compress_string(Node* src, const TypeAryPtr* src_type, Node* dst, Node* count);
   void inflate_string(Node* src, Node* dst, const TypeAryPtr* dst_type, Node* count);
@@ -869,14 +891,15 @@ class GraphKit : public Phase {
     return iff;
   }
 
-  // Insert a loop predicate into the graph
-  void add_predicate(int nargs = 0);
-  void add_predicate_impl(Deoptimization::DeoptReason reason, int nargs);
+  void add_empty_predicates(int nargs = 0);
+  void add_empty_predicate_impl(Deoptimization::DeoptReason reason, int nargs);
 
   Node* make_constant_from_field(ciField* field, Node* obj);
 
-  // Produce new array node of stable type
-  Node* cast_array_to_stable(Node* ary, const TypeAryPtr* ary_type);
+  // Vector API support (implemented in vectorIntrinsics.cpp)
+  Node* box_vector(Node* in, const TypeInstPtr* vbox_type, BasicType elem_bt, int num_elem, bool deoptimize_on_exception = false);
+  Node* unbox_vector(Node* in, const TypeInstPtr* vbox_type, BasicType elem_bt, int num_elem, bool shuffle_to_vector = false);
+  Node* vector_shift_count(Node* cnt, int shift_op, BasicType bt, int num_elem);
 };
 
 // Helper class to support building of control flow branches. Upon
@@ -925,4 +948,4 @@ class PreserveReexecuteState: public StackObj {
   ~PreserveReexecuteState();
 };
 
-#endif // SHARE_VM_OPTO_GRAPHKIT_HPP
+#endif // SHARE_OPTO_GRAPHKIT_HPP

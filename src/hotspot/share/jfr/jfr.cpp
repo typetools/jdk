@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,13 +25,16 @@
 #include "precompiled.hpp"
 #include "jfr/jfr.hpp"
 #include "jfr/leakprofiler/leakProfiler.hpp"
-#include "jfr/periodic/sampling/jfrThreadSampler.hpp"
+#include "jfr/recorder/checkpoint/types/traceid/jfrTraceIdLoadBarrier.inline.hpp"
 #include "jfr/recorder/jfrRecorder.hpp"
 #include "jfr/recorder/checkpoint/jfrCheckpointManager.hpp"
 #include "jfr/recorder/repository/jfrEmergencyDump.hpp"
 #include "jfr/recorder/service/jfrOptionSet.hpp"
+#include "jfr/recorder/repository/jfrRepository.hpp"
 #include "jfr/support/jfrThreadLocal.hpp"
+#include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/java.hpp"
+#include "runtime/thread.hpp"
 
 bool Jfr::is_enabled() {
   return JfrRecorder::is_enabled();
@@ -45,32 +48,48 @@ bool Jfr::is_recording() {
   return JfrRecorder::is_recording();
 }
 
-void Jfr::on_vm_init() {
-  if (!JfrRecorder::on_vm_init()) {
-    vm_exit_during_initialization("Failure when starting JFR on_vm_init");
+void Jfr::on_create_vm_1() {
+  if (!JfrRecorder::on_create_vm_1()) {
+    vm_exit_during_initialization("Failure when starting JFR on_create_vm_1");
   }
 }
 
-void Jfr::on_vm_start() {
-  if (!JfrRecorder::on_vm_start()) {
-    vm_exit_during_initialization("Failure when starting JFR on_vm_start");
+void Jfr::on_create_vm_2() {
+  if (!JfrRecorder::on_create_vm_2()) {
+    vm_exit_during_initialization("Failure when starting JFR on_create_vm_2");
+  }
+}
+
+void Jfr::on_create_vm_3() {
+  if (!JfrRecorder::on_create_vm_3()) {
+    vm_exit_during_initialization("Failure when starting JFR on_create_vm_3");
   }
 }
 
 void Jfr::on_unloading_classes() {
   if (JfrRecorder::is_created()) {
-    JfrCheckpointManager::write_type_set_for_unloaded_classes();
+    JfrCheckpointManager::on_unloading_classes();
   }
 }
 
-void Jfr::on_thread_exit(JavaThread* thread) {
-  JfrThreadLocal::on_exit(thread);
+void Jfr::on_thread_start(Thread* t) {
+  JfrThreadLocal::on_start(t);
 }
 
-void Jfr::on_thread_destruct(Thread* thread) {
-  if (JfrRecorder::is_created()) {
-    JfrThreadLocal::on_destruct(thread);
-  }
+void Jfr::on_thread_exit(Thread* t) {
+  JfrThreadLocal::on_exit(t);
+}
+
+void Jfr::exclude_thread(Thread* t) {
+  JfrThreadLocal::exclude(t);
+}
+
+void Jfr::include_thread(Thread* t) {
+  JfrThreadLocal::include(t);
+}
+
+bool Jfr::is_excluded(Thread* t) {
+  return t != NULL && t->jfr_thread_local()->is_excluded();
 }
 
 void Jfr::on_vm_shutdown(bool exception_handler) {
@@ -79,8 +98,10 @@ void Jfr::on_vm_shutdown(bool exception_handler) {
   }
 }
 
-void Jfr::weak_oops_do(BoolObjectClosure* is_alive, OopClosure* f) {
-  LeakProfiler::oops_do(is_alive, f);
+void Jfr::on_vm_error_report(outputStream* st) {
+  if (JfrRecorder::is_recording()) {
+    JfrRepository::on_vm_error_report(st);
+  }
 }
 
 bool Jfr::on_flight_recorder_option(const JavaVMOption** option, char* delimiter) {
@@ -91,6 +112,15 @@ bool Jfr::on_start_flight_recording_option(const JavaVMOption** option, char* de
   return JfrOptionSet::parse_start_flight_recording_option(option, delimiter);
 }
 
-Thread* Jfr::sampler_thread() {
-  return JfrThreadSampling::sampler_thread();
+JRT_LEAF(void, Jfr::get_class_id_intrinsic(const Klass* klass))
+  assert(klass != NULL, "sanity");
+  JfrTraceIdLoadBarrier::load_barrier(klass);
+JRT_END
+
+address Jfr::epoch_address() {
+  return JfrTraceIdEpoch::epoch_address();
+}
+
+address Jfr::signal_address() {
+  return JfrTraceIdEpoch::signal_address();
 }

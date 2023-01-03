@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -445,15 +445,15 @@ final class DigitList implements Cloneable {
      * java.math.RoundingMode class.
      * [bnf]
      * @param maximumDigits the number of digits to keep, from 0 to
-     * <code>count-1</code>.  If 0, then all digits are rounded away, and
+     * {@code count-1}.  If 0, then all digits are rounded away, and
      * this method returns true if a one should be generated (e.g., formatting
      * 0.09 with "#.#").
      * @param alreadyRounded whether or not rounding up has already happened.
      * @param valueExactAsDecimal whether or not collected digits provide
      * an exact decimal representation of the value.
-     * @exception ArithmeticException if rounding is needed with rounding
+     * @throws    ArithmeticException if rounding is needed with rounding
      *            mode being set to RoundingMode.UNNECESSARY
-     * @return true if digit <code>maximumDigits-1</code> should be
+     * @return true if digit {@code maximumDigits-1} should be
      * incremented
      */
     private boolean shouldRoundUp(int maximumDigits,
@@ -710,9 +710,8 @@ final class DigitList implements Cloneable {
     public boolean equals(@Nullable Object obj) {
         if (this == obj)                      // quick check
             return true;
-        if (!(obj instanceof DigitList))         // (1) same object?
+        if (!(obj instanceof DigitList other))         // (1) same object?
             return false;
-        DigitList other = (DigitList) obj;
         if (count != other.count ||
         decimalAt != other.decimalAt)
             return false;

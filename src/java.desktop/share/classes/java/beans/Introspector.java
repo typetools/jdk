@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,38 +22,34 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.beans;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import com.sun.beans.TypeResolver;
-import com.sun.beans.WeakCache;
-import com.sun.beans.finder.ClassFinder;
-import com.sun.beans.introspect.ClassInfo;
-import com.sun.beans.introspect.EventSetInfo;
-import com.sun.beans.introspect.PropertyInfo;
-
 import java.awt.Component;
-
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-
-import java.util.Map;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.EventObject;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
-import jdk.internal.misc.JavaBeansAccess;
-import jdk.internal.misc.SharedSecrets;
+import com.sun.beans.TypeResolver;
+import com.sun.beans.finder.ClassFinder;
+import com.sun.beans.introspect.ClassInfo;
+import com.sun.beans.introspect.EventSetInfo;
+import com.sun.beans.introspect.PropertyInfo;
+import jdk.internal.access.JavaBeansAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.reflect.misc.ReflectUtil;
 
 /**
@@ -94,7 +90,7 @@ import sun.reflect.misc.ReflectUtil;
  * <p>
  * For more information about introspection and design patterns, please
  * consult the
- *  <a href="http://www.oracle.com/technetwork/java/javase/documentation/spec-136004.html">JavaBeans&trade; specification</a>.
+ *  <a href="http://www.oracle.com/technetwork/java/javase/documentation/spec-136004.html">JavaBeans specification</a>.
  *
  * @since 1.1
  */
@@ -119,13 +115,10 @@ public @UsesObjectEquals class Introspector {
      */
     public static final int IGNORE_ALL_BEANINFO        = 3;
 
-    // Static Caches to speed up introspection.
-    private static final WeakCache<Class<?>, Method[]> declaredMethodCache = new WeakCache<>();
-
     private Class<?> beanClass;
     private BeanInfo explicitBeanInfo;
     private BeanInfo superBeanInfo;
-    private BeanInfo additionalBeanInfo[];
+    private BeanInfo[] additionalBeanInfo;
 
     private boolean propertyChangeSource = false;
 
@@ -201,15 +194,10 @@ public @UsesObjectEquals class Introspector {
             return (new Introspector(beanClass, null, USE_ALL_BEANINFO)).getBeanInfo();
         }
         ThreadGroupContext context = ThreadGroupContext.getContext();
-        BeanInfo beanInfo;
-        synchronized (declaredMethodCache) {
-            beanInfo = context.getBeanInfo(beanClass);
-        }
+        BeanInfo beanInfo = context.getBeanInfo(beanClass);
         if (beanInfo == null) {
             beanInfo = new Introspector(beanClass, null, USE_ALL_BEANINFO).getBeanInfo();
-            synchronized (declaredMethodCache) {
-                context.putBeanInfo(beanClass, beanInfo);
-            }
+            context.putBeanInfo(beanClass, beanInfo);
         }
         return beanInfo;
     }
@@ -326,7 +314,7 @@ public @UsesObjectEquals class Introspector {
                         Character.isUpperCase(name.charAt(0))){
             return name;
         }
-        char chars[] = name.toCharArray();
+        char[] chars = name.toCharArray();
         chars[0] = Character.toLowerCase(chars[0]);
         return new String(chars);
     }
@@ -362,6 +350,7 @@ public @UsesObjectEquals class Introspector {
      */
 
     public static void setBeanInfoSearchPath(String[] path) {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPropertiesAccess();
@@ -378,12 +367,9 @@ public @UsesObjectEquals class Introspector {
      *
      * @since 1.2
      */
-
     public static void flushCaches() {
-        synchronized (declaredMethodCache) {
-            ThreadGroupContext.getContext().clearBeanInfoCache();
-            declaredMethodCache.clear();
-        }
+        ThreadGroupContext.getContext().clearBeanInfoCache();
+        ClassInfo.clear();
     }
 
     /**
@@ -406,10 +392,8 @@ public @UsesObjectEquals class Introspector {
         if (clz == null) {
             throw new NullPointerException();
         }
-        synchronized (declaredMethodCache) {
-            ThreadGroupContext.getContext().removeBeanInfo(clz);
-            declaredMethodCache.put(clz, null);
-        }
+        ThreadGroupContext.getContext().removeBeanInfo(clz);
+        ClassInfo.remove(clz);
     }
 
     //======================================================================
@@ -463,9 +447,9 @@ public @UsesObjectEquals class Introspector {
         // event sets and locate PropertyChangeListeners before we
         // look for properties.
         BeanDescriptor bd = getTargetBeanDescriptor();
-        MethodDescriptor mds[] = getTargetMethodInfo();
-        EventSetDescriptor esds[] = getTargetEventInfo();
-        PropertyDescriptor pds[] = getTargetPropertyInfo();
+        MethodDescriptor[] mds = getTargetMethodInfo();
+        EventSetDescriptor[] esds = getTargetEventInfo();
+        PropertyDescriptor[] pds = getTargetPropertyInfo();
 
         int defaultEvent = getTargetDefaultEventIndex();
         int defaultProperty = getTargetDefaultPropertyIndex();
@@ -530,7 +514,7 @@ public @UsesObjectEquals class Introspector {
         processPropertyDescriptors();
 
         // Allocate and populate the result array.
-        PropertyDescriptor result[] =
+        PropertyDescriptor[] result =
                 properties.values().toArray(new PropertyDescriptor[properties.size()]);
 
         // Set the default index.
@@ -615,12 +599,11 @@ public @UsesObjectEquals class Introspector {
         PropertyDescriptor pd, gpd, spd;
         IndexedPropertyDescriptor ipd, igpd, ispd;
 
-        Iterator<List<PropertyDescriptor>> it = pdStore.values().iterator();
-        while (it.hasNext()) {
+        for (List<PropertyDescriptor> propertyDescriptors : pdStore.values()) {
             pd = null; gpd = null; spd = null;
             ipd = null; igpd = null; ispd = null;
 
-            list = it.next();
+            list = propertyDescriptors;
 
             // First pass. Find the latest getter method. Merge properties
             // of previous getter methods.
@@ -928,7 +911,7 @@ public @UsesObjectEquals class Introspector {
 
         if (explicitEvents == null && superBeanInfo != null) {
             // We have no explicit BeanInfo events.  Check with our parent.
-            EventSetDescriptor supers[] = superBeanInfo.getEventSetDescriptors();
+            EventSetDescriptor[] supers = superBeanInfo.getEventSetDescriptors();
             for (int i = 0 ; i < supers.length; i++) {
                 addEvent(supers[i]);
             }
@@ -939,7 +922,7 @@ public @UsesObjectEquals class Introspector {
         }
 
         for (int i = 0; i < additionalBeanInfo.length; i++) {
-            EventSetDescriptor additional[] = additionalBeanInfo[i].getEventSetDescriptors();
+            EventSetDescriptor[] additional = additionalBeanInfo[i].getEventSetDescriptors();
             if (additional != null) {
                 for (int j = 0 ; j < additional.length; j++) {
                     addEvent(additional[j]);
@@ -1024,14 +1007,14 @@ public @UsesObjectEquals class Introspector {
 
         if (explicitMethods == null && superBeanInfo != null) {
             // We have no explicit BeanInfo methods.  Check with our parent.
-            MethodDescriptor supers[] = superBeanInfo.getMethodDescriptors();
+            MethodDescriptor[] supers = superBeanInfo.getMethodDescriptors();
             for (int i = 0 ; i < supers.length; i++) {
                 addMethod(supers[i]);
             }
         }
 
         for (int i = 0; i < additionalBeanInfo.length; i++) {
-            MethodDescriptor additional[] = additionalBeanInfo[i].getMethodDescriptors();
+            MethodDescriptor[] additional = additionalBeanInfo[i].getMethodDescriptors();
             if (additional != null) {
                 for (int j = 0 ; j < additional.length; j++) {
                     addMethod(additional[j]);
@@ -1053,7 +1036,7 @@ public @UsesObjectEquals class Introspector {
         }
 
         // Allocate and populate the result array.
-        MethodDescriptor result[] = new MethodDescriptor[methods.size()];
+        MethodDescriptor[] result = new MethodDescriptor[methods.size()];
         result = methods.values().toArray(result);
 
         return result;
@@ -1145,7 +1128,7 @@ public @UsesObjectEquals class Introspector {
         try {
             type = ClassFinder.findClass(name, type.getClassLoader());
             // Each customizer should inherit java.awt.Component and implement java.beans.Customizer
-            // according to the section 9.3 of JavaBeans&trade; specification
+            // according to the section 9.3 of JavaBeans specification
             if (Component.class.isAssignableFrom(type) && Customizer.class.isAssignableFrom(type)) {
                 return type;
             }
@@ -1159,7 +1142,7 @@ public @UsesObjectEquals class Introspector {
     private boolean isEventHandler(Method m) {
         // We assume that a method is an event handler if it has a single
         // argument, whose type inherit from java.util.Event.
-        Type argTypes[] = m.getGenericParameterTypes();
+        Type[] argTypes = m.getGenericParameterTypes();
         if (argTypes.length != 1) {
             return false;
         }
@@ -1175,7 +1158,7 @@ public @UsesObjectEquals class Introspector {
      * parameter list on a given class.
      */
     private static Method internalFindMethod(Class<?> start, String methodName,
-                                                 int argCount, Class<?> args[]) {
+                                                 int argCount, Class<?>[] args) {
         // For overriden methods we need to find the most derived version.
         // So we start with the given class and walk up the superclass chain.
         for (Class<?> cl = start; cl != null; cl = cl.getSuperclass()) {

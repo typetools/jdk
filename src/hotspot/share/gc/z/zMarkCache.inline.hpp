@@ -25,6 +25,7 @@
 #define SHARE_GC_Z_ZMARKCACHE_INLINE_HPP
 
 #include "gc/z/zMarkCache.hpp"
+
 #include "gc/z/zPage.inline.hpp"
 
 inline void ZMarkCacheEntry::inc_live(ZPage* page, size_t bytes) {
@@ -44,7 +45,7 @@ inline void ZMarkCacheEntry::inc_live(ZPage* page, size_t bytes) {
 inline void ZMarkCacheEntry::evict() {
   if (_page != NULL) {
     // Write cached data out to page
-    _page->inc_live_atomic(_objects, _bytes);
+    _page->inc_live(_objects, _bytes);
     _page = NULL;
   }
 }

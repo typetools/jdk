@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,18 +22,29 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.awt;
 
-import java.util.Vector;
-import java.util.Locale;
-import java.util.EventListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.peer.ListPeer;
-import java.awt.event.*;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.io.IOException;
-import javax.accessibility.*;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.util.EventListener;
+import java.util.Locale;
+import java.util.Vector;
 
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
+import javax.accessibility.AccessibleSelection;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
 
 /**
  * The {@code List} component presents the user with a
@@ -61,7 +72,8 @@ import javax.accessibility.*;
  * scrolling list:
  * <p>
  * <img src="doc-files/List-1.gif"
- * alt="Shows a list containing: Venus, Earth, JavaSoft, and Mars. Javasoft is selected." style="float:center; margin: 7px 10px;">
+ * alt="Shows a list containing: Venus, Earth, JavaSoft, and Mars. Javasoft is
+ * selected." style="margin: 7px 10px;">
  * <p>
  * If the List allows multiple selections, then clicking on
  * an item that is already selected deselects it. In the preceding
@@ -152,7 +164,7 @@ public class List extends Component implements ItemSelectable, Accessible {
      * @see #getSelectedIndexes()
      * @see #getSelectedIndex()
      */
-    int         selected[] = new int[0];
+    int[]         selected = new int[0];
 
     /**
      * This variable contains the value that will be used
@@ -169,9 +181,10 @@ public class List extends Component implements ItemSelectable, Accessible {
     private static final String base = "list";
     private static int nameCounter = 0;
 
-    /*
-     * JDK 1.1 serialVersionUID
+    /**
+     * Use serialVersionUID from JDK 1.1 for interoperability.
      */
+     @Serial
      private static final long serialVersionUID = -3304312411574666869L;
 
     /**
@@ -321,7 +334,7 @@ public class List extends Component implements ItemSelectable, Accessible {
      * @since        1.1
      */
     public synchronized String[] getItems() {
-        String itemCopies[] = new String[items.size()];
+        String[] itemCopies = new String[items.size()];
         items.copyInto(itemCopies);
         return itemCopies;
     }
@@ -488,7 +501,7 @@ public class List extends Component implements ItemSelectable, Accessible {
      * @see           #isIndexSelected
      */
     public synchronized int getSelectedIndex() {
-        int sel[] = getSelectedIndexes();
+        int[] sel = getSelectedIndexes();
         return (sel.length == 1) ? sel[0] : -1;
     }
 
@@ -534,8 +547,8 @@ public class List extends Component implements ItemSelectable, Accessible {
      * @see           #isIndexSelected
      */
     public synchronized String[] getSelectedItems() {
-        int sel[] = getSelectedIndexes();
-        String str[] = new String[sel.length];
+        int[] sel = getSelectedIndexes();
+        String[] str = new String[sel.length];
         for (int i = 0 ; i < sel.length ; i++) {
             str[i] = getItem(sel[i]);
         }
@@ -602,7 +615,7 @@ public class List extends Component implements ItemSelectable, Accessible {
                         selected = new int[1];
                         selected[0] = index;
                     } else {
-                        int newsel[] = new int[selected.length + 1];
+                        int[] newsel = new int[selected.length + 1];
                         System.arraycopy(selected, 0, newsel, 0,
                                          selected.length);
                         newsel[selected.length] = index;
@@ -636,7 +649,7 @@ public class List extends Component implements ItemSelectable, Accessible {
 
         for (int i = 0 ; i < selected.length ; i++) {
             if (selected[i] == index) {
-                int newsel[] = new int[selected.length - 1];
+                int[] newsel = new int[selected.length - 1];
                 System.arraycopy(selected, 0, newsel, 0, i);
                 System.arraycopy(selected, i+1, newsel, i, selected.length - (i+1));
                 selected = newsel;
@@ -669,7 +682,7 @@ public class List extends Component implements ItemSelectable, Accessible {
      */
     @Deprecated
     public boolean isSelected(int index) {
-        int sel[] = getSelectedIndexes();
+        int[] sel = getSelectedIndexes();
         for (int i = 0 ; i < sel.length ; i++) {
             if (sel[i] == index) {
                 return true;
@@ -1233,12 +1246,14 @@ public class List extends Component implements ItemSelectable, Accessible {
      *  {@code actionListenerK} indicating an
      *    {@code ActionListener} object
      *
-     * @param s the {@code ObjectOutputStream} to write
+     * @param  s the {@code ObjectOutputStream} to write
+     * @throws IOException if an I/O error occurs
      * @see AWTEventMulticaster#save(ObjectOutputStream, String, EventListener)
      * @see java.awt.Component#itemListenerK
      * @see java.awt.Component#actionListenerK
      * @see #readObject(ObjectInputStream)
      */
+    @Serial
     private void writeObject(ObjectOutputStream s)
       throws IOException
     {
@@ -1263,15 +1278,18 @@ public class List extends Component implements ItemSelectable, Accessible {
      * {@code List}.
      * Unrecognized keys or values will be ignored.
      *
-     * @param s the {@code ObjectInputStream} to write
-     * @exception HeadlessException if
-     *   {@code GraphicsEnvironment.isHeadless} returns
-     *   {@code true}
+     * @param  s the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
+     * @throws HeadlessException if {@code GraphicsEnvironment.isHeadless()}
+     *         returns {@code true}
      * @see #removeItemListener(ItemListener)
      * @see #addItemListener(ItemListener)
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #writeObject(ObjectOutputStream)
      */
+    @Serial
     private void readObject(ObjectInputStream s)
       throws ClassNotFoundException, IOException, HeadlessException
     {
@@ -1325,9 +1343,10 @@ public class List extends Component implements ItemSelectable, Accessible {
     protected class AccessibleAWTList extends AccessibleAWTComponent
         implements AccessibleSelection, ItemListener, ActionListener
     {
-        /*
-         * JDK 1.3 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.3 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 7924617370136012829L;
 
         /**
@@ -1493,7 +1512,7 @@ public class List extends Component implements ItemSelectable, Accessible {
          */
          public void clearAccessibleSelection() {
              synchronized(List.this)  {
-                 int selectedIndexes[] = List.this.getSelectedIndexes();
+                 int[] selectedIndexes = List.this.getSelectedIndexes();
                  if (selectedIndexes == null)
                      return;
                  for (int i = selectedIndexes.length - 1; i >= 0; i--) {
@@ -1524,15 +1543,23 @@ public class List extends Component implements ItemSelectable, Accessible {
         protected class AccessibleAWTListChild extends AccessibleAWTComponent
             implements Accessible
         {
-            /*
-             * JDK 1.3 serialVersionUID
+            /**
+             * Use serialVersionUID from JDK 1.3 for interoperability.
              */
+            @Serial
             private static final long serialVersionUID = 4412022926028300317L;
 
         // [[[FIXME]]] need to finish implementing this!!!
 
-            private List parent;
-            private int  indexInParent;
+           /**
+            * The parent {@code List}.
+            */
+           private List parent;
+
+           /**
+            * The index in the parent.
+            */
+           private int indexInParent;
 
             /**
              * Constructs new {@code AccessibleAWTListChild} with the given

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,10 +86,21 @@ import sun.security.util.SecurityConstants;
  * @see java.security.ProtectionDomain
  * @see java.security.Permission
  * @see java.security.Security security properties
+ * @deprecated This class is only useful in conjunction with
+ *       {@linkplain SecurityManager the Security Manager}, which is deprecated
+ *       and subject to removal in a future release. Consequently, this class
+ *       is also deprecated and subject to removal. There is no replacement for
+ *       the Security Manager or this class.
  */
 
 @AnnotatedFor({"interning"})
+@Deprecated(since="17", forRemoval=true)
 public abstract @UsesObjectEquals class Policy {
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    public Policy() {}
 
     /**
      * A read-only empty PermissionCollection instance.
@@ -132,6 +143,7 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     private static void checkPermission(String type) {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new SecurityPermission("createPolicy." + type));
@@ -158,6 +170,7 @@ public abstract @UsesObjectEquals class Policy {
      */
     public static Policy getPolicy()
     {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkPermission(SecurityConstants.GET_POLICY_PERMISSION);
@@ -193,6 +206,7 @@ public abstract @UsesObjectEquals class Policy {
      * an intrinsic lock on the Policy.class.
      */
     private static Policy loadPolicyProvider() {
+        @SuppressWarnings("removal")
         String policyProvider =
             AccessController.doPrivileged(new PrivilegedAction<>() {
                 @Override
@@ -221,6 +235,7 @@ public abstract @UsesObjectEquals class Policy {
         Policy polFile = new sun.security.provider.PolicyFile();
         policyInfo = new PolicyInfo(polFile, false);
 
+        @SuppressWarnings("removal")
         Policy pol = AccessController.doPrivileged(new PrivilegedAction<>() {
             @Override
             public Policy run() {
@@ -270,6 +285,7 @@ public abstract @UsesObjectEquals class Policy {
      */
     public static void setPolicy(Policy p)
     {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) sm.checkPermission(
                                  new SecurityPermission("setPolicy"));
@@ -309,6 +325,7 @@ public abstract @UsesObjectEquals class Policy {
          * implementations will continue to function.
          */
 
+        @SuppressWarnings("removal")
         ProtectionDomain policyDomain =
         AccessController.doPrivileged(new PrivilegedAction<>() {
             public ProtectionDomain run() {
@@ -393,6 +410,7 @@ public abstract @UsesObjectEquals class Policy {
      * @see Provider
      * @since 1.6
      */
+    @SuppressWarnings("removal")
     public static Policy getInstance(String type, Policy.Parameters params)
                 throws NoSuchAlgorithmException {
         Objects.requireNonNull(type, "null type name");
@@ -454,13 +472,14 @@ public abstract @UsesObjectEquals class Policy {
      * @see Provider
      * @since 1.6
      */
+    @SuppressWarnings("removal")
     public static Policy getInstance(String type,
                                 Policy.Parameters params,
                                 String provider)
                 throws NoSuchProviderException, NoSuchAlgorithmException {
 
         Objects.requireNonNull(type, "null type name");
-        if (provider == null || provider.length() == 0) {
+        if (provider == null || provider.isEmpty()) {
             throw new IllegalArgumentException("missing provider");
         }
 
@@ -517,6 +536,7 @@ public abstract @UsesObjectEquals class Policy {
      * @see Provider
      * @since 1.6
      */
+    @SuppressWarnings("removal")
     public static Policy getInstance(String type,
                                 Policy.Parameters params,
                                 Provider provider)
@@ -768,12 +788,13 @@ public abstract @UsesObjectEquals class Policy {
      */
     private static class PolicyDelegate extends Policy {
 
+        @SuppressWarnings("removal")
         private PolicySpi spi;
         private Provider p;
         private String type;
         private Policy.Parameters params;
 
-        private PolicyDelegate(PolicySpi spi, Provider p,
+        private PolicyDelegate(@SuppressWarnings("removal") PolicySpi spi, Provider p,
                         String type, Policy.Parameters params) {
             this.spi = spi;
             this.p = p;
@@ -809,7 +830,13 @@ public abstract @UsesObjectEquals class Policy {
      * This represents a marker interface for Policy parameters.
      *
      * @since 1.6
+     * @deprecated This class is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this class is also deprecated and subject to removal.
+     *       There is no replacement for the Security Manager or this class.
      */
+    @Deprecated(since="17", forRemoval=true)
     public static interface Parameters { }
 
     /**
@@ -822,6 +849,7 @@ public abstract @UsesObjectEquals class Policy {
     private static class UnsupportedEmptyCollection
         extends PermissionCollection {
 
+        @java.io.Serial
         private static final long serialVersionUID = -8492269157353014774L;
 
         private Permissions perms;
@@ -840,7 +868,7 @@ public abstract @UsesObjectEquals class Policy {
          *
          * @param permission the Permission object to add.
          *
-         * @exception SecurityException - if this PermissionCollection object
+         * @throws    SecurityException   if this PermissionCollection object
          *                                has been marked readonly
          */
         @Override public void add(Permission permission) {

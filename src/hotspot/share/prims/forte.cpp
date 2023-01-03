@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/forte.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/javaCalls.hpp"
 #include "runtime/thread.inline.hpp"
@@ -70,7 +71,7 @@ enum {
 // Native interfaces for use by Forte tools.
 
 
-#if !defined(IA64) && !defined(PPC64)
+#if !defined(IA64)
 
 class vframeStreamForte : public vframeStreamCommon {
  public:
@@ -91,7 +92,7 @@ static bool is_decipherable_interpreted_frame(JavaThread* thread,
 
 vframeStreamForte::vframeStreamForte(JavaThread *jt,
                                      frame fr,
-                                     bool stop_at_java_call_stub) : vframeStreamCommon(jt) {
+                                     bool stop_at_java_call_stub) : vframeStreamCommon(jt, false /* process_frames */) {
 
   _stop_at_java_call_stub = stop_at_java_call_stub;
   _frame = fr;
@@ -248,7 +249,7 @@ static bool is_decipherable_interpreted_frame(JavaThread* thread,
     // a valid method. Then again we may have caught an interpreter
     // frame in the middle of construction and the bci field is
     // not yet valid.
-    if (!method->is_valid_method()) return false;
+    if (!Method::is_valid_method(method)) return false;
     *method_p = method; // If the Method* found is invalid, it is
                         // ignored by forte_fill_call_trace_given_top().
                         // So set method_p only if the Method is valid.
@@ -322,7 +323,7 @@ static bool find_initial_Java_frame(JavaThread* thread,
     // See if we can find a useful frame
     int loop_count;
     int loop_max = MaxJavaStackTraceDepth * 2;
-    RegisterMap map(thread, false);
+    RegisterMap map(thread, false, false);
 
     for (loop_count = 0; loop_max == 0 || loop_count < loop_max; loop_count++) {
       if (!candidate.safe_for_sender(thread)) return false;
@@ -336,7 +337,7 @@ static bool find_initial_Java_frame(JavaThread* thread,
   // We will hopefully be able to figure out something to do with it.
   int loop_count;
   int loop_max = MaxJavaStackTraceDepth * 2;
-  RegisterMap map(thread, false);
+  RegisterMap map(thread, false, false);
 
   for (loop_count = 0; loop_max == 0 || loop_count < loop_max; loop_count++) {
 
@@ -434,7 +435,7 @@ static void forte_fill_call_trace_given_top(JavaThread* thd,
   // Check if a Java Method has been found.
   if (method == NULL) return;
 
-  if (!method->is_valid_method()) {
+  if (!Method::is_valid_method(method)) {
     trace->num_frames = ticks_GC_active; // -2
     return;
   }
@@ -445,7 +446,7 @@ static void forte_fill_call_trace_given_top(JavaThread* thd,
     bci = st.bci();
     method = st.method();
 
-    if (!method->is_valid_method()) {
+    if (!Method::is_valid_method(method)) {
       // we throw away everything we've gathered in this sample since
       // none of it is safe
       trace->num_frames = ticks_GC_active; // -2
@@ -639,16 +640,16 @@ void    collector_func_load(char* name,
 #endif // !_WINDOWS
 
 } // end extern "C"
-#endif // !IA64 && !PPC64
+#endif // !IA64
 
 void Forte::register_stub(const char* name, address start, address end) {
-#if !defined(_WINDOWS) && !defined(IA64) && !defined(PPC64)
+#if !defined(_WINDOWS) && !defined(IA64)
   assert(pointer_delta(end, start, sizeof(jbyte)) < INT_MAX,
          "Code size exceeds maximum range");
 
   collector_func_load((char*)name, NULL, NULL, start,
     pointer_delta(end, start, sizeof(jbyte)), 0, NULL);
-#endif // !_WINDOWS && !IA64 && !PPC64
+#endif // !_WINDOWS && !IA64
 }
 
 #else // INCLUDE_JVMTI

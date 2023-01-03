@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,10 +33,13 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.util.Enumeration;
 import java.util.List;
-import jdk.internal.misc.JavaUtilJarAccess;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import jdk.internal.access.JavaUtilJarAccess;
 
 @AnnotatedFor({"interning"})
-public @UsesObjectEquals class JavaUtilJarAccessImpl implements JavaUtilJarAccess {
+@UsesObjectEquals class JavaUtilJarAccessImpl implements JavaUtilJarAccess {
     public boolean jarFileHasClassPathAttribute(JarFile jar) throws IOException {
         return jar.hasClassPathAttribute();
     }
@@ -63,5 +66,21 @@ public @UsesObjectEquals class JavaUtilJarAccessImpl implements JavaUtilJarAcces
 
     public List<Object> getManifestDigests(JarFile jar) {
         return jar.getManifestDigests();
+    }
+
+    public Attributes getTrustedAttributes(Manifest man, String name) {
+        return man.getTrustedAttributes(name);
+    }
+
+    public void ensureInitialization(JarFile jar) {
+        jar.ensureInitialization();
+    }
+
+    public boolean isInitializing() {
+        return JarFile.isInitializing();
+    }
+
+    public JarEntry entryFor(JarFile jar, String name) {
+        return jar.entryFor(name);
     }
 }

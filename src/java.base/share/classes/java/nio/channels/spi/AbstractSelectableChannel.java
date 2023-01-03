@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,6 +38,8 @@ import java.nio.channels.IllegalSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Arrays;
+import java.util.function.Consumer;
 
 
 /**
@@ -48,7 +50,7 @@ import java.nio.channels.Selector;
  * blocking mode of this channel as well as its current set of selection keys.
  * It performs all of the synchronization required to implement the {@link
  * java.nio.channels.SelectableChannel} specification.  Implementations of the
- * abstract protected methods defined in this class need not synchronize
+ * protected abstract methods defined in this class need not synchronize
  * against other threads that might be engaged in the same operations.  </p>
  *
  *
@@ -173,6 +175,20 @@ public abstract class AbstractSelectableChannel
     public final SelectionKey keyFor(Selector sel) {
         synchronized (keyLock) {
             return findKey(sel);
+        }
+    }
+
+    /**
+     * Invokes an action for each key.
+     *
+     * This method is invoked by DatagramChannelImpl::disconnect.
+     */
+    private void forEach(Consumer<SelectionKey> action) {
+        synchronized (keyLock) {
+            SelectionKey[] keys = this.keys;
+            if (keys != null) {
+                Arrays.stream(keys).filter(k -> k != null).forEach(action::accept);
+            }
         }
     }
 

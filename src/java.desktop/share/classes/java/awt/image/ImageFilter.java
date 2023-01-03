@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,12 @@ import java.util.Hashtable;
  */
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class ImageFilter implements ImageConsumer, Cloneable {
+
+    /**
+     * Constructs an {@code ImageFilter}.
+     */
+    public ImageFilter() {}
+
     /**
      * The consumer of the particular image data stream for which this
      * instance of the ImageFilter is filtering data.  It is not
@@ -161,7 +167,7 @@ public @UsesObjectEquals class ImageFilter implements ImageConsumer, Cloneable {
      * @see ImageConsumer#setPixels
      */
     public void setPixels(int x, int y, int w, int h,
-                          ColorModel model, byte pixels[], int off,
+                          ColorModel model, byte[] pixels, int off,
                           int scansize) {
         consumer.setPixels(x, y, w, h, model, pixels, off, scansize);
     }
@@ -178,7 +184,7 @@ public @UsesObjectEquals class ImageFilter implements ImageConsumer, Cloneable {
      * @see ImageConsumer#setPixels
      */
     public void setPixels(int x, int y, int w, int h,
-                          ColorModel model, int pixels[], int off,
+                          ColorModel model, int[] pixels, int off,
                           int scansize) {
         consumer.setPixels(x, y, w, h, model, pixels, off, scansize);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 /**
  * @test
- * @bug 8192920 8204588
+ * @bug 8192920 8204588 8210275
  * @summary Test source mode
  * @modules jdk.compiler jdk.jlink
  * @run main SourceMode
@@ -251,6 +251,31 @@ public class SourceMode extends TestHelper {
         show(tr);
     }
 
+    // java --source N -cp ... HelloWorld
+    @Test
+    void testSourceClasspath() throws IOException {
+        starting("testSourceClasspath");
+        Path base = Files.createDirectories(Paths.get("testSourceClasspath"));
+        Path src = Files.createDirectories(base.resolve("src"));
+        Path srcfile = src.resolve("java.java");
+        createFile(srcfile, List.of(
+                "class HelloWorld {",
+                "    public static void main(String... args) {",
+                "        System.out.println(\"Hello World\");",
+                "    }",
+                "}"
+        ));
+        Path classes = base.resolve("classes");
+        compile("-d", classes.toString(), srcfile.toString());
+        TestResult tr =
+            doExec(javaCmd, "--source", thisVersion, "-cp", classes.toString(), "HelloWorld");
+        if (tr.isOK())
+            error(tr, "Command succeeded unexpectedly");
+        if (!tr.contains("file not found: HelloWorld"))
+            error(tr, "Expected output not found");
+        show(tr);
+    }
+
     // java --source
     @Test
     void testSourceNoArg() throws IOException {
@@ -298,7 +323,7 @@ public class SourceMode extends TestHelper {
     @Test
     void testTerminalOptionInShebang() throws IOException {
         starting("testTerminalOptionInShebang");
-        if (skipShebangTest || isAIX || isMacOSX || isSolaris) {
+        if (skipShebangTest || isAIX || isMacOSX) {
             // On MacOSX, we cannot distinguish between terminal options on the
             // shebang line and those on the command line.
             // On Solaris, all options after the first on the shebang line are
@@ -322,7 +347,7 @@ public class SourceMode extends TestHelper {
     @Test
     void testTerminalOptionInShebangAtFile() throws IOException {
         starting("testTerminalOptionInShebangAtFile");
-        if (skipShebangTest || isAIX || isMacOSX || isSolaris) {
+        if (skipShebangTest || isAIX || isMacOSX) {
             // On MacOSX, we cannot distinguish between terminal options in a
             // shebang @-file and those on the command line.
             // On Solaris, all options after the first on the shebang line are
@@ -349,7 +374,7 @@ public class SourceMode extends TestHelper {
     @Test
     void testMainClassInShebang() throws IOException {
         starting("testMainClassInShebang");
-        if (skipShebangTest || isAIX || isMacOSX || isSolaris) {
+        if (skipShebangTest || isAIX || isMacOSX) {
             // On MacOSX, we cannot distinguish between a main class on the
             // shebang line and one on the command line.
             // On Solaris, all options after the first on the shebang line are

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,21 +21,33 @@
  * questions.
  */
 
+/**
+ * @test
+ * @bug 8192985
+ * @summary Test the clhsdb 'scanoops' command
+ * @requires vm.gc.Parallel
+ * @requires vm.hasSA
+ * @library /test/lib
+ * @run main/othervm/timeout=1200 ClhsdbScanOops UseParallelGC
+ */
+
+/**
+ * @test
+ * @bug 8192985
+ * @summary Test the clhsdb 'scanoops' command
+ * @requires vm.gc.Serial
+ * @requires vm.hasSA
+ * @library /test/lib
+ * @run main/othervm/timeout=1200 ClhsdbScanOops UseSerialGC
+ */
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import jdk.test.lib.Utils;
 import jdk.test.lib.apps.LingeredApp;
-
-/**
- * @test
- * @bug 8192985
- * @summary Test the clhsdb 'scanoops' command
- * @requires vm.hasSA
- * @library /test/lib
- * @run main/othervm/timeout=1200 ClhsdbScanOops
- */
+import jtreg.SkippedException;
 
 public class ClhsdbScanOops {
 
@@ -45,9 +57,7 @@ public class ClhsdbScanOops {
 
         try {
             ClhsdbLauncher test = new ClhsdbLauncher();
-            List<String> vmArgs = new ArrayList<String>();
-            vmArgs.add(gc);
-            theApp = LingeredApp.startApp(vmArgs);
+            theApp = LingeredApp.startApp(gc);
 
             System.out.println ("Started LingeredApp with the GC option " + gc +
                                 " and pid " + theApp.getPid());
@@ -56,13 +66,6 @@ public class ClhsdbScanOops {
             List<String> cmds = List.of("universe");
 
             String universeOutput = test.run(theApp.getPid(), cmds, null, null);
-
-            if (universeOutput == null) {
-                // Output could be null due to attach permission issues
-                // and if we are skipping this.
-                LingeredApp.stopApp(theApp);
-                return;
-            }
 
             cmds = new ArrayList<String>();
             Map<String, List<String>> expStrMap = new HashMap<>();
@@ -86,7 +89,7 @@ public class ClhsdbScanOops {
 
             expStrMap.put(cmd, List.of
                 ("java/lang/Object", "java/lang/Class", "java/lang/Thread",
-                 "java/lang/String", "[B", "[I"));
+                 "java/lang/String", "\\[B", "\\[I"));
 
             // Test the 'type' option also
             // scanoops <start addr> <end addr> java/lang/String
@@ -97,6 +100,8 @@ public class ClhsdbScanOops {
             unExpStrMap.put(cmd, List.of("java/lang/Thread"));
 
             test.run(theApp.getPid(), cmds, expStrMap, unExpStrMap);
+        } catch (SkippedException e) {
+            throw e;
         } catch (Exception ex) {
             throw new RuntimeException("Test ERROR " + ex, ex);
         } finally {
@@ -105,13 +110,9 @@ public class ClhsdbScanOops {
     }
 
     public static void main(String[] args) throws Exception {
+        String gc = args[0];
         System.out.println("Starting the ClhsdbScanOops test");
-        try {
-            testWithGcType("-XX:+UseParallelGC");
-            testWithGcType("-XX:+UseSerialGC");
-        } catch (Exception e) {
-            throw new Error("Test failed with " + e);
-        }
+        testWithGcType("-XX:+" + gc);
         System.out.println("Test PASSED");
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,17 +32,14 @@
 #if INCLUDE_ZGC
 #include "gc/z/zBarrier.inline.hpp"
 #endif
+#if INCLUDE_SHENANDOAHGC
+#include "gc/shenandoah/shenandoahBarrierSet.inline.hpp"
+#endif
 
 StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* reg_map, ScopeValue* sv) {
   if (sv->is_location()) {
     // Stack or register value
     Location loc = ((LocationValue *)sv)->location();
-
-#ifdef SPARC
-    // %%%%% Callee-save floats will NOT be working on a Sparc until we
-    // handle the case of a 2 floats in a single double register.
-    assert( !(loc.is_register() && loc.type() == Location::float_in_dbl), "Sparc does not handle callee-save floats yet" );
-#endif // SPARC
 
     // First find address of value
 
@@ -101,20 +98,31 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
         // The callee has no clue whether the register holds an int,
         // long or is unused.  He always saves a long.  Here we know
         // a long was saved, but we only want an int back.  Narrow the
-        // saved long to the int that the JVM wants.
-        value.noop =  (narrowOop) *(julong*) value_addr;
+        // saved long to the int that the JVM wants.  We can't just
+        // use narrow_oop_cast directly, because we don't know what
+        // the high bits of the value might be.
+        static_assert(sizeof(narrowOop) == sizeof(juint), "size mismatch");
+        juint narrow_value = (juint) *(julong*)value_addr;
+        value.noop = CompressedOops::narrow_oop_cast(narrow_value);
       } else {
         value.noop = *(narrowOop*) value_addr;
       }
-      // Decode narrowoop and wrap a handle around the oop
-      Handle h(Thread::current(), CompressedOops::decode(value.noop));
+      // Decode narrowoop
+      oop val = CompressedOops::decode(value.noop);
+      // Deoptimization must make sure all oops have passed load barriers
+#if INCLUDE_SHENANDOAHGC
+      if (UseShenandoahGC) {
+        val = ShenandoahBarrierSet::barrier_set()->load_reference_barrier(val);
+      }
+#endif
+      Handle h(Thread::current(), val); // Wrap a handle around the oop
       return new StackValue(h);
     }
 #endif
     case Location::oop: {
       oop val = *(oop *)value_addr;
 #ifdef _LP64
-      if (Universe::is_narrow_oop_base(val)) {
+      if (CompressedOops::is_base(val)) {
          // Compiled code may produce decoded oop = narrow_oop_base
          // when a narrow oop implicit null check is used.
          // The narrow_oop_base could be NULL or be the address
@@ -122,17 +130,18 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
          val = (oop)NULL;
       }
 #endif
-#if INCLUDE_ZGC
-      // Deoptimization must make sure all oop have passed load barrier
-      if (UseZGC) {
-        val = ZBarrier::load_barrier_on_oop_field_preloaded((oop*)value_addr, val);
+      // Deoptimization must make sure all oops have passed load barriers
+#if INCLUDE_SHENANDOAHGC
+      if (UseShenandoahGC) {
+        val = ShenandoahBarrierSet::barrier_set()->load_reference_barrier(val);
       }
 #endif
-
+      assert(oopDesc::is_oop_or_null(val, false), "bad oop found");
       Handle h(Thread::current(), val); // Wrap a handle around the oop
       return new StackValue(h);
     }
     case Location::addr: {
+      loc.print_on(tty);
       ShouldNotReachHere(); // both C1 and C2 now inline jsrs
     }
     case Location::normal: {
@@ -142,9 +151,15 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
       value.ji = *(jint*)value_addr;
       return new StackValue(value.p);
     }
-    case Location::invalid:
+    case Location::invalid: {
       return new StackValue();
+    }
+    case Location::vector: {
+      loc.print_on(tty);
+      ShouldNotReachHere(); // should be handled by VectorSupport::allocate_vector()
+    }
     default:
+      loc.print_on(tty);
       ShouldNotReachHere();
     }
 
@@ -174,8 +189,10 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
   } else if (sv->is_object()) { // Scalar replaced object in compiled frame
     Handle ov = ((ObjectValue *)sv)->value();
     return new StackValue(ov, (ov.is_null()) ? 1 : 0);
+  } else if (sv->is_marker()) {
+    // Should never need to directly construct a marker.
+    ShouldNotReachHere();
   }
-
   // Unknown ScopeValue type
   ShouldNotReachHere();
   return new StackValue((intptr_t) 0);   // dummy
@@ -206,9 +223,13 @@ void StackValue::print_on(outputStream* st) const {
       break;
 
     case T_OBJECT:
-      _handle_value()->print_value_on(st);
-      st->print(" <" INTPTR_FORMAT ">", p2i((address)_handle_value()));
-     break;
+      if (_handle_value() != NULL) {
+        _handle_value()->print_value_on(st);
+      } else {
+        st->print("NULL");
+      }
+      st->print(" <" INTPTR_FORMAT ">", p2i(_handle_value()));
+      break;
 
     case T_CONFLICT:
      st->print("conflict");

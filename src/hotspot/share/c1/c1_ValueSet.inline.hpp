@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_VALUESET_INLINE_HPP
-#define SHARE_VM_C1_C1_VALUESET_INLINE_HPP
+#ifndef SHARE_C1_C1_VALUESET_INLINE_HPP
+#define SHARE_C1_C1_VALUESET_INLINE_HPP
+
+#include "c1/c1_ValueSet.hpp"
 
 #include "c1/c1_Instruction.hpp"
-#include "c1/c1_ValueSet.hpp"
 #include "utilities/bitMap.inline.hpp"
 
 inline ValueSet::ValueSet() : _map(Instruction::number_of_instructions()) {
@@ -70,4 +71,4 @@ inline bool ValueSet::equals(ValueSet* other) {
   return _map.is_same(other->_map);
 }
 
-#endif // SHARE_VM_C1_C1_VALUESET_INLINE_HPP
+#endif // SHARE_C1_C1_VALUESET_INLINE_HPP

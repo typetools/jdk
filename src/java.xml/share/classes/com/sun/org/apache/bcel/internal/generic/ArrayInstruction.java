@@ -26,14 +26,13 @@ import com.sun.org.apache.bcel.internal.ExceptionConst;
 /**
  * Super class for instructions dealing with array access such as IALOAD.
  *
- * @version $Id: ArrayInstruction.java 1747278 2016-06-07 17:28:43Z britter $
  */
 public abstract class ArrayInstruction extends Instruction implements ExceptionThrower,
         TypedInstruction {
 
     /**
-     * Empty constructor needed for the Class.newInstance() statement in
-     * Instruction.readInstruction(). Not to be used otherwise.
+     * Empty constructor needed for Instruction.readInstruction.
+     * Not to be used otherwise.
      */
     ArrayInstruction() {
     }
@@ -84,7 +83,7 @@ public abstract class ArrayInstruction extends Instruction implements ExceptionT
             case com.sun.org.apache.bcel.internal.Const.AASTORE:
                 return Type.OBJECT;
             default:
-                throw new ClassGenException("Oops: unknown case in switch" + _opcode);
+                throw new ClassGenException("Unknown case in switch" + _opcode);
         }
     }
 }

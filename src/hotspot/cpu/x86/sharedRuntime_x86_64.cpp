@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,17 +32,27 @@
 #include "code/icBuffer.hpp"
 #include "code/nativeInst.hpp"
 #include "code/vtableStubs.hpp"
+#include "compiler/oopMap.hpp"
+#include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/gcLocker.hpp"
+#include "gc/shared/barrierSet.hpp"
+#include "gc/shared/barrierSetAssembler.hpp"
 #include "interpreter/interpreter.hpp"
 #include "logging/log.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
 #include "oops/compiledICHolder.hpp"
+#include "oops/klass.inline.hpp"
+#include "prims/methodHandles.hpp"
+#include "runtime/jniHandles.hpp"
 #include "runtime/safepointMechanism.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "runtime/signature.hpp"
+#include "runtime/stubRoutines.hpp"
 #include "runtime/vframeArray.hpp"
+#include "runtime/vm_version.hpp"
 #include "utilities/align.hpp"
 #include "utilities/formatBuffer.hpp"
-#include "vm_version_x86.hpp"
 #include "vmreg_x86.inline.hpp"
 #ifdef COMPILER1
 #include "c1/c1_Runtime1.hpp"
@@ -81,11 +91,14 @@ class RegisterSaver {
   // units because compiler frame slots are jints.
 #define XSAVE_AREA_BEGIN 160
 #define XSAVE_AREA_YMM_BEGIN 576
+#define XSAVE_AREA_OPMASK_BEGIN 1088
 #define XSAVE_AREA_ZMM_BEGIN 1152
 #define XSAVE_AREA_UPPERBANK 1664
-#define DEF_XMM_OFFS(regnum) xmm ## regnum ## _off = xmm_off + (regnum)*16/BytesPerInt, xmm ## regnum ## H_off
-#define DEF_YMM_OFFS(regnum) ymm ## regnum ## _off = ymm_off + (regnum)*16/BytesPerInt, ymm ## regnum ## H_off
-#define DEF_ZMM_OFFS(regnum) zmm ## regnum ## _off = zmm_off + (regnum-16)*64/BytesPerInt, zmm ## regnum ## H_off
+#define DEF_XMM_OFFS(regnum)       xmm ## regnum ## _off = xmm_off + (regnum)*16/BytesPerInt, xmm ## regnum ## H_off
+#define DEF_YMM_OFFS(regnum)       ymm ## regnum ## _off = ymm_off + (regnum)*16/BytesPerInt, ymm ## regnum ## H_off
+#define DEF_ZMM_OFFS(regnum)       zmm ## regnum ## _off = zmm_off + (regnum)*32/BytesPerInt, zmm ## regnum ## H_off
+#define DEF_OPMASK_OFFS(regnum)    opmask ## regnum ## _off = opmask_off + (regnum)*8/BytesPerInt,     opmask ## regnum ## H_off
+#define DEF_ZMM_UPPER_OFFS(regnum) zmm ## regnum ## _off = zmm_upper_off + (regnum-16)*64/BytesPerInt, zmm ## regnum ## H_off
   enum layout {
     fpu_state_off = frame::arg_reg_save_area_bytes/BytesPerInt, // fxsave save area
     xmm_off       = fpu_state_off + XSAVE_AREA_BEGIN/BytesPerInt,            // offset in fxsave save area
@@ -96,10 +109,16 @@ class RegisterSaver {
     DEF_YMM_OFFS(0),
     DEF_YMM_OFFS(1),
     // 2..15 are implied in range usage
-    zmm_high = xmm_off + (XSAVE_AREA_ZMM_BEGIN - XSAVE_AREA_BEGIN)/BytesPerInt,
-    zmm_off = xmm_off + (XSAVE_AREA_UPPERBANK - XSAVE_AREA_BEGIN)/BytesPerInt,
-    DEF_ZMM_OFFS(16),
-    DEF_ZMM_OFFS(17),
+    opmask_off         = xmm_off + (XSAVE_AREA_OPMASK_BEGIN - XSAVE_AREA_BEGIN)/BytesPerInt,
+    DEF_OPMASK_OFFS(0),
+    DEF_OPMASK_OFFS(1),
+    // 2..7 are implied in range usage
+    zmm_off = xmm_off + (XSAVE_AREA_ZMM_BEGIN - XSAVE_AREA_BEGIN)/BytesPerInt,
+    DEF_ZMM_OFFS(0),
+    DEF_ZMM_OFFS(1),
+    zmm_upper_off = xmm_off + (XSAVE_AREA_UPPERBANK - XSAVE_AREA_BEGIN)/BytesPerInt,
+    DEF_ZMM_UPPER_OFFS(16),
+    DEF_ZMM_UPPER_OFFS(17),
     // 18..31 are implied in range usage
     fpu_state_end = fpu_state_off + ((FPUStateSizeInWords-1)*wordSize / BytesPerInt),
     fpu_stateH_end,
@@ -131,7 +150,7 @@ class RegisterSaver {
   };
 
  public:
-  static OopMap* save_live_registers(MacroAssembler* masm, int additional_frame_words, int* total_frame_words, bool save_vectors = false);
+  static OopMap* save_live_registers(MacroAssembler* masm, int additional_frame_words, int* total_frame_words, bool save_vectors);
   static void restore_live_registers(MacroAssembler* masm, bool restore_vectors = false);
 
   // Offsets into the register save area
@@ -156,12 +175,12 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
     num_xmm_regs = num_xmm_regs/2;
   }
 #if COMPILER2_OR_JVMCI
-  if (save_vectors) {
-    assert(UseAVX > 0, "Vectors larger than 16 byte long are supported only with AVX");
-    assert(MaxVectorSize <= 64, "Only up to 64 byte long vectors are supported");
+  if (save_vectors && UseAVX == 0) {
+    save_vectors = false; // vectors larger than 16 byte long are supported only with AVX
   }
+  assert(!save_vectors || MaxVectorSize <= 64, "Only up to 64 byte long vectors are supported");
 #else
-  assert(!save_vectors, "vectors are generated only by C2 and JVMCI");
+  save_vectors = false; // vectors are generated only by C2 and JVMCI
 #endif
 
   // Always make the frame size 16-byte aligned, both vector and non vector stacks are always allocated
@@ -201,6 +220,13 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
       for (int n = 16; n < num_xmm_regs; n++) {
         __ evmovdqul(Address(rsp, base_addr+(off++*64)), as_XMMRegister(n), vector_len);
       }
+#if COMPILER2_OR_JVMCI
+      base_addr = XSAVE_AREA_OPMASK_BEGIN;
+      off = 0;
+      for(int n = 0; n < KRegisterImpl::number_of_registers; n++) {
+        __ kmov(Address(rsp, base_addr+(off++*8)), as_KRegister(n));
+      }
+#endif
     }
   } else {
     if (VM_Version::supports_evex()) {
@@ -210,6 +236,13 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
       for (int n = 16; n < num_xmm_regs; n++) {
         __ movsd(Address(rsp, base_addr+(off++*64)), as_XMMRegister(n));
       }
+#if COMPILER2_OR_JVMCI
+      base_addr = XSAVE_AREA_OPMASK_BEGIN;
+      off = 0;
+      for(int n = 0; n < KRegisterImpl::number_of_registers; n++) {
+        __ kmov(Address(rsp, base_addr+(off++*8)), as_KRegister(n));
+      }
+#endif
     }
   }
   __ vzeroupper();
@@ -253,7 +286,7 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
     map->set_callee_saved(STACK_OFFSET(off), xmm_name->as_VMReg());
     off += delta;
   }
-  if(UseAVX > 2) {
+  if (UseAVX > 2) {
     // Obtain xmm16..xmm31 from the XSAVE area on EVEX enabled targets
     off = zmm16_off;
     delta = zmm17_off - off;
@@ -266,12 +299,23 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
 
 #if COMPILER2_OR_JVMCI
   if (save_vectors) {
+    // Save upper half of YMM registers(0..15)
     off = ymm0_off;
-    int delta = ymm1_off - off;
+    delta = ymm1_off - ymm0_off;
     for (int n = 0; n < 16; n++) {
       XMMRegister ymm_name = as_XMMRegister(n);
       map->set_callee_saved(STACK_OFFSET(off), ymm_name->as_VMReg()->next(4));
       off += delta;
+    }
+    if (VM_Version::supports_evex()) {
+      // Save upper half of ZMM registers(0..15)
+      off = zmm0_off;
+      delta = zmm1_off - zmm0_off;
+      for (int n = 0; n < 16; n++) {
+        XMMRegister zmm_name = as_XMMRegister(n);
+        map->set_callee_saved(STACK_OFFSET(off), zmm_name->as_VMReg()->next(8));
+        off += delta;
+      }
     }
   }
 #endif // COMPILER2_OR_JVMCI
@@ -358,6 +402,13 @@ void RegisterSaver::restore_live_registers(MacroAssembler* masm, bool restore_ve
       for (int n = 16; n < num_xmm_regs; n++) {
         __ evmovdqul(as_XMMRegister(n), Address(rsp, base_addr+(off++*64)), vector_len);
       }
+#if COMPILER2_OR_JVMCI
+      base_addr = XSAVE_AREA_OPMASK_BEGIN;
+      off = 0;
+      for (int n = 0; n < KRegisterImpl::number_of_registers; n++) {
+        __ kmov(as_KRegister(n), Address(rsp, base_addr+(off++*8)));
+      }
+#endif
     }
   } else {
     if (VM_Version::supports_evex()) {
@@ -367,6 +418,13 @@ void RegisterSaver::restore_live_registers(MacroAssembler* masm, bool restore_ve
       for (int n = 16; n < num_xmm_regs; n++) {
         __ movsd(as_XMMRegister(n), Address(rsp, base_addr+(off++*64)));
       }
+#if COMPILER2_OR_JVMCI
+      base_addr = XSAVE_AREA_OPMASK_BEGIN;
+      off = 0;
+      for (int n = 0; n < KRegisterImpl::number_of_registers; n++) {
+        __ kmov(as_KRegister(n), Address(rsp, base_addr+(off++*8)));
+      }
+#endif
     }
   }
 
@@ -400,28 +458,6 @@ bool SharedRuntime::is_wide_vector(int size) {
   return size > 16;
 }
 
-size_t SharedRuntime::trampoline_size() {
-  return 16;
-}
-
-void SharedRuntime::generate_trampoline(MacroAssembler *masm, address destination) {
-  __ jump(RuntimeAddress(destination));
-}
-
-// The java_calling_convention describes stack locations as ideal slots on
-// a frame with no abi restrictions. Since we must observe abi restrictions
-// (like the placement of the register window) the slots must be biased by
-// the following value.
-static int reg2offset_in(VMReg r) {
-  // Account for saved rbp and return address
-  // This should really be in_preserve_stack_slots
-  return (r->reg2stack() + 4) * VMRegImpl::stack_slot_size;
-}
-
-static int reg2offset_out(VMReg r) {
-  return (r->reg2stack() + SharedRuntime::out_preserve_stack_slots()) * VMRegImpl::stack_slot_size;
-}
-
 // ---------------------------------------------------------------------------
 // Read the array of BasicTypes from a signature, and compute where the
 // arguments should go.  Values in the VMRegPair regs array refer to 4-byte
@@ -445,8 +481,7 @@ static int reg2offset_out(VMReg r) {
 
 int SharedRuntime::java_calling_convention(const BasicType *sig_bt,
                                            VMRegPair *regs,
-                                           int total_args_passed,
-                                           int is_outgoing) {
+                                           int total_args_passed) {
 
   // Create the mapping between argument positions and
   // registers.
@@ -810,7 +845,7 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
   __ movptr(r11, Address(rbx, in_bytes(Method::from_compiled_offset())));
 
 #if INCLUDE_JVMCI
-  if (EnableJVMCI || UseAOT) {
+  if (EnableJVMCI) {
     // check if this call should be routed towards a specific entry point
     __ cmpptr(Address(r15_thread, in_bytes(JavaThread::jvmci_alternate_call_target_offset())), 0);
     Label no_alternative_target;
@@ -950,7 +985,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   Register temp = rbx;
 
   {
-    __ load_klass(temp, receiver);
+    __ load_klass(temp, receiver, rscratch1);
     __ cmpptr(temp, Address(holder, CompiledICHolder::holder_klass_offset()));
     __ movptr(rbx, Address(holder, CompiledICHolder::holder_metadata_offset()));
     __ jcc(Assembler::equal, ok);
@@ -967,10 +1002,36 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
 
   address c2i_entry = __ pc();
 
+  // Class initialization barrier for static methods
+  address c2i_no_clinit_check_entry = NULL;
+  if (VM_Version::supports_fast_class_init_checks()) {
+    Label L_skip_barrier;
+    Register method = rbx;
+
+    { // Bypass the barrier for non-static methods
+      Register flags  = rscratch1;
+      __ movl(flags, Address(method, Method::access_flags_offset()));
+      __ testl(flags, JVM_ACC_STATIC);
+      __ jcc(Assembler::zero, L_skip_barrier); // non-static
+    }
+
+    Register klass = rscratch1;
+    __ load_method_holder(klass, method);
+    __ clinit_barrier(klass, r15_thread, &L_skip_barrier /*L_fast_path*/);
+
+    __ jump(RuntimeAddress(SharedRuntime::get_handle_wrong_method_stub())); // slow path
+
+    __ bind(L_skip_barrier);
+    c2i_no_clinit_check_entry = __ pc();
+  }
+
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->c2i_entry_barrier(masm);
+
   gen_c2i_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs, skip_fixup);
 
   __ flush();
-  return AdapterHandlerLibrary::new_entry(fingerprint, i2c_entry, c2i_entry, c2i_unverified_entry);
+  return AdapterHandlerLibrary::new_entry(fingerprint, i2c_entry, c2i_entry, c2i_unverified_entry, c2i_no_clinit_check_entry);
 }
 
 int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
@@ -1088,210 +1149,30 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
   return stk_args;
 }
 
-// On 64 bit we will store integer like items to the stack as
-// 64 bits items (sparc abi) even though java would only store
-// 32bits for a parameter. On 32bit it will simply be 32 bits
-// So this routine will do 32->32 on 32bit and 32->64 on 64bit
-static void move32_64(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  if (src.first()->is_stack()) {
-    if (dst.first()->is_stack()) {
-      // stack to stack
-      __ movslq(rax, Address(rbp, reg2offset_in(src.first())));
-      __ movq(Address(rsp, reg2offset_out(dst.first())), rax);
-    } else {
-      // stack to reg
-      __ movslq(dst.first()->as_Register(), Address(rbp, reg2offset_in(src.first())));
-    }
-  } else if (dst.first()->is_stack()) {
-    // reg to stack
-    // Do we really have to sign extend???
-    // __ movslq(src.first()->as_Register(), src.first()->as_Register());
-    __ movq(Address(rsp, reg2offset_out(dst.first())), src.first()->as_Register());
-  } else {
-    // Do we really have to sign extend???
-    // __ movslq(dst.first()->as_Register(), src.first()->as_Register());
-    if (dst.first() != src.first()) {
-      __ movq(dst.first()->as_Register(), src.first()->as_Register());
-    }
+int SharedRuntime::vector_calling_convention(VMRegPair *regs,
+                                             uint num_bits,
+                                             uint total_args_passed) {
+  assert(num_bits == 64 || num_bits == 128 || num_bits == 256 || num_bits == 512,
+         "only certain vector sizes are supported for now");
+
+  static const XMMRegister VEC_ArgReg[32] = {
+     xmm0,  xmm1,  xmm2,  xmm3,  xmm4,  xmm5,  xmm6,  xmm7,
+     xmm8,  xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15,
+    xmm16, xmm17, xmm18, xmm19, xmm20, xmm21, xmm22, xmm23,
+    xmm24, xmm25, xmm26, xmm27, xmm28, xmm29, xmm30, xmm31
+  };
+
+  uint stk_args = 0;
+  uint fp_args = 0;
+
+  for (uint i = 0; i < total_args_passed; i++) {
+    VMReg vmreg = VEC_ArgReg[fp_args++]->as_VMReg();
+    int next_val = num_bits == 64 ? 1 : (num_bits == 128 ? 3 : (num_bits  == 256 ? 7 : 15));
+    regs[i].set_pair(vmreg->next(next_val), vmreg);
   }
+
+  return stk_args;
 }
-
-static void move_ptr(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  if (src.first()->is_stack()) {
-    if (dst.first()->is_stack()) {
-      // stack to stack
-      __ movq(rax, Address(rbp, reg2offset_in(src.first())));
-      __ movq(Address(rsp, reg2offset_out(dst.first())), rax);
-    } else {
-      // stack to reg
-      __ movq(dst.first()->as_Register(), Address(rbp, reg2offset_in(src.first())));
-    }
-  } else if (dst.first()->is_stack()) {
-    // reg to stack
-    __ movq(Address(rsp, reg2offset_out(dst.first())), src.first()->as_Register());
-  } else {
-    if (dst.first() != src.first()) {
-      __ movq(dst.first()->as_Register(), src.first()->as_Register());
-    }
-  }
-}
-
-// An oop arg. Must pass a handle not the oop itself
-static void object_move(MacroAssembler* masm,
-                        OopMap* map,
-                        int oop_handle_offset,
-                        int framesize_in_slots,
-                        VMRegPair src,
-                        VMRegPair dst,
-                        bool is_receiver,
-                        int* receiver_offset) {
-
-  // must pass a handle. First figure out the location we use as a handle
-
-  Register rHandle = dst.first()->is_stack() ? rax : dst.first()->as_Register();
-
-  // See if oop is NULL if it is we need no handle
-
-  if (src.first()->is_stack()) {
-
-    // Oop is already on the stack as an argument
-    int offset_in_older_frame = src.first()->reg2stack() + SharedRuntime::out_preserve_stack_slots();
-    map->set_oop(VMRegImpl::stack2reg(offset_in_older_frame + framesize_in_slots));
-    if (is_receiver) {
-      *receiver_offset = (offset_in_older_frame + framesize_in_slots) * VMRegImpl::stack_slot_size;
-    }
-
-    __ cmpptr(Address(rbp, reg2offset_in(src.first())), (int32_t)NULL_WORD);
-    __ lea(rHandle, Address(rbp, reg2offset_in(src.first())));
-    // conditionally move a NULL
-    __ cmovptr(Assembler::equal, rHandle, Address(rbp, reg2offset_in(src.first())));
-  } else {
-
-    // Oop is in an a register we must store it to the space we reserve
-    // on the stack for oop_handles and pass a handle if oop is non-NULL
-
-    const Register rOop = src.first()->as_Register();
-    int oop_slot;
-    if (rOop == j_rarg0)
-      oop_slot = 0;
-    else if (rOop == j_rarg1)
-      oop_slot = 1;
-    else if (rOop == j_rarg2)
-      oop_slot = 2;
-    else if (rOop == j_rarg3)
-      oop_slot = 3;
-    else if (rOop == j_rarg4)
-      oop_slot = 4;
-    else {
-      assert(rOop == j_rarg5, "wrong register");
-      oop_slot = 5;
-    }
-
-    oop_slot = oop_slot * VMRegImpl::slots_per_word + oop_handle_offset;
-    int offset = oop_slot*VMRegImpl::stack_slot_size;
-
-    map->set_oop(VMRegImpl::stack2reg(oop_slot));
-    // Store oop in handle area, may be NULL
-    __ movptr(Address(rsp, offset), rOop);
-    if (is_receiver) {
-      *receiver_offset = offset;
-    }
-
-    __ cmpptr(rOop, (int32_t)NULL_WORD);
-    __ lea(rHandle, Address(rsp, offset));
-    // conditionally move a NULL from the handle area where it was just stored
-    __ cmovptr(Assembler::equal, rHandle, Address(rsp, offset));
-  }
-
-  // If arg is on the stack then place it otherwise it is already in correct reg.
-  if (dst.first()->is_stack()) {
-    __ movptr(Address(rsp, reg2offset_out(dst.first())), rHandle);
-  }
-}
-
-// A float arg may have to do float reg int reg conversion
-static void float_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  assert(!src.second()->is_valid() && !dst.second()->is_valid(), "bad float_move");
-
-  // The calling conventions assures us that each VMregpair is either
-  // all really one physical register or adjacent stack slots.
-  // This greatly simplifies the cases here compared to sparc.
-
-  if (src.first()->is_stack()) {
-    if (dst.first()->is_stack()) {
-      __ movl(rax, Address(rbp, reg2offset_in(src.first())));
-      __ movptr(Address(rsp, reg2offset_out(dst.first())), rax);
-    } else {
-      // stack to reg
-      assert(dst.first()->is_XMMRegister(), "only expect xmm registers as parameters");
-      __ movflt(dst.first()->as_XMMRegister(), Address(rbp, reg2offset_in(src.first())));
-    }
-  } else if (dst.first()->is_stack()) {
-    // reg to stack
-    assert(src.first()->is_XMMRegister(), "only expect xmm registers as parameters");
-    __ movflt(Address(rsp, reg2offset_out(dst.first())), src.first()->as_XMMRegister());
-  } else {
-    // reg to reg
-    // In theory these overlap but the ordering is such that this is likely a nop
-    if ( src.first() != dst.first()) {
-      __ movdbl(dst.first()->as_XMMRegister(),  src.first()->as_XMMRegister());
-    }
-  }
-}
-
-// A long move
-static void long_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-
-  // The calling conventions assures us that each VMregpair is either
-  // all really one physical register or adjacent stack slots.
-  // This greatly simplifies the cases here compared to sparc.
-
-  if (src.is_single_phys_reg() ) {
-    if (dst.is_single_phys_reg()) {
-      if (dst.first() != src.first()) {
-        __ mov(dst.first()->as_Register(), src.first()->as_Register());
-      }
-    } else {
-      assert(dst.is_single_reg(), "not a stack pair");
-      __ movq(Address(rsp, reg2offset_out(dst.first())), src.first()->as_Register());
-    }
-  } else if (dst.is_single_phys_reg()) {
-    assert(src.is_single_reg(),  "not a stack pair");
-    __ movq(dst.first()->as_Register(), Address(rbp, reg2offset_out(src.first())));
-  } else {
-    assert(src.is_single_reg() && dst.is_single_reg(), "not stack pairs");
-    __ movq(rax, Address(rbp, reg2offset_in(src.first())));
-    __ movq(Address(rsp, reg2offset_out(dst.first())), rax);
-  }
-}
-
-// A double move
-static void double_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-
-  // The calling conventions assures us that each VMregpair is either
-  // all really one physical register or adjacent stack slots.
-  // This greatly simplifies the cases here compared to sparc.
-
-  if (src.is_single_phys_reg() ) {
-    if (dst.is_single_phys_reg()) {
-      // In theory these overlap but the ordering is such that this is likely a nop
-      if ( src.first() != dst.first()) {
-        __ movdbl(dst.first()->as_XMMRegister(), src.first()->as_XMMRegister());
-      }
-    } else {
-      assert(dst.is_single_reg(), "not a stack pair");
-      __ movdbl(Address(rsp, reg2offset_out(dst.first())), src.first()->as_XMMRegister());
-    }
-  } else if (dst.is_single_phys_reg()) {
-    assert(src.is_single_reg(),  "not a stack pair");
-    __ movdbl(dst.first()->as_XMMRegister(), Address(rbp, reg2offset_out(src.first())));
-  } else {
-    assert(src.is_single_reg() && dst.is_single_reg(), "not stack pairs");
-    __ movq(rax, Address(rbp, reg2offset_in(src.first())));
-    __ movq(Address(rsp, reg2offset_out(dst.first())), rax);
-  }
-}
-
 
 void SharedRuntime::save_native_result(MacroAssembler *masm, BasicType ret_type, int frame_slots) {
   // We always ignore the frame_slots arg and just use the space just below frame pointer
@@ -1349,164 +1230,6 @@ static void restore_args(MacroAssembler *masm, int arg_count, int first_arg, VMR
     }
 }
 
-
-static void save_or_restore_arguments(MacroAssembler* masm,
-                                      const int stack_slots,
-                                      const int total_in_args,
-                                      const int arg_save_area,
-                                      OopMap* map,
-                                      VMRegPair* in_regs,
-                                      BasicType* in_sig_bt) {
-  // if map is non-NULL then the code should store the values,
-  // otherwise it should load them.
-  int slot = arg_save_area;
-  // Save down double word first
-  for ( int i = 0; i < total_in_args; i++) {
-    if (in_regs[i].first()->is_XMMRegister() && in_sig_bt[i] == T_DOUBLE) {
-      int offset = slot * VMRegImpl::stack_slot_size;
-      slot += VMRegImpl::slots_per_word;
-      assert(slot <= stack_slots, "overflow");
-      if (map != NULL) {
-        __ movdbl(Address(rsp, offset), in_regs[i].first()->as_XMMRegister());
-      } else {
-        __ movdbl(in_regs[i].first()->as_XMMRegister(), Address(rsp, offset));
-      }
-    }
-    if (in_regs[i].first()->is_Register() &&
-        (in_sig_bt[i] == T_LONG || in_sig_bt[i] == T_ARRAY)) {
-      int offset = slot * VMRegImpl::stack_slot_size;
-      if (map != NULL) {
-        __ movq(Address(rsp, offset), in_regs[i].first()->as_Register());
-        if (in_sig_bt[i] == T_ARRAY) {
-          map->set_oop(VMRegImpl::stack2reg(slot));;
-        }
-      } else {
-        __ movq(in_regs[i].first()->as_Register(), Address(rsp, offset));
-      }
-      slot += VMRegImpl::slots_per_word;
-    }
-  }
-  // Save or restore single word registers
-  for ( int i = 0; i < total_in_args; i++) {
-    if (in_regs[i].first()->is_Register()) {
-      int offset = slot * VMRegImpl::stack_slot_size;
-      slot++;
-      assert(slot <= stack_slots, "overflow");
-
-      // Value is in an input register pass we must flush it to the stack
-      const Register reg = in_regs[i].first()->as_Register();
-      switch (in_sig_bt[i]) {
-        case T_BOOLEAN:
-        case T_CHAR:
-        case T_BYTE:
-        case T_SHORT:
-        case T_INT:
-          if (map != NULL) {
-            __ movl(Address(rsp, offset), reg);
-          } else {
-            __ movl(reg, Address(rsp, offset));
-          }
-          break;
-        case T_ARRAY:
-        case T_LONG:
-          // handled above
-          break;
-        case T_OBJECT:
-        default: ShouldNotReachHere();
-      }
-    } else if (in_regs[i].first()->is_XMMRegister()) {
-      if (in_sig_bt[i] == T_FLOAT) {
-        int offset = slot * VMRegImpl::stack_slot_size;
-        slot++;
-        assert(slot <= stack_slots, "overflow");
-        if (map != NULL) {
-          __ movflt(Address(rsp, offset), in_regs[i].first()->as_XMMRegister());
-        } else {
-          __ movflt(in_regs[i].first()->as_XMMRegister(), Address(rsp, offset));
-        }
-      }
-    } else if (in_regs[i].first()->is_stack()) {
-      if (in_sig_bt[i] == T_ARRAY && map != NULL) {
-        int offset_in_older_frame = in_regs[i].first()->reg2stack() + SharedRuntime::out_preserve_stack_slots();
-        map->set_oop(VMRegImpl::stack2reg(offset_in_older_frame + stack_slots));
-      }
-    }
-  }
-}
-
-
-// Check GCLocker::needs_gc and enter the runtime if it's true.  This
-// keeps a new JNI critical region from starting until a GC has been
-// forced.  Save down any oops in registers and describe them in an
-// OopMap.
-static void check_needs_gc_for_critical_native(MacroAssembler* masm,
-                                               int stack_slots,
-                                               int total_c_args,
-                                               int total_in_args,
-                                               int arg_save_area,
-                                               OopMapSet* oop_maps,
-                                               VMRegPair* in_regs,
-                                               BasicType* in_sig_bt) {
-  __ block_comment("check GCLocker::needs_gc");
-  Label cont;
-  __ cmp8(ExternalAddress((address)GCLocker::needs_gc_address()), false);
-  __ jcc(Assembler::equal, cont);
-
-  // Save down any incoming oops and call into the runtime to halt for a GC
-
-  OopMap* map = new OopMap(stack_slots * 2, 0 /* arg_slots*/);
-  save_or_restore_arguments(masm, stack_slots, total_in_args,
-                            arg_save_area, map, in_regs, in_sig_bt);
-
-  address the_pc = __ pc();
-  oop_maps->add_gc_map( __ offset(), map);
-  __ set_last_Java_frame(rsp, noreg, the_pc);
-
-  __ block_comment("block_for_jni_critical");
-  __ movptr(c_rarg0, r15_thread);
-  __ mov(r12, rsp); // remember sp
-  __ subptr(rsp, frame::arg_reg_save_area_bytes); // windows
-  __ andptr(rsp, -16); // align stack as required by ABI
-  __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, SharedRuntime::block_for_jni_critical)));
-  __ mov(rsp, r12); // restore sp
-  __ reinit_heapbase();
-
-  __ reset_last_Java_frame(false);
-
-  save_or_restore_arguments(masm, stack_slots, total_in_args,
-                            arg_save_area, NULL, in_regs, in_sig_bt);
-  __ bind(cont);
-#ifdef ASSERT
-  if (StressCriticalJNINatives) {
-    // Stress register saving
-    OopMap* map = new OopMap(stack_slots * 2, 0 /* arg_slots*/);
-    save_or_restore_arguments(masm, stack_slots, total_in_args,
-                              arg_save_area, map, in_regs, in_sig_bt);
-    // Destroy argument registers
-    for (int i = 0; i < total_in_args - 1; i++) {
-      if (in_regs[i].first()->is_Register()) {
-        const Register reg = in_regs[i].first()->as_Register();
-        __ xorptr(reg, reg);
-      } else if (in_regs[i].first()->is_XMMRegister()) {
-        __ xorpd(in_regs[i].first()->as_XMMRegister(), in_regs[i].first()->as_XMMRegister());
-      } else if (in_regs[i].first()->is_FloatRegister()) {
-        ShouldNotReachHere();
-      } else if (in_regs[i].first()->is_stack()) {
-        // Nothing to do
-      } else {
-        ShouldNotReachHere();
-      }
-      if (in_sig_bt[i] == T_LONG || in_sig_bt[i] == T_DOUBLE) {
-        i++;
-      }
-    }
-
-    save_or_restore_arguments(masm, stack_slots, total_in_args,
-                              arg_save_area, NULL, in_regs, in_sig_bt);
-  }
-#endif
-}
-
 // Unpack an array argument into a pointer to the body and the length
 // if the array is non-null, otherwise pass 0 for both.
 static void unpack_array_argument(MacroAssembler* masm, VMRegPair reg, BasicType in_elem_type, VMRegPair body_arg, VMRegPair length_arg) {
@@ -1524,23 +1247,23 @@ static void unpack_array_argument(MacroAssembler* masm, VMRegPair reg, BasicType
   tmp.set_ptr(tmp_reg->as_VMReg());
   if (reg.first()->is_stack()) {
     // Load the arg up from the stack
-    move_ptr(masm, reg, tmp);
+    __ move_ptr(reg, tmp);
     reg = tmp;
   }
   __ testptr(reg.first()->as_Register(), reg.first()->as_Register());
   __ jccb(Assembler::equal, is_null);
   __ lea(tmp_reg, Address(reg.first()->as_Register(), arrayOopDesc::base_offset_in_bytes(in_elem_type)));
-  move_ptr(masm, tmp, body_arg);
+  __ move_ptr(tmp, body_arg);
   // load the length relative to the body.
   __ movl(tmp_reg, Address(tmp_reg, arrayOopDesc::length_offset_in_bytes() -
                            arrayOopDesc::base_offset_in_bytes(in_elem_type)));
-  move32_64(masm, tmp, length_arg);
+  __ move32_64(tmp, length_arg);
   __ jmpb(done);
   __ bind(is_null);
   // Pass zeros
   __ xorptr(tmp_reg, tmp_reg);
-  move_ptr(masm, tmp, body_arg);
-  move32_64(masm, tmp, length_arg);
+  __ move_ptr(tmp, body_arg);
+  __ move32_64(tmp, length_arg);
   __ bind(done);
 
   __ block_comment("} unpack_array_argument");
@@ -1574,12 +1297,12 @@ class ComputeMoveOrder: public StackObj {
    public:
     MoveOperation(int src_index, VMRegPair src, int dst_index, VMRegPair dst):
       _src(src)
-    , _src_index(src_index)
     , _dst(dst)
+    , _src_index(src_index)
     , _dst_index(dst_index)
+    , _processed(false)
     , _next(NULL)
-    , _prev(NULL)
-    , _processed(false) {
+    , _prev(NULL) {
     }
 
     VMRegPair src() const              { return _src; }
@@ -1627,8 +1350,8 @@ class ComputeMoveOrder: public StackObj {
   GrowableArray<MoveOperation*> edges;
 
  public:
-  ComputeMoveOrder(int total_in_args, VMRegPair* in_regs, int total_c_args, VMRegPair* out_regs,
-                    BasicType* in_sig_bt, GrowableArray<int>& arg_order, VMRegPair tmp_vmreg) {
+  ComputeMoveOrder(int total_in_args, const VMRegPair* in_regs, int total_c_args, VMRegPair* out_regs,
+                  const BasicType* in_sig_bt, GrowableArray<int>& arg_order, VMRegPair tmp_vmreg) {
     // Move operations where the dest is the stack can all be
     // scheduled first since they can't interfere with the other moves.
     for (int i = total_in_args - 1, c_arg = total_c_args - 1; i >= 0; i--, c_arg--) {
@@ -1728,8 +1451,7 @@ static void verify_oop_args(MacroAssembler* masm,
   Register temp_reg = rbx;  // not part of any compiled calling seq
   if (VerifyOops) {
     for (int i = 0; i < method->size_of_parameters(); i++) {
-      if (sig_bt[i] == T_OBJECT ||
-          sig_bt[i] == T_ARRAY) {
+      if (is_reference_type(sig_bt[i])) {
         VMReg r = regs[i].first();
         assert(r->is_valid(), "bad oop arg");
         if (r->is_stack()) {
@@ -1760,10 +1482,10 @@ static void gen_special_dispatch(MacroAssembler* masm,
     member_arg_pos = method->size_of_parameters() - 1;  // trailing MemberName argument
     member_reg = rbx;  // known to be free at this point
     has_receiver = MethodHandles::ref_kind_has_receiver(ref_kind);
-  } else if (iid == vmIntrinsics::_invokeBasic) {
+  } else if (iid == vmIntrinsics::_invokeBasic || iid == vmIntrinsics::_linkToNative) {
     has_receiver = true;
   } else {
-    fatal("unexpected intrinsic id %d", iid);
+    fatal("unexpected intrinsic id %d", vmIntrinsics::as_int(iid));
   }
 
   if (member_reg != noreg) {
@@ -1812,31 +1534,19 @@ static void gen_special_dispatch(MacroAssembler* masm,
 // Critical native functions are a shorthand for the use of
 // GetPrimtiveArrayCritical and disallow the use of any other JNI
 // functions.  The wrapper is expected to unpack the arguments before
-// passing them to the callee and perform checks before and after the
-// native call to ensure that they GCLocker
-// lock_critical/unlock_critical semantics are followed.  Some other
-// parts of JNI setup are skipped like the tear down of the JNI handle
+// passing them to the callee. Critical native functions leave the state _in_Java,
+// since they cannot stop for GC.
+// Some other parts of JNI setup are skipped like the tear down of the JNI handle
 // block and the check for pending exceptions it's impossible for them
 // to be thrown.
-//
-// They are roughly structured like this:
-//    if (GCLocker::needs_gc())
-//      SharedRuntime::block_for_jni_critical();
-//    tranistion to thread_in_native
-//    unpack arrray arguments and call native entry point
-//    check for safepoint in progress
-//    check if any thread suspend flags are set
-//      call into JVM and possible unlock the JNI critical
-//      if a GC was suppressed while in the critical native.
-//    transition back to thread_in_Java
-//    return to caller
 //
 nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                                 const methodHandle& method,
                                                 int compile_id,
                                                 BasicType* in_sig_bt,
                                                 VMRegPair* in_regs,
-                                                BasicType ret_type) {
+                                                BasicType ret_type,
+                                                address critical_entry) {
   if (method->is_method_handle_intrinsic()) {
     vmIntrinsics::ID iid = method->intrinsic_id();
     intptr_t start = (intptr_t)__ pc();
@@ -1859,7 +1569,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                        (OopMapSet*)NULL);
   }
   bool is_critical_native = true;
-  address native_func = method->critical_native_function();
+  address native_func = critical_entry;
   if (native_func == NULL) {
     native_func = method->native_function();
     is_critical_native = false;
@@ -1906,7 +1616,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       out_sig_bt[argc++] = in_sig_bt[i];
     }
   } else {
-    Thread* THREAD = Thread::current();
     in_elem_bt = NEW_RESOURCE_ARRAY(BasicType, total_in_args);
     SignatureStream ss(method->signature());
     for (int i = 0; i < total_in_args ; i++ ) {
@@ -1914,28 +1623,16 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
         // Arrays are passed as int, elem* pair
         out_sig_bt[argc++] = T_INT;
         out_sig_bt[argc++] = T_ADDRESS;
-        Symbol* atype = ss.as_symbol(CHECK_NULL);
-        const char* at = atype->as_C_string();
-        if (strlen(at) == 2) {
-          assert(at[0] == '[', "must be");
-          switch (at[1]) {
-            case 'B': in_elem_bt[i]  = T_BYTE; break;
-            case 'C': in_elem_bt[i]  = T_CHAR; break;
-            case 'D': in_elem_bt[i]  = T_DOUBLE; break;
-            case 'F': in_elem_bt[i]  = T_FLOAT; break;
-            case 'I': in_elem_bt[i]  = T_INT; break;
-            case 'J': in_elem_bt[i]  = T_LONG; break;
-            case 'S': in_elem_bt[i]  = T_SHORT; break;
-            case 'Z': in_elem_bt[i]  = T_BOOLEAN; break;
-            default: ShouldNotReachHere();
-          }
-        }
+        ss.skip_array_prefix(1);  // skip one '['
+        assert(ss.is_primitive(), "primitive type expected");
+        in_elem_bt[i] = ss.type();
       } else {
         out_sig_bt[argc++] = in_sig_bt[i];
         in_elem_bt[i] = T_VOID;
       }
       if (in_sig_bt[i] != T_VOID) {
-        assert(in_sig_bt[i] == ss.type(), "must match");
+        assert(in_sig_bt[i] == ss.type() ||
+               in_sig_bt[i] == T_ARRAY, "must match");
         ss.next();
       }
     }
@@ -2063,7 +1760,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   assert_different_registers(ic_reg, receiver, rscratch1);
   __ verify_oop(receiver);
-  __ load_klass(rscratch1, receiver);
+  __ load_klass(rscratch1, receiver, rscratch2);
   __ cmpq(ic_reg, rscratch1);
   __ jcc(Assembler::equal, hit);
 
@@ -2075,6 +1772,17 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ bind(hit);
 
   int vep_offset = ((intptr_t)__ pc()) - start;
+
+  if (VM_Version::supports_fast_class_init_checks() && method->needs_clinit_barrier()) {
+    Label L_skip_barrier;
+    Register klass = r10;
+    __ mov_metadata(klass, method->method_holder()); // InstanceKlass*
+    __ clinit_barrier(klass, r15_thread, &L_skip_barrier /*L_fast_path*/);
+
+    __ jump(RuntimeAddress(SharedRuntime::get_handle_wrong_method_stub())); // slow path
+
+    __ bind(L_skip_barrier);
+  }
 
 #ifdef COMPILER1
   // For Object.hashCode, System.identityHashCode try to pull hashCode from object header if available.
@@ -2088,18 +1796,15 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // instruction fits that requirement.
 
   // Generate stack overflow check
-
-  if (UseStackBanging) {
-    __ bang_stack_with_offset((int)JavaThread::stack_shadow_zone_size());
-  } else {
-    // need a 5 byte instruction to allow MT safe patching to non-entrant
-    __ fat_nop();
-  }
+  __ bang_stack_with_offset((int)StackOverflow::stack_shadow_zone_size());
 
   // Generate a new frame for the wrapper.
   __ enter();
   // -2 because return address is already present and so is saved rbp
   __ subptr(rsp, stack_size - 2*wordSize);
+
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->nmethod_entry_barrier(masm);
 
   // Frame is now completed as far as size and linkage.
   int frame_complete = ((intptr_t)__ pc()) - start;
@@ -2128,11 +1833,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // It is callee save so it survives the call to native
 
   const Register oop_handle_reg = r14;
-
-  if (is_critical_native) {
-    check_needs_gc_for_critical_native(masm, stack_slots, total_c_args, total_in_args,
-                                       oop_handle_offset, oop_maps, in_regs, in_sig_bt);
-  }
 
   //
   // We immediately shuffle the arguments so that any vm call we have to
@@ -2186,6 +1886,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // the incoming and outgoing registers are offset upwards and for
   // critical natives they are offset down.
   GrowableArray<int> arg_order(2 * total_in_args);
+
   VMRegPair tmp_vmreg;
   tmp_vmreg.set2(rbx->as_VMReg());
 
@@ -2246,7 +1947,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
         }
       case T_OBJECT:
         assert(!is_critical_native, "no oop arguments");
-        object_move(masm, map, oop_handle_offset, stack_slots, in_regs[i], out_regs[c_arg],
+        __ object_move(map, oop_handle_offset, stack_slots, in_regs[i], out_regs[c_arg],
                     ((i == 0) && (!is_static)),
                     &receiver_offset);
         break;
@@ -2254,24 +1955,24 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
         break;
 
       case T_FLOAT:
-        float_move(masm, in_regs[i], out_regs[c_arg]);
+        __ float_move(in_regs[i], out_regs[c_arg]);
           break;
 
       case T_DOUBLE:
         assert( i + 1 < total_in_args &&
                 in_sig_bt[i + 1] == T_VOID &&
                 out_sig_bt[c_arg+1] == T_VOID, "bad arg list");
-        double_move(masm, in_regs[i], out_regs[c_arg]);
+        __ double_move(in_regs[i], out_regs[c_arg]);
         break;
 
       case T_LONG :
-        long_move(masm, in_regs[i], out_regs[c_arg]);
+        __ long_move(in_regs[i], out_regs[c_arg]);
         break;
 
       case T_ADDRESS: assert(false, "found T_ADDRESS in java args");
 
       default:
-        move32_64(masm, in_regs[i], out_regs[c_arg]);
+        __ move32_64(in_regs[i], out_regs[c_arg]);
     }
   }
 
@@ -2370,7 +2071,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ movptr(obj_reg, Address(oop_handle_reg, 0));
 
     if (UseBiasedLocking) {
-      __ biased_locking_enter(lock_reg, obj_reg, swap_reg, rscratch1, false, lock_done, &slow_path_lock);
+      __ biased_locking_enter(lock_reg, obj_reg, swap_reg, rscratch1, rscratch2, false, lock_done, &slow_path_lock);
     }
 
     // Load immediate 1 into swap_reg %rax
@@ -2382,11 +2083,8 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     // Save (object->mark() | 1) into BasicLock's displaced header
     __ movptr(Address(lock_reg, mark_word_offset), swap_reg);
 
-    if (os::is_MP()) {
-      __ lock();
-    }
-
     // src -> dest iff dest == rax else rax <- dest
+    __ lock();
     __ cmpxchgptr(lock_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
     __ jcc(Assembler::equal, lock_done);
 
@@ -2413,17 +2111,15 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ bind(lock_done);
   }
 
-
   // Finally just about ready to make the JNI call
-
 
   // get JNIEnv* which is first argument to native
   if (!is_critical_native) {
     __ lea(c_rarg0, Address(r15_thread, in_bytes(JavaThread::jni_environment_offset())));
-  }
 
-  // Now set thread in native
-  __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_native);
+    // Now set thread in native
+    __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_native);
+  }
 
   __ call(RuntimeAddress(native_func));
 
@@ -2449,6 +2145,19 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   default       : ShouldNotReachHere();
   }
 
+  Label after_transition;
+
+  // If this is a critical native, check for a safepoint or suspend request after the call.
+  // If a safepoint is needed, transition to native, then to native_trans to handle
+  // safepoints like the native methods that are not critical natives.
+  if (is_critical_native) {
+    Label needs_safepoint;
+    __ safepoint_poll(needs_safepoint, r15_thread, false /* at_return */, false /* in_nmethod */);
+    __ cmpl(Address(r15_thread, JavaThread::suspend_flags_offset()), 0);
+    __ jcc(Assembler::equal, after_transition);
+    __ bind(needs_safepoint);
+  }
+
   // Switch thread to "native transition" state before reading the synchronization state.
   // This additional state is necessary because reading and testing the synchronization
   // state is not atomic w.r.t. GC, as this scenario demonstrates:
@@ -2458,29 +2167,17 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   //     didn't see any synchronization is progress, and escapes.
   __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_native_trans);
 
-  if(os::is_MP()) {
-    if (UseMembar) {
-      // Force this write out before the read below
-      __ membar(Assembler::Membar_mask_bits(
-           Assembler::LoadLoad | Assembler::LoadStore |
-           Assembler::StoreLoad | Assembler::StoreStore));
-    } else {
-      // Write serialization page so VM thread can do a pseudo remote membar.
-      // We use the current thread pointer to calculate a thread specific
-      // offset to write to within the page. This minimizes bus traffic
-      // due to cache line collision.
-      __ serialize_memory(r15_thread, rcx);
-    }
-  }
-
-  Label after_transition;
+  // Force this write out before the read below
+  __ membar(Assembler::Membar_mask_bits(
+              Assembler::LoadLoad | Assembler::LoadStore |
+              Assembler::StoreLoad | Assembler::StoreStore));
 
   // check for safepoint operation in progress and/or pending suspend requests
   {
     Label Continue;
     Label slow_path;
 
-    __ safepoint_poll(slow_path, r15_thread, rscratch1);
+    __ safepoint_poll(slow_path, r15_thread, true /* at_return */, false /* in_nmethod */);
 
     __ cmpl(Address(r15_thread, JavaThread::suspend_flags_offset()), 0);
     __ jcc(Assembler::equal, Continue);
@@ -2498,22 +2195,11 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ mov(r12, rsp); // remember sp
     __ subptr(rsp, frame::arg_reg_save_area_bytes); // windows
     __ andptr(rsp, -16); // align stack as required by ABI
-    if (!is_critical_native) {
-      __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans)));
-    } else {
-      __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans_and_transition)));
-    }
+    __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans)));
     __ mov(rsp, r12); // restore sp
     __ reinit_heapbase();
     // Restore any method result value
     restore_native_result(masm, ret_type, stack_slots);
-
-    if (is_critical_native) {
-      // The call above performed the transition to thread_in_Java so
-      // skip the transition logic below.
-      __ jmpb(after_transition);
-    }
-
     __ bind(Continue);
   }
 
@@ -2523,7 +2209,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   Label reguard;
   Label reguard_done;
-  __ cmpl(Address(r15_thread, JavaThread::stack_guard_state_offset()), JavaThread::stack_guard_yellow_reserved_disabled);
+  __ cmpl(Address(r15_thread, JavaThread::stack_guard_state_offset()), StackOverflow::stack_guard_yellow_reserved_disabled);
   __ jcc(Assembler::equal, reguard);
   __ bind(reguard_done);
 
@@ -2560,9 +2246,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ movptr(old_hdr, Address(rax, 0));
 
     // Atomic swap old header if oop still contains the stack lock
-    if (os::is_MP()) {
-      __ lock();
-    }
+    __ lock();
     __ cmpxchgptr(old_hdr, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
     __ jcc(Assembler::notEqual, slow_path_unlock);
 
@@ -2588,7 +2272,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ reset_last_Java_frame(false);
 
   // Unbox oop result, e.g. JNIHandles::resolve value.
-  if (ret_type == T_OBJECT || ret_type == T_ARRAY) {
+  if (is_reference_type(ret_type)) {
     __ resolve_jobject(rax /* value */,
                        r15_thread /* thread */,
                        rcx /* tmp */);
@@ -2738,12 +2422,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                             in_ByteSize(lock_slot_offset*VMRegImpl::stack_slot_size),
                                             oop_maps);
 
-  if (is_critical_native) {
-    nm->set_lazy_critical_native(true);
-  }
-
   return nm;
-
 }
 
 // this function returns the adjust size (in number of words) to a c2i adapter
@@ -2757,18 +2436,30 @@ uint SharedRuntime::out_preserve_stack_slots() {
   return 0;
 }
 
+
+// Number of stack slots between incoming argument block and the start of
+// a new frame.  The PROLOG must add this many slots to the stack.  The
+// EPILOG must remove this many slots.  amd64 needs two slots for
+// return address.
+uint SharedRuntime::in_preserve_stack_slots() {
+  return 4 + 2 * VerifyStackAtCalls;
+}
+
 //------------------------------generate_deopt_blob----------------------------
 void SharedRuntime::generate_deopt_blob() {
   // Allocate space for the code
   ResourceMark rm;
   // Setup code generation tools
   int pad = 0;
+  if (UseAVX > 2) {
+    pad += 1024;
+  }
 #if INCLUDE_JVMCI
-  if (EnableJVMCI || UseAOT) {
+  if (EnableJVMCI) {
     pad += 512; // Increase the buffer size when compiling for JVMCI
   }
 #endif
-  CodeBuffer buffer("deopt_blob", 2048+pad, 1024);
+  CodeBuffer buffer("deopt_blob", 2560+pad, 1024);
   MacroAssembler* masm = new MacroAssembler(&buffer);
   int frame_size_in_words;
   OopMap* map = NULL;
@@ -2810,7 +2501,7 @@ void SharedRuntime::generate_deopt_blob() {
   // Prolog for non exception case!
 
   // Save everything in sight.
-  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words);
+  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words, /*save_vectors*/ true);
 
   // Normal deoptimization.  Save exec mode for unpack_frames.
   __ movl(r14, Deoptimization::Unpack_deopt); // callee-saved
@@ -2828,7 +2519,7 @@ void SharedRuntime::generate_deopt_blob() {
   // return address is the pc describes what bci to do re-execute at
 
   // No need to update map as each call to save_live_registers will produce identical oopmap
-  (void) RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words);
+  (void) RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words, /*save_vectors*/ true);
 
   __ movl(r14, Deoptimization::Unpack_reexecute); // callee-saved
   __ jmp(cont);
@@ -2838,7 +2529,7 @@ void SharedRuntime::generate_deopt_blob() {
   int implicit_exception_uncommon_trap_offset = 0;
   int uncommon_trap_offset = 0;
 
-  if (EnableJVMCI || UseAOT) {
+  if (EnableJVMCI) {
     implicit_exception_uncommon_trap_offset = __ pc() - start;
 
     __ pushptr(Address(r15_thread, in_bytes(JavaThread::jvmci_implicit_exception_pc_offset())));
@@ -2847,7 +2538,7 @@ void SharedRuntime::generate_deopt_blob() {
     uncommon_trap_offset = __ pc() - start;
 
     // Save everything in sight.
-    RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words);
+    RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words, /*save_vectors*/ true);
     // fetch_unroll_info needs to call last_java_frame()
     __ set_last_Java_frame(noreg, noreg, NULL);
 
@@ -2894,7 +2585,7 @@ void SharedRuntime::generate_deopt_blob() {
   __ push(0);
 
   // Save everything in sight.
-  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words);
+  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words, /*save_vectors*/ true);
 
   // Now it is safe to overwrite any register
 
@@ -2953,7 +2644,7 @@ void SharedRuntime::generate_deopt_blob() {
   __ reset_last_Java_frame(false);
 
 #if INCLUDE_JVMCI
-  if (EnableJVMCI || UseAOT) {
+  if (EnableJVMCI) {
     __ bind(after_fetch_unroll_info_call);
   }
 #endif
@@ -3013,10 +2704,8 @@ void SharedRuntime::generate_deopt_blob() {
   // Compilers generate code that bang the stack by as much as the
   // interpreter would need. So this stack banging should never
   // trigger a fault. Verify that it does not on non product builds.
-  if (UseStackBanging) {
-    __ movl(rbx, Address(rdi, Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
-    __ bang_stack_size(rbx, rcx);
-  }
+  __ movl(rbx, Address(rdi, Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
+  __ bang_stack_size(rbx, rcx);
 #endif
 
   // Load address of array of frame pcs into rcx
@@ -3118,7 +2807,7 @@ void SharedRuntime::generate_deopt_blob() {
   _deopt_blob = DeoptimizationBlob::create(&buffer, oop_maps, 0, exception_offset, reexecute_offset, frame_size_in_words);
   _deopt_blob->set_unpack_with_exception_in_tls_offset(exception_in_tls_offset);
 #if INCLUDE_JVMCI
-  if (EnableJVMCI || UseAOT) {
+  if (EnableJVMCI) {
     _deopt_blob->set_uncommon_trap_offset(uncommon_trap_offset);
     _deopt_blob->set_implicit_exception_uncommon_trap_offset(implicit_exception_uncommon_trap_offset);
   }
@@ -3216,10 +2905,8 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   // Compilers generate code that bang the stack by as much as the
   // interpreter would need. So this stack banging should never
   // trigger a fault. Verify that it does not on non product builds.
-  if (UseStackBanging) {
-    __ movl(rbx, Address(rdi ,Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
-    __ bang_stack_size(rbx, rcx);
-  }
+  __ movl(rbx, Address(rdi ,Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
+  __ bang_stack_size(rbx, rcx);
 #endif
 
   // Load address of array of frame pcs into rcx (address*)
@@ -3308,7 +2995,6 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 }
 #endif // COMPILER2
 
-
 //------------------------------generate_handler_blob------
 //
 // Generate a special Compile2Runtime blob that saves all registers,
@@ -3391,8 +3077,13 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
   // No exception case
   __ bind(noException);
 
-  Label no_adjust, bail, no_prefix, not_special;
-  if (SafepointMechanism::uses_thread_local_poll() && !cause_return) {
+  Label no_adjust;
+#ifdef ASSERT
+  Label bail;
+#endif
+  if (!cause_return) {
+    Label no_prefix, not_special;
+
     // If our stashed return pc was modified by the runtime we avoid touching it
     __ cmpptr(rbx, Address(rbp, wordSize));
     __ jccb(Assembler::notEqual, no_adjust);
@@ -3491,7 +3182,8 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
 
   int start = __ offset();
 
-  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words);
+  // No need to save vector registers since they are caller-saved anyway.
+  map = RegisterSaver::save_live_registers(masm, 0, &frame_size_in_words, /*save_vectors*/ false);
 
   int frame_complete = __ offset();
 
@@ -3551,20 +3243,273 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   return RuntimeStub::new_runtime_stub(name, &buffer, frame_complete, frame_size_in_words, oop_maps, true);
 }
 
+#ifdef COMPILER2
+static const int native_invoker_code_size = MethodHandles::adapter_code_size;
+
+class NativeInvokerGenerator : public StubCodeGenerator {
+  address _call_target;
+  int _shadow_space_bytes;
+
+  const GrowableArray<VMReg>& _input_registers;
+  const GrowableArray<VMReg>& _output_registers;
+
+  int _frame_complete;
+  int _framesize;
+  OopMapSet* _oop_maps;
+public:
+  NativeInvokerGenerator(CodeBuffer* buffer,
+                         address call_target,
+                         int shadow_space_bytes,
+                         const GrowableArray<VMReg>& input_registers,
+                         const GrowableArray<VMReg>& output_registers)
+   : StubCodeGenerator(buffer, PrintMethodHandleStubs),
+     _call_target(call_target),
+     _shadow_space_bytes(shadow_space_bytes),
+     _input_registers(input_registers),
+     _output_registers(output_registers),
+     _frame_complete(0),
+     _framesize(0),
+     _oop_maps(NULL) {
+    assert(_output_registers.length() <= 1
+           || (_output_registers.length() == 2 && !_output_registers.at(1)->is_valid()), "no multi-reg returns");
+
+  }
+
+  void generate();
+
+  int spill_size_in_bytes() const {
+    if (_output_registers.length() == 0) {
+      return 0;
+    }
+    VMReg reg = _output_registers.at(0);
+    assert(reg->is_reg(), "must be a register");
+    if (reg->is_Register()) {
+      return 8;
+    } else if (reg->is_XMMRegister()) {
+      if (UseAVX >= 3) {
+        return 64;
+      } else if (UseAVX >= 1) {
+        return 32;
+      } else {
+        return 16;
+      }
+    } else {
+      ShouldNotReachHere();
+    }
+    return 0;
+  }
+
+  void spill_out_registers() {
+    if (_output_registers.length() == 0) {
+      return;
+    }
+    VMReg reg = _output_registers.at(0);
+    assert(reg->is_reg(), "must be a register");
+    MacroAssembler* masm = _masm;
+    if (reg->is_Register()) {
+      __ movptr(Address(rsp, 0), reg->as_Register());
+    } else if (reg->is_XMMRegister()) {
+      if (UseAVX >= 3) {
+        __ evmovdqul(Address(rsp, 0), reg->as_XMMRegister(), Assembler::AVX_512bit);
+      } else if (UseAVX >= 1) {
+        __ vmovdqu(Address(rsp, 0), reg->as_XMMRegister());
+      } else {
+        __ movdqu(Address(rsp, 0), reg->as_XMMRegister());
+      }
+    } else {
+      ShouldNotReachHere();
+    }
+  }
+
+  void fill_out_registers() {
+    if (_output_registers.length() == 0) {
+      return;
+    }
+    VMReg reg = _output_registers.at(0);
+    assert(reg->is_reg(), "must be a register");
+    MacroAssembler* masm = _masm;
+    if (reg->is_Register()) {
+      __ movptr(reg->as_Register(), Address(rsp, 0));
+    } else if (reg->is_XMMRegister()) {
+      if (UseAVX >= 3) {
+        __ evmovdqul(reg->as_XMMRegister(), Address(rsp, 0), Assembler::AVX_512bit);
+      } else if (UseAVX >= 1) {
+        __ vmovdqu(reg->as_XMMRegister(), Address(rsp, 0));
+      } else {
+        __ movdqu(reg->as_XMMRegister(), Address(rsp, 0));
+      }
+    } else {
+      ShouldNotReachHere();
+    }
+  }
+
+  int frame_complete() const {
+    return _frame_complete;
+  }
+
+  int framesize() const {
+    return (_framesize >> (LogBytesPerWord - LogBytesPerInt));
+  }
+
+  OopMapSet* oop_maps() const {
+    return _oop_maps;
+  }
+
+private:
+#ifdef ASSERT
+bool target_uses_register(VMReg reg) {
+  return _input_registers.contains(reg) || _output_registers.contains(reg);
+}
+#endif
+};
+
+RuntimeStub* SharedRuntime::make_native_invoker(address call_target,
+                                                int shadow_space_bytes,
+                                                const GrowableArray<VMReg>& input_registers,
+                                                const GrowableArray<VMReg>& output_registers) {
+  int locs_size  = 64;
+  CodeBuffer code("nep_invoker_blob", native_invoker_code_size, locs_size);
+  NativeInvokerGenerator g(&code, call_target, shadow_space_bytes, input_registers, output_registers);
+  g.generate();
+  code.log_section_sizes("nep_invoker_blob");
+
+  RuntimeStub* stub =
+    RuntimeStub::new_runtime_stub("nep_invoker_blob",
+                                  &code,
+                                  g.frame_complete(),
+                                  g.framesize(),
+                                  g.oop_maps(), false);
+  return stub;
+}
+
+void NativeInvokerGenerator::generate() {
+  assert(!(target_uses_register(r15_thread->as_VMReg()) || target_uses_register(rscratch1->as_VMReg())), "Register conflict");
+
+  enum layout {
+    rbp_off,
+    rbp_off2,
+    return_off,
+    return_off2,
+    framesize // inclusive of return address
+  };
+
+  _framesize = align_up(framesize + ((_shadow_space_bytes + spill_size_in_bytes()) >> LogBytesPerInt), 4);
+  assert(is_even(_framesize/2), "sp not 16-byte aligned");
+
+  _oop_maps  = new OopMapSet();
+  MacroAssembler* masm = _masm;
+
+  address start = __ pc();
+
+  __ enter();
+
+  // return address and rbp are already in place
+  __ subptr(rsp, (_framesize-4) << LogBytesPerInt); // prolog
+
+  _frame_complete = __ pc() - start;
+
+  address the_pc = __ pc();
+
+  __ set_last_Java_frame(rsp, rbp, (address)the_pc);
+  OopMap* map = new OopMap(_framesize, 0);
+  _oop_maps->add_gc_map(the_pc - start, map);
+
+  // State transition
+  __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_native);
+
+  __ call(RuntimeAddress(_call_target));
+
+  __ restore_cpu_control_state_after_jni();
+
+  __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_native_trans);
+
+  // Force this write out before the read below
+  __ membar(Assembler::Membar_mask_bits(
+          Assembler::LoadLoad | Assembler::LoadStore |
+          Assembler::StoreLoad | Assembler::StoreStore));
+
+  Label L_after_safepoint_poll;
+  Label L_safepoint_poll_slow_path;
+
+  __ safepoint_poll(L_safepoint_poll_slow_path, r15_thread, true /* at_return */, false /* in_nmethod */);
+  __ cmpl(Address(r15_thread, JavaThread::suspend_flags_offset()), 0);
+  __ jcc(Assembler::notEqual, L_safepoint_poll_slow_path);
+
+  __ bind(L_after_safepoint_poll);
+
+  // change thread state
+  __ movl(Address(r15_thread, JavaThread::thread_state_offset()), _thread_in_Java);
+
+  __ block_comment("reguard stack check");
+  Label L_reguard;
+  Label L_after_reguard;
+  __ cmpl(Address(r15_thread, JavaThread::stack_guard_state_offset()), StackOverflow::stack_guard_yellow_reserved_disabled);
+  __ jcc(Assembler::equal, L_reguard);
+  __ bind(L_after_reguard);
+
+  __ reset_last_Java_frame(r15_thread, true);
+
+  __ leave(); // required for proper stackwalking of RuntimeStub frame
+  __ ret(0);
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ block_comment("{ L_safepoint_poll_slow_path");
+  __ bind(L_safepoint_poll_slow_path);
+  __ vzeroupper();
+
+  spill_out_registers();
+
+  __ mov(c_rarg0, r15_thread);
+  __ mov(r12, rsp); // remember sp
+  __ subptr(rsp, frame::arg_reg_save_area_bytes); // windows
+  __ andptr(rsp, -16); // align stack as required by ABI
+  __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans)));
+  __ mov(rsp, r12); // restore sp
+  __ reinit_heapbase();
+
+  fill_out_registers();
+
+  __ jmp(L_after_safepoint_poll);
+  __ block_comment("} L_safepoint_poll_slow_path");
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ block_comment("{ L_reguard");
+  __ bind(L_reguard);
+  __ vzeroupper();
+
+  spill_out_registers();
+
+  __ mov(r12, rsp); // remember sp
+  __ subptr(rsp, frame::arg_reg_save_area_bytes); // windows
+  __ andptr(rsp, -16); // align stack as required by ABI
+  __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, SharedRuntime::reguard_yellow_pages)));
+  __ mov(rsp, r12); // restore sp
+  __ reinit_heapbase();
+
+  fill_out_registers();
+
+  __ jmp(L_after_reguard);
+
+  __ block_comment("} L_reguard");
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ flush();
+}
+#endif // COMPILER2
 
 //------------------------------Montgomery multiplication------------------------
 //
 
 #ifndef _WINDOWS
 
-#define ASM_SUBTRACT
-
-#ifdef ASM_SUBTRACT
 // Subtract 0:b from carry:a.  Return carry.
-static unsigned long
-sub(unsigned long a[], unsigned long b[], unsigned long carry, long len) {
-  long i = 0, cnt = len;
-  unsigned long tmp;
+static julong
+sub(julong a[], julong b[], julong carry, long len) {
+  long long i = 0, cnt = len;
+  julong tmp;
   asm volatile("clc; "
                "0: ; "
                "mov (%[b], %[i], 8), %[tmp]; "
@@ -3577,24 +3522,6 @@ sub(unsigned long a[], unsigned long b[], unsigned long carry, long len) {
                : "memory");
   return tmp;
 }
-#else // ASM_SUBTRACT
-typedef int __attribute__((mode(TI))) int128;
-
-// Subtract 0:b from carry:a.  Return carry.
-static unsigned long
-sub(unsigned long a[], unsigned long b[], unsigned long carry, int len) {
-  int128 tmp = 0;
-  int i;
-  for (i = 0; i < len; i++) {
-    tmp += a[i];
-    tmp -= b[i];
-    a[i] = tmp;
-    tmp >>= 64;
-    assert(-1 <= tmp && tmp <= 0, "invariant");
-  }
-  return tmp + carry;
-}
-#endif // ! ASM_SUBTRACT
 
 // Multiply (unsigned) Long A by Long B, accumulating the double-
 // length result into the accumulator formed of T0, T1, and T2.
@@ -3617,17 +3544,59 @@ do {                                                            \
            : "r"(A), "a"(B) : "cc");                            \
  } while(0)
 
+#else //_WINDOWS
+
+static julong
+sub(julong a[], julong b[], julong carry, long len) {
+  long i;
+  julong tmp;
+  unsigned char c = 1;
+  for (i = 0; i < len; i++) {
+    c = _addcarry_u64(c, a[i], ~b[i], &tmp);
+    a[i] = tmp;
+  }
+  c = _addcarry_u64(c, carry, ~0, &tmp);
+  return tmp;
+}
+
+// Multiply (unsigned) Long A by Long B, accumulating the double-
+// length result into the accumulator formed of T0, T1, and T2.
+#define MACC(A, B, T0, T1, T2)                          \
+do {                                                    \
+  julong hi, lo;                            \
+  lo = _umul128(A, B, &hi);                             \
+  unsigned char c = _addcarry_u64(0, lo, T0, &T0);      \
+  c = _addcarry_u64(c, hi, T1, &T1);                    \
+  _addcarry_u64(c, T2, 0, &T2);                         \
+ } while(0)
+
+// As above, but add twice the double-length result into the
+// accumulator.
+#define MACC2(A, B, T0, T1, T2)                         \
+do {                                                    \
+  julong hi, lo;                            \
+  lo = _umul128(A, B, &hi);                             \
+  unsigned char c = _addcarry_u64(0, lo, T0, &T0);      \
+  c = _addcarry_u64(c, hi, T1, &T1);                    \
+  _addcarry_u64(c, T2, 0, &T2);                         \
+  c = _addcarry_u64(0, lo, T0, &T0);                    \
+  c = _addcarry_u64(c, hi, T1, &T1);                    \
+  _addcarry_u64(c, T2, 0, &T2);                         \
+ } while(0)
+
+#endif //_WINDOWS
+
 // Fast Montgomery multiplication.  The derivation of the algorithm is
 // in  A Cryptographic Library for the Motorola DSP56000,
 // Dusse and Kaliski, Proc. EUROCRYPT 90, pp. 230-237.
 
-static void __attribute__((noinline))
-montgomery_multiply(unsigned long a[], unsigned long b[], unsigned long n[],
-                    unsigned long m[], unsigned long inv, int len) {
-  unsigned long t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
+static void NOINLINE
+montgomery_multiply(julong a[], julong b[], julong n[],
+                    julong m[], julong inv, int len) {
+  julong t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
   int i;
 
-  assert(inv * n[0] == -1UL, "broken inverse in Montgomery multiply");
+  assert(inv * n[0] == ULLONG_MAX, "broken inverse in Montgomery multiply");
 
   for (i = 0; i < len; i++) {
     int j;
@@ -3663,13 +3632,13 @@ montgomery_multiply(unsigned long a[], unsigned long b[], unsigned long n[],
 // multiplication.  However, its loop control is more complex and it
 // may actually run slower on some machines.
 
-static void __attribute__((noinline))
-montgomery_square(unsigned long a[], unsigned long n[],
-                  unsigned long m[], unsigned long inv, int len) {
-  unsigned long t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
+static void NOINLINE
+montgomery_square(julong a[], julong n[],
+                  julong m[], julong inv, int len) {
+  julong t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
   int i;
 
-  assert(inv * n[0] == -1UL, "broken inverse in Montgomery multiply");
+  assert(inv * n[0] == ULLONG_MAX, "broken inverse in Montgomery square");
 
   for (i = 0; i < len; i++) {
     int j;
@@ -3715,13 +3684,13 @@ montgomery_square(unsigned long a[], unsigned long n[],
 }
 
 // Swap words in a longword.
-static unsigned long swap(unsigned long x) {
+static julong swap(julong x) {
   return (x << 32) | (x >> 32);
 }
 
 // Copy len longwords from s to d, word-swapping as we go.  The
 // destination array is reversed.
-static void reverse_words(unsigned long *s, unsigned long *d, int len) {
+static void reverse_words(julong *s, julong *d, int len) {
   d += len;
   while(len-- > 0) {
     d--;
@@ -3743,24 +3712,24 @@ void SharedRuntime::montgomery_multiply(jint *a_ints, jint *b_ints, jint *n_ints
   // Make very sure we don't use so much space that the stack might
   // overflow.  512 jints corresponds to an 16384-bit integer and
   // will use here a total of 8k bytes of stack space.
-  int total_allocation = longwords * sizeof (unsigned long) * 4;
+  int total_allocation = longwords * sizeof (julong) * 4;
   guarantee(total_allocation <= 8192, "must be");
-  unsigned long *scratch = (unsigned long *)alloca(total_allocation);
+  julong *scratch = (julong *)alloca(total_allocation);
 
   // Local scratch arrays
-  unsigned long
+  julong
     *a = scratch + 0 * longwords,
     *b = scratch + 1 * longwords,
     *n = scratch + 2 * longwords,
     *m = scratch + 3 * longwords;
 
-  reverse_words((unsigned long *)a_ints, a, longwords);
-  reverse_words((unsigned long *)b_ints, b, longwords);
-  reverse_words((unsigned long *)n_ints, n, longwords);
+  reverse_words((julong *)a_ints, a, longwords);
+  reverse_words((julong *)b_ints, b, longwords);
+  reverse_words((julong *)n_ints, n, longwords);
 
-  ::montgomery_multiply(a, b, n, m, (unsigned long)inv, longwords);
+  ::montgomery_multiply(a, b, n, m, (julong)inv, longwords);
 
-  reverse_words(m, (unsigned long *)m_ints, longwords);
+  reverse_words(m, (julong *)m_ints, longwords);
 }
 
 void SharedRuntime::montgomery_square(jint *a_ints, jint *n_ints,
@@ -3772,29 +3741,27 @@ void SharedRuntime::montgomery_square(jint *a_ints, jint *n_ints,
   // Make very sure we don't use so much space that the stack might
   // overflow.  512 jints corresponds to an 16384-bit integer and
   // will use here a total of 6k bytes of stack space.
-  int total_allocation = longwords * sizeof (unsigned long) * 3;
+  int total_allocation = longwords * sizeof (julong) * 3;
   guarantee(total_allocation <= 8192, "must be");
-  unsigned long *scratch = (unsigned long *)alloca(total_allocation);
+  julong *scratch = (julong *)alloca(total_allocation);
 
   // Local scratch arrays
-  unsigned long
+  julong
     *a = scratch + 0 * longwords,
     *n = scratch + 1 * longwords,
     *m = scratch + 2 * longwords;
 
-  reverse_words((unsigned long *)a_ints, a, longwords);
-  reverse_words((unsigned long *)n_ints, n, longwords);
+  reverse_words((julong *)a_ints, a, longwords);
+  reverse_words((julong *)n_ints, n, longwords);
 
   if (len >= MONTGOMERY_SQUARING_THRESHOLD) {
-    ::montgomery_square(a, n, m, (unsigned long)inv, longwords);
+    ::montgomery_square(a, n, m, (julong)inv, longwords);
   } else {
-    ::montgomery_multiply(a, a, n, m, (unsigned long)inv, longwords);
+    ::montgomery_multiply(a, a, n, m, (julong)inv, longwords);
   }
 
-  reverse_words(m, (unsigned long *)m_ints, longwords);
+  reverse_words(m, (julong *)m_ints, longwords);
 }
-
-#endif // WINDOWS
 
 #ifdef COMPILER2
 // This is here instead of runtime_x86_64.cpp because it uses SimpleRuntimeFrame
@@ -3929,3 +3896,13 @@ void OptoRuntime::generate_exception_blob() {
   _exception_blob =  ExceptionBlob::create(&buffer, oop_maps, SimpleRuntimeFrame::framesize >> 1);
 }
 #endif // COMPILER2
+
+void SharedRuntime::compute_move_order(const BasicType* in_sig_bt,
+                                       int total_in_args, const VMRegPair* in_regs,
+                                       int total_out_args, VMRegPair* out_regs,
+                                       GrowableArray<int>& arg_order,
+                                       VMRegPair tmp_vmreg) {
+  ComputeMoveOrder order(total_in_args, in_regs,
+                         total_out_args, out_regs,
+                         in_sig_bt, arg_order, tmp_vmreg);
+}

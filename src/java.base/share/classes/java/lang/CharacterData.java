@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,9 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 abstract @UsesObjectEquals class CharacterData {
     abstract int getProperties(int ch);
     abstract int getType(int ch);
+    abstract boolean isDigit(int ch);
+    abstract boolean isLowerCase(int ch);
+    abstract boolean isUpperCase(int ch);
     abstract boolean isWhitespace(int ch);
     abstract boolean isMirrored(int ch);
     abstract boolean isJavaIdentifierStart(int ch);
@@ -56,14 +59,6 @@ abstract @UsesObjectEquals class CharacterData {
         return null;
     }
 
-    boolean isOtherLowercase(int ch) {
-        return false;
-    }
-
-    boolean isOtherUppercase(int ch) {
-        return false;
-    }
-
     boolean isOtherAlphabetic(int ch) {
         return false;
     }
@@ -82,21 +77,15 @@ abstract @UsesObjectEquals class CharacterData {
         if (ch >>> 8 == 0) {     // fast-path
             return CharacterDataLatin1.instance;
         } else {
-            switch(ch >>> 16) {  //plane 00-16
-            case(0):
-                return CharacterData00.instance;
-            case(1):
-                return CharacterData01.instance;
-            case(2):
-                return CharacterData02.instance;
-            case(14):
-                return CharacterData0E.instance;
-            case(15):   // Private Use
-            case(16):   // Private Use
-                return CharacterDataPrivateUse.instance;
-            default:
-                return CharacterDataUndefined.instance;
-            }
+            return switch (ch >>> 16) {  //plane 00-16
+                case 0 -> CharacterData00.instance;
+                case 1 -> CharacterData01.instance;
+                case 2 -> CharacterData02.instance;
+                case 3 -> CharacterData03.instance;
+                case 14 -> CharacterData0E.instance;
+                case 15, 16 -> CharacterDataPrivateUse.instance; // Both cases Private Use
+                default -> CharacterDataUndefined.instance;
+            };
         }
     }
 }

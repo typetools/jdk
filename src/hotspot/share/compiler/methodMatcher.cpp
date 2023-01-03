@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,9 +23,13 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/symbolTable.hpp"
+#include "classfile/vmSymbols.hpp"
+#include "compiler/compilerOracle.hpp"
 #include "compiler/methodMatcher.hpp"
 #include "memory/oopFactory.hpp"
 #include "memory/resourceArea.hpp"
+#include "oops/method.hpp"
 #include "oops/oop.inline.hpp"
 
 // The JVM specification defines the allowed characters.
@@ -62,11 +66,11 @@
 #define RANGESLASH "[*" RANGEBASE "/]"
 
 MethodMatcher::MethodMatcher():
-    _class_mode(Exact)
-  , _method_mode(Exact)
-  , _class_name(NULL)
+    _class_name(NULL)
   , _method_name(NULL)
-  , _signature(NULL) {
+  , _signature(NULL)
+  , _class_mode(Exact)
+  , _method_mode(Exact) {
 }
 
 MethodMatcher::~MethodMatcher() {
@@ -103,7 +107,6 @@ bool MethodMatcher::canonicalize(char * line, const char *& error_msg) {
       }
     }
 
-    bool in_signature = false;
     char* pos = line;
     if (pos != NULL) {
       for (char* lp = pos + 1; *lp != '\0'; lp++) {
@@ -237,6 +240,10 @@ void skip_leading_spaces(char*& line, int* total_bytes_read ) {
   }
 }
 
+PRAGMA_DIAG_PUSH
+// warning C4189: The file contains a character that cannot be represented
+//                in the current code page
+PRAGMA_DISABLE_MSVC_WARNING(4819)
 void MethodMatcher::parse_method_pattern(char*& line, const char*& error_msg, MethodMatcher* matcher) {
   MethodMatcher::Mode c_match;
   MethodMatcher::Mode m_match;
@@ -254,17 +261,38 @@ void MethodMatcher::parse_method_pattern(char*& line, const char*& error_msg, Me
   }
 
   skip_leading_spaces(line, &total_bytes_read);
+  if (*line == '\0') {
+    error_msg = "Method pattern missing from command";
+    return;
+  }
 
   if (2 == sscanf(line, "%255" RANGESLASH "%*[ ]" "%255"  RANGE0 "%n", class_name, method_name, &bytes_read)) {
     c_match = check_mode(class_name, error_msg);
     m_match = check_mode(method_name, error_msg);
 
-    if ((strchr(class_name, '<') != NULL) || (strchr(class_name, '>') != NULL)) {
+    // Over-consumption
+    // method_name points to an option type or option name because the method name is not specified by users.
+    // In very rare case, the method name happens to be same as option type/name, so look ahead to make sure
+    // it doesn't show up again.
+    if ((OptionType::Unknown != CompilerOracle::parse_option_type(method_name) ||
+        CompileCommand::Unknown != CompilerOracle::parse_option_name(method_name)) &&
+        *(line + bytes_read) != '\0' &&
+        strstr(line + bytes_read, method_name) == NULL) {
+      error_msg = "Did not specify any method name";
+      method_name[0] = '\0';
+      return;
+    }
+
+    if ((strchr(class_name, JVM_SIGNATURE_SPECIAL) != NULL) ||
+        (strchr(class_name, JVM_SIGNATURE_ENDSPECIAL) != NULL)) {
       error_msg = "Chars '<' and '>' not allowed in class name";
       return;
     }
-    if ((strchr(method_name, '<') != NULL) || (strchr(method_name, '>') != NULL)) {
-      if ((strncmp("<init>", method_name, 255) != 0) && (strncmp("<clinit>", method_name, 255) != 0)) {
+
+    if ((strchr(method_name, JVM_SIGNATURE_SPECIAL) != NULL) ||
+        (strchr(method_name, JVM_SIGNATURE_ENDSPECIAL) != NULL)) {
+      if (!vmSymbols::object_initializer_name()->equals(method_name) &&
+          !vmSymbols::class_initializer_name()->equals(method_name)) {
         error_msg = "Chars '<' and '>' only allowed in <init> and <clinit>";
         return;
       }
@@ -295,10 +323,10 @@ void MethodMatcher::parse_method_pattern(char*& line, const char*& error_msg, Me
         }
         line += bytes_read;
       }
-      signature = SymbolTable::new_symbol(sig, CHECK);
+      signature = SymbolTable::new_symbol(sig);
     }
-    Symbol* c_name = SymbolTable::new_symbol(class_name, CHECK);
-    Symbol* m_name = SymbolTable::new_symbol(method_name, CHECK);
+    Symbol* c_name = SymbolTable::new_symbol(class_name);
+    Symbol* m_name = SymbolTable::new_symbol(method_name);
 
     matcher->init(c_name, c_match, m_name, m_match, signature);
     return;
@@ -306,6 +334,7 @@ void MethodMatcher::parse_method_pattern(char*& line, const char*& error_msg, Me
     error_msg = "Could not parse method pattern";
   }
 }
+PRAGMA_DIAG_POP
 
 bool MethodMatcher::matches(const methodHandle& method) const {
   Symbol* class_name  = method->method_holder()->name();
@@ -343,7 +372,7 @@ void MethodMatcher::print_base(outputStream* st) {
   }
 }
 
-BasicMatcher* BasicMatcher::parse_method_pattern(char* line, const char*& error_msg) {
+BasicMatcher* BasicMatcher::parse_method_pattern(char* line, const char*& error_msg, bool expect_trailing_chars) {
   assert(error_msg == NULL, "Don't call here with error_msg already set");
   BasicMatcher* bm = new BasicMatcher();
   MethodMatcher::parse_method_pattern(line, error_msg, bm);
@@ -351,14 +380,15 @@ BasicMatcher* BasicMatcher::parse_method_pattern(char* line, const char*& error_
     delete bm;
     return NULL;
   }
-
-  // check for bad trailing characters
-  int bytes_read = 0;
-  sscanf(line, "%*[ \t]%n", &bytes_read);
-  if (line[bytes_read] != '\0') {
-    error_msg = "Unrecognized trailing text after method pattern";
-    delete bm;
-    return NULL;
+  if (!expect_trailing_chars) {
+    // check for bad trailing characters
+    int bytes_read = 0;
+    sscanf(line, "%*[ \t]%n", &bytes_read);
+    if (line[bytes_read] != '\0') {
+      error_msg = "Unrecognized trailing text after method pattern";
+      delete bm;
+      return NULL;
+    }
   }
   return bm;
 }
@@ -417,8 +447,7 @@ InlineMatcher* InlineMatcher::parse_inline_pattern(char* str, const char*& error
    }
    str++;
 
-   int bytes_read = 0;
-   assert(error_msg== NULL, "error_msg must not be set yet");
+   assert(error_msg == NULL, "error_msg must not be set yet");
    InlineMatcher* im = InlineMatcher::parse_method_pattern(str, error_msg);
    if (im == NULL) {
      assert(error_msg != NULL, "Must have error message");

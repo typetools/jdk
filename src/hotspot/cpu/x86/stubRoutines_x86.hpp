@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef CPU_X86_VM_STUBROUTINES_X86_HPP
-#define CPU_X86_VM_STUBROUTINES_X86_HPP
+#ifndef CPU_X86_STUBROUTINES_X86_HPP
+#define CPU_X86_STUBROUTINES_X86_HPP
 
 // This file holds the platform specific parts of the StubRoutines
 // definition. See stubRoutines.hpp for a description on how to
@@ -33,7 +33,7 @@ static bool returns_to_call_stub(address return_pc) { return return_pc == _call_
 
 enum platform_dependent_constants {
   code_size1 = 20000 LP64_ONLY(+10000),         // simply increase if too small (assembler will crash if too small)
-  code_size2 = 33800 LP64_ONLY(+10000)           // simply increase if too small (assembler will crash if too small)
+  code_size2 = 35300 LP64_ONLY(+25000)          // simply increase if too small (assembler will crash if too small)
 };
 
 class x86 {
@@ -42,7 +42,6 @@ class x86 {
 
 #ifdef _LP64
  private:
-  static address _get_previous_fp_entry;
   static address _get_previous_sp_entry;
 
   static address _f2i_fixup;
@@ -56,10 +55,6 @@ class x86 {
   static address _double_sign_flip;
 
  public:
-
-  static address get_previous_fp_entry() {
-    return _get_previous_fp_entry;
-  }
 
   static address get_previous_sp_entry() {
     return _get_previous_sp_entry;
@@ -96,17 +91,37 @@ class x86 {
   static address double_sign_flip() {
     return _double_sign_flip;
   }
+
 #else // !LP64
 
  private:
   static address _verify_fpu_cntrl_wrd_entry;
+  static address _d2i_wrapper;
+  static address _d2l_wrapper;
+
+  static jint    _fpu_cntrl_wrd_std;
+  static jint    _fpu_cntrl_wrd_24;
+  static jint    _fpu_cntrl_wrd_trunc;
+
+  static jint    _fpu_subnormal_bias1[3];
+  static jint    _fpu_subnormal_bias2[3];
 
  public:
   static address verify_fpu_cntrl_wrd_entry() { return _verify_fpu_cntrl_wrd_entry; }
+  static address d2i_wrapper()                { return _d2i_wrapper; }
+  static address d2l_wrapper()                { return _d2l_wrapper; }
+  static address addr_fpu_cntrl_wrd_std()     { return (address)&_fpu_cntrl_wrd_std;   }
+  static address addr_fpu_cntrl_wrd_24()      { return (address)&_fpu_cntrl_wrd_24;    }
+  static address addr_fpu_cntrl_wrd_trunc()   { return (address)&_fpu_cntrl_wrd_trunc; }
+  static address addr_fpu_subnormal_bias1()   { return (address)&_fpu_subnormal_bias1; }
+  static address addr_fpu_subnormal_bias2()   { return (address)&_fpu_subnormal_bias2; }
 
+  static jint    fpu_cntrl_wrd_std()          { return _fpu_cntrl_wrd_std; }
 #endif // !LP64
 
  private:
+  static jint    _mxcsr_std;
+
   static address _verify_mxcsr_entry;
   // shuffle mask for fixing up 128-bit words consisting of big-endian 32-bit integers
   static address _key_shuffle_mask_addr;
@@ -114,14 +129,26 @@ class x86 {
   //shuffle mask for big-endian 128-bit integers
   static address _counter_shuffle_mask_addr;
 
+  static address _method_entry_barrier;
+
   // masks and table for CRC32
   static uint64_t _crc_by128_masks[];
   static juint    _crc_table[];
+#ifdef _LP64
+  static juint    _crc_by128_masks_avx512[];
+  static juint    _crc_table_avx512[];
+  static juint    _shuf_table_crc32_avx512[];
+  static juint    _adler32_shuf0_table[];
+  static juint    _adler32_shuf1_table[];
+  static juint    _adler32_ascale_table[];
+#endif // _LP64
   // table for CRC32C
   static juint* _crc32c_table;
   // swap mask for ghash
   static address _ghash_long_swap_mask_addr;
   static address _ghash_byte_swap_mask_addr;
+  static address _ghash_poly_addr;
+  static address _ghash_shuffmask_addr;
 
   // upper word mask for sha1
   static address _upper_word_mask_addr;
@@ -131,6 +158,23 @@ class x86 {
   //k256 table for sha256
   static juint _k256[];
   static address _k256_adr;
+  static address _vector_short_to_byte_mask;
+  static address _vector_float_sign_mask;
+  static address _vector_float_sign_flip;
+  static address _vector_double_sign_mask;
+  static address _vector_double_sign_flip;
+  static address _vector_long_sign_mask;
+  static address _vector_all_bits_set;
+  static address _vector_byte_perm_mask;
+  static address _vector_int_to_byte_mask;
+  static address _vector_int_to_short_mask;
+  static address _vector_32_bit_mask;
+  static address _vector_64_bit_mask;
+  static address _vector_int_shuffle_mask;
+  static address _vector_byte_shuffle_mask;
+  static address _vector_short_shuffle_mask;
+  static address _vector_long_shuffle_mask;
+  static address _vector_iota_indices;
 #ifdef _LP64
   static juint _k256_W[];
   static address _k256_W_adr;
@@ -138,6 +182,7 @@ class x86 {
   static address _k512_W_addr;
   // byte flip mask for sha512
   static address _pshuffle_byte_flip_mask_addr_sha512;
+  static address _counter_mask_addr;
   // Masks for base64
   static address _base64_charset;
   static address _bswap_mask;
@@ -193,15 +238,92 @@ class x86 {
   static address _ones_adr;
 
  public:
+  static address addr_mxcsr_std()        { return (address)&_mxcsr_std; }
   static address verify_mxcsr_entry()    { return _verify_mxcsr_entry; }
   static address key_shuffle_mask_addr() { return _key_shuffle_mask_addr; }
   static address counter_shuffle_mask_addr() { return _counter_shuffle_mask_addr; }
   static address crc_by128_masks_addr()  { return (address)_crc_by128_masks; }
+#ifdef _LP64
+  static address crc_by128_masks_avx512_addr()  { return (address)_crc_by128_masks_avx512; }
+  static address shuf_table_crc32_avx512_addr()  { return (address)_shuf_table_crc32_avx512; }
+  static address crc_table_avx512_addr()  { return (address)_crc_table_avx512; }
+#endif // _LP64
   static address ghash_long_swap_mask_addr() { return _ghash_long_swap_mask_addr; }
   static address ghash_byte_swap_mask_addr() { return _ghash_byte_swap_mask_addr; }
+  static address ghash_shufflemask_addr() { return _ghash_shuffmask_addr; }
+  static address ghash_polynomial_addr() { return _ghash_poly_addr; }
   static address upper_word_mask_addr() { return _upper_word_mask_addr; }
   static address shuffle_byte_flip_mask_addr() { return _shuffle_byte_flip_mask_addr; }
   static address k256_addr()      { return _k256_adr; }
+  static address method_entry_barrier() { return _method_entry_barrier; }
+
+  static address vector_short_to_byte_mask() {
+    return _vector_short_to_byte_mask;
+  }
+  static address vector_float_sign_mask() {
+    return _vector_float_sign_mask;
+  }
+
+  static address vector_float_sign_flip() {
+    return _vector_float_sign_flip;
+  }
+
+  static address vector_double_sign_mask() {
+    return _vector_double_sign_mask;
+  }
+
+  static address vector_double_sign_flip() {
+    return _vector_double_sign_flip;
+  }
+
+  static address vector_all_bits_set() {
+    return _vector_all_bits_set;
+  }
+
+  static address vector_byte_perm_mask() {
+    return _vector_byte_perm_mask;
+  }
+
+  static address vector_int_to_byte_mask() {
+    return _vector_int_to_byte_mask;
+  }
+
+  static address vector_int_to_short_mask() {
+    return _vector_int_to_short_mask;
+  }
+
+  static address vector_32_bit_mask() {
+    return _vector_32_bit_mask;
+  }
+
+  static address vector_64_bit_mask() {
+    return _vector_64_bit_mask;
+  }
+
+  static address vector_int_shuffle_mask() {
+    return _vector_int_shuffle_mask;
+  }
+
+  static address vector_byte_shuffle_mask() {
+    return _vector_byte_shuffle_mask;
+  }
+
+  static address vector_short_shuffle_mask() {
+    return _vector_short_shuffle_mask;
+  }
+
+  static address vector_long_shuffle_mask() {
+    return _vector_long_shuffle_mask;
+  }
+
+  static address vector_long_sign_mask() {
+    return _vector_long_sign_mask;
+  }
+
+  static address vector_iota_indices() {
+    return _vector_iota_indices;
+  }
+
 #ifdef _LP64
   static address k256_W_addr()    { return _k256_W_adr; }
   static address k512_W_addr()    { return _k512_W_addr; }
@@ -213,6 +335,7 @@ class x86 {
   static address base64_right_shift_mask_addr() { return _right_shift_mask; }
   static address base64_left_shift_mask_addr() { return _left_shift_mask; }
   static address base64_and_mask_addr() { return _and_mask; }
+  static address counter_mask_addr() { return _counter_mask_addr; }
 #endif
   static address pshuffle_byte_flip_mask_addr() { return _pshuffle_byte_flip_mask_addr; }
   static void generate_CRC32C_table(bool is_pclmulqdq_supported);
@@ -238,4 +361,4 @@ class x86 {
 
 };
 
-#endif // CPU_X86_VM_STUBROUTINES_X86_HPP
+#endif // CPU_X86_STUBROUTINES_X86_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,9 +33,9 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Abstract class for writing filtered character streams.
- * The abstract class <code>FilterWriter</code> itself
+ * The abstract class {@code FilterWriter} itself
  * provides default methods that pass all requests to the
- * contained stream. Subclasses of <code>FilterWriter</code>
+ * contained stream. Subclasses of {@code FilterWriter}
  * should override some of these methods and may also
  * provide additional methods and fields.
  *
@@ -55,7 +55,7 @@ public abstract class FilterWriter extends Writer {
      * Create a new filtered writer.
      *
      * @param out  a Writer object to provide the underlying stream.
-     * @throws NullPointerException if <code>out</code> is <code>null</code>
+     * @throws NullPointerException if {@code out} is {@code null}
      */
     protected FilterWriter(Writer out) {
         super(out);
@@ -65,7 +65,7 @@ public abstract class FilterWriter extends Writer {
     /**
      * Writes a single character.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public void write(int c) throws IOException {
         out.write(c);
@@ -110,7 +110,7 @@ public abstract class FilterWriter extends Writer {
     /**
      * Flushes the stream.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public void flush() throws IOException {
         out.flush();

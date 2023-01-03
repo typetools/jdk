@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,8 @@
 
 package javax.xml.stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * An error class for reporting factory configuration errors.
  *
@@ -36,6 +38,9 @@ package javax.xml.stream;
 public class FactoryConfigurationError extends Error {
     private static final long serialVersionUID = -2994412584589975744L;
 
+  /**
+   * The nested exception.
+   */
   Exception nested;
 
   /**
@@ -97,7 +102,7 @@ public class FactoryConfigurationError extends Error {
      * use the exception chaining mechanism of JDK1.4
     */
     @Override
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return nested;
     }
 

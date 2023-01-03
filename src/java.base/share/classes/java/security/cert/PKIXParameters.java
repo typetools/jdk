@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -613,7 +613,7 @@ public @UsesObjectEquals class PKIXParameters implements CertPathParameters {
      *
      * @param sigProvider the signature provider's name (or {@code null})
      * @see #getSigProvider
-    */
+     */
     public void setSigProvider(String sigProvider) {
         this.sigProvider = sigProvider;
     }

@@ -101,20 +101,19 @@ public final class Signal {
     /**
      * Compares the equality of two <code>Signal</code> objects.
      *
-     * @param other the object to compare with.
+     * @param obj the object to compare with.
      * @return whether two <code>Signal</code> objects are equal.
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object other) {
-        if (this == other) {
+    public boolean equals(@Nullable Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (other == null || !(other instanceof Signal)) {
-            return false;
+        if (obj instanceof Signal other) {
+            return name.equals(other.name) && (number == other.number);
         }
-        Signal other1 = (Signal)other;
-        return name.equals(other1.name) && (number == other1.number);
+        return false;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_ASM_ASSEMBLER_HPP
-#define SHARE_VM_ASM_ASSEMBLER_HPP
+#ifndef SHARE_ASM_ASSEMBLER_HPP
+#define SHARE_ASM_ASSEMBLER_HPP
 
 #include "asm/codeBuffer.hpp"
 #include "asm/register.hpp"
 #include "code/oopRecorder.hpp"
 #include "code/relocInfo.hpp"
 #include "memory/allocation.hpp"
-#include "runtime/vm_version.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/macros.hpp"
@@ -73,7 +72,7 @@ class Label;
  */
 class Label {
  private:
-  enum { PatchCacheSize = 4 };
+  enum { PatchCacheSize = 4 debug_only( +4 ) };
 
   // _loc encodes both the binding state (via its sign)
   // and the binding locator (via its value) of a label.
@@ -98,6 +97,11 @@ class Label {
   // The label will be bound to a location near its users.
   bool _is_near;
 
+#ifdef ASSERT
+  // Sourcre file and line location of jump instruction
+  int _lines[PatchCacheSize];
+  const char* _files[PatchCacheSize];
+#endif
  public:
 
   /**
@@ -141,7 +145,7 @@ class Label {
    * @param cb         the code buffer being patched
    * @param branch_loc the locator of the branch instruction in the code buffer
    */
-  void add_patch_at(CodeBuffer* cb, int branch_loc);
+  void add_patch_at(CodeBuffer* cb, int branch_loc, const char* file = NULL, int line = 0);
 
   /**
    * Iterate over the list of patches, resolving the instructions
@@ -158,6 +162,14 @@ class Label {
 
   Label() {
     init();
+  }
+
+  ~Label() {
+    assert(is_bound() || is_unused(), "Label was never bound to a location, but it was used as a jmp target");
+  }
+
+  void reset() {
+    init(); //leave _patch_overflow because it points to CodeBuffer.
   }
 };
 
@@ -270,37 +282,45 @@ class AbstractAssembler : public ResourceObj  {
   // ensure buf contains all code (call this before using/copying the code)
   void flush();
 
-  void emit_int8(   int8_t  x) { code_section()->emit_int8(   x); }
-  void emit_int16(  int16_t x) { code_section()->emit_int16(  x); }
-  void emit_int32(  int32_t x) { code_section()->emit_int32(  x); }
-  void emit_int64(  int64_t x) { code_section()->emit_int64(  x); }
+  void emit_int8(   int8_t x1)                                  { code_section()->emit_int8(x1); }
 
-  void emit_float(  jfloat  x) { code_section()->emit_float(  x); }
-  void emit_double( jdouble x) { code_section()->emit_double( x); }
-  void emit_address(address x) { code_section()->emit_address(x); }
+  void emit_int16(  int16_t x)                                  { code_section()->emit_int16(x); }
+  void emit_int16(  int8_t x1, int8_t x2)                       { code_section()->emit_int16(x1, x2); }
 
-  // min and max values for signed immediate ranges
-  static int min_simm(int nbits) { return -(intptr_t(1) << (nbits - 1))    ; }
-  static int max_simm(int nbits) { return  (intptr_t(1) << (nbits - 1)) - 1; }
+  void emit_int24(  int8_t x1, int8_t x2, int8_t x3)            { code_section()->emit_int24(x1, x2, x3); }
 
-  // Define some:
-  static int min_simm10() { return min_simm(10); }
-  static int min_simm13() { return min_simm(13); }
-  static int min_simm16() { return min_simm(16); }
+  void emit_int32(  int32_t x)                                  { code_section()->emit_int32(x); }
+  void emit_int32(  int8_t x1, int8_t x2, int8_t x3, int8_t x4) { code_section()->emit_int32(x1, x2, x3, x4); }
 
-  // Test if x is within signed immediate range for nbits
-  static bool is_simm(intptr_t x, int nbits) { return min_simm(nbits) <= x && x <= max_simm(nbits); }
+  void emit_int64(  int64_t x)                                  { code_section()->emit_int64(x); }
 
-  // Define some:
-  static bool is_simm5( intptr_t x) { return is_simm(x, 5 ); }
-  static bool is_simm8( intptr_t x) { return is_simm(x, 8 ); }
-  static bool is_simm10(intptr_t x) { return is_simm(x, 10); }
-  static bool is_simm11(intptr_t x) { return is_simm(x, 11); }
-  static bool is_simm12(intptr_t x) { return is_simm(x, 12); }
-  static bool is_simm13(intptr_t x) { return is_simm(x, 13); }
-  static bool is_simm16(intptr_t x) { return is_simm(x, 16); }
-  static bool is_simm26(intptr_t x) { return is_simm(x, 26); }
-  static bool is_simm32(intptr_t x) { return is_simm(x, 32); }
+  void emit_float(  jfloat  x)                                  { code_section()->emit_float(x); }
+  void emit_double( jdouble x)                                  { code_section()->emit_double(x); }
+  void emit_address(address x)                                  { code_section()->emit_address(x); }
+
+  enum { min_simm10 = -512 };
+
+  // Test if x is within signed immediate range for width.
+  static bool is_simm(int64_t x, uint w) {
+    precond(1 < w && w < 64);
+    int64_t limes = INT64_C(1) << (w - 1);
+    return -limes <= x && x < limes;
+  }
+
+  static bool is_simm8(int64_t x) { return is_simm(x, 8); }
+  static bool is_simm9(int64_t x) { return is_simm(x, 9); }
+  static bool is_simm10(int64_t x) { return is_simm(x, 10); }
+  static bool is_simm16(int64_t x) { return is_simm(x, 16); }
+  static bool is_simm32(int64_t x) { return is_simm(x, 32); }
+
+  // Test if x is within unsigned immediate range for width.
+  static bool is_uimm(uint64_t x, uint w) {
+    precond(0 < w && w < 64);
+    uint64_t limes = UINT64_C(1) << w;
+    return x < limes;
+  }
+
+  static bool is_uimm12(uint64_t x) { return is_uimm(x, 12); }
 
   // Accessors
   CodeSection*  code_section() const   { return _code_section; }
@@ -410,22 +430,6 @@ class AbstractAssembler : public ResourceObj  {
     return ptr;
   }
 
-  // Bootstrapping aid to cope with delayed determination of constants.
-  // Returns a static address which will eventually contain the constant.
-  // The value zero (NULL) stands instead of a constant which is still uncomputed.
-  // Thus, the eventual value of the constant must not be zero.
-  // This is fine, since this is designed for embedding object field
-  // offsets in code which must be generated before the object class is loaded.
-  // Field offsets are never zero, since an object's header (mark word)
-  // is located at offset zero.
-  RegisterOrConstant delayed_value(int(*value_fn)(), Register tmp, int offset = 0);
-  RegisterOrConstant delayed_value(address(*value_fn)(), Register tmp, int offset = 0);
-  virtual RegisterOrConstant delayed_value_impl(intptr_t* delayed_value_addr, Register tmp, int offset) = 0;
-  // Last overloading is platform-dependent; look in assembler_<arch>.cpp.
-  static intptr_t* delayed_value_addr(int(*constant_fn)());
-  static intptr_t* delayed_value_addr(address(*constant_fn)());
-  static void update_delayed_values();
-
   // Bang stack to trigger StackOverflowError at a safe location
   // implementation delegates to machine-specific bang_stack_with_offset
   void generate_stack_overflow_check( int frame_size_in_bytes );
@@ -439,10 +443,10 @@ class AbstractAssembler : public ResourceObj  {
    * @param branch the location of the instruction to patch
    * @param masm the assembler which generated the branch
    */
-  void pd_patch_instruction(address branch, address target);
+  void pd_patch_instruction(address branch, address target, const char* file, int line);
 
 };
 
 #include CPU_HEADER(assembler)
 
-#endif // SHARE_VM_ASM_ASSEMBLER_HPP
+#endif // SHARE_ASM_ASSEMBLER_HPP

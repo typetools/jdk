@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,19 +74,31 @@ class RedirectFilter implements HeaderFilter {
     }
 
     private static String redirectedMethod(int statusCode, String orig) {
-        switch (statusCode) {
-            case 301:
-            case 302:
-                return orig.equals("POST") ? "GET" : orig;
-            case 303:
-                return "GET";
-            case 307:
-            case 308:
-                return orig;
-            default:
-                // unexpected but return orig
-                return orig;
-        }
+        return switch (statusCode) {
+            case 301, 302   -> orig.equals("POST") ? "GET" : orig;
+            case 303        -> "GET";
+            case 307, 308   -> orig;
+
+            default -> orig; // unexpected but return orig
+        };
+    }
+
+    private static boolean isRedirecting(int statusCode) {
+        // < 300: not a redirect codes
+        if (statusCode < 300) return false;
+        // 309-399 Unassigned => don't follow
+        // > 399: not a redirect code
+        if (statusCode > 308) return false;
+
+        return switch (statusCode) {
+            // 300: MultipleChoice => don't follow
+            // 304: Not Modified => don't follow
+            // 305: Proxy Redirect => don't follow.
+            // 306: Unused => don't follow
+            case 300, 304, 305, 306 -> false;
+            // 301, 302, 303, 307, 308: OK to follow.
+            default -> true;
+        };
     }
 
     /**
@@ -102,13 +114,13 @@ class RedirectFilter implements HeaderFilter {
         if (rcode == HTTP_NOT_MODIFIED)
             return null;
 
-        if (rcode >= 300 && rcode <= 399) {
+        if (isRedirecting(rcode)) {
             URI redir = getRedirectedURI(r.headers());
             String newMethod = redirectedMethod(rcode, method);
             Log.logTrace("response code: {0}, redirected URI: {1}", rcode, redir);
             if (canRedirect(redir) && ++exchange.numberOfRedirects < max_redirects) {
                 Log.logTrace("redirect to: {0} with method: {1}", redir, newMethod);
-                return HttpRequestImpl.newInstanceForRedirection(redir, newMethod, request);
+                return HttpRequestImpl.newInstanceForRedirection(redir, newMethod, request, rcode != 303);
             } else {
                 Log.logTrace("not redirecting");
                 return null;
@@ -133,16 +145,11 @@ class RedirectFilter implements HeaderFilter {
     private boolean canRedirect(URI redir) {
         String newScheme = redir.getScheme();
         String oldScheme = uri.getScheme();
-        switch (policy) {
-            case ALWAYS:
-                return true;
-            case NEVER:
-                return false;
-            case NORMAL:
-                return newScheme.equalsIgnoreCase(oldScheme)
-                        || newScheme.equalsIgnoreCase("https");
-            default:
-                throw new InternalError();
-        }
+        return switch (policy) {
+            case ALWAYS -> true;
+            case NEVER -> false;
+            case NORMAL -> newScheme.equalsIgnoreCase(oldScheme)
+                    || newScheme.equalsIgnoreCase("https");
+        };
     }
 }

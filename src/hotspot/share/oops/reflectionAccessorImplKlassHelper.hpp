@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, SAP SE. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef HOTSPOT_SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP
-#define HOTSPOT_SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP
+#ifndef SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP
+#define SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP
 
 #include "memory/allocation.hpp"
 
@@ -71,5 +71,4 @@ public:
 
 
 
-#endif /* HOTSPOT_SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP */
-
+#endif // SHARE_OOPS_REFLECTIONACCESSORIMPLKLASSHELPER_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,6 +49,9 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.StringConcatFactory;
 import java.lang.module.ModuleDescriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -63,29 +66,32 @@ import java.security.PrivilegedAction;
 import java.nio.channels.Channel;
 import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.PropertyPermission;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
+import jdk.internal.misc.Unsafe;
 import jdk.internal.util.StaticProperty;
 import jdk.internal.module.ModuleBootstrap;
 import jdk.internal.module.ServicesCatalog;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
-import jdk.internal.HotSpotIntrinsicCandidate;
-import jdk.internal.misc.JavaLangAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.VM;
 import jdk.internal.logger.LoggerFinderLoader;
 import jdk.internal.logger.LazyLoggers;
 import jdk.internal.logger.LocalizedLoggerWrapper;
+import jdk.internal.util.SystemProps;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
+import jdk.internal.vm.annotation.Stable;
+import sun.nio.fs.DefaultFileSystemProvider;
 import sun.reflect.annotation.AnnotationType;
 import sun.nio.ch.Interruptible;
 import sun.security.util.SecurityConstants;
@@ -106,10 +112,8 @@ import sun.security.util.SecurityConstants;
 public final @UsesObjectEquals class System {
     /* Register the natives via the static initializer.
      *
-     * VM will invoke the initializeSystemClass method to complete
-     * the initialization for this class separated from clinit.
-     * Note that to use properties set by the VM, see the constraints
-     * described in the initializeSystemClass method.
+     * The VM will invoke the initPhase1 method to complete the initialization
+     * of this class separate from <clinit>.
      */
     private static native void registerNatives();
     static {
@@ -124,7 +128,13 @@ public final @UsesObjectEquals class System {
      * The "standard" input stream. This stream is already
      * open and ready to supply input data. Typically this stream
      * corresponds to keyboard input or another input source specified by
-     * the host environment or user.
+     * the host environment or user. In case this stream is wrapped
+     * in a {@link java.io.InputStreamReader}, {@link Console#charset()}
+     * should be used for the charset, or consider using
+     * {@link Console#reader()}.
+     *
+     * @see Console#charset()
+     * @see Console#reader()
      */
     @CFComment("This field can be null. The Checker Framework conservatively annotates it as @NonNull, forbidding programs that set it to null.")
     public static final @MustCall({}) InputStream in = null;
@@ -133,7 +143,10 @@ public final @UsesObjectEquals class System {
      * The "standard" output stream. This stream is already
      * open and ready to accept output data. Typically this stream
      * corresponds to display output or another output destination
-     * specified by the host environment or user.
+     * specified by the host environment or user. The encoding used
+     * in the conversion from characters to bytes is equivalent to
+     * {@link Console#charset()} if the {@code Console} exists,
+     * {@link Charset#defaultCharset()} otherwise.
      * <p>
      * For simple stand-alone Java applications, a typical way to write
      * a line of output data is:
@@ -153,6 +166,8 @@ public final @UsesObjectEquals class System {
      * @see     java.io.PrintStream#println(long)
      * @see     java.io.PrintStream#println(java.lang.Object)
      * @see     java.io.PrintStream#println(java.lang.String)
+     * @see     Console#charset()
+     * @see     Charset#defaultCharset()
      */
     @CFComment("This field can be null. The Checker Framework conservatively annotates it as @NonNull, forbidding programs that set it to null.")
     public static final @MustCall({}) PrintStream out = null;
@@ -168,13 +183,29 @@ public final @UsesObjectEquals class System {
      * of a user even if the principal output stream, the value of the
      * variable {@code out}, has been redirected to a file or other
      * destination that is typically not continuously monitored.
+     * The encoding used in the conversion from characters to bytes is
+     * equivalent to {@link Console#charset()} if the {@code Console}
+     * exists, {@link Charset#defaultCharset()} otherwise.
+     *
+     * @see     Console#charset()
+     * @see     Charset#defaultCharset()
      */
     @CFComment("This field can be null. The Checker Framework conservatively annotates it as @NonNull, forbidding programs that set it to null.")
     public static final @MustCall({}) PrintStream err = null;
 
-    /* The security manager for the system.
-     */
-    private static volatile SecurityManager security;
+    // indicates if a security manager is possible
+    private static final int NEVER = 1;
+    private static final int MAYBE = 2;
+    private static @Stable int allowSecurityManager;
+
+    // current security manager
+    @SuppressWarnings("removal")
+    private static volatile SecurityManager security;   // read by VM
+
+    // return true if a security manager is allowed
+    private static boolean allowSecurityManager() {
+        return (allowSecurityManager != NEVER);
+    }
 
     /**
      * Reassigns the "standard" input stream.
@@ -252,6 +283,7 @@ public final @UsesObjectEquals class System {
     }
 
     private static volatile Console cons;
+
     /**
      * Returns the unique {@link java.io.Console Console} object associated
      * with the current Java virtual machine, if any.
@@ -302,6 +334,7 @@ public final @UsesObjectEquals class System {
     }
 
     private static void checkIO() {
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new RuntimePermission("setIO"));
@@ -313,7 +346,7 @@ public final @UsesObjectEquals class System {
     private static native void setErr0(PrintStream err);
 
     /**
-     * Sets the System security.
+     * Sets the system-wide security manager.
      *
      * If there is a security manager already installed, this method first
      * calls the security manager's {@code checkPermission} method
@@ -327,42 +360,76 @@ public final @UsesObjectEquals class System {
      * security manager has been established, then no action is taken and
      * the method simply returns.
      *
-     * @param      s   the security manager.
-     * @throws     SecurityException  if the security manager has already
-     *             been set and its {@code checkPermission} method
-     *             doesn't allow it to be replaced.
+     * @implNote In the JDK implementation, if the Java virtual machine is
+     * started with the system property {@code java.security.manager} set to
+     * the special token "{@code disallow}" then the {@code setSecurityManager}
+     * method cannot be used to set a security manager.
+     *
+     * @param  sm the security manager or {@code null}
+     * @throws SecurityException
+     *         if the security manager has already been set and its {@code
+     *         checkPermission} method doesn't allow it to be replaced
+     * @throws UnsupportedOperationException
+     *         if {@code sm} is non-null and a security manager is not allowed
+     *         to be set dynamically
      * @see #getSecurityManager
      * @see SecurityManager#checkPermission
      * @see java.lang.RuntimePermission
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
-    public static void setSecurityManager(final @Nullable SecurityManager s) {
+    @Deprecated(since="17", forRemoval=true)
+    public static void setSecurityManager(@SuppressWarnings("removal") @Nullable SecurityManager sm) {
+        if (allowSecurityManager()) {
+            System.err.println("WARNING: java.lang.System::setSecurityManager" +
+                    " is deprecated and will be removed in a future release.");
+            implSetSecurityManager(sm);
+        } else {
+            // security manager not allowed
+            if (sm != null) {
+                throw new UnsupportedOperationException(
+                    "Runtime configured to disallow security manager");
+            }
+        }
+    }
+
+    private static void implSetSecurityManager(@SuppressWarnings("removal") SecurityManager sm) {
         if (security == null) {
             // ensure image reader is initialized
             Object.class.getResource("java/lang/ANY");
+            // ensure the default file system is initialized
+            DefaultFileSystemProvider.theFileSystem();
         }
-        if (s != null) {
+        if (sm != null) {
             try {
-                s.checkPackageAccess("java.lang");
+                // pre-populates the SecurityManager.packageAccess cache
+                // to avoid recursive permission checking issues with custom
+                // SecurityManager implementations
+                sm.checkPackageAccess("java.lang");
             } catch (Exception e) {
                 // no-op
             }
         }
-        setSecurityManager0(s);
+        setSecurityManager0(sm);
     }
 
+    @SuppressWarnings("removal")
     private static synchronized
     void setSecurityManager0(final SecurityManager s) {
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             // ask the currently installed security manager if we
             // can replace it.
-            sm.checkPermission(new RuntimePermission
-                                     ("setSecurityManager"));
+            sm.checkPermission(new RuntimePermission("setSecurityManager"));
         }
 
         if ((s != null) && (s.getClass().getClassLoader() != null)) {
             // New security manager class is not on bootstrap classpath.
-            // Cause policy to get initialized before we install the new
+            // Force policy to get initialized before we install the new
             // security manager, in order to prevent infinite loops when
             // trying to initialize the policy (which usually involves
             // accessing some security and/or system properties, which in turn
@@ -382,15 +449,27 @@ public final @UsesObjectEquals class System {
     }
 
     /**
-     * Gets the system security interface.
+     * Gets the system-wide security manager.
      *
      * @return  if a security manager has already been established for the
      *          current application, then that security manager is returned;
      *          otherwise, {@code null} is returned.
      * @see     #setSecurityManager
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(since="17", forRemoval=true)
     public static @Nullable SecurityManager getSecurityManager() {
-        return security;
+        if (allowSecurityManager()) {
+            return security;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -409,7 +488,7 @@ public final @UsesObjectEquals class System {
      *          the current time and midnight, January 1, 1970 UTC.
      * @see     java.util.Date
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static native long currentTimeMillis();
 
     /**
@@ -453,7 +532,7 @@ public final @UsesObjectEquals class System {
      *         high-resolution time source, in nanoseconds
      * @since 1.5
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static native long nanoTime();
 
     /**
@@ -549,7 +628,7 @@ public final @UsesObjectEquals class System {
      *             {@code dest} is {@code null}.
      */
     @SideEffectFree
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static native void arraycopy(@PolySigned @GuardSatisfied Object src,  @NonNegative int  srcPos,
                                         @PolySigned @GuardSatisfied Object dest, @NonNegative int destPos,
                                         @LTLengthOf(value={"#1", "#3"}, offset={"#2 - 1", "#4 - 1"}) @NonNegative int length);
@@ -568,34 +647,15 @@ public final @UsesObjectEquals class System {
      * @see java.util.Objects#hashCode(Object)
      */
     @Pure
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static native int identityHashCode(@GuardSatisfied @Nullable Object x);
 
     /**
-     * System properties. The following properties are guaranteed to be defined:
-     * <dl>
-     * <dt>java.version         <dd>Java version number
-     * <dt>java.version.date    <dd>Java version date
-     * <dt>java.vendor          <dd>Java vendor specific string
-     * <dt>java.vendor.url      <dd>Java vendor URL
-     * <dt>java.vendor.version  <dd>Java vendor version
-     * <dt>java.home            <dd>Java installation directory
-     * <dt>java.class.version   <dd>Java class version number
-     * <dt>java.class.path      <dd>Java classpath
-     * <dt>os.name              <dd>Operating System Name
-     * <dt>os.arch              <dd>Operating System Architecture
-     * <dt>os.version           <dd>Operating System Version
-     * <dt>file.separator       <dd>File separator ("/" on Unix)
-     * <dt>path.separator       <dd>Path separator (":" on Unix)
-     * <dt>line.separator       <dd>Line separator ("\n" on Unix)
-     * <dt>user.name            <dd>User account name
-     * <dt>user.home            <dd>User home directory
-     * <dt>user.dir             <dd>User's current working directory
-     * </dl>
+     * System properties.
+     *
+     * See {@linkplain #getProperties getProperties} for details.
      */
-
     private static Properties props;
-    private static native Properties initProperties(Properties props);
 
     /**
      * Determines the current system properties.
@@ -608,8 +668,9 @@ public final @UsesObjectEquals class System {
      * {@link #getProperty(String)} method is returned as a
      * {@code Properties} object. If there is no current set of
      * system properties, a set of system properties is first created and
-     * initialized. This set of system properties always includes values
-     * for the following keys:
+     * initialized. This set of system properties includes a value
+     * for each of the following keys unless the description of the associated
+     * value indicates that the value is optional.
      * <table class="striped" style="text-align:left">
      * <caption style="display:none">Shows property keys and associated values</caption>
      * <thead>
@@ -617,73 +678,76 @@ public final @UsesObjectEquals class System {
      *     <th scope="col">Description of Associated Value</th></tr>
      * </thead>
      * <tbody>
-     * <tr><th scope="row">{@code java.version}</th>
+     * <tr><th scope="row">{@systemProperty java.version}</th>
      *     <td>Java Runtime Environment version, which may be interpreted
      *     as a {@link Runtime.Version}</td></tr>
-     * <tr><th scope="row">{@code java.version.date}</th>
+     * <tr><th scope="row">{@systemProperty java.version.date}</th>
      *     <td>Java Runtime Environment version date, in ISO-8601 YYYY-MM-DD
      *     format, which may be interpreted as a {@link
      *     java.time.LocalDate}</td></tr>
-     * <tr><th scope="row">{@code java.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor}</th>
      *     <td>Java Runtime Environment vendor</td></tr>
-     * <tr><th scope="row">{@code java.vendor.url}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor.url}</th>
      *     <td>Java vendor URL</td></tr>
-     * <tr><th scope="row">{@code java.vendor.version}</th>
-     *     <td>Java vendor version</td></tr>
-     * <tr><th scope="row">{@code java.home}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor.version}</th>
+     *     <td>Java vendor version <em>(optional)</em> </td></tr>
+     * <tr><th scope="row">{@systemProperty java.home}</th>
      *     <td>Java installation directory</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.version}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.version}</th>
      *     <td>Java Virtual Machine specification version, whose value is the
      *     {@linkplain Runtime.Version#feature feature} element of the
      *     {@linkplain Runtime#version() runtime version}</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.vendor}</th>
      *     <td>Java Virtual Machine specification vendor</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.name}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.name}</th>
      *     <td>Java Virtual Machine specification name</td></tr>
-     * <tr><th scope="row">{@code java.vm.version}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.version}</th>
      *     <td>Java Virtual Machine implementation version which may be
      *     interpreted as a {@link Runtime.Version}</td></tr>
-     * <tr><th scope="row">{@code java.vm.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.vendor}</th>
      *     <td>Java Virtual Machine implementation vendor</td></tr>
-     * <tr><th scope="row">{@code java.vm.name}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.name}</th>
      *     <td>Java Virtual Machine implementation name</td></tr>
-     * <tr><th scope="row">{@code java.specification.version}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.version}</th>
      *     <td>Java Runtime Environment specification version, whose value is
      *     the {@linkplain Runtime.Version#feature feature} element of the
      *     {@linkplain Runtime#version() runtime version}</td></tr>
-     * <tr><th scope="row">{@code java.specification.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.vendor}</th>
      *     <td>Java Runtime Environment specification  vendor</td></tr>
-     * <tr><th scope="row">{@code java.specification.name}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.name}</th>
      *     <td>Java Runtime Environment specification  name</td></tr>
-     * <tr><th scope="row">{@code java.class.version}</th>
+     * <tr><th scope="row">{@systemProperty java.class.version}</th>
      *     <td>Java class format version number</td></tr>
-     * <tr><th scope="row">{@code java.class.path}</th>
+     * <tr><th scope="row">{@systemProperty java.class.path}</th>
      *     <td>Java class path  (refer to
      *        {@link ClassLoader#getSystemClassLoader()} for details)</td></tr>
-     * <tr><th scope="row">{@code java.library.path}</th>
+     * <tr><th scope="row">{@systemProperty java.library.path}</th>
      *     <td>List of paths to search when loading libraries</td></tr>
-     * <tr><th scope="row">{@code java.io.tmpdir}</th>
+     * <tr><th scope="row">{@systemProperty java.io.tmpdir}</th>
      *     <td>Default temp file path</td></tr>
-     * <tr><th scope="row">{@code java.compiler}</th>
+     * <tr><th scope="row">{@systemProperty java.compiler}</th>
      *     <td>Name of JIT compiler to use</td></tr>
-     * <tr><th scope="row">{@code os.name}</th>
+     * <tr><th scope="row">{@systemProperty os.name}</th>
      *     <td>Operating system name</td></tr>
-     * <tr><th scope="row">{@code os.arch}</th>
+     * <tr><th scope="row">{@systemProperty os.arch}</th>
      *     <td>Operating system architecture</td></tr>
-     * <tr><th scope="row">{@code os.version}</th>
+     * <tr><th scope="row">{@systemProperty os.version}</th>
      *     <td>Operating system version</td></tr>
-     * <tr><th scope="row">{@code file.separator}</th>
+     * <tr><th scope="row">{@systemProperty file.separator}</th>
      *     <td>File separator ("/" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code path.separator}</th>
+     * <tr><th scope="row">{@systemProperty path.separator}</th>
      *     <td>Path separator (":" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code line.separator}</th>
+     * <tr><th scope="row">{@systemProperty line.separator}</th>
      *     <td>Line separator ("\n" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code user.name}</th>
+     * <tr><th scope="row">{@systemProperty user.name}</th>
      *     <td>User's account name</td></tr>
-     * <tr><th scope="row">{@code user.home}</th>
+     * <tr><th scope="row">{@systemProperty user.home}</th>
      *     <td>User's home directory</td></tr>
-     * <tr><th scope="row">{@code user.dir}</th>
+     * <tr><th scope="row">{@systemProperty user.dir}</th>
      *     <td>User's current working directory</td></tr>
+     * <tr><th scope="row">{@systemProperty native.encoding}</th>
+     *     <td>Character encoding name derived from the host environment and/or
+     *     the user's settings. Setting this system property has no effect.</td></tr>
      * </tbody>
      * </table>
      * <p>
@@ -712,13 +776,13 @@ public final @UsesObjectEquals class System {
      *     <th scope="col">Description of Associated Value</th></tr>
      * </thead>
      * <tbody>
-     * <tr><th scope="row">{@code jdk.module.path}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.path}</th>
      *     <td>The application module path</td></tr>
-     * <tr><th scope="row">{@code jdk.module.upgrade.path}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.upgrade.path}</th>
      *     <td>The upgrade module path</td></tr>
-     * <tr><th scope="row">{@code jdk.module.main}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.main}</th>
      *     <td>The module name of the initial/main module</td></tr>
-     * <tr><th scope="row">{@code jdk.module.main.class}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.main.class}</th>
      *     <td>The main class name of the initial module</td></tr>
      * </tbody>
      * </table>
@@ -733,6 +797,7 @@ public final @UsesObjectEquals class System {
      * @see        java.util.Properties
      */
     public static Properties getProperties() {
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPropertiesAccess();
@@ -786,13 +851,16 @@ public final @UsesObjectEquals class System {
      * @see        java.lang.SecurityManager#checkPropertiesAccess()
      */
     public static void setProperties(@Nullable Properties props) {
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPropertiesAccess();
         }
+
         if (props == null) {
-            props = new Properties();
-            initProperties(props);
+            Map<String, String> tempProps = SystemProps.initProperties();
+            VersionProps.init(tempProps);
+            props = createProperties(tempProps);
         }
         System.props = props;
     }
@@ -830,6 +898,7 @@ public final @UsesObjectEquals class System {
     @Pure
     public static @Nullable String getProperty(String key) {
         checkKey(key);
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPropertyAccess(key);
@@ -866,6 +935,7 @@ public final @UsesObjectEquals class System {
     @Pure
     public static @PolyNull String getProperty(String key, @PolyNull String def) {
         checkKey(key);
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPropertyAccess(key);
@@ -909,6 +979,7 @@ public final @UsesObjectEquals class System {
      */
     public static @Nullable String setProperty(String key, String value) {
         checkKey(key);
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new PropertyPermission(key,
@@ -950,6 +1021,7 @@ public final @UsesObjectEquals class System {
      */
     public static @Nullable String clearProperty(String key) {
         checkKey(key);
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new PropertyPermission(key, "write"));
@@ -962,7 +1034,7 @@ public final @UsesObjectEquals class System {
         if (key == null) {
             throw new NullPointerException("key can't be null");
         }
-        if (key.equals("")) {
+        if (key.isEmpty()) {
             throw new IllegalArgumentException("key can't be empty");
         }
     }
@@ -975,7 +1047,7 @@ public final @UsesObjectEquals class System {
      * <p>If a security manager exists, its
      * {@link SecurityManager#checkPermission checkPermission}
      * method is called with a
-     * {@code {@link RuntimePermission}("getenv."+name)}
+     * {@link RuntimePermission RuntimePermission("getenv."+name)}
      * permission.  This may result in a {@link SecurityException}
      * being thrown.  If no exception is thrown the value of the
      * variable {@code name} is returned.
@@ -1014,6 +1086,7 @@ public final @UsesObjectEquals class System {
      * @see    ProcessBuilder#environment()
      */
     public static @Nullable String getenv(String name) {
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new RuntimePermission("getenv."+name));
@@ -1046,7 +1119,7 @@ public final @UsesObjectEquals class System {
      * <p>If a security manager exists, its
      * {@link SecurityManager#checkPermission checkPermission}
      * method is called with a
-     * {@code {@link RuntimePermission}("getenv.*")} permission.
+     * {@link RuntimePermission RuntimePermission("getenv.*")} permission.
      * This may result in a {@link SecurityException} being thrown.
      *
      * <p>When passing information to a Java subprocess,
@@ -1063,6 +1136,7 @@ public final @UsesObjectEquals class System {
      * @since  1.5
      */
     public static java.util.Map<String,String> getenv() {
+        @SuppressWarnings("removal")
         SecurityManager sm = getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new RuntimePermission("getenv.*"));
@@ -1530,6 +1604,7 @@ public final @UsesObjectEquals class System {
         }
 
         private static Void checkPermission() {
+            @SuppressWarnings("removal")
             final SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
                 sm.checkPermission(LOGGERFINDER_PERMISSION);
@@ -1606,13 +1681,14 @@ public final @UsesObjectEquals class System {
          * the Java Runtime.  See the class specification of how the
          * {@link LoggerFinder LoggerFinder} implementation is located and
          * loaded.
-
+         *
          * @return the {@link LoggerFinder LoggerFinder} instance.
          * @throws SecurityException if a security manager is present and its
          *         {@code checkPermission} method doesn't allow the
          *         {@code RuntimePermission("loggerFinder")}.
          */
         public static LoggerFinder getLoggerFinder() {
+            @SuppressWarnings("removal")
             final SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
                 sm.checkPermission(LOGGERFINDER_PERMISSION);
@@ -1622,6 +1698,7 @@ public final @UsesObjectEquals class System {
 
 
         private static volatile LoggerFinder service;
+        @SuppressWarnings("removal")
         static LoggerFinder accessProvider() {
             // We do not need to synchronize: LoggerFinderLoader will
             // always return the same instance, so if we don't have it,
@@ -1725,6 +1802,7 @@ public final @UsesObjectEquals class System {
      *
      * @since 9
      */
+    @SuppressWarnings("removal")
     @CallerSensitive
     public static Logger getLogger(String name, ResourceBundle bundle) {
         final ResourceBundle rb = Objects.requireNonNull(bundle);
@@ -1774,14 +1852,17 @@ public final @UsesObjectEquals class System {
     }
 
     /**
-     * Runs the garbage collector.
-     *
-     * Calling the {@code gc} method suggests that the Java Virtual
-     * Machine expend effort toward recycling unused objects in order to
-     * make the memory they currently occupy available for quick reuse.
-     * When control returns from the method call, the Java Virtual
-     * Machine has made a best effort to reclaim space from all discarded
-     * objects.
+     * Runs the garbage collector in the Java Virtual Machine.
+     * <p>
+     * Calling the {@code gc} method suggests that the Java Virtual Machine
+     * expend effort toward recycling unused objects in order to
+     * make the memory they currently occupy available for reuse
+     * by the Java Virtual Machine.
+     * When control returns from the method call, the Java Virtual Machine
+     * has made a best effort to reclaim space from all unused objects.
+     * There is no guarantee that this effort will recycle any particular
+     * number of unused objects, reclaim any particular amount of space, or
+     * complete at any particular time, if at all, before the method returns or ever.
      * <p>
      * The call {@code System.gc()} is effectively equivalent to the
      * call:
@@ -1868,8 +1949,8 @@ public final @UsesObjectEquals class System {
      * for more details.
      *
      * Otherwise, the libname argument is loaded from a system library
-     * location and mapped to a native library image in an implementation-
-     * dependent manner.
+     * location and mapped to a native library image in an
+     * implementation-dependent manner.
      * <p>
      * The call {@code System.loadLibrary(name)} is effectively
      * equivalent to the call
@@ -1953,20 +2034,46 @@ public final @UsesObjectEquals class System {
     }
 
     /**
+     * Create the Properties object from a map - masking out system properties
+     * that are not intended for public access.
+     */
+    private static Properties createProperties(Map<String, String> initialProps) {
+        Properties properties = new Properties(initialProps.size());
+        for (var entry : initialProps.entrySet()) {
+            String prop = entry.getKey();
+            switch (prop) {
+                // Do not add private system properties to the Properties
+                case "sun.nio.MaxDirectMemorySize":
+                case "sun.nio.PageAlignDirectMemory":
+                    // used by java.lang.Integer.IntegerCache
+                case "java.lang.Integer.IntegerCache.high":
+                    // used by sun.launcher.LauncherHelper
+                case "sun.java.launcher.diag":
+                    // used by jdk.internal.loader.ClassLoaders
+                case "jdk.boot.class.path.append":
+                    break;
+                default:
+                    properties.put(prop, entry.getValue());
+            }
+        }
+        return properties;
+    }
+
+    /**
      * Initialize the system class.  Called after thread initialization.
      */
     private static void initPhase1() {
 
+        // register the shared secrets - do this first, since SystemProps.initProperties
+        // might initialize CharsetDecoders that rely on it
+        setJavaLangAccess();
+
         // VM might invoke JNU_NewStringPlatform() to set those encoding
         // sensitive properties (user.home, user.name, boot.class.path, etc.)
-        // during "props" initialization, in which it may need access, via
-        // System.getProperty(), to the related system encoding property that
-        // have been initialized (put into "props") at early stage of the
-        // initialization. So make sure the "props" is available at the
-        // very beginning of the initialization and all system properties to
-        // be put into it directly.
-        props = new Properties(84);
-        initProperties(props);  // initialized by the VM
+        // during "props" initialization.
+        // The charset is initialized in System.c and does not depend on the Properties.
+        Map<String, String> tempProps = SystemProps.initProperties();
+        VersionProps.init(tempProps);
 
         // There are certain system configurations that may be controlled by
         // VM options such as the maximum amount of direct memory and
@@ -1974,24 +2081,24 @@ public final @UsesObjectEquals class System {
         // of autoboxing.  Typically, the library will obtain these values
         // from the properties set by the VM.  If the properties are for
         // internal implementation use only, these properties should be
-        // removed from the system properties.
-        //
-        // See java.lang.Integer.IntegerCache and the
-        // VM.saveAndRemoveProperties method for example.
+        // masked from the system properties.
         //
         // Save a private copy of the system properties object that
-        // can only be accessed by the internal implementation.  Remove
-        // certain system properties that are not intended for public access.
-        VM.saveAndRemoveProperties(props);
+        // can only be accessed by the internal implementation.
+        VM.saveProperties(tempProps);
+        props = createProperties(tempProps);
+
+        StaticProperty.javaHome();          // Load StaticProperty to cache the property values
 
         lineSeparator = props.getProperty("line.separator");
-        StaticProperty.javaHome();          // Load StaticProperty to cache the property values
-        VersionProps.init();
 
         FileInputStream fdIn = new FileInputStream(FileDescriptor.in);
         FileOutputStream fdOut = new FileOutputStream(FileDescriptor.out);
         FileOutputStream fdErr = new FileOutputStream(FileDescriptor.err);
         setIn0(new BufferedInputStream(fdIn));
+        // sun.stdout/err.encoding are set when the VM is associated with the terminal,
+        // thus they are equivalent to Console.charset(), otherwise the encoding
+        // defaults to Charset.defaultCharset()
         setOut0(newPrintStream(fdOut, props.getProperty("sun.stdout.encoding")));
         setErr0(newPrintStream(fdErr, props.getProperty("sun.stderr.encoding")));
 
@@ -2009,8 +2116,6 @@ public final @UsesObjectEquals class System {
         Thread current = Thread.currentThread();
         current.getThreadGroup().add(current);
 
-        // register shared secrets
-        setJavaLangAccess();
 
         // Subsystems that are invoked during initialization can invoke
         // VM.isBooted() in order to avoid doing things that should
@@ -2034,6 +2139,7 @@ public final @UsesObjectEquals class System {
      * @return JNI_OK for success, JNI_ERR for failure
      */
     private static int initPhase2(boolean printToStderr, boolean printStackTrace) {
+
         try {
             bootLayer = ModuleBootstrap.boot();
         } catch (Exception | Error e) {
@@ -2050,40 +2156,70 @@ public final @UsesObjectEquals class System {
 
     /*
      * Invoked by VM.  Phase 3 is the final system initialization:
-     * 1. set security manager
-     * 2. set system class loader
-     * 3. set TCCL
+     * 1. eagerly initialize bootstrap method factories that might interact
+     *    negatively with custom security managers and custom class loaders
+     * 2. set security manager
+     * 3. set system class loader
+     * 4. set TCCL
      *
      * This method must be called after the module system initialization.
-     * The security manager and system class loader may be custom class from
+     * The security manager and system class loader may be a custom class from
      * the application classpath or modulepath.
      */
+    @SuppressWarnings("removal")
     private static void initPhase3() {
-        // set security manager
-        String cn = System.getProperty("java.security.manager");
-        if (cn != null) {
-            if (cn.isEmpty() || "default".equals(cn)) {
-                System.setSecurityManager(new SecurityManager());
-            } else {
-                try {
-                    Class<?> c = Class.forName(cn, false, ClassLoader.getBuiltinAppClassLoader());
-                    Constructor<?> ctor = c.getConstructor();
-                    // Must be a public subclass of SecurityManager with
-                    // a public no-arg constructor
-                    if (!SecurityManager.class.isAssignableFrom(c) ||
+
+        // Initialize the StringConcatFactory eagerly to avoid potential
+        // bootstrap circularity issues that could be caused by a custom
+        // SecurityManager
+        Unsafe.getUnsafe().ensureClassInitialized(StringConcatFactory.class);
+
+        String smProp = System.getProperty("java.security.manager");
+        boolean needWarning = false;
+        if (smProp != null) {
+            switch (smProp) {
+                case "disallow":
+                    allowSecurityManager = NEVER;
+                    break;
+                case "allow":
+                    allowSecurityManager = MAYBE;
+                    break;
+                case "":
+                case "default":
+                    implSetSecurityManager(new SecurityManager());
+                    allowSecurityManager = MAYBE;
+                    needWarning = true;
+                    break;
+                default:
+                    try {
+                        ClassLoader cl = ClassLoader.getBuiltinAppClassLoader();
+                        Class<?> c = Class.forName(smProp, false, cl);
+                        Constructor<?> ctor = c.getConstructor();
+                        // Must be a public subclass of SecurityManager with
+                        // a public no-arg constructor
+                        if (!SecurityManager.class.isAssignableFrom(c) ||
                             !Modifier.isPublic(c.getModifiers()) ||
                             !Modifier.isPublic(ctor.getModifiers())) {
-                        throw new Error("Could not create SecurityManager: " + ctor.toString());
+                            throw new Error("Could not create SecurityManager: "
+                                             + ctor.toString());
+                        }
+                        // custom security manager may be in non-exported package
+                        ctor.setAccessible(true);
+                        SecurityManager sm = (SecurityManager) ctor.newInstance();
+                        implSetSecurityManager(sm);
+                        needWarning = true;
+                    } catch (Exception e) {
+                        throw new InternalError("Could not create SecurityManager", e);
                     }
-                    // custom security manager implementation may be in unnamed module
-                    // or a named module but non-exported package
-                    ctor.setAccessible(true);
-                    SecurityManager sm = (SecurityManager) ctor.newInstance();
-                    System.setSecurityManager(sm);
-                } catch (Exception e) {
-                    throw new Error("Could not create SecurityManager", e);
-                }
+                    allowSecurityManager = MAYBE;
             }
+        } else {
+            allowSecurityManager = MAYBE;
+        }
+
+        if (needWarning) {
+            System.err.println("WARNING: The Security Manager is deprecated" +
+                    " and will be removed in a future release.");
         }
 
         // initializing the system class loader
@@ -2136,7 +2272,7 @@ public final @UsesObjectEquals class System {
             public void registerShutdownHook(int slot, boolean registerShutdownInProgress, Runnable hook) {
                 Shutdown.add(slot, registerShutdownInProgress, hook);
             }
-            public Thread newThreadWithAcc(Runnable target, AccessControlContext acc) {
+            public Thread newThreadWithAcc(Runnable target, @SuppressWarnings("removal") AccessControlContext acc) {
                 return new Thread(target, acc);
             }
             @SuppressWarnings("deprecation")
@@ -2149,8 +2285,12 @@ public final @UsesObjectEquals class System {
             public Class<?> defineClass(ClassLoader loader, String name, byte[] b, ProtectionDomain pd, String source) {
                 return ClassLoader.defineClass1(loader, name, b, 0, b.length, pd, source);
             }
-            public Class<?> findBootstrapClassOrNull(ClassLoader cl, String name) {
-                return cl.findBootstrapClassOrNull(name);
+            public Class<?> defineClass(ClassLoader loader, Class<?> lookup, String name, byte[] b, ProtectionDomain pd,
+                                        boolean initialize, int flags, Object classData) {
+                return ClassLoader.defineClass0(loader, lookup, name, b, 0, b.length, pd, initialize, flags, classData);
+            }
+            public Class<?> findBootstrapClassOrNull(String name) {
+                return ClassLoader.findBootstrapClassOrNull(name);
             }
             public Package definePackage(ClassLoader cl, String name, Module module) {
                 return cl.definePackage(name, module);
@@ -2158,9 +2298,11 @@ public final @UsesObjectEquals class System {
             public String fastUUID(long lsb, long msb) {
                 return Long.fastUUID(lsb, msb);
             }
+            @SuppressWarnings("removal")
             public void addNonExportedPackages(ModuleLayer layer) {
                 SecurityManager.addNonExportedPackages(layer);
             }
+            @SuppressWarnings("removal")
             public void invalidatePackageAccessCache() {
                 SecurityManager.invalidatePackageAccessCache();
             }
@@ -2178,6 +2320,9 @@ public final @UsesObjectEquals class System {
             public void addReadsAllUnnamed(Module m) {
                 m.implAddReadsAllUnnamed();
             }
+            public void addExports(Module m, String pn) {
+                m.implAddExports(pn);
+            }
             public void addExports(Module m, String pn, Module other) {
                 m.implAddExports(pn, other);
             }
@@ -2190,8 +2335,8 @@ public final @UsesObjectEquals class System {
             public void addOpensToAllUnnamed(Module m, String pn) {
                 m.implAddOpensToAllUnnamed(pn);
             }
-            public void addOpensToAllUnnamed(Module m, Iterator<String> packages) {
-                m.implAddOpensToAllUnnamed(packages);
+            public void addOpensToAllUnnamed(Module m, Set<String> concealedPackages, Set<String> exportedPackages) {
+                m.implAddOpensToAllUnnamed(concealedPackages, exportedPackages);
             }
             public void addUses(Module m, Class<?> service) {
                 m.implAddUses(service);
@@ -2202,8 +2347,20 @@ public final @UsesObjectEquals class System {
             public boolean isReflectivelyOpened(Module m, String pn, Module other) {
                 return m.isReflectivelyOpened(pn, other);
             }
+            public Module addEnableNativeAccess(Module m) {
+                return m.implAddEnableNativeAccess();
+            }
+            public void addEnableNativeAccessAllUnnamed() {
+                Module.implAddEnableNativeAccessAllUnnamed();
+            }
+            public boolean isEnableNativeAccess(Module m) {
+                return m.implIsEnableNativeAccess();
+            }
             public ServicesCatalog getServicesCatalog(ModuleLayer layer) {
                 return layer.getServicesCatalog();
+            }
+            public void bindToLoader(ModuleLayer layer, ClassLoader loader) {
+                layer.bindToLoader(loader);
             }
             public Stream<ModuleLayer> layers(ModuleLayer layer) {
                 return layer.layers();
@@ -2213,21 +2370,66 @@ public final @UsesObjectEquals class System {
             }
 
             public String newStringNoRepl(byte[] bytes, Charset cs) throws CharacterCodingException  {
-                return StringCoding.newStringNoRepl(bytes, cs);
+                return String.newStringNoRepl(bytes, cs);
             }
 
             public byte[] getBytesNoRepl(String s, Charset cs) throws CharacterCodingException {
-                return StringCoding.getBytesNoRepl(s, cs);
+                return String.getBytesNoRepl(s, cs);
             }
 
             public String newStringUTF8NoRepl(byte[] bytes, int off, int len) {
-                return StringCoding.newStringUTF8NoRepl(bytes, off, len);
+                return String.newStringUTF8NoRepl(bytes, off, len);
             }
 
             public byte[] getBytesUTF8NoRepl(String s) {
-                return StringCoding.getBytesUTF8NoRepl(s);
+                return String.getBytesUTF8NoRepl(s);
             }
 
+            public void inflateBytesToChars(byte[] src, int srcOff, char[] dst, int dstOff, int len) {
+                StringLatin1.inflate(src, srcOff, dst, dstOff, len);
+            }
+
+            public int decodeASCII(byte[] src, int srcOff, char[] dst, int dstOff, int len) {
+                return String.decodeASCII(src, srcOff, dst, dstOff, len);
+            }
+
+            public void setCause(Throwable t, Throwable cause) {
+                t.setCause(cause);
+            }
+
+            public ProtectionDomain protectionDomain(Class<?> c) {
+                return c.protectionDomain();
+            }
+
+            public MethodHandle stringConcatHelper(String name, MethodType methodType) {
+                return StringConcatHelper.lookupStatic(name, methodType);
+            }
+
+            public long stringConcatInitialCoder() {
+                return StringConcatHelper.initialCoder();
+            }
+
+            public long stringConcatMix(long lengthCoder, String constant) {
+                return StringConcatHelper.mix(lengthCoder, constant);
+            }
+
+            public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
+                return String.join(prefix, suffix, delimiter, elements, size);
+            }
+
+            public Object classData(Class<?> c) {
+                return c.getClassData();
+            }
+
+            @Override
+            public long findNative(ClassLoader loader, String entry) {
+                return ClassLoader.findNative(loader, entry);
+            }
+
+            @Override
+            public void exit(int statusCode) {
+                Shutdown.exit(statusCode);
+            }
         });
     }
 }

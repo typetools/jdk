@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_AARCH64_VM_FRAME_AARCH64_HPP
-#define CPU_AARCH64_VM_FRAME_AARCH64_HPP
+#ifndef CPU_AARCH64_FRAME_AARCH64_HPP
+#define CPU_AARCH64_FRAME_AARCH64_HPP
 
 #include "runtime/synchronizer.hpp"
 
@@ -50,7 +50,7 @@
 //    [padding               ]
 
 //    [methodData            ]                   = mdp()                mdx_offset
-//    [methodOop             ]                   = method()             method_offset
+//    [Method                ]                   = method()             method_offset
 
 //    [last esp              ]                   = last_sp()            last_sp_offset
 //    [old stack pointer     ]                     (sender_sp)          sender_sp_offset
@@ -61,6 +61,7 @@
 //    [last sp               ]
 //    [oop temp              ]                     (only for native calls)
 
+//    [padding               ]                     (to preserve machine SP alignment)
 //    [locals and parameters ]
 //                               <- sender sp
 // ------------------------------ Asm interpreter ----------------------------------------
@@ -148,6 +149,7 @@
   intptr_t*   fp() const { return _fp; }
 
   inline address* sender_pc_addr() const;
+  inline address  sender_pc_maybe_signed() const;
 
   // expression stack tos if we are nested in a java call
   intptr_t* interpreter_frame_last_sp() const;
@@ -160,4 +162,7 @@
 
   static jint interpreter_frame_expression_stack_direction() { return -1; }
 
-#endif // CPU_AARCH64_VM_FRAME_AARCH64_HPP
+  // returns the sending frame, without applying any barriers
+  frame sender_raw(RegisterMap* map) const;
+
+#endif // CPU_AARCH64_FRAME_AARCH64_HPP

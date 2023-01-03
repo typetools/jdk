@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,30 +22,50 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.beans.JavaBean;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.FocusListener;
+import java.awt.event.MouseEvent;
 import java.beans.BeanProperty;
+import java.beans.JavaBean;
 import java.beans.Transient;
-import java.util.*;
-import javax.swing.event.*;
-import javax.swing.plaf.*;
-import javax.accessibility.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Locale;
+
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleComponent;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleIcon;
+import javax.accessibility.AccessibleRole;
+import javax.accessibility.AccessibleSelection;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.plaf.TabbedPaneUI;
+import javax.swing.plaf.UIResource;
 
 import sun.swing.SwingUtilities2;
-
-import java.io.Serializable;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
 
 /**
  * A component that lets the user switch between a group of components by
  * clicking on a tab with a given title and/or icon.
  * For examples and information on using tabbed panes see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/components/tabbedpane.html">How to Use Tabbed Panes</a>,
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/tabbedpane.html">How to Use Tabbed Panes</a>,
  * a section in <em>The Java Tutorial</em>.
  * <p>
  * Tabs/components are added to a <code>TabbedPane</code> object by using the
@@ -93,7 +113,7 @@ import java.io.IOException;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -150,7 +170,7 @@ public class JTabbedPane extends JComponent
      */
     protected ChangeListener changeListener = null;
 
-    private final java.util.List<Page> pages;
+    private java.util.List<Page> pages;
 
     /* The component that is currently visible */
     private Component visComp = null;
@@ -265,6 +285,12 @@ public class JTabbedPane extends JComponent
      * the tabbedpane (instead of the model itself) as the event source.
      */
     protected class ModelListener implements ChangeListener, Serializable {
+
+        /**
+         * Constructs a {@code ModelListener}.
+         */
+        protected ModelListener() {}
+
         public void stateChanged(ChangeEvent e) {
             fireStateChanged();
         }
@@ -329,7 +355,7 @@ public class JTabbedPane extends JComponent
      * these cases.
      *
      * @see #addChangeListener
-     * @see EventListenerList
+     * @see javax.swing.event.EventListenerList
      */
     @SuppressWarnings("deprecation")
     protected void fireStateChanged() {
@@ -923,6 +949,13 @@ public class JTabbedPane extends JComponent
         }
     }
 
+    private void clearAccessibleParent(Component c) {
+        AccessibleContext ac = c.getAccessibleContext();
+        if (ac != null) {
+            ac.setAccessibleParent(null);
+        }
+    }
+
     /**
      * Removes the tab at <code>index</code>.
      * After the component associated with <code>index</code> is removed,
@@ -1000,11 +1033,12 @@ public class JTabbedPane extends JComponent
         // container's children array indices, so make sure we
         // remove the correct child!
         if (component != null) {
-            Component components[] = getComponents();
+            Component[] components = getComponents();
             for (int i = components.length; --i >= 0; ) {
                 if (components[i] == component) {
                     super.remove(i);
                     component.setVisible(true);
+                    clearAccessibleParent(component);
                     break;
                 }
             }
@@ -1034,7 +1068,7 @@ public class JTabbedPane extends JComponent
         } else {
             // Container#remove(comp) invokes Container#remove(int)
             // so make sure JTabbedPane#remove(int) isn't called here
-            Component children[] = getComponents();
+            Component[] children = getComponents();
             for (int i=0; i < children.length; i++) {
                 if (component == children[i]) {
                     super.remove(i);
@@ -1548,10 +1582,11 @@ public class JTabbedPane extends JComponent
                 // why not if (page.component.getParent() == this) remove(component)
                 synchronized(getTreeLock()) {
                     int count = getComponentCount();
-                    Component children[] = getComponents();
+                    Component[] children = getComponents();
                     for (int i = 0; i < count; i++) {
                         if (children[i] == page.component) {
                             super.remove(i);
+                            clearAccessibleParent(children[i]);
                         }
                     }
                 }
@@ -1765,6 +1800,7 @@ public class JTabbedPane extends JComponent
      * <code>JComponent</code> for more
      * information about serialization in Swing.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         if (getUIClassID().equals(uiClassID)) {
@@ -1794,6 +1830,8 @@ public class JTabbedPane extends JComponent
      * <code>JComponent</code> for more
      * information about serialization in Swing.
      */
+    @Serial
+    @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException
     {
@@ -1808,6 +1846,7 @@ public class JTabbedPane extends JComponent
         model = (SingleSelectionModel) f.get("model", null);
         haveRegistered = f.get("haveRegistered", false);
         changeListener = (ChangeListener) f.get("changeListener", null);
+        pages = (java.util.List<JTabbedPane.Page>) f.get("pages", null);
         visComp = (Component) f.get("visComp", null);
 
         if ((ui != null) && (getUIClassID().equals(uiClassID))) {
@@ -1888,7 +1927,7 @@ public class JTabbedPane extends JComponent
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      */

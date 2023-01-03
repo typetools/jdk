@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,8 +46,6 @@ import com.sun.tools.javac.main.JavaCompiler;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- *  @author Neal Gafter
  */
 public class JavadocEnter extends Enter {
     public static JavadocEnter instance(Context context) {
@@ -63,24 +61,24 @@ public class JavadocEnter extends Enter {
 
     protected JavadocEnter(Context context) {
         super(context);
-        messager = Messager.instance0(context);
+        log = JavadocLog.instance0(context);
         toolEnv = ToolEnvironment.instance(context);
         compiler = JavaCompiler.instance(context);
     }
 
-    final Messager messager;
+    final JavadocLog log;
     final ToolEnvironment toolEnv;
     final JavaCompiler compiler;
 
     @Override
     public void main(List<JCCompilationUnit> trees) {
         // cache the error count if we need to convert Enter errors as warnings.
-        int nerrors = messager.nerrors;
+        int nerrors = log.nerrors;
         super.main(trees);
         compiler.enterDone();
         if (toolEnv.ignoreSourceErrors) {
-            messager.nwarnings += (messager.nerrors - nerrors);
-            messager.nerrors = nerrors;
+            log.nwarnings += (log.nerrors - nerrors);
+            log.nerrors = nerrors;
         }
     }
 

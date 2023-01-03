@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,18 +25,44 @@
 
 package sun.lwawt.macosx;
 
-import sun.lwawt.LWWindowPeer;
-
-import java.awt.*;
-import java.beans.*;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.Window;
+import java.awt.event.KeyEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
-import javax.accessibility.*;
-import javax.swing.*;
-import sun.awt.AWTAccessor;
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleAction;
+import javax.accessibility.AccessibleComponent;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
+import javax.accessibility.AccessibleSelection;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
+import javax.accessibility.AccessibleTable;
+import javax.accessibility.AccessibleText;
+import javax.accessibility.AccessibleValue;
+import javax.swing.Icon;
+import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 
+import sun.awt.AWTAccessor;
+import sun.lwawt.LWWindowPeer;
+
+@SuppressWarnings("removal")
 class CAccessibility implements PropertyChangeListener {
     private static Set<String> ignoredRoles;
 
@@ -90,25 +116,31 @@ class CAccessibility implements PropertyChangeListener {
     private native void focusChanged();
 
     static <T> T invokeAndWait(final Callable<T> callable, final Component c) {
-        try {
-            return LWCToolkit.invokeAndWait(callable, c);
-        } catch (final Exception e) { e.printStackTrace(); }
+        if (c != null) {
+            try {
+                return LWCToolkit.invokeAndWait(callable, c);
+            } catch (final Exception e) { e.printStackTrace(); }
+        }
         return null;
     }
 
     static <T> T invokeAndWait(final Callable<T> callable, final Component c, final T defValue) {
         T value = null;
-        try {
-            value = LWCToolkit.invokeAndWait(callable, c);
-        } catch (final Exception e) { e.printStackTrace(); }
+        if (c != null) {
+            try {
+                value = LWCToolkit.invokeAndWait(callable, c);
+            } catch (final Exception e) { e.printStackTrace(); }
+        }
 
         return value != null ? value : defValue;
     }
 
     static void invokeLater(final Runnable runnable, final Component c) {
-        try {
-            LWCToolkit.invokeLater(runnable, c);
-        } catch (InvocationTargetException e) { e.printStackTrace(); }
+        if (c != null) {
+            try {
+                LWCToolkit.invokeLater(runnable, c);
+            } catch (InvocationTargetException e) { e.printStackTrace(); }
+        }
     }
 
     public static String getAccessibleActionDescription(final AccessibleAction aa, final int index, final Component c) {
@@ -333,6 +365,10 @@ class CAccessibility implements PropertyChangeListener {
                 if (accessibleName == null) {
                     return ac.getAccessibleDescription();
                 }
+                final String acceleratorText = getAcceleratorText(ac);
+                if (!acceleratorText.isEmpty()) {
+                    return accessibleName +' '+ acceleratorText;
+                }
                 return accessibleName;
             }
         }, c);
@@ -350,6 +386,41 @@ class CAccessibility implements PropertyChangeListener {
                 return accessibleText;
             }
         }, c);
+    }
+
+    /*
+     * Returns the JMenuItem accelerator. Implementation of this method is based
+     * on AccessBridge.getAccelerator(AccessibleContext) to access the KeyStroke
+     * and on AquaMenuPainter.paintMenuItem() to convert it to string.
+     */
+    @SuppressWarnings("deprecation")
+    private static String getAcceleratorText(AccessibleContext ac) {
+        String accText = "";
+        Accessible parent = ac.getAccessibleParent();
+        if (parent != null) {
+            // workaround for getAccessibleKeyBinding not returning the
+            // JMenuItem accelerator
+            int indexInParent = ac.getAccessibleIndexInParent();
+            Accessible child = parent.getAccessibleContext()
+                                     .getAccessibleChild(indexInParent);
+            if (child instanceof JMenuItem) {
+                JMenuItem menuItem = (JMenuItem) child;
+                KeyStroke keyStroke = menuItem.getAccelerator();
+                if (keyStroke != null) {
+                    int modifiers = keyStroke.getModifiers();
+                    if (modifiers > 0) {
+                        accText = KeyEvent.getKeyModifiersText(modifiers);
+                    }
+                    int keyCode = keyStroke.getKeyCode();
+                    if (keyCode != 0) {
+                        accText += KeyEvent.getKeyText(keyCode);
+                    } else {
+                        accText += keyStroke.getKeyChar();
+                    }
+                }
+            }
+        }
+        return accText;
     }
 
     public static String getAccessibleDescription(final Accessible a, final Component c) {
@@ -626,7 +697,7 @@ class CAccessibility implements PropertyChangeListener {
                                 currentAC = currentAccessible.getAccessibleContext();
                                 currentName = currentAC.getAccessibleName();
                                 currentRole = (AccessibleRole)childrenAndRoles.get(i+1);
-                                if ( currentName.equals(activeDescendantName) &&
+                                if (currentName != null && currentName.equals(activeDescendantName) &&
                                      currentRole.equals(activeDescendantRole) ) {
                                     newArray.add(0, currentAccessible);
                                     newArray.add(1, currentRole);
@@ -646,6 +717,26 @@ class CAccessibility implements PropertyChangeListener {
 
                 return new Object[] { childrenAndRoles.get(whichChildren * 2), childrenAndRoles.get((whichChildren * 2) + 1) };
             }
+        }, c);
+    }
+
+    private static final int JAVA_AX_ROWS = 1;
+    private static final int JAVA_AX_COLS = 2;
+
+    public static int getTableInfo(final Accessible a, final Component c,
+                                   final int info) {
+        if (a == null) return 0;
+        return invokeAndWait(() -> {
+            AccessibleContext ac = a.getAccessibleContext();
+            AccessibleTable table = ac.getAccessibleTable();
+            if (table != null) {
+                if (info == JAVA_AX_COLS) {
+                    return table.getAccessibleColumnCount();
+                } else if (info == JAVA_AX_ROWS) {
+                    return table.getAccessibleRowCount();
+                }
+            }
+            return 0;
         }, c);
     }
 

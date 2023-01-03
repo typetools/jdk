@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,6 +57,11 @@ import sun.security.jca.JCAUtil;
 public abstract @UsesObjectEquals class SignatureSpi {
 
     /**
+     * Constructor for subclasses to call.
+     */
+    public SignatureSpi() {}
+
+    /**
      * Application-specified source of randomness.
      */
     protected SecureRandom appRandom = null;
@@ -68,11 +73,38 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * @param publicKey the public key of the identity whose signature is
      * going to be verified.
      *
-     * @exception InvalidKeyException if the key is improperly
+     * @throws    InvalidKeyException if the key is improperly
      * encoded, parameters are missing, and so on.
      */
     protected abstract void engineInitVerify(PublicKey publicKey)
         throws InvalidKeyException;
+
+    /**
+     * Initializes this signature object with the specified
+     * public key for verification operations.
+     *
+     * @param publicKey the public key of the identity whose signature is
+     * going to be verified.
+     * @param params the parameters for generating this signature
+     *
+     * @throws    InvalidKeyException if the key is improperly
+     * encoded, does not work with the given parameters, and so on.
+     * @throws    InvalidAlgorithmParameterException if the given parameters
+     * is invalid.
+     */
+    void engineInitVerify(PublicKey publicKey,
+            AlgorithmParameterSpec params)
+            throws InvalidKeyException, InvalidAlgorithmParameterException {
+        if (params != null) {
+            try {
+                engineSetParameter(params);
+            } catch (UnsupportedOperationException usoe) {
+                // error out if not overridden
+                throw new InvalidAlgorithmParameterException(usoe);
+            }
+        }
+        engineInitVerify(publicKey);
+    }
 
     /**
      * Initializes this signature object with the specified
@@ -81,7 +113,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * @param privateKey the private key of the identity whose signature
      * will be generated.
      *
-     * @exception InvalidKeyException if the key is improperly
+     * @throws    InvalidKeyException if the key is improperly
      * encoded, parameters are missing, and so on.
      */
     protected abstract void engineInitSign(PrivateKey privateKey)
@@ -98,14 +130,45 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * will be generated.
      * @param random the source of randomness
      *
-     * @exception InvalidKeyException if the key is improperly
+     * @throws    InvalidKeyException if the key is improperly
      * encoded, parameters are missing, and so on.
      */
     protected void engineInitSign(PrivateKey privateKey,
-                                  SecureRandom random)
-        throws InvalidKeyException {
-            this.appRandom = random;
-            engineInitSign(privateKey);
+            SecureRandom random)
+            throws InvalidKeyException {
+        this.appRandom = random;
+        engineInitSign(privateKey);
+    }
+
+    /**
+     * Initializes this signature object with the specified
+     * private key and source of randomness for signing operations.
+     *
+     * <p>This concrete method has been added to this previously-defined
+     * abstract class. (For backwards compatibility, it cannot be abstract.)
+     *
+     * @param privateKey the private key of the identity whose signature
+     * will be generated.
+     * @param params the parameters for generating this signature
+     * @param random the source of randomness
+     *
+     * @throws    InvalidKeyException if the key is improperly
+     * encoded, parameters are missing, and so on.
+     * @throws    InvalidAlgorithmParameterException if the parameters is
+     * invalid.
+     */
+    void engineInitSign(PrivateKey privateKey,
+            AlgorithmParameterSpec params, SecureRandom random)
+            throws InvalidKeyException, InvalidAlgorithmParameterException {
+        if (params != null) {
+            try {
+                engineSetParameter(params);
+            } catch (UnsupportedOperationException usoe) {
+                // error out if not overridden
+                throw new InvalidAlgorithmParameterException(usoe);
+            }
+        }
+        engineInitSign(privateKey, random);
     }
 
     /**
@@ -114,7 +177,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @param b the byte to use for the update.
      *
-     * @exception SignatureException if the engine is not initialized
+     * @throws    SignatureException if the engine is not initialized
      * properly.
      */
     protected abstract void engineUpdate(byte b) throws SignatureException;
@@ -127,11 +190,11 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * @param off the offset to start from in the array of bytes
      * @param len the number of bytes to use, starting at offset
      *
-     * @exception SignatureException if the engine is not initialized
+     * @throws    SignatureException if the engine is not initialized
      * properly
      */
     protected abstract void engineUpdate(byte[] b, int off, int len)
-        throws SignatureException;
+            throws SignatureException;
 
     /**
      * Updates the data to be signed or verified using the specified
@@ -180,7 +243,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @return the signature bytes of the signing operation's result.
      *
-     * @exception SignatureException if the engine is not
+     * @throws    SignatureException if the engine is not
      * initialized properly or if this signature algorithm is unable to
      * process the input data provided.
      */
@@ -219,7 +282,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @return the number of bytes placed into {@code outbuf}
      *
-     * @exception SignatureException if the engine is not
+     * @throws    SignatureException if the engine is not
      * initialized properly, if this signature algorithm is unable to
      * process the input data provided, or if {@code len} is less
      * than the actual signature length.
@@ -227,7 +290,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * @since 1.2
      */
     protected int engineSign(byte[] outbuf, int offset, int len)
-                        throws SignatureException {
+             throws SignatureException {
         byte[] sig = engineSign();
         if (len < sig.length) {
                 throw new SignatureException
@@ -249,13 +312,13 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @return true if the signature was verified, false if not.
      *
-     * @exception SignatureException if the engine is not
+     * @throws    SignatureException if the engine is not
      * initialized properly, the passed-in signature is improperly
      * encoded or of the wrong type, if this signature algorithm is unable to
      * process the input data provided, etc.
      */
     protected abstract boolean engineVerify(byte[] sigBytes)
-        throws SignatureException;
+            throws SignatureException;
 
     /**
      * Verifies the passed-in signature in the specified array
@@ -270,14 +333,14 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @return true if the signature was verified, false if not.
      *
-     * @exception SignatureException if the engine is not
+     * @throws    SignatureException if the engine is not
      * initialized properly, the passed-in signature is improperly
      * encoded or of the wrong type, if this signature algorithm is unable to
      * process the input data provided, etc.
      * @since 1.4
      */
     protected boolean engineVerify(byte[] sigBytes, int offset, int length)
-        throws SignatureException {
+            throws SignatureException {
         byte[] sigBytesCopy = new byte[length];
         System.arraycopy(sigBytes, offset, sigBytesCopy, 0, length);
         return engineVerify(sigBytesCopy);
@@ -298,7 +361,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @param value the parameter value.
      *
-     * @exception InvalidParameterException if {@code param} is an
+     * @throws    InvalidParameterException if {@code param} is an
      * invalid parameter for this signature algorithm engine,
      * the parameter is already set
      * and cannot be set again, a security exception occurs, and so on.
@@ -309,7 +372,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      */
     @Deprecated
     protected abstract void engineSetParameter(String param, Object value)
-        throws InvalidParameterException;
+            throws InvalidParameterException;
 
     /**
      * <p>This method is overridden by providers to initialize
@@ -317,33 +380,35 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @param params the parameters
      *
-     * @exception UnsupportedOperationException if this method is not
+     * @throws    UnsupportedOperationException if this method is not
      * overridden by a provider
      *
-     * @exception InvalidAlgorithmParameterException if this method is
+     * @throws    InvalidAlgorithmParameterException if this method is
      * overridden by a provider and the given parameters
      * are inappropriate for this signature engine
      */
     protected void engineSetParameter(AlgorithmParameterSpec params)
-        throws InvalidAlgorithmParameterException {
-            throw new UnsupportedOperationException();
+            throws InvalidAlgorithmParameterException {
+        throw new UnsupportedOperationException();
     }
 
     /**
      * <p>This method is overridden by providers to return the parameters
      * used with this signature engine.
      *
-     * <p> If this signature engine has been previously initialized with
-     * parameters (by calling the {@code engineSetParameter} method), this
-     * method returns the same parameters. If this signature engine has not been
-     * initialized with parameters, this method may return a combination of
-     * default and randomly generated parameter values if the underlying
-     * signature implementation supports it and can successfully generate
-     * them. Otherwise, {@code null} is returned.
+     * <p> If this signature engine has been initialized with parameters
+     * (by calling {@link #engineSetParameter(AlgorithmParameterSpec)} or
+     * {@link #engineSetParameter(String, Object)}) and the underlying signature
+     * implementation supports returning the parameters as
+     * {@code AlgorithmParameters}, this method returns the same parameters.
+     * If the parameters were not set, this method may return a combination
+     * of default and randomly generated parameter values if the
+     * underlying signature implementation supports it and can successfully
+     * generate them. Otherwise, {@code null} is returned.
      *
      * @return the parameters used with this signature engine, or {@code null}
      *
-     * @exception UnsupportedOperationException if this method is
+     * @throws    UnsupportedOperationException if this method is
      * not overridden by a provider
      * @since 1.4
      */
@@ -367,7 +432,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      * @return the object that represents the parameter value, or {@code null} if
      * there is none.
      *
-     * @exception InvalidParameterException if {@code param} is an
+     * @throws    InvalidParameterException if {@code param} is an
      * invalid parameter for this engine, or another exception occurs while
      * trying to get this parameter.
      *
@@ -382,7 +447,7 @@ public abstract @UsesObjectEquals class SignatureSpi {
      *
      * @return a clone if the implementation is cloneable.
      *
-     * @exception CloneNotSupportedException if this is called
+     * @throws    CloneNotSupportedException if this is called
      * on an implementation that does not support {@code Cloneable}.
      */
     public Object clone() throws CloneNotSupportedException {

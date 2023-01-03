@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "c1/c1_ValueStack.hpp"
 #include "ci/ciObjArrayKlass.hpp"
 #include "ci/ciTypeArrayKlass.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 
 // Implementation of Instruction
@@ -322,17 +323,15 @@ void BlockBegin::state_values_do(ValueVisitor* f) {
 
 
 Invoke::Invoke(Bytecodes::Code code, ValueType* result_type, Value recv, Values* args,
-               int vtable_index, ciMethod* target, ValueStack* state_before)
+               ciMethod* target, ValueStack* state_before)
   : StateSplit(result_type, state_before)
   , _code(code)
   , _recv(recv)
   , _args(args)
-  , _vtable_index(vtable_index)
   , _target(target)
 {
   set_flag(TargetIsLoadedFlag,   target->is_loaded());
   set_flag(TargetIsFinalFlag,    target_is_loaded() && target->is_final_method());
-  set_flag(TargetIsStrictfpFlag, target_is_loaded() && target->is_strict());
 
   assert(args != NULL, "args must exist");
 #ifdef ASSERT
@@ -827,9 +826,16 @@ bool BlockBegin::try_merge(ValueStack* new_state) {
       for_each_local_value(existing_state, index, existing_value) {
         Value new_value = new_state->local_at(index);
         if (new_value == NULL || new_value->type()->tag() != existing_value->type()->tag()) {
-          // The old code invalidated the phi function here
-          // Because dead locals are replaced with NULL, this is a very rare case now, so simply bail out
-          return false; // BAILOUT in caller
+          Phi* existing_phi = existing_value->as_Phi();
+          if (existing_phi == NULL) {
+            return false; // BAILOUT in caller
+          }
+          // Invalidate the phi function here. This case is very rare except for
+          // JVMTI capability "can_access_local_variables".
+          // In really rare cases we will bail out in LIRGenerator::move_to_phi.
+          existing_phi->make_illegal();
+          existing_state->invalidate_local(index);
+          TRACE_PHI(tty->print_cr("invalidating local %d because of type mismatch", index));
         }
       }
 

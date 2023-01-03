@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,7 +47,7 @@ class CE_Eliminator: public BlockClosure {
   int _has_substitution;
 
  public:
-  CE_Eliminator(IR* hir) : _cee_count(0), _ifop_count(0), _hir(hir) {
+  CE_Eliminator(IR* hir) : _hir(hir), _cee_count(0), _ifop_count(0) {
     _has_substitution = false;
     _hir->iterate_preorder(this);
     if (_has_substitution) {
@@ -174,6 +174,12 @@ void CE_Eliminator::block_do(BlockBegin* block) {
   for_each_phi_fun(t_block, phi, return; );
   for_each_phi_fun(f_block, phi, return; );
 
+  // Only replace safepoint gotos if state_before information is available (if is a safepoint)
+  bool is_safepoint = if_->is_safepoint();
+  if (!is_safepoint && (t_goto->is_safepoint() || f_goto->is_safepoint())) {
+    return;
+  }
+
   // 2) substitute conditional expression
   //    with an IfOp followed by a Goto
   // cut if_ away and get node before
@@ -202,7 +208,7 @@ void CE_Eliminator::block_do(BlockBegin* block) {
 
   // append Goto to successor
   ValueStack* state_before = if_->state_before();
-  Goto* goto_ = new Goto(sux, state_before, if_->is_safepoint() || t_goto->is_safepoint() || f_goto->is_safepoint());
+  Goto* goto_ = new Goto(sux, state_before, is_safepoint);
 
   // prepare state for Goto
   ValueStack* goto_state = if_state;
@@ -360,6 +366,8 @@ class BlockMerger: public BlockClosure {
           assert(sux_value == end_state->stack_at(index), "stack not equal");
         }
         for_each_local_value(sux_state, index, sux_value) {
+          Phi* sux_phi = sux_value->as_Phi();
+          if (sux_phi != NULL && sux_phi->is_illegal()) continue;
           assert(sux_value == end_state->local_at(index), "locals not equal");
         }
         assert(sux_state->caller_state() == end_state->caller_state(), "caller not equal");
@@ -513,7 +521,6 @@ public:
   void do_BlockBegin     (BlockBegin*      x);
   void do_Goto           (Goto*            x);
   void do_If             (If*              x);
-  void do_IfInstanceOf   (IfInstanceOf*    x);
   void do_TableSwitch    (TableSwitch*     x);
   void do_LookupSwitch   (LookupSwitch*    x);
   void do_Return         (Return*          x);
@@ -592,10 +599,10 @@ class NullCheckEliminator: public ValueVisitor {
   // constructor
   NullCheckEliminator(Optimizer* opt)
     : _opt(opt)
+    , _work_list(new BlockList())
     , _set(new ValueSet())
-    , _last_explicit_null_check(NULL)
     , _block_states(BlockBegin::number_of_blocks(), BlockBegin::number_of_blocks(), NULL)
-    , _work_list(new BlockList()) {
+    , _last_explicit_null_check(NULL) {
     _visitable_instructions = new ValueSet();
     _visitor.set_eliminator(this);
     CompileLog* log = _opt->ir()->compilation()->log();
@@ -699,7 +706,6 @@ void NullCheckVisitor::do_Intrinsic      (Intrinsic*       x) { nce()->handle_In
 void NullCheckVisitor::do_BlockBegin     (BlockBegin*      x) {}
 void NullCheckVisitor::do_Goto           (Goto*            x) {}
 void NullCheckVisitor::do_If             (If*              x) {}
-void NullCheckVisitor::do_IfInstanceOf   (IfInstanceOf*    x) {}
 void NullCheckVisitor::do_TableSwitch    (TableSwitch*     x) {}
 void NullCheckVisitor::do_LookupSwitch   (LookupSwitch*    x) {}
 void NullCheckVisitor::do_Return         (Return*          x) {}
@@ -862,7 +868,7 @@ void NullCheckEliminator::handle_AccessField(AccessField* x) {
       if (field->is_constant()) {
         ciConstant field_val = field->constant_value();
         BasicType field_type = field_val.basic_type();
-        if (field_type == T_OBJECT || field_type == T_ARRAY) {
+        if (is_reference_type(field_type)) {
           ciObject* obj_val = field_val.as_object();
           if (!obj_val->is_null_object()) {
             if (PrintNullCheckElimination) {
@@ -1094,13 +1100,13 @@ void NullCheckEliminator::handle_Intrinsic(Intrinsic* x) {
   if (set_contains(recv)) {
     // Value is non-null => update Intrinsic
     if (PrintNullCheckElimination) {
-      tty->print_cr("Eliminated Intrinsic %d's null check for value %d", x->id(), recv->id());
+      tty->print_cr("Eliminated Intrinsic %d's null check for value %d", vmIntrinsics::as_int(x->id()), recv->id());
     }
     x->set_needs_null_check(false);
   } else {
     set_put(recv);
     if (PrintNullCheckElimination) {
-      tty->print_cr("Intrinsic %d of value %d proves value to be non-null", x->id(), recv->id());
+      tty->print_cr("Intrinsic %d of value %d proves value to be non-null", vmIntrinsics::as_int(x->id()), recv->id());
     }
     // Ensure previous passes do not cause wrong state
     x->set_needs_null_check(true);

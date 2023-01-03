@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -101,13 +101,11 @@ import java.lang.*;
  *     test
  * </pre></blockquote>
  *
- * @author  unascribed
  * @see     java.io.StreamTokenizer
  * @since   1.0
  */
 @AnnotatedFor({"index", "interning", "lock", "nullness"})
-public
-@UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
+public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
     private int currentPosition;
     private int newPosition;
     private int maxPosition;
@@ -196,7 +194,7 @@ public
      * @param   delim          the delimiters.
      * @param   returnDelims   flag indicating whether to return the delimiters
      *                         as tokens.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str, @Nullable String delim, boolean returnDelims) {
         currentPosition = 0;
@@ -222,7 +220,7 @@ public
      *
      * @param   str     a string to be parsed.
      * @param   delim   the delimiters.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str, @Nullable String delim) {
         this(str, delim, false);
@@ -237,7 +235,7 @@ public
      * not be treated as tokens.
      *
      * @param   str   a string to be parsed.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str) {
         this(str, " \t\n\r\f", false);
@@ -335,7 +333,7 @@ public
      * Returns the next token from this string tokenizer.
      *
      * @return     the next token from this string tokenizer.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
      */
     public @MinLen(1) String nextToken() {
@@ -370,9 +368,9 @@ public
      *
      * @param      delim   the new delimiters.
      * @return     the next token, after switching to the new delimiter set.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
-     * @exception NullPointerException if delim is {@code null}
+     * @throws    NullPointerException if delim is {@code null}
      */
     public @MinLen(1) String nextToken(String delim) {
         delimiters = delim;
@@ -405,7 +403,7 @@ public
      * {@code Enumeration} interface.
      *
      * @return     the next token in the string.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
      * @see        java.util.Enumeration
      * @see        java.util.StringTokenizer#nextToken()

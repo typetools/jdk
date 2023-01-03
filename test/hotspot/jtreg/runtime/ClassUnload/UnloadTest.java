@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,16 +23,17 @@
 
 /*
  * @test UnloadTest
+ * @bug 8210559
  * @requires vm.opt.final.ClassUnloading
  * @modules java.base/jdk.internal.misc
- * @library /runtime/testlibrary /test/lib
+ * @library /test/lib
  * @library classes
  * @build sun.hotspot.WhiteBox test.Empty
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- *                              sun.hotspot.WhiteBox$WhiteBoxPermission
- * @run main/othervm -Xbootclasspath/a:. -Xmn8m -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI UnloadTest
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller sun.hotspot.WhiteBox
+ * @run main/othervm -Xbootclasspath/a:. -Xmn8m -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI -Xlog:class+unload=debug UnloadTest
  */
 import sun.hotspot.WhiteBox;
+import jdk.test.lib.classloader.ClassUnloadCommon;
 
 /**
  * Test that verifies that classes are unloaded when they are no longer reachable.
@@ -60,8 +61,16 @@ public class UnloadTest {
 
         ClassUnloadCommon.failIf(!wb.isClassAlive(className), "should be live here");
 
+        String loaderName = cl.getName();
+        int loadedRefcount = wb.getSymbolRefcount(loaderName);
+        System.out.println("Refcount of symbol " + loaderName + " is " + loadedRefcount);
+
         cl = null; c = null; o = null;
         ClassUnloadCommon.triggerUnloading();
         ClassUnloadCommon.failIf(wb.isClassAlive(className), "should have been unloaded");
+
+        int unloadedRefcount = wb.getSymbolRefcount(loaderName);
+        System.out.println("Refcount of symbol " + loaderName + " is " + unloadedRefcount);
+        ClassUnloadCommon.failIf(unloadedRefcount != (loadedRefcount - 1), "Refcount must be decremented");
     }
 }

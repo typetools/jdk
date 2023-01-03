@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,15 +26,21 @@
 #include "jvm.h"
 #include "classfile/classFileParser.hpp"
 #include "classfile/classFileStream.hpp"
+#include "classfile/classLoadInfo.hpp"
 #include "classfile/javaClasses.inline.hpp"
+#include "classfile/moduleEntry.hpp"
+#include "classfile/modules.hpp"
 #include "classfile/stackMapTable.hpp"
+#include "classfile/symbolTable.hpp"
+#include "classfile/systemDictionary.hpp"
 #include "classfile/verificationType.hpp"
 #include "interpreter/bytecodes.hpp"
 #include "jfr/instrumentation/jfrEventClassTransformer.hpp"
 #include "jfr/jfr.hpp"
 #include "jfr/jni/jfrJavaSupport.hpp"
 #include "jfr/jni/jfrUpcalls.hpp"
-#include "jfr/support/jfrEventClass.hpp"
+#include "jfr/recorder/checkpoint/types/traceid/jfrTraceId.inline.hpp"
+#include "jfr/support/jfrJdkJfrEvent.hpp"
 #include "jfr/utilities/jfrBigEndian.hpp"
 #include "jfr/writers/jfrBigEndianWriter.hpp"
 #include "logging/log.hpp"
@@ -42,9 +48,11 @@
 #include "memory/resourceArea.hpp"
 #include "oops/array.hpp"
 #include "oops/instanceKlass.hpp"
+#include "oops/klass.inline.hpp"
 #include "oops/method.hpp"
 #include "prims/jvmtiRedefineClasses.hpp"
 #include "runtime/handles.inline.hpp"
+#include "runtime/jniHandles.hpp"
 #include "runtime/os.hpp"
 #include "runtime/thread.inline.hpp"
 #include "utilities/exceptions.hpp"
@@ -61,25 +69,26 @@ static const char* utf8_constants[] = {
   "J",            // 1
   "commit",       // 2
   "eventHandler", // 3
-  "Ljdk/jfr/internal/handlers/EventHandler;", // 4
-  "duration",     // 5
-  "begin",        // 6
-  "()V",          // 7
-  "isEnabled",    // 8
-  "()Z",          // 9
-  "end",          // 10
-  "shouldCommit", // 11
-  "startTime",    // 12
-  "<clinit>",     // 13
-  "jdk/jfr/FlightRecorder", // 14
-  "register", // 15
-  "(Ljava/lang/Class;)V", // 16 // LAST_REQUIRED_UTF8
-  "StackMapTable", // 17
-  "Exceptions", // 18
+  "duration",     // 4
+  "begin",        // 5
+  "()V",          // 6
+  "isEnabled",    // 7
+  "()Z",          // 8
+  "end",          // 9
+  "shouldCommit", // 10
+  "startTime",    // 11 // LAST_REQUIRED_UTF8
+  "Ljdk/jfr/internal/handlers/EventHandler;", // 12
+  "Ljava/lang/Object;", // 13
+  "<clinit>",     // 14
+  "jdk/jfr/FlightRecorder", // 15
+  "register",     // 16
+  "(Ljava/lang/Class;)V", // 17
+  "StackMapTable", // 18
+  "Exceptions", // 19
   "LineNumberTable", // 20
   "LocalVariableTable", // 21
   "LocalVariableTypeTable", // 22
-  "RuntimeVisibleAnnotation" // 23
+  "RuntimeVisibleAnnotation", // 23
 };
 
 enum utf8_req_symbols {
@@ -87,7 +96,6 @@ enum utf8_req_symbols {
   UTF8_REQ_J_FIELD_DESC,
   UTF8_REQ_commit,
   UTF8_REQ_eventHandler,
-  UTF8_REQ_eventHandler_FIELD_DESC,
   UTF8_REQ_duration,
   UTF8_REQ_begin,
   UTF8_REQ_EMPTY_VOID_METHOD_DESC,
@@ -96,15 +104,17 @@ enum utf8_req_symbols {
   UTF8_REQ_end,
   UTF8_REQ_shouldCommit,
   UTF8_REQ_startTime,
-  UTF8_REQ_clinit,
-  UTF8_REQ_FlightRecorder,
-  UTF8_REQ_register,
-  UTF8_REQ_CLASS_VOID_METHOD_DESC,
   NOF_UTF8_REQ_SYMBOLS
 };
 
 enum utf8_opt_symbols {
-  UTF8_OPT_StackMapTable = NOF_UTF8_REQ_SYMBOLS,
+  UTF8_OPT_eventHandler_FIELD_DESC = NOF_UTF8_REQ_SYMBOLS,
+  UTF8_OPT_LjavaLangObject,
+  UTF8_OPT_clinit,
+  UTF8_OPT_FlightRecorder,
+  UTF8_OPT_register,
+  UTF8_OPT_CLASS_VOID_METHOD_DESC,
+  UTF8_OPT_StackMapTable,
   UTF8_OPT_Exceptions,
   UTF8_OPT_LineNumberTable,
   UTF8_OPT_LocalVariableTable,
@@ -265,8 +275,8 @@ class AnnotationElementIterator : public StackObj {
   AnnotationElementIterator(const InstanceKlass* ik, address buffer, u2 limit) : _ik(ik),
                                                                                  _buffer(buffer),
                                                                                  _limit(limit),
-                                                                                 _next(element_name_offset),
-                                                                                 _current(element_name_offset) {
+                                                                                 _current(element_name_offset),
+                                                                                 _next(element_name_offset) {
     assert(_buffer != NULL, "invariant");
     assert(_next == element_name_offset, "invariant");
     assert(_current == element_name_offset, "invariant");
@@ -319,10 +329,10 @@ class AnnotationIterator : public StackObj {
 
  public:
   AnnotationIterator(const InstanceKlass* ik, AnnotationArray* ar) : _ik(ik),
-                                                                     _current(0),
-                                                                     _next(0),
                                                                      _limit(ar != NULL ? ar->length() : 0),
-                                                                     _buffer(_limit > 2 ? ar->adr_at(2) : NULL) {
+                                                                     _buffer(_limit > 2 ? ar->adr_at(2) : NULL),
+                                                                     _current(0),
+                                                                     _next(0) {
     if (_buffer != NULL) {
       _limit -= 2; // subtract sizeof(u2) number of annotations field
     }
@@ -351,9 +361,8 @@ class AnnotationIterator : public StackObj {
   }
 };
 
-static unsigned int unused_hash = 0;
 static const char value_name[] = "value";
-static bool has_registered_annotation(const InstanceKlass* ik, const Symbol* annotation_type, bool& value) {
+static bool has_annotation(const InstanceKlass* ik, const Symbol* annotation_type, bool& value) {
   assert(annotation_type != NULL, "invariant");
   AnnotationArray* class_annotations = ik->class_annotations();
   if (class_annotations == NULL) {
@@ -366,7 +375,7 @@ static bool has_registered_annotation(const InstanceKlass* ik, const Symbol* ann
     if (annotation_iterator.type() == annotation_type) {
       // target annotation found
       static const Symbol* value_symbol =
-        SymbolTable::lookup_only(value_name, sizeof value_name - 1, unused_hash);
+        SymbolTable::probe(value_name, sizeof value_name - 1);
       assert(value_symbol != NULL, "invariant");
       const AnnotationElementIterator element_iterator = annotation_iterator.elements();
       while (element_iterator.has_next()) {
@@ -383,16 +392,51 @@ static bool has_registered_annotation(const InstanceKlass* ik, const Symbol* ann
   return false;
 }
 
-static bool registered_annotation_value(const InstanceKlass* ik, const Symbol* const registered_symbol) {
-  assert(registered_symbol != NULL, "invariant");
+// Evaluate to the value of the first found Symbol* annotation type.
+// Searching moves upwards in the klass hierarchy in order to support
+// inherited annotations in addition to the ability to override.
+static bool annotation_value(const InstanceKlass* ik, const Symbol* annotation_type, bool& value) {
   assert(ik != NULL, "invariant");
+  assert(annotation_type != NULL, "invariant");
   assert(JdkJfrEvent::is_a(ik), "invariant");
-  bool registered_value = false;
-  if (has_registered_annotation(ik, registered_symbol, registered_value)) {
-    return registered_value;
+  if (has_annotation(ik, annotation_type, value)) {
+    return true;
   }
-  InstanceKlass* super = InstanceKlass::cast(ik->super());
-  return registered_annotation_value(super, registered_symbol);
+  InstanceKlass* const super = InstanceKlass::cast(ik->super());
+  return super != NULL && JdkJfrEvent::is_a(super) ? annotation_value(super, annotation_type, value) : false;
+}
+
+static const char jdk_jfr_module_name[] = "jdk.jfr";
+
+static bool java_base_can_read_jdk_jfr() {
+  static bool can_read = false;
+  if (can_read) {
+    return true;
+  }
+  static Symbol* jdk_jfr_module_symbol = NULL;
+  if (jdk_jfr_module_symbol == NULL) {
+    jdk_jfr_module_symbol = SymbolTable::probe(jdk_jfr_module_name, sizeof jdk_jfr_module_name - 1);
+    if (jdk_jfr_module_symbol == NULL) {
+      return false;
+    }
+  }
+  assert(jdk_jfr_module_symbol != NULL, "invariant");
+  ModuleEntryTable* const table = Modules::get_module_entry_table(Handle());
+  assert(table != NULL, "invariant");
+  const ModuleEntry* const java_base_module = table->javabase_moduleEntry();
+  if (java_base_module == NULL) {
+    return false;
+  }
+  assert(java_base_module != NULL, "invariant");
+  ModuleEntry* const jdk_jfr_module = table->lookup_only(jdk_jfr_module_symbol);
+  if (jdk_jfr_module == NULL) {
+    return false;
+  }
+  assert(jdk_jfr_module != NULL, "invariant");
+  if (java_base_module->can_read(jdk_jfr_module)) {
+    can_read = true;
+  }
+  return can_read;
 }
 
 static const char registered_constant[] = "Ljdk/jfr/Registered;";
@@ -400,13 +444,24 @@ static const char registered_constant[] = "Ljdk/jfr/Registered;";
 // Evaluate to the value of the first found "Ljdk/jfr/Registered;" annotation.
 // Searching moves upwards in the klass hierarchy in order to support
 // inherited annotations in addition to the ability to override.
-static bool should_register_klass(const InstanceKlass* ik) {
-  static const Symbol* const registered_symbol = SymbolTable::lookup_only(registered_constant,
-                                                                          sizeof registered_constant - 1,
-                                                                          unused_hash);
+static bool should_register_klass(const InstanceKlass* ik, bool& untypedEventHandler) {
+  assert(ik != NULL, "invariant");
+  assert(JdkJfrEvent::is_a(ik), "invariant");
+  assert(!untypedEventHandler, "invariant");
+  static const Symbol* registered_symbol = NULL;
+  if (registered_symbol == NULL) {
+    registered_symbol = SymbolTable::probe(registered_constant, sizeof registered_constant - 1);
+    if (registered_symbol == NULL) {
+      untypedEventHandler = true;
+      return false;
+    }
+  }
   assert(registered_symbol != NULL, "invariant");
-  return registered_annotation_value(ik, registered_symbol);
+  bool value = false; // to be set by annotation_value
+  untypedEventHandler = !(annotation_value(ik, registered_symbol, value) || java_base_can_read_jdk_jfr());
+  return value;
 }
+
 /*
  * Map an utf8 constant back to its CONSTANT_UTF8_INFO
  */
@@ -450,6 +505,9 @@ static u2 add_method_ref_info(JfrBigEndianWriter& writer,
                               u2 orig_cp_len,
                               u2& number_of_new_constants,
                               TRAPS) {
+  assert(cls_name_index != invalid_cp_index, "invariant");
+  assert(method_index != invalid_cp_index, "invariant");
+  assert(desc_index != invalid_cp_index, "invariant");
   assert(is_index_within_range(cls_name_index, orig_cp_len, number_of_new_constants), "invariant");
   assert(is_index_within_range(method_index, orig_cp_len, number_of_new_constants), "invariant");
   assert(is_index_within_range(desc_index, orig_cp_len, number_of_new_constants), "invariant");
@@ -477,9 +535,9 @@ static u2 add_flr_register_method_constants(JfrBigEndianWriter& writer,
                                             TRAPS) {
   assert(utf8_indexes != NULL, "invariant");
   return add_method_ref_info(writer,
-                             utf8_indexes[UTF8_REQ_FlightRecorder],
-                             utf8_indexes[UTF8_REQ_register],
-                             utf8_indexes[UTF8_REQ_CLASS_VOID_METHOD_DESC],
+                             utf8_indexes[UTF8_OPT_FlightRecorder],
+                             utf8_indexes[UTF8_OPT_register],
+                             utf8_indexes[UTF8_OPT_CLASS_VOID_METHOD_DESC],
                              orig_cp_len,
                              number_of_new_constants,
                              THREAD);
@@ -495,8 +553,8 @@ static u2 add_flr_register_method_constants(JfrBigEndianWriter& writer,
  * }
  */
 static jlong add_field_info(JfrBigEndianWriter& writer, u2 name_index, u2 desc_index, bool is_static = false) {
-  assert(name_index > 0, "invariant");
-  assert(desc_index > 0, "invariant");
+  assert(name_index != invalid_cp_index, "invariant");
+  assert(desc_index != invalid_cp_index, "invariant");
   DEBUG_ONLY(const jlong start_offset = writer.current_offset();)
   writer.write<u2>(JVM_ACC_SYNTHETIC | JVM_ACC_PRIVATE | (is_static ? JVM_ACC_STATIC : JVM_ACC_TRANSIENT)); // flags
   writer.write(name_index);
@@ -507,11 +565,11 @@ static jlong add_field_info(JfrBigEndianWriter& writer, u2 name_index, u2 desc_i
   return writer.current_offset();
 }
 
-static u2 add_field_infos(JfrBigEndianWriter& writer, const u2* utf8_indexes) {
+static u2 add_field_infos(JfrBigEndianWriter& writer, const u2* utf8_indexes, bool untypedEventHandler) {
   assert(utf8_indexes != NULL, "invariant");
   add_field_info(writer,
                  utf8_indexes[UTF8_REQ_eventHandler],
-                 utf8_indexes[UTF8_REQ_eventHandler_FIELD_DESC],
+                 untypedEventHandler ? utf8_indexes[UTF8_OPT_LjavaLangObject] : utf8_indexes[UTF8_OPT_eventHandler_FIELD_DESC],
                  true); // static
 
   add_field_info(writer,
@@ -570,7 +628,7 @@ static jlong add_method_info(JfrBigEndianWriter& writer,
   DEBUG_ONLY(assert(start_offset + 8 == writer.current_offset(), "invariant");)
   // Code attribute
   writer.write(code_index); // "Code"
-  writer.bytes(code, code_len);
+  writer.write_bytes(code, code_len);
   DEBUG_ONLY(assert((start_offset + 8 + 2 + (jlong)code_len) == writer.current_offset(), "invariant");)
   return writer.current_offset();
 }
@@ -629,6 +687,10 @@ static u2 position_stream_after_cp(const ClassFileStream* stream) {
           stream->skip_u2_fast(1); // skip 3 bytes
         }
       }
+      continue;
+      case JVM_CONSTANT_Dynamic:
+        stream->skip_u2_fast(1);
+        stream->skip_u2_fast(1);
       continue;
       default:
         assert(false, "error in skip logic!");
@@ -709,8 +771,8 @@ static u2 position_stream_after_methods(JfrBigEndianWriter& writer,
       // We will need to re-create a new <clinit> in a later step.
       // For now, ensure that this method is excluded from the methods
       // being copied.
-      writer.bytes(stream->buffer() + orig_method_len_offset,
-                   method_offset - orig_method_len_offset);
+      writer.write_bytes(stream->buffer() + orig_method_len_offset,
+                         method_offset - orig_method_len_offset);
       assert(writer.is_valid(), "invariant");
 
       // Update copy position to skip copy of <clinit> method
@@ -989,7 +1051,8 @@ static jlong insert_clinit_method(const InstanceKlass* ik,
   // This is to ensure that padding can be done
   // where needed and to simplify size calculations.
   static const u2 injected_code_length = 8;
-  const u2 name_index = utf8_indexes[UTF8_REQ_clinit];
+  const u2 name_index = utf8_indexes[UTF8_OPT_clinit];
+  assert(name_index != invalid_cp_index, "invariant");
   const u2 desc_index = utf8_indexes[UTF8_REQ_EMPTY_VOID_METHOD_DESC];
   const u2 max_stack = MAX2(clinit_method != NULL ? clinit_method->verifier_max_stack() : 1, 1);
   const u2 max_locals = MAX2(clinit_method != NULL ? clinit_method->max_locals() : 0, 0);
@@ -1031,7 +1094,7 @@ static jlong insert_clinit_method(const InstanceKlass* ik,
     writer.write<u1>((u1)Bytecodes::_nop);
     writer.write<u1>((u1)Bytecodes::_nop);
     // insert original clinit code
-    writer.bytes(orig_bytecodes, orig_bytecodes_length);
+    writer.write_bytes(orig_bytecodes, orig_bytecodes_length);
   }
 
   /* END CLINIT CODE */
@@ -1111,7 +1174,7 @@ static u2 find_or_add_utf8_info(JfrBigEndianWriter& writer,
                                 u2& added_cp_entries,
                                 TRAPS) {
   assert(utf8_constant != NULL, "invariant");
-  TempNewSymbol utf8_sym = SymbolTable::new_symbol(utf8_constant, THREAD);
+  TempNewSymbol utf8_sym = SymbolTable::new_symbol(utf8_constant);
   // lookup existing
   const int utf8_orig_idx = utf8_info_index(ik, utf8_sym, THREAD);
   if (utf8_orig_idx != invalid_cp_index) {
@@ -1138,59 +1201,58 @@ static u2 resolve_utf8_indexes(JfrBigEndianWriter& writer,
                                u2* const utf8_indexes,
                                u2 orig_cp_len,
                                const Method* clinit_method,
+                               bool register_klass,
+                               bool untypedEventHandler,
                                TRAPS) {
   assert(utf8_indexes != NULL, "invariant");
   u2 added_cp_entries = 0;
   // resolve all required symbols
   for (u2 index = 0; index < NOF_UTF8_REQ_SYMBOLS; ++index) {
-    utf8_indexes[index] = find_or_add_utf8_info(writer,
-                                                ik,
-                                                utf8_constants[index],
-                                                orig_cp_len,
-                                                added_cp_entries,
-                                                THREAD);
+    utf8_indexes[index] = find_or_add_utf8_info(writer, ik, utf8_constants[index], orig_cp_len, added_cp_entries, THREAD);
   }
-  // Now determine optional constants (mainly "Code" attributes)
+
+  // resolve optional constants
+  utf8_indexes[UTF8_OPT_eventHandler_FIELD_DESC] = untypedEventHandler ? invalid_cp_index :
+    find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_eventHandler_FIELD_DESC], orig_cp_len, added_cp_entries, THREAD);
+
+  utf8_indexes[UTF8_OPT_LjavaLangObject] = untypedEventHandler ?
+    find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_LjavaLangObject], orig_cp_len, added_cp_entries, THREAD) : invalid_cp_index;
+
+  if (register_klass) {
+    utf8_indexes[UTF8_OPT_clinit] =
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_clinit], orig_cp_len, added_cp_entries, THREAD);
+    utf8_indexes[UTF8_OPT_FlightRecorder] =
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_FlightRecorder], orig_cp_len, added_cp_entries, THREAD);
+    utf8_indexes[UTF8_OPT_register] =
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_register], orig_cp_len, added_cp_entries, THREAD);
+    utf8_indexes[UTF8_OPT_CLASS_VOID_METHOD_DESC] =
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_CLASS_VOID_METHOD_DESC], orig_cp_len, added_cp_entries, THREAD);
+  } else {
+    utf8_indexes[UTF8_OPT_clinit] = invalid_cp_index;
+    utf8_indexes[UTF8_OPT_FlightRecorder] = invalid_cp_index;
+    utf8_indexes[UTF8_OPT_register] = invalid_cp_index;
+    utf8_indexes[UTF8_OPT_CLASS_VOID_METHOD_DESC] = invalid_cp_index;
+  }
+
   if (clinit_method != NULL && clinit_method->has_stackmap_table()) {
     utf8_indexes[UTF8_OPT_StackMapTable] =
-      find_or_add_utf8_info(writer,
-                            ik,
-                            utf8_constants[UTF8_OPT_StackMapTable],
-                            orig_cp_len,
-                            added_cp_entries,
-                            THREAD);
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_StackMapTable], orig_cp_len, added_cp_entries, THREAD);
   } else {
     utf8_indexes[UTF8_OPT_StackMapTable] = invalid_cp_index;
   }
 
   if (clinit_method != NULL && clinit_method->has_linenumber_table()) {
     utf8_indexes[UTF8_OPT_LineNumberTable] =
-      find_or_add_utf8_info(writer,
-                            ik,
-                            utf8_constants[UTF8_OPT_LineNumberTable],
-                            orig_cp_len,
-                            added_cp_entries,
-                            THREAD);
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_LineNumberTable], orig_cp_len, added_cp_entries, THREAD);
   } else {
     utf8_indexes[UTF8_OPT_LineNumberTable] = invalid_cp_index;
   }
 
   if (clinit_method != NULL && clinit_method->has_localvariable_table()) {
     utf8_indexes[UTF8_OPT_LocalVariableTable] =
-      find_or_add_utf8_info(writer,
-                            ik,
-                            utf8_constants[UTF8_OPT_LocalVariableTable],
-                            orig_cp_len,
-                            added_cp_entries,
-                            THREAD);
-
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_LocalVariableTable], orig_cp_len, added_cp_entries, THREAD);
     utf8_indexes[UTF8_OPT_LocalVariableTypeTable] =
-      find_or_add_utf8_info(writer,
-                            ik,
-                            utf8_constants[UTF8_OPT_LocalVariableTypeTable],
-                            orig_cp_len,
-                            added_cp_entries,
-                            THREAD);
+      find_or_add_utf8_info(writer, ik, utf8_constants[UTF8_OPT_LocalVariableTypeTable], orig_cp_len, added_cp_entries, THREAD);
   } else {
     utf8_indexes[UTF8_OPT_LocalVariableTable] = invalid_cp_index;
     utf8_indexes[UTF8_OPT_LocalVariableTypeTable] = invalid_cp_index;
@@ -1207,7 +1269,8 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
   // If the class already has a clinit method
   // we need to take that into account
   const Method* clinit_method = ik->class_initializer();
-  const bool register_klass = should_register_klass(ik);
+  bool untypedEventHandler = false;
+  const bool register_klass = should_register_klass(ik, untypedEventHandler);
   const ClassFileStream* const orig_stream = parser.clone_stream();
   const int orig_stream_size = orig_stream->length();
   assert(orig_stream->current_offset() == 0, "invariant");
@@ -1230,7 +1293,7 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
   const u4 orig_access_flag_offset = orig_stream->current_offset();
   // Copy original stream from the beginning up to AccessFlags
   // This means the original constant pool contents are copied unmodified
-  writer.bytes(orig_stream->buffer(), orig_access_flag_offset);
+  writer.write_bytes(orig_stream->buffer(), orig_access_flag_offset);
   assert(writer.is_valid(), "invariant");
   assert(writer.current_offset() == (intptr_t)orig_access_flag_offset, "invariant"); // same positions
   // Our writer now sits just after the last original constant pool entry.
@@ -1241,7 +1304,8 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
   // Resolve_utf8_indexes will be conservative in attempting to
   // locate an existing UTF8_INFO; it will only append constants
   // that is absolutely required
-  u2 number_of_new_constants = resolve_utf8_indexes(writer, ik, utf8_indexes, orig_cp_len, clinit_method, THREAD);
+  u2 number_of_new_constants =
+    resolve_utf8_indexes(writer, ik, utf8_indexes, orig_cp_len, clinit_method, register_klass, untypedEventHandler, THREAD);
   // UTF8_INFO entries now added to the constant pool
   // In order to invoke a method we would need additional
   // constants, JVM_CONSTANT_Class, JVM_CONSTANT_NameAndType
@@ -1263,18 +1327,18 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
   orig_stream->skip_u2_fast(iface_len);
   const u4 orig_fields_len_offset = orig_stream->current_offset();
   // Copy from AccessFlags up to and including interfaces
-  writer.bytes(orig_stream->buffer() + orig_access_flag_offset,
-               orig_fields_len_offset - orig_access_flag_offset);
+  writer.write_bytes(orig_stream->buffer() + orig_access_flag_offset,
+                     orig_fields_len_offset - orig_access_flag_offset);
   assert(writer.is_valid(), "invariant");
   const jlong new_fields_len_offset = writer.current_offset();
   const u2 orig_fields_len = position_stream_after_fields(orig_stream);
   u4 orig_method_len_offset = orig_stream->current_offset();
   // Copy up to and including fields
-  writer.bytes(orig_stream->buffer() + orig_fields_len_offset, orig_method_len_offset - orig_fields_len_offset);
+  writer.write_bytes(orig_stream->buffer() + orig_fields_len_offset, orig_method_len_offset - orig_fields_len_offset);
   assert(writer.is_valid(), "invariant");
   // We are sitting just after the original number of field_infos
   // so this is a position where we can add (append) new field_infos
-  const u2 number_of_new_fields = add_field_infos(writer, utf8_indexes);
+  const u2 number_of_new_fields = add_field_infos(writer, utf8_indexes, untypedEventHandler);
   assert(writer.is_valid(), "invariant");
   const jlong new_method_len_offset = writer.current_offset();
   // Additional field_infos added, update classfile fields_count
@@ -1289,7 +1353,7 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
                                                             orig_method_len_offset);
   const u4 orig_attributes_count_offset = orig_stream->current_offset();
   // Copy existing methods
-  writer.bytes(orig_stream->buffer() + orig_method_len_offset, orig_attributes_count_offset - orig_method_len_offset);
+  writer.write_bytes(orig_stream->buffer() + orig_method_len_offset, orig_attributes_count_offset - orig_method_len_offset);
   assert(writer.is_valid(), "invariant");
   // We are sitting just after the original number of method_infos
   // so this is a position where we can add (append) new method_infos
@@ -1311,7 +1375,7 @@ static u1* new_bytes_for_lazy_instrumentation(const InstanceKlass* ik,
   writer.write_at_offset<u2>(orig_methods_len + number_of_new_methods, new_method_len_offset);
   assert(writer.is_valid(), "invariant");
   // Copy last remaining bytes
-  writer.bytes(orig_stream->buffer() + orig_attributes_count_offset, orig_stream_size - orig_attributes_count_offset);
+  writer.write_bytes(orig_stream->buffer() + orig_attributes_count_offset, orig_stream_size - orig_attributes_count_offset);
   assert(writer.is_valid(), "invariant");
   assert(writer.current_offset() > orig_stream->length(), "invariant");
   size_of_new_bytes = (jint)writer.current_offset();
@@ -1333,7 +1397,7 @@ static bool should_force_instrumentation() {
   return !JfrOptionSet::allow_event_retransforms() || JfrEventClassTransformer::is_force_instrumentation();
 }
 
-static ClassFileStream* create_new_bytes_for_subklass(const InstanceKlass* ik, const ClassFileParser& parser, Thread* t) {
+static ClassFileStream* create_new_bytes_for_subklass(const InstanceKlass* ik, const ClassFileParser& parser, JavaThread* t) {
   assert(JdkJfrEvent::is_a(ik), "invariant");
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_vm(t));
   jint size_of_new_bytes = 0;
@@ -1349,7 +1413,7 @@ static ClassFileStream* create_new_bytes_for_subklass(const InstanceKlass* ik, c
     jint size_instrumented_data = 0;
     unsigned char* instrumented_data = NULL;
     const jclass super = (jclass)JNIHandles::make_local(ik->super()->java_mirror());
-    JfrUpcalls::new_bytes_eager_instrumentation(TRACE_ID(ik),
+    JfrUpcalls::new_bytes_eager_instrumentation(JfrTraceId::load_raw(ik),
                                                 force_instrumentation,
                                                 super,
                                                 size_of_new_bytes,
@@ -1405,12 +1469,11 @@ static InstanceKlass* create_new_instance_klass(InstanceKlass* ik, ClassFileStre
   Handle pd(THREAD, ik->protection_domain());
   Symbol* const class_name = ik->name();
   const char* const klass_name = class_name != NULL ? class_name->as_C_string() : "";
+  ClassLoadInfo cl_info(pd);
   ClassFileParser new_parser(stream,
                              class_name,
                              cld,
-                             pd,
-                             NULL, // host klass
-                             NULL, // cp_patches
+                             &cl_info,
                              ClassFileParser::INTERNAL, // internal visibility
                              THREAD);
   if (HAS_PENDING_EXCEPTION) {
@@ -1418,7 +1481,8 @@ static InstanceKlass* create_new_instance_klass(InstanceKlass* ik, ClassFileStre
     CLEAR_PENDING_EXCEPTION;
     return NULL;
   }
-  InstanceKlass* const new_ik = new_parser.create_instance_klass(false, THREAD);
+  const ClassInstanceInfo* cl_inst_info = cl_info.class_hidden_info_ptr();
+  InstanceKlass* const new_ik = new_parser.create_instance_klass(false, *cl_inst_info, THREAD);
   if (HAS_PENDING_EXCEPTION) {
     log_pending_exception(PENDING_EXCEPTION);
     CLEAR_PENDING_EXCEPTION;
@@ -1442,35 +1506,6 @@ static void rewrite_klass_pointer(InstanceKlass*& ik, InstanceKlass* new_ik, Cla
   ik = new_ik;
 }
 
-// During retransform/redefine, copy the Method specific trace flags
-// from the previous ik ("the original klass") to the new ik ("the scratch_klass").
-// The open code for retransform/redefine does not know about these.
-// In doing this migration here, we ensure the new Methods (defined in scratch klass)
-// will carry over trace tags from the old Methods being replaced,
-// ensuring flag/tag continuity while being transparent to open code.
-static void copy_method_trace_flags(const InstanceKlass* the_original_klass, const InstanceKlass* the_scratch_klass) {
-  assert(the_original_klass != NULL, "invariant");
-  assert(the_scratch_klass != NULL, "invariant");
-  assert(the_original_klass->name() == the_scratch_klass->name(), "invariant");
-  const Array<Method*>* old_methods = the_original_klass->methods();
-  const Array<Method*>* new_methods = the_scratch_klass->methods();
-  const bool equal_array_length = old_methods->length() == new_methods->length();
-  // The Method array has the property of being sorted.
-  // If they are the same length, there is a one-to-one mapping.
-  // If they are unequal, there was a method added (currently only
-  // private static methods allowed to be added), use lookup.
-  for (int i = 0; i < old_methods->length(); ++i) {
-    const Method* const old_method = old_methods->at(i);
-    Method* const new_method = equal_array_length ? new_methods->at(i) :
-      the_scratch_klass->find_method(old_method->name(), old_method->signature());
-    assert(new_method != NULL, "invariant");
-    assert(new_method->name() == old_method->name(), "invariant");
-    assert(new_method->signature() == old_method->signature(), "invariant");
-    *new_method->trace_flags_addr() = old_method->trace_flags();
-    assert(new_method->trace_flags() == old_method->trace_flags(), "invariant");
-  }
-}
-
 static bool is_retransforming(const InstanceKlass* ik, TRAPS) {
   assert(ik != NULL, "invariant");
   assert(JdkJfrEvent::is_a(ik), "invariant");
@@ -1478,16 +1513,7 @@ static bool is_retransforming(const InstanceKlass* ik, TRAPS) {
   assert(name != NULL, "invariant");
   Handle class_loader(THREAD, ik->class_loader());
   Handle protection_domain(THREAD, ik->protection_domain());
-  // nota bene: use lock-free dictionary lookup
-  const InstanceKlass* prev_ik = (const InstanceKlass*)SystemDictionary::find(name, class_loader, protection_domain, THREAD);
-  if (prev_ik == NULL) {
-    return false;
-  }
-  // an existing ik implies a retransform/redefine
-  assert(prev_ik != NULL, "invariant");
-  assert(JdkJfrEvent::is_a(prev_ik), "invariant");
-  copy_method_trace_flags(prev_ik, ik);
-  return true;
+  return SystemDictionary::find_instance_klass(name, class_loader, protection_domain) != NULL;
 }
 
 // target for JFR_ON_KLASS_CREATION hook
@@ -1516,12 +1542,8 @@ void JfrEventClassTransformer::on_klass_creation(InstanceKlass*& ik, ClassFilePa
     return;
   }
   assert(JdkJfrEvent::is_subklass(ik), "invariant");
-  if (is_retransforming(ik, THREAD)) {
-    // not the initial klass load
-    return;
-  }
-  if (ik->is_abstract()) {
-    // abstract classes are not instrumented
+  if (ik->is_abstract() || is_retransforming(ik, THREAD)) {
+    // abstract and scratch classes are not instrumented
     return;
   }
   ResourceMark rm(THREAD);

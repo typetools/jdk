@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,6 +51,8 @@ class WinNTFileSystem extends FileSystem {
         semicolon = props.getProperty("path.separator").charAt(0);
         altSlash = (this.slash == '\\') ? '/' : '\\';
         userDir = normalize(props.getProperty("user.dir"));
+        cache = useCanonCaches ? new ExpiringCache() : null;
+        prefixCache = useCanonPrefixCache ? new ExpiringCache() : null;
     }
 
     private boolean isSlash(char c) {
@@ -62,7 +64,7 @@ class WinNTFileSystem extends FileSystem {
     }
 
     private String slashify(String p) {
-        if ((p.length() > 0) && (p.charAt(0) != slash)) return slash + p;
+        if (!p.isEmpty() && p.charAt(0) != slash) return slash + p;
         else return p;
     }
 
@@ -326,12 +328,12 @@ class WinNTFileSystem extends FileSystem {
                 return up + slashify(path.substring(2));
             char drive = path.charAt(0);
             String dir = getDriveDirectory(drive);
-            String np;
             if (dir != null) {
                 /* When resolving a directory-relative path that refers to a
                    drive other than the current drive, insist that the caller
                    have read permission on the result */
                 String p = drive + (':' + dir + slashify(path.substring(2)));
+                @SuppressWarnings("removal")
                 SecurityManager security = System.getSecurityManager();
                 try {
                     if (security != null) security.checkRead(p);
@@ -349,6 +351,7 @@ class WinNTFileSystem extends FileSystem {
     private String getUserPath() {
         /* For both compatibility and security,
            we must look this up every time */
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPropertyAccess("user.dir");
@@ -387,8 +390,8 @@ class WinNTFileSystem extends FileSystem {
     // same directory, and must not create results differing from the true
     // canonicalization algorithm in canonicalize_md.c. For this reason the
     // prefix cache is conservative and is not used for complex path names.
-    private ExpiringCache cache       = new ExpiringCache();
-    private ExpiringCache prefixCache = new ExpiringCache();
+    private final ExpiringCache cache;
+    private final ExpiringCache prefixCache;
 
     @Override
     public String canonicalize(String path) throws IOException {
@@ -568,8 +571,12 @@ class WinNTFileSystem extends FileSystem {
         // (i.e., only remove/update affected entries) but probably
         // not worth it since these entries expire after 30 seconds
         // anyway.
-        cache.clear();
-        prefixCache.clear();
+        if (useCanonCaches) {
+            cache.clear();
+        }
+        if (useCanonPrefixCache) {
+            prefixCache.clear();
+        }
         return delete0(f);
     }
 
@@ -582,8 +589,12 @@ class WinNTFileSystem extends FileSystem {
         // (i.e., only remove/update affected entries) but probably
         // not worth it since these entries expire after 30 seconds
         // anyway.
-        cache.clear();
-        prefixCache.clear();
+        if (useCanonCaches) {
+            cache.clear();
+        }
+        if (useCanonPrefixCache) {
+            prefixCache.clear();
+        }
         return rename0(f1, f2);
     }
 
@@ -605,6 +616,7 @@ class WinNTFileSystem extends FileSystem {
 
     private boolean access(String path) {
         try {
+            @SuppressWarnings("removal")
             SecurityManager security = System.getSecurityManager();
             if (security != null) security.checkRead(path);
             return true;
@@ -631,6 +643,7 @@ class WinNTFileSystem extends FileSystem {
     // expects the path to be null or a root component ending in a backslash
     private native int getNameMax0(String path);
 
+    @Override
     public int getNameMax(String path) {
         String s = null;
         if (path != null) {

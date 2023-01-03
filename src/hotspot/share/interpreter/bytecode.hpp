@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_INTERPRETER_BYTECODE_HPP
-#define SHARE_VM_INTERPRETER_BYTECODE_HPP
+#ifndef SHARE_INTERPRETER_BYTECODE_HPP
+#define SHARE_INTERPRETER_BYTECODE_HPP
 
 #include "interpreter/bytecodes.hpp"
 #include "memory/allocation.hpp"
@@ -209,8 +209,7 @@ class Bytecode_invoke: public Bytecode_member_ref {
   void verify() const;
 
   // Attributes
-  methodHandle static_target(TRAPS);             // "specified" method   (from constant pool)
-  Handle       appendix(TRAPS);                  // if CPCE::has_appendix (from constant pool)
+  Method* static_target(TRAPS);                  // "specified" method   (from constant pool)
 
   // Testers
   bool is_invokeinterface() const                { return invoke_code() == Bytecodes::_invokeinterface; }
@@ -342,4 +341,4 @@ class Bytecode_loadconstant: public Bytecode {
   oop resolve_constant(TRAPS) const;
 };
 
-#endif // SHARE_VM_INTERPRETER_BYTECODE_HPP
+#endif // SHARE_INTERPRETER_BYTECODE_HPP

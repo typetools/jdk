@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,7 +22,7 @@
  *
  */
 
-#include "precompiled/precompiled.hpp"
+#include "precompiled.hpp"
 #ifndef __APPLE__
 #include "runtime/os.hpp"
 // POSIX unamed semaphores are not supported on OS X.
@@ -46,7 +46,8 @@ PosixSemaphore::PosixSemaphore(uint value) {
 }
 
 PosixSemaphore::~PosixSemaphore() {
-  sem_destroy(&_semaphore);
+  int ret = sem_destroy(&_semaphore);
+  assert_with_errno(ret == 0, "sem_destroy failed");
 }
 
 void PosixSemaphore::signal(uint count) {
@@ -77,6 +78,12 @@ bool PosixSemaphore::trywait() {
   assert_with_errno(ret == 0 || errno == EAGAIN, "trywait failed");
 
   return ret == 0;
+}
+
+bool PosixSemaphore::timedwait(int64_t millis) {
+  struct timespec ts;
+  os::Posix::to_RTC_abstime(&ts, millis);
+  return timedwait(ts);
 }
 
 bool PosixSemaphore::timedwait(struct timespec ts) {

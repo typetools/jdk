@@ -21,10 +21,7 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id: DOMX509IssuerSerial.java 1788465 2017-03-24 15:10:51Z coheigea $
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
@@ -35,20 +32,22 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.dom.DOMCryptoContext;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.keyinfo.X509IssuerSerial;
 
 import java.math.BigInteger;
 
 import javax.security.auth.x500.X500Principal;
-
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 /**
  * DOM-based implementation of X509IssuerSerial.
  *
  */
-public final class DOMX509IssuerSerial extends BaseStructure
+public final class DOMX509IssuerSerial extends DOMStructure
     implements X509IssuerSerial {
 
     private final String issuerName;
@@ -95,19 +94,36 @@ public final class DOMX509IssuerSerial extends BaseStructure
         serialNumber = new BigInteger(sNElem.getFirstChild().getNodeValue());
     }
 
-    @Override
     public String getIssuerName() {
         return issuerName;
     }
 
-    @Override
     public BigInteger getSerialNumber() {
         return serialNumber;
     }
 
     @Override
+    public void marshal(Node parent, String dsPrefix, DOMCryptoContext context)
+        throws MarshalException
+    {
+        Document ownerDoc = DOMUtils.getOwnerDocument(parent);
+
+        Element isElem = DOMUtils.createElement(ownerDoc, "X509IssuerSerial",
+                                                XMLSignature.XMLNS, dsPrefix);
+        Element inElem = DOMUtils.createElement(ownerDoc, "X509IssuerName",
+                                                XMLSignature.XMLNS, dsPrefix);
+        Element snElem = DOMUtils.createElement(ownerDoc, "X509SerialNumber",
+                                                XMLSignature.XMLNS, dsPrefix);
+        inElem.appendChild(ownerDoc.createTextNode(issuerName));
+        snElem.appendChild(ownerDoc.createTextNode(serialNumber.toString()));
+        isElem.appendChild(inElem);
+        isElem.appendChild(snElem);
+        parent.appendChild(isElem);
+    }
+
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;

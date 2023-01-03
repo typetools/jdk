@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,13 +27,14 @@
 #include "gc/shared/ageTable.inline.hpp"
 #include "gc/shared/ageTableTracer.hpp"
 #include "gc/shared/collectedHeap.hpp"
-#include "gc/shared/collectorPolicy.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "memory/resourceArea.hpp"
+#include "runtime/perfData.hpp"
 #include "logging/log.hpp"
 #include "oops/oop.inline.hpp"
 #include "utilities/copy.hpp"
 
-/* Copyright (c) 1992, 2016, Oracle and/or its affiliates, and Stanford University.
+/* Copyright (c) 1992, 2021, Oracle and/or its affiliates, and Stanford University.
    See the LICENSE file for license information. */
 
 AgeTable::AgeTable(bool global) {
@@ -79,8 +80,8 @@ uint AgeTable::compute_tenuring_threshold(size_t desired_survivor_size) {
   uint result;
 
   if (AlwaysTenure || NeverTenure) {
-    assert(MaxTenuringThreshold == 0 || MaxTenuringThreshold == markOopDesc::max_age + 1,
-           "MaxTenuringThreshold should be 0 or markOopDesc::max_age + 1, but is " UINTX_FORMAT, MaxTenuringThreshold);
+    assert(MaxTenuringThreshold == 0 || MaxTenuringThreshold == markWord::max_age + 1,
+           "MaxTenuringThreshold should be 0 or markWord::max_age + 1, but is " UINTX_FORMAT, MaxTenuringThreshold);
     result = MaxTenuringThreshold;
   } else {
     size_t total = 0;

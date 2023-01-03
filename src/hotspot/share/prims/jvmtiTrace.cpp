@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,11 +23,13 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/javaClasses.inline.hpp"
 #include "jvmtifiles/jvmtiEnv.hpp"
 #include "logging/log.hpp"
 #include "logging/logConfiguration.hpp"
 #include "memory/resourceArea.hpp"
 #include "prims/jvmtiTrace.hpp"
+#include "runtime/thread.inline.hpp"
 
 //
 // class JvmtiTrace
@@ -275,8 +277,7 @@ const char *JvmtiTrace::safe_get_thread_name(Thread *thread) {
   if (!thread->is_Java_thread()) {
     return thread->name();
   }
-  JavaThread *java_thread = (JavaThread *)thread;
-  oop threadObj = java_thread->threadObj();
+  oop threadObj = thread->as_Java_thread()->threadObj();
   if (threadObj == NULL) {
     return "NULL";
   }
@@ -291,7 +292,7 @@ const char *JvmtiTrace::safe_get_thread_name(Thread *thread) {
 // return the name of the current thread
 const char *JvmtiTrace::safe_get_current_thread_name() {
   if (JvmtiEnv::is_vm_live()) {
-    return JvmtiTrace::safe_get_thread_name(Thread::current());
+    return JvmtiTrace::safe_get_thread_name(Thread::current_or_null());
   } else {
     return "VM not live";
   }

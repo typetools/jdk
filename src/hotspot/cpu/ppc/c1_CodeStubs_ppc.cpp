@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2018 SAP SE. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@
 #include "c1/c1_LIRAssembler.hpp"
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
+#include "classfile/javaClasses.hpp"
 #include "nativeInst_ppc.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "utilities/macros.hpp"
@@ -37,15 +38,40 @@
 
 #define __ ce->masm()->
 
+void C1SafepointPollStub::emit_code(LIR_Assembler* ce) {
+  if (UseSIGTRAP) {
+    DEBUG_ONLY( __ should_not_reach_here("C1SafepointPollStub::emit_code"); )
+  } else {
+    assert(SharedRuntime::polling_page_return_handler_blob() != NULL,
+           "polling page return stub not created yet");
+    address stub = SharedRuntime::polling_page_return_handler_blob()->entry_point();
+
+    __ bind(_entry);
+    // Using pc relative address computation.
+    {
+      Label next_pc;
+      __ bl(next_pc);
+      __ bind(next_pc);
+    }
+    int current_offset = __ offset();
+    __ mflr(R12);
+    __ add_const_optimized(R12, R12, safepoint_offset() - current_offset);
+    __ std(R12, in_bytes(JavaThread::saved_exception_pc_offset()), R16_thread);
+
+    __ add_const_optimized(R0, R29_TOC, MacroAssembler::offset_to_global_toc(stub));
+    __ mtctr(R0);
+    __ bctr();
+  }
+}
 
 RangeCheckStub::RangeCheckStub(CodeEmitInfo* info, LIR_Opr index, LIR_Opr array)
-  : _throw_index_out_of_bounds_exception(false), _index(index), _array(array) {
+  : _index(index), _array(array), _throw_index_out_of_bounds_exception(false) {
   assert(info != NULL, "must have info");
   _info = new CodeEmitInfo(info);
 }
 
 RangeCheckStub::RangeCheckStub(CodeEmitInfo* info, LIR_Opr index)
-  : _throw_index_out_of_bounds_exception(true), _index(index), _array(NULL) {
+  : _index(index), _array(NULL), _throw_index_out_of_bounds_exception(true) {
   assert(info != NULL, "must have info");
   _info = new CodeEmitInfo(info);
 }
@@ -322,7 +348,7 @@ inline void compare_with_patch_site(address template_start, address pc_start, in
 void PatchingStub::emit_code(LIR_Assembler* ce) {
   // copy original code here
   assert(NativeGeneralJump::instruction_size <= _bytes_to_copy && _bytes_to_copy <= 0xFF,
-         "not enough room for call");
+         "not enough room for call, need %d", _bytes_to_copy);
   assert((_bytes_to_copy & 0x3) == 0, "must copy a multiple of four bytes");
 
   Label call_patch;
@@ -340,7 +366,7 @@ void PatchingStub::emit_code(LIR_Assembler* ce) {
     __ load_const(_obj, addrlit, R0);
     DEBUG_ONLY( compare_with_patch_site(__ code_section()->start() + being_initialized_entry, _pc_start, _bytes_to_copy); )
   } else {
-    // Make a copy the code which is going to be patched.
+    // Make a copy of the code which is going to be patched.
     for (int i = 0; i < _bytes_to_copy; i++) {
       address ptr = (address)(_pc_start + i);
       int a_byte = (*ptr) & 0xFF;
@@ -361,7 +387,7 @@ void PatchingStub::emit_code(LIR_Assembler* ce) {
     assert(_obj != noreg, "must be a valid register");
     assert(_index >= 0, "must have oop index");
     __ mr(R0, _obj); // spill
-    __ ld(_obj, java_lang_Class::klass_offset_in_bytes(), _obj);
+    __ ld(_obj, java_lang_Class::klass_offset(), _obj);
     __ ld(_obj, in_bytes(InstanceKlass::init_thread_offset()), _obj);
     __ cmpd(CCR0, _obj, R16_thread);
     __ mr(_obj, R0); // restore

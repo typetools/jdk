@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -853,11 +853,9 @@ public class MidiSystem {
                 allTypes.add(types[j]);
             }
         }
-        int resultTypes[] = new int[allTypes.size()];
+        int[] resultTypes = new int[allTypes.size()];
         int index = 0;
-        Iterator<Integer> iterator = allTypes.iterator();
-        while (iterator.hasNext()) {
-            Integer integer = iterator.next();
+        for (Integer integer : allTypes) {
             resultTypes[index++] = integer.intValue();
         }
         return resultTypes;
@@ -908,11 +906,9 @@ public class MidiSystem {
                 allTypes.add(types[j]);
             }
         }
-        int resultTypes[] = new int[allTypes.size()];
+        int[] resultTypes = new int[allTypes.size()];
         int index = 0;
-        Iterator<Integer> iterator = allTypes.iterator();
-        while (iterator.hasNext()) {
-            Integer integer = iterator.next();
+        for (Integer integer : allTypes) {
             resultTypes[index++] = integer.intValue();
         }
         return resultTypes;

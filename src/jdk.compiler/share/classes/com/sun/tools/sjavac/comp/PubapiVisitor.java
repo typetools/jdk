@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,13 +30,9 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementScanner9;
+import javax.lang.model.util.ElementScanner14;
 
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.util.DefinedBy;
@@ -56,7 +52,7 @@ import com.sun.tools.sjavac.pubapi.TypeDesc;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-public class PubapiVisitor extends ElementScanner9<Void, Void> {
+public class PubapiVisitor extends ElementScanner14<Void, Void> {
 
     private PubApi collectedApi = new PubApi();
 
@@ -97,7 +93,7 @@ public class PubapiVisitor extends ElementScanner9<Void, Void> {
             Object constVal = e.getConstantValue();
             String constValStr = null;
             // TODO: This doesn't seem to be entirely accurate. What if I change
-            // from, say, 0 to 0L? (And the field is public final static so that
+            // from, say, 0 to 0L? (And the field is public static final so that
             // it could get inlined.)
             if (constVal != null) {
                 if (e.asType().toString().equals("char")) {
@@ -128,6 +124,16 @@ public class PubapiVisitor extends ElementScanner9<Void, Void> {
     }
 
     @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public Void visitRecordComponent(RecordComponentElement e, Void p) {
+        PubVar v = new PubVar(e.getModifiers(),
+                TypeDesc.fromType(e.asType()),
+                e.toString(),
+                null);
+        collectedApi.recordComponents.put(v.identifier, v);
+        return null;
+    }
+
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
     public Void visitExecutable(ExecutableElement e, Void p) {
         if (isNonPrivate(e)) {
             PubMethod m = new PubMethod(e.getModifiers(),
@@ -144,20 +150,20 @@ public class PubapiVisitor extends ElementScanner9<Void, Void> {
     private List<PubApiTypeParam> getTypeParameters(List<? extends TypeParameterElement> elements) {
         return elements.stream()
                        .map(e -> new PubApiTypeParam(e.getSimpleName().toString(), getTypeDescs(e.getBounds())))
-                       .collect(Collectors.toList());
+                       .toList();
     }
 
     private List<TypeMirror> getParamTypes(ExecutableElement e) {
         return e.getParameters()
                 .stream()
                 .map(VariableElement::asType)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<TypeDesc> getTypeDescs(List<? extends TypeMirror> list) {
         return list.stream()
                    .map(TypeDesc::fromType)
-                   .collect(Collectors.toList());
+                   .toList();
     }
 
     public PubApi getCollectedPubApi() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef CPU_ARM_VM_NATIVEINST_ARM_32_HPP
-#define CPU_ARM_VM_NATIVEINST_ARM_32_HPP
+#ifndef CPU_ARM_NATIVEINST_ARM_32_HPP
+#define CPU_ARM_NATIVEINST_ARM_32_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "code/codeCache.hpp"
 #include "runtime/icache.hpp"
+#include "runtime/orderAccess.hpp"
 #include "runtime/os.hpp"
 #include "runtime/thread.hpp"
 #include "register_arm.hpp"
@@ -45,6 +46,7 @@
 // The non-raw classes are the front-end entry point, hiding potential
 // back-end extensions or the actual instructions size.
 class NativeInstruction;
+class NativeCall;
 
 class RawNativeInstruction {
  public:
@@ -143,9 +145,6 @@ class RawNativeInstruction {
   bool is_movt()           const { return (encoding() & 0x0ff00000) == 0x03400000; }
   // c2 doesn't use fixed registers for safepoint poll address
   bool is_safepoint_poll() const { return (encoding() & 0xfff0ffff) == 0xe590c000; }
-  // For unit tests
-  static void test() {}
-
 };
 
 inline RawNativeInstruction* rawNativeInstruction_at(address address) {
@@ -348,6 +347,11 @@ NativeCall* rawNativeCall_before(address return_address);
 // (field access patching is handled differently in that case)
 class NativeMovRegMem: public NativeInstruction {
  public:
+  enum arm_specific_constants {
+    instruction_size = 8
+  };
+
+  int num_bytes_to_end_of_patch() const { return instruction_size; }
 
   int offset() const;
   void set_offset(int x);
@@ -428,4 +432,4 @@ inline NativeCall* nativeCall_before(address return_address) {
   return (NativeCall *) rawNativeCall_before(return_address);
 }
 
-#endif // CPU_ARM_VM_NATIVEINST_ARM_32_HPP
+#endif // CPU_ARM_NATIVEINST_ARM_32_HPP

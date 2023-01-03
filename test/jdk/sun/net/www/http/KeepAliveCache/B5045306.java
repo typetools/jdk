@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 5045306 6356004 6993490
+ * @bug 5045306 6356004 6993490 8255124
  * @modules java.base/sun.net.www
  *          java.management
  * @library ../../httptest/
@@ -35,6 +35,8 @@
 import java.net.*;
 import java.io.*;
 import java.lang.management.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /* Part 1:
  * The http client makes a connection to a URL whos content contains a lot of
@@ -62,22 +64,27 @@ public class B5045306
     public static void startHttpServer() {
         try {
             httpTrans = new SimpleHttpTransaction();
-            server = new TestHttpServer(httpTrans, 1, 10, 0);
+            server = new TestHttpServer(httpTrans, 1, 10, InetAddress.getLocalHost(), 0);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void clientHttpCalls() {
+        List<Throwable> uncaught = new ArrayList<>();
+        Thread.setDefaultUncaughtExceptionHandler((t, ex) -> {
+            uncaught.add(ex);
+        });
         try {
             System.out.println("http server listen on: " + server.getLocalPort());
-            String baseURLStr = "http://" + InetAddress.getLocalHost().getHostAddress() + ":" +
-                                  server.getLocalPort() + "/";
+            String hostAddr =  InetAddress.getLocalHost().getHostAddress();
+            if (hostAddr.indexOf(':') > -1) hostAddr = "[" + hostAddr + "]";
+            String baseURLStr = "http://" + hostAddr + ":" + server.getLocalPort() + "/";
 
             URL bigDataURL = new URL (baseURLStr + "firstCall");
             URL smallDataURL = new URL (baseURLStr + "secondCall");
 
-            HttpURLConnection uc = (HttpURLConnection)bigDataURL.openConnection();
+            HttpURLConnection uc = (HttpURLConnection)bigDataURL.openConnection(Proxy.NO_PROXY);
 
             //Only read 1 byte of response data and close the stream
             InputStream is = uc.getInputStream();
@@ -88,7 +95,7 @@ public class B5045306
             // Allow the KeepAliveStreamCleaner thread to read the data left behind and cache the connection.
             try { Thread.sleep(2000); } catch (Exception e) {}
 
-            uc = (HttpURLConnection)smallDataURL.openConnection();
+            uc = (HttpURLConnection)smallDataURL.openConnection(Proxy.NO_PROXY);
             uc.getResponseCode();
 
             if (SimpleHttpTransaction.failed)
@@ -96,7 +103,7 @@ public class B5045306
 
             // Part 2
             URL part2Url = new URL (baseURLStr + "part2");
-            uc = (HttpURLConnection)part2Url.openConnection();
+            uc = (HttpURLConnection)part2Url.openConnection(Proxy.NO_PROXY);
             is = uc.getInputStream();
             is.close();
 
@@ -131,6 +138,9 @@ public class B5045306
             e.printStackTrace();
         } finally {
             server.terminate();
+        }
+        if (!uncaught.isEmpty()) {
+            throw new RuntimeException("Unhandled exception:", uncaught.get(0));
         }
     }
 }

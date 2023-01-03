@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 #include "precompiled.hpp"
 #include "code/relocInfo.hpp"
 #include "compiler/compilerDefinitions.hpp"
+#include "compiler/compilerDirectives.hpp"
 #include "oops/metadata.hpp"
 #include "runtime/os.hpp"
 #include "interpreter/invocationCounter.hpp"
@@ -33,6 +34,7 @@
 #include "runtime/flags/jvmFlagConstraintsCompiler.hpp"
 #include "runtime/globals.hpp"
 #include "runtime/globals_extension.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 JVMFlag::Error AliasLevelConstraintFunc(intx value, bool verbose) {
   if ((value <= 1) && (Arguments::mode() == Arguments::_comp || Arguments::mode() == Arguments::_mixed)) {
@@ -47,37 +49,24 @@ JVMFlag::Error AliasLevelConstraintFunc(intx value, bool verbose) {
 }
 
 /**
- * Validate the minimum number of compiler threads needed to run the
- * JVM. The following configurations are possible.
- *
- * 1) The JVM is build using an interpreter only. As a result, the minimum number of
- *    compiler threads is 0.
- * 2) The JVM is build using the compiler(s) and tiered compilation is disabled. As
- *    a result, either C1 or C2 is used, so the minimum number of compiler threads is 1.
- * 3) The JVM is build using the compiler(s) and tiered compilation is enabled. However,
- *    the option "TieredStopAtLevel < CompLevel_full_optimization". As a result, only
- *    C1 can be used, so the minimum number of compiler threads is 1.
- * 4) The JVM is build using the compilers and tiered compilation is enabled. The option
- *    'TieredStopAtLevel = CompLevel_full_optimization' (the default value). As a result,
- *    the minimum number of compiler threads is 2.
+ * Validate the minimum number of compiler threads needed to run the JVM.
  */
 JVMFlag::Error CICompilerCountConstraintFunc(intx value, bool verbose) {
   int min_number_of_compiler_threads = 0;
-#if !defined(COMPILER1) && !defined(COMPILER2) && !INCLUDE_JVMCI
-  // case 1
+#if COMPILER1_OR_COMPILER2
+  if (CompilerConfig::is_tiered()) {
+    min_number_of_compiler_threads = 2;
+  } else if (!CompilerConfig::is_interpreter_only()) {
+    min_number_of_compiler_threads = 1;
+  }
 #else
-  if (!TieredCompilation || (TieredStopAtLevel < CompLevel_full_optimization)) {
-    min_number_of_compiler_threads = 1; // case 2 or case 3
-  } else {
-    min_number_of_compiler_threads = 2;   // case 4 (tiered)
+  if (value > 0) {
+    JVMFlag::printError(verbose,
+                        "CICompilerCount (" INTX_FORMAT ") cannot be "
+                        "greater than 0 because there are no compilers\n", value);
+    return JVMFlag::VIOLATES_CONSTRAINT;
   }
 #endif
-
-  // The default CICompilerCount's value is CI_COMPILER_COUNT.
-  // With a client VM, -XX:+TieredCompilation causes TieredCompilation
-  // to be true here (the option is validated later) and
-  // min_number_of_compiler_threads to exceed CI_COMPILER_COUNT.
-  min_number_of_compiler_threads = MIN2(min_number_of_compiler_threads, CI_COMPILER_COUNT);
 
   if (value < (intx)min_number_of_compiler_threads) {
     JVMFlag::printError(verbose,
@@ -94,7 +83,7 @@ JVMFlag::Error AllocatePrefetchDistanceConstraintFunc(intx value, bool verbose) 
   if (value < 0 || value > 512) {
     JVMFlag::printError(verbose,
                         "AllocatePrefetchDistance (" INTX_FORMAT ") must be "
-                        "between 0 and " INTX_FORMAT "\n",
+                        "between 0 and %d\n",
                         AllocatePrefetchDistance, 512);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
@@ -116,9 +105,7 @@ JVMFlag::Error AllocatePrefetchStepSizeConstraintFunc(intx value, bool verbose) 
 
 JVMFlag::Error AllocatePrefetchInstrConstraintFunc(intx value, bool verbose) {
   intx max_value = max_intx;
-#if defined(SPARC)
-  max_value = 1;
-#elif defined(X86)
+#if defined(X86)
   max_value = 3;
 #endif
   if (value < 0 || value > max_value) {
@@ -145,47 +132,48 @@ JVMFlag::Error CompileThresholdConstraintFunc(intx value, bool verbose) {
 }
 
 JVMFlag::Error OnStackReplacePercentageConstraintFunc(intx value, bool verbose) {
-  int backward_branch_limit;
+  // We depend on CompileThreshold being valid, verify it first.
+  if (CompileThresholdConstraintFunc(CompileThreshold, false) == JVMFlag::VIOLATES_CONSTRAINT) {
+    JVMFlag::printError(verbose, "OnStackReplacePercentage cannot be validated because CompileThreshold value is invalid\n");
+    return JVMFlag::VIOLATES_CONSTRAINT;
+  }
+
+  int64_t  max_percentage_limit = INT_MAX;
+  if (!ProfileInterpreter) {
+    max_percentage_limit = (max_percentage_limit>>InvocationCounter::count_shift);
+  }
+  max_percentage_limit = CompileThreshold == 0  ? max_percentage_limit*100 : max_percentage_limit*100/CompileThreshold;
+
   if (ProfileInterpreter) {
-    if (OnStackReplacePercentage < InterpreterProfilePercentage) {
+    if (value < InterpreterProfilePercentage) {
       JVMFlag::printError(verbose,
                           "OnStackReplacePercentage (" INTX_FORMAT ") must be "
                           "larger than InterpreterProfilePercentage (" INTX_FORMAT ")\n",
-                          OnStackReplacePercentage, InterpreterProfilePercentage);
+                          value, InterpreterProfilePercentage);
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
 
-    backward_branch_limit = ((CompileThreshold * (OnStackReplacePercentage - InterpreterProfilePercentage)) / 100)
-                            << InvocationCounter::count_shift;
-
-    if (backward_branch_limit < 0) {
+    max_percentage_limit += InterpreterProfilePercentage;
+    if (value > max_percentage_limit) {
       JVMFlag::printError(verbose,
-                          "CompileThreshold * (InterpreterProfilePercentage - OnStackReplacePercentage) / 100 = "
-                          INTX_FORMAT " "
-                          "must be between 0 and " INTX_FORMAT ", try changing "
-                          "CompileThreshold, InterpreterProfilePercentage, and/or OnStackReplacePercentage\n",
-                          (CompileThreshold * (OnStackReplacePercentage - InterpreterProfilePercentage)) / 100,
-                          INT_MAX >> InvocationCounter::count_shift);
+                          "OnStackReplacePercentage (" INTX_FORMAT ") must be between 0 and " INT64_FORMAT "\n",
+                          value,
+                          max_percentage_limit);
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
   } else {
-    if (OnStackReplacePercentage < 0 ) {
+    if (value < 0) {
       JVMFlag::printError(verbose,
                           "OnStackReplacePercentage (" INTX_FORMAT ") must be "
-                          "non-negative\n", OnStackReplacePercentage);
+                          "non-negative\n", value);
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
 
-    backward_branch_limit = ((CompileThreshold * OnStackReplacePercentage) / 100)
-                            << InvocationCounter::count_shift;
-
-    if (backward_branch_limit < 0) {
+    if (value > max_percentage_limit) {
       JVMFlag::printError(verbose,
-                          "CompileThreshold * OnStackReplacePercentage / 100 = " INTX_FORMAT " "
-                          "must be between 0 and " INTX_FORMAT ", try changing "
-                          "CompileThreshold and/or OnStackReplacePercentage\n",
-                          (CompileThreshold * OnStackReplacePercentage) / 100,
-                          INT_MAX >> InvocationCounter::count_shift);
+                          "OnStackReplacePercentage (" INTX_FORMAT ") must be between 0 and " INT64_FORMAT "\n",
+                          value,
+                          max_percentage_limit);
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
   }
@@ -224,32 +212,7 @@ JVMFlag::Error CodeCacheSegmentSizeConstraintFunc(uintx value, bool verbose) {
   return JVMFlag::SUCCESS;
 }
 
-JVMFlag::Error CompilerThreadPriorityConstraintFunc(intx value, bool verbose) {
-#ifdef SOLARIS
-  if ((value < MinimumPriority || value > MaximumPriority) &&
-      (value != -1) && (value != -FXCriticalPriority)) {
-    JVMFlag::printError(verbose,
-                        "CompileThreadPriority (" INTX_FORMAT ") must be "
-                        "between %d and %d inclusively or -1 (means no change) "
-                        "or %d (special value for critical thread class/priority)\n",
-                        value, MinimumPriority, MaximumPriority, -FXCriticalPriority);
-    return JVMFlag::VIOLATES_CONSTRAINT;
-  }
-#endif
-
-  return JVMFlag::SUCCESS;
-}
-
 JVMFlag::Error CodeEntryAlignmentConstraintFunc(intx value, bool verbose) {
-#ifdef SPARC
-  if (CodeEntryAlignment % relocInfo::addr_unit() != 0) {
-    JVMFlag::printError(verbose,
-                        "CodeEntryAlignment (" INTX_FORMAT ") must be "
-                        "multiple of NOP size\n", CodeEntryAlignment);
-    return JVMFlag::VIOLATES_CONSTRAINT;
-  }
-#endif
-
   if (!is_power_of_2(value)) {
     JVMFlag::printError(verbose,
                         "CodeEntryAlignment (" INTX_FORMAT ") must be "
@@ -277,7 +240,7 @@ JVMFlag::Error OptoLoopAlignmentConstraintFunc(intx value, bool verbose) {
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
 
-  // Relevant on ppc, s390, sparc. Will be optimized where
+  // Relevant on ppc, s390. Will be optimized where
   // addr_unit() == 1.
   if (OptoLoopAlignment % relocInfo::addr_unit() != 0) {
     JVMFlag::printError(verbose,
@@ -295,6 +258,17 @@ JVMFlag::Error ArraycopyDstPrefetchDistanceConstraintFunc(uintx value, bool verb
     JVMFlag::printError(verbose,
                         "ArraycopyDstPrefetchDistance (" UINTX_FORMAT ") must be"
                         "between 0 and 4031\n", value);
+    return JVMFlag::VIOLATES_CONSTRAINT;
+  }
+
+  return JVMFlag::SUCCESS;
+}
+
+JVMFlag::Error AVX3ThresholdConstraintFunc(int value, bool verbose) {
+  if (value != 0 && !is_power_of_2(value)) {
+    JVMFlag::printError(verbose,
+                        "AVX3Threshold ( %d ) must be 0 or "
+                        "a power of two value between 0 and MAX_INT\n", value);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
 
@@ -328,6 +302,9 @@ JVMFlag::Error TypeProfileLevelConstraintFunc(uintx value, bool verbose) {
 
 JVMFlag::Error InitArrayShortSizeConstraintFunc(intx value, bool verbose) {
   if (value % BytesPerLong != 0) {
+    JVMFlag::printError(verbose,
+                        "InitArrayShortSize (" INTX_FORMAT ") must be "
+                        "a multiple of %d\n", value, BytesPerLong);
     return JVMFlag::VIOLATES_CONSTRAINT;
   } else {
     return JVMFlag::SUCCESS;
@@ -344,15 +321,6 @@ JVMFlag::Error InteriorEntryAlignmentConstraintFunc(intx value, bool verbose) {
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
 
-#ifdef SPARC
-  if (InteriorEntryAlignment % relocInfo::addr_unit() != 0) {
-    JVMFlag::printError(verbose,
-                        "InteriorEntryAlignment (" INTX_FORMAT ") must be "
-                        "multiple of NOP size\n");
-    return JVMFlag::VIOLATES_CONSTRAINT;
-  }
-#endif
-
   if (!is_power_of_2(value)) {
      JVMFlag::printError(verbose,
                          "InteriorEntryAlignment (" INTX_FORMAT ") must be "
@@ -361,7 +329,7 @@ JVMFlag::Error InteriorEntryAlignmentConstraintFunc(intx value, bool verbose) {
    }
 
   int minimum_alignment = 16;
-#if defined(SPARC) || (defined(X86) && !defined(AMD64))
+#if defined(X86) && !defined(AMD64)
   minimum_alignment = 4;
 #elif defined(S390)
   minimum_alignment = 2;
@@ -395,8 +363,8 @@ JVMFlag::Error RTMTotalCountIncrRateConstraintFunc(int value, bool verbose) {
 #if INCLUDE_RTM_OPT
   if (UseRTMLocking && !is_power_of_2(RTMTotalCountIncrRate)) {
     JVMFlag::printError(verbose,
-                        "RTMTotalCountIncrRate (" INTX_FORMAT
-                        ") must be a power of 2, resetting it to 64\n",
+                        "RTMTotalCountIncrRate (%d) must be "
+                        "a power of 2, resetting it to 64\n",
                         RTMTotalCountIncrRate);
     FLAG_SET_DEFAULT(RTMTotalCountIncrRate, 64);
   }
@@ -404,3 +372,51 @@ JVMFlag::Error RTMTotalCountIncrRateConstraintFunc(int value, bool verbose) {
 
   return JVMFlag::SUCCESS;
 }
+
+#ifdef COMPILER2
+JVMFlag::Error LoopStripMiningIterConstraintFunc(uintx value, bool verbose) {
+  if (UseCountedLoopSafepoints && LoopStripMiningIter == 0) {
+    if (!FLAG_IS_DEFAULT(UseCountedLoopSafepoints) || !FLAG_IS_DEFAULT(LoopStripMiningIter)) {
+      JVMFlag::printError(verbose,
+                          "When counted loop safepoints are enabled, "
+                          "LoopStripMiningIter must be at least 1 "
+                          "(a safepoint every 1 iteration): setting it to 1\n");
+    }
+    LoopStripMiningIter = 1;
+  } else if (!UseCountedLoopSafepoints && LoopStripMiningIter > 0) {
+    if (!FLAG_IS_DEFAULT(UseCountedLoopSafepoints) || !FLAG_IS_DEFAULT(LoopStripMiningIter)) {
+      JVMFlag::printError(verbose,
+                          "Disabling counted safepoints implies no loop strip mining: "
+                          "setting LoopStripMiningIter to 0\n");
+    }
+    LoopStripMiningIter = 0;
+  }
+
+  return JVMFlag::SUCCESS;
+}
+#endif // COMPILER2
+
+JVMFlag::Error DisableIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
+  ControlIntrinsicValidator validator(value, true/*disabled_all*/);
+  if (!validator.is_valid()) {
+    JVMFlag::printError(verbose,
+                        "Unrecognized intrinsic detected in DisableIntrinsic: %s\n",
+                        validator.what());
+    return JVMFlag::VIOLATES_CONSTRAINT;
+  }
+
+  return JVMFlag::SUCCESS;
+}
+
+JVMFlag::Error ControlIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
+  ControlIntrinsicValidator validator(value, false/*disabled_all*/);
+  if (!validator.is_valid()) {
+    JVMFlag::printError(verbose,
+                        "Unrecognized intrinsic detected in ControlIntrinsic: %s\n",
+                        validator.what());
+    return JVMFlag::VIOLATES_CONSTRAINT;
+  }
+
+  return JVMFlag::SUCCESS;
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -91,6 +91,7 @@ public abstract @UsesObjectEquals class Handler {
      *                           nor found in LogManager configuration properties
      * @param specifiedFormatter if not null, this is the formatter to configure
      */
+    @SuppressWarnings("removal")
     Handler(Level defaultLevel, Formatter defaultFormatter,
             Formatter specifiedFormatter) {
 
@@ -152,7 +153,7 @@ public abstract @UsesObjectEquals class Handler {
      * should no longer be used.  Method calls may either be silently
      * ignored or may throw runtime exceptions.
      *
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public abstract void close() throws SecurityException;
@@ -165,7 +166,7 @@ public abstract @UsesObjectEquals class Handler {
      * which case the {@code Formatter} will be remembered, but not used.
      *
      * @param newFormatter the {@code Formatter} to use (may not be null)
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public synchronized void setFormatter(Formatter newFormatter) throws SecurityException {
@@ -189,9 +190,9 @@ public abstract @UsesObjectEquals class Handler {
      *
      * @param encoding  The name of a supported character encoding.
      *        May be null, to indicate the default platform encoding.
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
-     * @exception  UnsupportedEncodingException if the named encoding is
+     * @throws  UnsupportedEncodingException if the named encoding is
      *          not supported.
      */
     public synchronized void setEncoding(String encoding)
@@ -227,7 +228,7 @@ public abstract @UsesObjectEquals class Handler {
      * {@code LogRecord} should be published or discarded.
      *
      * @param   newFilter  a {@code Filter} object (may be null)
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public synchronized void setFilter(Filter newFilter) throws SecurityException {
@@ -251,7 +252,7 @@ public abstract @UsesObjectEquals class Handler {
      * errors occur while using this Handler.
      *
      * @param em  the new ErrorManager
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public synchronized void setErrorManager(ErrorManager em) {
@@ -266,7 +267,7 @@ public abstract @UsesObjectEquals class Handler {
      * Retrieves the ErrorManager for this Handler.
      *
      * @return the ErrorManager for this Handler
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public ErrorManager getErrorManager() {
@@ -303,7 +304,7 @@ public abstract @UsesObjectEquals class Handler {
      * {@code Handlers}.
      *
      * @param newLevel   the new value for the log level
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have {@code LoggingPermission("control")}.
      */
     public synchronized void setLevel(Level newLevel) throws SecurityException {
@@ -333,12 +334,13 @@ public abstract @UsesObjectEquals class Handler {
      * handler from logging the {@code LogRecord}. It will return false if
      * the {@code LogRecord} is null.
      *
-     * @param record  a {@code LogRecord}
+     * @param record  a {@code LogRecord} (may be null).
      * @return true if the {@code LogRecord} would be logged.
      *
      */
     public boolean isLoggable(LogRecord record) {
         final int levelValue = getLevel().intValue();
+        if (record == null) return false;
         if (record.getLevel().intValue() < levelValue || levelValue == offValue) {
             return false;
         }

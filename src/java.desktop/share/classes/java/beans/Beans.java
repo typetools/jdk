@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,6 +63,11 @@ import java.util.Vector;
 
 @AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class Beans {
+
+    /**
+     * Constructs a {@code Beans}.
+     */
+    public Beans() {}
 
     /**
      * <p>
@@ -167,7 +172,8 @@ public @UsesObjectEquals class Beans {
      * <a href="../../java/applet/package-summary.html"> java.applet package
      * documentation</a> for further information.
      */
-    @Deprecated(since = "9")
+    @Deprecated(since = "9", forRemoval = true)
+    @SuppressWarnings("removal")
     public static Object instantiate(@Nullable ClassLoader cls, String beanName,
                                      @Nullable BeanContext beanContext,
                                      @Nullable AppletInitializer initializer)
@@ -443,6 +449,7 @@ public @UsesObjectEquals class Beans {
 
     public static void setDesignTime(boolean isDesignTime)
                         throws SecurityException {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPropertiesAccess();
@@ -469,6 +476,7 @@ public @UsesObjectEquals class Beans {
 
     public static void setGuiAvailable(boolean isGuiAvailable)
                         throws SecurityException {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPropertiesAccess();
@@ -516,7 +524,8 @@ class ObjectInputStreamWithLoader extends ObjectInputStream
  * Package private support class.  This provides a default AppletContext
  * for beans which are applets.
  */
-@Deprecated(since = "9")
+@Deprecated(since = "9", forRemoval = true)
+@SuppressWarnings("removal")
 class BeansAppletContext implements AppletContext {
     Applet target;
     Hashtable<URL,Object> imageCache = new Hashtable<>();
@@ -601,7 +610,8 @@ class BeansAppletContext implements AppletContext {
  * Package private support class.  This provides an AppletStub
  * for beans which are applets.
  */
-@Deprecated(since = "9")
+@Deprecated(since = "9", forRemoval = true)
+@SuppressWarnings("removal")
 class BeansAppletStub implements AppletStub {
     transient boolean active;
     transient Applet target;

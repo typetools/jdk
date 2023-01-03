@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -167,7 +168,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  * {@link #reset} method will reset the value of the scanner's radix to
  * {@code 10} regardless of whether it was previously changed.
  *
- * <h3> <a id="localized-numbers">Localized numbers</a> </h3>
+ * <h2> <a id="localized-numbers">Localized numbers</a> </h2>
  *
  * <p> An instance of this class is capable of scanning numbers in the standard
  * formats as well as in the formats of the scanner's locale. A scanner's
@@ -228,7 +229,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *         getInfinity()}
  * </dl></blockquote>
  *
- * <h4> <a id="number-syntax">Number syntax</a> </h4>
+ * <h3> <a id="number-syntax">Number syntax</a> </h3>
  *
  * <p> The strings that can be parsed as numbers by an instance of this class
  * are specified in terms of the following regular-expression grammar, where
@@ -441,7 +442,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
         // here but what can we do? The final authority will be
         // whatever parse method is invoked, so ultimately the
         // Scanner will do the right thing
-        String digit = "((?i)["+radixDigits+"]|\\p{javaDigit})";
+        String digit = "((?i)["+radixDigits+"\\p{javaDigit}])";
         String groupedNumeral = "("+non0Digit+digit+"?"+digit+"?("+
                                 groupSeparator+digit+digit+digit+")+)";
         // digit++ is the possessive form which is necessary for reducing
@@ -491,7 +492,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     private Pattern decimalPattern;
     private void buildFloatAndDecimalPattern() {
         // \\p{javaDigit} may not be perfect, see above
-        String digit = "([0-9]|(\\p{javaDigit}))";
+        String digit = "(([0-9\\p{javaDigit}]))";
         String exponent = "([eE][+-]?"+digit+"+)?";
         String groupedNumeral = "("+non0Digit+digit+"?"+digit+"?("+
                                 groupSeparator+digit+digit+digit+")+)";
@@ -627,7 +628,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
     /*
      * This method is added so that null-check on charset can be performed before
      * creating InputStream as an existing test required it.
-    */
+     */
     private static Readable makeReadable(Path source, Charset charset)
             throws IOException {
         Objects.requireNonNull(charset, "charset");
@@ -1220,7 +1221,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param pattern A delimiting pattern
      * @return this scanner
      */
-    public Scanner useDelimiter(Pattern pattern) {
+    public @This Scanner useDelimiter(Pattern pattern) {
         modCount++;
         delimPattern = pattern;
         return this;
@@ -1240,7 +1241,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param pattern A string specifying a delimiting pattern
      * @return this scanner
      */
-    public Scanner useDelimiter(String pattern) {
+    public @This Scanner useDelimiter(String pattern) {
         modCount++;
         delimPattern = patternCache.forName(pattern);
         return this;
@@ -1272,7 +1273,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @param locale A string specifying the locale to use
      * @return this scanner
      */
-    public Scanner useLocale(Locale locale) {
+    public @This Scanner useLocale(Locale locale) {
         if (locale.equals(this.locale))
             return this;
 
@@ -1302,25 +1303,25 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
 
         // These must be literalized to avoid collision with regex
         // metacharacters such as dot or parenthesis
-        groupSeparator =   "\\" + dfs.getGroupingSeparator();
-        decimalSeparator = "\\" + dfs.getDecimalSeparator();
+        groupSeparator =   "\\x{" + Integer.toHexString(dfs.getGroupingSeparator()) + "}";
+        decimalSeparator = "\\x{" + Integer.toHexString(dfs.getDecimalSeparator()) + "}";
 
         // Quoting the nonzero length locale-specific things
         // to avoid potential conflict with metacharacters
-        nanString = "\\Q" + dfs.getNaN() + "\\E";
-        infinityString = "\\Q" + dfs.getInfinity() + "\\E";
+        nanString = Pattern.quote(dfs.getNaN());
+        infinityString = Pattern.quote(dfs.getInfinity());
         positivePrefix = df.getPositivePrefix();
-        if (positivePrefix.length() > 0)
-            positivePrefix = "\\Q" + positivePrefix + "\\E";
+        if (!positivePrefix.isEmpty())
+            positivePrefix = Pattern.quote(positivePrefix);
         negativePrefix = df.getNegativePrefix();
-        if (negativePrefix.length() > 0)
-            negativePrefix = "\\Q" + negativePrefix + "\\E";
+        if (!negativePrefix.isEmpty())
+            negativePrefix = Pattern.quote(negativePrefix);
         positiveSuffix = df.getPositiveSuffix();
-        if (positiveSuffix.length() > 0)
-            positiveSuffix = "\\Q" + positiveSuffix + "\\E";
+        if (!positiveSuffix.isEmpty())
+            positiveSuffix = Pattern.quote(positiveSuffix);
         negativeSuffix = df.getNegativeSuffix();
-        if (negativeSuffix.length() > 0)
-            negativeSuffix = "\\Q" + negativeSuffix + "\\E";
+        if (!negativeSuffix.isEmpty())
+            negativeSuffix = Pattern.quote(negativeSuffix);
 
         // Force rebuilding and recompilation of locale dependent
         // primitive patterns
@@ -1361,7 +1362,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return this scanner
      * @throws IllegalArgumentException if radix is out of range
      */
-    public Scanner useRadix(@IntRange(from = 2, to = 36) int radix) {
+    public @This Scanner useRadix(@IntRange(from = 2, to = 36) int radix) {
         if ((radix < Character.MIN_RADIX) || (radix > Character.MAX_RADIX))
             throw new IllegalArgumentException("radix:"+radix);
 
@@ -1837,7 +1838,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the specified pattern is not found
      * @throws IllegalStateException if this scanner is closed
      */
-    public Scanner skip(@GuardSatisfied Scanner this, Pattern pattern) {
+    public @This Scanner skip(@GuardSatisfied Scanner this, Pattern pattern) {
         ensureOpen();
         if (pattern == null)
             throw new NullPointerException();
@@ -1870,7 +1871,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return this scanner
      * @throws IllegalStateException if this scanner is closed
      */
-    public Scanner skip(@GuardSatisfied Scanner this, String pattern) {
+    public @This Scanner skip(@GuardSatisfied Scanner this, String pattern) {
         return skip(patternCache.forName(pattern));
     }
 
@@ -2678,9 +2679,8 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      */
     public BigInteger nextBigInteger(@GuardSatisfied Scanner this, @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
-        if ((typeCache != null) && (typeCache instanceof BigInteger)
+        if ((typeCache != null) && (typeCache instanceof BigInteger val)
             && this.radix == radix) {
-            BigInteger val = (BigInteger)typeCache;
             useTypeCache();
             return val;
         }
@@ -2744,8 +2744,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      */
     public BigDecimal nextBigDecimal(@GuardSatisfied Scanner this) {
         // Check cached result
-        if ((typeCache != null) && (typeCache instanceof BigDecimal)) {
-            BigDecimal val = (BigDecimal)typeCache;
+        if ((typeCache != null) && (typeCache instanceof BigDecimal val)) {
             useTypeCache();
             return val;
         }
@@ -2784,7 +2783,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      *
      * @since 1.6
      */
-    public Scanner reset(@GuardSatisfied Scanner this) {
+    public @This Scanner reset(@GuardSatisfied Scanner this) {
         delimPattern = WHITESPACE_PATTERN;
         useLocale(Locale.getDefault(Locale.Category.FORMAT));
         useRadix(10);

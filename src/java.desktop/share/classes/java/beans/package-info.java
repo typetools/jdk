@@ -25,7 +25,7 @@
 
 /**
  * Contains classes related to developing <em>beans</em> -- components based on
- * the JavaBeans&trade; architecture. A few of the classes are used by beans
+ * the JavaBeans architecture. A few of the classes are used by beans
  * while they run in an application. For example, the event classes are used by
  * beans that fire property and vetoable change events (see
  * {@link java.beans.PropertyChangeEvent}). However, most of the classes in this
@@ -102,7 +102,7 @@
  * <h2>Related Documentation</h2>
  * For overview, architecture, and tutorial documentation, please see:
  * <ul>
- *     <li><a href="http://docs.oracle.com/javase/tutorial/javabeans/">
+ *     <li><a href="https://docs.oracle.com/javase/tutorial/javabeans/">
  *         JavaBeans</a>, a trail in <em>The Java Tutorial</em>.</li>
  *     <li><a href="http://www.oracle.com/technetwork/java/persistence2-141443.html">
  *         Long-Term Persistence</a>, an article in

@@ -37,7 +37,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since   1.4
  */
 @AnnotatedFor({"interning"})
-public @UsesObjectEquals class Base64 {
+@UsesObjectEquals class Base64 {
     /**
      * Translates the specified byte array into a Base64 string as per
      * Preferences.put(byte[]).

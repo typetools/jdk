@@ -26,6 +26,7 @@
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "runtime/thread.hpp"
+#include "utilities/debug.hpp"
 #include "utilities/macros.hpp"
 
 BarrierSet* BarrierSet::_barrier_set = NULL;
@@ -34,9 +35,17 @@ void BarrierSet::set_barrier_set(BarrierSet* barrier_set) {
   assert(_barrier_set == NULL, "Already initialized");
   _barrier_set = barrier_set;
 
-  // The barrier set was not initialized when the this thread (the main thread)
-  // was created, so the call to BarrierSet::on_thread_create() had to be deferred
-  // until we have a barrier set. Now we have a barrier set, so we make the call.
+  // Notify barrier set of the current (main) thread.  Normally the
+  // Thread constructor deals with this, but the main thread is
+  // created before we get here.  Verify it isn't yet on the thread
+  // list, else we'd also need to call BarrierSet::on_thread_attach.
+  // This is the only thread that can exist at this point; the Thread
+  // constructor objects to other threads being created before the
+  // barrier set is available.
+  assert(Thread::current()->is_Java_thread(),
+         "Expected main thread to be a JavaThread");
+  assert(!JavaThread::current()->on_thread_list(),
+         "Main thread already on thread list.");
   _barrier_set->on_thread_create(Thread::current());
 }
 

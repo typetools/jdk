@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,8 +81,38 @@ public enum Source {
     /** 1.10 local-variable type inference (var). */
     JDK10("10"),
 
-    /** 1.11 covers the to be determined language features that will be added in JDK 11. */
-    JDK11("11");
+    /** 1.11 local-variable syntax for lambda parameters */
+    JDK11("11"),
+
+    /** 12, no language features; switch expression in preview */
+    JDK12("12"),
+
+    /**
+     * 13, no language features; text blocks and revised switch
+     * expressions in preview
+     */
+    JDK13("13"),
+
+    /**
+     * 14, switch expressions; pattern matching, records, and revised
+     * text blocks in preview
+     */
+    JDK14("14"),
+
+    /**
+      * 15, text blocks
+      */
+    JDK15("15"),
+
+    /**
+      * 16, tbd
+      */
+    JDK16("16"),
+
+    /**
+      * 17, tbd
+      */
+    JDK17("17");
 
     private static final Context.Key<Source> sourceKey = new Context.Key<>();
 
@@ -118,7 +148,7 @@ public enum Source {
         this.name = name;
     }
 
-    public static final Source MIN = Source.JDK6;
+    public static final Source MIN = Source.JDK7;
 
     private static final Source MAX = values()[values().length - 1];
 
@@ -128,16 +158,28 @@ public enum Source {
         return tab.get(name);
     }
 
+    public boolean isSupported() {
+        return this.compareTo(MIN) >= 0;
+    }
+
     public Target requiredTarget() {
-        if (this.compareTo(JDK11) >= 0) return Target.JDK1_11;
-        if (this.compareTo(JDK10) >= 0) return Target.JDK1_10;
-        if (this.compareTo(JDK9) >= 0) return Target.JDK1_9;
-        if (this.compareTo(JDK8) >= 0) return Target.JDK1_8;
-        if (this.compareTo(JDK7) >= 0) return Target.JDK1_7;
-        if (this.compareTo(JDK6) >= 0) return Target.JDK1_6;
-        if (this.compareTo(JDK5) >= 0) return Target.JDK1_5;
-        if (this.compareTo(JDK1_4) >= 0) return Target.JDK1_4;
-        return Target.JDK1_1;
+        return switch(this) {
+        case JDK17  -> Target.JDK1_17;
+        case JDK16  -> Target.JDK1_16;
+        case JDK15  -> Target.JDK1_15;
+        case JDK14  -> Target.JDK1_14;
+        case JDK13  -> Target.JDK1_13;
+        case JDK12  -> Target.JDK1_12;
+        case JDK11  -> Target.JDK1_11;
+        case JDK10  -> Target.JDK1_10;
+        case JDK9   -> Target.JDK1_9;
+        case JDK8   -> Target.JDK1_8;
+        case JDK7   -> Target.JDK1_7;
+        case JDK6   -> Target.JDK1_6;
+        case JDK5   -> Target.JDK1_5;
+        case JDK1_4 -> Target.JDK1_4;
+        default     -> Target.JDK1_1;
+        };
     }
 
     /**
@@ -148,19 +190,9 @@ public enum Source {
     public enum Feature {
 
         DIAMOND(JDK7, Fragments.FeatureDiamond, DiagKind.NORMAL),
-        MULTICATCH(JDK7, Fragments.FeatureMulticatch, DiagKind.PLURAL),
-        IMPROVED_RETHROW_ANALYSIS(JDK7),
-        IMPROVED_CATCH_ANALYSIS(JDK7),
         MODULES(JDK9, Fragments.FeatureModules, DiagKind.PLURAL),
-        TRY_WITH_RESOURCES(JDK7, Fragments.FeatureTryWithResources, DiagKind.NORMAL),
         EFFECTIVELY_FINAL_VARIABLES_IN_TRY_WITH_RESOURCES(JDK9, Fragments.FeatureVarInTryWithResources, DiagKind.PLURAL),
-        BINARY_LITERALS(JDK7, Fragments.FeatureBinaryLit, DiagKind.PLURAL),
-        UNDERSCORES_IN_LITERALS(JDK7, Fragments.FeatureUnderscoreLit, DiagKind.PLURAL),
-        STRINGS_IN_SWITCH(JDK7, Fragments.FeatureStringSwitch, DiagKind.PLURAL),
         DEPRECATION_ON_IMPORT(MIN, JDK8),
-        SIMPLIFIED_VARARGS(JDK7),
-        OBJECT_TO_PRIMITIVE_CAST(JDK7),
-        ENFORCE_THIS_DOT_INIT(JDK7),
         POLY(JDK8),
         LAMBDA(JDK8, Fragments.FeatureLambda, DiagKind.PLURAL),
         METHOD_REFERENCES(JDK8, Fragments.FeatureMethodReferences, DiagKind.PLURAL),
@@ -182,7 +214,20 @@ public enum Source {
         UNDERSCORE_IDENTIFIER(MIN, JDK8),
         PRIVATE_INTERFACE_METHODS(JDK9, Fragments.FeaturePrivateIntfMethods, DiagKind.PLURAL),
         LOCAL_VARIABLE_TYPE_INFERENCE(JDK10),
-        IMPORT_ON_DEMAND_OBSERVABLE_PACKAGES(JDK1_2, JDK8);
+        VAR_SYNTAX_IMPLICIT_LAMBDAS(JDK11, Fragments.FeatureVarSyntaxInImplicitLambda, DiagKind.PLURAL),
+        IMPORT_ON_DEMAND_OBSERVABLE_PACKAGES(JDK1_2, JDK8),
+        SWITCH_MULTIPLE_CASE_LABELS(JDK14, Fragments.FeatureMultipleCaseLabels, DiagKind.PLURAL),
+        SWITCH_RULE(JDK14, Fragments.FeatureSwitchRules, DiagKind.PLURAL),
+        SWITCH_EXPRESSION(JDK14, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
+        TEXT_BLOCKS(JDK15, Fragments.FeatureTextBlocks, DiagKind.PLURAL),
+        PATTERN_MATCHING_IN_INSTANCEOF(JDK16, Fragments.FeaturePatternMatchingInstanceof, DiagKind.NORMAL),
+        REIFIABLE_TYPES_INSTANCEOF(JDK16, Fragments.FeatureReifiableTypesInstanceof, DiagKind.PLURAL),
+        RECORDS(JDK16, Fragments.FeatureRecords, DiagKind.PLURAL),
+        SEALED_CLASSES(JDK17, Fragments.FeatureSealedClasses, DiagKind.PLURAL),
+        CASE_NULL(JDK17, Fragments.FeatureCaseNull, DiagKind.NORMAL),
+        PATTERN_SWITCH(JDK17, Fragments.FeaturePatternSwitch, DiagKind.PLURAL),
+        REDUNDANT_STRICTFP(JDK17),
+        ;
 
         enum DiagKind {
             NORMAL,
@@ -244,29 +289,24 @@ public enum Source {
     }
 
     public static SourceVersion toSourceVersion(Source source) {
-        switch(source) {
-        case JDK1_2:
-            return RELEASE_2;
-        case JDK1_3:
-            return RELEASE_3;
-        case JDK1_4:
-            return RELEASE_4;
-        case JDK5:
-            return RELEASE_5;
-        case JDK6:
-            return RELEASE_6;
-        case JDK7:
-            return RELEASE_7;
-        case JDK8:
-            return RELEASE_8;
-        case JDK9:
-            return RELEASE_9;
-        case JDK10:
-            return RELEASE_10;
-        case JDK11:
-            return RELEASE_11;
-        default:
-            return null;
-        }
+        return switch(source) {
+        case JDK1_2 -> RELEASE_2;
+        case JDK1_3 -> RELEASE_3;
+        case JDK1_4 -> RELEASE_4;
+        case JDK5   -> RELEASE_5;
+        case JDK6   -> RELEASE_6;
+        case JDK7   -> RELEASE_7;
+        case JDK8   -> RELEASE_8;
+        case JDK9   -> RELEASE_9;
+        case JDK10  -> RELEASE_10;
+        case JDK11  -> RELEASE_11;
+        case JDK12  -> RELEASE_12;
+        case JDK13  -> RELEASE_13;
+        case JDK14  -> RELEASE_14;
+        case JDK15  -> RELEASE_15;
+        case JDK16  -> RELEASE_16;
+        case JDK17  -> RELEASE_17;
+        default     -> null;
+        };
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -82,7 +82,7 @@ import java.util.Arrays;
 public class ComponentSampleModel extends SampleModel
 {
     /** Offsets for all bands in data array elements. */
-    protected int bandOffsets[];
+    protected int[] bandOffsets;
 
     /** Index for each bank storing a band of image data. */
     protected int[] bankIndices;
@@ -124,25 +124,22 @@ public class ComponentSampleModel extends SampleModel
      * @param scanlineStride the line stride of the region of image
      *     data described
      * @param bandOffsets the offsets of all bands
-     * @throws IllegalArgumentException if {@code w} or
-     *         {@code h} is not greater than 0
-     * @throws IllegalArgumentException if {@code pixelStride}
-     *         is less than 0
-     * @throws IllegalArgumentException if {@code scanlineStride}
-     *         is less than 0
-     * @throws IllegalArgumentException if {@code numBands}
-     *         is less than 1
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
      * @throws IllegalArgumentException if the product of {@code w}
-     *         and {@code h} is greater than
-     *         {@code Integer.MAX_VALUE}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code pixelStride} is less than 0
+     * @throws IllegalArgumentException if {@code scanlineStride} is less than 0
+     * @throws NullPointerException if {@code bandOffsets} is {@code null}
+     * @throws IllegalArgumentException if {@code bandOffsets.length} is 0
      * @throws IllegalArgumentException if {@code dataType} is not
-     *         one of the supported data types
+     *         one of the supported data types for this sample model.
      */
     public ComponentSampleModel(int dataType,
                                 int w, int h,
                                 int pixelStride,
                                 int scanlineStride,
-                                int bandOffsets[]) {
+                                int[] bandOffsets) {
         super(dataType, w, h, bandOffsets.length);
         this.dataType = dataType;
         this.pixelStride = pixelStride;
@@ -155,9 +152,6 @@ public class ComponentSampleModel extends SampleModel
         // TODO - bug 4296691 - remove this check
         if (scanlineStride < 0) {
             throw new IllegalArgumentException("Scanline stride must be >= 0");
-        }
-        if (numBands < 1) {
-            throw new IllegalArgumentException("Must have at least one band.");
         }
         if ((dataType < DataBuffer.TYPE_BYTE) ||
             (dataType > DataBuffer.TYPE_DOUBLE)) {
@@ -187,32 +181,39 @@ public class ComponentSampleModel extends SampleModel
      *     data described
      * @param bankIndices the bank indices of all bands
      * @param bandOffsets the band offsets of all bands
-     * @throws IllegalArgumentException if {@code w} or
-     *         {@code h} is not greater than 0
-     * @throws IllegalArgumentException if {@code pixelStride}
-     *         is less than 0
-     * @throws IllegalArgumentException if {@code scanlineStride}
-     *         is less than 0
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if {@code pixelStride} is less than 0
+     * @throws IllegalArgumentException if {@code scanlineStride} is less than 0
+     * @throws NullPointerException if {@code bankIndices} is {@code null}
+     * @throws NullPointerException if {@code bandOffsets} is {@code null}
+     * @throws IllegalArgumentException if {@code bandOffsets.length} is 0
      * @throws IllegalArgumentException if the length of
      *         {@code bankIndices} does not equal the length of
-     *         {@code bankOffsets}
+     *         {@code bandOffsets}
      * @throws IllegalArgumentException if any of the bank indices
      *         of {@code bandIndices} is less than 0
      * @throws IllegalArgumentException if {@code dataType} is not
-     *         one of the supported data types
+     *         one of the supported data types for this sample model
      */
     public ComponentSampleModel(int dataType,
                                 int w, int h,
                                 int pixelStride,
                                 int scanlineStride,
-                                int bankIndices[],
-                                int bandOffsets[]) {
+                                int[] bankIndices,
+                                int[] bandOffsets) {
         super(dataType, w, h, bandOffsets.length);
         this.dataType = dataType;
         this.pixelStride = pixelStride;
         this.scanlineStride  = scanlineStride;
         this.bandOffsets = bandOffsets.clone();
         this.bankIndices = bankIndices.clone();
+        if (this.bandOffsets.length != this.bankIndices.length) {
+            throw new IllegalArgumentException("Length of bandOffsets must "+
+                                               "equal length of bankIndices.");
+        }
         if (pixelStride < 0) {
             throw new IllegalArgumentException("Pixel stride must be >= 0");
         }
@@ -241,10 +242,6 @@ public class ComponentSampleModel extends SampleModel
         }
         numBanks         = maxBank+1;
         numBands         = this.bandOffsets.length;
-        if (this.bandOffsets.length != this.bankIndices.length) {
-            throw new IllegalArgumentException("Length of bandOffsets must "+
-                                               "equal length of bankIndices.");
-        }
         verify();
     }
 
@@ -298,9 +295,9 @@ public class ComponentSampleModel extends SampleModel
      /**
       * Preserves band ordering with new step factor...
       */
-    int []orderBands(int orig[], int step) {
-        int map[] = new int[orig.length];
-        int ret[] = new int[orig.length];
+    int []orderBands(int[] orig, int step) {
+        int[] map = new int[orig.length];
+        int[] ret = new int[orig.length];
 
         for (int i=0; i<map.length; i++) map[i] = i;
 
@@ -340,7 +337,7 @@ public class ComponentSampleModel extends SampleModel
         maxBandOff -= minBandOff;
 
         int bands   = bandOffsets.length;
-        int bandOff[];
+        int[] bandOff;
         int pStride = Math.abs(pixelStride);
         int lStride = Math.abs(scanlineStride);
         int bStride = Math.abs(maxBandOff);
@@ -408,13 +405,13 @@ public class ComponentSampleModel extends SampleModel
      * @return a {@code ComponentSampleModel} created with a subset
      *          of bands from this {@code ComponentSampleModel}.
      */
-    public SampleModel createSubsetSampleModel(int bands[]) {
+    public SampleModel createSubsetSampleModel(int[] bands) {
        if (bands.length > bankIndices.length)
             throw new RasterFormatException("There are only " +
                                             bankIndices.length +
                                             " bands");
-        int newBankIndices[] = new int[bands.length];
-        int newBandOffsets[] = new int[bands.length];
+        int[] newBankIndices = new int[bands.length];
+        int[] newBandOffsets = new int[bands.length];
 
         for (int i=0; i<bands.length; i++) {
             newBankIndices[i] = bankIndices[bands[i]];
@@ -505,7 +502,7 @@ public class ComponentSampleModel extends SampleModel
      *          represents a band.
      */
     public final int[] getSampleSize() {
-        int sampleSize[] = new int [numBands];
+        int[] sampleSize = new int [numBands];
         int sizeInBits = getSampleSize(0);
 
         for (int i=0; i<numBands; i++)
@@ -734,12 +731,12 @@ public class ComponentSampleModel extends SampleModel
      * @throws ArrayIndexOutOfBoundsException if the coordinates are
      * not in bounds, or if iArray is too small to hold the output.
      */
-    public int[] getPixel(int x, int y, int iArray[], DataBuffer data) {
+    public int[] getPixel(int x, int y, int[] iArray, DataBuffer data) {
         if ((x < 0) || (y < 0) || (x >= width) || (y >= height)) {
             throw new ArrayIndexOutOfBoundsException
                 ("Coordinate out of bounds!");
         }
-        int pixels[];
+        int[] pixels;
         if (iArray != null) {
            pixels = iArray;
         } else {
@@ -768,7 +765,7 @@ public class ComponentSampleModel extends SampleModel
      * @see #setPixels(int, int, int, int, int[], DataBuffer)
      */
     public int[] getPixels(int x, int y, int w, int h,
-                           int iArray[], DataBuffer data) {
+                           int[] iArray, DataBuffer data) {
         int x1 = x + w;
         int y1 = y + h;
 
@@ -778,7 +775,7 @@ public class ComponentSampleModel extends SampleModel
             throw new ArrayIndexOutOfBoundsException
                 ("Coordinate out of bounds!");
         }
-        int pixels[];
+        int[] pixels;
         if (iArray != null) {
            pixels = iArray;
         } else {
@@ -892,13 +889,13 @@ public class ComponentSampleModel extends SampleModel
      * @see #setSamples(int, int, int, int, int, int[], DataBuffer)
      */
     public int[] getSamples(int x, int y, int w, int h, int b,
-                            int iArray[], DataBuffer data) {
+                            int[] iArray, DataBuffer data) {
         // Bounds check for 'b' will be performed automatically
         if ((x < 0) || (y < 0) || (x + w > width) || (y + h > height)) {
             throw new ArrayIndexOutOfBoundsException
                 ("Coordinate out of bounds!");
         }
-        int samples[];
+        int[] samples;
         if (iArray != null) {
            samples = iArray;
         } else {
@@ -1033,7 +1030,7 @@ public class ComponentSampleModel extends SampleModel
      * @param data      The DataBuffer containing the image data
      * @see #getPixel(int, int, int[], DataBuffer)
      */
-    public void setPixel(int x, int y, int iArray[], DataBuffer data) {
+    public void setPixel(int x, int y, int[] iArray, DataBuffer data) {
         if ((x < 0) || (y < 0) || (x >= width) || (y >= height)) {
             throw new ArrayIndexOutOfBoundsException
                 ("Coordinate out of bounds!");
@@ -1059,7 +1056,7 @@ public class ComponentSampleModel extends SampleModel
      * @see #getPixels(int, int, int, int, int[], DataBuffer)
      */
     public void setPixels(int x, int y, int w, int h,
-                          int iArray[], DataBuffer data) {
+                          int[] iArray, DataBuffer data) {
         int x1 = x + w;
         int y1 = y + h;
 
@@ -1174,7 +1171,7 @@ public class ComponentSampleModel extends SampleModel
      * @see #getSamples(int, int, int, int, int, int[], DataBuffer)
      */
     public void setSamples(int x, int y, int w, int h, int b,
-                           int iArray[], DataBuffer data) {
+                           int[] iArray, DataBuffer data) {
         // Bounds check for 'b' will be performed automatically
         if ((x < 0) || (y < 0) || (x + w > width) || (y + h > height)) {
             throw new ArrayIndexOutOfBoundsException
@@ -1207,7 +1204,6 @@ public class ComponentSampleModel extends SampleModel
             this.dataType == that.dataType &&
             Arrays.equals(this.bandOffsets, that.bandOffsets) &&
             Arrays.equals(this.bankIndices, that.bankIndices) &&
-            this.numBands == that.numBands &&
             this.numBanks == that.numBanks &&
             this.scanlineStride == that.scanlineStride &&
             this.pixelStride == that.pixelStride;
@@ -1232,8 +1228,6 @@ public class ComponentSampleModel extends SampleModel
             hash ^= bankIndices[i];
             hash <<= 8;
         }
-        hash ^= numBands;
-        hash <<= 8;
         hash ^= numBanks;
         hash <<= 8;
         hash ^= scanlineStride;

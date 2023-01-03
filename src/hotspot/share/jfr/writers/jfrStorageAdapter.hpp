@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_JFR_WRITERS_JFRSTORAGEADAPTER_HPP
-#define SHARE_VM_JFR_WRITERS_JFRSTORAGEADAPTER_HPP
+#ifndef SHARE_JFR_WRITERS_JFRSTORAGEADAPTER_HPP
+#define SHARE_JFR_WRITERS_JFRSTORAGEADAPTER_HPP
 
 #include "jfr/utilities/jfrAllocation.hpp"
 
@@ -82,7 +82,7 @@ class Adapter {
     assert(_thread != NULL, "invariant");
     Flush f(_storage, used, requested, _thread);
     _storage = f.result();
-    return _storage != NULL;
+    return _storage != NULL && !_storage->excluded();
   }
 
   void release() {
@@ -236,8 +236,9 @@ class NoOwnershipAdapter {
   void release() {}
   bool flush(size_t used, size_t requested) {
     // don't flush/expand a buffer that is not our own
-    return false;
+    _pos = _start;
+    return true;
   }
 };
 
-#endif // SHARE_VM_JFR_WRITERS_JFRSTORAGEADAPTER_HPP
+#endif // SHARE_JFR_WRITERS_JFRSTORAGEADAPTER_HPP

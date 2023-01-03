@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,22 +55,26 @@ import jdk.jfr.Recording;
 import jdk.jfr.RecordingState;
 import jdk.jfr.events.ActiveRecordingEvent;
 import jdk.jfr.events.ActiveSettingEvent;
+import jdk.jfr.internal.SecuritySupport.SafePath;
 import jdk.jfr.internal.SecuritySupport.SecureRecorderListener;
+import jdk.jfr.internal.consumer.EventLog;
 import jdk.jfr.internal.instrument.JDKEvents;
 
 public final class PlatformRecorder {
 
-    private final List<PlatformRecording> recordings = new ArrayList<>();
-    private final static List<SecureRecorderListener> changeListeners = new ArrayList<>();
+
+    private final ArrayList<PlatformRecording> recordings = new ArrayList<>();
+    private static final List<SecureRecorderListener> changeListeners = new ArrayList<>();
     private final Repository repository;
-    private final Timer timer;
-    private final static JVM jvm = JVM.getJVM();
+    private static final JVM jvm = JVM.getJVM();
     private final EventType activeRecordingEvent;
     private final EventType activeSettingEvent;
     private final Thread shutdownHook;
 
+    private Timer timer;
     private long recordingCounter = 0;
     private RepositoryChunk currentChunk;
+    private boolean inShutdown;
 
     public PlatformRecorder() throws Exception {
         repository = Repository.getRepository();
@@ -81,15 +86,14 @@ public final class PlatformRecorder {
         Logger.log(JFR_SYSTEM, INFO, "Registered JDK events");
         JDKEvents.addInstrumentation();
         startDiskMonitor();
-        SecuritySupport.registerEvent(ActiveRecordingEvent.class);
         activeRecordingEvent = EventType.getEventType(ActiveRecordingEvent.class);
-        SecuritySupport.registerEvent(ActiveSettingEvent.class);
         activeSettingEvent = EventType.getEventType(ActiveSettingEvent.class);
-        shutdownHook = SecuritySupport.createThreadWitNoPermissions("JFR: Shutdown Hook", new ShutdownHook(this));
+        shutdownHook = SecuritySupport.createThreadWitNoPermissions("JFR Shutdown Hook", new ShutdownHook(this));
         SecuritySupport.setUncaughtExceptionHandler(shutdownHook, new ShutdownHook.ExceptionHandler());
         SecuritySupport.registerShutdownHook(shutdownHook);
-        timer = createTimer();
+
     }
+
 
     private static Timer createTimer() {
         try {
@@ -97,6 +101,7 @@ public final class PlatformRecorder {
             Thread t = SecuritySupport.createThreadWitNoPermissions("Permissionless thread", ()-> {
                 result.add(new Timer("JFR Recording Scheduler", true));
             });
+            jvm.exclude(t);
             t.start();
             t.join();
             return result.get(0);
@@ -139,6 +144,7 @@ public final class PlatformRecorder {
     }
 
     public synchronized static void addListener(FlightRecorderListener changeListener) {
+        @SuppressWarnings("removal")
         AccessControlContext context = AccessController.getContext();
         SecureRecorderListener sl = new SecureRecorderListener(context, changeListener);
         boolean runInitialized;
@@ -165,7 +171,10 @@ public final class PlatformRecorder {
         return new ArrayList<>(changeListeners);
     }
 
-    Timer getTimer() {
+    synchronized Timer getTimer() {
+        if (timer == null) {
+            timer = createTimer();
+        }
         return timer;
     }
 
@@ -176,10 +185,16 @@ public final class PlatformRecorder {
         }
     }
 
+    synchronized void setInShutDown() {
+        this.inShutdown = true;
+    }
+
     // called by shutdown hook
     synchronized void destroy() {
         try {
-            timer.cancel();
+            if (timer != null) {
+                timer.cancel();
+            }
         } catch (Exception ex) {
             Logger.log(JFR_SYSTEM, WARN, "Shutdown hook could not cancel timer");
         }
@@ -198,66 +213,89 @@ public final class PlatformRecorder {
 
         if (jvm.hasNativeJFR()) {
             if (jvm.isRecording()) {
-                jvm.endRecording_();
+                jvm.endRecording();
             }
             jvm.destroyNativeJFR();
         }
         repository.clear();
     }
 
-    synchronized void start(PlatformRecording recording) {
+    synchronized long start(PlatformRecording recording) {
         // State can only be NEW or DELAYED because of previous checks
-        Instant now = Instant.now();
-        recording.setStartTime(now);
-        recording.updateTimer();
-        Duration duration = recording.getDuration();
-        if (duration != null) {
-            recording.setStopTime(now.plus(duration));
-        }
+        Instant startTime = null;
         boolean toDisk = recording.isToDisk();
         boolean beginPhysical = true;
+        long streamInterval = recording.getStreamIntervalMillis();
         for (PlatformRecording s : getRecordings()) {
             if (s.getState() == RecordingState.RUNNING) {
                 beginPhysical = false;
                 if (s.isToDisk()) {
                     toDisk = true;
                 }
+                streamInterval = Math.min(streamInterval, s.getStreamIntervalMillis());
             }
         }
+        long startNanos = -1;
         if (beginPhysical) {
             RepositoryChunk newChunk = null;
             if (toDisk) {
-                newChunk = repository.newChunk(now);
-                MetadataRepository.getInstance().setOutput(newChunk.getUnfishedFile().toString());
+                newChunk = repository.newChunk();
+                if (EventLog.shouldLog()) {
+                    EventLog.start();
+                }
+                MetadataRepository.getInstance().setOutput(newChunk.getFile().toString());
             } else {
                 MetadataRepository.getInstance().setOutput(null);
             }
             currentChunk = newChunk;
-            jvm.beginRecording_();
+            jvm.beginRecording();
+            startNanos = jvm.getChunkStartNanos();
+            startTime = Utils.epochNanosToInstant(startNanos);
+            if (currentChunk != null) {
+                currentChunk.setStartTime(startTime);
+            }
             recording.setState(RecordingState.RUNNING);
             updateSettings();
+            recording.setStartTime(startTime);
             writeMetaEvents();
         } else {
             RepositoryChunk newChunk = null;
             if (toDisk) {
-                newChunk = repository.newChunk(now);
+                newChunk = repository.newChunk();
+                if (EventLog.shouldLog()) {
+                    EventLog.start();
+                }
                 RequestEngine.doChunkEnd();
-                MetadataRepository.getInstance().setOutput(newChunk.getUnfishedFile().toString());
+                String p = newChunk.getFile().toString();
+                startTime = MetadataRepository.getInstance().setOutput(p);
+                newChunk.setStartTime(startTime);
             }
+            startNanos = jvm.getChunkStartNanos();
+            startTime = Utils.epochNanosToInstant(startNanos);
+            recording.setStartTime(startTime);
             recording.setState(RecordingState.RUNNING);
             updateSettings();
             writeMetaEvents();
             if (currentChunk != null) {
-                finishChunk(currentChunk, now, recording);
+                finishChunk(currentChunk, startTime, recording);
             }
             currentChunk = newChunk;
         }
-
+        if (toDisk) {
+            RequestEngine.setFlushInterval(streamInterval);
+        }
         RequestEngine.doChunkBegin();
+        Duration duration = recording.getDuration();
+        if (duration != null) {
+            recording.setStopTime(startTime.plus(duration));
+        }
+        recording.updateTimer();
+        return startNanos;
     }
 
     synchronized void stop(PlatformRecording recording) {
         RecordingState state = recording.getState();
+        Instant stopTime;
 
         if (Utils.isAfter(state, RecordingState.RUNNING)) {
             throw new IllegalStateException("Can't stop an already stopped recording.");
@@ -265,9 +303,9 @@ public final class PlatformRecorder {
         if (Utils.isBefore(state, RecordingState.RUNNING)) {
             throw new IllegalStateException("Recording must be started before it can be stopped.");
         }
-        Instant now = Instant.now();
         boolean toDisk = false;
         boolean endPhysical = true;
+        long streamInterval = Long.MAX_VALUE;
         for (PlatformRecording s : getRecordings()) {
             RecordingState rs = s.getState();
             if (s != recording && RecordingState.RUNNING == rs) {
@@ -275,50 +313,70 @@ public final class PlatformRecorder {
                 if (s.isToDisk()) {
                     toDisk = true;
                 }
+                streamInterval = Math.min(streamInterval, s.getStreamIntervalMillis());
             }
         }
         OldObjectSample.emit(recording);
+        recording.setFinalStartnanos(jvm.getChunkStartNanos());
 
         if (endPhysical) {
             RequestEngine.doChunkEnd();
             if (recording.isToDisk()) {
-                if (currentChunk != null) {
-                    MetadataRepository.getInstance().setOutput(null);
-                    finishChunk(currentChunk, now, null);
-                    currentChunk = null;
+                if (inShutdown) {
+                    jvm.markChunkFinal();
                 }
+                stopTime = MetadataRepository.getInstance().setOutput(null);
+                finishChunk(currentChunk, stopTime, null);
+                currentChunk = null;
             } else {
                 // last memory
-                dumpMemoryToDestination(recording);
+                stopTime = dumpMemoryToDestination(recording);
             }
-            jvm.endRecording_();
+            jvm.endRecording();
+            recording.setStopTime(stopTime);
             disableEvents();
         } else {
             RepositoryChunk newChunk = null;
             RequestEngine.doChunkEnd();
             updateSettingsButIgnoreRecording(recording);
+
+            String path = null;
             if (toDisk) {
-                newChunk = repository.newChunk(now);
-                MetadataRepository.getInstance().setOutput(newChunk.getUnfishedFile().toString());
-            } else {
-                MetadataRepository.getInstance().setOutput(null);
+                newChunk = repository.newChunk();
+                path = newChunk.getFile().toString();
             }
+            stopTime = MetadataRepository.getInstance().setOutput(path);
+            if (toDisk) {
+                newChunk.setStartTime(stopTime);
+            }
+            recording.setStopTime(stopTime);
             writeMetaEvents();
             if (currentChunk != null) {
-                finishChunk(currentChunk, now, null);
+                finishChunk(currentChunk, stopTime, null);
             }
             currentChunk = newChunk;
             RequestEngine.doChunkBegin();
         }
+
+        if (toDisk) {
+            RequestEngine.setFlushInterval(streamInterval);
+        } else {
+            RequestEngine.setFlushInterval(Long.MAX_VALUE);
+        }
         recording.setState(RecordingState.STOPPED);
+        if (!isToDisk()) {
+            EventLog.stop();
+        }
     }
 
-    private void dumpMemoryToDestination(PlatformRecording recording)  {
+    private Instant dumpMemoryToDestination(PlatformRecording recording)  {
         WriteableUserPath dest = recording.getDestination();
         if (dest != null) {
-            MetadataRepository.getInstance().setOutput(dest.getText());
+            Instant t = MetadataRepository.getInstance().setOutput(dest.getRealPathText());
             recording.clearDestination();
+            return t;
         }
+        return Instant.now();
     }
     private void disableEvents() {
         MetadataRepository.getInstance().disableEvents();
@@ -339,14 +397,17 @@ public final class PlatformRecorder {
         MetadataRepository.getInstance().setSettings(list);
     }
 
+
+
     synchronized void rotateDisk() {
-        Instant now = Instant.now();
-        RepositoryChunk newChunk = repository.newChunk(now);
+        RepositoryChunk newChunk = repository.newChunk();
         RequestEngine.doChunkEnd();
-        MetadataRepository.getInstance().setOutput(newChunk.getUnfishedFile().toString());
+        String path = newChunk.getFile().toString();
+        Instant timestamp = MetadataRepository.getInstance().setOutput(path);
+        newChunk.setStartTime(timestamp);
         writeMetaEvents();
         if (currentChunk != null) {
-            finishChunk(currentChunk, now, null);
+            finishChunk(currentChunk, timestamp, null);
         }
         currentChunk = newChunk;
         RequestEngine.doChunkBegin();
@@ -396,18 +457,18 @@ public final class PlatformRecorder {
                 r.appendChunk(chunk);
             }
         }
+        FilePurger.purge();
     }
 
     private void writeMetaEvents() {
-
         if (activeRecordingEvent.isEnabled()) {
+            ActiveRecordingEvent event = ActiveRecordingEvent.EVENT;
             for (PlatformRecording r : getRecordings()) {
                 if (r.getState() == RecordingState.RUNNING && r.shouldWriteMetadataEvent()) {
-                    ActiveRecordingEvent event = new ActiveRecordingEvent();
                     event.id = r.getId();
                     event.name = r.getName();
                     WriteableUserPath p = r.getDestination();
-                    event.destination = p == null ? null : p.getText();
+                    event.destination = p == null ? null : p.getRealPathText();
                     Duration d = r.getDuration();
                     event.recordingDuration = d == null ? Long.MAX_VALUE : d.toMillis();
                     Duration age = r.getMaxAge();
@@ -416,6 +477,8 @@ public final class PlatformRecorder {
                     event.maxSize = size == null ? Long.MAX_VALUE : size;
                     Instant start = r.getStartTime();
                     event.recordingStart = start == null ? Long.MAX_VALUE : start.toEpochMilli();
+                    Duration fi = r.getFlushInterval();
+                    event.flushInterval = fi == null ? Long.MAX_VALUE : fi.toMillis();
                     event.commit();
                 }
             }
@@ -428,19 +491,16 @@ public final class PlatformRecorder {
     }
 
     private void periodicTask() {
+        if (!jvm.hasNativeJFR()) {
+            return;
+        }
         while (true) {
             synchronized (this) {
-                if (!jvm.hasNativeJFR()) {
-                    return;
+                if (jvm.shouldRotateDisk()) {
+                    rotateDisk();
                 }
-                if (currentChunk != null) {
-                    try {
-                        if (SecuritySupport.getFileSize(currentChunk.getUnfishedFile()) > Options.getMaxChunkSize()) {
-                            rotateDisk();
-                        }
-                    } catch (IOException e) {
-                        Logger.log(JFR_SYSTEM, WARN, "Could not check file size to determine chunk rotation");
-                    }
+                if (isToDisk()) {
+                    EventLog.update();
                 }
             }
             long minDelta = RequestEngine.doPeriodic();
@@ -449,13 +509,25 @@ public final class PlatformRecorder {
         }
     }
 
+    private boolean isToDisk() {
+        // Use indexing to avoid Iterator allocation if nothing happens
+        int count = recordings.size();
+        for (int i = 0; i < count; i++) {
+            PlatformRecording r = recordings.get(i);
+            if (r.isToDisk() && r.getState() == RecordingState.RUNNING) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void takeNap(long duration) {
         try {
             synchronized (JVM.FILE_DELTA_CHANGE) {
                 JVM.FILE_DELTA_CHANGE.wait(duration < 10 ? 10 : duration);
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            // Ignore
         }
     }
 
@@ -471,6 +543,7 @@ public final class PlatformRecorder {
         copy.setInternalDuration(r.getDuration());
         copy.setStartTime(r.getStartTime());
         copy.setStopTime(r.getStopTime());
+        copy.setFlushInterval(r.getFlushInterval());
 
         if (r.getState() == RecordingState.NEW) {
             return newRec;
@@ -556,5 +629,21 @@ public final class PlatformRecorder {
         target.setStartTime(startTime);
         target.setStopTime(endTime);
         target.setInternalDuration(Duration.between(startTime, endTime));
+    }
+
+    public synchronized void migrate(SafePath repo) throws IOException {
+        // Must set repository while holding recorder lock so
+        // the final chunk in repository gets marked correctly
+        Repository.getRepository().setBasePath(repo);
+        boolean disk = false;
+        for (PlatformRecording s : getRecordings()) {
+            if (RecordingState.RUNNING == s.getState() && s.isToDisk()) {
+                disk = true;
+            }
+        }
+        if (disk) {
+            jvm.markChunkFinal();
+            rotateDisk();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_CODE_COMPILEDIC_HPP
-#define SHARE_VM_CODE_COMPILEDIC_HPP
+#ifndef SHARE_CODE_COMPILEDIC_HPP
+#define SHARE_CODE_COMPILEDIC_HPP
 
 #include "code/nativeInst.hpp"
 #include "interpreter/linkResolver.hpp"
 #include "oops/compiledICHolder.hpp"
+#include "runtime/safepointVerifiers.hpp"
 
 //-----------------------------------------------------------------------------
 // The CompiledIC represents a compiled inline cache.
@@ -59,7 +60,22 @@
 // transition is made to a stub.
 //
 class CompiledIC;
+class CompiledICProtectionBehaviour;
+class CompiledMethod;
 class ICStub;
+
+class CompiledICLocker: public StackObj {
+  CompiledMethod* _method;
+  CompiledICProtectionBehaviour* _behaviour;
+  bool _locked;
+  NoSafepointVerifier _nsv;
+
+public:
+  CompiledICLocker(CompiledMethod* method);
+  ~CompiledICLocker();
+  static bool is_safe(CompiledMethod* method);
+  static bool is_safe(address code);
+};
 
 class CompiledICInfo : public StackObj {
  private:
@@ -68,7 +84,6 @@ class CompiledICInfo : public StackObj {
   bool    _is_icholder;          // Is the cached value a CompiledICHolder*
   bool    _is_optimized;       // it is an optimized virtual call (i.e., can be statically bound)
   bool    _to_interpreter;     // Call it to interpreter
-  bool    _to_aot;             // Call it to aot code
   bool    _release_icholder;
  public:
   address entry() const        { return _entry; }
@@ -83,13 +98,11 @@ class CompiledICInfo : public StackObj {
   }
   bool    is_optimized() const { return _is_optimized; }
   bool  to_interpreter() const { return _to_interpreter; }
-  bool          to_aot() const { return _to_aot; }
 
   void set_compiled_entry(address entry, Klass* klass, bool is_optimized) {
     _entry      = entry;
     _cached_value = (void*)klass;
     _to_interpreter = false;
-    _to_aot = false;
     _is_icholder = false;
     _is_optimized = is_optimized;
     _release_icholder = false;
@@ -99,17 +112,6 @@ class CompiledICInfo : public StackObj {
     _entry      = entry;
     _cached_value = (void*)method;
     _to_interpreter = true;
-    _to_aot = false;
-    _is_icholder = false;
-    _is_optimized = true;
-    _release_icholder = false;
-  }
-
-  void set_aot_entry(address entry, Method* method) {
-    _entry      = entry;
-    _cached_value = (void*)method;
-    _to_interpreter = false;
-    _to_aot = true;
     _is_icholder = false;
     _is_optimized = true;
     _release_icholder = false;
@@ -119,14 +121,13 @@ class CompiledICInfo : public StackObj {
     _entry      = entry;
     _cached_value = (void*)icholder;
     _to_interpreter = true;
-    _to_aot = false;
     _is_icholder = true;
     _is_optimized = false;
     _release_icholder = true;
   }
 
   CompiledICInfo(): _entry(NULL), _cached_value(NULL), _is_icholder(false),
-                    _to_interpreter(false), _to_aot(false), _is_optimized(false), _release_icholder(false) {
+                    _is_optimized(false), _to_interpreter(false), _release_icholder(false) {
   }
   ~CompiledICInfo() {
     // In rare cases the info is computed but not used, so release any
@@ -210,10 +211,6 @@ class CompiledIC: public ResourceObj {
   friend CompiledIC* CompiledIC_at(Relocation* call_site);
   friend CompiledIC* CompiledIC_at(RelocIterator* reloc_iter);
 
-  // This is used to release CompiledICHolder*s from nmethods that
-  // are about to be freed.  The callsite might contain other stale
-  // values of other kinds so it must be careful.
-  static void cleanup_call_site(virtual_call_Relocation* call_site, const CompiledMethod* cm);
   static bool is_icholder_call_site(virtual_call_Relocation* call_site, const CompiledMethod* cm);
 
   // Return the cached_metadata/destination associated with this inline cache. If the cache currently points
@@ -258,13 +255,13 @@ class CompiledIC: public ResourceObj {
   //
   // They all takes a TRAP argument, since they can cause a GC if the inline-cache buffer is full.
   //
-  void set_to_clean(bool in_use = true);
-  void set_to_monomorphic(CompiledICInfo& info);
+  bool set_to_clean(bool in_use = true);
+  bool set_to_monomorphic(CompiledICInfo& info);
   void clear_ic_stub();
 
   // Returns true if successful and false otherwise. The call can fail if memory
-  // allocation in the code cache fails.
-  bool set_to_megamorphic(CallInfo* call_info, Bytecodes::Code bytecode, TRAPS);
+  // allocation in the code cache fails, or ic stub refill is required.
+  bool set_to_megamorphic(CallInfo* call_info, Bytecodes::Code bytecode, bool& needs_ic_stub_refill, TRAPS);
 
   static void compute_monomorphic_entry(const methodHandle& method, Klass* receiver_klass,
                                         bool is_optimized, bool static_bound, bool caller_is_nmethod,
@@ -329,7 +326,6 @@ class StaticCallInfo {
   address      _entry;          // Entrypoint
   methodHandle _callee;         // Callee (used when calling interpreter)
   bool         _to_interpreter; // call to interpreted method (otherwise compiled)
-  bool         _to_aot;         // call to aot method (otherwise compiled)
 
   friend class CompiledStaticCall;
   friend class CompiledDirectStaticCall;
@@ -346,9 +342,6 @@ class CompiledStaticCall : public ResourceObj {
   static int to_interp_stub_size();
   static int to_trampoline_stub_size();
   static int reloc_to_interp_stub();
-  static void emit_to_aot_stub(CodeBuffer &cbuf, address mark = NULL);
-  static int to_aot_stub_size();
-  static int reloc_to_aot_stub();
 
   // Compute entry point given a method
   static void compute_entry(const methodHandle& m, bool caller_is_nmethod, StaticCallInfo& info);
@@ -358,7 +351,7 @@ public:
   virtual address destination() const = 0;
 
   // Clean static call (will force resolving on next use)
-  void set_to_clean(bool in_use = true);
+  bool set_to_clean(bool in_use = true);
 
   // Set state. The entry must be the same, as computed by compute_entry.
   // Computation and setting is split up, since the actions are separate during
@@ -374,9 +367,6 @@ public:
 protected:
   virtual address resolve_call_stub() const = 0;
   virtual void set_destination_mt_safe(address dest) = 0;
-#if INCLUDE_AOT
-  virtual void set_to_far(const methodHandle& callee, address entry) = 0;
-#endif
   virtual void set_to_interpreted(const methodHandle& callee, address entry) = 0;
   virtual const char* name() const = 0;
 
@@ -390,9 +380,9 @@ private:
 
   // Also used by CompiledIC
   void set_to_interpreted(const methodHandle& callee, address entry);
-#if INCLUDE_AOT
-  void set_to_far(const methodHandle& callee, address entry);
-#endif
+  void verify_mt_safe(const methodHandle& callee, address entry,
+                      NativeMovConstReg* method_holder,
+                      NativeJump*        jump) PRODUCT_RETURN;
   address instruction_address() const { return _call->instruction_address(); }
   void set_destination_mt_safe(address dest) { _call->set_destination_mt_safe(dest); }
 
@@ -422,11 +412,10 @@ private:
 
   // State
   virtual bool is_call_to_interpreted() const;
-  bool is_call_to_far() const;
 
   // Stub support
-  static address find_stub_for(address instruction, bool is_aot);
-  address find_stub(bool is_aot);
+  static address find_stub_for(address instruction);
+  address find_stub();
   static void set_stub_to_clean(static_stub_Relocation* static_stub);
 
   // Misc.
@@ -438,4 +427,4 @@ private:
   virtual const char* name() const { return "CompiledDirectStaticCall"; }
 };
 
-#endif // SHARE_VM_CODE_COMPILEDIC_HPP
+#endif // SHARE_CODE_COMPILEDIC_HPP

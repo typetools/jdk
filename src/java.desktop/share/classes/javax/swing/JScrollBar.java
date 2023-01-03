@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,23 +22,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing;
 
-import java.io.Serializable;
-import java.awt.Component;
 import java.awt.Adjustable;
+import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.AdjustmentListener;
 import java.awt.event.AdjustmentEvent;
-import java.beans.JavaBean;
+import java.awt.event.AdjustmentListener;
 import java.beans.BeanProperty;
-
-import javax.swing.event.*;
-import javax.swing.plaf.*;
-import javax.accessibility.*;
-
-import java.io.ObjectOutputStream;
+import java.beans.JavaBean;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.Serializable;
+
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
+import javax.accessibility.AccessibleState;
+import javax.accessibility.AccessibleStateSet;
+import javax.accessibility.AccessibleValue;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+import javax.swing.plaf.ScrollBarUI;
 
 /**
  * An implementation of a scrollbar. The user positions the knob in the
@@ -64,7 +72,7 @@ import java.io.IOException;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -235,7 +243,7 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
     /**
      * Returns the name of the LookAndFeel class for this component.
      *
-     * @return "ScrollBarUI"
+     * @return the string "ScrollBarUI"
      * @see JComponent#getUIClassID
      * @see UIDefaults#getUI
      */
@@ -340,17 +348,17 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * given a unit up/down request.  A ScrollBarUI implementation
      * typically calls this method when the user clicks on a scrollbar
      * up/down arrow and uses the result to update the scrollbar's
-     * value.   Subclasses my override this method to compute
-     * a value, e.g. the change required to scroll up or down one
-     * (variable height) line text or one row in a table.
+     * value.   Subclasses may override this method to compute
+     * a value, e.g. the change required to scroll one
+     * (variable height) line of text or one row in a table.
      * <p>
      * The JScrollPane component creates scrollbars (by default)
      * that override this method and delegate to the viewports
      * Scrollable view, if it has one.  The Scrollable interface
      * provides a more specialized version of this method.
      * <p>
-     * Some look and feels implement custom scrolling behavior
-     * and ignore this property.
+     * Some look and feel implementations that provide custom scrolling
+     * behavior ignore this property.
      *
      * @param direction is -1 or 1 for up/down respectively
      * @return the value of the unitIncrement property
@@ -367,10 +375,11 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * Sets the unitIncrement property.
      * <p>
      * Note, that if the argument is equal to the value of Integer.MIN_VALUE,
-     * the most look and feels will not provide the scrolling to the right/down.
+     * then most look and feel implementations will not provide scrolling
+     * to the right/down.
      * <p>
-     * Some look and feels implement custom scrolling behavior
-     * and ignore this property.
+     * Some look and feel implementations that provide custom scrolling
+     * behavior ignore this property.
      *
      * @see #getUnitIncrement
      */
@@ -387,18 +396,18 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * Returns the amount to change the scrollbar's value by,
      * given a block (usually "page") up/down request.  A ScrollBarUI
      * implementation typically calls this method when the user clicks
-     * above or below the scrollbar "knob" to change the value
-     * up or down by large amount.  Subclasses my override this
-     * method to compute a value, e.g. the change required to scroll
-     * up or down one paragraph in a text document.
+     * outside the scrollbar "knob" to scroll up or down by a large amount.
+     * Subclasses may override this method to compute a
+     * value, e.g. the change required to scroll one paragraph
+     * in a text document.
      * <p>
      * The JScrollPane component creates scrollbars (by default)
      * that override this method and delegate to the viewports
      * Scrollable view, if it has one.  The Scrollable interface
      * provides a more specialized version of this method.
      * <p>
-     * Some look and feels implement custom scrolling behavior
-     * and ignore this property.
+     * Some look and feel implementations that provide custom scrolling
+     * behavior ignore this property.
      *
      * @param direction is -1 or 1 for up/down respectively
      * @return the value of the blockIncrement property
@@ -415,10 +424,11 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * Sets the blockIncrement property.
      * <p>
      * Note, that if the argument is equal to the value of Integer.MIN_VALUE,
-     * the most look and feels will not provide the scrolling to the right/down.
+     * then most look and feel implementations will not provide scrolling
+     * to the right/down.
      * <p>
-     * Some look and feels implement custom scrolling behavior
-     * and ignore this property.
+     * Some look and feel implementations that provide custom scrolling
+     * behavior ignore this property.
      *
      * @see #getBlockIncrement()
      */
@@ -642,7 +652,7 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * to a BoundedRangeModels value are considered equivalent.  To change
      * the value of a BoundedRangeModel one just sets its value property,
      * i.e. model.setValue(123).  No information about the origin of the
-     * change, e.g. it's a block decrement, is provided.  We don't try
+     * change, e.g. it's a block decrement, is provided.  We don't try to
      * fabricate the origin of the change here.
      *
      * @param l the AdjustmentLister to add
@@ -782,6 +792,7 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * See readObject() and writeObject() in JComponent for more
      * information about serialization in Swing.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         if (getUIClassID().equals(uiClassID)) {
@@ -845,13 +856,18 @@ public class JScrollBar extends JComponent implements Adjustable, Accessible
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      */
     @SuppressWarnings("serial") // Same-version serialization only
     protected class AccessibleJScrollBar extends AccessibleJComponent
         implements AccessibleValue {
+
+        /**
+         * Constructs an {@code AccessibleJScrollBar}.
+         */
+        protected AccessibleJScrollBar() {}
 
         /**
          * Get the state set of this object.

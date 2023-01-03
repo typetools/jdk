@@ -35,9 +35,11 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -111,6 +113,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * element.  This field is declared final for the sake of thread
      * safety, which entails some ugliness in clone().
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private final ConcurrentNavigableMap<E,Object> m;
 
     /**
@@ -232,7 +235,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public boolean contains(Object o) {
+    public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         return m.containsKey(o);
     }
 
@@ -268,7 +271,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
      */
-    public boolean remove(Object o) {
+    public boolean remove(@GuardSatisfied @UnknownSignedness Object o) {
         return m.remove(o, Boolean.TRUE);
     }
 
@@ -343,7 +346,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         // Override AbstractSet version to avoid unnecessary call to size()
         boolean modified = false;
         for (Object e : c)
@@ -523,6 +526,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
 
     /** Initializes map field; for use in clone. */
     private void setMap(ConcurrentNavigableMap<E,Object> map) {
+        @SuppressWarnings("removal")
         Field mapField = java.security.AccessController.doPrivileged(
             (java.security.PrivilegedAction<Field>) () -> {
                 try {

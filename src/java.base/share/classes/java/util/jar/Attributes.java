@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,11 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -43,6 +45,10 @@ import java.util.Set;
 
 import org.checkerframework.framework.qual.CFComment;
 
+import jdk.internal.misc.CDS;
+import jdk.internal.vm.annotation.Stable;
+
+import sun.nio.cs.UTF_8;
 import sun.util.logging.PlatformLogger;
 
 /**
@@ -162,7 +168,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name the attribute name
      * @param value the attribute value
      * @return the previous value of the attribute, or null if none
-     * @exception ClassCastException if the name is not a Attributes.Name
+     * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
     public Object put(Object name, Object value) {
@@ -183,7 +189,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name the attribute name as a string
      * @param value the attribute value
      * @return the previous value of the attribute, or null if none
-     * @exception IllegalArgumentException if the attribute name is invalid
+     * @throws    IllegalArgumentException if the attribute name is invalid
      */
     public String putValue(String name, String value) {
         return (String)put(Name.of(name), value);
@@ -196,7 +202,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
-    public Object remove(Object name) {
+    public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
 
@@ -209,7 +215,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         the specified value
      */
     @Pure
-    public boolean containsValue(Object value) {
+    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
@@ -220,7 +226,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return true if this Map contains the specified attribute name
      */
     @Pure
-    public boolean containsKey(Object name) {
+    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.containsKey(name);
     }
 
@@ -229,7 +235,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * Attributes to this Map. Duplicate mappings will be replaced.
      *
      * @param attr the Attributes to be stored in this map
-     * @exception ClassCastException if attr is not an Attributes
+     * @throws    ClassCastException if attr is not an Attributes
      */
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
@@ -286,9 +292,10 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     }
 
     /**
-     * Compares the specified Attributes object with this Map for equality.
-     * Returns true if the given object is also an instance of Attributes
-     * and the two Attributes objects represent the same mappings.
+     * Compares the specified object to the underlying
+     * {@linkplain Attributes#map map} for equality.
+     * Returns true if the given object is also a Map
+     * and the two maps represent the same mappings.
      *
      * @param o the Object to be compared
      * @return true if the specified Object is equal to this Map
@@ -323,25 +330,16 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * Writes the current attributes to the specified data output stream.
      * XXX Need to handle UTF8 values and break up lines longer than 72 bytes
      */
-     @SuppressWarnings("deprecation")
-     void write(DataOutputStream os) throws IOException {
-         for (Entry<Object, Object> e : entrySet()) {
-             StringBuffer buffer = new StringBuffer(
-                                         ((Name) e.getKey()).toString());
-             buffer.append(": ");
-
-             String value = (String) e.getValue();
-             if (value != null) {
-                 byte[] vb = value.getBytes("UTF8");
-                 value = new String(vb, 0, 0, vb.length);
-             }
-             buffer.append(value);
-
-             Manifest.make72Safe(buffer);
-             buffer.append("\r\n");
-             os.writeBytes(buffer.toString());
-         }
-        os.writeBytes("\r\n");
+    void write(DataOutputStream out) throws IOException {
+        StringBuilder buffer = new StringBuilder(72);
+        for (Entry<Object, Object> e : entrySet()) {
+            buffer.setLength(0);
+            buffer.append(e.getKey().toString());
+            buffer.append(": ");
+            buffer.append(e.getValue());
+            Manifest.println72(out, buffer.toString());
+        }
+        Manifest.println(out); // empty line after individual section
     }
 
     /*
@@ -351,9 +349,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *
      * XXX Need to handle UTF8 values and break up lines longer than 72 bytes
      */
-    @SuppressWarnings("deprecation")
-    void writeMain(DataOutputStream out) throws IOException
-    {
+    void writeMain(DataOutputStream out) throws IOException {
+        StringBuilder buffer = new StringBuilder(72);
+
         // write out the *-Version header first, if it exists
         String vername = Name.MANIFEST_VERSION.toString();
         String version = getValue(vername);
@@ -363,7 +361,11 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         }
 
         if (version != null) {
-            out.writeBytes(vername+": "+version+"\r\n");
+            buffer.append(vername);
+            buffer.append(": ");
+            buffer.append(version);
+            out.write(buffer.toString().getBytes(UTF_8.INSTANCE));
+            Manifest.println(out);
         }
 
         // write out all attributes except for the version
@@ -371,31 +373,25 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         for (Entry<Object, Object> e : entrySet()) {
             String name = ((Name) e.getKey()).toString();
             if ((version != null) && !(name.equalsIgnoreCase(vername))) {
-
-                StringBuffer buffer = new StringBuffer(name);
+                buffer.setLength(0);
+                buffer.append(name);
                 buffer.append(": ");
-
-                String value = (String) e.getValue();
-                if (value != null) {
-                    byte[] vb = value.getBytes("UTF8");
-                    value = new String(vb, 0, 0, vb.length);
-                }
-                buffer.append(value);
-
-                Manifest.make72Safe(buffer);
-                buffer.append("\r\n");
-                out.writeBytes(buffer.toString());
+                buffer.append(e.getValue());
+                Manifest.println72(out, buffer.toString());
             }
         }
-        out.writeBytes("\r\n");
+
+        Manifest.println(out); // empty line after main attributes section
     }
 
     /*
      * Reads attributes from the specified input stream.
-     * XXX Need to handle UTF8 values.
      */
-    @SuppressWarnings("deprecation")
     void read(Manifest.FastInputStream is, byte[] lbuf) throws IOException {
+        read(is, lbuf, null, 0);
+    }
+
+    int read(Manifest.FastInputStream is, byte[] lbuf, String filename, int lineNumber) throws IOException {
         String name = null, value;
         byte[] lastline = null;
 
@@ -403,8 +399,11 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         while ((len = is.readLine(lbuf)) != -1) {
             boolean lineContinued = false;
             byte c = lbuf[--len];
+            lineNumber++;
+
             if (c != '\n' && c != '\r') {
-                throw new IOException("line too long");
+                throw new IOException("line too long ("
+                            + Manifest.getErrorPosition(filename, lineNumber) + ")");
             }
             if (len > 0 && lbuf[len-1] == '\r') {
                 --len;
@@ -416,7 +415,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
             if (lbuf[0] == ' ') {
                 // continuation of previous line
                 if (name == null) {
-                    throw new IOException("misplaced continuation line");
+                    throw new IOException("misplaced continuation line ("
+                                + Manifest.getErrorPosition(filename, lineNumber) + ")");
                 }
                 lineContinued = true;
                 byte[] buf = new byte[lastline.length + len - 1];
@@ -426,24 +426,26 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                     lastline = buf;
                     continue;
                 }
-                value = new String(buf, 0, buf.length, "UTF8");
+                value = new String(buf, 0, buf.length, UTF_8.INSTANCE);
                 lastline = null;
             } else {
                 while (lbuf[i++] != ':') {
                     if (i >= len) {
-                        throw new IOException("invalid header field");
+                        throw new IOException("invalid header field ("
+                                    + Manifest.getErrorPosition(filename, lineNumber) + ")");
                     }
                 }
                 if (lbuf[i++] != ' ') {
-                    throw new IOException("invalid header field");
+                    throw new IOException("invalid header field ("
+                                + Manifest.getErrorPosition(filename, lineNumber) + ")");
                 }
-                name = new String(lbuf, 0, 0, i - 2);
+                name = new String(lbuf, 0, i - 2, UTF_8.INSTANCE);
                 if (is.peek() == ' ') {
                     lastline = new byte[len - i];
                     System.arraycopy(lbuf, i, lastline, 0, len - i);
                     continue;
                 }
-                value = new String(lbuf, i, len - i, "UTF8");
+                value = new String(lbuf, i, len - i, UTF_8.INSTANCE);
             }
             try {
                 if ((putValue(name, value) != null) && (!lineContinued)) {
@@ -458,9 +460,11 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                                      + "entry in the jar file.");
                 }
             } catch (IllegalArgumentException e) {
-                throw new IOException("invalid header field name: " + name);
+                throw new IOException("invalid header field name: " + name
+                            + " (" + Manifest.getErrorPosition(filename, lineNumber) + ")");
             }
         }
+        return lineNumber;
     }
 
     /**
@@ -479,7 +483,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Avoid allocation for common Names
          */
-        private static final Map<String, Name> KNOWN_NAMES;
+        private static @Stable Map<String, Name> KNOWN_NAMES;
 
         static final Name of(String name) {
             Name n = KNOWN_NAMES.get(name);
@@ -493,9 +497,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * Constructs a new attribute name using the given string name.
          *
          * @param name the attribute string name
-         * @exception IllegalArgumentException if the attribute name was
+         * @throws    IllegalArgumentException if the attribute name was
          *            invalid
-         * @exception NullPointerException if the attribute name was null
+         * @throws    NullPointerException if the attribute name was null
          */
         public Name(String name) {
             this.hashCode = hash(name);
@@ -537,12 +541,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
             if (this == o) {
                 return true;
             }
-            if (o instanceof Name) {
-                Name other = (Name)o;
-                return other.name.equalsIgnoreCase(name);
-            } else {
-                return false;
-            }
+            return o instanceof Name other
+                    && other.name.equalsIgnoreCase(name);
         }
 
         /**
@@ -563,32 +563,32 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * {@code Name} object for {@code Manifest-Version}
          * manifest attribute. This attribute indicates the version number
          * of the manifest standard to which a JAR file's manifest conforms.
-         * @see <a href="{@docRoot}/../specs/jar/jar.html#JAR_Manifest">
+         * @see <a href="{@docRoot}/../specs/jar/jar.html#jar-manifest">
          *      Manifest and Signature Specification</a>
          */
-        public static final Name MANIFEST_VERSION = new Name("Manifest-Version");
+        public static final Name MANIFEST_VERSION;
 
         /**
          * {@code Name} object for {@code Signature-Version}
          * manifest attribute used when signing JAR files.
-         * @see <a href="{@docRoot}/../specs/jar/jar.html#JAR_Manifest">
+         * @see <a href="{@docRoot}/../specs/jar/jar.html#jar-manifest">
          *      Manifest and Signature Specification</a>
          */
-        public static final Name SIGNATURE_VERSION = new Name("Signature-Version");
+        public static final Name SIGNATURE_VERSION;
 
         /**
          * {@code Name} object for {@code Content-Type}
          * manifest attribute.
          */
-        public static final Name CONTENT_TYPE = new Name("Content-Type");
+        public static final Name CONTENT_TYPE;
 
         /**
          * {@code Name} object for {@code Class-Path}
          * manifest attribute.
-         * @see <a href="{@docRoot}/../specs/jar/jar.html#classpath">
+         * @see <a href="{@docRoot}/../specs/jar/jar.html#class-path-attribute">
          *      JAR file specification</a>
          */
-        public static final Name CLASS_PATH = new Name("Class-Path");
+        public static final Name CLASS_PATH;
 
         /**
          * {@code Name} object for {@code Main-Class} manifest
@@ -597,7 +597,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * with the {@code -jar} command-line option of the
          * {@code java} application launcher.
          */
-        public static final Name MAIN_CLASS = new Name("Main-Class");
+        public static final Name MAIN_CLASS;
 
         /**
          * {@code Name} object for {@code Sealed} manifest attribute
@@ -605,19 +605,19 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @see <a href="{@docRoot}/../specs/jar/jar.html#package-sealing">
          *      Package Sealing</a>
          */
-        public static final Name SEALED = new Name("Sealed");
+        public static final Name SEALED;
 
         /**
          * {@code Name} object for {@code Extension-List} manifest attribute
          * used for the extension mechanism that is no longer supported.
          */
-        public static final Name EXTENSION_LIST = new Name("Extension-List");
+        public static final Name EXTENSION_LIST;
 
         /**
-         * {@code Name} object for {@code Extension-Name} manifest attribute.
+         * {@code Name} object for {@code Extension-Name} manifest attribute
          * used for the extension mechanism that is no longer supported.
          */
-        public static final Name EXTENSION_NAME = new Name("Extension-Name");
+        public static final Name EXTENSION_NAME;
 
         /**
          * {@code Name} object for {@code Extension-Installation} manifest attribute.
@@ -625,25 +625,25 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @deprecated Extension mechanism is no longer supported.
          */
         @Deprecated
-        public static final Name EXTENSION_INSTALLATION = new Name("Extension-Installation");
+        public static final Name EXTENSION_INSTALLATION;
 
         /**
          * {@code Name} object for {@code Implementation-Title}
          * manifest attribute used for package versioning.
          */
-        public static final Name IMPLEMENTATION_TITLE = new Name("Implementation-Title");
+        public static final Name IMPLEMENTATION_TITLE;
 
         /**
          * {@code Name} object for {@code Implementation-Version}
          * manifest attribute used for package versioning.
          */
-        public static final Name IMPLEMENTATION_VERSION = new Name("Implementation-Version");
+        public static final Name IMPLEMENTATION_VERSION;
 
         /**
          * {@code Name} object for {@code Implementation-Vendor}
          * manifest attribute used for package versioning.
          */
-        public static final Name IMPLEMENTATION_VENDOR = new Name("Implementation-Vendor");
+        public static final Name IMPLEMENTATION_VENDOR;
 
         /**
          * {@code Name} object for {@code Implementation-Vendor-Id}
@@ -652,7 +652,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @deprecated Extension mechanism is no longer supported.
          */
         @Deprecated
-        public static final Name IMPLEMENTATION_VENDOR_ID = new Name("Implementation-Vendor-Id");
+        public static final Name IMPLEMENTATION_VENDOR_ID;
 
         /**
          * {@code Name} object for {@code Implementation-URL}
@@ -661,25 +661,25 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @deprecated Extension mechanism is no longer supported.
          */
         @Deprecated
-        public static final Name IMPLEMENTATION_URL = new Name("Implementation-URL");
+        public static final Name IMPLEMENTATION_URL;
 
         /**
          * {@code Name} object for {@code Specification-Title}
          * manifest attribute used for package versioning.
          */
-        public static final Name SPECIFICATION_TITLE = new Name("Specification-Title");
+        public static final Name SPECIFICATION_TITLE;
 
         /**
          * {@code Name} object for {@code Specification-Version}
          * manifest attribute used for package versioning.
          */
-        public static final Name SPECIFICATION_VERSION = new Name("Specification-Version");
+        public static final Name SPECIFICATION_VERSION;
 
         /**
          * {@code Name} object for {@code Specification-Vendor}
          * manifest attribute used for package versioning.
          */
-        public static final Name SPECIFICATION_VENDOR = new Name("Specification-Vendor");
+        public static final Name SPECIFICATION_VENDOR;
 
         /**
          * {@code Name} object for {@code Multi-Release}
@@ -687,56 +687,94 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          *
          * @since   9
          */
-        public static final Name MULTI_RELEASE = new Name("Multi-Release");
+        public static final Name MULTI_RELEASE;
 
         private static void addName(Map<String, Name> names, Name name) {
             names.put(name.name, name);
         }
 
         static {
-            var names = new HashMap<String, Name>(64);
-            addName(names, MANIFEST_VERSION);
-            addName(names, SIGNATURE_VERSION);
-            addName(names, CONTENT_TYPE);
-            addName(names, CLASS_PATH);
-            addName(names, MAIN_CLASS);
-            addName(names, SEALED);
-            addName(names, EXTENSION_LIST);
-            addName(names, EXTENSION_NAME);
-            addName(names, IMPLEMENTATION_TITLE);
-            addName(names, IMPLEMENTATION_VERSION);
-            addName(names, IMPLEMENTATION_VENDOR);
-            addName(names, SPECIFICATION_TITLE);
-            addName(names, SPECIFICATION_VERSION);
-            addName(names, SPECIFICATION_VENDOR);
-            addName(names, MULTI_RELEASE);
 
-            // Common attributes used in MANIFEST.MF et.al; adding these has a
-            // small footprint cost, but is likely to be quickly paid for by
-            // reducing allocation when reading and parsing typical manifests
-            addName(names, new Name("Add-Exports"));
-            addName(names, new Name("Add-Opens"));
-            addName(names, new Name("Ant-Version"));
-            addName(names, new Name("Archiver-Version"));
-            addName(names, new Name("Build-Jdk"));
-            addName(names, new Name("Built-By"));
-            addName(names, new Name("Bnd-LastModified"));
-            addName(names, new Name("Bundle-Description"));
-            addName(names, new Name("Bundle-DocURL"));
-            addName(names, new Name("Bundle-License"));
-            addName(names, new Name("Bundle-ManifestVersion"));
-            addName(names, new Name("Bundle-Name"));
-            addName(names, new Name("Bundle-Vendor"));
-            addName(names, new Name("Bundle-Version"));
-            addName(names, new Name("Bundle-SymbolicName"));
-            addName(names, new Name("Created-By"));
-            addName(names, new Name("Export-Package"));
-            addName(names, new Name("Import-Package"));
-            addName(names, new Name("Name"));
-            addName(names, new Name("SHA1-Digest"));
-            addName(names, new Name("X-Compile-Source-JDK"));
-            addName(names, new Name("X-Compile-Target-JDK"));
-            KNOWN_NAMES = names;
+            CDS.initializeFromArchive(Attributes.Name.class);
+
+            if (KNOWN_NAMES == null) {
+                MANIFEST_VERSION = new Name("Manifest-Version");
+                SIGNATURE_VERSION = new Name("Signature-Version");
+                CONTENT_TYPE = new Name("Content-Type");
+                CLASS_PATH = new Name("Class-Path");
+                MAIN_CLASS = new Name("Main-Class");
+                SEALED = new Name("Sealed");
+                EXTENSION_LIST = new Name("Extension-List");
+                EXTENSION_NAME = new Name("Extension-Name");
+                EXTENSION_INSTALLATION = new Name("Extension-Installation");
+                IMPLEMENTATION_TITLE = new Name("Implementation-Title");
+                IMPLEMENTATION_VERSION = new Name("Implementation-Version");
+                IMPLEMENTATION_VENDOR = new Name("Implementation-Vendor");
+                IMPLEMENTATION_VENDOR_ID = new Name("Implementation-Vendor-Id");
+                IMPLEMENTATION_URL = new Name("Implementation-URL");
+                SPECIFICATION_TITLE = new Name("Specification-Title");
+                SPECIFICATION_VERSION = new Name("Specification-Version");
+                SPECIFICATION_VENDOR = new Name("Specification-Vendor");
+                MULTI_RELEASE = new Name("Multi-Release");
+
+                var names = new HashMap<String, Name>(64);
+                addName(names, MANIFEST_VERSION);
+                addName(names, SIGNATURE_VERSION);
+                addName(names, CONTENT_TYPE);
+                addName(names, CLASS_PATH);
+                addName(names, MAIN_CLASS);
+                addName(names, SEALED);
+                addName(names, EXTENSION_LIST);
+                addName(names, EXTENSION_NAME);
+                addName(names, EXTENSION_INSTALLATION);
+                addName(names, IMPLEMENTATION_TITLE);
+                addName(names, IMPLEMENTATION_VERSION);
+                addName(names, IMPLEMENTATION_VENDOR);
+                addName(names, IMPLEMENTATION_VENDOR_ID);
+                addName(names, IMPLEMENTATION_URL);
+                addName(names, SPECIFICATION_TITLE);
+                addName(names, SPECIFICATION_VERSION);
+                addName(names, SPECIFICATION_VENDOR);
+                addName(names, MULTI_RELEASE);
+
+                // Common attributes used in MANIFEST.MF et.al; adding these has a
+                // small footprint cost, but is likely to be quickly paid for by
+                // reducing allocation when reading and parsing typical manifests
+
+                // JDK internal attributes
+                addName(names, new Name("Add-Exports"));
+                addName(names, new Name("Add-Opens"));
+                // LauncherHelper attributes
+                addName(names, new Name("Launcher-Agent-Class"));
+                addName(names, new Name("JavaFX-Application-Class"));
+                // jarsigner attributes
+                addName(names, new Name("Name"));
+                addName(names, new Name("Created-By"));
+                addName(names, new Name("SHA1-Digest"));
+                addName(names, new Name("SHA-256-Digest"));
+                KNOWN_NAMES = Map.copyOf(names);
+            } else {
+                // Even if KNOWN_NAMES was read from archive, we still need
+                // to initialize the public constants
+                MANIFEST_VERSION = KNOWN_NAMES.get("Manifest-Version");
+                SIGNATURE_VERSION = KNOWN_NAMES.get("Signature-Version");
+                CONTENT_TYPE = KNOWN_NAMES.get("Content-Type");
+                CLASS_PATH = KNOWN_NAMES.get("Class-Path");
+                MAIN_CLASS = KNOWN_NAMES.get("Main-Class");
+                SEALED = KNOWN_NAMES.get("Sealed");
+                EXTENSION_LIST = KNOWN_NAMES.get("Extension-List");
+                EXTENSION_NAME = KNOWN_NAMES.get("Extension-Name");
+                EXTENSION_INSTALLATION = KNOWN_NAMES.get("Extension-Installation");
+                IMPLEMENTATION_TITLE = KNOWN_NAMES.get("Implementation-Title");
+                IMPLEMENTATION_VERSION = KNOWN_NAMES.get("Implementation-Version");
+                IMPLEMENTATION_VENDOR = KNOWN_NAMES.get("Implementation-Vendor");
+                IMPLEMENTATION_VENDOR_ID = KNOWN_NAMES.get("Implementation-Vendor-Id");
+                IMPLEMENTATION_URL = KNOWN_NAMES.get("Implementation-URL");
+                SPECIFICATION_TITLE = KNOWN_NAMES.get("Specification-Title");
+                SPECIFICATION_VERSION = KNOWN_NAMES.get("Specification-Version");
+                SPECIFICATION_VENDOR = KNOWN_NAMES.get("Specification-Vendor");
+                MULTI_RELEASE = KNOWN_NAMES.get("Multi-Release");
+            }
         }
     }
 }

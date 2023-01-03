@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,19 +52,19 @@ import java.nio.charset.UnsupportedCharsetException;
  * {@code IOException}; instead, exceptional situations merely set an
  * internal flag that can be tested via the {@code checkError} method.
  * Optionally, a {@code PrintStream} can be created so as to flush
- * automatically; this means that the {@code flush} method is
- * automatically invoked after a byte array is written, one of the
- * {@code println} methods is invoked, or a newline character or byte
+ * automatically; this means that the {@code flush} method of the underlying
+ * output stream is automatically invoked after a byte array is written, one
+ * of the {@code println} methods is invoked, or a newline character or byte
  * ({@code '\n'}) is written.
  *
  * <p> All characters printed by a {@code PrintStream} are converted into
- * bytes using the given encoding or charset, or platform's default character
- * encoding if not specified.
+ * bytes using the given encoding or charset, or the platform's default
+ * character encoding if not specified.
  * The {@link PrintWriter} class should be used in situations that require
- *  writing characters rather than bytes.
+ * writing characters rather than bytes.
  *
- * <p> This class always replaces malformed and unmappable character sequences with
- * the charset's default replacement string.
+ * <p> This class always replaces malformed and unmappable character sequences
+ * with the charset's default replacement string.
  * The {@linkplain java.nio.charset.CharsetEncoder} class should be used when more
  * control over the encoding process is required.
  *
@@ -119,7 +119,7 @@ public class PrintStream extends FilterOutputStream
     }
 
     /* Private constructors */
-    private PrintStream(boolean autoFlush, OutputStream out) {
+    private @MustCallAlias PrintStream(boolean autoFlush, @MustCallAlias OutputStream out) {
         super(out);
         this.autoFlush = autoFlush;
         this.charOut = new OutputStreamWriter(this);
@@ -131,12 +131,14 @@ public class PrintStream extends FilterOutputStream
      * by constructors creating a FileOutputStream that also take a
      * charset name.
      */
-    private PrintStream(boolean autoFlush, Charset charset, OutputStream out) {
+    private @MustCallAlias PrintStream(boolean autoFlush, Charset charset, @MustCallAlias OutputStream out) {
         this(out, autoFlush, charset);
     }
 
     /**
-     * Creates a new print stream.  This stream will not flush automatically.
+     * Creates a new print stream, without automatic line flushing, with the
+     * specified OutputStream. Characters written to the stream are converted
+     * to bytes using the platform's default character encoding.
      *
      * @param  out        The output stream to which values and objects will be
      *                    printed
@@ -148,11 +150,13 @@ public class PrintStream extends FilterOutputStream
     }
 
     /**
-     * Creates a new print stream.
+     * Creates a new print stream, with the specified OutputStream and line
+     * flushing. Characters written to the stream are converted to bytes using
+     * the platform's default character encoding.
      *
      * @param  out        The output stream to which values and objects will be
      *                    printed
-     * @param  autoFlush  A boolean; if true, the output buffer will be flushed
+     * @param  autoFlush  Whether the output buffer will be flushed
      *                    whenever a byte array is written, one of the
      *                    {@code println} methods is invoked, or a newline
      *                    character or byte ({@code '\n'}) is written
@@ -164,11 +168,12 @@ public class PrintStream extends FilterOutputStream
     }
 
     /**
-     * Creates a new print stream.
+     * Creates a new print stream, with the specified OutputStream, line
+     * flushing, and character encoding.
      *
      * @param  out        The output stream to which values and objects will be
      *                    printed
-     * @param  autoFlush  A boolean; if true, the output buffer will be flushed
+     * @param  autoFlush  Whether the output buffer will be flushed
      *                    whenever a byte array is written, one of the
      *                    {@code println} methods is invoked, or a newline
      *                    character or byte ({@code '\n'}) is written
@@ -188,14 +193,14 @@ public class PrintStream extends FilterOutputStream
     }
 
     /**
-     * Creates a new print stream, with the specified OutputStream, automatic line
+     * Creates a new print stream, with the specified OutputStream, line
      * flushing and charset.  This convenience constructor creates the necessary
      * intermediate {@link java.io.OutputStreamWriter OutputStreamWriter},
      * which will encode characters using the provided charset.
      *
      * @param  out        The output stream to which values and objects will be
      *                    printed
-     * @param  autoFlush  A boolean; if true, the output buffer will be flushed
+     * @param  autoFlush  Whether the output buffer will be flushed
      *                    whenever a byte array is written, one of the
      *                    {@code println} methods is invoked, or a newline
      *                    character or byte ({@code '\n'}) is written
@@ -425,6 +430,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @see        java.io.OutputStream#flush()
      */
+    @Override
     public void flush(@GuardSatisfied PrintStream this) {
         synchronized (this) {
             try {
@@ -445,6 +451,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @see        java.io.OutputStream#close()
      */
+    @Override
     public void close(@GuardSatisfied PrintStream this) {
         synchronized (this) {
             if (! closing) {
@@ -484,8 +491,7 @@ public class PrintStream extends FilterOutputStream
     public boolean checkError(@GuardSatisfied PrintStream this) {
         if (out != null)
             flush();
-        if (out instanceof java.io.PrintStream) {
-            PrintStream ps = (PrintStream) out;
+        if (out instanceof PrintStream ps) {
             return ps.checkError();
         }
         return trouble;
@@ -525,7 +531,7 @@ public class PrintStream extends FilterOutputStream
     /**
      * Writes the specified byte to this stream.  If the byte is a newline and
      * automatic flushing is enabled then the {@code flush} method will be
-     * invoked.
+     * invoked on the underlying output stream.
      *
      * <p> Note that the byte is written as given; to write a character that
      * will be translated according to the platform's default character
@@ -536,6 +542,7 @@ public class PrintStream extends FilterOutputStream
      * @see #print(char)
      * @see #println(char)
      */
+    @Override
     public void write(@GuardSatisfied PrintStream this, int b) {
         try {
             synchronized (this) {
@@ -556,7 +563,8 @@ public class PrintStream extends FilterOutputStream
     /**
      * Writes {@code len} bytes from the specified byte array starting at
      * offset {@code off} to this stream.  If automatic flushing is
-     * enabled then the {@code flush} method will be invoked.
+     * enabled then the {@code flush} method will be invoked on the underlying
+     * output stream.
      *
      * <p> Note that the bytes will be written as given; to write characters
      * that will be translated according to the platform's default character
@@ -567,6 +575,7 @@ public class PrintStream extends FilterOutputStream
      * @param  off   Offset from which to start taking bytes
      * @param  len   Number of bytes to write
      */
+    @Override
     public void write(@GuardSatisfied PrintStream this, @PolySigned byte buf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         try {
             synchronized (this) {
@@ -584,13 +593,73 @@ public class PrintStream extends FilterOutputStream
         }
     }
 
+    /**
+     * Writes all bytes from the specified byte array to this stream. If
+     * automatic flushing is enabled then the {@code flush} method will be
+     * invoked on the underlying output stream.
+     *
+     * <p> Note that the bytes will be written as given; to write characters
+     * that will be translated according to the platform's default character
+     * encoding, use the {@code print(char[])} or {@code println(char[])}
+     * methods.
+     *
+     * @apiNote
+     * Although declared to throw {@code IOException}, this method never
+     * actually does so. Instead, like other methods that this class
+     * overrides, it sets an internal flag which may be tested via the
+     * {@link #checkError()} method. To write an array of bytes without having
+     * to write a {@code catch} block for the {@code IOException}, use either
+     * {@link #writeBytes(byte[] buf) writeBytes(buf)} or
+     * {@link #write(byte[], int, int) write(buf, 0, buf.length)}.
+     *
+     * @implSpec
+     * This method is equivalent to
+     * {@link java.io.PrintStream#write(byte[],int,int)
+     * this.write(buf, 0, buf.length)}.
+     *
+     * @param  buf   A byte array
+     *
+     * @throws IOException If an I/O error occurs.
+     *
+     * @see #writeBytes(byte[])
+     * @see #write(byte[],int,int)
+     *
+     * @since 14
+     */
+    @Override
+    public void write(@GuardSatisfied PrintStream this, @PolySigned byte buf[]) throws IOException {
+        this.write(buf, 0, buf.length);
+    }
+
+    /**
+     * Writes all bytes from the specified byte array to this stream.
+     * If automatic flushing is enabled then the {@code flush} method
+     * will be invoked.
+     *
+     * <p> Note that the bytes will be written as given; to write characters
+     * that will be translated according to the platform's default character
+     * encoding, use the {@code print(char[])} or {@code println(char[])}
+     * methods.
+     *
+     * @implSpec
+     * This method is equivalent to
+     * {@link #write(byte[], int, int) this.write(buf, 0, buf.length)}.
+     *
+     * @param  buf   A byte array
+     *
+     * @since 14
+     */
+    public void writeBytes(@GuardSatisfied PrintStream this, @PolySigned byte buf[]) {
+        this.write(buf, 0, buf.length);
+    }
+
     /*
      * The following private methods on the text- and character-output streams
      * always flush the stream buffers, so that writes to the underlying byte
      * stream occur as promptly as with the original PrintStream.
      */
 
-    private void write(@PolySigned char buf[]) {
+    private void write(@PolySigned char[] buf) {
         try {
             synchronized (this) {
                 ensureOpen();
@@ -599,9 +668,33 @@ public class PrintStream extends FilterOutputStream
                 charOut.flushBuffer();
                 if (autoFlush) {
                     for (int i = 0; i < buf.length; i++)
-                        if (buf[i] == '\n')
+                        if (buf[i] == '\n') {
                             out.flush();
+                            break;
+                        }
                 }
+            }
+        } catch (InterruptedIOException x) {
+            Thread.currentThread().interrupt();
+        } catch (IOException x) {
+            trouble = true;
+        }
+    }
+
+    // Used to optimize away back-to-back flushing and synchronization when
+    // using println, but since subclasses could exist which depend on
+    // observing a call to print followed by newLine() we only use this if
+    // getClass() == PrintStream.class to avoid compatibility issues.
+    private void writeln(char[] buf) {
+        try {
+            synchronized (this) {
+                ensureOpen();
+                textOut.write(buf);
+                textOut.newLine();
+                textOut.flushBuffer();
+                charOut.flushBuffer();
+                if (autoFlush)
+                    out.flush();
             }
         }
         catch (InterruptedIOException x) {
@@ -620,6 +713,30 @@ public class PrintStream extends FilterOutputStream
                 textOut.flushBuffer();
                 charOut.flushBuffer();
                 if (autoFlush && (s.indexOf('\n') >= 0))
+                    out.flush();
+            }
+        }
+        catch (InterruptedIOException x) {
+            Thread.currentThread().interrupt();
+        }
+        catch (IOException x) {
+            trouble = true;
+        }
+    }
+
+    // Used to optimize away back-to-back flushing and synchronization when
+    // using println, but since subclasses could exist which depend on
+    // observing a call to print followed by newLine we only use this if
+    // getClass() == PrintStream.class to avoid compatibility issues.
+    private void writeln(String s) {
+        try {
+            synchronized (this) {
+                ensureOpen();
+                textOut.write(s);
+                textOut.newLine();
+                textOut.flushBuffer();
+                charOut.flushBuffer();
+                if (autoFlush)
                     out.flush();
             }
         }
@@ -667,9 +784,9 @@ public class PrintStream extends FilterOutputStream
 
     /**
      * Prints a character.  The character is translated into one or more bytes
-     * according to the platform's default character encoding, and these bytes
-     * are written in exactly the manner of the
-     * {@link #write(int)} method.
+     * according to the character encoding given to the constructor, or the
+     * platform's default character encoding if none specified. These bytes
+     * are written in exactly the manner of the {@link #write(int)} method.
      *
      * @param      c   The {@code char} to be printed
      */
@@ -735,9 +852,9 @@ public class PrintStream extends FilterOutputStream
 
     /**
      * Prints an array of characters.  The characters are converted into bytes
-     * according to the platform's default character encoding, and these bytes
-     * are written in exactly the manner of the
-     * {@link #write(int)} method.
+     * according to the character encoding given to the constructor, or the
+     * platform's default character encoding if none specified. These bytes
+     * are written in exactly the manner of the {@link #write(int)} method.
      *
      * @param      s   The array of chars to be printed
      *
@@ -750,8 +867,9 @@ public class PrintStream extends FilterOutputStream
     /**
      * Prints a string.  If the argument is {@code null} then the string
      * {@code "null"} is printed.  Otherwise, the string's characters are
-     * converted into bytes according to the platform's default character
-     * encoding, and these bytes are written in exactly the manner of the
+     * converted into bytes according to the character encoding given to the
+     * constructor, or the platform's default character encoding if none
+     * specified. These bytes are written in exactly the manner of the
      * {@link #write(int)} method.
      *
      * @param      s   The {@code String} to be printed
@@ -795,9 +913,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code boolean} to be printed
      */
     public void println(@GuardSatisfied PrintStream this, boolean x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -809,9 +931,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code char} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, char x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -823,9 +949,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code int} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, int x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -837,9 +967,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  a The {@code long} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, long x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -851,9 +985,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code float} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, float x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -865,9 +1003,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code double} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, double x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -878,10 +1020,14 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  an array of chars to print.
      */
-    public void println(@GuardSatisfied PrintStream this, char x[]) {
-        synchronized (this) {
-            print(x);
-            newLine();
+    public void println(@GuardSatisfied PrintStream this, char[] x) {
+        if (getClass() == PrintStream.class) {
+            writeln(x);
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -893,9 +1039,13 @@ public class PrintStream extends FilterOutputStream
      * @param x  The {@code String} to be printed.
      */
     public void println(@GuardSatisfied PrintStream this, @Nullable @Localized String x) {
-        synchronized (this) {
-            print(x);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            writeln(String.valueOf(x));
+        } else {
+            synchronized (this) {
+                print(x);
+                newLine();
+            }
         }
     }
 
@@ -910,9 +1060,15 @@ public class PrintStream extends FilterOutputStream
      */
     public void println(@GuardSatisfied PrintStream this, @Nullable Object x) {
         String s = String.valueOf(x);
-        synchronized (this) {
-            print(s);
-            newLine();
+        if (getClass() == PrintStream.class) {
+            // need to apply String.valueOf again since first invocation
+            // might return null
+            writeln(String.valueOf(s));
+        } else {
+            synchronized (this) {
+                print(s);
+                newLine();
+            }
         }
     }
 
@@ -939,7 +1095,7 @@ public class PrintStream extends FilterOutputStream
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -993,7 +1149,7 @@ public class PrintStream extends FilterOutputStream
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -1039,7 +1195,7 @@ public class PrintStream extends FilterOutputStream
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -1099,7 +1255,7 @@ public class PrintStream extends FilterOutputStream
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,8 +30,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.security.*;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Objects;
-
 import sun.security.jca.GetInstance;
 
 /**
@@ -42,18 +43,16 @@ import sun.security.jca.GetInstance;
  * secure random bytes.
  *
  * <p> Every implementation of the Java platform is required to support the
- * following standard {@code SSLContext} protocols:
+ * following standard {@code SSLContext} protocol:
  * <ul>
- * <li>{@code TLSv1}</li>
- * <li>{@code TLSv1.1}</li>
  * <li>{@code TLSv1.2}</li>
  * </ul>
- * These protocols are described in the <a href=
+ * This protocol is described in the <a href=
  * "{@docRoot}/../specs/security/standard-names.html#sslcontext-algorithms">
  * SSLContext section</a> of the
  * Java Security Standard Algorithm Names Specification.
  * Consult the release documentation for your implementation to see if any
- * other algorithms are supported.
+ * other protocols are supported.
  *
  * @since 1.4
  */
@@ -64,6 +63,20 @@ public class SSLContext {
     private final SSLContextSpi contextSpi;
 
     private final String protocol;
+
+    private static volatile @MonotonicNonNull SSLContext defaultContext;
+
+    private static final VarHandle VH_DEFAULT_CONTEXT;
+
+    static {
+        try {
+            VH_DEFAULT_CONTEXT = MethodHandles.lookup()
+                .findStaticVarHandle(
+                    SSLContext.class, "defaultContext", SSLContext.class);
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     /**
      * Creates an SSLContext object.
@@ -78,8 +91,6 @@ public class SSLContext {
         this.provider = provider;
         this.protocol = protocol;
     }
-
-    private static @MonotonicNonNull SSLContext defaultContext;
 
     /**
      * Returns the default SSL context.
@@ -98,12 +109,16 @@ public class SSLContext {
      *   {@link SSLContext#getInstance SSLContext.getInstance()} call fails
      * @since 1.6
      */
-    public static synchronized SSLContext getDefault()
-            throws NoSuchAlgorithmException {
-        if (defaultContext == null) {
-            defaultContext = SSLContext.getInstance("Default");
+    public static SSLContext getDefault() throws NoSuchAlgorithmException {
+        SSLContext temporaryContext = defaultContext;
+        if (temporaryContext == null) {
+            temporaryContext = SSLContext.getInstance("Default");
+            if (!VH_DEFAULT_CONTEXT.compareAndSet(null, temporaryContext)) {
+                temporaryContext = defaultContext;
+            }
         }
-        return defaultContext;
+
+        return temporaryContext;
     }
 
     /**
@@ -118,14 +133,16 @@ public class SSLContext {
      *          {@code SSLPermission("setDefaultSSLContext")}
      * @since 1.6
      */
-    public static synchronized void setDefault(SSLContext context) {
+    public static void setDefault(SSLContext context) {
         if (context == null) {
             throw new NullPointerException();
         }
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new SSLPermission("setDefaultSSLContext"));
         }
+
         defaultContext = context;
     }
 
@@ -341,6 +358,14 @@ public class SSLContext {
      * Some cipher suites (such as Kerberos) require remote hostname
      * information, in which case this factory method should not be used.
      *
+     * @implNote
+     * It is provider-specific if the returned SSLEngine uses client or
+     * server mode by default for the (D)TLS connection. The JDK SunJSSE
+     * provider implementation uses server mode by default.  However, it
+     * is recommended to always set the desired mode explicitly by calling
+     * {@link SSLEngine#setUseClientMode(boolean) SSLEngine.setUseClientMode()}
+     * before invoking other methods of the SSLEngine.
+     *
      * @return  the {@code SSLEngine} object
      * @throws  UnsupportedOperationException if the underlying provider
      *          does not implement the operation.
@@ -370,6 +395,14 @@ public class SSLContext {
      * <P>
      * Some cipher suites (such as Kerberos) require remote hostname
      * information, in which case peerHost needs to be specified.
+     *
+     * @implNote
+     * It is provider-specific if the returned SSLEngine uses client or
+     * server mode by default for the (D)TLS connection. The JDK SunJSSE
+     * provider implementation uses server mode by default.  However, it
+     * is recommended to always set the desired mode explicitly by calling
+     * {@link SSLEngine#setUseClientMode(boolean) SSLEngine.setUseClientMode()}
+     * before invoking other methods of the SSLEngine.
      *
      * @param   peerHost the non-authoritative name of the host
      * @param   peerPort the non-authoritative port

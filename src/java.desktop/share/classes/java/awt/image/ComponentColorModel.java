@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -808,7 +808,7 @@ public class ComponentColorModel extends ColorModel {
             // Note: we do no clamping of the pixel data here - we
             // assume that the data is scaled properly
             case DataBuffer.TYPE_SHORT: {
-                short sdata[] = (short[]) inData;
+                short[] sdata = (short[]) inData;
                 float scalefactor = (float) ((1 << precision) - 1);
                 if (needAlpha) {
                     short s = sdata[numColorComponents];
@@ -823,7 +823,7 @@ public class ComponentColorModel extends ColorModel {
                 }
             }
             case DataBuffer.TYPE_FLOAT: {
-                float fdata[] = (float[]) inData;
+                float[] fdata = (float[]) inData;
                 float scalefactor = (float) ((1 << precision) - 1);
                 if (needAlpha) {
                     float f = fdata[numColorComponents];
@@ -837,7 +837,7 @@ public class ComponentColorModel extends ColorModel {
                 }
             }
             case DataBuffer.TYPE_DOUBLE: {
-                double ddata[] = (double[]) inData;
+                double[] ddata = (double[]) inData;
                 double scalefactor = (double) ((1 << precision) - 1);
                 if (needAlpha) {
                     double d = ddata[numColorComponents];
@@ -851,7 +851,7 @@ public class ComponentColorModel extends ColorModel {
                 }
             }
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                comp = bdata[idx] & mask;
                precision = 8;
                if (needAlpha) {
@@ -859,14 +859,14 @@ public class ComponentColorModel extends ColorModel {
                }
             break;
             case DataBuffer.TYPE_USHORT:
-               short usdata[] = (short[])inData;
+               short[] usdata = (short[])inData;
                comp = usdata[idx] & mask;
                if (needAlpha) {
                    alp = usdata[numColorComponents] & mask;
                }
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                comp = idata[idx];
                if (needAlpha) {
                    alp = idata[numColorComponents];
@@ -1060,27 +1060,27 @@ public class ComponentColorModel extends ColorModel {
 
         switch (transferType) {
             case DataBuffer.TYPE_SHORT:
-                short sdata[] = (short[])inData;
+                short[] sdata = (short[])inData;
                 alpha = (int) ((sdata[aIdx] / 32767.0f) * 255.0f + 0.5f);
                 return alpha;
             case DataBuffer.TYPE_FLOAT:
-                float fdata[] = (float[])inData;
+                float[] fdata = (float[])inData;
                 alpha = (int) (fdata[aIdx] * 255.0f + 0.5f);
                 return alpha;
             case DataBuffer.TYPE_DOUBLE:
-                double ddata[] = (double[])inData;
+                double[] ddata = (double[])inData;
                 alpha = (int) (ddata[aIdx] * 255.0 + 0.5);
                 return alpha;
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                alpha = bdata[aIdx] & mask;
             break;
             case DataBuffer.TYPE_USHORT:
-               short usdata[] = (short[])inData;
+               short[] usdata = (short[])inData;
                alpha = usdata[aIdx] & mask;
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                alpha = idata[aIdx];
             break;
             default:
@@ -1207,7 +1207,7 @@ public class ComponentColorModel extends ColorModel {
             switch(transferType) {
             case DataBuffer.TYPE_SHORT:
                 {
-                    short sdata[];
+                    short[] sdata;
                     if (pixel == null) {
                         sdata = new short[numComponents];
                     } else {
@@ -1270,7 +1270,7 @@ public class ComponentColorModel extends ColorModel {
                         sdata[0] = (short) (gray * factor + 0.5f);
                     } else {
                         factor = 1.0f / 255.0f;
-                        float norm[] = new float[3];
+                        float[] norm = new float[3];
                         norm[0] = red * factor;
                         norm[1] = grn * factor;
                         norm[2] = blu * factor;
@@ -1306,7 +1306,7 @@ public class ComponentColorModel extends ColorModel {
                 }
             case DataBuffer.TYPE_FLOAT:
                 {
-                    float fdata[];
+                    float[] fdata;
                     if (pixel == null) {
                         fdata = new float[numComponents];
                     } else {
@@ -1363,7 +1363,7 @@ public class ComponentColorModel extends ColorModel {
                             }
                         }
                     } else {
-                        float norm[] = new float[3];
+                        float[] norm = new float[3];
                         factor = 1.0f / 255.0f;
                         norm[0] = red * factor;
                         norm[1] = grn * factor;
@@ -1387,7 +1387,7 @@ public class ComponentColorModel extends ColorModel {
                 }
             case DataBuffer.TYPE_DOUBLE:
                 {
-                    double ddata[];
+                    double[] ddata;
                     if (pixel == null) {
                         ddata = new double[numComponents];
                     } else {
@@ -1445,7 +1445,7 @@ public class ComponentColorModel extends ColorModel {
                         }
                     } else {
                         float factor = 1.0f / 255.0f;
-                        float norm[] = new float[3];
+                        float[] norm = new float[3];
                         norm[0] = red * factor;
                         norm[1] = grn * factor;
                         norm[2] = blu * factor;
@@ -1472,7 +1472,7 @@ public class ComponentColorModel extends ColorModel {
         // Handle BYTE, USHORT, & INT here
         //REMIND: maybe more efficient not to use int array for
         //DataBuffer.TYPE_USHORT and DataBuffer.TYPE_INT
-        int intpixel[];
+        int[] intpixel;
         if (transferType == DataBuffer.TYPE_INT &&
             pixel != null) {
            intpixel = (int[])pixel;
@@ -1621,7 +1621,7 @@ public class ComponentColorModel extends ColorModel {
 
         switch (transferType) {
             case DataBuffer.TYPE_BYTE: {
-               byte bdata[];
+               byte[] bdata;
                if (pixel == null) {
                    bdata = new byte[numComponents];
                } else {
@@ -1633,7 +1633,7 @@ public class ComponentColorModel extends ColorModel {
                return bdata;
             }
             case DataBuffer.TYPE_USHORT:{
-               short sdata[];
+               short[] sdata;
                if (pixel == null) {
                    sdata = new short[numComponents];
                } else {
@@ -1747,7 +1747,7 @@ public class ComponentColorModel extends ColorModel {
      * enough to hold a pixel value for this ColorModel.
      */
     public int[] getComponents(Object pixel, int[] components, int offset) {
-        int intpixel[];
+        int[] intpixel;
         if (needScaleInit) {
             initScale();
         }
@@ -2063,7 +2063,7 @@ public class ComponentColorModel extends ColorModel {
         switch (transferType) {
         case DataBuffer.TYPE_BYTE:
             {
-                byte bpixel[] = (byte[]) pixel;
+                byte[] bpixel = (byte[]) pixel;
                 return bpixel[0] & 0xff;
             }
         case DataBuffer.TYPE_USHORT:
@@ -2474,8 +2474,8 @@ public class ComponentColorModel extends ColorModel {
         if (isAlphaPremultiplied) {
             switch (transferType) {
                 case DataBuffer.TYPE_BYTE: {
-                    byte pixel[] = null;
-                    byte zpixel[] = null;
+                    byte[] pixel = null;
+                    byte[] zpixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2501,8 +2501,8 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_USHORT: {
-                    short pixel[] = null;
-                    short zpixel[] = null;
+                    short[] pixel = null;
+                    short[] zpixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2529,8 +2529,8 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_INT: {
-                    int pixel[] = null;
-                    int zpixel[] = null;
+                    int[] pixel = null;
+                    int[] zpixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2556,8 +2556,8 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_SHORT: {
-                    short pixel[] = null;
-                    short zpixel[] = null;
+                    short[] pixel = null;
+                    short[] zpixel = null;
                     float alphaScale = 1.0f / 32767.0f;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2583,8 +2583,8 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_FLOAT: {
-                    float pixel[] = null;
-                    float zpixel[] = null;
+                    float[] pixel = null;
+                    float[] zpixel = null;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
                         for (int x = 0; x < w; x++, rX++) {
@@ -2608,8 +2608,8 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_DOUBLE: {
-                    double pixel[] = null;
-                    double zpixel[] = null;
+                    double[] pixel = null;
+                    double[] zpixel = null;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
                         for (int x = 0; x < w; x++, rX++) {
@@ -2641,7 +2641,7 @@ public class ComponentColorModel extends ColorModel {
             // We are premultiplied and want to divide it out
             switch (transferType) {
                 case DataBuffer.TYPE_BYTE: {
-                    byte pixel[] = null;
+                    byte[] pixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2662,7 +2662,7 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_USHORT: {
-                    short pixel[] = null;
+                    short[] pixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2683,7 +2683,7 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_INT: {
-                    int pixel[] = null;
+                    int[] pixel = null;
                     float alphaScale = 1.0f / ((float) ((1<<nBits[aIdx]) - 1));
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2704,7 +2704,7 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_SHORT: {
-                    short pixel[] = null;
+                    short[] pixel = null;
                     float alphaScale = 1.0f / 32767.0f;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
@@ -2725,7 +2725,7 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_FLOAT: {
-                    float pixel[] = null;
+                    float[] pixel = null;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
                         for (int x = 0; x < w; x++, rX++) {
@@ -2744,7 +2744,7 @@ public class ComponentColorModel extends ColorModel {
                 }
                 break;
                 case DataBuffer.TYPE_DOUBLE: {
-                    double pixel[] = null;
+                    double[] pixel = null;
                     for (int y = 0; y < h; y++, rY++) {
                         rX = rminX;
                         for (int x = 0; x < w; x++, rX++) {

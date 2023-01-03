@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1EVACSTATS_HPP
-#define SHARE_VM_GC_G1_G1EVACSTATS_HPP
+#ifndef SHARE_GC_G1_G1EVACSTATS_HPP
+#define SHARE_GC_G1_G1EVACSTATS_HPP
 
 #include "gc/shared/plab.hpp"
 
@@ -56,7 +56,7 @@ class G1EvacStats : public PLABStats {
   virtual size_t compute_desired_plab_sz();
 
  public:
-  G1EvacStats(const char* description, size_t desired_plab_sz_, unsigned wt);
+  G1EvacStats(const char* description, size_t default_per_thread_plab_size, unsigned wt);
 
   ~G1EvacStats();
 
@@ -74,4 +74,4 @@ class G1EvacStats : public PLABStats {
   inline void add_failure_used_and_waste(size_t used, size_t waste);
 };
 
-#endif // SHARE_VM_GC_G1_G1EVACSTATS_HPP
+#endif // SHARE_GC_G1_G1EVACSTATS_HPP

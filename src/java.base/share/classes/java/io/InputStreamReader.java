@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@ import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import sun.nio.cs.StreamDecoder;
@@ -44,7 +45,7 @@ import sun.nio.cs.StreamDecoder;
  * reads bytes and decodes them into characters using a specified {@link
  * java.nio.charset.Charset charset}.  The charset that it uses
  * may be specified by name or may be given explicitly, or the platform's
- * default charset may be accepted.
+ * {@link Charset#defaultCharset() default charset} may be accepted.
  *
  * <p> Each invocation of one of an InputStreamReader's read() methods may
  * cause one or more bytes to be read from the underlying byte-input stream.
@@ -57,7 +58,7 @@ import sun.nio.cs.StreamDecoder;
  *
  * <pre>
  * BufferedReader in
- *   = new BufferedReader(new InputStreamReader(System.in));
+ *   = new BufferedReader(new InputStreamReader(anInputStream));
  * </pre>
  *
  * @see BufferedReader
@@ -74,18 +75,17 @@ public class InputStreamReader extends Reader {
     private final StreamDecoder sd;
 
     /**
-     * Creates an InputStreamReader that uses the default charset.
+     * Creates an InputStreamReader that uses the
+     * {@link Charset#defaultCharset() default charset}.
      *
      * @param  in   An InputStream
+     *
+     * @see Charset#defaultCharset()
      */
     public @MustCallAlias InputStreamReader(@MustCallAlias InputStream in) {
         super(in);
-        try {
-            sd = StreamDecoder.forInputStreamReader(in, this, (String)null); // ## check lock object
-        } catch (UnsupportedEncodingException e) {
-            // The default encoding should always be available
-            throw new Error(e);
-        }
+        sd = StreamDecoder.forInputStreamReader(in, this,
+                Charset.defaultCharset()); // ## check lock object
     }
 
     /**
@@ -98,7 +98,7 @@ public class InputStreamReader extends Reader {
      *         The name of a supported
      *         {@link java.nio.charset.Charset charset}
      *
-     * @exception  UnsupportedEncodingException
+     * @throws     UnsupportedEncodingException
      *             If the named charset is not supported
      */
     public @MustCallAlias InputStreamReader(@MustCallAlias InputStream in, String charsetName)
@@ -117,7 +117,6 @@ public class InputStreamReader extends Reader {
      * @param  cs       A charset
      *
      * @since 1.4
-     * @spec JSR-51
      */
     public @MustCallAlias InputStreamReader(@MustCallAlias InputStream in, Charset cs) {
         super(in);
@@ -133,7 +132,6 @@ public class InputStreamReader extends Reader {
      * @param  dec      A charset decoder
      *
      * @since 1.4
-     * @spec JSR-51
      */
     public @MustCallAlias InputStreamReader(@MustCallAlias InputStream in, CharsetDecoder dec) {
         super(in);
@@ -151,19 +149,22 @@ public class InputStreamReader extends Reader {
      * <p> If this instance was created with the {@link
      * #InputStreamReader(InputStream, String)} constructor then the returned
      * name, being unique for the encoding, may differ from the name passed to
-     * the constructor. This method will return <code>null</code> if the
+     * the constructor. This method will return {@code null} if the
      * stream has been closed.
      * </p>
      * @return The historical name of this encoding, or
-     *         <code>null</code> if the stream has been closed
+     *         {@code null} if the stream has been closed
      *
      * @see java.nio.charset.Charset
      *
      * @revised 1.4
-     * @spec JSR-51
      */
     public @Nullable String getEncoding() {
         return sd.getEncoding();
+    }
+
+    public int read(CharBuffer target) throws IOException {
+        return sd.read(target);
     }
 
     /**
@@ -172,27 +173,18 @@ public class InputStreamReader extends Reader {
      * @return The character read, or -1 if the end of the stream has been
      *         reached
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public int read() throws IOException {
         return sd.read();
     }
 
     /**
-     * Reads characters into a portion of an array.
-     *
-     * @param      cbuf     Destination buffer
-     * @param      offset   Offset at which to start storing characters
-     * @param      length   Maximum number of characters to read
-     *
-     * @return     The number of characters read, or -1 if the end of the
-     *             stream has been reached
-     *
-     * @exception  IOException  If an I/O error occurs
-     * @exception  IndexOutOfBoundsException {@inheritDoc}
+     * {@inheritDoc}
+     * @throws     IndexOutOfBoundsException  {@inheritDoc}
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(char cbuf[], @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length) throws IOException {
-        return sd.read(cbuf, offset, length);
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+        return sd.read(cbuf, off, len);
     }
 
     /**
@@ -200,7 +192,7 @@ public class InputStreamReader extends Reader {
      * ready if its input buffer is not empty, or if bytes are available to be
      * read from the underlying byte stream.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public boolean ready() throws IOException {
         return sd.ready();

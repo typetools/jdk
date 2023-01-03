@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,13 +58,6 @@ import java.util.zip.ZipFile;
  * a .class file, a directory, or a JAR file.
  */
 public class ClassFileReader implements Closeable {
-    /**
-     * Returns a ClassFileReader instance of a given path.
-     */
-    public static ClassFileReader newInstance(Path path) throws IOException {
-        return newInstance(path, null);
-    }
-
     /**
      * Returns a ClassFileReader instance of a given path.
      */
@@ -267,8 +260,8 @@ public class ClassFileReader implements Closeable {
             DirectoryIterator() throws IOException {
                 List<Path> paths = null;
                 try (Stream<Path> stream = Files.walk(path, Integer.MAX_VALUE)) {
-                    paths = stream.filter(ClassFileReader::isClass)
-                                  .collect(Collectors.toList());
+                    paths = stream.filter(ClassFileReader::isClass).toList();
+
                 }
                 this.entries = paths;
                 this.index = 0;
@@ -325,9 +318,6 @@ public class ClassFileReader implements Closeable {
                 }
             } else {
                 jf = new JarFile(f, false, ZipFile.OPEN_READ, version);
-                if (!jf.isMultiRelease()) {
-                    throw new MultiReleaseException("err.multirelease.option.exists", f.getName());
-                }
             }
             return jf;
         }

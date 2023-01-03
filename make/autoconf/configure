@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -43,10 +43,13 @@ fi
 export CONFIG_SHELL=$BASH
 export _as_can_reexec=no
 
+# Make sure all shell commands are executed with the C locale
+export LC_ALL=C
+
 if test "x$CUSTOM_CONFIG_DIR" != x; then
   custom_hook=$CUSTOM_CONFIG_DIR/custom-hook.m4
   if test ! -e $custom_hook; then
-    echo "CUSTOM_CONFIG_DIR not pointing to a proper custom config dir."
+    echo "CUSTOM_CONFIG_DIR ($CUSTOM_CONFIG_DIR) not pointing to a proper custom config dir."
     echo "Error: Cannot continue" 1>&2
     exit 1
   fi
@@ -75,17 +78,23 @@ generated_script="$build_support_dir/generated-configure.sh"
 ###
 
 autoconf_missing_help() {
-  APT_GET="`which apt-get 2> /dev/null | grep -v '^no apt-get in'`"
-  YUM="`which yum 2> /dev/null | grep -v '^no yum in'`"
-  BREW="`which brew 2> /dev/null | grep -v '^no brew in'`"
-  CYGWIN="`which cygpath 2> /dev/null | grep -v '^no cygpath in'`"
+  APT_GET="`type -p apt-get 2> /dev/null`"
+  YUM="`type -p yum 2> /dev/null`"
+  BREW="`type -p brew 2> /dev/null`"
+  ZYPPER="`type -p zypper 2> /dev/null`"
+  CYGWIN="`type -p cygpath 2> /dev/null`"
+  UNAMEOUT="`uname 2> /dev/null`"
 
-  if test "x$APT_GET" != x; then
+  if test "x$ZYPPER" != x; then
+    PKGHANDLER_COMMAND="sudo zypper install autoconf"
+  elif test "x$APT_GET" != x; then
     PKGHANDLER_COMMAND="sudo apt-get install autoconf"
   elif test "x$YUM" != x; then
     PKGHANDLER_COMMAND="sudo yum install autoconf"
   elif test "x$BREW" != x; then
     PKGHANDLER_COMMAND="brew install autoconf"
+  elif test "x$UNAMEOUT" == xAIX; then
+    echo "You might be able to fix this by installing autoconf from the 'AIX Toolbox for Linux Applications' (or compile it from the sources)."
   elif test "x$CYGWIN" != x; then
     PKGHANDLER_COMMAND="( cd <location of cygwin setup.exe> && cmd /c setup -q -P autoconf )"
   fi
@@ -105,10 +114,10 @@ generate_configure_script() {
       exit 1
     fi
   else
-    AUTOCONF="`which autoconf 2> /dev/null | grep -v '^no autoconf in'`"
+    AUTOCONF="`type -p autoconf 2> /dev/null`"
     if test "x$AUTOCONF" = x; then
       echo
-      echo "Autoconf is not found on the PATH, and AUTOCONF is not set."
+      echo "Autoconf is not found on the PATH ($PATH), and AUTOCONF is not set."
       echo "You need autoconf to be able to generate a runnable configure script."
       autoconf_missing_help
       echo "Error: Cannot find autoconf" 1>&2
@@ -122,14 +131,18 @@ generate_configure_script() {
   if test "x$CUSTOM_CONFIG_DIR" != x; then
     # Generate configure script with custom hooks compiled in.
     custom_patcher='sed -e "s|#CUSTOM_AUTOCONF_INCLUDE|m4_include([$custom_hook])|"'
+    custom_script_dir_include="-I$CUSTOM_CONFIG_DIR"
   else
     custom_patcher='cat'
+    custom_script_dir_include=""
   fi
 
   mkdir -p $build_support_dir
   # Call autoconf but replace the "magic" variable in configure.ac if requested.
+
   cat $conf_script_dir/configure.ac | eval $custom_patcher | \
-      ${AUTOCONF} -W all -I$conf_script_dir - > $generated_script
+      ${AUTOCONF} -W all $custom_script_dir_include -I$conf_script_dir - \
+      > $generated_script
   rm -rf autom4te.cache
 
   # Sanity check

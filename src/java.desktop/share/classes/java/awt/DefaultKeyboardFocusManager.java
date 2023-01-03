@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.awt;
 
 import java.awt.event.FocusEvent;
@@ -29,20 +30,20 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.peer.ComponentPeer;
 import java.awt.peer.LightweightPeer;
+import java.io.Serial;
 import java.lang.ref.WeakReference;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Set;
 
-import sun.util.logging.PlatformLogger;
-
+import sun.awt.AWTAccessor;
 import sun.awt.AppContext;
 import sun.awt.SunToolkit;
-import sun.awt.AWTAccessor;
 import sun.awt.TimedWindowEvent;
+import sun.util.logging.PlatformLogger;
 
 /**
  * The default KeyboardFocusManager for AWT applications. Focus traversal is
@@ -50,10 +51,10 @@ import sun.awt.TimedWindowEvent;
  * Container's FocusTraversalPolicy.
  * <p>
  * Please see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
  * How to Use the Focus Subsystem</a>,
  * a section in <em>The Java Tutorial</em>, and the
- * <a href="../../java/awt/doc-files/FocusSpec.html">Focus Specification</a>
+ * <a href="doc-files/FocusSpec.html">Focus Specification</a>
  * for more information.
  *
  * @author David Mendenhall
@@ -82,6 +83,11 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
     private static boolean fxAppThreadIsDispatchThread;
 
     static {
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
         AWTAccessor.setDefaultKeyboardFocusManagerAccessor(
             new AWTAccessor.DefaultKeyboardFocusManagerAccessor() {
                 public void consumeNextKeyTyped(DefaultKeyboardFocusManager dkfm, KeyEvent e) {
@@ -96,6 +102,11 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
             }
         });
     }
+
+    /**
+     * Constructs a {@code DefaultKeyboardFocusManager}.
+     */
+    public DefaultKeyboardFocusManager() {}
 
     private static class TypeAheadMarker {
         long after;
@@ -223,9 +234,10 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
     private static class DefaultKeyboardFocusManagerSentEvent
         extends SentEvent
     {
-        /*
-         * serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -2924743257508701758L;
 
         public DefaultKeyboardFocusManagerSentEvent(AWTEvent nested,
@@ -813,7 +825,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
                     : NULL_WINDOW_WR;
                 typeAheadAssertions(currentFocusedWindow, we);
 
-                if (oppositeWindow == null) {
+                if (oppositeWindow == null && activeWindow != null) {
                     // Then we need to deactivate the active Window as well.
                     // No need to synthesize in other cases, because
                     // WINDOW_ACTIVATED will handle it if necessary.
@@ -967,9 +979,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
             focusLog.finest(">>> Markers dump, time: {0}", System.currentTimeMillis());
             synchronized (this) {
                 if (typeAheadMarkers.size() != 0) {
-                    Iterator<TypeAheadMarker> iter = typeAheadMarkers.iterator();
-                    while (iter.hasNext()) {
-                        TypeAheadMarker marker = iter.next();
+                    for (TypeAheadMarker marker : typeAheadMarkers) {
                         focusLog.finest("    {0}", marker);
                     }
                 }

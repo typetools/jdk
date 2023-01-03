@@ -31,8 +31,7 @@
  * @library /test/lib /
  *
  * @build sun.hotspot.WhiteBox
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- *                                sun.hotspot.WhiteBox$WhiteBoxPermission
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller sun.hotspot.WhiteBox
  * @run main/othervm
  *        -Xbootclasspath/a:.
  *        -XX:+UnlockDiagnosticVMOptions
@@ -361,6 +360,12 @@ public class TestMeetIncompatibleInterfaceArrays extends ClassLoader {
                 for (int j = 0; j < 3; j++) {
                     System.out.println((j + 1) + ". invokation of " + baseClassName + i + "ASM.test() [::" +
                                        r.getName() + "() should be '" + tier[pass][j] + "' compiled]");
+
+                    // Skip Profiling compilation (C1) when Tiered is disabled.
+                    boolean profile = (level[pass][j] == CompilerWhiteBoxTest.COMP_LEVEL_FULL_PROFILE);
+                    if (profile && CompilerWhiteBoxTest.skipOnTieredCompilation(false)) {
+                        continue;
+                    }
 
                     WB.enqueueMethodForCompilation(r, level[pass][j]);
 

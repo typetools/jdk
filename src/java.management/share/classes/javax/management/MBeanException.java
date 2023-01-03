@@ -25,6 +25,7 @@
 
 package javax.management;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Represents "user defined" exceptions thrown by MBean methods
@@ -83,7 +84,7 @@ public class MBeanException extends JMException   {
      *
      * @return the wrapped exception.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return exception;
     }
 }

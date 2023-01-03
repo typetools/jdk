@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,7 +51,7 @@ public class PendingBinaryPongClose extends PendingOperations {
         repeatable(() -> {
             server = Support.notReadingServer();
             server.open();
-            webSocket = newBuilder().proxy(NO_PROXY).build().newWebSocketBuilder()
+            webSocket = httpClient().newWebSocketBuilder()
                     .buildAsync(server.getURI(), new WebSocket.Listener() { })
                     .join();
             ByteBuffer data = ByteBuffer.allocate(65536);
@@ -79,8 +79,9 @@ public class PendingBinaryPongClose extends PendingOperations {
             assertFails(ISE, webSocket.sendPong(ByteBuffer.allocate(125)));
             cfClose = webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "ok");
             assertHangs(cfClose);
+            assertNotDone(cfBinary);
             return null;
-        }, () -> cfBinary.isDone() ? true : false);
+        }, () -> cfBinary.isDone());
         webSocket.abort();
         assertFails(IOE, cfBinary);
         assertFails(IOE, cfPong);

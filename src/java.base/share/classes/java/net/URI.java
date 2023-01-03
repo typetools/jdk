@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -39,17 +40,18 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.CharacterCodingException;
+import java.nio.file.Path;
 import java.text.Normalizer;
-import jdk.internal.misc.JavaNetUriAccess;
-import jdk.internal.misc.SharedSecrets;
-import sun.nio.cs.ThreadLocalCoders;
+import jdk.internal.access.JavaNetUriAccess;
+import jdk.internal.access.SharedSecrets;
+import sun.nio.cs.UTF_8;
 
 import java.lang.Character;             // for javadoc
 import java.lang.NullPointerException;  // for javadoc
-
 
 /**
  * Represents a Uniform Resource Identifier (URI) reference.
@@ -68,7 +70,7 @@ import java.lang.NullPointerException;  // for javadoc
  * and relativizing URI instances.  Instances of this class are immutable.
  *
  *
- * <h3> URI syntax and components </h3>
+ * <h2> URI syntax and components </h2>
  *
  * At the highest level a URI reference (hereinafter simply "URI") in string
  * form has the syntax
@@ -89,7 +91,7 @@ import java.lang.NullPointerException;  // for javadoc
  * subject to further parsing.  Some examples of opaque URIs are:
  *
  * <blockquote><ul style="list-style-type:none">
- * <li>{@code mailto:java-net@java.sun.com}</li>
+ * <li>{@code mailto:java-net@www.example.com}</li>
  * <li>{@code news:comp.lang.java}</li>
  * <li>{@code urn:isbn:096139210x}</li>
  * </ul></blockquote>
@@ -172,7 +174,7 @@ import java.lang.NullPointerException;  // for javadoc
  * will be defined and the user-information and port components may be defined.
  *
  *
- * <h4> Operations on URI instances </h4>
+ * <h3> Operations on URI instances </h3>
  *
  * The key operations supported by this class are those of
  * <i>normalization</i>, <i>resolution</i>, and <i>relativization</i>.
@@ -251,7 +253,7 @@ import java.lang.NullPointerException;  // for javadoc
  * yields the relative URI {@code sample/a/index.html#28}.
  *
  *
- * <h4> Character categories </h4>
+ * <h3> Character categories </h3>
  *
  * RFC&nbsp;2396 specifies precisely which characters are permitted in the
  * various components of a URI reference.  The following categories, most of
@@ -302,7 +304,7 @@ import java.lang.NullPointerException;  // for javadoc
  * characters.
  *
  *
- * <h4> Escaped octets, quotation, encoding, and decoding </h4>
+ * <h3> Escaped octets, quotation, encoding, and decoding </h3>
  *
  * RFC 2396 allows escaped octets to appear in the user-info, path, query, and
  * fragment components.  Escaping serves two purposes in URIs:
@@ -394,7 +396,7 @@ import java.lang.NullPointerException;  // for javadoc
  * </ul>
  *
  *
- * <h4> Identities </h4>
+ * <h3> Identities </h3>
  *
  * For any URI <i>u</i>, it is always the case that
  *
@@ -405,7 +407,7 @@ import java.lang.NullPointerException;  // for javadoc
  * For any URI <i>u</i> that does not contain redundant syntax such as two
  * slashes before an empty authority (as in {@code file:///tmp/}&nbsp;) or a
  * colon following a host name but no port (as in
- * {@code http://java.sun.com:}&nbsp;), and that does not encode characters
+ * {@code http://www.example.com:}&nbsp;), and that does not encode characters
  * except those that must be quoted, the following identities also hold:
  * <pre>
  *     new URI(<i>u</i>.getScheme(),
@@ -430,7 +432,7 @@ import java.lang.NullPointerException;  // for javadoc
  * authority.
  *
  *
- * <h4> URIs, URLs, and URNs </h4>
+ * <h3> URIs, URLs, and URNs </h3>
  *
  * A URI is a uniform resource <i>identifier</i> while a URL is a uniform
  * resource <i>locator</i>.  Hence every URL is a URI, abstractly speaking, but
@@ -464,19 +466,40 @@ import java.lang.NullPointerException;  // for javadoc
  * resolution as well as the network I/O operations of looking up the host and
  * opening a connection to the specified resource.
  *
+ * @apiNote
+ *
+ * Applications working with file paths and file URIs should take great
+ * care to use the appropriate methods to convert between the two.
+ * The {@link Path#of(URI)} factory method and the {@link File#File(URI)}
+ * constructor can be used to create {@link Path} or {@link File}
+ * objects from a file URI. {@link Path#toUri()} and {@link File#toURI()}
+ * can be used to create a {@link URI} from a file path.
+ * Applications should never try to {@linkplain
+ * #URI(String, String, String, int, String, String, String)
+ * construct}, {@linkplain #URI(String) parse}, or
+ * {@linkplain #resolve(String) resolve} a {@code URI}
+ * from the direct string representation of a {@code File} or {@code Path}
+ * instance.
+ * <p>
+ * Some components of a URL or URI, such as <i>userinfo</i>, may
+ * be abused to construct misleading URLs or URIs. Applications
+ * that deal with URLs or URIs should take into account
+ * the recommendations advised in <a
+ * href="https://tools.ietf.org/html/rfc3986#section-7">RFC3986,
+ * Section 7, Security Considerations</a>.
  *
  * @author Mark Reinhold
  * @since 1.4
  *
  * @see <a href="http://www.ietf.org/rfc/rfc2279.txt"><i>RFC&nbsp;2279: UTF-8, a
- * transformation format of ISO 10646</i></a>, <br><a
- * href="http://www.ietf.org/rfc/rfc2373.txt"><i>RFC&nbsp;2373: IPv6 Addressing
- * Architecture</i></a>, <br><a
- * href="http://www.ietf.org/rfc/rfc2396.txt"><i>RFC&nbsp;2396: Uniform
- * Resource Identifiers (URI): Generic Syntax</i></a>, <br><a
- * href="http://www.ietf.org/rfc/rfc2732.txt"><i>RFC&nbsp;2732: Format for
- * Literal IPv6 Addresses in URLs</i></a>, <br><a
- * href="URISyntaxException.html">URISyntaxException</a>
+ * transformation format of ISO 10646</i></a>
+ * @see <a href="http://www.ietf.org/rfc/rfc2373.txt"><i>RFC&nbsp;2373: IPv6 Addressing
+ * Architecture</i></a>
+ * @see <a href="http://www.ietf.org/rfc/rfc2396.txt"><i>RFC&nbsp;2396: Uniform
+ * Resource Identifiers (URI): Generic Syntax</i></a>
+ * @see <a href="http://www.ietf.org/rfc/rfc2732.txt"><i>RFC&nbsp;2732: Format for
+ * Literal IPv6 Addresses in URLs</i></a>
+ * @see <a href="URISyntaxException.html">URISyntaxException</a>
  */
 
 public final class URI
@@ -486,7 +509,7 @@ public final class URI
     // Note: Comments containing the word "ASSERT" indicate places where a
     // throw of an InternalError should be replaced by an appropriate assertion
     // statement once asserts are enabled in the build.
-
+    @java.io.Serial
     static final long serialVersionUID = -6052424284110960213L;
 
 
@@ -867,9 +890,9 @@ public final class URI
      *
      * <p> This method is provided for use in situations where it is known that
      * the given string is a legal URI, for example for URI constants declared
-     * within in a program, and so it would be considered a programming error
+     * within a program, and so it would be considered a programming error
      * for the string not to parse as such.  The constructors, which throw
-     * {@link URISyntaxException} directly, should be used situations where a
+     * {@link URISyntaxException} directly, should be used in situations where a
      * URI is being constructed from user input or from some other source that
      * may be prone to errors.  </p>
      *
@@ -1486,9 +1509,8 @@ public final class URI
     public boolean equals(@Nullable Object ob) {
         if (ob == this)
             return true;
-        if (!(ob instanceof URI))
+        if (!(ob instanceof URI that))
             return false;
-        URI that = (URI)ob;
         if (this.isOpaque() != that.isOpaque()) return false;
         if (!equalIgnoringCase(this.scheme, that.scheme)) return false;
         if (!equal(this.fragment, that.fragment)) return false;
@@ -1557,10 +1579,11 @@ public final class URI
      * component is undefined but the other is defined then the first is
      * considered to be less than the second.  Unless otherwise noted, string
      * components are ordered according to their natural, case-sensitive
-     * ordering as defined by the {@link java.lang.String#compareTo(Object)
+     * ordering as defined by the {@link java.lang.String#compareTo(String)
      * String.compareTo} method.  String components that are subject to
      * encoding are compared by comparing their raw forms rather than their
-     * encoded forms.
+     * encoded forms and the hexadecimal digits of escaped octets are compared
+     * without regard to case.
      *
      * <p> The ordering of URIs is defined as follows: </p>
      *
@@ -1761,7 +1784,11 @@ public final class URI
      *
      * @param  os  The object-output stream to which this object
      *             is to be written
+     *
+     * @throws IOException
+     *         If an I/O error occurs
      */
+    @java.io.Serial
     private void writeObject(ObjectOutputStream os)
         throws IOException
     {
@@ -1778,7 +1805,14 @@ public final class URI
      *
      * @param  is  The object-input stream from which this object
      *             is being read
+     *
+     * @throws IOException
+     *         If an I/O error occurs
+     *
+     * @throws ClassNotFoundException
+     *         If a serialized class cannot be loaded
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream is)
         throws ClassNotFoundException, IOException
     {
@@ -1821,35 +1855,9 @@ public final class URI
     }
 
     private static boolean equal(String s, String t) {
-        if (s == t) return true;
-        if ((s != null) && (t != null)) {
-            if (s.length() != t.length())
-                return false;
-            if (s.indexOf('%') < 0)
-                return s.equals(t);
-            int n = s.length();
-            for (int i = 0; i < n;) {
-                char c = s.charAt(i);
-                char d = t.charAt(i);
-                if (c != '%') {
-                    if (c != d)
-                        return false;
-                    i++;
-                    continue;
-                }
-                if (d != '%')
-                    return false;
-                i++;
-                if (toLower(s.charAt(i)) != toLower(t.charAt(i)))
-                    return false;
-                i++;
-                if (toLower(s.charAt(i)) != toLower(t.charAt(i)))
-                    return false;
-                i++;
-            }
-            return true;
-        }
-        return false;
+        boolean testForEquality = true;
+        int result = percentNormalizedComparison(s, t, testForEquality);
+        return result == 0;
     }
 
     // US-ASCII only
@@ -1903,11 +1911,61 @@ public final class URI
     }
 
     private static int compare(String s, String t) {
+        boolean testForEquality = false;
+        int result = percentNormalizedComparison(s, t, testForEquality);
+        return result;
+    }
+
+    // The percentNormalizedComparison method does not verify two
+    // characters that follow the % sign are hexadecimal digits.
+    // Reason being:
+    // 1) percentNormalizedComparison method is not called with
+    // 'decoded' strings
+    // 2) The only place where a percent can be followed by anything
+    // other than hexadecimal digits is in the authority component
+    // (for a IPv6 scope) and the whole authority component is case
+    // insensitive.
+    private static int percentNormalizedComparison(String s, String t,
+                                                   boolean testForEquality) {
+
         if (s == t) return 0;
         if (s != null) {
-            if (t != null)
-                return s.compareTo(t);
-            else
+            if (t != null) {
+                if (s.indexOf('%') < 0) {
+                    return s.compareTo(t);
+                }
+                int sn = s.length();
+                int tn = t.length();
+                if ((sn != tn) && testForEquality)
+                    return sn - tn;
+                int val = 0;
+                int n = sn < tn ? sn : tn;
+                for (int i = 0; i < n; ) {
+                    char c = s.charAt(i);
+                    char d = t.charAt(i);
+                    val = c - d;
+                    if (c != '%') {
+                        if (val != 0)
+                            return val;
+                        i++;
+                        continue;
+                    }
+                    if (d != '%') {
+                        if (val != 0)
+                            return val;
+                    }
+                    i++;
+                    val = toLower(s.charAt(i)) - toLower(t.charAt(i));
+                    if (val != 0)
+                        return val;
+                    i++;
+                    val = toLower(s.charAt(i)) - toLower(t.charAt(i));
+                    if (val != 0)
+                        return val;
+                    i++;
+                }
+                return sn - tn;
+            } else
                 return +1;
         } else {
             return -1;
@@ -1944,10 +2002,8 @@ public final class URI
         throws URISyntaxException
     {
         if (scheme != null) {
-            if ((path != null)
-                && ((path.length() > 0) && (path.charAt(0) != '/')))
-                throw new URISyntaxException(s,
-                                             "Relative path in absolute URI");
+            if (path != null && !path.isEmpty() && path.charAt(0) != '/')
+                throw new URISyntaxException(s, "Relative path in absolute URI");
         }
     }
 
@@ -2148,7 +2204,7 @@ public final class URI
             ru.port = base.port;
 
             String cp = (child.path == null) ? "" : child.path;
-            if ((cp.length() > 0) && (cp.charAt(0) == '/')) {
+            if (!cp.isEmpty() && cp.charAt(0) == '/') {
                 // 5.2 (5): Child path is absolute
                 ru.path = child.path;
             } else {
@@ -2172,7 +2228,7 @@ public final class URI
     // o.w., return a new URI containing the normalized path.
     //
     private static URI normalize(URI u) {
-        if (u.isOpaque() || (u.path == null) || (u.path.length() == 0))
+        if (u.isOpaque() || u.path == null || u.path.isEmpty())
             return u;
 
         String np = normalize(u.path);
@@ -2721,11 +2777,10 @@ public final class URI
         sb.append(hexDigits[(b >> 0) & 0x0f]);
     }
 
-    private static void appendEncoded(StringBuilder sb, char c) {
+    private static void appendEncoded(CharsetEncoder encoder, StringBuilder sb, char c) {
         ByteBuffer bb = null;
         try {
-            bb = ThreadLocalCoders.encoderFor("UTF-8")
-                .encode(CharBuffer.wrap("" + c));
+            bb = encoder.encode(CharBuffer.wrap("" + c));
         } catch (CharacterCodingException x) {
             assert false;
         }
@@ -2743,6 +2798,7 @@ public final class URI
     //
     private static String quote(String s, long lowMask, long highMask) {
         StringBuilder sb = null;
+        CharsetEncoder encoder = null;
         boolean allowNonASCII = ((lowMask & L_ESCAPED) != 0);
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
@@ -2760,11 +2816,13 @@ public final class URI
             } else if (allowNonASCII
                        && (Character.isSpaceChar(c)
                            || Character.isISOControl(c))) {
+                if (encoder == null)
+                    encoder = UTF_8.INSTANCE.newEncoder();
                 if (sb == null) {
                     sb = new StringBuilder();
                     sb.append(s, 0, i);
                 }
-                appendEncoded(sb, c);
+                appendEncoded(encoder, sb, c);
             } else {
                 if (sb != null)
                     sb.append(c);
@@ -2792,8 +2850,9 @@ public final class URI
         String ns = Normalizer.normalize(s, Normalizer.Form.NFC);
         ByteBuffer bb = null;
         try {
-            bb = ThreadLocalCoders.encoderFor("UTF-8")
+            bb = UTF_8.INSTANCE.newEncoder()
                 .encode(CharBuffer.wrap(ns));
+
         } catch (CharacterCodingException x) {
             assert false;
         }
@@ -2850,9 +2909,9 @@ public final class URI
         StringBuilder sb = new StringBuilder(n);
         ByteBuffer bb = ByteBuffer.allocate(n);
         CharBuffer cb = CharBuffer.allocate(n);
-        CharsetDecoder dec = ThreadLocalCoders.decoderFor("UTF-8")
-                .onMalformedInput(CodingErrorAction.REPLACE)
-                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+        CharsetDecoder dec = UTF_8.INSTANCE.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPLACE)
+            .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
         // This is not horribly efficient, but it will do for now
         char c = s.charAt(0);

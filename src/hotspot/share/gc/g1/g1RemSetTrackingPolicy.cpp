@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/g1/collectionSetChooser.hpp"
+#include "gc/g1/g1CollectionSetChooser.hpp"
 #include "gc/g1/g1RemSetTrackingPolicy.hpp"
 #include "gc/g1/heapRegion.inline.hpp"
 #include "gc/g1/heapRegionRemSet.hpp"
@@ -93,7 +93,7 @@ bool G1RemSetTrackingPolicy::update_humongous_before_rebuild(HeapRegion* r, bool
   // For humongous regions, to be of interest for rebuilding the remembered set the following must apply:
   // - We always try to update the remembered sets of humongous regions containing
   // type arrays as they might have been reset after full gc.
-  if (is_live && oop(r->humongous_start_region()->bottom())->is_typeArray() && !r->rem_set()->is_tracked()) {
+  if (is_live && cast_to_oop(r->humongous_start_region()->bottom())->is_typeArray() && !r->rem_set()->is_tracked()) {
     r->rem_set()->set_state_updating();
     selected_for_rebuild = true;
   }
@@ -126,7 +126,7 @@ bool G1RemSetTrackingPolicy::update_before_rebuild(HeapRegion* r, size_t live_by
   // - Otherwise only add those old gen regions which occupancy is low enough that there
   // is a chance that we will ever evacuate them in the mixed gcs.
   if ((total_live_bytes > 0) &&
-      CollectionSetChooser::region_occupancy_low_enough_for_evac(total_live_bytes) &&
+      G1CollectionSetChooser::region_occupancy_low_enough_for_evac(total_live_bytes) &&
       !r->rem_set()->is_tracked()) {
 
     r->rem_set()->set_state_updating();
@@ -141,8 +141,9 @@ bool G1RemSetTrackingPolicy::update_before_rebuild(HeapRegion* r, size_t live_by
 void G1RemSetTrackingPolicy::update_after_rebuild(HeapRegion* r) {
   assert(SafepointSynchronize::is_at_safepoint(), "should be at safepoint");
 
-  if (r->is_old_or_humongous()) {
+  if (r->is_old_or_humongous_or_archive()) {
     if (r->rem_set()->is_updating()) {
+      assert(!r->is_archive(), "Archive region %u with remembered set", r->hrm_index());
       r->rem_set()->set_state_complete();
     }
     G1CollectedHeap* g1h = G1CollectedHeap::heap();
@@ -151,7 +152,7 @@ void G1RemSetTrackingPolicy::update_after_rebuild(HeapRegion* r) {
     // cycle as e.g. remembered set entries will always be added.
     if (r->is_starts_humongous() && !g1h->is_potential_eager_reclaim_candidate(r)) {
       // Handle HC regions with the HS region.
-      uint const size_in_regions = (uint)g1h->humongous_obj_size_in_regions(oop(r->bottom())->size());
+      uint const size_in_regions = (uint)g1h->humongous_obj_size_in_regions(cast_to_oop(r->bottom())->size());
       uint const region_idx = r->hrm_index();
       for (uint j = region_idx; j < (region_idx + size_in_regions); j++) {
         HeapRegion* const cur = g1h->region_at(j);
@@ -169,9 +170,9 @@ void G1RemSetTrackingPolicy::update_after_rebuild(HeapRegion* r) {
                                     "size " SIZE_FORMAT ")",
                                     r->hrm_index(),
                                     p2i(r->next_top_at_mark_start()),
-                                    cm->liveness(r->hrm_index()) * HeapWordSize,
+                                    cm->live_bytes(r->hrm_index()),
                                     r->next_marked_bytes(),
-                                    r->rem_set()->occupied_locked(),
+                                    r->rem_set()->occupied(),
                                     r->rem_set()->mem_size());
   }
 }

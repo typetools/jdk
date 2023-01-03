@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,14 +30,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import jdk.jfr.Configuration;
+import jdk.jfr.EventType;
 import jdk.jfr.Timespan;
 import jdk.jfr.Timestamp;
 import jdk.jfr.ValueDescriptor;
 import jdk.jfr.internal.PrivateAccess;
-import jdk.jfr.internal.cmd.PrettyWriter;
+import jdk.jfr.internal.Type;
+import jdk.jfr.internal.consumer.JdkJfrConsumer;
+import jdk.jfr.internal.consumer.ObjectContext;
+import jdk.jfr.internal.consumer.ObjectFactory;
+import jdk.jfr.internal.tool.PrettyWriter;
 
 /**
  * A complex data type that consists of one or more fields.
@@ -51,7 +59,98 @@ import jdk.jfr.internal.cmd.PrettyWriter;
  */
 public class RecordedObject {
 
-    private final static class UnsignedValue {
+    static{
+        JdkJfrConsumer access = new JdkJfrConsumer() {
+            @Override
+            public List<Type> readTypes(RecordingFile file) throws IOException {
+                return file.readTypes();
+            }
+
+            @Override
+            public boolean isLastEventInChunk(RecordingFile file) {
+                return file.isLastEventInChunk();
+            }
+
+            @Override
+            public Object getOffsetDataTime(RecordedObject event, String name) {
+                return event.getOffsetDateTime(name);
+            }
+
+            @Override
+            public RecordedClass newRecordedClass(ObjectContext objectContext, long id, Object[] values) {
+                return new RecordedClass(objectContext, id, values);
+            }
+
+            @Override
+            public RecordedClassLoader newRecordedClassLoader(ObjectContext objectContext, long id, Object[] values) {
+                return new RecordedClassLoader(objectContext, id, values);
+            }
+
+            @Override
+            public Comparator<? super RecordedEvent> eventComparator() {
+                return new Comparator<RecordedEvent>()  {
+                    @Override
+                    public int compare(RecordedEvent e1, RecordedEvent e2) {
+                        return Long.compare(e1.endTimeTicks, e2.endTimeTicks);
+                    }
+                };
+            }
+
+            @Override
+            public RecordedStackTrace newRecordedStackTrace(ObjectContext objectContext, Object[] values) {
+                return new RecordedStackTrace(objectContext, values);
+            }
+
+            @Override
+            public RecordedThreadGroup newRecordedThreadGroup(ObjectContext objectContext, Object[] values) {
+                return new RecordedThreadGroup(objectContext, values);
+            }
+
+            @Override
+            public RecordedFrame newRecordedFrame(ObjectContext objectContext, Object[] values) {
+                return new RecordedFrame(objectContext, values);
+            }
+
+            @Override
+            public RecordedThread newRecordedThread(ObjectContext objectContext, long id, Object[] values) {
+                return new RecordedThread(objectContext, id, values);
+            }
+
+            @Override
+            public RecordedMethod newRecordedMethod(ObjectContext objectContext, Object[] values) {
+                return new RecordedMethod(objectContext, values);
+            }
+
+            @Override
+            public RecordedEvent newRecordedEvent(ObjectContext objectContext, Object[] values, long startTimeTicks, long endTimeTicks) {
+                return new RecordedEvent(objectContext, values, startTimeTicks, endTimeTicks);
+            }
+
+            @Override
+            public void setStartTicks(RecordedEvent event, long startTicks) {
+               event.startTimeTicks = startTicks;
+            }
+
+            @Override
+            public void setEndTicks(RecordedEvent event, long endTicks) {
+               event.endTimeTicks = endTicks;
+            }
+
+            @Override
+            public Object[] eventValues(RecordedEvent event) {
+                return event.objects;
+            }
+
+            @Override
+            public MetadataEvent newMetadataEvent(List<EventType> previous, List<EventType> current,
+                    List<Configuration> configurations) {
+                return new MetadataEvent(previous, current, configurations);
+            }
+        };
+        JdkJfrConsumer.setAccess(access);
+    }
+
+    private static final class UnsignedValue {
         private final Object o;
 
         UnsignedValue(Object o) {
@@ -63,15 +162,13 @@ public class RecordedObject {
         }
     }
 
-    private final Object[] objects;
-    private final List<ValueDescriptor> descriptors;
-    private final TimeConverter timeConverter;
+    final Object[] objects;
+    final ObjectContext objectContext;
 
     // package private, not to be subclassed outside this package
-    RecordedObject(List<ValueDescriptor> descriptors, Object[] objects, TimeConverter timeConverter) {
-        this.descriptors = descriptors;
+    RecordedObject(ObjectContext objectContext, Object[] objects) {
+        this.objectContext = objectContext;
         this.objects = objects;
-        this.timeConverter = timeConverter;
     }
 
     // package private
@@ -92,16 +189,19 @@ public class RecordedObject {
     /**
      * Returns {@code true} if a field with the given name exists, {@code false}
      * otherwise.
+     * <p>
+     * It's possible to index into a nested field by using {@code "."} (for
+     * instance {@code "thread.group.parent.name}").
      *
      * @param name name of the field to get, not {@code null}
      *
-     * @return {@code true} if the field exists, {@code false} otherwise.
+     * @return {@code true} if the field exists, {@code false} otherwise
      *
      * @see #getFields()
      */
     public boolean hasField(String name) {
         Objects.requireNonNull(name);
-        for (ValueDescriptor v : descriptors) {
+        for (ValueDescriptor v : objectContext.fields) {
             if (v.getName().equals(name)) {
                 return true;
             }
@@ -109,7 +209,7 @@ public class RecordedObject {
         int dotIndex = name.indexOf(".");
         if (dotIndex > 0) {
             String structName = name.substring(0, dotIndex);
-            for (ValueDescriptor v : descriptors) {
+            for (ValueDescriptor v : objectContext.fields) {
                 if (!v.getFields().isEmpty() && v.getName().equals(structName)) {
                     RecordedObject child = getValue(structName);
                     if (child != null) {
@@ -135,8 +235,7 @@ public class RecordedObject {
      * <p>
      * Example
      *
-     * <pre>
-     * <code>
+     * <pre>{@literal
      * if (event.hasField("intValue")) {
      *   int intValue = event.getValue("intValue");
      *   System.out.println("Int value: " + intValue);
@@ -149,10 +248,9 @@ public class RecordedObject {
      *
      * if (event.hasField("sampledThread")) {
      *   RecordedThread sampledThread = event.getValue("sampledThread");
-     *   System.out.println("Sampled thread: " + sampledThread.getName());
+     *   System.out.println("Sampled thread: " + sampledThread.getJavaName());
      * }
-     * </code>
-     * </pre>
+     * }</pre>
      *
      * @param <T> the return type
      * @param  name of the field to get, not {@code null}
@@ -163,18 +261,22 @@ public class RecordedObject {
      * @see #hasField(String)
      *
      */
-    final public <T> T getValue(String name) {
+    public final <T> T getValue(String name) {
         @SuppressWarnings("unchecked")
         T t = (T) getValue(name, false);
         return t;
     }
 
+    Object objectAt(int index) {
+        return objects[index];
+    }
+
     private Object getValue(String name, boolean allowUnsigned) {
         Objects.requireNonNull(name);
         int index = 0;
-        for (ValueDescriptor v : descriptors) {
+        for (ValueDescriptor v : objectContext.fields) {
             if (name.equals(v.getName())) {
-                Object object = objects[index];
+                Object object = objectAt(index);
                 if (object == null) {
                     // error or missing
                     return null;
@@ -200,7 +302,7 @@ public class RecordedObject {
                         return structifyArray(v, array, 0);
                     }
                     // struct
-                    return new RecordedObject(v.getFields(), (Object[]) object, timeConverter);
+                    return new RecordedObject(objectContext.getInstance(v), (Object[]) object);
                 }
             }
             index++;
@@ -209,7 +311,7 @@ public class RecordedObject {
         int dotIndex = name.indexOf(".");
         if (dotIndex > 0) {
             String structName = name.substring(0, dotIndex);
-            for (ValueDescriptor v : descriptors) {
+            for (ValueDescriptor v : objectContext.fields) {
                 if (!v.getFields().isEmpty() && v.getName().equals(structName)) {
                     RecordedObject child = getValue(structName);
                     String subName = name.substring(dotIndex + 1);
@@ -261,7 +363,7 @@ public class RecordedObject {
     private <T> T getTypedValue(String name, String typeName) {
         Objects.requireNonNull(name);
         // Validate name and type first
-        getValueDescriptor(descriptors, name, typeName);
+        getValueDescriptor(objectContext.fields, name, typeName);
         return getValue(name);
     }
 
@@ -270,15 +372,16 @@ public class RecordedObject {
             return null;
         }
         Object[] structArray = new Object[array.length];
+        ObjectContext objContext = objectContext.getInstance(v);
         for (int i = 0; i < structArray.length; i++) {
             Object arrayElement = array[i];
             if (dimension == 0) {
                 // No general way to handle structarrays
                 // without invoking ObjectFactory for every instance (which may require id)
                 if (isStackFrameType(v.getTypeName())) {
-                    structArray[i] = new RecordedFrame(v.getFields(), (Object[]) arrayElement, timeConverter);
+                    structArray[i] = new RecordedFrame(objContext, (Object[]) arrayElement);
                 } else {
-                    structArray[i] = new RecordedObject(v.getFields(), (Object[]) arrayElement, timeConverter);
+                    structArray[i] = new RecordedObject(objContext, (Object[]) arrayElement);
                 }
             } else {
                 structArray[i] = structifyArray(v, (Object[]) arrayElement, dimension - 1);
@@ -303,7 +406,7 @@ public class RecordedObject {
      * @return the fields, not {@code null}
      */
     public List<ValueDescriptor> getFields() {
-        return descriptors;
+        return objectContext.fields;
     }
 
     /**
@@ -327,8 +430,8 @@ public class RecordedObject {
      */
     public final boolean getBoolean(String name) {
         Object o = getValue(name);
-        if (o instanceof Boolean) {
-            return ((Boolean) o).booleanValue();
+        if (o instanceof Boolean b) {
+            return b;
         }
         throw newIllegalArgumentException(name, "boolean");
     }
@@ -354,8 +457,8 @@ public class RecordedObject {
      */
     public final byte getByte(String name) {
         Object o = getValue(name);
-        if (o instanceof Byte) {
-            return ((Byte) o).byteValue();
+        if (o instanceof Byte b) {
+            return b;
         }
         throw newIllegalArgumentException(name, "byte");
     }
@@ -381,8 +484,8 @@ public class RecordedObject {
      */
     public final char getChar(String name) {
         Object o = getValue(name);
-        if (o instanceof Character) {
-            return ((Character) o).charValue();
+        if (o instanceof Character c) {
+            return c;
         }
 
         throw newIllegalArgumentException(name, "char");
@@ -412,23 +515,23 @@ public class RecordedObject {
      *         conversion
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final short getShort(String name) {
         Object o = getValue(name, true);
-        if (o instanceof Short) {
-            return ((Short) o).shortValue();
+        if (o instanceof Short s) {
+            return s;
         }
-        if (o instanceof Byte) {
-            return ((Byte) o).byteValue();
+        if (o instanceof Byte b) {
+            return b;
         }
-        if (o instanceof UnsignedValue) {
-            Object u = ((UnsignedValue) o).value();
-            if (u instanceof Short) {
-                return ((Short) u).shortValue();
+        if (o instanceof UnsignedValue unsigned) {
+            Object u = unsigned.value();
+            if (u instanceof Short s) {
+                return s;
             }
-            if (u instanceof Byte) {
-                return (short) Byte.toUnsignedInt(((Byte) u));
+            if (u instanceof Byte b) {
+                return (short) Byte.toUnsignedInt(b);
             }
         }
         throw newIllegalArgumentException(name, "short");
@@ -459,32 +562,32 @@ public class RecordedObject {
      *         conversion
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final int getInt(String name) {
         Object o = getValue(name, true);
-        if (o instanceof Integer) {
-            return ((Integer) o).intValue();
+        if (o instanceof Integer i) {
+            return i;
         }
-        if (o instanceof Short) {
-            return ((Short) o).intValue();
+        if (o instanceof Short s) {
+            return s;
         }
-        if (o instanceof Character) {
-            return ((Character) o).charValue();
+        if (o instanceof Character c) {
+            return c;
         }
-        if (o instanceof Byte) {
-            return ((Byte) o).intValue();
+        if (o instanceof Byte b) {
+            return b;
         }
-        if (o instanceof UnsignedValue) {
-            Object u = ((UnsignedValue) o).value();
-            if (u instanceof Integer) {
-                return ((Integer) u).intValue();
+        if (o instanceof UnsignedValue unsigned) {
+            Object u = unsigned.value();
+            if (u instanceof Integer i) {
+                return i;
             }
-            if (u instanceof Short) {
-                return Short.toUnsignedInt(((Short) u));
+            if (u instanceof Short s) {
+                return Short.toUnsignedInt(s);
             }
-            if (u instanceof Byte) {
-                return Byte.toUnsignedInt(((Byte) u));
+            if (u instanceof Byte b) {
+                return Byte.toUnsignedInt(b);
             }
         }
         throw newIllegalArgumentException(name, "int");
@@ -512,27 +615,27 @@ public class RecordedObject {
      *         conversion
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final float getFloat(String name) {
         Object o = getValue(name);
-        if (o instanceof Float) {
-            return ((Float) o).floatValue();
+        if (o instanceof Float f) {
+            return f;
         }
-        if (o instanceof Long) {
-            return ((Long) o).floatValue();
+        if (o instanceof Long l) {
+            return l;
         }
-        if (o instanceof Integer) {
-            return ((Integer) o).floatValue();
+        if (o instanceof Integer i) {
+            return i;
         }
-        if (o instanceof Short) {
-            return ((Short) o).floatValue();
+        if (o instanceof Short s) {
+            return s;
         }
-        if (o instanceof Byte) {
-            return ((Byte) o).byteValue();
+        if (o instanceof Byte b) {
+            return b;
         }
-        if (o instanceof Character) {
-            return ((Character) o).charValue();
+        if (o instanceof Character c) {
+            return c;
         }
         throw newIllegalArgumentException(name, "float");
     }
@@ -562,35 +665,35 @@ public class RecordedObject {
      *         conversion
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final long getLong(String name) {
         Object o = getValue(name, true);
-        if (o instanceof Long) {
-            return ((Long) o).longValue();
+        if (o instanceof Long l) {
+            return l;
         }
-        if (o instanceof Integer) {
-            return ((Integer) o).longValue();
+        if (o instanceof Integer i) {
+            return i;
         }
-        if (o instanceof Short) {
-            return ((Short) o).longValue();
+        if (o instanceof Short s) {
+            return s;
         }
-        if (o instanceof Character) {
-            return ((Character) o).charValue();
+        if (o instanceof Character c) {
+            return c;
         }
-        if (o instanceof Byte) {
-            return ((Byte) o).longValue();
+        if (o instanceof Byte b) {
+            return b.longValue();
         }
-        if (o instanceof UnsignedValue) {
-            Object u = ((UnsignedValue) o).value();
-            if (u instanceof Integer) {
-                return Integer.toUnsignedLong(((Integer) u));
+        if (o instanceof UnsignedValue unsigned) {
+            Object u = unsigned.value();
+            if (u instanceof Integer i) {
+                return Integer.toUnsignedLong(i);
             }
-            if (u instanceof Short) {
-                return Short.toUnsignedLong(((Short) u));
+            if (u instanceof Short s) {
+                return Short.toUnsignedLong(s);
             }
-            if (u instanceof Byte) {
-                return Byte.toUnsignedLong(((Byte) u));
+            if (u instanceof Byte b) {
+                return Byte.toUnsignedLong(b);
             }
         }
         throw newIllegalArgumentException(name, "long");
@@ -618,30 +721,30 @@ public class RecordedObject {
      *         conversion
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final double getDouble(String name) {
         Object o = getValue(name);
-        if (o instanceof Double) {
-            return ((Double) o).doubleValue();
+        if (o instanceof Double d) {
+            return d.doubleValue();
         }
-        if (o instanceof Float) {
-            return ((Float) o).doubleValue();
+        if (o instanceof Float f) {
+            return f.doubleValue();
         }
-        if (o instanceof Long) {
-            return ((Long) o).doubleValue();
+        if (o instanceof Long l) {
+            return l.doubleValue();
         }
-        if (o instanceof Integer) {
-            return ((Integer) o).doubleValue();
+        if (o instanceof Integer i) {
+            return i.doubleValue();
         }
-        if (o instanceof Short) {
-            return ((Short) o).doubleValue();
+        if (o instanceof Short s) {
+            return s.doubleValue();
         }
-        if (o instanceof Byte) {
-            return ((Byte) o).byteValue();
+        if (o instanceof Byte b) {
+            return b.doubleValue();
         }
-        if (o instanceof Character) {
-            return ((Character) o).charValue();
+        if (o instanceof Character c) {
+            return c;
         }
         throw newIllegalArgumentException(name, "double");
     }
@@ -663,7 +766,7 @@ public class RecordedObject {
      *         isn't of type {@code String}
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final String getString(String name) {
         return getTypedValue(name, "java.lang.String");
@@ -690,42 +793,45 @@ public class RecordedObject {
      *         value can't be converted to a {@code Duration} object
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final Duration getDuration(String name) {
         Object o = getValue(name);
-        if (o instanceof Long) {
-            return getDuration(((Long) o).longValue(), name);
+        if (o instanceof Long l) {
+            return getDuration(l, name);
         }
-        if (o instanceof Integer) {
-            return getDuration(((Integer) o).longValue(), name);
+        if (o instanceof Integer i) {
+            return getDuration(i, name);
         }
-        if (o instanceof Short) {
-            return getDuration(((Short) o).longValue(), name);
+        if (o instanceof Short s) {
+            return getDuration(s, name);
         }
-        if (o instanceof Character) {
-            return getDuration(((Character) o).charValue(), name);
+        if (o instanceof Character c) {
+            return getDuration(c, name);
         }
-        if (o instanceof Byte) {
-            return getDuration(((Byte) o).longValue(), name);
+        if (o instanceof Byte b) {
+            return getDuration(b, name);
         }
-        if (o instanceof UnsignedValue) {
-            Object u = ((UnsignedValue) o).value();
-            if (u instanceof Integer) {
-                return getDuration(Integer.toUnsignedLong((Integer) u), name);
+        if (o instanceof UnsignedValue unsigned) {
+            Object u = unsigned.value();
+            if (u instanceof Integer i) {
+                return getDuration(Integer.toUnsignedLong(i), name);
             }
-            if (u instanceof Short) {
-                return getDuration(Short.toUnsignedLong((Short) u), name);
+            if (u instanceof Short s) {
+                return getDuration(Short.toUnsignedLong(s), name);
             }
-            if (u instanceof Byte) {
-                return getDuration(Short.toUnsignedLong((Byte) u), name);
+            if (u instanceof Byte b) {
+                return getDuration(Short.toUnsignedLong(b), name);
             }
         }
-        throw newIllegalArgumentException(name, "java,time.Duration");
+        throw newIllegalArgumentException(name, "java.time.Duration");
     }
 
     private Duration getDuration(long timespan, String name) throws InternalError {
-        ValueDescriptor v = getValueDescriptor(descriptors, name, null);
+        ValueDescriptor v = getValueDescriptor(objectContext.fields, name, null);
+        if (timespan == Long.MIN_VALUE) {
+            return Duration.ofSeconds(Long.MIN_VALUE, 0);
+        }
         Timespan ts = v.getAnnotation(Timespan.class);
         if (ts != null) {
             switch (ts.value()) {
@@ -738,7 +844,7 @@ public class RecordedObject {
             case Timespan.NANOSECONDS:
                 return Duration.ofNanos(timespan);
             case Timespan.TICKS:
-                return Duration.ofNanos(timeConverter.convertTimespan(timespan));
+                return Duration.ofNanos(objectContext.convertTimespan(timespan));
             }
             throw new IllegalArgumentException("Attempt to get " + v.getTypeName() + " field \"" + name + "\" with illegal timespan unit " + ts.value());
         }
@@ -766,49 +872,52 @@ public class RecordedObject {
      *         value can't be converted to an {@code Instant} object
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final Instant getInstant(String name) {
         Object o = getValue(name, true);
-        if (o instanceof Long) {
-            return getInstant(((Long) o).longValue(), name);
+        if (o instanceof Long l) {
+            return getInstant(l, name);
         }
-        if (o instanceof Integer) {
-            return getInstant(((Integer) o).longValue(), name);
+        if (o instanceof Integer i) {
+            return getInstant(i, name);
         }
-        if (o instanceof Short) {
-            return getInstant(((Short) o).longValue(), name);
+        if (o instanceof Short s) {
+            return getInstant(s, name);
         }
-        if (o instanceof Character) {
-            return getInstant(((Character) o).charValue(), name);
+        if (o instanceof Character c) {
+            return getInstant(c, name);
         }
-        if (o instanceof Byte) {
-            return getInstant(((Byte) o).longValue(), name);
+        if (o instanceof Byte b) {
+            return getInstant(b, name);
         }
-        if (o instanceof UnsignedValue) {
-            Object u = ((UnsignedValue) o).value();
-            if (u instanceof Integer) {
-                return getInstant(Integer.toUnsignedLong((Integer) u), name);
+        if (o instanceof UnsignedValue unsigned) {
+            Object u = unsigned.value();
+            if (u instanceof Integer i) {
+                return getInstant(Integer.toUnsignedLong(i), name);
             }
-            if (u instanceof Short) {
-                return getInstant(Short.toUnsignedLong((Short) u), name);
+            if (u instanceof Short s) {
+                return getInstant(Short.toUnsignedLong(s), name);
             }
-            if (u instanceof Byte) {
-                return getInstant(Short.toUnsignedLong((Byte) u), name);
+            if (u instanceof Byte b) {
+                return getInstant(Short.toUnsignedLong(b), name);
             }
         }
-        throw newIllegalArgumentException(name, "java,time.Instant");
+        throw newIllegalArgumentException(name, "java.time.Instant");
     }
 
     private Instant getInstant(long timestamp, String name) {
-        ValueDescriptor v = getValueDescriptor(descriptors, name, null);
+        ValueDescriptor v = getValueDescriptor(objectContext.fields, name, null);
         Timestamp ts = v.getAnnotation(Timestamp.class);
         if (ts != null) {
+            if (timestamp == Long.MIN_VALUE) {
+                return Instant.MIN;
+            }
             switch (ts.value()) {
             case Timestamp.MILLISECONDS_SINCE_EPOCH:
                 return Instant.ofEpochMilli(timestamp);
             case Timestamp.TICKS:
-                return Instant.ofEpochSecond(0, timeConverter.convertTimestamp(timestamp));
+                return Instant.ofEpochSecond(0, objectContext.convertTimestamp(timestamp));
             }
             throw new IllegalArgumentException("Attempt to get " + v.getTypeName() + " field \"" + name + "\" with illegal timestamp unit " + ts.value());
         }
@@ -833,7 +942,7 @@ public class RecordedObject {
      *         isn't of type {@code Class}
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final RecordedClass getClass(String name) {
         return getTypedValue(name, "java.lang.Class");
@@ -857,7 +966,7 @@ public class RecordedObject {
      *         isn't of type {@code Thread}
      *
      * @see #hasField(String)
-     * @set #getValue(String)
+     * @see #getValue(String)
      */
     public final RecordedThread getThread(String name) {
         return getTypedValue(name, "java.lang.Thread");
@@ -869,21 +978,26 @@ public class RecordedObject {
      * @return textual description of this object
      */
     @Override
-    final public String toString() {
+    public final String toString() {
         StringWriter s = new StringWriter();
         PrettyWriter p = new PrettyWriter(new PrintWriter(s));
-        try {
-            if (this instanceof RecordedEvent) {
-                p.print((RecordedEvent) this);
-            } else {
-                p.print(this, "");
-            }
-
-        } catch (IOException e) {
-            // Ignore, should not happen with StringWriter
+        p.setStackDepth(5);
+        if (this instanceof RecordedEvent event) {
+            p.print(event);
+        } else {
+            p.print(this, "");
         }
-        p.flush();
+        p.flush(true);
         return s.toString();
+    }
+
+    // package private for now. Used by EventWriter
+    private OffsetDateTime getOffsetDateTime(String name) {
+        Instant instant = getInstant(name);
+        if (instant.equals(Instant.MIN)) {
+            return OffsetDateTime.MIN;
+        }
+        return OffsetDateTime.ofInstant(getInstant(name), objectContext.getZoneOffset());
     }
 
     private static IllegalArgumentException newIllegalArgumentException(String name, String typeName) {

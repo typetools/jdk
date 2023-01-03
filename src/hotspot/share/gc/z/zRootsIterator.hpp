@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,162 +24,101 @@
 #ifndef SHARE_GC_Z_ZROOTSITERATOR_HPP
 #define SHARE_GC_Z_ZROOTSITERATOR_HPP
 
-#include "gc/shared/oopStorageParState.hpp"
-#include "memory/allocation.hpp"
+#include "gc/shared/oopStorageSetParState.hpp"
+#include "logging/log.hpp"
 #include "memory/iterator.hpp"
-#include "utilities/globalDefinitions.hpp"
+#include "runtime/threadSMR.hpp"
 
-typedef OopStorage::ParState<false /* concurrent */, false /* is_const */> ZOopStorageIterator;
-typedef OopStorage::ParState<true /* concurrent */, false /* is_const */>  ZConcurrentOopStorageIterator;
-
-template <typename T, void (T::*F)(OopClosure*)>
-class ZSerialOopsDo {
+template <typename Iterator>
+class ZParallelApply {
 private:
-  T* const      _iter;
-  volatile bool _claimed;
-
-public:
-  ZSerialOopsDo(T* iter);
-  void oops_do(OopClosure* cl);
-};
-
-template <typename T, void (T::*F)(OopClosure*)>
-class ZParallelOopsDo {
-private:
-  T* const      _iter;
+  Iterator      _iter;
   volatile bool _completed;
 
 public:
-  ZParallelOopsDo(T* iter);
-  void oops_do(OopClosure* cl);
+  ZParallelApply() :
+      _iter(),
+      _completed(false) {}
+
+  template <typename ClosureType>
+  void apply(ClosureType* cl);
+
+  Iterator& iter() {
+    return _iter;
+  }
 };
 
-template <typename T, void (T::*F)(BoolObjectClosure*, OopClosure*)>
-class ZSerialWeakOopsDo {
-private:
-  T* const      _iter;
-  volatile bool _claimed;
+class ZStrongOopStorageSetIterator {
+  OopStorageSetStrongParState<true /* concurrent */, false /* is_const */> _iter;
 
 public:
-  ZSerialWeakOopsDo(T* iter);
-  void weak_oops_do(BoolObjectClosure* is_alive, OopClosure* cl);
+  ZStrongOopStorageSetIterator();
+
+  void apply(OopClosure* cl);
 };
 
-template <typename T, void (T::*F)(BoolObjectClosure*, OopClosure*)>
-class ZParallelWeakOopsDo {
+class ZStrongCLDsIterator {
+public:
+  void apply(CLDClosure* cl);
+};
+
+class ZJavaThreadsIterator {
 private:
-  T* const      _iter;
-  volatile bool _completed;
+  ThreadsListHandle _threads;
+  volatile uint     _claimed;
+
+  uint claim();
 
 public:
-  ZParallelWeakOopsDo(T* iter);
-  void weak_oops_do(BoolObjectClosure* is_alive, OopClosure* cl);
+  ZJavaThreadsIterator();
+
+  void apply(ThreadClosure* cl);
+};
+
+class ZNMethodsIterator {
+public:
+  ZNMethodsIterator();
+  ~ZNMethodsIterator();
+
+  void apply(NMethodClosure* cl);
 };
 
 class ZRootsIterator {
 private:
-  ZOopStorageIterator _vm_weak_handles_iter;
-  ZOopStorageIterator _jni_handles_iter;
-  ZOopStorageIterator _jni_weak_handles_iter;
-  ZOopStorageIterator _string_table_iter;
-
-  void do_universe(OopClosure* cl);
-  void do_vm_weak_handles(OopClosure* cl);
-  void do_jni_handles(OopClosure* cl);
-  void do_jni_weak_handles(OopClosure* cl);
-  void do_object_synchronizer(OopClosure* cl);
-  void do_management(OopClosure* cl);
-  void do_jvmti_export(OopClosure* cl);
-  void do_jvmti_weak_export(OopClosure* cl);
-  void do_jfr_weak(OopClosure* cl);
-  void do_system_dictionary(OopClosure* cl);
-  void do_class_loader_data_graph(OopClosure* cl);
-  void do_threads(OopClosure* cl);
-  void do_code_cache(OopClosure* cl);
-  void do_string_table(OopClosure* cl);
-
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_universe>                  _universe;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_object_synchronizer>       _object_synchronizer;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_management>                _management;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_jvmti_export>              _jvmti_export;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_jvmti_weak_export>         _jvmti_weak_export;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_jfr_weak>                  _jfr_weak;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_system_dictionary>         _system_dictionary;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_vm_weak_handles>         _vm_weak_handles;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_jni_handles>             _jni_handles;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_jni_weak_handles>        _jni_weak_handles;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_class_loader_data_graph> _class_loader_data_graph;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_threads>                 _threads;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_code_cache>              _code_cache;
-  ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_string_table>            _string_table;
+  ZParallelApply<ZStrongOopStorageSetIterator> _oop_storage_set;
+  ZParallelApply<ZStrongCLDsIterator>          _class_loader_data_graph;
+  ZParallelApply<ZJavaThreadsIterator>         _java_threads;
+  ZParallelApply<ZNMethodsIterator>            _nmethods;
 
 public:
-  ZRootsIterator();
-  ~ZRootsIterator();
+  ZRootsIterator(int cld_claim);
 
-  void oops_do(OopClosure* cl, bool visit_jvmti_weak_export = false);
+  void apply(OopClosure* cl,
+             CLDClosure* cld_cl,
+             ThreadClosure* thread_cl,
+             NMethodClosure* nm_cl);
+};
+
+class ZWeakOopStorageSetIterator {
+private:
+  OopStorageSetWeakParState<true /* concurrent */, false /* is_const */> _iter;
+
+public:
+  ZWeakOopStorageSetIterator();
+
+  void apply(OopClosure* cl);
+
+  void report_num_dead();
 };
 
 class ZWeakRootsIterator {
 private:
-  ZOopStorageIterator _vm_weak_handles_iter;
-  ZOopStorageIterator _jni_weak_handles_iter;
-  ZOopStorageIterator _string_table_iter;
-
-  void do_vm_weak_handles(BoolObjectClosure* is_alive, OopClosure* cl);
-  void do_jni_weak_handles(BoolObjectClosure* is_alive, OopClosure* cl);
-  void do_jvmti_weak_export(BoolObjectClosure* is_alive, OopClosure* cl);
-  void do_jfr_weak(BoolObjectClosure* is_alive, OopClosure* cl);
-  void do_symbol_table(BoolObjectClosure* is_alive, OopClosure* cl);
-  void do_string_table(BoolObjectClosure* is_alive, OopClosure* cl);
-
-  ZSerialWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_jvmti_weak_export>  _jvmti_weak_export;
-  ZSerialWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_jfr_weak>           _jfr_weak;
-  ZParallelWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_vm_weak_handles>  _vm_weak_handles;
-  ZParallelWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_jni_weak_handles> _jni_weak_handles;
-  ZParallelWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_symbol_table>     _symbol_table;
-  ZParallelWeakOopsDo<ZWeakRootsIterator, &ZWeakRootsIterator::do_string_table>     _string_table;
+  ZParallelApply<ZWeakOopStorageSetIterator> _oop_storage_set;
 
 public:
-  ZWeakRootsIterator();
-  ~ZWeakRootsIterator();
+  void apply(OopClosure* cl);
 
-  void weak_oops_do(BoolObjectClosure* is_alive, OopClosure* cl);
-  void oops_do(OopClosure* cl);
-};
-
-class ZConcurrentWeakRootsIterator {
-private:
-  ZConcurrentOopStorageIterator _vm_weak_handles_iter;
-  ZConcurrentOopStorageIterator _jni_weak_handles_iter;
-  ZConcurrentOopStorageIterator _string_table_iter;
-
-  void do_vm_weak_handles(OopClosure* cl);
-  void do_jni_weak_handles(OopClosure* cl);
-  void do_string_table(OopClosure* cl);
-
-  ZParallelOopsDo<ZConcurrentWeakRootsIterator, &ZConcurrentWeakRootsIterator::do_vm_weak_handles>  _vm_weak_handles;
-  ZParallelOopsDo<ZConcurrentWeakRootsIterator, &ZConcurrentWeakRootsIterator::do_jni_weak_handles> _jni_weak_handles;
-  ZParallelOopsDo<ZConcurrentWeakRootsIterator, &ZConcurrentWeakRootsIterator::do_string_table>     _string_table;
-
-public:
-  ZConcurrentWeakRootsIterator();
-  ~ZConcurrentWeakRootsIterator();
-
-  void oops_do(OopClosure* cl);
-};
-
-class ZThreadRootsIterator {
-private:
-  void do_threads(OopClosure* cl);
-
-  ZParallelOopsDo<ZThreadRootsIterator, &ZThreadRootsIterator::do_threads> _threads;
-
-public:
-  ZThreadRootsIterator();
-  ~ZThreadRootsIterator();
-
-  void oops_do(OopClosure* cl);
+  void report_num_dead();
 };
 
 #endif // SHARE_GC_Z_ZROOTSITERATOR_HPP

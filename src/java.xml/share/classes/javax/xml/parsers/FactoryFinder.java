@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -171,6 +171,7 @@ class FactoryFinder {
      * @param useBSClsLoader True if cl=null actually meant bootstrap classLoader. This parameter
      * is needed since DocumentBuilderFactory/SAXParserFactory defined null as context classLoader.
      */
+    @SuppressWarnings("removal")
     static <T> T newInstance(Class<T> type, String className, @Nullable ClassLoader cl,
                              boolean doFallback, boolean useBSClsLoader)
         throws FactoryConfigurationError
@@ -283,7 +284,7 @@ class FactoryFinder {
      *
      * @return instance of provider class if found or null
      */
-    @CFComment("nullness: @Nullable is commented out because of https://github.com/typetools/checker-framework/issues/1863")
+    @SuppressWarnings("removal")
     private static <T> @Nullable T findServiceProvider(final Class<T> type) {
         try {
             return AccessController.doPrivileged(new PrivilegedAction</*@ Nullable*/ T>() {

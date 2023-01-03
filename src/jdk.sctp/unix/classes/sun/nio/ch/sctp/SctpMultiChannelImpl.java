@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,6 +53,7 @@ import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpMultiChannel;
 import com.sun.nio.sctp.SctpSocketOption;
+import sun.net.util.IPAddressUtil;
 import sun.nio.ch.DirectBuffer;
 import sun.nio.ch.NativeThread;
 import sun.nio.ch.IOStatus;
@@ -148,6 +149,7 @@ public class SctpMultiChannelImpl extends SctpMultiChannel
                     InetSocketAddress isa = (local == null) ?
                         new InetSocketAddress(0) : Net.checkAddress(local);
 
+                    @SuppressWarnings("removal")
                     SecurityManager sm = System.getSecurityManager();
                     if (sm != null)
                         sm.checkListen(isa.getPort());
@@ -509,6 +511,7 @@ public class SctpMultiChannelImpl extends SctpMultiChannel
                                     resultContainer.getMessageInfo();
                             info.setAssociation(lookupAssociation(info.
                                     associationID()));
+                            @SuppressWarnings("removal")
                             SecurityManager sm = System.getSecurityManager();
                             if (sm != null) {
                                 InetSocketAddress isa  = (InetSocketAddress)info.address();
@@ -816,6 +819,7 @@ public class SctpMultiChannelImpl extends SctpMultiChannel
                             assocId = association.associationID();
 
                         } else { /* must be new association */
+                            @SuppressWarnings("removal")
                             SecurityManager sm = System.getSecurityManager();
                             if (sm != null)
                                 sm.checkConnect(addr.getAddress().getHostAddress(),
@@ -892,6 +896,9 @@ public class SctpMultiChannelImpl extends SctpMultiChannel
         if (target != null) {
             InetSocketAddress isa = Net.checkAddress(target);
             addr = isa.getAddress();
+            if (addr.isLinkLocalAddress()) {
+                addr = IPAddressUtil.toScopedAddress(addr);
+            }
             port = isa.getPort();
         }
         int pos = bb.position();
@@ -990,16 +997,5 @@ public class SctpMultiChannelImpl extends SctpMultiChannel
             throws IOException {
         return SctpChannelImpl.send0(fd, address, length, addr, port, assocId,
                 streamNumber, unordered, ppid);
-    }
-
-    static {
-        IOUtil.load();   /* loads nio & net native libraries */
-        java.security.AccessController.doPrivileged(
-            new java.security.PrivilegedAction<Void>() {
-                public Void run() {
-                    System.loadLibrary("sctp");
-                    return null;
-                }
-            });
     }
 }

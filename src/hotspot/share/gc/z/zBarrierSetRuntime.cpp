@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,23 @@
 #include "precompiled.hpp"
 #include "gc/z/zBarrier.inline.hpp"
 #include "gc/z/zBarrierSetRuntime.hpp"
+#include "oops/access.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 
 JRT_LEAF(oopDesc*, ZBarrierSetRuntime::load_barrier_on_oop_field_preloaded(oopDesc* o, oop* p))
   return ZBarrier::load_barrier_on_oop_field_preloaded(p, o);
+JRT_END
+
+JRT_LEAF(oopDesc*, ZBarrierSetRuntime::weak_load_barrier_on_oop_field_preloaded(oopDesc* o, oop* p))
+  return ZBarrier::weak_load_barrier_on_oop_field_preloaded(p, o);
+JRT_END
+
+JRT_LEAF(oopDesc*, ZBarrierSetRuntime::weak_load_barrier_on_weak_oop_field_preloaded(oopDesc* o, oop* p))
+  return ZBarrier::weak_load_barrier_on_weak_oop_field_preloaded(p, o);
+JRT_END
+
+JRT_LEAF(oopDesc*, ZBarrierSetRuntime::weak_load_barrier_on_phantom_oop_field_preloaded(oopDesc* o, oop* p))
+  return ZBarrier::weak_load_barrier_on_phantom_oop_field_preloaded(p, o);
 JRT_END
 
 JRT_LEAF(oopDesc*, ZBarrierSetRuntime::load_barrier_on_weak_oop_field_preloaded(oopDesc* o, oop* p))
@@ -42,13 +55,29 @@ JRT_LEAF(void, ZBarrierSetRuntime::load_barrier_on_oop_array(oop* p, size_t leng
   ZBarrier::load_barrier_on_oop_array(p, length);
 JRT_END
 
+JRT_LEAF(void, ZBarrierSetRuntime::clone(oopDesc* src, oopDesc* dst, size_t size))
+  HeapAccess<>::clone(src, dst, size);
+JRT_END
+
 address ZBarrierSetRuntime::load_barrier_on_oop_field_preloaded_addr(DecoratorSet decorators) {
   if (decorators & ON_PHANTOM_OOP_REF) {
-    return load_barrier_on_phantom_oop_field_preloaded_addr();
+    if (decorators & AS_NO_KEEPALIVE) {
+      return weak_load_barrier_on_phantom_oop_field_preloaded_addr();
+    } else {
+      return load_barrier_on_phantom_oop_field_preloaded_addr();
+    }
   } else if (decorators & ON_WEAK_OOP_REF) {
-    return load_barrier_on_weak_oop_field_preloaded_addr();
+    if (decorators & AS_NO_KEEPALIVE) {
+      return weak_load_barrier_on_weak_oop_field_preloaded_addr();
+    } else {
+      return load_barrier_on_weak_oop_field_preloaded_addr();
+    }
   } else {
-    return load_barrier_on_oop_field_preloaded_addr();
+    if (decorators & AS_NO_KEEPALIVE) {
+      return weak_load_barrier_on_oop_field_preloaded_addr();
+    } else {
+      return load_barrier_on_oop_field_preloaded_addr();
+    }
   }
 }
 
@@ -64,6 +93,22 @@ address ZBarrierSetRuntime::load_barrier_on_phantom_oop_field_preloaded_addr() {
   return reinterpret_cast<address>(load_barrier_on_phantom_oop_field_preloaded);
 }
 
+address ZBarrierSetRuntime::weak_load_barrier_on_oop_field_preloaded_addr() {
+  return reinterpret_cast<address>(weak_load_barrier_on_oop_field_preloaded);
+}
+
+address ZBarrierSetRuntime::weak_load_barrier_on_weak_oop_field_preloaded_addr() {
+  return reinterpret_cast<address>(weak_load_barrier_on_weak_oop_field_preloaded);
+}
+
+address ZBarrierSetRuntime::weak_load_barrier_on_phantom_oop_field_preloaded_addr() {
+  return reinterpret_cast<address>(weak_load_barrier_on_phantom_oop_field_preloaded);
+}
+
 address ZBarrierSetRuntime::load_barrier_on_oop_array_addr() {
   return reinterpret_cast<address>(load_barrier_on_oop_array);
+}
+
+address ZBarrierSetRuntime::clone_addr() {
+  return reinterpret_cast<address>(clone);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2018 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 
 #include "classfile/classLoaderData.inline.hpp"
+#include "classfile/classLoaderDataGraph.hpp"
 #include "classfile/classLoaderHierarchyDCmd.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
@@ -128,7 +129,7 @@ public:
 
 class LoaderTreeNode : public ResourceObj {
 
-  // We walk the CLDG and, for each CLD which is non-anonymous, add
+  // We walk the CLDG and, for each CLD which is findable, add
   // a tree node.
   // To add a node we need its parent node; if the parent node does not yet
   // exist - because we have not yet encountered the CLD for the parent loader -
@@ -145,8 +146,8 @@ class LoaderTreeNode : public ResourceObj {
   LoadedClassInfo* _classes;
   int _num_classes;
 
-  LoadedClassInfo* _anon_classes;
-  int _num_anon_classes;
+  LoadedClassInfo* _hidden_classes;
+  int _num_hidden_classes;
 
   // In default view, similar tree nodes (same loader class, same name or no name)
   // are folded into each other to make the output more readable.
@@ -176,6 +177,7 @@ class LoaderTreeNode : public ResourceObj {
     if (_cld->is_the_null_class_loader_data()) {
       st->print(" <bootstrap>");
     } else {
+      assert(!_cld->has_class_mirror_holder(), "_cld must be the primary cld");
       if (loader_name != NULL) {
         st->print(" \"%s\",", loader_name->as_C_string());
       }
@@ -219,7 +221,8 @@ class LoaderTreeNode : public ResourceObj {
       if (print_classes) {
         if (_classes != NULL) {
           for (LoadedClassInfo* lci = _classes; lci; lci = lci->_next) {
-            // Non-anonymous classes should live in the primary CLD of its loader
+            // non-strong hidden classes should not live in
+            // the primary CLD of their loaders.
             assert(lci->_cld == _cld, "must be");
 
             branchtracker.print(st);
@@ -248,16 +251,17 @@ class LoaderTreeNode : public ResourceObj {
           st->cr();
         }
 
-        if (_anon_classes != NULL) {
-          for (LoadedClassInfo* lci = _anon_classes; lci; lci = lci->_next) {
+        if (_hidden_classes != NULL) {
+          for (LoadedClassInfo* lci = _hidden_classes; lci; lci = lci->_next) {
             branchtracker.print(st);
-            if (lci == _anon_classes) { // first iteration
-              st->print("%*s ", indentation, "Anonymous Classes:");
+            if (lci == _hidden_classes) { // first iteration
+              st->print("%*s ", indentation, "Hidden Classes:");
             } else {
               st->print("%*s ", indentation, "");
             }
             st->print("%s", lci->_klass->external_name());
-            // For anonymous classes, also print CLD if verbose. Should be a different one than the primary CLD.
+            // For non-strong hidden classes, also print CLD if verbose. Should be a
+            // different one than the primary CLD.
             assert(lci->_cld != _cld, "must be");
             if (verbose) {
               st->print("  (Loader Data: " PTR_FORMAT ")", p2i(lci->_cld));
@@ -266,7 +270,8 @@ class LoaderTreeNode : public ResourceObj {
           }
           branchtracker.print(st);
           st->print("%*s ", indentation, "");
-          st->print_cr("(%u anonymous class%s)", _num_anon_classes, (_num_anon_classes == 1) ? "" : "es");
+          st->print_cr("(%u hidden class%s)", _num_hidden_classes,
+                       (_num_hidden_classes == 1) ? "" : "es");
 
           // Empty line
           branchtracker.print(st);
@@ -299,8 +304,8 @@ public:
 
   LoaderTreeNode(const oop loader_oop)
     : _loader_oop(loader_oop), _cld(NULL), _child(NULL), _next(NULL),
-      _classes(NULL), _anon_classes(NULL), _num_classes(0), _num_anon_classes(0),
-      _num_folded(0)
+      _classes(NULL), _num_classes(0), _hidden_classes(NULL),
+      _num_hidden_classes(0), _num_folded(0)
     {}
 
   void set_cld(const ClassLoaderData* cld) {
@@ -318,15 +323,21 @@ public:
     _next = info;
   }
 
-  void add_classes(LoadedClassInfo* first_class, int num_classes, bool anonymous) {
-    LoadedClassInfo** p_list_to_add_to = anonymous ? &_anon_classes : &_classes;
+  void add_classes(LoadedClassInfo* first_class, int num_classes, bool has_class_mirror_holder) {
+    LoadedClassInfo** p_list_to_add_to;
+    bool is_hidden = first_class->_klass->is_hidden();
+    if (has_class_mirror_holder) {
+      p_list_to_add_to = &_hidden_classes;
+    } else {
+      p_list_to_add_to = &_classes;
+    }
     // Search tail.
     while ((*p_list_to_add_to) != NULL) {
       p_list_to_add_to = &(*p_list_to_add_to)->_next;
     }
     *p_list_to_add_to = first_class;
-    if (anonymous) {
-      _num_anon_classes += num_classes;
+    if (has_class_mirror_holder) {
+      _num_hidden_classes += num_classes;
     } else {
       _num_classes += num_classes;
     }
@@ -420,7 +431,7 @@ class LoaderInfoScanClosure : public CLDClosure {
     LoadedClassCollectClosure lccc(cld);
     const_cast<ClassLoaderData*>(cld)->classes_do(&lccc);
     if (lccc._num_classes > 0) {
-      info->add_classes(lccc._list, lccc._num_classes, cld->is_anonymous());
+      info->add_classes(lccc._list, lccc._num_classes, cld->has_class_mirror_holder());
     }
   }
 
@@ -470,7 +481,7 @@ public:
   void do_cld (ClassLoaderData* cld) {
 
     // We do not display unloading loaders, for now.
-    if (cld->is_unloading()) {
+    if (!cld->is_alive()) {
       return;
     }
 
@@ -480,7 +491,7 @@ public:
     assert(info != NULL, "must be");
 
     // Update CLD in node, but only if this is the primary CLD for this loader.
-    if (cld->is_anonymous() == false) {
+    if (cld->has_class_mirror_holder() == false) {
       assert(info->cld() == NULL, "there should be only one primary CLD per loader");
       info->set_cld(cld);
     }
@@ -514,7 +525,7 @@ public:
     assert(SafepointSynchronize::is_at_safepoint(), "must be a safepoint");
     ResourceMark rm;
     LoaderInfoScanClosure cl (_show_classes, _verbose);
-    ClassLoaderDataGraph::cld_do(&cl);
+    ClassLoaderDataGraph::loaded_cld_do(&cl);
     // In non-verbose and non-show-classes mode, attempt to fold the tree.
     if (_fold) {
       if (!_verbose && !_show_classes) {

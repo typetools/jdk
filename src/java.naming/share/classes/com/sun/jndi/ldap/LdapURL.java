@@ -62,7 +62,7 @@ import com.sun.jndi.toolkit.url.UrlUtil;
  * This class also supports ldaps URLs.
  */
 
-final public class LdapURL extends Uri {
+public final class LdapURL extends Uri {
 
     private boolean useSsl = false;
     private String DN = null;
@@ -197,7 +197,7 @@ final public class LdapURL extends Uri {
 
         // path begins with a '/' or is empty
 
-        if (path.equals("")) {
+        if (path.isEmpty()) {
             return;
         }
 

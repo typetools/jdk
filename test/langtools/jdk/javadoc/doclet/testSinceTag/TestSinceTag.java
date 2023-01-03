@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,14 +23,15 @@
 
 /*
  * @test
- * @bug      7180906 8026567
+ * @bug      7180906 8026567 8239804
  * @summary  Test to make sure that the since tag works correctly
- * @author   Bhavesh Patel
- * @library  ../lib
+ * @library  ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build    JavadocTester
+ * @build    javadoc.tester.*
  * @run main TestSinceTag
  */
+
+import javadoc.tester.JavadocTester;
 
 public class TestSinceTag extends JavadocTester {
 
@@ -41,7 +42,7 @@ public class TestSinceTag extends JavadocTester {
     }
 
     @Test
-    void testSince() {
+    public void testSince() {
         javadoc("-d", "out-since",
                 "-sourcepath", testSrc,
                 "pkg1");
@@ -51,7 +52,7 @@ public class TestSinceTag extends JavadocTester {
     }
 
     @Test
-    void testNoSince() {
+    public void testNoSince() {
         javadoc("-d", "out-nosince",
                 "-sourcepath", testSrc,
                 "-nosince",
@@ -63,13 +64,15 @@ public class TestSinceTag extends JavadocTester {
 
     void checkSince(boolean on) {
         checkOutput("pkg1/C1.html", on,
-                "<dl>\n"
-                + "<dt><span class=\"simpleTagLabel\">Since:</span></dt>\n"
-                + "<dd>JDK1.0</dd>");
+                """
+                    <dl class="notes">
+                    <dt>Since:</dt>
+                    <dd>JDK1.0</dd>""");
 
         checkOutput("serialized-form.html", on,
-                "<dl>\n"
-                + "<dt><span class=\"simpleTagLabel\">Since:</span></dt>\n"
-                + "<dd>1.4</dd>");
+                """
+                    <dl class="notes">
+                    <dt>Since:</dt>
+                    <dd>1.4</dd>""");
     }
 }

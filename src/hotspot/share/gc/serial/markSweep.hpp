@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SERIAL_MARKSWEEP_HPP
-#define SHARE_VM_GC_SERIAL_MARKSWEEP_HPP
+#ifndef SHARE_GC_SERIAL_MARKSWEEP_HPP
+#define SHARE_GC_SERIAL_MARKSWEEP_HPP
 
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/genOopClosures.hpp"
 #include "gc/shared/taskqueue.hpp"
 #include "memory/iterator.hpp"
-#include "oops/markOop.hpp"
+#include "oops/markWord.hpp"
 #include "oops/oop.hpp"
 #include "runtime/timer.hpp"
 #include "utilities/growableArray.hpp"
@@ -56,7 +56,7 @@ class MarkSweep : AllStatic {
   //
   // Inline closure decls
   //
-  class FollowRootClosure: public BasicOopsInGenClosure {
+  class FollowRootClosure: public BasicOopIterateClosure {
    public:
     virtual void do_oop(oop* p);
     virtual void do_oop(narrowOop* p);
@@ -100,7 +100,7 @@ class MarkSweep : AllStatic {
   static Stack<ObjArrayTask, mtGC>             _objarray_stack;
 
   // Space for storing/restoring mark word
-  static Stack<markOop, mtGC>                  _preserved_mark_stack;
+  static Stack<markWord, mtGC>                 _preserved_mark_stack;
   static Stack<oop, mtGC>                      _preserved_oop_stack;
   static size_t                          _preserved_count;
   static size_t                          _preserved_count_max;
@@ -137,7 +137,7 @@ class MarkSweep : AllStatic {
   static STWGCTimer* gc_timer() { return _gc_timer; }
   static SerialOldTracer* gc_tracer() { return _gc_tracer; }
 
-  static void preserve_mark(oop p, markOop mark);
+  static void preserve_mark(oop p, markWord mark);
                                 // Save the mark word so it can be restored later
   static void adjust_marks();   // Adjust the pointers in the preserved marks table
   static void restore_marks();  // Restore the marks that we saved in preserve_mark
@@ -185,24 +185,21 @@ public:
   }
 };
 
-class AdjustPointerClosure: public BasicOopsInGenClosure {
+class AdjustPointerClosure: public BasicOopIterateClosure {
  public:
   template <typename T> void do_oop_work(T* p);
   virtual void do_oop(oop* p);
   virtual void do_oop(narrowOop* p);
   virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
-
-  // This closure provides its own oop verification code.
-  debug_only(virtual bool should_verify_oops() { return false; })
 };
 
 class PreservedMark {
 private:
   oop _obj;
-  markOop _mark;
+  markWord _mark;
 
 public:
-  void init(oop obj, markOop mark) {
+  void init(oop obj, markWord mark) {
     _obj = obj;
     _mark = mark;
   }
@@ -211,4 +208,4 @@ public:
   void restore();
 };
 
-#endif // SHARE_VM_GC_SERIAL_MARKSWEEP_HPP
+#endif // SHARE_GC_SERIAL_MARKSWEEP_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import java.util.Formatter;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
@@ -69,6 +70,7 @@ class ResourceBundleGenerator implements BundleGenerator {
     private static final String META_VALUE_PREFIX = "metaValue_";
 
     @Override
+    @SuppressWarnings("unchecked")
     public void generateBundle(String packageName, String baseName, String localeID, boolean useJava,
                                Map<String, ?> map, BundleType type) throws IOException {
         String suffix = useJava ? ".java" : ".properties";
@@ -158,11 +160,17 @@ class ResourceBundleGenerator implements BundleGenerator {
                         }
 
                         if (Objects.isNull(metaVal)) {
-                            metaVal = META_VALUE_PREFIX + key.replaceAll("\\.", "_");
+                            metaVal = META_VALUE_PREFIX + key.replaceAll("[\\.-]", "_");
 
                             if (val instanceof String[]) {
                                 fmt.format("        final String[] %s = new String[] {\n", metaVal);
-                                for (String s : (String[])val) {
+                                for (String s : (String[]) val) {
+                                    fmt.format("               \"%s\",\n", CLDRConverter.saveConvert(s, useJava));
+                                }
+                                fmt.format("            };\n");
+                            } else if (val instanceof List) {
+                                fmt.format("        final String[] %s = new String[] {\n", metaVal);
+                                for (String s : (List<String>) val) {
                                     fmt.format("               \"%s\",\n", CLDRConverter.saveConvert(s, useJava));
                                 }
                                 fmt.format("            };\n");
@@ -309,7 +317,7 @@ class ResourceBundleGenerator implements BundleGenerator {
             // for languageAliasMap
             if (CLDRConverter.isBaseModule) {
                 CLDRConverter.handlerSupplMeta.getLanguageAliasData().forEach((key, value) -> {
-                    out.printf("                languageAliasMap.put(\"%s\", \"%s\");\n", key, value);
+                    out.printf("        languageAliasMap.put(\"%s\", \"%s\");\n", key, value);
                 });
             }
 

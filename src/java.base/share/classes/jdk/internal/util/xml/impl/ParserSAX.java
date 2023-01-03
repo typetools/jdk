@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,14 +40,14 @@ import jdk.internal.org.xml.sax.helpers.DefaultHandler;
 
 /**
  * XML non-validating push parser.
- *
- * This non-validating parser conforms to <a href="http://www.w3.org/TR/REC-xml"
- * >Extensible Markup Language (XML) 1.0</a> and <a
- * href="http://www.w3.org/TR/REC-xml-names" >"Namespaces in XML"</a>
- * specifications. The API supported by the parser are <a
- * href="http://java.sun.com/aboutJava/communityprocess/final/jsr030/index.html">CLDC
- * 1.0</a> and <a href="http://www.jcp.org/en/jsr/detail?id=280">JSR-280</a>, a
- * JavaME subset of <a href="http://java.sun.com/xml/jaxp/index.html">JAXP</a>
+ * <p>
+ * This non-validating parser conforms to <a href="http://www.w3.org/TR/REC-xml">
+ * Extensible Markup Language (XML) 1.0</a> and
+ * <a href="http://www.w3.org/TR/REC-xml-names" >Namespaces in XML</a>
+ * specifications. The API supported by the parser are
+ * <a href="https://www.oracle.com/technetwork/java/cldc-141990.html">CLDC</a> and
+ * <a href="http://www.jcp.org/en/jsr/detail?id=280">JSR-280</a>, a JavaME subset of
+ * <a href="https://www.oracle.com/technetwork/java/intro-140052.html">JAXP</a>
  * and <a href="http://www.saxproject.org/">SAX2</a>.
  *
  * @see org.xml.sax.XMLReader
@@ -551,7 +551,16 @@ final class ParserSAX
      * @param sysid The system identifier of the entity or <code>null</code>.
      */
     protected void docType(String name, String pubid, String sysid) throws SAXException {
-        mHandDtd.notationDecl(name, pubid, sysid);
+        mHandDtd.startDTD(name, pubid, sysid);
+    }
+
+    /**
+     * Reports the start of DTD internal subset.
+     *
+     * @throws SAXException if the receiver throws SAXException
+     */
+    public void startInternalSub () throws SAXException {
+        mHandDtd.startInternalSub();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_PPC_VM_BYTES_PPC_HPP
-#define CPU_PPC_VM_BYTES_PPC_HPP
+#ifndef CPU_PPC_BYTES_PPC_HPP
+#define CPU_PPC_BYTES_PPC_HPP
 
 #include "memory/allocation.hpp"
 
@@ -266,6 +266,6 @@ class Bytes: AllStatic {
 #endif // VM_LITTLE_ENDIAN
 };
 
-#include OS_CPU_HEADER_INLINE(bytes)
+#include OS_CPU_HEADER(bytes)
 
-#endif // CPU_PPC_VM_BYTES_PPC_HPP
+#endif // CPU_PPC_BYTES_PPC_HPP

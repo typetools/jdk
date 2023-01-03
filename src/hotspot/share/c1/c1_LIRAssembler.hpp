@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_LIRASSEMBLER_HPP
-#define SHARE_VM_C1_C1_LIRASSEMBLER_HPP
+#ifndef SHARE_C1_C1_LIRASSEMBLER_HPP
+#define SHARE_C1_C1_LIRASSEMBLER_HPP
 
 #include "c1/c1_CodeStubs.hpp"
 #include "ci/ciMethodData.hpp"
@@ -71,7 +71,7 @@ class LIR_Assembler: public CompilationResourceObj {
   void record_non_safepoint_debug_info();
 
   // unified bailout support
-  void bailout(const char* msg) const            { compilation()->bailout(msg); }
+  void bailout(const char* msg) const { compilation()->bailout(msg); }
   bool bailed_out() const                        { return compilation()->bailed_out(); }
 
   // code emission patterns and accessors
@@ -80,6 +80,9 @@ class LIR_Assembler: public CompilationResourceObj {
 
   // returns offset of icache check
   int check_icache();
+
+  bool needs_clinit_barrier_on_entry(ciMethod* method) const;
+  void clinit_barrier(ciMethod* method);
 
   void jobject2reg(jobject o, Register reg);
   void jobject2reg_with_patching(Register reg, CodeEmitInfo* info);
@@ -101,13 +104,6 @@ class LIR_Assembler: public CompilationResourceObj {
   void add_debug_info_for_div0_here(CodeEmitInfo* info);
   ImplicitNullCheckStub* add_debug_info_for_null_check(int pc_offset, CodeEmitInfo* cinfo);
   ImplicitNullCheckStub* add_debug_info_for_null_check_here(CodeEmitInfo* info);
-
-  void set_24bit_FPU();
-  void reset_FPU();
-  void fpop();
-  void fxch(int i);
-  void fld(int i);
-  void ffree(int i);
 
   void breakpoint();
   void push(LIR_Opr opr);
@@ -161,7 +157,7 @@ class LIR_Assembler: public CompilationResourceObj {
   // particular sparc uses this for delay slot filling.
   void peephole(LIR_List* list);
 
-  void return_op(LIR_Opr result);
+  void return_op(LIR_Opr result, C1SafepointPollStub* code_stub);
 
   // returns offset of poll instruction
   int safepoint_poll(LIR_Opr result, CodeEmitInfo* info);
@@ -239,8 +235,8 @@ class LIR_Assembler: public CompilationResourceObj {
   void align_backward_branch_target();
   void align_call(LIR_Code code);
 
-  void negate(LIR_Opr left, LIR_Opr dest);
-  void leal(LIR_Opr src, LIR_Opr dest, LIR_PatchCode patch_code, CodeEmitInfo* info);
+  void negate(LIR_Opr left, LIR_Opr dest, LIR_Opr tmp = LIR_OprFact::illegalOpr);
+  void leal(LIR_Opr src, LIR_Opr dest, LIR_PatchCode patch_code = lir_patch_none, CodeEmitInfo* info = NULL);
 
   void rt_call(LIR_Opr result, address dest, const LIR_OprList* args, LIR_Opr tmp, CodeEmitInfo* info);
 
@@ -263,11 +259,7 @@ class LIR_Assembler: public CompilationResourceObj {
  public:
 
   static int call_stub_size() {
-    if (UseAOT) {
-      return _call_stub_size + _call_aot_stub_size;
-    } else {
-      return _call_stub_size;
-    }
+    return _call_stub_size;
   }
 
   static int exception_handler_size() {
@@ -279,4 +271,4 @@ class LIR_Assembler: public CompilationResourceObj {
   }
 };
 
-#endif // SHARE_VM_C1_C1_LIRASSEMBLER_HPP
+#endif // SHARE_C1_C1_LIRASSEMBLER_HPP

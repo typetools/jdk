@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -50,9 +51,9 @@ import java.io.Serializable;
  *   the IANA MIME-preferred name, or its canonical name if no preferred name is
  *   specified. Additionally a few historical names supported by earlier
  *   versions of the Java platform may be recognized. See
- *   <a href="../../java/lang/package-summary.html#charenc">character encodings
- *   </a> for more information on the character encodings supported on the Java
- *   platform.
+ *   <a href="../../../java.base/java/lang/package-summary.html#charenc">
+ *   character encodings</a> for more information on the character encodings
+ *   supported on the Java platform.
  *   <li><b>Representation class name.</b> This specifies the fully-qualified
  *   name of the class of the object from which the actual print data comes, as
  *   returned by the {@link Class#getName() Class.getName()} method. (Thus the
@@ -66,7 +67,7 @@ import java.io.Serializable;
  * class, from which the {@code DocPrintJob} then obtains the actual print data.
  *
  * <hr>
- * <h3>Client Formatted Print Data</h3>
+ * <h2>Client Formatted Print Data</h2>
  * There are two broad categories of print data, client formatted print data and
  * service formatted print data.
  * <p>
@@ -126,7 +127,7 @@ import java.io.Serializable;
  * </ul>
  *
  * <hr>
- * <h3>Default and Platform Encodings</h3>
+ * <h2>Default and Platform Encodings</h2>
  * For byte print data where the doc flavor's MIME type does not include a
  * {@code charset} parameter, the Java Print Service instance assumes the
  * US-ASCII character set by default. This is in accordance with
@@ -162,12 +163,12 @@ import java.io.Serializable;
  * the primary IANA name but is guaranteed to be understood by this VM. For
  * common flavors, the pre-defined *HOST {@code DocFlavors} may be used.
  * <p>
- * See <a href="../../java/lang/package-summary.html#charenc">character
- * encodings</a> for more information on the character encodings supported on
- * the Java platform.
+ * See <a href="../../../java.base/java/lang/package-summary.html#charenc">
+ * character encodings</a> for more information on the character encodings
+ * supported on the Java platform.
  *
  * <hr>
- * <h3>Recommended DocFlavors</h3>
+ * <h2>Recommended DocFlavors</h2>
  * The Java Print Service API does not define any mandatorily supported
  * {@code DocFlavors}. However, here are some examples of MIME types that a Java
  * Print Service instance might support for client formatted print data. Nested
@@ -267,7 +268,7 @@ import java.io.Serializable;
  * </ul>
  *
  * <hr>
- * <h3>Service Formatted Print Data</h3>
+ * <h2>Service Formatted Print Data</h2>
  * For <b>service formatted print data</b>, the Java Print Service instance
  * determines the print data format. The doc flavor's representation class
  * denotes an interface whose methods the {@code DocPrintJob} invokes to
@@ -302,7 +303,7 @@ import java.io.Serializable;
  * </ul>
  *
  * <hr>
- * <h3>Pre-defined Doc Flavors</h3>
+ * <h2>Pre-defined Doc Flavors</h2>
  * A Java Print Service instance is not <b><i>required</i></b> to support the
  * following print data formats and print data representation classes. In fact,
  * a developer using this class should <b>never</b> assume that a particular
@@ -348,7 +349,7 @@ import java.io.Serializable;
  * The client must itself perform all plain text print data formatting not
  * addressed by the above requirements.
  *
- * <h3>Design Rationale</h3>
+ * <h2>Design Rationale</h2>
  * Class {@code DocFlavor} in package {@code javax.print} is similar to class
  * {@link java.awt.datatransfer.DataFlavor}. Class {@code DataFlavor} is not
  * used in the Java Print Service (JPS) API for three reasons which are all
@@ -390,11 +391,13 @@ import java.io.Serializable;
  *
  * @author Alan Kaminsky
  */
+@SuppressWarnings("removal")
 public class DocFlavor implements Serializable, Cloneable {
 
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = -4512080796965449721L;
 
     /**
@@ -571,6 +574,7 @@ public class DocFlavor implements Serializable, Cloneable {
      * @throws IOException if I/O errors occur while writing to the underlying
      *         stream
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
 
         s.defaultWriteObject();
@@ -590,6 +594,7 @@ public class DocFlavor implements Serializable, Cloneable {
      *             the {@code String} representing the canonical form of the
      *             mime type
      */
+    @Serial
     private void readObject(ObjectInputStream s)
         throws ClassNotFoundException, IOException {
 
@@ -609,6 +614,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -9065578006593857475L;
 
         /**
@@ -777,6 +783,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -7045842700749194127L;
 
         /**
@@ -958,6 +965,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 2936725788144902062L;
 
         /**
@@ -1129,6 +1137,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = -8720590903724405128L;
 
         /**
@@ -1176,6 +1185,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 4414407504887034035L;
 
         /**
@@ -1221,6 +1231,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 7100295812579351567L;
 
         /**
@@ -1269,6 +1280,7 @@ public class DocFlavor implements Serializable, Cloneable {
         /**
          * Use serialVersionUID from JDK 1.4 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 6181337766266637256L;
 
         /**

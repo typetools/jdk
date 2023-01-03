@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,16 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_MACHNODE_HPP
-#define SHARE_VM_OPTO_MACHNODE_HPP
+#ifndef SHARE_OPTO_MACHNODE_HPP
+#define SHARE_OPTO_MACHNODE_HPP
 
 #include "opto/callnode.hpp"
+#include "opto/constantTable.hpp"
 #include "opto/matcher.hpp"
 #include "opto/multnode.hpp"
 #include "opto/node.hpp"
 #include "opto/regmask.hpp"
+#include "utilities/growableArray.hpp"
 
 class BiasedLockingCounters;
 class BufferBlob;
@@ -38,6 +40,7 @@ class JVMState;
 class MachCallDynamicJavaNode;
 class MachCallJavaNode;
 class MachCallLeafNode;
+class MachCallNativeNode;
 class MachCallNode;
 class MachCallRuntimeNode;
 class MachCallStaticJavaNode;
@@ -100,6 +103,12 @@ public:
   }
 
 #if defined(IA32) || defined(AMD64)
+  KRegister  as_KRegister(PhaseRegAlloc *ra_, const Node *node)   const {
+    return ::as_KRegister(reg(ra_, node));
+  }
+  KRegister  as_KRegister(PhaseRegAlloc *ra_, const Node *node, int idx)   const {
+    return ::as_KRegister(reg(ra_, node, idx));
+  }
   XMMRegister  as_XMMRegister(PhaseRegAlloc *ra_, const Node *node)   const {
     return ::as_XMMRegister(reg(ra_, node));
   }
@@ -150,7 +159,7 @@ public:
   virtual int  index_position() const;  // index edge position, or -1
 
   // Access the TypeKlassPtr of operands with a base==RegI and disp==RegP
-  // Only returns non-null value for i486.ad's indOffset32X
+  // Only returns non-null value for x86_32.ad's indOffset32X
   virtual const TypePtr *disp_as_type() const { return NULL; }
 
   // Return the label
@@ -161,7 +170,7 @@ public:
 
   // Hash and compare over operands are currently identical
   virtual uint  hash() const;
-  virtual uint  cmp( const MachOper &oper ) const;
+  virtual bool  cmp( const MachOper &oper ) const;
 
   // Virtual clone, since I do not know how big the MachOper is.
   virtual MachOper *clone() const = 0;
@@ -197,7 +206,7 @@ public:
 // ADLC inherit from this class.
 class MachNode : public Node {
 public:
-  MachNode() : Node((uint)0), _num_opnds(0), _opnds(NULL) {
+  MachNode() : Node((uint)0), _barrier(0), _num_opnds(0), _opnds(NULL) {
     init_class_id(Class_Mach);
   }
   // Required boilerplate
@@ -210,6 +219,9 @@ public:
   // Position of constant base node in node's inputs. -1 if
   // no constant base node input.
   virtual uint mach_constant_base_node_input() const { return (uint)-1; }
+
+  uint8_t barrier_data() const { return _barrier; }
+  void set_barrier_data(uint8_t data) { _barrier = data; }
 
   // Copy inputs and operands to new node of instruction.
   // Called from cisc_version() and short_branch_version().
@@ -240,6 +252,7 @@ public:
   // First index in _in[] corresponding to operand, or -1 if there is none
   int  operand_index(uint operand) const;
   int  operand_index(const MachOper *oper) const;
+  int  operand_index(Node* m) const;
 
   // Register class input is expected in
   virtual const RegMask &in_RegMask(uint) const;
@@ -254,6 +267,9 @@ public:
   // both an input and an output).  It is nessecary when the input and
   // output have choices - but they must use the same choice.
   virtual uint two_adr( ) const { return 0; }
+
+  // The GC might require some barrier metadata for machine code emission.
+  uint8_t _barrier;
 
   // Array of complex operand pointers.  Each corresponds to zero or
   // more leafs.  Must be set by MachNode constructor to point to an
@@ -278,11 +294,12 @@ public:
 
   // Return the alignment required (in units of relocInfo::addr_unit())
   // for this instruction (must be a power of 2)
-  virtual int   alignment_required() const { return 1; }
+  int           pd_alignment_required() const;
+  virtual int   alignment_required() const { return pd_alignment_required(); }
 
   // Return the padding (in bytes) to be emitted before this
   // instruction to properly align it.
-  virtual int   compute_padding(int current_offset) const { return 0; }
+  virtual int   compute_padding(int current_offset) const;
 
   // Return number of relocatable values contained in this instruction
   virtual int   reloc() const { return 0; }
@@ -292,7 +309,7 @@ public:
 
   // Hash and compare over operands.  Used to do GVN on machine Nodes.
   virtual uint  hash() const;
-  virtual uint  cmp( const Node &n ) const;
+  virtual bool  cmp( const Node &n ) const;
 
   // Expand method for MachNode, replaces nodes representing pseudo
   // instructions with a set of nodes which represent real machine
@@ -301,7 +318,14 @@ public:
 
   // Bottom_type call; value comes from operand0
   virtual const class Type *bottom_type() const { return _opnds[0]->type(); }
-  virtual uint ideal_reg() const { const Type *t = _opnds[0]->type(); return t == TypeInt::CC ? Op_RegFlags : t->ideal_reg(); }
+  virtual uint ideal_reg() const {
+    const Type *t = _opnds[0]->type();
+    if (t == TypeInt::CC) {
+      return Op_RegFlags;
+    } else {
+      return t->ideal_reg();
+    }
+  }
 
   // If this is a memory op, return the base pointer and fixed offset.
   // If there are no such, return NULL.  If there are multiple addresses
@@ -418,7 +442,6 @@ public:
 
   virtual void emit(CodeBuffer& cbuf, PhaseRegAlloc* ra_) const;
   virtual uint size(PhaseRegAlloc* ra_) const;
-  virtual bool pinned() const { return UseRDPCForConstantTableBase; }
 
   static const RegMask& static_out_RegMask() { return _out_RegMask; }
   virtual const RegMask& out_RegMask() const { return static_out_RegMask(); }
@@ -433,7 +456,7 @@ public:
 // Machine node that holds a constant which is stored in the constant table.
 class MachConstantNode : public MachTypeNode {
 protected:
-  Compile::Constant _constant;  // This node's constant.
+  ConstantTable::Constant _constant;  // This node's constant.
 
 public:
   MachConstantNode() : MachTypeNode() {
@@ -508,9 +531,6 @@ private:
 public:
   bool do_polling() const { return _do_polling; }
 
-  // Offset of safepoint from the beginning of the node
-  int safepoint_offset() const;
-
 #ifndef PRODUCT
   virtual const char *Name() const { return "Epilog"; }
   virtual void format( PhaseRegAlloc *, outputStream *st ) const;
@@ -569,7 +589,7 @@ private:
   const SpillType _spill_type;
 public:
   MachSpillCopyNode(SpillType spill_type, Node *n, const RegMask &in, const RegMask &out ) :
-    MachIdealNode(), _spill_type(spill_type), _in(&in), _out(&out), _type(n->bottom_type()) {
+    MachIdealNode(), _in(&in), _out(&out), _type(n->bottom_type()), _spill_type(spill_type) {
     init_class_id(Class_MachSpillCopy);
     init_flags(Flag_is_Copy);
     add_req(NULL);
@@ -685,6 +705,7 @@ public:
     add_req(ctrl);
     add_req(memop);
   }
+  virtual int Opcode() const;
   virtual uint size_of() const { return sizeof(*this); }
 
   virtual void emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const;
@@ -807,10 +828,11 @@ public:
   OopMap*         _oop_map;     // Array of OopMap info (8-bit char) for GC
   JVMState*       _jvms;        // Pointer to list of JVM State Objects
   uint            _jvmadj;      // Extra delta to jvms indexes (mach. args)
+  bool            _has_ea_local_in_scope; // NoEscape or ArgEscape objects in JVM States
   OopMap*         oop_map() const { return _oop_map; }
   void            set_oop_map(OopMap* om) { _oop_map = om; }
 
-  MachSafePointNode() : MachReturnNode(), _oop_map(NULL), _jvms(NULL), _jvmadj(0) {
+  MachSafePointNode() : MachReturnNode(), _oop_map(NULL), _jvms(NULL), _jvmadj(0), _has_ea_local_in_scope(false) {
     init_class_id(Class_MachSafePoint);
   }
 
@@ -861,23 +883,22 @@ public:
 class MachCallNode : public MachSafePointNode {
 protected:
   virtual uint hash() const { return NO_HASH; }  // CFG nodes do not hash
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const = 0; // Size is bigger
 public:
   const TypeFunc *_tf;        // Function type
   address      _entry_point;  // Address of the method being called
   float        _cnt;          // Estimate of number of times called
-  uint         _argsize;      // Size of argument block on stack
+  bool         _guaranteed_safepoint; // Do we need to observe safepoint?
 
   const TypeFunc* tf()        const { return _tf; }
   const address entry_point() const { return _entry_point; }
   const float   cnt()         const { return _cnt; }
-  uint argsize()              const { return _argsize; }
 
-  void set_tf(const TypeFunc* tf) { _tf = tf; }
-  void set_entry_point(address p) { _entry_point = p; }
-  void set_cnt(float c)           { _cnt = c; }
-  void set_argsize(int s)         { _argsize = s; }
+  void set_tf(const TypeFunc* tf)       { _tf = tf; }
+  void set_entry_point(address p)       { _entry_point = p; }
+  void set_cnt(float c)                 { _cnt = c; }
+  void set_guaranteed_safepoint(bool b) { _guaranteed_safepoint = b; }
 
   MachCallNode() : MachSafePointNode() {
     init_class_id(Class_MachCall);
@@ -895,6 +916,8 @@ public:
   // Similar to cousin class CallNode::returns_pointer
   bool returns_pointer() const;
 
+  bool guaranteed_safepoint() const { return _guaranteed_safepoint; }
+
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif
@@ -904,14 +927,14 @@ public:
 // "Base" class for machine-specific versions of subroutine calls
 class MachCallJavaNode : public MachCallNode {
 protected:
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const; // Size is bigger
 public:
   ciMethod* _method;                 // Method being direct called
   bool      _override_symbolic_info; // Override symbolic call site info from bytecode
-  int       _bci;                    // Byte Code index of call byte code
   bool      _optimized_virtual;      // Tells if node is a static call or an optimized virtual
   bool      _method_handle_invoke;   // Tells if the call has to preserve SP
+  bool      _arg_escape;             // ArgEscape in parameter list
   MachCallJavaNode() : MachCallNode(), _override_symbolic_info(false) {
     init_class_id(Class_MachCallJava);
   }
@@ -937,7 +960,7 @@ public:
 //------------------------------MachCallStaticJavaNode------------------------
 // Machine-specific versions of monomorphic subroutine calls
 class MachCallStaticJavaNode : public MachCallJavaNode {
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const; // Size is bigger
 public:
   const char *_name;            // Runtime wrapper name
@@ -973,10 +996,11 @@ public:
 //------------------------------MachCallRuntimeNode----------------------------
 // Machine-specific versions of subroutine calls
 class MachCallRuntimeNode : public MachCallNode {
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const; // Size is bigger
 public:
   const char *_name;            // Printable name, if _method is NULL
+  bool _leaf_no_fp;             // Is this CallLeafNoFP?
   MachCallRuntimeNode() : MachCallNode() {
     init_class_id(Class_MachCallRuntime);
   }
@@ -993,11 +1017,48 @@ public:
   }
 };
 
+class MachCallNativeNode: public MachCallNode {
+  virtual bool cmp( const Node &n ) const;
+  virtual uint size_of() const;
+  void print_regs(const GrowableArray<VMReg>& regs, outputStream* st) const;
+public:
+  const char *_name;
+  GrowableArray<VMReg> _arg_regs;
+  GrowableArray<VMReg> _ret_regs;
+
+  MachCallNativeNode() : MachCallNode() {
+    init_class_id(Class_MachCallNative);
+  }
+
+  virtual int ret_addr_offset();
+#ifndef PRODUCT
+  virtual void dump_spec(outputStream *st) const;
+#endif
+};
+
 //------------------------------MachHaltNode-----------------------------------
 // Machine-specific versions of halt nodes
 class MachHaltNode : public MachReturnNode {
 public:
+  bool _reachable;
+  const char* _halt_reason;
   virtual JVMState* jvms() const;
+  bool is_reachable() const {
+    return _reachable;
+  }
+};
+
+class MachMemBarNode : public MachNode {
+  virtual uint size_of() const; // Size is bigger
+public:
+  const TypePtr* _adr_type;     // memory effects
+  MachMemBarNode() : MachNode() {
+    init_class_id(Class_MachMemBar);
+    _adr_type = TypePtr::BOTTOM; // the default: all of memory
+  }
+
+  void set_adr_type(const TypePtr* atp) { _adr_type = atp; }
+  virtual const TypePtr *adr_type() const;
 };
 
 
@@ -1040,7 +1101,7 @@ public:
 
   uint _block_num;
 
-  labelOper() : _block_num(0), _label(0) {}
+  labelOper() : _label(0), _block_num(0) {}
 
   labelOper(Label* label, uint block_num) : _label(label), _block_num(block_num) {}
 
@@ -1053,7 +1114,7 @@ public:
   virtual uint           opcode() const;
 
   virtual uint           hash()   const;
-  virtual uint           cmp( const MachOper &oper ) const;
+  virtual bool           cmp( const MachOper &oper ) const;
 #ifndef PRODUCT
   virtual const char    *Name()   const { return "Label";}
 
@@ -1080,7 +1141,7 @@ public:
   virtual uint           opcode() const;
 
   virtual uint           hash()   const;
-  virtual uint           cmp( const MachOper &oper ) const;
+  virtual bool           cmp( const MachOper &oper ) const;
 #ifndef PRODUCT
   virtual const char    *Name()   const { return "Method";}
 
@@ -1089,4 +1150,4 @@ public:
 #endif
 };
 
-#endif // SHARE_VM_OPTO_MACHNODE_HPP
+#endif // SHARE_OPTO_MACHNODE_HPP

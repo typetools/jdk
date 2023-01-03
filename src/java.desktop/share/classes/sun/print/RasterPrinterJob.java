@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -175,6 +175,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
          * use a particular pipeline. Either the raster
          * pipeline or the pdl pipeline can be forced.
          */
+        @SuppressWarnings("removal")
         String forceStr = java.security.AccessController.doPrivileged(
                    new sun.security.action.GetPropertyAction(FORCE_PIPE_PROP));
 
@@ -186,6 +187,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
             }
         }
 
+        @SuppressWarnings("removal")
         String shapeTextStr =java.security.AccessController.doPrivileged(
                    new sun.security.action.GetPropertyAction(SHAPE_TEXT_PROP));
 
@@ -554,7 +556,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
         MediaSize size = getMediaSize(media, service, page);
 
         Paper paper = new Paper();
-        float dim[] = size.getSize(1); //units == 1 to avoid FP error
+        float[] dim = size.getSize(1); //units == 1 to avoid FP error
         double w = Math.rint((dim[0]*72.0)/Size2DSyntax.INCH);
         double h = Math.rint((dim[1]*72.0)/Size2DSyntax.INCH);
         paper.setSize(w, h);
@@ -729,6 +731,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
           GraphicsEnvironment.getLocalGraphicsEnvironment().
           getDefaultScreenDevice().getDefaultConfiguration();
 
+        @SuppressWarnings("removal")
         PrintService service = java.security.AccessController.doPrivileged(
                                new java.security.PrivilegedAction<PrintService>() {
                 public PrintService run() {
@@ -809,6 +812,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
         }
         final GraphicsConfiguration gc = grCfg;
 
+        @SuppressWarnings("removal")
         PrintService service = java.security.AccessController.doPrivileged(
                                new java.security.PrivilegedAction<PrintService>() {
                 public PrintService run() {
@@ -895,17 +899,16 @@ public abstract class RasterPrinterJob extends PrinterJob {
    }
 
     protected PageFormat getPageFormatFromAttributes() {
-        if (attributes == null || attributes.isEmpty()) {
+        Pageable pageable = null;
+        if (attributes == null || attributes.isEmpty() ||
+            !((pageable = getPageable()) instanceof OpenBook)) {
             return null;
         }
 
         PageFormat newPf = attributeToPageFormat(
             getPrintService(), attributes);
         PageFormat oldPf = null;
-        Pageable pageable = getPageable();
-        if ((pageable != null) &&
-            (pageable instanceof OpenBook) &&
-            ((oldPf = pageable.getPageFormat(0)) != null)) {
+        if ((oldPf = pageable.getPageFormat(0)) != null) {
             // If orientation, media, imageable area attributes are not in
             // "attributes" set, then use respective values of the existing
             // page format "oldPf".
@@ -950,6 +953,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
+    @SuppressWarnings("removal")
     public boolean printDialog(final PrintRequestAttributeSet attributes)
         throws HeadlessException {
         if (GraphicsEnvironment.isHeadless()) {
@@ -1276,10 +1280,12 @@ public abstract class RasterPrinterJob extends PrinterJob {
                printerResAttr = (PrinterResolution)
                    service.getDefaultAttributeValue(PrinterResolution.class);
             }
-            double xr =
-               printerResAttr.getCrossFeedResolution(ResolutionSyntax.DPI);
-            double yr = printerResAttr.getFeedResolution(ResolutionSyntax.DPI);
-            setXYRes(xr, yr);
+            if (printerResAttr != null) {
+                double xr =
+                        printerResAttr.getCrossFeedResolution(ResolutionSyntax.DPI);
+                double yr = printerResAttr.getFeedResolution(ResolutionSyntax.DPI);
+                setXYRes(xr, yr);
+            }
         }
 
         pageRangesAttr =  (PageRanges)attributes.get(PageRanges.class);
@@ -2553,6 +2559,7 @@ public abstract class RasterPrinterJob extends PrinterJob {
      * to throw a SecurityException if the permission is not granted
      */
     private void throwPrintToFile() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             if (printToFilePermission == null) {

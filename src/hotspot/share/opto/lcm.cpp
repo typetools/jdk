@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,9 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "memory/allocation.inline.hpp"
+#include "oops/compressedOops.hpp"
 #include "opto/ad.hpp"
 #include "opto/block.hpp"
 #include "opto/c2compiler.hpp"
@@ -40,7 +42,7 @@
 // Check whether val is not-null-decoded compressed oop,
 // i.e. will grab into the base of the heap if it represents NULL.
 static bool accesses_heap_base_zone(Node *val) {
-  if (Universe::narrow_oop_base() != NULL) { // Implies UseCompressedOops.
+  if (CompressedOops::base() != NULL) { // Implies UseCompressedOops.
     if (val && val->is_Mach()) {
       if (val->as_Mach()->ideal_Opcode() == Op_DecodeN) {
         // This assumes all Decodes with TypePtr::NotNull are matched to nodes that
@@ -66,8 +68,8 @@ static bool needs_explicit_null_check_for_read(Node *val) {
     return false;  // Implicit null check will work.
   }
   // Also a read accessing the base of a heap-based compressed heap will trap.
-  if (accesses_heap_base_zone(val) &&                    // Hits the base zone page.
-      Universe::narrow_oop_use_implicit_null_checks()) { // Base zone page is protected.
+  if (accesses_heap_base_zone(val) &&         // Hits the base zone page.
+      CompressedOops::use_implicit_null_checks()) { // Base zone page is protected.
     return false;
   }
 
@@ -152,7 +154,6 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
 
   // Search the successor block for a load or store who's base value is also
   // the tested value.  There may be several.
-  Node_List *out = new Node_List(Thread::current()->resource_area());
   MachNode *best = NULL;        // Best found so far
   for (DUIterator i = val->outs(); val->has_out(i); i++) {
     Node *m = val->out(i);
@@ -169,8 +170,6 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
     case Op_LoadI:
     case Op_LoadL:
     case Op_LoadP:
-    case Op_LoadBarrierSlowReg:
-    case Op_LoadBarrierWeakSlowReg:
     case Op_LoadN:
     case Op_LoadS:
     case Op_LoadKlass:
@@ -261,13 +260,13 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
         // Give up if offset is beyond page size or if heap base is not protected.
         if (val->bottom_type()->isa_narrowoop() &&
             (MacroAssembler::needs_explicit_null_check(offset) ||
-             !Universe::narrow_oop_use_implicit_null_checks()))
+             !CompressedOops::use_implicit_null_checks()))
           continue;
         // cannot reason about it; is probably not implicit null exception
       } else {
         const TypePtr* tptr;
-        if (UseCompressedOops && (Universe::narrow_oop_shift() == 0 ||
-                                  Universe::narrow_klass_shift() == 0)) {
+        if ((UseCompressedOops || UseCompressedClassPointers) &&
+            (CompressedOops::shift() == 0 || CompressedKlassPointers::shift() == 0)) {
           // 32-bits narrow oop can be the base of address expressions
           tptr = base->get_ptr_type();
         } else {
@@ -283,7 +282,7 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
           continue;
         // Give up if base is a decode node and the heap base is not protected.
         if (base->is_Mach() && base->as_Mach()->ideal_Opcode() == Op_DecodeN &&
-            !Universe::narrow_oop_use_implicit_null_checks())
+            !CompressedOops::use_implicit_null_checks())
           continue;
       }
     }
@@ -375,7 +374,21 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
     // Check if we need to hoist decodeHeapOop_not_null first.
     Block *valb = get_block_for_node(val);
     if( block != valb && block->_dom_depth < valb->_dom_depth ) {
-      // Hoist it up to the end of the test block.
+      // Hoist it up to the end of the test block together with its inputs if they exist.
+      for (uint i = 2; i < val->req(); i++) {
+        // DecodeN has 2 regular inputs + optional MachTemp or load Base inputs.
+        Node *temp = val->in(i);
+        Block *tempb = get_block_for_node(temp);
+        if (!tempb->dominates(block)) {
+          assert(block->dominates(tempb), "sanity check: temp node placement");
+          // We only expect nodes without further inputs, like MachTemp or load Base.
+          assert(temp->req() == 0 || (temp->req() == 1 && temp->in(0) == (Node*)C->root()),
+                 "need for recursive hoisting not expected");
+          tempb->find_remove(temp);
+          block->add_inst(temp);
+          map_node_to_block(temp, block);
+        }
+      }
       valb->find_remove(val);
       block->add_inst(val);
       map_node_to_block(val, block);
@@ -399,7 +412,8 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
 
   // Move the control dependence if it is pinned to not-null block.
   // Don't change it in other cases: NULL or dominating control.
-  if (best->in(0) == not_null_block->head()) {
+  Node* ctrl = best->in(0);
+  if (get_block_for_node(ctrl) == not_null_block) {
     // Set it to control edge of null check.
     best->set_req(0, proj->in(0)->in(0));
   }
@@ -432,7 +446,7 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
     tmp1->replace_by(tmp);
     tmp2->replace_by(tmp1);
     tmp->replace_by(tmp2);
-    tmp->destruct();
+    tmp->destruct(NULL);
   }
 
   // Remove the existing null check; use a new implicit null check instead.
@@ -451,7 +465,7 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
     old_tst->set_req(i3, NULL);
     if (in->outcnt() == 0) {
       // Remove dead input node
-      in->disconnect_inputs(NULL, C);
+      in->disconnect_inputs(C);
       block->find_remove(in);
     }
   }
@@ -634,7 +648,7 @@ Node* PhaseCFG::select(
     cand_cnt++;
     if (choice < n_choice ||
         (choice == n_choice &&
-         ((StressLCM && Compile::randomized_select(cand_cnt)) ||
+         ((StressLCM && C->randomized_select(cand_cnt)) ||
           (!StressLCM &&
            (latency < n_latency ||
             (latency == n_latency &&
@@ -688,6 +702,8 @@ void PhaseCFG::adjust_register_pressure(Node* n, Block* block, intptr_t* recalc_
         case Op_StoreP:
         case Op_StoreN:
         case Op_StoreVector:
+        case Op_StoreVectorScatter:
+        case Op_StoreVectorMasked:
         case Op_StoreNKlass:
           for (uint k = 1; k < m->req(); k++) {
             Node *in = m->in(k);
@@ -854,6 +870,7 @@ uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, Grow
     case Op_CallRuntime:
     case Op_CallLeaf:
     case Op_CallLeafNoFP:
+    case Op_CallLeafVector:
       // Calling C code so use C calling convention
       save_policy = _matcher._c_reg_save_policy;
       break;
@@ -862,6 +879,12 @@ uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, Grow
     case Op_CallDynamicJava:
       // Calling Java code so use Java calling convention
       save_policy = _matcher._register_save_policy;
+      break;
+    case Op_CallNative:
+      // We use the c reg save policy here since Foreign Linker
+      // only supports the C ABI currently.
+      // TODO compute actual save policy based on nep->abi
+      save_policy = _matcher._c_reg_save_policy;
       break;
 
     default:
@@ -876,7 +899,14 @@ uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, Grow
   // done for oops since idealreg2debugmask takes care of debug info
   // references but there no way to handle oops differently than other
   // pointers as far as the kill mask goes.
-  bool exclude_soe = op == Op_CallRuntime;
+  //
+  // Also, native callees can not save oops, so we kill the SOE registers
+  // here in case a native call has a safepoint. This doesn't work for
+  // RBP though, which seems to be special-cased elsewhere to always be
+  // treated as alive, so we instead manually save the location of RBP
+  // before doing the native call (see NativeInvokerGenerator::generate).
+  bool exclude_soe = op == Op_CallRuntime
+    || (op == Op_CallNative && mcall->guaranteed_safepoint());
 
   // If the call is a MethodHandle invoke, we need to exclude the
   // register which is used to save the SP value over MH invokes from
@@ -959,7 +989,7 @@ bool PhaseCFG::schedule_local(Block* block, GrowableArray<int>& ready_cnt, Vecto
       ready_cnt.at_put(n->_idx, local); // Count em up
 
 #ifdef ASSERT
-      if( UseConcMarkSweepGC || UseG1GC ) {
+      if (UseG1GC) {
         if( n->is_Mach() && n->as_Mach()->ideal_Opcode() == Op_StoreCM ) {
           // Check the precedence edges
           for (uint prec = n->req(); prec < n->len(); prec++) {
@@ -1232,7 +1262,7 @@ Node* PhaseCFG::catch_cleanup_find_cloned_def(Block *use_blk, Node *def, Block *
   if( j == def_blk->_num_succs ) {
     // Block at same level in dom-tree is not a successor.  It needs a
     // PhiNode, the PhiNode uses from the def and IT's uses need fixup.
-    Node_Array inputs = new Node_List(Thread::current()->resource_area());
+    Node_Array inputs = new Node_List();
     for(uint k = 1; k < use_blk->num_preds(); k++) {
       Block* block = get_block_for_node(use_blk->pred(k));
       inputs.map(k, catch_cleanup_find_cloned_def(block, def, def_blk, n_clone_idx));
@@ -1343,7 +1373,7 @@ void PhaseCFG::call_catch_cleanup(Block* block) {
     uint n_clone_idx = i2-beg+1; // Index of clone of n in each successor block
     Node *n = block->get_node(i2);        // Node that got cloned
     // Need DU safe iterator because of edge manipulation in calls.
-    Unique_Node_List *out = new Unique_Node_List(Thread::current()->resource_area());
+    Unique_Node_List* out = new Unique_Node_List();
     for (DUIterator_Fast j1max, j1 = n->fast_outs(j1max); j1 < j1max; j1++) {
       out->push(n->fast_out(j1));
     }
@@ -1371,20 +1401,46 @@ void PhaseCFG::call_catch_cleanup(Block* block) {
 
   // Remove the now-dead cloned ops
   for(uint i3 = beg; i3 < end; i3++ ) {
-    block->get_node(beg)->disconnect_inputs(NULL, C);
+    block->get_node(beg)->disconnect_inputs(C);
     block->remove_node(beg);
   }
 
   // If the successor blocks have a CreateEx node, move it back to the top
-  for(uint i4 = 0; i4 < block->_num_succs; i4++ ) {
+  for (uint i4 = 0; i4 < block->_num_succs; i4++) {
     Block *sb = block->_succs[i4];
     uint new_cnt = end - beg;
-    // Remove any newly created, but dead, nodes.
-    for( uint j = new_cnt; j > 0; j-- ) {
+    // Remove any newly created, but dead, nodes by traversing their schedule
+    // backwards. Here, a dead node is a node whose only outputs (if any) are
+    // unused projections.
+    for (uint j = new_cnt; j > 0; j--) {
       Node *n = sb->get_node(j);
-      if (n->outcnt() == 0 &&
-          (!n->is_Proj() || n->as_Proj()->in(0)->outcnt() == 1) ){
-        n->disconnect_inputs(NULL, C);
+      // Individual projections are examined together with all siblings when
+      // their parent is visited.
+      if (n->is_Proj()) {
+        continue;
+      }
+      bool dead = true;
+      for (DUIterator_Fast imax, i = n->fast_outs(imax); i < imax; i++) {
+        Node* out = n->fast_out(i);
+        // n is live if it has a non-projection output or a used projection.
+        if (!out->is_Proj() || out->outcnt() > 0) {
+          dead = false;
+          break;
+        }
+      }
+      if (dead) {
+        // n's only outputs (if any) are unused projections scheduled next to n
+        // (see PhaseCFG::select()). Remove these projections backwards.
+        for (uint k = j + n->outcnt(); k > j; k--) {
+          Node* proj = sb->get_node(k);
+          assert(proj->is_Proj() && proj->in(0) == n,
+                 "projection should correspond to dead node");
+          proj->disconnect_inputs(C);
+          sb->remove_node(k);
+          new_cnt--;
+        }
+        // Now remove the node itself.
+        n->disconnect_inputs(C);
         sb->remove_node(j);
         new_cnt--;
       }

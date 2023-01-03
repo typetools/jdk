@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,6 +68,7 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
         addKeyType("DESede",   CKK_DES3);
         addKeyType("AES",      CKK_AES);
         addKeyType("Blowfish", CKK_BLOWFISH);
+        addKeyType("ChaCha20", CKK_CHACHA20);
 
         // we don't implement RC2 or IDEA, but we want to be able to generate
         // keys for those SSL/TLS ciphersuites.
@@ -86,6 +87,17 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
         keyTypes.put(name.toUpperCase(Locale.ENGLISH), l);
     }
 
+    // returns the PKCS11 key type of the specified algorithm
+    // no psuedo KeyTypes
+    static long getPKCS11KeyType(String algorithm) {
+        long kt = getKeyType(algorithm);
+        if (kt == -1 || kt > PCKK_ANY) {
+            kt = CKK_GENERIC_SECRET;
+        }
+        return kt;
+    }
+
+    // returns direct lookup result of keyTypes using algorithm
     static long getKeyType(String algorithm) {
         Long l = keyTypes.get(algorithm);
         if (l == null) {
@@ -146,20 +158,24 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
             P11Key p11Key = (P11Key)key;
             if (p11Key.token == token) {
                 if (extraAttrs != null) {
+                    P11Key newP11Key = null;
                     Session session = null;
+                    long p11KeyID = p11Key.getKeyID();
                     try {
                         session = token.getObjSession();
                         long newKeyID = token.p11.C_CopyObject(session.id(),
-                                p11Key.keyID, extraAttrs);
-                        p11Key = (P11Key) (P11Key.secretKey(session,
+                            p11KeyID, extraAttrs);
+                        newP11Key = (P11Key) (P11Key.secretKey(session,
                                 newKeyID, p11Key.algorithm, p11Key.keyLength,
                                 extraAttrs));
                     } catch (PKCS11Exception p11e) {
                         throw new InvalidKeyException
                                 ("Cannot duplicate the PKCS11 key", p11e);
                     } finally {
+                        p11Key.releaseKeyID();
                         token.releaseSession(session);
                     }
+                    p11Key = newP11Key;
                 }
                 return p11Key;
             }
@@ -221,6 +237,10 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
                     keyLength =
                         P11KeyGenerator.checkKeySize(CKM_BLOWFISH_KEY_GEN, n,
                         token);
+                    break;
+                case (int)CKK_CHACHA20:
+                    keyLength = P11KeyGenerator.checkKeySize(
+                        CKM_CHACHA20_KEY_GEN, n, token);
                     break;
                 case (int)CKK_GENERIC_SECRET:
                 case (int)PCKK_TLSPREMASTER:
@@ -326,11 +346,11 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
             throw new InvalidKeySpecException
                 ("key and keySpec must not be null");
         }
-        if (SecretKeySpec.class.isAssignableFrom(keySpec)) {
+        if (keySpec.isAssignableFrom(SecretKeySpec.class)) {
             return new SecretKeySpec(getKeyBytes(key), algorithm);
         } else if (algorithm.equalsIgnoreCase("DES")) {
             try {
-                if (DESKeySpec.class.isAssignableFrom(keySpec)) {
+                if (keySpec.isAssignableFrom(DESKeySpec.class)) {
                     return new DESKeySpec(getKeyBytes(key));
                 }
             } catch (InvalidKeyException e) {
@@ -338,7 +358,7 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
             }
         } else if (algorithm.equalsIgnoreCase("DESede")) {
             try {
-                if (DESedeKeySpec.class.isAssignableFrom(keySpec)) {
+                if (keySpec.isAssignableFrom(DESedeKeySpec.class)) {
                     return new DESedeKeySpec(getKeyBytes(key));
                 }
             } catch (InvalidKeyException e) {

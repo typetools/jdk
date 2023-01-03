@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+* Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
 * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef SHARE_VM_JFR_SUPPORT_JFRINTRINSICS_HPP
-#define SHARE_VM_JFR_SUPPORT_JFRINTRINSICS_HPP
+#ifndef SHARE_JFR_SUPPORT_JFRINTRINSICS_HPP
+#define SHARE_JFR_SUPPORT_JFRINTRINSICS_HPP
 
 #include "utilities/macros.hpp"
 
@@ -34,7 +34,9 @@
 #include "jfr/recorder/checkpoint/types/traceid/jfrTraceIdMacros.hpp"
 
 #define JFR_TEMPLATES(template) \
-  template(jdk_jfr_internal_JVM,          "jdk/jfr/internal/JVM")
+  template(jdk_jfr_internal_JVM,                                      "jdk/jfr/internal/JVM")                     \
+  template(jdk_jfr_internal_handlers_EventHandler_signature,          "Ljdk/jfr/internal/handlers/EventHandler;") \
+  template(eventHandler_name,                                         "eventHandler")                             \
 
 #define JFR_INTRINSICS(do_intrinsic, do_class, do_name, do_signature, do_alias)                              \
   do_intrinsic(_counterTime,        jdk_jfr_internal_JVM, counterTime_name, void_long_signature, F_SN)       \
@@ -53,4 +55,4 @@
 #define JFR_INTRINSICS(do_intrinsic, do_class, do_name, do_signature, do_alias)
 
 #endif // INCLUDE_JFR
-#endif // SHARE_VM_JFR_SUPPORT_JFRINTRINSICS_HPP
+#endif // SHARE_JFR_SUPPORT_JFRINTRINSICS_HPP

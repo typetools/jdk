@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import sun.security.ssl.SSLLogger;
 
@@ -151,7 +153,7 @@ class DomainName {
         private final boolean hasExceptions;
 
         private Rules(InputStream is) throws IOException {
-            InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+            InputStreamReader isr = new InputStreamReader(is, UTF_8);
             BufferedReader reader = new BufferedReader(isr);
             boolean hasExceptions = false;
 
@@ -202,6 +204,7 @@ class DomainName {
         }
 
         private static InputStream getPubSuffixStream() {
+            @SuppressWarnings("removal")
             InputStream is = AccessController.doPrivileged(
                 new PrivilegedAction<>() {
                     @Override
@@ -363,7 +366,7 @@ class DomainName {
             }
 
             private static int numLabels(String rule) {
-                if (rule.equals("")) {
+                if (rule.isEmpty()) {
                     return 0;
                 }
                 int len = rule.length();

@@ -36,6 +36,8 @@
 #include <windows.h>
 #include <io.h>
 #include <limits.h>
+#include <wchar.h>
+#include <Winioctl.h>
 
 #include "jni.h"
 #include "io_util.h"
@@ -137,28 +139,10 @@ static WCHAR* getFinalPath(JNIEnv *env, const WCHAR *path)
                              result[5] == L'N' &&
                              result[6] == L'C');
                 int prefixLen = (isUnc) ? 7 : 4;
-                /* actual result length (includes terminator) */
-                int resultLen = len - prefixLen + (isUnc ? 1 : 0) + 1;
-
-                /* copy result without prefix into new buffer */
-                WCHAR *tmp = (WCHAR*)malloc(resultLen * sizeof(WCHAR));
-                if (tmp == NULL) {
-                    JNU_ThrowOutOfMemoryError(env, "native memory allocation failed");
-                    len = 0;
-                } else {
-                    WCHAR *p = result;
-                    p += prefixLen;
-                    if (isUnc) {
-                        WCHAR *p2 = tmp;
-                        p2[0] = L'\\';
-                        p2++;
-                        wcscpy(p2, p);
-                    } else {
-                        wcscpy(tmp, p);
-                    }
-                    free(result);
-                    result = tmp;
-                }
+                int prefixToKeep = (isUnc) ? 1 : 0;
+                // the amount to copy includes terminator
+                int amountToCopy = len - prefixLen + 1;
+                wmemmove(result + prefixToKeep, result + prefixLen, amountToCopy);
             }
         }
 
@@ -205,6 +189,60 @@ static BOOL getFileInformation(const WCHAR *path,
 }
 
 /**
+ * path is likely to be a Unix domain socket.
+ * Verify and if it is return its attributes
+ */
+static DWORD getFinalAttributesUnixSocket(const WCHAR *path)
+{
+    DWORD result;
+    BY_HANDLE_FILE_INFORMATION finfo;
+    REPARSE_GUID_DATA_BUFFER reparse;
+
+    HANDLE h = CreateFileW(path,
+                           FILE_READ_ATTRIBUTES,
+                           FILE_SHARE_DELETE |
+                               FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL,
+                           OPEN_EXISTING,
+                           FILE_FLAG_BACKUP_SEMANTICS |
+                               FILE_FLAG_OPEN_REPARSE_POINT,
+                           NULL);
+
+    if (h == INVALID_HANDLE_VALUE)
+        return INVALID_FILE_ATTRIBUTES;
+
+
+    if (!GetFileInformationByHandle(h, &finfo)) {
+        DWORD error = GetLastError();
+        if (CloseHandle(h)) {
+            SetLastError(error);
+        }
+        return INVALID_FILE_ATTRIBUTES;
+    }
+
+    if ((finfo.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+        CloseHandle(h);
+        return INVALID_FILE_ATTRIBUTES;
+    }
+
+    /* check the reparse tag */
+
+    if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, &reparse,
+                (DWORD)sizeof(reparse), &result, NULL) == 0) {
+        CloseHandle(h);
+        return INVALID_FILE_ATTRIBUTES;
+    }
+
+    if (reparse.ReparseTag != IO_REPARSE_TAG_AF_UNIX) {
+        CloseHandle(h);
+        return INVALID_FILE_ATTRIBUTES;
+    }
+
+    CloseHandle(h);
+    return finfo.dwFileAttributes;
+}
+
+/**
  * If the given attributes are the attributes of a reparse point, then
  * read and return the attributes of the special cases.
  */
@@ -234,6 +272,11 @@ DWORD getFinalAttributes(WCHAR *path)
 
     if (GetFileAttributesExW(path, GetFileExInfoStandard, &wfad)) {
         attr = getFinalAttributesIfReparsePoint(path, wfad.dwFileAttributes);
+        if (attr == INVALID_FILE_ATTRIBUTES) {
+            if (GetLastError() == ERROR_CANT_ACCESS_FILE) {
+                attr = getFinalAttributesUnixSocket(path);
+            }
+        }
     } else {
         DWORD lerr = GetLastError();
         if ((lerr == ERROR_SHARING_VIOLATION || lerr == ERROR_ACCESS_DENIED) &&
@@ -656,6 +699,7 @@ Java_java_io_WinNTFileSystem_list(JNIEnv *env, jobject this, jobject file)
     jstring name;
     jclass str_class;
     WCHAR *pathbuf;
+    DWORD err;
 
     str_class = JNU_ClassString(env);
     CHECK_NULL_RETURN(str_class, NULL);
@@ -717,8 +761,10 @@ Java_java_io_WinNTFileSystem_list(JNIEnv *env, jobject this, jobject file)
     len = 0;
     maxlen = 16;
     rv = (*env)->NewObjectArray(env, maxlen, str_class, NULL);
-    if (rv == NULL) // Couldn't allocate an array
+    if (rv == NULL) { // Couldn't allocate an array
+        FindClose(handle);
         return NULL;
+    }
     /* Scan the directory */
     do {
         if (!wcscmp(find_data.cFileName, L".")
@@ -726,13 +772,17 @@ Java_java_io_WinNTFileSystem_list(JNIEnv *env, jobject this, jobject file)
            continue;
         name = (*env)->NewString(env, find_data.cFileName,
                                  (jsize)wcslen(find_data.cFileName));
-        if (name == NULL)
-            return NULL; // error;
+        if (name == NULL) {
+            FindClose(handle);
+            return NULL; // error
+        }
         if (len == maxlen) {
             old = rv;
             rv = (*env)->NewObjectArray(env, maxlen <<= 1, str_class, NULL);
-            if (rv == NULL || JNU_CopyObjectArray(env, rv, old, len) < 0)
+            if (rv == NULL || JNU_CopyObjectArray(env, rv, old, len) < 0) {
+                FindClose(handle);
                 return NULL; // error
+            }
             (*env)->DeleteLocalRef(env, old);
         }
         (*env)->SetObjectArrayElement(env, rv, len++, name);
@@ -740,9 +790,11 @@ Java_java_io_WinNTFileSystem_list(JNIEnv *env, jobject this, jobject file)
 
     } while (FindNextFileW(handle, &find_data));
 
-    if (GetLastError() != ERROR_NO_MORE_FILES)
-        return NULL; // error
+    err = GetLastError();
     FindClose(handle);
+    if (err != ERROR_NO_MORE_FILES) {
+        return NULL; // error
+    }
 
     if (len < maxlen) {
         /* Copy the final results into an appropriately-sized array */

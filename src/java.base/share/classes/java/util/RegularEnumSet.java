@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,9 +26,11 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -43,6 +45,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 @AnnotatedFor({"index"})
 class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
+    @java.io.Serial
     private static final long serialVersionUID = 3411599620347842686L;
     /**
      * Bit vector representation of this set.  The 2^k bit indicates the
@@ -148,7 +151,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be checked for containment in this collection
      * @return {@code true} if this set contains the specified element
      */
-    public boolean contains(Object e) {
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -182,7 +185,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(Object e) {
+    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -205,11 +208,10 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *        in the specified collection
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean containsAll(Collection<?> c) {
-        if (!(c instanceof RegularEnumSet))
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+        if (!(c instanceof RegularEnumSet<?> es))
             return super.containsAll(c);
 
-        RegularEnumSet<?> es = (RegularEnumSet<?>)c;
         if (es.elementType != elementType)
             return es.isEmpty();
 
@@ -225,10 +227,9 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *     of its elements are null
      */
     public boolean addAll(Collection<? extends E> c) {
-        if (!(c instanceof RegularEnumSet))
+        if (!(c instanceof RegularEnumSet<?> es))
             return super.addAll(c);
 
-        RegularEnumSet<?> es = (RegularEnumSet<?>)c;
         if (es.elementType != elementType) {
             if (es.isEmpty())
                 return false;
@@ -250,11 +251,10 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean removeAll(Collection<?> c) {
-        if (!(c instanceof RegularEnumSet))
+    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+        if (!(c instanceof RegularEnumSet<?> es))
             return super.removeAll(c);
 
-        RegularEnumSet<?> es = (RegularEnumSet<?>)c;
         if (es.elementType != elementType)
             return false;
 
@@ -271,11 +271,10 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean retainAll(Collection<?> c) {
-        if (!(c instanceof RegularEnumSet))
+    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+        if (!(c instanceof RegularEnumSet<?> es))
             return super.retainAll(c);
 
-        RegularEnumSet<?> es = (RegularEnumSet<?>)c;
         if (es.elementType != elementType) {
             boolean changed = (elements != 0);
             elements = 0;
@@ -306,10 +305,9 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof RegularEnumSet))
+        if (!(o instanceof RegularEnumSet<?> es))
             return super.equals(o);
 
-        RegularEnumSet<?> es = (RegularEnumSet<?>)o;
         if (es.elementType != elementType)
             return elements == 0 && es.elements == 0;
         return es.elements == elements;

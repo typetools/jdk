@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2017, Red Hat, Inc. and/or its affiliates.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,13 +26,41 @@
 #include "precompiled.hpp"
 #include "gc/g1/g1Arguments.hpp"
 #include "gc/g1/g1CollectedHeap.inline.hpp"
-#include "gc/g1/g1CollectorPolicy.hpp"
 #include "gc/g1/g1HeapVerifier.hpp"
 #include "gc/g1/heapRegion.hpp"
-#include "gc/shared/gcArguments.inline.hpp"
+#include "gc/g1/heapRegionRemSet.hpp"
+#include "gc/shared/cardTableRS.hpp"
+#include "gc/shared/gcArguments.hpp"
+#include "gc/shared/workerPolicy.hpp"
 #include "runtime/globals.hpp"
 #include "runtime/globals_extension.hpp"
-#include "runtime/vm_version.hpp"
+#include "runtime/java.hpp"
+
+static size_t calculate_heap_alignment(size_t space_alignment) {
+  size_t card_table_alignment = CardTableRS::ct_max_alignment_constraint();
+  size_t page_size = UseLargePages ? os::large_page_size() : os::vm_page_size();
+  return MAX3(card_table_alignment, space_alignment, page_size);
+}
+
+void G1Arguments::initialize_alignments() {
+  // Set up the region size and associated fields.
+  //
+  // There is a circular dependency here. We base the region size on the heap
+  // size, but the heap size should be aligned with the region size. To get
+  // around this we use the unaligned values for the heap.
+  HeapRegion::setup_heap_region_size(MaxHeapSize);
+
+  // The remembered set needs the heap regions set up.
+  HeapRegionRemSet::setup_remset_size();
+  // Needs remembered set initialization as the ergonomics are based
+  // on it.
+  if (FLAG_IS_DEFAULT(G1EagerReclaimRemSetThreshold)) {
+    FLAG_SET_ERGO(G1EagerReclaimRemSetThreshold, G1RSetSparseRegionEntries);
+  }
+
+  SpaceAlignment = HeapRegion::GrainBytes;
+  HeapAlignment = calculate_heap_alignment(SpaceAlignment);
+}
 
 size_t G1Arguments::conservative_max_heap_alignment() {
   return HeapRegion::max_region_size();
@@ -44,10 +72,12 @@ void G1Arguments::initialize_verification_types() {
     size_t length = strlen(VerifyGCType);
     char* type_list = NEW_C_HEAP_ARRAY(char, length + 1, mtInternal);
     strncpy(type_list, VerifyGCType, length + 1);
-    char* token = strtok(type_list, delimiter);
+    char* save_ptr;
+
+    char* token = strtok_r(type_list, delimiter, &save_ptr);
     while (token != NULL) {
       parse_verification_type(token);
-      token = strtok(NULL, delimiter);
+      token = strtok_r(NULL, delimiter, &save_ptr);
     }
     FREE_C_HEAP_ARRAY(char, type_list);
   }
@@ -72,25 +102,48 @@ void G1Arguments::parse_verification_type(const char* type) {
   }
 }
 
+// Returns the maximum number of workers to be used in a concurrent
+// phase based on the number of GC workers being used in a STW
+// phase.
+static uint scale_concurrent_worker_threads(uint num_gc_workers) {
+  return MAX2((num_gc_workers + 2) / 4, 1U);
+}
+
+void G1Arguments::initialize_mark_stack_size() {
+  if (FLAG_IS_DEFAULT(MarkStackSize)) {
+    size_t mark_stack_size = MIN2(MarkStackSizeMax,
+                                  MAX2(MarkStackSize, (size_t)ConcGCThreads * TASKQUEUE_SIZE));
+    FLAG_SET_ERGO(MarkStackSize, mark_stack_size);
+  }
+
+  log_trace(gc)("MarkStackSize: %uk  MarkStackSizeMax: %uk", (uint)(MarkStackSize / K), (uint)(MarkStackSizeMax / K));
+}
+
 void G1Arguments::initialize() {
   GCArguments::initialize();
   assert(UseG1GC, "Error");
-  FLAG_SET_DEFAULT(ParallelGCThreads, Abstract_VM_Version::parallel_worker_threads());
+  FLAG_SET_DEFAULT(ParallelGCThreads, WorkerPolicy::parallel_worker_threads());
   if (ParallelGCThreads == 0) {
     assert(!FLAG_IS_DEFAULT(ParallelGCThreads), "The default value for ParallelGCThreads should not be 0.");
     vm_exit_during_initialization("The flag -XX:+UseG1GC can not be combined with -XX:ParallelGCThreads=0", NULL);
   }
 
-  if (FLAG_IS_DEFAULT(G1ConcRefinementThreads)) {
-    FLAG_SET_ERGO(uint, G1ConcRefinementThreads, ParallelGCThreads);
+  // When dumping the CDS archive we want to reduce fragmentation by
+  // triggering a full collection. To get as low fragmentation as
+  // possible we only use one worker thread.
+  if (DumpSharedSpaces) {
+    FLAG_SET_ERGO(ParallelGCThreads, 1);
   }
 
-  // MarkStackSize will be set (if it hasn't been set by the user)
-  // when concurrent marking is initialized.
-  // Its value will be based upon the number of parallel marking threads.
-  // But we do set the maximum mark stack size here.
-  if (FLAG_IS_DEFAULT(MarkStackSizeMax)) {
-    FLAG_SET_DEFAULT(MarkStackSizeMax, 128 * TASKQUEUE_SIZE);
+  if (FLAG_IS_DEFAULT(G1ConcRefinementThreads)) {
+    FLAG_SET_ERGO(G1ConcRefinementThreads, ParallelGCThreads);
+  }
+
+  if (FLAG_IS_DEFAULT(ConcGCThreads) || ConcGCThreads == 0) {
+    // Calculate the number of concurrent worker threads by scaling
+    // the number of parallel GC threads.
+    uint marking_thread_num = scale_concurrent_worker_threads(ParallelGCThreads);
+    FLAG_SET_ERGO(ConcGCThreads, marking_thread_num);
   }
 
   if (FLAG_IS_DEFAULT(GCTimeRatio) || GCTimeRatio == 0) {
@@ -126,11 +179,9 @@ void G1Arguments::initialize() {
     FLAG_SET_DEFAULT(ParallelRefProcEnabled, true);
   }
 
-  log_trace(gc)("MarkStackSize: %uk  MarkStackSizeMax: %uk", (unsigned int) (MarkStackSize / K), (uint) (MarkStackSizeMax / K));
-
   // By default do not let the target stack size to be more than 1/4 of the entries
   if (FLAG_IS_DEFAULT(GCDrainStackTargetSize)) {
-    FLAG_SET_ERGO(uintx, GCDrainStackTargetSize, MIN2(GCDrainStackTargetSize, (uintx)TASKQUEUE_SIZE / 4));
+    FLAG_SET_ERGO(GCDrainStackTargetSize, MIN2(GCDrainStackTargetSize, (uintx)TASKQUEUE_SIZE / 4));
   }
 
 #ifdef COMPILER2
@@ -143,9 +194,19 @@ void G1Arguments::initialize() {
   }
 #endif
 
+  initialize_mark_stack_size();
   initialize_verification_types();
 }
 
-CollectedHeap* G1Arguments::create_heap() {
-  return create_heap_with_policy<G1CollectedHeap, G1CollectorPolicy>();
+void G1Arguments::initialize_heap_flags_and_sizes() {
+  GCArguments::initialize_heap_flags_and_sizes();
 }
+
+CollectedHeap* G1Arguments::create_heap() {
+  return new G1CollectedHeap();
+}
+
+size_t G1Arguments::heap_reserved_size_bytes() {
+  return MaxHeapSize;
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_ADLC_ADLPARSE_HPP
-#define SHARE_VM_ADLC_ADLPARSE_HPP
+#ifndef SHARE_ADLC_ADLPARSE_HPP
+#define SHARE_ADLC_ADLPARSE_HPP
 
 // ADLPARSE.HPP - Definitions for Architecture Description Language Parser
 // Authors: Chris Vick and Mike Paleczny
@@ -110,18 +110,15 @@ protected:
   void enc_class_parse_block(EncClass* encoding, char* ec_name);
 
   // Parse the components of the frame section
-  void stack_dir_parse(FrameForm *frame);   // Parse the stack direction entry
   void sync_stack_slots_parse(FrameForm *frame);
   void frame_pointer_parse(FrameForm *frame, bool native);
   void interpreter_frame_pointer_parse(FrameForm *frame, bool native);
   void inline_cache_parse(FrameForm *frame, bool native);
   void interpreter_arg_ptr_parse(FrameForm *frame, bool native);
-  void interpreter_method_oop_parse(FrameForm *frame, bool native);
+  void interpreter_method_parse(FrameForm *frame, bool native);
   void cisc_spilling_operand_name_parse(FrameForm *frame, bool native);
   void stack_alignment_parse(FrameForm *frame);
   void return_addr_parse(FrameForm *frame, bool native);
-  void preserve_stack_parse(FrameForm *frame);
-  char *calling_convention_parse();
   char *return_value_parse();
 
   // Parse components of the register section
@@ -289,4 +286,4 @@ public:
   static void trim(char* &token);  // trim leading & trailing spaces
 };
 
-#endif // SHARE_VM_ADLC_ADLPARSE_HPP
+#endif // SHARE_ADLC_ADLPARSE_HPP

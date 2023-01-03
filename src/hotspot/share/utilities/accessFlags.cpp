@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,7 @@ void AccessFlags::atomic_set_bits(jint bits) {
   do {
     old_flags = _flags;
     new_flags = old_flags | bits;
-    f = Atomic::cmpxchg(new_flags, &_flags, old_flags);
+    f = Atomic::cmpxchg(&_flags, old_flags, new_flags);
   } while(f != old_flags);
 }
 
@@ -43,7 +43,7 @@ void AccessFlags::atomic_clear_bits(jint bits) {
   do {
     old_flags = _flags;
     new_flags = old_flags & ~bits;
-    f = Atomic::cmpxchg(new_flags, &_flags, old_flags);
+    f = Atomic::cmpxchg(&_flags, old_flags, new_flags);
   } while(f != old_flags);
 }
 
@@ -62,7 +62,6 @@ void AccessFlags::print_on(outputStream* st) const {
   if (is_native      ()) st->print("native "      );
   if (is_interface   ()) st->print("interface "   );
   if (is_abstract    ()) st->print("abstract "    );
-  if (is_strict      ()) st->print("strict "      );
   if (is_synthetic   ()) st->print("synthetic "   );
   if (is_old         ()) st->print("{old} "       );
   if (is_obsolete    ()) st->print("{obsolete} "  );

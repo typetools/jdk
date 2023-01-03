@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,13 @@
 
 package com.sun.source.tree;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * Common interface for all nodes in an abstract syntax tree.
  *
  * <p><b>WARNING:</b> This interface and its sub-interfaces are
- * subject to change as the Java&trade; programming language evolves.
+ * subject to change as the Java programming language evolves.
  * These interfaces are implemented by the JDK Java compiler (javac)
  * and should not be implemented either directly or indirectly by
  * other applications.
@@ -220,6 +222,37 @@ public interface Tree {
         PARENTHESIZED(ParenthesizedTree.class),
 
         /**
+         * Used for instances of {@link BindingPatternTree}.
+         *
+         * @since 16
+         */
+        BINDING_PATTERN(BindingPatternTree.class),
+
+        /**
+         * Used for instances of {@link GuardedPatternTree}.
+         *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        GUARDED_PATTERN(GuardedPatternTree.class),
+
+        /**
+         * Used for instances of {@link ParenthesizedPatternTree}.
+         *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        PARENTHESIZED_PATTERN(ParenthesizedPatternTree.class),
+
+        /**
+         * Used for instances of {@link DefaultCaseLabelTree}.
+         *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        DEFAULT_CASE_LABEL(DefaultCaseLabelTree.class),
+
+        /**
          * Used for instances of {@link PrimitiveTypeTree}.
          */
         PRIMITIVE_TYPE(PrimitiveTypeTree.class),
@@ -238,6 +271,13 @@ public interface Tree {
          * Used for instances of {@link SwitchTree}.
          */
         SWITCH(SwitchTree.class),
+
+        /**
+         * Used for instances of {@link SwitchExpressionTree}.
+         *
+         * @since 12
+         */
+        SWITCH_EXPRESSION(SwitchExpressionTree.class),
 
         /**
          * Used for instances of {@link SynchronizedTree}.
@@ -627,6 +667,12 @@ public interface Tree {
         PROVIDES(ProvidesTree.class),
 
         /**
+         * Used for instances of {@link ClassTree} representing records.
+         * @since 16
+         */
+        RECORD(ClassTree.class),
+
+        /**
          * Used for instances of {@link RequiresTree} representing
          * requires directives in a module declaration.
          */
@@ -642,7 +688,14 @@ public interface Tree {
          * An implementation-reserved node. This is the not the node
          * you are looking for.
          */
-        OTHER(null);
+        OTHER(null),
+
+        /**
+         * Used for instances of {@link YieldTree}.
+         *
+         * @since 13
+         */
+        YIELD(YieldTree.class);
 
 
         Kind(Class<? extends Tree> intf) {
@@ -663,7 +716,7 @@ public interface Tree {
     /**
      * Returns the kind of this tree.
      *
-     * @return the kind of this tree.
+     * @return the kind of this tree
      */
     Kind getKind();
 
@@ -671,8 +724,8 @@ public interface Tree {
      * Accept method used to implement the visitor pattern.  The
      * visitor pattern is used to implement operations on trees.
      *
-     * @param <R> result type of this operation.
-     * @param <D> type of additional data.
+     * @param <R> the result type of this operation
+     * @param <D> the type of additional data
      * @param visitor the visitor to be called
      * @param data a value to be passed to the visitor
      * @return the result returned from calling the visitor

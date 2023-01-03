@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,8 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.awt.Shape;
 import java.beans.ConstructorProperties;
+import java.io.IOException;
+import java.io.Serial;
 
 /**
  * The {@code AffineTransform} class represents a 2D affine transform
@@ -52,7 +54,7 @@ import java.beans.ConstructorProperties;
  *      [ y'] = [  m10  m11  m12  ] [ y ] = [ m10x + m11y + m12 ]
  *      [ 1 ]   [   0    0    1   ] [ 1 ]   [         1         ]
  * </pre>
- * <h3><a id="quadrantapproximation">Handling 90-Degree Rotations</a></h3>
+ * <h2><a id="quadrantapproximation">Handling 90-Degree Rotations</a></h2>
  * <p>
  * In some variations of the {@code rotate} methods in the
  * {@code AffineTransform} class, a double-precision argument
@@ -1350,7 +1352,7 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
     // Utility methods to optimize rotate methods.
     // These tables translate the flags during predictable quadrant
     // rotations where the shear and scale values are swapped and negated.
-    private static final int rot90conversion[] = {
+    private static final int[] rot90conversion = {
         /* IDENTITY => */        APPLY_SHEAR,
         /* TRANSLATE (TR) => */  APPLY_SHEAR | APPLY_TRANSLATE,
         /* SCALE (SC) => */      APPLY_SHEAR,
@@ -3945,17 +3947,34 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * readObject method as it is in the 6-argument matrix constructor.
      */
 
-    /*
-     * JDK 1.2 serialVersionUID
+    /**
+     * Use serialVersionUID from JDK 1.2 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = 1330973210523860834L;
 
+    /**
+     * Writes default serializable fields to stream.
+     *
+     * @param  s the {@code ObjectOutputStream} to write
+     * @throws IOException if an I/O error occurs
+     */
+    @Serial
     private void writeObject(java.io.ObjectOutputStream s)
-        throws java.lang.ClassNotFoundException, java.io.IOException
+        throws java.io.IOException
     {
         s.defaultWriteObject();
     }
 
+    /**
+     * Reads the {@code ObjectInputStream}.
+     *
+     * @param  s the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
+     */
+    @Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.lang.ClassNotFoundException, java.io.IOException
     {

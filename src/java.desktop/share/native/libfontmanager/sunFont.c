@@ -173,9 +173,9 @@ static void initFontIDs(JNIEnv *env) {
 
      CHECK_NULL(tmpClass = (*env)->FindClass(env, "sun/font/GlyphList"));
      CHECK_NULL(sunFontIDs.glyphListX =
-         (*env)->GetFieldID(env, tmpClass, "x", "F"));
+         (*env)->GetFieldID(env, tmpClass, "gposx", "F"));
      CHECK_NULL(sunFontIDs.glyphListY =
-         (*env)->GetFieldID(env, tmpClass, "y", "F"));
+         (*env)->GetFieldID(env, tmpClass, "gposy", "F"));
      CHECK_NULL(sunFontIDs.glyphListLen =
          (*env)->GetFieldID(env, tmpClass, "len", "I"));
      CHECK_NULL(sunFontIDs.glyphImages =
@@ -343,33 +343,4 @@ Java_sun_font_StrikeCache_getGlyphCacheDescription
     nresults[12] = (size_t)&(info->managed)-baseAddr;
 
     (*env)->ReleasePrimitiveArrayCritical(env, results, nresults, 0);
-}
-
-JNIEXPORT TTLayoutTableCache* newLayoutTableCache() {
-  TTLayoutTableCache* ltc = calloc(1, sizeof(TTLayoutTableCache));
-  if (ltc) {
-    int i;
-    for(i=0;i<LAYOUTCACHE_ENTRIES;i++) {
-      ltc->entries[i].len = -1;
-    }
-    ltc->entries[0].tag = GDEF_TAG;
-    ltc->entries[1].tag = GPOS_TAG;
-    ltc->entries[2].tag = GSUB_TAG;
-    ltc->entries[3].tag = HEAD_TAG;
-    ltc->entries[4].tag = KERN_TAG;
-    ltc->entries[5].tag = MORT_TAG;
-    ltc->entries[6].tag = MORX_TAG;
-  }
-  return ltc;
-}
-
-JNIEXPORT void freeLayoutTableCache(TTLayoutTableCache* ltc) {
-  if (ltc) {
-    int i;
-    for(i=0;i<LAYOUTCACHE_ENTRIES;i++) {
-      if(ltc->entries[i].ptr) free (ltc->entries[i].ptr);
-    }
-    if (ltc->kernPairs) free(ltc->kernPairs);
-    free(ltc);
-  }
 }

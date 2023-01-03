@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,7 @@ G1FullGCCompactionPoint::G1FullGCCompactionPoint() :
     _current_region(NULL),
     _threshold(NULL),
     _compaction_top(NULL) {
-  _compaction_regions = new (ResourceObj::C_HEAP, mtGC) GrowableArray<HeapRegion*>(32, true, mtGC);
+  _compaction_regions = new (ResourceObj::C_HEAP, mtGC) GrowableArray<HeapRegion*>(32, mtGC);
   _compaction_region_iterator = _compaction_regions->begin();
 }
 
@@ -102,8 +102,8 @@ void G1FullGCCompactionPoint::forward(oop object, size_t size) {
   }
 
   // Store a forwarding pointer if the object should be moved.
-  if ((HeapWord*)object != _compaction_top) {
-    object->forward_to(oop(_compaction_top));
+  if (cast_from_oop<HeapWord*>(object) != _compaction_top) {
+    object->forward_to(cast_to_oop(_compaction_top));
   } else {
     if (object->forwardee() != NULL) {
       // Object should not move but mark-word is used so it looks like the
@@ -112,15 +112,15 @@ void G1FullGCCompactionPoint::forward(oop object, size_t size) {
       // with BiasedLocking, in this case forwardee() will return NULL
       // even if the mark-word is used. This is no problem since
       // forwardee() will return NULL in the compaction phase as well.
-      object->init_mark_raw();
+      object->init_mark();
     } else {
       // Make sure object has the correct mark-word set or that it will be
       // fixed when restoring the preserved marks.
-      assert(object->mark_raw() == markOopDesc::prototype_for_object(object) || // Correct mark
-             object->mark_raw()->must_be_preserved(object) || // Will be restored by PreservedMarksSet
-             (UseBiasedLocking && object->has_bias_pattern_raw()), // Will be restored by BiasedLocking
+      assert(object->mark() == markWord::prototype_for_klass(object->klass()) || // Correct mark
+             object->mark_must_be_preserved() || // Will be restored by PreservedMarksSet
+             (UseBiasedLocking && object->has_bias_pattern()), // Will be restored by BiasedLocking
              "should have correct prototype obj: " PTR_FORMAT " mark: " PTR_FORMAT " prototype: " PTR_FORMAT,
-             p2i(object), p2i(object->mark_raw()), p2i(markOopDesc::prototype_for_object(object)));
+             p2i(object), object->mark().value(), markWord::prototype_for_klass(object->klass()).value());
     }
     assert(object->forwardee() == NULL, "should be forwarded to NULL");
   }
@@ -134,10 +134,6 @@ void G1FullGCCompactionPoint::forward(oop object, size_t size) {
 
 void G1FullGCCompactionPoint::add(HeapRegion* hr) {
   _compaction_regions->append(hr);
-}
-
-void G1FullGCCompactionPoint::merge(G1FullGCCompactionPoint* other) {
-   _compaction_regions->appendAll(other->regions());
 }
 
 HeapRegion* G1FullGCCompactionPoint::remove_last() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
- * Interface to invoke Java&trade; programming language compilers from
+ * Interface to invoke Java programming language compilers from
  * programs.
  *
  * <p>The compiler might generate diagnostics during compilation (for
@@ -60,9 +60,9 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * #getStandardFileManager getStandardFileManager}.
  *
  * <p>An instance implementing this interface must conform to
- * <cite>The Java&trade; Language Specification</cite>
+ * <cite>The Java Language Specification</cite>
  * and generate class files conforming to
- * <cite>The Java&trade; Virtual Machine Specification</cite>.
+ * <cite>The Java Virtual Machine Specification</cite>.
  * The versions of these
  * specifications are defined in the {@linkplain Tool} interface.
  *
@@ -241,7 +241,7 @@ public interface JavaCompiler extends Tool, OptionChecker {
      * @param out a Writer for additional output from the compiler;
      * use {@code System.err} if {@code null}
      * @param fileManager a file manager; if {@code null} use the
-     * compiler's standard filemanager
+     * compiler's standard file manager
      * @param diagnosticListener a diagnostic listener; if {@code
      * null} use the compiler's default method for reporting
      * diagnostics
@@ -295,7 +295,7 @@ public interface JavaCompiler extends Tool, OptionChecker {
      * compilation task has not yet started.  To start the task, call
      * the {@linkplain #call call} method.
      *
-     * <p>Before calling the call method, additional aspects of the
+     * <p>Before calling the {@code call} method, additional aspects of the
      * task can be configured, for example, by calling the
      * {@linkplain #setProcessors setProcessors} method.
      */
@@ -336,7 +336,7 @@ public interface JavaCompiler extends Tool, OptionChecker {
         /**
          * Performs this compilation task.  The compilation may only
          * be performed once.  Subsequent calls to this method throw
-         * IllegalStateException.
+         * {@code IllegalStateException}.
          *
          * @return true if and only all the files compiled without errors;
          * false otherwise

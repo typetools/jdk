@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,7 @@ package java.util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * A specialized {@link Set} implementation for use with enum types.  All of
@@ -80,11 +80,13 @@ import jdk.internal.misc.SharedSecrets;
  * @see EnumMap
  */
 @AnnotatedFor({"nullness", "index"})
-@SuppressWarnings("serial") // No serialVersionUID due to usage of
-                            // serial proxy pattern
 public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     implements Cloneable, java.io.Serializable
 {
+    // declare EnumSet.class serialization compatibility with JDK 8
+    @java.io.Serial
+    private static final long serialVersionUID = 1009687484059888093L;
+
     /**
      * The class of all the elements of this set.
      */
@@ -452,6 +454,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
          * held by this proxy
          */
         @SuppressWarnings("unchecked")
+        @java.io.Serial
         private Object readResolve() {
             // instead of cast to E, we should perhaps use elementType.cast()
             // to avoid injection of forged stream, but it will slow the
@@ -462,27 +465,41 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
             return result;
         }
 
+        @java.io.Serial
         private static final long serialVersionUID = 362491234563181265L;
     }
 
     /**
      * Returns a
-     * <a href="../../serialized-form.html#java.util.EnumSet.SerializationProxy">
+     * <a href="{@docRoot}/serialized-form.html#java.util.EnumSet.SerializationProxy">
      * SerializationProxy</a>
      * representing the state of this instance.
      *
      * @return a {@link SerializationProxy}
      * representing the state of this instance
      */
+    @java.io.Serial
     Object writeReplace() {
         return new SerializationProxy<>(this);
     }
 
     /**
+     * Throws {@code InvalidObjectException}.
      * @param s the stream
      * @throws java.io.InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
+        throws java.io.InvalidObjectException {
+        throw new java.io.InvalidObjectException("Proxy required");
+    }
+
+    /**
+     * Throws {@code InvalidObjectException}.
+     * @throws java.io.InvalidObjectException always
+     */
+    @java.io.Serial
+    private void readObjectNoData()
         throws java.io.InvalidObjectException {
         throw new java.io.InvalidObjectException("Proxy required");
     }

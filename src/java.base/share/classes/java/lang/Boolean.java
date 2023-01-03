@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,26 +36,42 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
+
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DynamicConstantDesc;
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
+import static java.lang.constant.ConstantDescs.CD_Boolean;
 
 /**
  * The Boolean class wraps a value of the primitive type
  * {@code boolean} in an object. An object of type
  * {@code Boolean} contains a single field whose type is
  * {@code boolean}.
- * <p>
- * In addition, this class provides many methods for
+ *
+ * <p>In addition, this class provides many methods for
  * converting a {@code boolean} to a {@code String} and a
  * {@code String} to a {@code boolean}, as well as other
  * constants and methods useful when dealing with a
  * {@code boolean}.
  *
+ * <p>This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
+ *
  * @author  Arthur van Hoff
  * @since   1.0
  */
 @AnnotatedFor({"interning", "nullness", "value"})
+@jdk.internal.ValueBased
 public final class Boolean implements java.io.Serializable,
-                                      Comparable<Boolean>
+                                      Comparable<Boolean>, Constable
 {
     /**
      * The {@code Boolean} object corresponding to the primitive
@@ -85,6 +101,7 @@ public final class Boolean implements java.io.Serializable,
     private final boolean value;
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = -3665804199014368530L;
 
     /**
@@ -101,7 +118,7 @@ public final class Boolean implements java.io.Serializable,
      * if possible.
      */
     @StaticallyExecutable
-    @Deprecated(since="9")
+    @Deprecated(since="9", forRemoval = true)
     public @PolyValue Boolean(@PolyValue boolean value) {
         this.value = value;
     }
@@ -122,7 +139,7 @@ public final class Boolean implements java.io.Serializable,
      * to convert a string to a {@code Boolean} object.
      */
     @StaticallyExecutable
-    @Deprecated(since="9")
+    @Deprecated(since="9", forRemoval = true)
     public Boolean(@Nullable String s) {
         this(parseBoolean(s));
     }
@@ -157,7 +174,7 @@ public final class Boolean implements java.io.Serializable,
      */
     @Pure
     @StaticallyExecutable
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public @PolyValue boolean booleanValue(@PolyValue Boolean this) {
         return value;
     }
@@ -178,7 +195,7 @@ public final class Boolean implements java.io.Serializable,
      */
     @Pure
     @StaticallyExecutable
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static @Interned @NewObject @PolyValue Boolean valueOf(@PolyValue boolean b) {
         return (b ? TRUE : FALSE);
     }
@@ -258,7 +275,7 @@ public final class Boolean implements java.io.Serializable,
         return value ? 1231 : 1237;
     }
 
-   /**
+    /**
      * Returns {@code true} if and only if the argument is not
      * {@code null} and is a {@code Boolean} object that
      * represents the same {@code boolean} value as this object.
@@ -389,5 +406,17 @@ public final class Boolean implements java.io.Serializable,
     @StaticallyExecutable
     public static boolean logicalXor(boolean a, boolean b) {
         return a ^ b;
+    }
+
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance.
+     *
+     * @return an {@link Optional} describing the {@linkplain Boolean} instance
+     * @since 15
+     */
+    @Override
+    public Optional<DynamicConstantDesc<Boolean>> describeConstable() {
+        return Optional.of(value ? ConstantDescs.TRUE : ConstantDescs.FALSE);
     }
 }

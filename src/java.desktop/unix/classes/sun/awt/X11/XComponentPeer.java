@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package sun.awt.X11;
 
 import java.awt.AWTEvent;
@@ -52,8 +53,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.PaintEvent;
 import java.awt.event.WindowEvent;
-import java.awt.image.ImageObserver;
-import java.awt.image.ImageProducer;
 import java.awt.image.VolatileImage;
 import java.awt.peer.ComponentPeer;
 import java.awt.peer.ContainerPeer;
@@ -61,14 +60,15 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
+import sun.awt.AWTAccessor;
 import sun.awt.AWTAccessor.ComponentAccessor;
-import sun.util.logging.PlatformLogger;
-import sun.awt.*;
+import sun.awt.SunToolkit;
+import sun.awt.X11GraphicsConfig;
 import sun.awt.event.IgnorePaintEvent;
 import sun.awt.image.SunVolatileImage;
-import sun.awt.image.ToolkitImage;
 import sun.java2d.BackBufferCapsProvider;
 import sun.java2d.pipe.Region;
+import sun.util.logging.PlatformLogger;
 
 
 public class XComponentPeer extends XWindow implements ComponentPeer, DropTargetPeer,
@@ -710,24 +710,12 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
         }
     }
 
-    public Image createImage(ImageProducer producer) {
-        return new ToolkitImage(producer);
-    }
-
     public Image createImage(int width, int height) {
         return graphicsConfig.createAcceleratedImage(target, width, height);
     }
 
     public VolatileImage createVolatileImage(int width, int height) {
         return new SunVolatileImage(target, width, height);
-    }
-
-    public boolean prepareImage(Image img, int w, int h, ImageObserver o) {
-        return Toolkit.getDefaultToolkit().prepareImage(img, w, h, o);
-    }
-
-    public int checkImage(Image img, int w, int h, ImageObserver o) {
-        return Toolkit.getDefaultToolkit().checkImage(img, w, h, o);
     }
 
     public Insets getInsets() {
@@ -773,7 +761,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
 
     static int[] getRGBvals(Color c) {
 
-        int rgbvals[] = new int[3];
+        int[] rgbvals = new int[3];
 
         rgbvals[0] = c.getRed();
         rgbvals[1] = c.getGreen();
@@ -788,7 +776,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
     static final int FOREGROUND_COLOR = 3;
 
     public Color[] getGUIcolors() {
-        Color c[] = new Color[4];
+        Color[] c = new Color[4];
         float backb, highb, shadowb, hue, saturation;
         c[BACKGROUND_COLOR] = getWinBackground();
         if (c[BACKGROUND_COLOR] == null) {
@@ -907,7 +895,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
     /**
      * Draw a 3D oval.
      */
-    public void draw3DOval(Graphics g, Color colors[],
+    public void draw3DOval(Graphics g, Color[] colors,
                            int x, int y, int w, int h, boolean raised)
         {
         Color c = g.getColor();
@@ -918,7 +906,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
         g.setColor(c);
     }
 
-    public void draw3DRect(Graphics g, Color colors[],
+    public void draw3DRect(Graphics g, Color[] colors,
                            int x, int y, int width, int height, boolean raised)
         {
             Color c = g.getColor();
@@ -974,8 +962,8 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
         int v1 = thickness + (int)(f * (val - min));
         int v2 = (int)(f * vis);
         int w2 = thickness-4;
-        int tpts_x[] = new int[3];
-        int tpts_y[] = new int[3];
+        int[] tpts_x = new int[3];
+        int[] tpts_y = new int[3];
 
         if (length < 3*w2 ) {
             v1 = v2 = 0;

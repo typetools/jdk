@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2014, 2018, Red Hat Inc. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,14 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "code/codeCache.hpp"
+#include "code/compiledIC.hpp"
+#include "gc/shared/collectedHeap.hpp"
 #include "memory/resourceArea.hpp"
 #include "nativeInst_aarch64.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.hpp"
+#include "runtime/orderAccess.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/ostream.hpp"
@@ -178,7 +182,8 @@ address NativeCall::destination() const {
 // during code generation, where no patching lock is needed.
 void NativeCall::set_destination_mt_safe(address dest, bool assert_lock) {
   assert(!assert_lock ||
-         (Patching_lock->is_locked() || SafepointSynchronize::is_at_safepoint()),
+         (Patching_lock->is_locked() || SafepointSynchronize::is_at_safepoint()) ||
+         CompiledICLocker::is_safe(addr_at(0)),
          "concurrent code patching");
 
   ResourceMark rm;
@@ -230,7 +235,11 @@ void NativeCall::insert(address code_pos, address entry) { Unimplemented(); }
 //-------------------------------------------------------------------
 
 void NativeMovConstReg::verify() {
-  // make sure code pattern is actually mov reg64, imm64 instructions
+  if (! (nativeInstruction_at(instruction_address())->is_movz() ||
+        is_adrp_at(instruction_address()) ||
+        is_ldr_literal_at(instruction_address())) ) {
+    fatal("should be MOVZ or ADRP or LDR (literal)");
+  }
 }
 
 
@@ -281,8 +290,6 @@ void NativeMovConstReg::print() {
 
 //-------------------------------------------------------------------
 
-address NativeMovRegMem::instruction_address() const      { return addr_at(instruction_offset); }
-
 int NativeMovRegMem::offset() const  {
   address pc = instruction_address();
   unsigned insn = *(unsigned*)pc;
@@ -299,7 +306,7 @@ void NativeMovRegMem::set_offset(int x) {
   unsigned insn = *(unsigned*)pc;
   if (maybe_cpool_ref(pc)) {
     address addr = MacroAssembler::target_addr_for_insn(pc);
-    *(long*)addr = x;
+    *(int64_t*)addr = x;
   } else {
     MacroAssembler::pd_patch_instruction(pc, (address)intptr_t(x));
     ICache::invalidate_range(instruction_address(), instruction_size);
@@ -326,9 +333,14 @@ address NativeJump::jump_destination() const          {
 
   // We use jump to self as the unresolved address which the inline
   // cache code (and relocs) know about
+  // As a special case we also use sequence movptr(r,0); br(r);
+  // i.e. jump to 0 when we need leave space for a wide immediate
+  // load
 
-  // return -1 if jump to self
-  dest = (dest == (address) this) ? (address) -1 : dest;
+  // return -1 if jump to self or to 0
+  if ((dest == (address)this) || dest == 0) {
+    dest = (address) -1;
+  }
   return dest;
 }
 
@@ -350,9 +362,13 @@ address NativeGeneralJump::jump_destination() const {
 
   // We use jump to self as the unresolved address which the inline
   // cache code (and relocs) know about
+  // As a special case we also use jump to 0 when first generating
+  // a general jump
 
-  // return -1 if jump to self
-  dest = (dest == (address) this) ? (address) -1 : dest;
+  // return -1 if jump to self or to 0
+  if ((dest == (address)this) || dest == 0) {
+    dest = (address) -1;
+  }
   return dest;
 }
 
@@ -448,6 +464,10 @@ void NativeIllegalInstruction::insert(address code_pos) {
   *(juint*)code_pos = 0xd4bbd5a1; // dcps1 #0xdead
 }
 
+bool NativeInstruction::is_stop() {
+  return uint_at(0) == 0xd4bbd5c1; // dcps1 #0xdeae
+}
+
 //-------------------------------------------------------------------
 
 // MT-safe inserting of a jump over a jump or a nop (used by
@@ -456,16 +476,9 @@ void NativeIllegalInstruction::insert(address code_pos) {
 void NativeJump::patch_verified_entry(address entry, address verified_entry, address dest) {
 
   assert(dest == SharedRuntime::get_handle_wrong_method_stub(), "expected fixed destination of patch");
-
-#ifdef ASSERT
-  // This may be the temporary nmethod generated while we're AOT
-  // compiling.  Such an nmethod doesn't begin with a NOP but with an ADRP.
-  if (! (CalculateClassFingerprint && UseAOT && is_adrp_at(verified_entry))) {
-    assert(nativeInstruction_at(verified_entry)->is_jump_or_nop()
-           || nativeInstruction_at(verified_entry)->is_sigill_zombie_not_entrant(),
-           "Aarch64 cannot replace non-jump with jump");
-  }
-#endif
+  assert(nativeInstruction_at(verified_entry)->is_jump_or_nop()
+         || nativeInstruction_at(verified_entry)->is_sigill_zombie_not_entrant(),
+         "Aarch64 cannot replace non-jump with jump");
 
   // Patch this nmethod atomically.
   if (Assembler::reachable_from_branch_at(verified_entry, dest)) {

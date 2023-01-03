@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@ package jdk.jfr.internal;
 
 import java.lang.reflect.Modifier;
 
-import jdk.jfr.Event;
 import jdk.jfr.internal.handlers.EventHandler;
 import jdk.jfr.internal.instrument.JDKEvents;
 
@@ -53,8 +52,8 @@ final class JVMUpcalls {
      */
     static byte[] onRetransform(long traceId, boolean dummy, Class<?> clazz, byte[] oldBytes) throws Throwable {
         try {
-            if (Event.class.isAssignableFrom(clazz) && !Modifier.isAbstract(clazz.getModifiers())) {
-                EventHandler handler = Utils.getHandler(clazz.asSubclass(Event.class));
+            if (jdk.internal.event.Event.class.isAssignableFrom(clazz) && !Modifier.isAbstract(clazz.getModifiers())) {
+                EventHandler handler = Utils.getHandler(clazz.asSubclass(jdk.internal.event.Event.class));
                 if (handler == null) {
                     Logger.log(LogTag.JFR_SYSTEM, LogLevel.INFO, "No event handler found for " + clazz.getName() + ". Ignoring instrumentation request.");
                     // Probably triggered by some other agent
@@ -82,7 +81,7 @@ final class JVMUpcalls {
      *            Id of the class
      * @param forceInstrumentation
      *            add instrumentation regardless if event is enabled or not.
-     * @param superClazz
+     * @param superClass
      *            the super class of the class being processed
      * @param oldBytes
      *            byte code

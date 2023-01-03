@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package jdk.jshell;
 
-import jdk.jshell.SourceCodeAnalysis.Completeness;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
@@ -33,6 +32,7 @@ import com.sun.source.tree.ErroneousTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.ImportTree;
+import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
@@ -103,9 +103,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.stream.Stream;
@@ -170,7 +168,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
     @Override
     public CompletionInfo analyzeCompletion(String srcInput) {
         MaskCommentsAndModifiers mcm = new MaskCommentsAndModifiers(srcInput, false);
-        if (mcm.endsWithOpenComment()) {
+        if (mcm.endsWithOpenToken()) {
             proc.debug(DBG_COMPA, "Incomplete (open comment): %s\n", srcInput);
             return new CompletionInfoImpl(DEFINITELY_INCOMPLETE, null, srcInput + '\n');
         }
@@ -277,24 +275,16 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
         if (code.trim().isEmpty()) { //TODO: comment handling
             code += ";";
         }
-        OuterWrap codeWrap;
-        switch (guessKind(code)) {
-            case IMPORT:
-                codeWrap = proc.outerMap.wrapImport(Wrap.simpleWrap(code + "any.any"), null);
-                break;
-            case CLASS:
-            case METHOD:
-                codeWrap = proc.outerMap.wrapInTrialClass(Wrap.classMemberWrap(code));
-                break;
-            default:
-                codeWrap = proc.outerMap.wrapInTrialClass(Wrap.methodWrap(code));
-                break;
-        }
+        OuterWrap codeWrap = switch (guessKind(code)) {
+            case IMPORT -> proc.outerMap.wrapImport(Wrap.simpleWrap(code + "any.any"), null);
+            case CLASS, METHOD -> proc.outerMap.wrapInTrialClass(Wrap.classMemberWrap(code));
+            default -> proc.outerMap.wrapInTrialClass(Wrap.methodWrap(code));
+        };
         String requiredPrefix = identifier;
         return computeSuggestions(codeWrap, cursor, anchor).stream()
                 .filter(s -> s.continuation().startsWith(requiredPrefix) && !s.continuation().equals(REPL_DOESNOTMATTER_CLASS_NAME))
                 .sorted(Comparator.comparing(Suggestion::continuation))
-                .collect(collectingAndThen(toList(), Collections::unmodifiableList));
+                .toList();
     }
 
     private List<Suggestion> computeSuggestions(OuterWrap code, int cursor, int[] anchor) {
@@ -302,7 +292,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
             SourcePositions sp = at.trees().getSourcePositions();
             CompilationUnitTree topLevel = at.firstCuTree();
             List<Suggestion> result = new ArrayList<>();
-            TreePath tp = pathFor(topLevel, sp, code.snippetIndexToWrapIndex(cursor));
+            TreePath tp = pathFor(topLevel, sp, code, cursor);
             if (tp != null) {
                 Scope scope = at.trees().getScope(tp);
                 Predicate<Element> accessibility = createAccessibilityFilter(at, tp);
@@ -310,11 +300,53 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                 Predicate<Element> smartFilter;
                 Iterable<TypeMirror> targetTypes = findTargetType(at, tp);
                 if (targetTypes != null) {
-                    smartTypeFilter = el -> {
-                        TypeMirror resultOf = resultTypeOf(el);
-                        return Util.stream(targetTypes)
-                                .anyMatch(targetType -> at.getTypes().isAssignable(resultOf, targetType));
-                    };
+                    if (tp.getLeaf().getKind() == Kind.MEMBER_REFERENCE) {
+                        Types types = at.getTypes();
+                        smartTypeFilter = t -> {
+                            if (t.getKind() != ElementKind.METHOD) {
+                                return false;
+                            }
+                            ExecutableElement ee = (ExecutableElement) t;
+                            for (TypeMirror type : targetTypes) {
+                                if (type.getKind() != TypeKind.DECLARED)
+                                    continue;
+                                DeclaredType d = (DeclaredType) type;
+                                List<? extends Element> enclosed =
+                                        ((TypeElement) d.asElement()).getEnclosedElements();
+                                for (ExecutableElement m : ElementFilter.methodsIn(enclosed)) {
+                                    boolean matches = true;
+                                    if (!m.getModifiers().contains(Modifier.ABSTRACT)) {
+                                        continue;
+                                    }
+                                    if (m.getParameters().size() != ee.getParameters().size()) {
+                                        continue;
+                                    }
+                                    ExecutableType mInst = (ExecutableType) types.asMemberOf(d, m);
+                                    List<? extends TypeMirror> expectedParams = mInst.getParameterTypes();
+                                    if (mInst.getReturnType().getKind() != TypeKind.VOID &&
+                                        !types.isSubtype(ee.getReturnType(), mInst.getReturnType())) {
+                                        continue;
+                                    }
+                                    for (int i = 0; i < m.getParameters().size(); i++) {
+                                        if (!types.isSubtype(expectedParams.get(i),
+                                                             ee.getParameters().get(i).asType())) {
+                                            matches = false;
+                                        }
+                                    }
+                                    if (matches) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
+                        };
+                    } else {
+                        smartTypeFilter = el -> {
+                            TypeMirror resultOf = resultTypeOf(el);
+                            return Util.stream(targetTypes)
+                                    .anyMatch(targetType -> at.getTypes().isAssignable(resultOf, targetType));
+                        };
+                    }
 
                     smartFilter = IS_CLASS.negate()
                                           .and(IS_INTERFACE.negate())
@@ -325,19 +357,31 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                     smartTypeFilter = TRUE;
                 }
                 switch (tp.getLeaf().getKind()) {
-                    case MEMBER_SELECT: {
-                        MemberSelectTree mst = (MemberSelectTree)tp.getLeaf();
-                        if (mst.getIdentifier().contentEquals("*"))
+                    case MEMBER_REFERENCE, MEMBER_SELECT: {
+                        javax.lang.model.element.Name identifier;
+                        ExpressionTree expression;
+                        Function<Boolean, String> paren;
+                        if (tp.getLeaf().getKind() == Kind.MEMBER_SELECT) {
+                            MemberSelectTree mst = (MemberSelectTree)tp.getLeaf();
+                            identifier = mst.getIdentifier();
+                            expression = mst.getExpression();
+                            paren = DEFAULT_PAREN;
+                        } else {
+                            MemberReferenceTree mst = (MemberReferenceTree)tp.getLeaf();
+                            identifier = mst.getName();
+                            expression = mst.getQualifierExpression();
+                            paren = NO_PAREN;
+                        }
+                        if (identifier.contentEquals("*"))
                             break;
-                        TreePath exprPath = new TreePath(tp, mst.getExpression());
+                        TreePath exprPath = new TreePath(tp, expression);
                         TypeMirror site = at.trees().getTypeMirror(exprPath);
                         boolean staticOnly = isStaticContext(at, exprPath);
                         ImportTree it = findImport(tp);
                         boolean isImport = it != null;
 
-                        List<? extends Element> members = membersOf(at, site, staticOnly && !isImport);
+                        List<? extends Element> members = membersOf(at, site, staticOnly && !isImport && tp.getLeaf().getKind() == Kind.MEMBER_SELECT);
                         Predicate<Element> filter = accessibility;
-                        Function<Boolean, String> paren = DEFAULT_PAREN;
 
                         if (isNewClass(tp)) { // new xxx.|
                             Predicate<Element> constructorFilter = accessibility.and(IS_CONSTRUCTOR)
@@ -450,23 +494,14 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                         addScopeElements(at, scope, IDENTITY, accept, smartFilter, result);
 
                         Tree parent = tp.getParentPath().getLeaf();
-                        switch (parent.getKind()) {
-                            case VARIABLE:
-                                accept = ((VariableTree)parent).getType() == tp.getLeaf() ?
-                                        IS_VOID.negate() :
-                                        TRUE;
-                                break;
-                            case PARAMETERIZED_TYPE: // TODO: JEP 218: Generics over Primitive Types
-                            case TYPE_PARAMETER:
-                            case CLASS:
-                            case INTERFACE:
-                            case ENUM:
-                                accept = FALSE;
-                                break;
-                            default:
-                                accept = TRUE;
-                                break;
-                        }
+                        accept = switch (parent.getKind()) {
+                            case VARIABLE -> ((VariableTree) parent).getType() == tp.getLeaf() ?
+                                             IS_VOID.negate() :
+                                             TRUE;
+                            case PARAMETERIZED_TYPE -> FALSE; // TODO: JEP 218: Generics over Primitive Types
+                            case TYPE_PARAMETER, CLASS, INTERFACE, ENUM -> FALSE;
+                            default -> TRUE;
+                        };
                         addElements(primitivesOrVoid(at), accept, smartFilter, result);
                         break;
                     }
@@ -535,7 +570,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
     public List<SnippetWrapper> wrappers(String input) {
         return proc.eval.sourceToSnippetsWithWrappers(input).stream()
                 .map(this::wrapper)
-                .collect(toList());
+                .toList();
     }
 
     @Override
@@ -564,7 +599,10 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
         }
     }
 
-    private TreePath pathFor(CompilationUnitTree topLevel, SourcePositions sp, int pos) {
+    private TreePath pathFor(CompilationUnitTree topLevel, SourcePositions sp, GeneralWrap wrap, int snippetEndPos) {
+        int wrapEndPos = snippetEndPos == 0
+                ? wrap.snippetIndexToWrapIndex(snippetEndPos)
+                : wrap.snippetIndexToWrapIndex(snippetEndPos - 1) + 1;
         TreePath[] deepest = new TreePath[1];
 
         new TreePathScanner<Void, Void>() {
@@ -577,7 +615,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                 long end = sp.getEndPosition(topLevel, tree);
                 long prevEnd = deepest[0] != null ? sp.getEndPosition(topLevel, deepest[0].getLeaf()) : -1;
 
-                if (start <= pos && pos <= end &&
+                if (start <= wrapEndPos && wrapEndPos <= end &&
                     (start != end || prevEnd != end || deepest[0] == null ||
                      deepest[0].getParentPath().getLeaf() != getCurrentPath().getLeaf())) {
                     deepest[0] = new TreePath(getCurrentPath(), tree);
@@ -781,7 +819,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
     private List<? extends Element> membersOf(AnalyzeTask at, List<? extends Element> elements) {
         return elements.stream()
                 .flatMap(e -> membersOf(at, e.asType(), true).stream())
-                .collect(toList());
+                .toList();
     }
 
     private List<? extends Element> getEnclosedElements(PackageElement packageEl) {
@@ -795,7 +833,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                                 .stream()
                                 .filter(el -> el.asType() != null)
                                 .filter(el -> el.asType().getKind() != TypeKind.ERROR)
-                                .collect(toList());
+                                .toList();
             } catch (CompletionFailure cf) {
                 //ignore...
             }
@@ -810,7 +848,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                 TypeKind.LONG, TypeKind.SHORT, TypeKind.VOID)
                 .map(tk -> (Type)(tk == TypeKind.VOID ? types.getNoType(tk) : types.getPrimitiveType(tk)))
                 .map(Type::asElement)
-                .collect(toList());
+                .toList();
     }
 
     void classpathChanged() {
@@ -1048,15 +1086,12 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
 
     private TypeMirror resultTypeOf(Element el) {
         //TODO: should reflect the type of site!
-        switch (el.getKind()) {
-            case METHOD:
-                return ((ExecutableElement) el).getReturnType();
-            case CONSTRUCTOR:
-            case INSTANCE_INIT: case STATIC_INIT: //TODO: should be filtered out
-                return el.getEnclosingElement().asType();
-            default:
-                return el.asType();
-        }
+        return switch (el.getKind()) {
+            case METHOD -> ((ExecutableElement) el).getReturnType();
+            // TODO: INSTANCE_INIT and STATIC_INIT should be filtered out
+            case CONSTRUCTOR, INSTANCE_INIT, STATIC_INIT -> el.getEnclosingElement().asType();
+            default -> el.asType();
+        };
     }
 
     private void addScopeElements(AnalyzeTask at, Scope scope, Function<Element, Iterable<? extends Element>> elementConvertor, Predicate<Element> filter, Predicate<Element> smartFilter, List<Suggestion> result) {
@@ -1177,7 +1212,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
         return proc.taskFactory.analyze(codeWrap, List.of(keepParameterNames), at -> {
             SourcePositions sp = at.trees().getSourcePositions();
             CompilationUnitTree topLevel = at.firstCuTree();
-            TreePath tp = pathFor(topLevel, sp, codeWrap.snippetIndexToWrapIndex(cursor));
+            TreePath tp = pathFor(topLevel, sp, codeWrap, cursor);
 
             if (tp == null)
                 return Collections.emptyList();
@@ -1216,7 +1251,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                             this.filterExecutableTypesByArguments(at, candidates, fullActuals)
                                 .stream()
                                 .filter(method -> parameterType(method.fst, method.snd, fullActuals.size(), true).findAny().isPresent())
-                                .collect(Collectors.toList());
+                                .toList();
                 }
 
                 elements = Util.stream(candidates).map(method -> method.fst);
@@ -1230,6 +1265,13 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                     return Collections.emptyList();
                 }
 
+                Predicate<Element> accessibility = createAccessibilityFilter(at, tp);
+
+                if (!accessibility.test(el)) {
+                    //not accessible
+                    return Collections.emptyList();
+                }
+
                 elements = Stream.of(el);
             } else {
                 return Collections.emptyList();
@@ -1240,7 +1282,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
             try (JavadocHelper helper = JavadocHelper.create(at.task, findSources())) {
                 result = elements.map(el -> constructDocumentation(at, helper, el, computeJavadoc))
                                  .filter(Objects::nonNull)
-                                 .collect(Collectors.toList());
+                                 .toList();
             } catch (IOException ex) {
                 proc.debug(ex, "JavadocHelper.close()");
             }
@@ -1520,7 +1562,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
         return proc.taskFactory.analyze(codeWrap, at -> {
             SourcePositions sp = at.trees().getSourcePositions();
             CompilationUnitTree topLevel = at.firstCuTree();
-            TreePath tp = pathFor(topLevel, sp, codeWrap.snippetIndexToWrapIndex(codeFin.length()));
+            TreePath tp = pathFor(topLevel, sp, codeWrap, codeFin.length());
             if (tp.getLeaf().getKind() != Kind.IDENTIFIER) {
                 return new QualifiedNames(Collections.emptyList(), -1, true, false);
             }
@@ -1543,7 +1585,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                                        .distinct()
                                        .filter(fqn -> isAccessible(at, scope, fqn))
                                        .sorted()
-                                       .collect(Collectors.toList());
+                                       .toList();
             }
 
             return new QualifiedNames(result, simpleName.length(), upToDate, !erroneous);

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2018, Google and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -32,6 +33,7 @@ import java.util.List;
  * @summary Verifies that when the VM event is sent, sampled events are also collected.
  * @build Frame HeapMonitor
  * @compile HeapMonitorVMEventsTest.java
+ * @requires vm.jvmti
  * @requires !vm.graal.enabled
  * @run main/othervm/native -XX:+UnlockDiagnosticVMOptions
  *                          -XX:DisableIntrinsic=_clone

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@
 #include "utilities/macros.hpp"
 #include "asm/macroAssembler.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "code/codeBlob.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "runtime/java.hpp"
@@ -43,10 +44,10 @@ typedef enum {
    CPU_FAMILY_PENTIUM_4  = 0xF
 } FamilyFlag;
 
- typedef enum {
-    RDTSCP_FLAG  = 0x08000000, // bit 27
-    INTEL64_FLAG = 0x20000000  // bit 29
-  } _featureExtendedEdxFlag;
+typedef enum {
+  RDTSCP_FLAG  = 0x08000000, // bit 27
+  INTEL64_FLAG = 0x20000000  // bit 29
+} _featureExtendedEdxFlag;
 
 #define CPUID_STANDARD_FN   0x0
 #define CPUID_STANDARD_FN_1 0x1
@@ -256,7 +257,7 @@ const size_t VM_Version_Ext::CPU_EBS_MAX_LENGTH = (3 * 4 * 4 + 1);
 const size_t VM_Version_Ext::CPU_TYPE_DESC_BUF_SIZE = 256;
 const size_t VM_Version_Ext::CPU_DETAILED_DESC_BUF_SIZE = 4096;
 char* VM_Version_Ext::_cpu_brand_string = NULL;
-jlong VM_Version_Ext::_max_qualified_cpu_frequency = 0;
+int64_t VM_Version_Ext::_max_qualified_cpu_frequency = 0;
 
 int VM_Version_Ext::_no_of_threads = 0;
 int VM_Version_Ext::_no_of_cores = 0;
@@ -340,6 +341,10 @@ bool VM_Version_Ext::supports_tscinv_ext(void) {
     return !is_amd_Barcelona();
   }
 
+  if (is_hygon()) {
+    return true;
+  }
+
   return false;
 }
 
@@ -399,13 +404,20 @@ int VM_Version_Ext::number_of_sockets(void) {
 const char* VM_Version_Ext::cpu_family_description(void) {
   int cpu_family_id = extended_cpu_family();
   if (is_amd()) {
-    return _family_id_amd[cpu_family_id];
+    if (cpu_family_id < ExtendedFamilyIdLength_AMD) {
+      return _family_id_amd[cpu_family_id];
+    }
   }
   if (is_intel()) {
     if (cpu_family_id == CPU_FAMILY_PENTIUMPRO) {
       return cpu_model_description();
     }
-    return _family_id_intel[cpu_family_id];
+    if (cpu_family_id < ExtendedFamilyIdLength_INTEL) {
+      return _family_id_intel[cpu_family_id];
+    }
+  }
+  if (is_hygon()) {
+    return "Dhyana";
   }
   return "Unknown x86";
 }
@@ -422,6 +434,9 @@ int VM_Version_Ext::cpu_type_description(char* const buf, size_t buf_len) {
     x64 = cpu_is_em64t() ? " Intel64" : "";
   } else if (is_amd()) {
     cpu_type = "AMD";
+    x64 = cpu_is_em64t() ? " AMD64" : "";
+  } else if (is_hygon()) {
+    cpu_type = "Hygon";
     x64 = cpu_is_em64t() ? " AMD64" : "";
   } else {
     cpu_type = "Unknown x86";
@@ -630,56 +645,50 @@ const char* VM_Version_Ext::cpu_description(void) {
 }
 
 /**
- *  See Intel Application note 485 (chapter 10) for details
- *  on frequency extraction from cpu brand string.
- *  http://www.intel.com/content/dam/www/public/us/en/documents/application-notes/processor-identification-cpuid-instruction-note.pdf
+ *  For information about extracting the frequency from the cpu brand string, please see:
  *
+ *    Intel Processor Identification and the CPUID Instruction
+ *    Application Note 485
+ *    May 2012
+ *
+ * The return value is the frequency in Hz.
  */
-jlong VM_Version_Ext::max_qualified_cpu_freq_from_brand_string(void) {
-  // get brand string
+int64_t VM_Version_Ext::max_qualified_cpu_freq_from_brand_string(void) {
   const char* const brand_string = cpu_brand_string();
   if (brand_string == NULL) {
     return 0;
   }
-
-  const u8 MEGA = 1000000;
-  u8 multiplier = 0;
-  jlong frequency = 0;
-
-  // the frequency information in the cpu brand string
-  // is given in either of two formats "x.xxyHz" or "xxxxyHz",
-  // where y=M,G,T and x is digits
-  const char* Hz_location = strchr(brand_string, 'H');
-
-  if (Hz_location != NULL) {
-    if (*(Hz_location + 1) == 'z') {
-      // switch on y in "yHz"
-      switch(*(Hz_location - 1)) {
-        case 'M' :
-          // Set multiplier to frequency is in Hz
-          multiplier = MEGA;
-          break;
-        case 'G' :
-          multiplier = MEGA * 1000;
-          break;
-        case 'T' :
-          multiplier = MEGA * 1000 * 1000;
-          break;
+  const int64_t MEGA = 1000000;
+  int64_t multiplier = 0;
+  int64_t frequency = 0;
+  uint8_t idx = 0;
+  // The brand string buffer is at most 48 bytes.
+  // -2 is to prevent buffer overrun when looking for y in yHz, as z is +2 from y.
+  for (; idx < 48-2; ++idx) {
+    // Format is either "x.xxyHz" or "xxxxyHz", where y=M, G, T and x are digits.
+    // Search brand string for "yHz" where y is M, G, or T.
+    if (brand_string[idx+1] == 'H' && brand_string[idx+2] == 'z') {
+      if (brand_string[idx] == 'M') {
+        multiplier = MEGA;
+      } else if (brand_string[idx] == 'G') {
+        multiplier = MEGA * 1000;
+      } else if (brand_string[idx] == 'T') {
+        multiplier = MEGA * MEGA;
       }
+      break;
     }
   }
-
   if (multiplier > 0) {
-    // compute frequency (in Hz) from brand string
-    if (*(Hz_location - 4) == '.') { // if format is "x.xx"
-      frequency =  (jlong)(*(Hz_location - 5) - '0') * (multiplier);
-      frequency += (jlong)(*(Hz_location - 3) - '0') * (multiplier / 10);
-      frequency += (jlong)(*(Hz_location - 2) - '0') * (multiplier / 100);
+    // Compute freqency (in Hz) from brand string.
+    if (brand_string[idx-3] == '.') { // if format is "x.xx"
+      frequency =  (brand_string[idx-4] - '0') * multiplier;
+      frequency += (brand_string[idx-2] - '0') * multiplier / 10;
+      frequency += (brand_string[idx-1] - '0') * multiplier / 100;
     } else { // format is "xxxx"
-      frequency =  (jlong)(*(Hz_location - 5) - '0') * 1000;
-      frequency += (jlong)(*(Hz_location - 4) - '0') * 100;
-      frequency += (jlong)(*(Hz_location - 3) - '0') * 10;
-      frequency += (jlong)(*(Hz_location - 2) - '0');
+      frequency =  (brand_string[idx-4] - '0') * 1000;
+      frequency += (brand_string[idx-3] - '0') * 100;
+      frequency += (brand_string[idx-2] - '0') * 10;
+      frequency += (brand_string[idx-1] - '0');
       frequency *= multiplier;
     }
   }
@@ -687,14 +696,14 @@ jlong VM_Version_Ext::max_qualified_cpu_freq_from_brand_string(void) {
 }
 
 
-jlong VM_Version_Ext::maximum_qualified_cpu_frequency(void) {
+int64_t VM_Version_Ext::maximum_qualified_cpu_frequency(void) {
   if (_max_qualified_cpu_frequency == 0) {
     _max_qualified_cpu_frequency = max_qualified_cpu_freq_from_brand_string();
   }
   return _max_qualified_cpu_frequency;
 }
 
-const char* const VM_Version_Ext::_family_id_intel[] = {
+const char* const VM_Version_Ext::_family_id_intel[ExtendedFamilyIdLength_INTEL] = {
   "8086/8088",
   "",
   "286",
@@ -713,7 +722,7 @@ const char* const VM_Version_Ext::_family_id_intel[] = {
   "Pentium 4"
 };
 
-const char* const VM_Version_Ext::_family_id_amd[] = {
+const char* const VM_Version_Ext::_family_id_amd[ExtendedFamilyIdLength_AMD] = {
   "",
   "",
   "",
@@ -730,7 +739,14 @@ const char* const VM_Version_Ext::_family_id_amd[] = {
   "",
   "",
   "Opteron/Athlon64",
-  "Opteron QC/Phenom"  // Barcelona et.al.
+  "Opteron QC/Phenom",  // Barcelona et.al.
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Zen"
 };
 // Partially from Intel 64 and IA-32 Architecture Software Developer's Manual,
 // September 2013, Vol 3C Table 35-1

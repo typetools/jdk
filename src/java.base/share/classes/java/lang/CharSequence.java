@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,7 +63,6 @@ import java.util.stream.StreamSupport;
  *
  * @author Mike McCloskey
  * @since 1.4
- * @spec JSR-51
  */
 
 @AnnotatedFor({"lock", "nullness", "index"})
@@ -75,9 +74,8 @@ public interface CharSequence {
      *
      * @return  the number of {@code char}s in this sequence
      */
-    @LengthOf({"this"})
     @Pure
-    int length(@GuardSatisfied CharSequence this);
+    @LengthOf({"this"}) int length(@GuardSatisfied CharSequence this);
 
     /**
      * Returns the {@code char} value at the specified index.  An index ranges from zero
@@ -97,7 +95,24 @@ public interface CharSequence {
      *          if the {@code index} argument is negative or not less than
      *          {@code length()}
      */
+    @Pure
     char charAt(@IndexFor({"this"}) int index);
+
+    /**
+     * Returns {@code true} if this character sequence is empty.
+     *
+     * @implSpec
+     * The default implementation returns the result of calling {@code length() == 0}.
+     *
+     * @return {@code true} if {@link #length()} is {@code 0}, otherwise
+     * {@code false}
+     *
+     * @since 15
+     */
+    @Pure
+    default boolean isEmpty() {
+        return this.length() == 0;
+    }
 
     /**
      * Returns a {@code CharSequence} that is a subsequence of this sequence.
@@ -117,6 +132,7 @@ public interface CharSequence {
      *          if {@code end} is greater than {@code length()},
      *          or if {@code start} is greater than {@code end}
      */
+    @SideEffectFree
     CharSequence subSequence(@IndexOrHigh({"this"}) int start, @IndexOrHigh({"this"}) int end);
 
     /**
@@ -281,6 +297,7 @@ public interface CharSequence {
      * @since 11
      */
     @SuppressWarnings("unchecked")
+    @Pure
     public static int compare(CharSequence cs1, CharSequence cs2) {
         if (Objects.requireNonNull(cs1) == Objects.requireNonNull(cs2)) {
             return 0;

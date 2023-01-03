@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -120,22 +120,32 @@ HandlerTableEntry* ExceptionHandlerTable::entry_for(int catch_pco, int handler_b
 }
 
 
-void ExceptionHandlerTable::print_subtable(HandlerTableEntry* t) const {
+void ExceptionHandlerTable::print_subtable(HandlerTableEntry* t, address base) const {
   int l = t->len();
-  tty->print_cr("catch_pco = %d (%d entries)", t->pco(), l);
+  bool have_base_addr = (base != NULL);
+  if (have_base_addr) {
+    tty->print_cr("catch_pco = %d (pc=" INTPTR_FORMAT ", %d entries)", t->pco(), p2i(base + t->pco()), l);
+  } else {
+    tty->print_cr("catch_pco = %d (%d entries)", t->pco(), l);
+  }
   while (l-- > 0) {
     t++;
-    tty->print_cr("  bci %d at scope depth %d -> pco %d", t->bci(), t->scope_depth(), t->pco());
+    if (have_base_addr) {
+      tty->print_cr("  bci %d at scope depth %d -> pco %d (pc=" INTPTR_FORMAT ")",
+                    t->bci(), t->scope_depth(), t->pco(), p2i(base + t->pco()));
+    } else {
+      tty->print_cr("  bci %d at scope depth %d -> pco %d", t->bci(), t->scope_depth(), t->pco());
+    }
   }
 }
 
 
-void ExceptionHandlerTable::print() const {
+void ExceptionHandlerTable::print(address base) const {
   tty->print_cr("ExceptionHandlerTable (size = %d bytes)", size_in_bytes());
   int i = 0;
   while (i < _length) {
     HandlerTableEntry* t = _table + i;
-    print_subtable(t);
+    print_subtable(t, base);
     // advance to next subtable
     i += t->len() + 1; // +1 for header
   }
@@ -176,7 +186,7 @@ void ImplicitExceptionTable::append( uint exec_off, uint cont_off ) {
   _len = l+1;
 };
 
-uint ImplicitExceptionTable::at( uint exec_off ) const {
+uint ImplicitExceptionTable::continuation_offset( uint exec_off ) const {
   uint l = len();
   for( uint i=0; i<l; i++ )
     if( *adr(i) == exec_off )
@@ -185,13 +195,27 @@ uint ImplicitExceptionTable::at( uint exec_off ) const {
 }
 
 void ImplicitExceptionTable::print(address base) const {
-  tty->print("{");
-  for( uint i=0; i<len(); i++ )
-    tty->print("< " INTPTR_FORMAT ", " INTPTR_FORMAT " > ", p2i(base + *adr(i)), p2i(base + *(adr(i)+1)));
-  tty->print_cr("}");
+  const uint n = len();
+  if (n > 0) {
+    const uint items_per_line = 3;
+    uint i;
+    tty->print_cr("ImplicitExceptionTable (size = %d entries, %d bytes):", n, size_in_bytes());
+    tty->print("{");
+    for (i = 0; i < n; i++) {
+      if (i%items_per_line == 0) {
+        tty->cr();
+        tty->fill_to(3);
+      }
+      tty->print("< " INTPTR_FORMAT ", " INTPTR_FORMAT " > ", p2i(base + *adr(i)), p2i(base + *(adr(i)+1)));
+    }
+    tty->bol();
+    tty->print_cr("}");
+  } else {
+    tty->print_cr("ImplicitExceptionTable is empty");
+  }
 }
 
-ImplicitExceptionTable::ImplicitExceptionTable(const nmethod* nm) {
+ImplicitExceptionTable::ImplicitExceptionTable(const CompiledMethod* nm) {
   if (nm->nul_chk_table_size() == 0) {
     _len = 0;
     _data = NULL;
@@ -207,9 +231,13 @@ ImplicitExceptionTable::ImplicitExceptionTable(const nmethod* nm) {
 }
 
 void ImplicitExceptionTable::copy_to( nmethod* nm ) {
-  assert(size_in_bytes() <= nm->nul_chk_table_size(), "size of space allocated in nmethod incorrect");
+  copy_bytes_to(nm->nul_chk_table_begin(), nm->nul_chk_table_size());
+}
+
+void ImplicitExceptionTable::copy_bytes_to(address addr, int size) {
+  assert(size_in_bytes() <= size, "size of space allocated in nmethod incorrect");
   if (len() != 0) {
-    implicit_null_entry* nmdata = (implicit_null_entry*)nm->nul_chk_table_begin();
+    implicit_null_entry* nmdata = (implicit_null_entry*)addr;
     // store the length in the first uint
     nmdata[0] = _len;
     nmdata++;
@@ -218,7 +246,7 @@ void ImplicitExceptionTable::copy_to( nmethod* nm ) {
   } else {
     // zero length table takes zero bytes
     assert(size_in_bytes() == 0, "bad size");
-    assert(nm->nul_chk_table_size() == 0, "bad size");
+    assert(size == 0, "bad size");
   }
 }
 

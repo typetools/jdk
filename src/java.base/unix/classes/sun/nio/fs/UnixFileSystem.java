@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,8 +58,7 @@ abstract class UnixFileSystem
         // default directory.
         String propValue = GetPropertyAction
                 .privilegedGetProperty("sun.nio.fs.chdirAllowed", "false");
-        boolean chdirAllowed = (propValue.length() == 0) ?
-            true : Boolean.valueOf(propValue);
+        boolean chdirAllowed = propValue.isEmpty() ? true : Boolean.parseBoolean(propValue);
         if (chdirAllowed) {
             this.needToResolveAgainstDefaultDirectory = true;
         } else {
@@ -91,10 +90,6 @@ abstract class UnixFileSystem
 
     UnixPath rootDirectory() {
         return rootDirectory;
-    }
-
-    boolean isSolaris() {
-        return false;
     }
 
     static List<String> standardFileAttributeViews() {
@@ -154,6 +149,7 @@ abstract class UnixFileSystem
         return new Iterable<>() {
             public Iterator<Path> iterator() {
                 try {
+                    @SuppressWarnings("removal")
                     SecurityManager sm = System.getSecurityManager();
                     if (sm != null)
                         sm.checkRead(rootDirectory.toString());
@@ -200,6 +196,7 @@ abstract class UnixFileSystem
                     continue;
 
                 // check permission to read mount point
+                @SuppressWarnings("removal")
                 SecurityManager sm = System.getSecurityManager();
                 if (sm != null) {
                     try {
@@ -245,6 +242,7 @@ abstract class UnixFileSystem
 
     @Override
     public final Iterable<FileStore> getFileStores() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             try {
@@ -262,6 +260,7 @@ abstract class UnixFileSystem
 
     @Override
     public final Path getPath(String first, String... more) {
+        Objects.requireNonNull(first);
         String path;
         if (more.length == 0) {
             path = first;
@@ -269,7 +268,7 @@ abstract class UnixFileSystem
             StringBuilder sb = new StringBuilder();
             sb.append(first);
             for (String segment: more) {
-                if (segment.length() > 0) {
+                if (!segment.isEmpty()) {
                     if (sb.length() > 0)
                         sb.append('/');
                     sb.append(segment);
@@ -347,7 +346,7 @@ abstract class UnixFileSystem
     // Override if the platform uses different Unicode normalization form
     // for native file path. For example on MacOSX, the native path is stored
     // in Unicode NFD form.
-    char[] normalizeNativePath(char[] path) {
+    String normalizeNativePath(String path) {
         return path;
     }
 

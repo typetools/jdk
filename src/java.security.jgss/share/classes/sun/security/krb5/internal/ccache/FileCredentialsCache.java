@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,8 +33,15 @@
  */
 package sun.security.krb5.internal.ccache;
 
+import sun.security.action.GetPropertyAction;
 import sun.security.krb5.*;
 import sun.security.krb5.internal.*;
+import sun.security.util.SecurityProperties;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.io.IOException;
@@ -43,6 +50,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 /**
  * CredentialsCache stores credentials(tickets, session keys, etc) in a
@@ -181,9 +190,13 @@ public class FileCredentialsCache extends CredentialsCache
                 primaryPrincipal = p;
             credentialsList = new Vector<Credentials>();
             while (cis.available() > 0) {
-                Credentials cred = cis.readCred(version);
+                Object cred = cis.readCred(version);
                 if (cred != null) {
-                    credentialsList.addElement(cred);
+                    if (cred instanceof Credentials) {
+                        credentialsList.addElement((Credentials)cred);
+                    } else {
+                        addConfigEntry((CredentialsCache.ConfigEntry)cred);
+                    }
                 }
             }
         }
@@ -254,6 +267,9 @@ public class FileCredentialsCache extends CredentialsCache
                     cos.addCreds(tmp[i]);
                 }
             }
+            for (ConfigEntry e : getConfigEntries()) {
+                cos.addConfigEntry(primaryPrincipal, e);
+            }
         }
     }
 
@@ -306,6 +322,17 @@ public class FileCredentialsCache extends CredentialsCache
         }
     }
 
+    private List<ConfigEntry> configEntries = new ArrayList<>();
+
+    @Override
+    public void addConfigEntry(ConfigEntry e) {
+        configEntries.add(e);
+    }
+
+    @Override
+    public List<ConfigEntry> getConfigEntries() {
+        return Collections.unmodifiableList(configEntries);
+    }
 
     /**
      * Gets a credentials for a specified service.
@@ -323,6 +350,81 @@ public class FileCredentialsCache extends CredentialsCache
             }
         }
         return null;
+    }
+
+    public sun.security.krb5.Credentials getInitialCreds() {
+
+        Credentials defaultCreds = getDefaultCreds();
+        if (defaultCreds == null) {
+            return null;
+        }
+        sun.security.krb5.Credentials tgt = defaultCreds.setKrbCreds();
+
+        CredentialsCache.ConfigEntry entry = getConfigEntry("proxy_impersonator");
+        if (entry == null) {
+            if (DEBUG) {
+                System.out.println("get normal credential");
+            }
+            return tgt;
+        }
+
+        boolean force;
+        String prop = SecurityProperties.privilegedGetOverridable(
+                "jdk.security.krb5.default.initiate.credential");
+        if (prop == null) {
+            prop = "always-impersonate";
+        }
+        switch (prop) {
+            case "no-impersonate": // never try impersonation
+                if (DEBUG) {
+                    System.out.println("get normal credential");
+                }
+                return tgt;
+            case "try-impersonate":
+                force = false;
+                break;
+            case "always-impersonate":
+                force = true;
+                break;
+            default:
+                throw new RuntimeException(
+                        "Invalid jdk.security.krb5.default.initiate.credential");
+        }
+
+        try {
+            PrincipalName service = new PrincipalName(
+                    new String(entry.getData(), StandardCharsets.UTF_8));
+            if (!tgt.getClient().equals(service)) {
+                if (DEBUG) {
+                    System.out.println("proxy_impersonator does not match service name");
+                }
+                return force ? null : tgt;
+            }
+            PrincipalName client = getPrimaryPrincipal();
+            Credentials proxy = null;
+            for (Credentials c : getCredsList()) {
+                if (c.getClientPrincipal().equals(client)
+                        && c.getServicePrincipal().equals(service)) {
+                    proxy = c;
+                    break;
+                }
+            }
+            if (proxy == null) {
+                if (DEBUG) {
+                    System.out.println("Cannot find evidence ticket in ccache");
+                }
+                return force ? null : tgt;
+            }
+            if (DEBUG) {
+                System.out.println("Get proxied credential");
+            }
+            return tgt.setProxy(proxy.setKrbCreds());
+        } catch (KrbException e) {
+            if (DEBUG) {
+                System.out.println("Impersonation with ccache failed");
+            }
+            return force ? null : tgt;
+        }
     }
 
     public Credentials getDefaultCreds() {
@@ -356,11 +458,11 @@ public class FileCredentialsCache extends CredentialsCache
     public static String getDefaultCacheName() {
 
         String stdCacheNameComponent = "krb5cc";
-        String name;
 
         // The env var can start with TYPE:, we only support FILE: here.
         // http://docs.oracle.com/cd/E19082-01/819-2252/6n4i8rtr3/index.html
-        name = java.security.AccessController.doPrivileged(
+        @SuppressWarnings("removal")
+        String name = java.security.AccessController.doPrivileged(
                 new java.security.PrivilegedAction<String>() {
             @Override
             public String run() {
@@ -381,9 +483,7 @@ public class FileCredentialsCache extends CredentialsCache
         }
 
         // get cache name from system.property
-        String osname =
-            java.security.AccessController.doPrivileged(
-                        new sun.security.action.GetPropertyAction("os.name"));
+        String osname = GetPropertyAction.privilegedGetProperty("os.name");
 
         /*
          * For Unix platforms we use the default cache name to be
@@ -417,18 +517,12 @@ public class FileCredentialsCache extends CredentialsCache
 
         // we did not get the uid;
 
-        String user_name =
-            java.security.AccessController.doPrivileged(
-                        new sun.security.action.GetPropertyAction("user.name"));
+        String user_name = GetPropertyAction.privilegedGetProperty("user.name");
 
-        String user_home =
-            java.security.AccessController.doPrivileged(
-                        new sun.security.action.GetPropertyAction("user.home"));
+        String user_home = GetPropertyAction.privilegedGetProperty("user.home");
 
         if (user_home == null) {
-            user_home =
-                java.security.AccessController.doPrivileged(
-                        new sun.security.action.GetPropertyAction("user.dir"));
+            user_home = GetPropertyAction.privilegedGetProperty("user.dir");
         }
 
         if (user_name != null) {
@@ -481,6 +575,7 @@ public class FileCredentialsCache extends CredentialsCache
         v.copyInto(command);
         try {
 
+            @SuppressWarnings("removal")
             Process p =
                 java.security.AccessController.doPrivileged
                 (new java.security.PrivilegedAction<Process> () {
@@ -502,7 +597,7 @@ public class FileCredentialsCache extends CredentialsCache
 
             BufferedReader commandResult =
                 new BufferedReader
-                    (new InputStreamReader(p.getInputStream(), "8859_1"));
+                    (new InputStreamReader(p.getInputStream(), ISO_8859_1));
             String s1 = null;
             if ((command.length == 1) &&
                 (command[0].equals("/usr/bin/env"))) {

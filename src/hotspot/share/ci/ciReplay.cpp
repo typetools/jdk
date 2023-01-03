@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,14 +29,26 @@
 #include "ci/ciSymbol.hpp"
 #include "ci/ciKlass.hpp"
 #include "ci/ciUtilities.inline.hpp"
+#include "classfile/javaClasses.hpp"
+#include "classfile/symbolTable.hpp"
+#include "classfile/systemDictionary.hpp"
+#include "compiler/compilationPolicy.hpp"
 #include "compiler/compileBroker.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/oopFactory.hpp"
 #include "memory/resourceArea.hpp"
+#include "oops/constantPool.hpp"
+#include "oops/klass.inline.hpp"
 #include "oops/method.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "prims/jvmtiExport.hpp"
+#include "runtime/fieldDescriptor.inline.hpp"
+#include "runtime/globals_extension.hpp"
+#include "runtime/handles.inline.hpp"
+#include "runtime/java.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/utf8.hpp"
 
 #ifndef PRODUCT
 
@@ -271,15 +283,42 @@ class CompileReplay : public StackObj {
   // Parse a sequence of raw data encoded as bytes and return the
   // resulting data.
   char* parse_data(const char* tag, int& length) {
-    if (!parse_tag_and_count(tag, length)) {
+    int read_size = 0;
+    if (!parse_tag_and_count(tag, read_size)) {
       return NULL;
     }
 
-    char * result = NEW_RESOURCE_ARRAY(char, length);
-    for (int i = 0; i < length; i++) {
+    int actual_size = sizeof(MethodData::CompilerCounters);
+    char *result = NEW_RESOURCE_ARRAY(char, actual_size);
+    int i = 0;
+    if (read_size != actual_size) {
+      tty->print_cr("Warning: ciMethodData parsing sees MethodData size %i in file, current is %i", read_size,
+                    actual_size);
+      // Replay serializes the entire MethodData, but the data is at the end.
+      // If the MethodData instance size has changed, we can pad or truncate in the beginning
+      int padding = actual_size - read_size;
+      if (padding > 0) {
+        // pad missing data with zeros
+        tty->print_cr("- Padding MethodData");
+        for (; i < padding; i++) {
+          result[i] = 0;
+        }
+      } else if (padding < 0) {
+        // drop some data
+        tty->print_cr("- Truncating MethodData");
+        for (int j = 0; j < -padding; j++) {
+          int val = parse_int("data");
+          // discard val
+        }
+      }
+    }
+
+    assert(i < actual_size, "At least some data must remain to be copied");
+    for (; i < actual_size; i++) {
       int val = parse_int("data");
       result[i] = val;
     }
+    length = actual_size;
     return result;
   }
 
@@ -304,7 +343,7 @@ class CompileReplay : public StackObj {
   Symbol* parse_symbol(TRAPS) {
     const char* str = parse_escaped_string();
     if (str != NULL) {
-      Symbol* sym = SymbolTable::lookup(str, (int)strlen(str), CHECK_NULL);
+      Symbol* sym = SymbolTable::new_symbol(str);
       return sym;
     }
     return NULL;
@@ -313,7 +352,7 @@ class CompileReplay : public StackObj {
   // Parse a valid klass name and look it up
   Klass* parse_klass(TRAPS) {
     const char* str = parse_escaped_string();
-    Symbol* klass_name = SymbolTable::lookup(str, (int)strlen(str), CHECK_NULL);
+    Symbol* klass_name = SymbolTable::new_symbol(str);
     if (klass_name != NULL) {
       Klass* k = NULL;
       if (_iklass != NULL) {
@@ -339,7 +378,7 @@ class CompileReplay : public StackObj {
 
   // Lookup a klass
   Klass* resolve_klass(const char* klass, TRAPS) {
-    Symbol* klass_name = SymbolTable::lookup(klass, (int)strlen(klass), CHECK_NULL);
+    Symbol* klass_name = SymbolTable::new_symbol(klass);
     return SystemDictionary::resolve_or_fail(klass_name, _loader, _protection_domain, true, THREAD);
   }
 
@@ -440,18 +479,12 @@ class CompileReplay : public StackObj {
     if (!is_compile(comp_level)) {
       msg = NEW_RESOURCE_ARRAY(char, msg_len);
       jio_snprintf(msg, msg_len, "%d isn't compilation level", comp_level);
-    } else if (!TieredCompilation && (comp_level != CompLevel_highest_tier)) {
+    } else if (is_c1_compile(comp_level) && !CompilerConfig::is_c1_enabled()) {
       msg = NEW_RESOURCE_ARRAY(char, msg_len);
-      switch (comp_level) {
-        case CompLevel_simple:
-          jio_snprintf(msg, msg_len, "compilation level %d requires Client VM or TieredCompilation", comp_level);
-          break;
-        case CompLevel_full_optimization:
-          jio_snprintf(msg, msg_len, "compilation level %d requires Server VM", comp_level);
-          break;
-        default:
-          jio_snprintf(msg, msg_len, "compilation level %d requires TieredCompilation", comp_level);
-      }
+      jio_snprintf(msg, msg_len, "compilation level %d requires C1", comp_level);
+    } else if (is_c2_compile(comp_level) && !CompilerConfig::is_c2_enabled()) {
+      msg = NEW_RESOURCE_ARRAY(char, msg_len);
+      jio_snprintf(msg, msg_len, "compilation level %d requires C2", comp_level);
     }
     if (msg != NULL) {
       report_error(msg);
@@ -460,7 +493,7 @@ class CompileReplay : public StackObj {
     return true;
   }
 
-  // compile <klass> <name> <signature> <entry_bci> <comp_level> inline <count> <depth> <bci> <klass> <name> <signature> ...
+  // compile <klass> <name> <signature> <entry_bci> <comp_level> inline <count> (<depth> <bci> <klass> <name> <signature>)*
   void* process_inline(ciMethod* imethod, Method* m, int entry_bci, int comp_level, TRAPS) {
     _imethod    = m;
     _iklass     = imethod->holder();
@@ -490,7 +523,7 @@ class CompileReplay : public StackObj {
     return NULL;
   }
 
-  // compile <klass> <name> <signature> <entry_bci> <comp_level> inline <count> <depth> <bci> <klass> <name> <signature> ...
+  // compile <klass> <name> <signature> <entry_bci> <comp_level> inline <count> (<depth> <bci> <klass> <name> <signature>)*
   void process_compile(TRAPS) {
     Method* method = parse_method(CHECK);
     if (had_error()) return;
@@ -500,7 +533,7 @@ class CompileReplay : public StackObj {
     // old version w/o comp_level
     if (had_error() && (error_message() == comp_level_label)) {
       // use highest available tier
-      comp_level = TieredCompilation ? TieredStopAtLevel : CompLevel_highest_tier;
+      comp_level = CompilationPolicy::highest_compile_level();
     }
     if (!is_valid_comp_level(comp_level)) {
       return;
@@ -561,15 +594,13 @@ class CompileReplay : public StackObj {
       nm->make_not_entrant();
     }
     replay_state = this;
-    CompileBroker::compile_method(method, entry_bci, comp_level,
+    CompileBroker::compile_method(methodHandle(THREAD, method), entry_bci, comp_level,
                                   methodHandle(), 0, CompileTask::Reason_Replay, THREAD);
     replay_state = NULL;
     reset();
   }
 
   // ciMethod <klass> <name> <signature> <invocation_counter> <backedge_counter> <interpreter_invocation_count> <interpreter_throwout_count> <instructions_size>
-  //
-  //
   void process_ciMethod(TRAPS) {
     Method* method = parse_method(CHECK);
     if (had_error()) return;
@@ -581,7 +612,7 @@ class CompileReplay : public StackObj {
     rec->_instructions_size = parse_int("instructions_size");
   }
 
-  // ciMethodData <klass> <name> <signature> <state> <current mileage> orig <length> # # ... data <length> # # ... oops <length> # ... methods <length>
+  // ciMethodData <klass> <name> <signature> <state> <current_mileage> orig <length> <byte>* data <length> <ptr>* oops <length> (<offset> <klass>)* methods <length> (<offset> <klass> <name> <signature>)*
   void process_ciMethodData(TRAPS) {
     Method* method = parse_method(CHECK);
     if (had_error()) return;
@@ -591,14 +622,14 @@ class CompileReplay : public StackObj {
     // method to be rewritten (number of arguments at a call for
     // instance)
     method->method_holder()->link_class(CHECK);
-    // methodOopDesc::build_interpreter_method_data(method, CHECK);
+    // Method::build_interpreter_method_data(method, CHECK);
     {
       // Grab a lock here to prevent multiple
       // MethodData*s from being created.
-      MutexLocker ml(MethodData_lock, THREAD);
+      MutexLocker ml(THREAD, MethodData_lock);
       if (method->method_data() == NULL) {
         ClassLoaderData* loader_data = method->method_holder()->class_loader_data();
-        MethodData* method_data = MethodData::allocate(loader_data, method, CHECK);
+        MethodData* method_data = MethodData::allocate(loader_data, methodHandle(THREAD, method), CHECK);
         method->set_method_data(method_data);
       }
     }
@@ -656,7 +687,7 @@ class CompileReplay : public StackObj {
     Klass* k = parse_klass(CHECK);
   }
 
-  // ciInstanceKlass <name> <is_linked> <is_initialized> <length> tag # # # ...
+  // ciInstanceKlass <name> <is_linked> <is_initialized> <length> tag*
   //
   // Load the klass 'name' and link or initialize it.  Verify that the
   // constant pool is the same length as 'length' and make sure the
@@ -751,10 +782,12 @@ class CompileReplay : public StackObj {
     }
   }
 
+  // staticfield <klass> <name> <signature> <value>
+  //
   // Initialize a class and fill in the value for a static field.
   // This is useful when the compile was dependent on the value of
   // static fields but it's impossible to properly rerun the static
-  // initiailizer.
+  // initializer.
   void process_staticfield(TRAPS) {
     InstanceKlass* k = (InstanceKlass *)parse_klass(CHECK);
 
@@ -768,8 +801,8 @@ class CompileReplay : public StackObj {
     const char* field_name = parse_escaped_string();
     const char* field_signature = parse_string();
     fieldDescriptor fd;
-    Symbol* name = SymbolTable::lookup(field_name, (int)strlen(field_name), CHECK);
-    Symbol* sig = SymbolTable::lookup(field_signature, (int)strlen(field_signature), CHECK);
+    Symbol* name = SymbolTable::new_symbol(field_name);
+    Symbol* sig = SymbolTable::new_symbol(field_signature);
     if (!k->find_local_field(name, sig, &fd) ||
         !fd.is_static() ||
         fd.has_initial_value()) {
@@ -778,18 +811,18 @@ class CompileReplay : public StackObj {
     }
 
     oop java_mirror = k->java_mirror();
-    if (field_signature[0] == '[') {
+    if (field_signature[0] == JVM_SIGNATURE_ARRAY) {
       int length = parse_int("array length");
       oop value = NULL;
 
-      if (field_signature[1] == '[') {
+      if (field_signature[1] == JVM_SIGNATURE_ARRAY) {
         // multi dimensional array
         ArrayKlass* kelem = (ArrayKlass *)parse_klass(CHECK);
         if (kelem == NULL) {
           return;
         }
         int rank = 0;
-        while (field_signature[rank] == '[') {
+        while (field_signature[rank] == JVM_SIGNATURE_ARRAY) {
           rank++;
         }
         jint* dims = NEW_RESOURCE_ARRAY(jint, rank);
@@ -808,14 +841,15 @@ class CompileReplay : public StackObj {
         } else if (strcmp(field_signature, "[S") == 0) {
           value = oopFactory::new_shortArray(length, CHECK);
         } else if (strcmp(field_signature, "[F") == 0) {
-          value = oopFactory::new_singleArray(length, CHECK);
+          value = oopFactory::new_floatArray(length, CHECK);
         } else if (strcmp(field_signature, "[D") == 0) {
           value = oopFactory::new_doubleArray(length, CHECK);
         } else if (strcmp(field_signature, "[I") == 0) {
           value = oopFactory::new_intArray(length, CHECK);
         } else if (strcmp(field_signature, "[J") == 0) {
           value = oopFactory::new_longArray(length, CHECK);
-        } else if (field_signature[0] == '[' && field_signature[1] == 'L') {
+        } else if (field_signature[0] == JVM_SIGNATURE_ARRAY &&
+                   field_signature[1] == JVM_SIGNATURE_CLASS) {
           Klass* kelem = resolve_klass(field_signature + 1, CHECK);
           value = oopFactory::new_objArray(kelem, length, CHECK);
         } else {
@@ -856,7 +890,7 @@ class CompileReplay : public StackObj {
       } else if (strcmp(field_signature, "Ljava/lang/String;") == 0) {
         Handle value = java_lang_String::create_from_str(string_value, CHECK);
         java_mirror->obj_field_put(fd.offset(), value());
-      } else if (field_signature[0] == 'L') {
+      } else if (field_signature[0] == JVM_SIGNATURE_CLASS) {
         Klass* k = resolve_klass(string_value, CHECK);
         oop value = InstanceKlass::cast(k)->allocate_instance(CHECK);
         java_mirror->obj_field_put(fd.offset(), value);
@@ -867,6 +901,7 @@ class CompileReplay : public StackObj {
   }
 
 #if INCLUDE_JVMTI
+  // JvmtiExport <field> <value>
   void process_JvmtiExport(TRAPS) {
     const char* field = parse_string();
     bool value = parse_int("JvmtiExport flag") != 0;
@@ -1071,8 +1106,8 @@ void* ciReplay::load_inline_data(ciMethod* method, int entry_bci, int comp_level
 }
 
 int ciReplay::replay_impl(TRAPS) {
-  HandleMark hm;
-  ResourceMark rm;
+  HandleMark hm(THREAD);
+  ResourceMark rm(THREAD);
 
   if (ReplaySuppressInitializers > 2) {
     // ReplaySuppressInitializers > 2 means that we want to allow

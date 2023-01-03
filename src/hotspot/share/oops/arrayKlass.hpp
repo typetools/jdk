@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,9 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_ARRAYKLASS_HPP
-#define SHARE_VM_OOPS_ARRAYKLASS_HPP
+#ifndef SHARE_OOPS_ARRAYKLASS_HPP
+#define SHARE_OOPS_ARRAYKLASS_HPP
 
-#include "memory/universe.hpp"
 #include "oops/klass.hpp"
 
 class fieldDescriptor;
@@ -61,11 +60,9 @@ class ArrayKlass: public Klass {
   inline Klass* higher_dimension_acquire() const; // load with acquire semantics
   void set_higher_dimension(Klass* k) { _higher_dimension = k; }
   inline void release_set_higher_dimension(Klass* k); // store with release semantics
-  Klass** adr_higher_dimension()      { return (Klass**)&this->_higher_dimension;}
 
   Klass* lower_dimension() const      { return _lower_dimension; }
   void set_lower_dimension(Klass* k)  { _lower_dimension = k; }
-  Klass** adr_lower_dimension()       { return (Klass**)&this->_lower_dimension;}
 
   // offset of first element, including any padding for the sake of alignment
   int  array_header_in_bytes() const    { return layout_helper_header_size(layout_helper()); }
@@ -73,7 +70,7 @@ class ArrayKlass: public Klass {
   // type of elements (T_OBJECT for both oop arrays and array-arrays)
   BasicType element_type() const        { return layout_helper_element_type(layout_helper()); }
 
-  virtual Klass* java_super() const;//{ return SystemDictionary::Object_klass(); }
+  virtual InstanceKlass* java_super() const;
 
   // Allocation
   // Sizes points to the first dimension of the array, subsequent dimensions
@@ -88,7 +85,7 @@ class ArrayKlass: public Klass {
   Method* uncached_lookup_method(const Symbol* name,
                                  const Symbol* signature,
                                  OverpassLookupMode overpass_mode,
-                                 PrivateLookupMode private_mode = find_private) const;
+                                 PrivateLookupMode private_mode = PrivateLookupMode::find) const;
 
   static ArrayKlass* cast(Klass* k) {
     return const_cast<ArrayKlass*>(cast(const_cast<const Klass*>(k)));
@@ -100,21 +97,12 @@ class ArrayKlass: public Klass {
   }
 
   GrowableArray<Klass*>* compute_secondary_supers(int num_extra_slots,
-                                                  Array<Klass*>* transitive_interfaces);
-  bool compute_is_subtype_of(Klass* k);
+                                                  Array<InstanceKlass*>* transitive_interfaces);
 
   // Sizing
   static int static_size(int header_size);
 
   virtual void metaspace_pointers_do(MetaspaceClosure* iter);
-
-#if INCLUDE_SERVICES
-  virtual void collect_statistics(KlassSizeStats *sz) const {
-    Klass::collect_statistics(sz);
-    // Do nothing for now, but remember to modify if you add new
-    // stuff to ArrayKlass.
-  }
-#endif
 
   // Iterators
   void array_klasses_do(void f(Klass* k));
@@ -125,7 +113,7 @@ class ArrayKlass: public Klass {
 
 
   // jvm support
-  jint compute_modifier_flags(TRAPS) const;
+  jint compute_modifier_flags() const;
 
   // JVMTI support
   jint jvmti_class_status() const;
@@ -133,7 +121,7 @@ class ArrayKlass: public Klass {
   // CDS support - remove and restore oops from metadata. Oops are not shared.
   virtual void remove_unshareable_info();
   virtual void remove_java_mirror();
-  virtual void restore_unshareable_info(ClassLoaderData* loader_data, Handle protection_domain, TRAPS);
+  void restore_unshareable_info(ClassLoaderData* loader_data, Handle protection_domain, TRAPS);
 
   // Printing
   void print_on(outputStream* st) const;
@@ -147,4 +135,4 @@ class ArrayKlass: public Klass {
   void oop_verify_on(oop obj, outputStream* st);
 };
 
-#endif // SHARE_VM_OOPS_ARRAYKLASS_HPP
+#endif // SHARE_OOPS_ARRAYKLASS_HPP

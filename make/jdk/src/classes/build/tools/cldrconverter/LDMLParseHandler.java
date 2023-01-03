@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DateFormatSymbols;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +53,7 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
     private final String id;
     private String currentContext = ""; // "format"/"stand-alone"
     private String currentWidth = ""; // "wide"/"narrow"/"abbreviated"
+    private String currentStyle = ""; // short, long for decimalFormat
 
     LDMLParseHandler(String id) {
         this.id = id;
@@ -300,8 +302,6 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
         case "dayPeriodContext":
             // for FormatData
             // need to keep stand-alone and format, to allow for multiple inheritance in CLDR
-            // for FormatData
-            // need to keep stand-alone and format, to allow for multiple inheritance in CLDR
             {
                 String type = attributes.getValue("type");
                 if ("stand-alone".equals(type) || "format".equals(type)) {
@@ -314,17 +314,17 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
             break;
         case "dayPeriodWidth":
             // for FormatData
-            // create string array entry for am/pm. only keeping wide
+            // create string array entry for am/pm.
             currentWidth = attributes.getValue("type");
             switch (currentWidth) {
             case "wide":
-                pushStringArrayEntry(qName, attributes, "AmPmMarkers/" + getContainerKey(), 2);
+                pushStringArrayEntry(qName, attributes, "AmPmMarkers/" + getContainerKey(), 12);
                 break;
             case "narrow":
-                pushStringArrayEntry(qName, attributes, "narrow.AmPmMarkers/" + getContainerKey(), 2);
+                pushStringArrayEntry(qName, attributes, "narrow.AmPmMarkers/" + getContainerKey(), 12);
                 break;
             case "abbreviated":
-                pushStringArrayEntry(qName, attributes, "abbreviated.AmPmMarkers/" + getContainerKey(), 2);
+                pushStringArrayEntry(qName, attributes, "abbreviated.AmPmMarkers/" + getContainerKey(), 12);
                 break;
             default:
                 pushIgnoredContainer(qName);
@@ -341,6 +341,36 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
                     break;
                 case "pm":
                     pushStringArrayElement(qName, attributes, 1);
+                    break;
+                case "midnight":
+                    pushStringArrayElement(qName, attributes, 2);
+                    break;
+                case "noon":
+                    pushStringArrayElement(qName, attributes, 3);
+                    break;
+                case "morning1":
+                    pushStringArrayElement(qName, attributes, 4);
+                    break;
+                case "morning2":
+                    pushStringArrayElement(qName, attributes, 5);
+                    break;
+                case "afternoon1":
+                    pushStringArrayElement(qName, attributes, 6);
+                    break;
+                case "afternoon2":
+                    pushStringArrayElement(qName, attributes, 7);
+                    break;
+                case "evening1":
+                    pushStringArrayElement(qName, attributes, 8);
+                    break;
+                case "evening2":
+                    pushStringArrayElement(qName, attributes, 9);
+                    break;
+                case "night1":
+                    pushStringArrayElement(qName, attributes, 10);
+                    break;
+                case "night2":
+                    pushStringArrayElement(qName, attributes, 11);
                     break;
                 default:
                     pushIgnoredContainer(qName);
@@ -503,13 +533,105 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
         // Number format information
         //
         case "decimalFormatLength":
-            if (attributes.getValue("type") == null) {
-                // skipping type="short" data
-                // for FormatData
-                // copy string for later assembly into NumberPatterns
-                pushStringEntry(qName, attributes, "NumberPatterns/decimal");
+            String type = attributes.getValue("type");
+            if (null == type) {
+                // format data for decimal number format
+                pushStringEntry(qName, attributes,
+                    currentNumberingSystem + "NumberPatterns/decimal");
+                currentStyle = type;
             } else {
-                pushIgnoredContainer(qName);
+                switch (type) {
+                    case "short":
+                    case "long":
+                        // considering "short" and long for
+                        // compact number formatting patterns
+                        pushKeyContainer(qName, attributes, type);
+                        currentStyle = type;
+                        break;
+                    default:
+                        pushIgnoredContainer(qName);
+                        break;
+                }
+            }
+            break;
+        case "decimalFormat":
+            if(currentStyle == null) {
+                pushContainer(qName, attributes);
+            } else {
+                switch (currentStyle) {
+                    case "short":
+                    case "long":
+                        pushStringListEntry(qName, attributes,
+                                currentStyle+".CompactNumberPatterns");
+                        break;
+                    default:
+                        pushIgnoredContainer(qName);
+                        break;
+                }
+            }
+            break;
+        case "currencyFormat":
+        case "percentFormat":
+            pushKeyContainer(qName, attributes, attributes.getValue("type"));
+            break;
+
+        case "pattern":
+            String containerName = currentContainer.getqName();
+            switch (containerName) {
+                case "currencyFormat":
+                case "percentFormat":
+                {
+                    // for FormatData
+                    // copy string for later assembly into NumberPatterns
+                    if (currentContainer instanceof KeyContainer) {
+                        String fStyle = ((KeyContainer)currentContainer).getKey();
+                        if (fStyle.equals("standard")) {
+                            pushStringEntry(qName, attributes,
+                                    currentNumberingSystem + "NumberPatterns/" + containerName.replaceFirst("Format", ""));
+                        } else if (fStyle.equals("accounting") && containerName.equals("currencyFormat")) {
+                            pushStringEntry(qName, attributes,
+                                    currentNumberingSystem + "NumberPatterns/accounting");
+                        } else {
+                            pushIgnoredContainer(qName);
+                        }
+                    } else {
+                        pushIgnoredContainer(qName);
+                    }
+                }
+                break;
+
+                case "decimalFormat":
+                    if (currentStyle == null) {
+                        pushContainer(qName, attributes);
+                    } else {
+                        switch (currentStyle) {
+                            case "short":
+                            case "long":
+                                pushStringListElement(qName, attributes,
+                                    (int) Math.log10(Double.parseDouble(attributes.getValue("type"))),
+                                    attributes.getValue("count"));
+                                break;
+                            default:
+                                pushIgnoredContainer(qName);
+                                break;
+                        }
+                    }
+                    break;
+                default:
+                    pushContainer(qName, attributes);
+                    break;
+            }
+            break;
+        case "currencyFormats":
+        case "decimalFormats":
+        case "percentFormats":
+            {
+                String script = attributes.getValue("numberSystem");
+                if (script != null) {
+                    addNumberingScript(script);
+                    currentNumberingSystem = script + ".";
+                }
+                pushContainer(qName, attributes);
             }
             break;
         case "currencyFormatLength":
@@ -517,24 +639,6 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
                 // skipping type="short" data
                 // for FormatData
                 pushContainer(qName, attributes);
-            } else {
-                pushIgnoredContainer(qName);
-            }
-            break;
-        case "currencyFormat":
-            // for FormatData
-            // copy string for later assembly into NumberPatterns
-            if (attributes.getValue("type").equals("standard")) {
-            pushStringEntry(qName, attributes, "NumberPatterns/currency");
-            } else {
-                pushIgnoredContainer(qName);
-            }
-            break;
-        case "percentFormat":
-            // for FormatData
-            // copy string for later assembly into NumberPatterns
-            if (attributes.getValue("type").equals("standard")) {
-            pushStringEntry(qName, attributes, "NumberPatterns/percent");
             } else {
                 pushIgnoredContainer(qName);
             }
@@ -562,31 +666,19 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
                     break;
                 }
 
-                @SuppressWarnings("unchecked")
-                List<String> numberingScripts = (List<String>) get("numberingScripts");
-                if (numberingScripts == null) {
-                    numberingScripts = new ArrayList<>();
-                    put("numberingScripts", numberingScripts);
-                }
-                numberingScripts.add(script);
+                addNumberingScript(script);
                 put(currentNumberingSystem + "NumberElements/zero", digits.substring(0, 1));
                 pushContainer(qName, attributes);
             }
             break;
         case "decimal":
-            // for FormatData
-            // copy string for later assembly into NumberElements
-            if (currentContainer.getqName().equals("symbols")) {
-                pushStringEntry(qName, attributes, currentNumberingSystem + "NumberElements/decimal");
-            } else {
-                pushIgnoredContainer(qName);
-            }
-            break;
         case "group":
+        case "currencyDecimal":
+        case "currencyGroup":
             // for FormatData
             // copy string for later assembly into NumberElements
             if (currentContainer.getqName().equals("symbols")) {
-                pushStringEntry(qName, attributes, currentNumberingSystem + "NumberElements/group");
+                pushStringEntry(qName, attributes, currentNumberingSystem + "NumberElements/" + qName);
             } else {
                 pushIgnoredContainer(qName);
             }
@@ -676,10 +768,11 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
         // "alias" for root
         case "alias":
             {
-                if (id.equals("root") &&
-                        !isIgnored(attributes) &&
-                        currentCalendarType != null &&
-                        !currentCalendarType.lname().startsWith("islamic-")) { // ignore Islamic variants
+                if (id.equals("root") && !isIgnored(attributes)
+                        && ((currentContainer.getqName().equals("decimalFormatLength"))
+                        || (currentContainer.getqName().equals("currencyFormat"))
+                        || (currentContainer.getqName().equals("percentFormat"))
+                        || (currentCalendarType != null && !currentCalendarType.lname().startsWith("islamic-")))) { // ignore islamic variants
                     pushAliasEntry(qName, attributes, attributes.getValue("path"));
                 } else {
                     pushIgnoredContainer(qName);
@@ -831,6 +924,15 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
         case "dayPeriods":
         case "eras":
             break;
+        case "decimalFormatLength": // used for compact number formatting patterns
+            keyName = type + ".CompactNumberPatterns";
+            break;
+        case "currencyFormat":
+        case "percentFormat":
+            keyName = currentNumberingSystem +
+                    "NumberPatterns/" +
+                    (type.equals("standard") ? containerqName.replaceFirst("Format", "") : type);
+            break;
         default:
             keyName = "";
             break;
@@ -869,10 +971,35 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
             width = path.substring(start+typeKey.length(), path.indexOf("']", start));
         }
 
+        // used for compact number formatting patterns aliases
+        typeKey = "decimalFormatLength[@type='";
+        start = path.indexOf(typeKey);
+        if (start != -1) {
+            String style = path.substring(start + typeKey.length(), path.indexOf("']", start));
+            return toJDKKey(qName, "", style);
+        }
+
+        // currencyFormat
+        typeKey = "currencyFormat[@type='";
+        start = path.indexOf(typeKey);
+        if (start != -1) {
+            String style = path.substring(start + typeKey.length(), path.indexOf("']", start));
+            return toJDKKey(qName, "", style);
+        }
+
+        // percentFormat
+        typeKey = "percentFormat[@type='";
+        start = path.indexOf(typeKey);
+        if (start != -1) {
+            String style = path.substring(start + typeKey.length(), path.indexOf("']", start));
+            return toJDKKey(qName, "", style);
+        }
+
         return calType + "." + toJDKKey(qName, context, width);
     }
 
     @Override
+    @SuppressWarnings("fallthrough")
     public void endElement(String uri, String localName, String qName) throws SAXException {
         assert qName.equals(currentContainer.getqName()) : "current=" + currentContainer.getqName() + ", param=" + qName;
         switch (qName) {
@@ -883,9 +1010,7 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
 
         case "defaultNumberingSystem":
             if (currentContainer instanceof StringEntry) {
-                defaultNumberingSystem = ((StringEntry) currentContainer).getValue();
-                assert defaultNumberingSystem != null;
-                put(((StringEntry) currentContainer).getKey(), defaultNumberingSystem);
+                defaultNumberingSystem = (String) putIfEntry();
             } else {
                 defaultNumberingSystem = null;
             }
@@ -926,33 +1051,56 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
             currentContext = "";
             putIfEntry();
             break;
-
+        case "decimalFormatLength":
+            currentStyle = "";
+            putIfEntry();
+            break;
+        case "currencyFormats":
+        case "decimalFormats":
+        case "percentFormats":
+        case "symbols":
+            currentNumberingSystem = "";
+            putIfEntry();
+            break;
         default:
             putIfEntry();
         }
         currentContainer = currentContainer.getParent();
     }
 
-    private void putIfEntry() {
+    private Object putIfEntry() {
         if (currentContainer instanceof AliasEntry) {
             Entry<?> entry = (Entry<?>) currentContainer;
             String containerqName = entry.getParent().getqName();
-            Set<String> keyNames = populateAliasKeys(containerqName, currentContext, currentWidth);
-            if (!keyNames.isEmpty()) {
-                for (String keyName : keyNames) {
-                    String[] tmp = keyName.split(",", 3);
-                    String calType = currentCalendarType.lname();
-                    String src = calType+"."+tmp[0];
-                    String target = getTarget(
-                                entry.getKey(),
-                                calType,
-                                tmp[1].length()>0 ? tmp[1] : currentContext,
-                                tmp[2].length()>0 ? tmp[2] : currentWidth);
-                    if (target.substring(target.lastIndexOf('.')+1).equals(containerqName)) {
-                        target = target.substring(0, target.indexOf('.'))+"."+tmp[0];
+            if (containerqName.equals("decimalFormatLength")) {
+                String srcKey = toJDKKey(containerqName, "", currentStyle);
+                String targetKey = getTarget(entry.getKey(), "", "", "");
+                CLDRConverter.aliases.put(srcKey, targetKey);
+            } else if (containerqName.equals("currencyFormat") ||
+                        containerqName.equals("percentFormat")) {
+                KeyContainer kc = (KeyContainer)entry.getParent();
+                CLDRConverter.aliases.put(
+                        toJDKKey(containerqName, "", kc.getKey()),
+                        getTarget(entry.getKey(), "", "", "")
+                );
+            } else {
+                Set<String> keyNames = populateAliasKeys(containerqName, currentContext, currentWidth);
+                if (!keyNames.isEmpty()) {
+                    for (String keyName : keyNames) {
+                        String[] tmp = keyName.split(",", 3);
+                        String calType = currentCalendarType.lname();
+                        String src = calType+"."+tmp[0];
+                        String target = getTarget(
+                                    entry.getKey(),
+                                    calType,
+                                    tmp[1].length()>0 ? tmp[1] : currentContext,
+                                    tmp[2].length()>0 ? tmp[2] : currentWidth);
+                        if (target.substring(target.lastIndexOf('.')+1).equals(containerqName)) {
+                            target = target.substring(0, target.indexOf('.'))+"."+tmp[0];
+                        }
+                        CLDRConverter.aliases.put(src.replaceFirst("^gregorian.", ""),
+                                                  target.replaceFirst("^gregorian.", ""));
                     }
-                    CLDRConverter.aliases.put(src.replaceFirst("^gregorian.", ""),
-                                              target.replaceFirst("^gregorian.", ""));
                 }
             }
         } else if (currentContainer instanceof Entry) {
@@ -965,9 +1113,10 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
                 if (id.equals("root") && key.startsWith("MonthNames")) {
                     value = new DateFormatSymbols(Locale.US).getShortMonths();
                 }
-                put(entry.getKey(), value);
+                return put(entry.getKey(), value);
             }
         }
+        return null;
     }
 
     public String convertOldKeyName(String key) {
@@ -985,6 +1134,18 @@ class LDMLParseHandler extends AbstractLDMLHandler<Object> {
                 return "tz";
             default:
                 return key;
+        }
+    }
+
+    private void addNumberingScript(String script) {
+        @SuppressWarnings("unchecked")
+        List<String> numberingScripts = (List<String>) get("numberingScripts");
+        if (numberingScripts == null) {
+            numberingScripts = new ArrayList<>();
+            put("numberingScripts", numberingScripts);
+        }
+        if (!numberingScripts.contains(script)) {
+            numberingScripts.add(script);
         }
     }
 }

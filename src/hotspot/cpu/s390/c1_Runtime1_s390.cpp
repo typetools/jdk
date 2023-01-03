@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -29,20 +29,24 @@
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
 #include "ci/ciUtilities.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/cardTable.hpp"
 #include "gc/shared/cardTableBarrierSet.hpp"
 #include "interpreter/interpreter.hpp"
+#include "memory/universe.hpp"
 #include "nativeInst_s390.hpp"
 #include "oops/compiledICHolder.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "register_s390.hpp"
+#include "registerSaver_s390.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/signature.hpp"
+#include "runtime/stubRoutines.hpp"
 #include "runtime/vframeArray.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include "vmreg_s390.inline.hpp"
-#include "registerSaver_s390.hpp"
 
 // Implementation of StubAssembler
 
@@ -338,7 +342,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps->add_gc_map(call_offset, map);
         restore_live_registers_except_r2(sasm);
 
-        __ verify_oop(obj);
+        __ verify_oop(obj, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;
@@ -404,7 +408,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps->add_gc_map(call_offset, map);
         restore_live_registers_except_r2(sasm);
 
-        __ verify_oop(obj);
+        __ verify_oop(obj, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;
@@ -422,7 +426,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         restore_live_registers_except_r2(sasm);
 
         // Z_R2,: new multi array
-        __ verify_oop(Z_R2);
+        __ verify_oop(Z_R2, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package java.util.zip;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
@@ -35,7 +36,9 @@ import java.io.IOException;
 import java.io.EOFException;
 import java.io.PushbackInputStream;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+
+import sun.nio.cs.UTF_8;
+
 import static java.util.zip.ZipConstants64.*;
 import static java.util.zip.ZipUtils.*;
 
@@ -48,8 +51,7 @@ import static java.util.zip.ZipUtils.*;
  * @since 1.1
  */
 @AnnotatedFor({"index"})
-public
-class ZipInputStream extends InflaterInputStream implements ZipConstants {
+public class ZipInputStream extends InflaterInputStream implements ZipConstants {
     private ZipEntry entry;
     private int flag;
     private CRC32 crc = new CRC32();
@@ -83,8 +85,8 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      *
      * @param in the actual input stream
      */
-    public ZipInputStream(InputStream in) {
-        this(in, StandardCharsets.UTF_8);
+    public @MustCallAlias ZipInputStream(@MustCallAlias InputStream in) {
+        this(in, UTF_8.INSTANCE);
     }
 
     /**
@@ -101,7 +103,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      *
      * @since 1.7
      */
-    public ZipInputStream(InputStream in, Charset charset) {
+    public @MustCallAlias ZipInputStream(@MustCallAlias InputStream in, Charset charset) {
         super(new PushbackInputStream(in, 512), new Inflater(true), 512);
         usesDefaultInflater = true;
         if (in == null) {
@@ -116,8 +118,8 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      * Reads the next ZIP file entry and positions the stream at the
      * beginning of the entry data.
      * @return the next ZIP file entry, or null if there are no more entries
-     * @exception ZipException if a ZIP file error has occurred
-     * @exception IOException if an I/O error has occurred
+     * @throws    ZipException if a ZIP file error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public ZipEntry getNextEntry() throws IOException {
         ensureOpen();
@@ -139,8 +141,8 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
     /**
      * Closes the current ZIP entry and positions the stream for reading the
      * next entry.
-     * @exception ZipException if a ZIP file error has occurred
-     * @exception IOException if an I/O error has occurred
+     * @throws    ZipException if a ZIP file error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public void closeEntry() throws IOException {
         ensureOpen();
@@ -156,7 +158,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      * of bytes that could be read without blocking.
      *
      * @return     1 before EOF and 0 after EOF has reached for current entry.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      *
      */
     public int available() throws IOException {
@@ -170,20 +172,20 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
 
     /**
      * Reads from the current ZIP entry into an array of bytes.
-     * If <code>len</code> is not zero, the method
+     * If {@code len} is not zero, the method
      * blocks until some input is available; otherwise, no
-     * bytes are read and <code>0</code> is returned.
+     * bytes are read and {@code 0} is returned.
      * @param b the buffer into which the data is read
-     * @param off the start offset in the destination array <code>b</code>
+     * @param off the start offset in the destination array {@code b}
      * @param len the maximum number of bytes read
      * @return the actual number of bytes read, or -1 if the end of the
      *         entry is reached
-     * @exception  NullPointerException if <code>b</code> is <code>null</code>.
-     * @exception  IndexOutOfBoundsException if <code>off</code> is negative,
-     * <code>len</code> is negative, or <code>len</code> is greater than
-     * <code>b.length - off</code>
-     * @exception ZipException if a ZIP file error has occurred
-     * @exception IOException if an I/O error has occurred
+     * @throws     NullPointerException if {@code b} is {@code null}.
+     * @throws     IndexOutOfBoundsException if {@code off} is negative,
+     * {@code len} is negative, or {@code len} is greater than
+     * {@code b.length - off}
+     * @throws    ZipException if a ZIP file error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) throws IOException {
         ensureOpen();
@@ -237,9 +239,9 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
      * Skips specified number of bytes in the current ZIP entry.
      * @param n the number of bytes to skip
      * @return the actual number of bytes skipped
-     * @exception ZipException if a ZIP file error has occurred
-     * @exception IOException if an I/O error has occurred
-     * @exception IllegalArgumentException if {@code n < 0}
+     * @throws    ZipException if a ZIP file error has occurred
+     * @throws    IOException if an I/O error has occurred
+     * @throws    IllegalArgumentException if {@code n < 0}
      */
     public long skip(long n) throws IOException {
         if (n < 0) {
@@ -266,7 +268,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
     /**
      * Closes this input stream and releases any system resources associated
      * with the stream.
-     * @exception IOException if an I/O error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public void close() throws IOException {
         if (!closed) {
@@ -303,7 +305,7 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
         readFully(b, 0, len);
         // Force to use UTF-8 if the USE_UTF8 bit is ON
         ZipEntry e = createZipEntry(((flag & USE_UTF8) != 0)
-                                    ? zc.toStringUTF8(b, len)
+                                    ? ZipCoder.toStringUTF8(b, len)
                                     : zc.toString(b, len));
         // now get the remaining fields for the entry
         if ((flag & 1) == 1) {
@@ -327,13 +329,13 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
             byte[] extra = new byte[len];
             readFully(extra, 0, len);
             e.setExtra0(extra,
-                        e.csize == ZIP64_MAGICVAL || e.size == ZIP64_MAGICVAL);
+                        e.csize == ZIP64_MAGICVAL || e.size == ZIP64_MAGICVAL, true);
         }
         return e;
     }
 
     /**
-     * Creates a new <code>ZipEntry</code> object for the specified
+     * Creates a new {@code ZipEntry} object for the specified
      * entry name.
      *
      * @param name the ZIP file entry name

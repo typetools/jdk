@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_CFGNODE_HPP
-#define SHARE_VM_OPTO_CFGNODE_HPP
+#ifndef SHARE_OPTO_CFGNODE_HPP
+#define SHARE_OPTO_CFGNODE_HPP
 
 #include "opto/multnode.hpp"
 #include "opto/node.hpp"
@@ -64,15 +64,20 @@ class PhaseIdealLoop;
 // correspond 1-to-1 with RegionNode inputs.  The zero input of a PhiNode is
 // the RegionNode, and the zero input of the RegionNode is itself.
 class RegionNode : public Node {
+private:
+  bool _is_unreachable_region;
+
+  bool is_possible_unsafe_loop(const PhaseGVN* phase) const;
+  bool is_unreachable_from_root(const PhaseGVN* phase) const;
 public:
   // Node layout (parallels PhiNode):
   enum { Region,                // Generally points to self.
          Control                // Control arcs are [1..len)
   };
 
-  RegionNode( uint required ) : Node(required) {
+  RegionNode(uint required) : Node(required), _is_unreachable_region(false) {
     init_class_id(Class_Region);
-    init_req(0,this);
+    init_req(0, this);
   }
 
   Node* is_copy() const {
@@ -84,18 +89,20 @@ public:
   PhiNode* has_phi() const;        // returns an arbitrary phi user, or NULL
   PhiNode* has_unique_phi() const; // returns the unique phi user, or NULL
   // Is this region node unreachable from root?
-  bool is_unreachable_region(PhaseGVN *phase) const;
+  bool is_unreachable_region(const PhaseGVN* phase);
   virtual int Opcode() const;
-  virtual bool pinned() const { return (const Node *)in(0) == this; }
-  virtual bool  is_CFG   () const { return true; }
-  virtual uint hash() const { return NO_HASH; }  // CFG nodes do not hash
+  virtual uint size_of() const { return sizeof(*this); }
+  virtual bool pinned() const { return (const Node*)in(0) == this; }
+  virtual bool is_CFG() const { return true; }
+  virtual uint hash() const { return NO_HASH; } // CFG nodes do not hash
   virtual bool depends_only_on_test() const { return false; }
-  virtual const Type *bottom_type() const { return Type::CONTROL; }
+  virtual const Type* bottom_type() const { return Type::CONTROL; }
   virtual const Type* Value(PhaseGVN* phase) const;
   virtual Node* Identity(PhaseGVN* phase);
-  virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
+  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
   virtual const RegMask &out_RegMask() const;
-  bool try_clean_mem_phi(PhaseGVN *phase);
+  bool try_clean_mem_phi(PhaseGVN* phase);
+  bool optimize_trichotomy(PhaseIterGVN* igvn);
 };
 
 //------------------------------JProjNode--------------------------------------
@@ -114,25 +121,27 @@ class JProjNode : public ProjNode {
 //------------------------------PhiNode----------------------------------------
 // PhiNodes merge values from different Control paths.  Slot 0 points to the
 // controlling RegionNode.  Other slots map 1-for-1 with incoming control flow
-// paths to the RegionNode.  For speed reasons (to avoid another pass) we
-// can turn PhiNodes into copys in-place by NULL'ing out their RegionNode
-// input in slot 0.
+// paths to the RegionNode.
 class PhiNode : public TypeNode {
+  friend class PhaseRenumberLive;
+
   const TypePtr* const _adr_type; // non-null only for Type::MEMORY nodes.
   // The following fields are only used for data PhiNodes to indicate
   // that the PhiNode represents the value of a known instance field.
         int _inst_mem_id; // Instance memory id (node index of the memory Phi)
-  const int _inst_id;     // Instance id of the memory slice.
+        int _inst_id;     // Instance id of the memory slice.
   const int _inst_index;  // Alias index of the instance memory slice.
   // Array elements references have the same alias_idx but different offset.
   const int _inst_offset; // Offset of the instance memory slice.
   // Size is bigger to hold the _adr_type field.
   virtual uint hash() const;    // Check the type
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const { return sizeof(*this); }
 
   // Determine if CMoveNode::is_cmove_id can be used at this join point.
   Node* is_cmove_id(PhaseTransform* phase, int true_path);
+  bool wait_for_region_igvn(PhaseGVN* phase);
+  bool is_data_loop(RegionNode* r, Node* uin, const PhaseGVN* phase);
 
 public:
   // Node layout (parallels RegionNode):
@@ -169,14 +178,7 @@ public:
   // Accessors
   RegionNode* region() const { Node* r = in(Region); assert(!r || r->is_Region(), ""); return (RegionNode*)r; }
 
-  Node* is_copy() const {
-    // The node is a real phi if _in[0] is a Region node.
-    DEBUG_ONLY(const Node* r = _in[Region];)
-    assert(r != NULL && r->is_Region(), "Not valid control");
-    return NULL;  // not a copy!
-  }
-
-  bool is_tripcount() const;
+  bool is_tripcount(BasicType bt) const;
 
   // Determine a unique non-trivial input, if any.
   // Ignore casts if it helps.  Return NULL on failure.
@@ -286,7 +288,7 @@ class IfNode : public MultiBranchNode {
 
 private:
   // Helper methods for fold_compares
-  bool cmpi_folds(PhaseIterGVN* igvn);
+  bool cmpi_folds(PhaseIterGVN* igvn, bool fold_ne = false);
   bool is_ctrl_folds(Node* ctrl, PhaseIterGVN* igvn);
   bool has_shared_region(ProjNode* proj, ProjNode*& success, ProjNode*& fail);
   bool has_only_uncommon_traps(ProjNode* proj, ProjNode*& success, ProjNode*& fail, PhaseIterGVN* igvn);
@@ -303,8 +305,9 @@ private:
 protected:
   ProjNode* range_check_trap_proj(int& flip, Node*& l, Node*& r);
   Node* Ideal_common(PhaseGVN *phase, bool can_reshape);
-  Node* dominated_by(Node* prev_dom, PhaseIterGVN* igvn);
   Node* search_identical(int dist);
+
+  Node* simple_subsuming(PhaseIterGVN* igvn);
 
 public:
 
@@ -391,6 +394,7 @@ public:
   virtual const RegMask &out_RegMask() const;
   Node* fold_compares(PhaseIterGVN* phase);
   static Node* up_one_dom(Node* curr, bool linear_only = false);
+  Node* dominated_by(Node* prev_dom, PhaseIterGVN* igvn);
 
   // Takes the type of val and filters it through the test represented
   // by if_proj and returns a more refined type if one is produced.
@@ -462,7 +466,7 @@ protected:
 // Undefined behavior if passed-in index is not inside the table.
 class PCTableNode : public MultiBranchNode {
   virtual uint hash() const;    // Target count; table size
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const { return sizeof(*this); }
 
 public:
@@ -504,7 +508,7 @@ public:
 
 class JumpProjNode : public JProjNode {
   virtual uint hash() const;
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const { return sizeof(*this); }
 
  private:
@@ -547,7 +551,7 @@ public:
 // the projection doesn't lead to an exception handler.
 class CatchProjNode : public CProjNode {
   virtual uint hash() const;
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const { return sizeof(*this); }
 
 private:
@@ -612,4 +616,4 @@ public:
 #endif
 };
 
-#endif // SHARE_VM_OPTO_CFGNODE_HPP
+#endif // SHARE_OPTO_CFGNODE_HPP

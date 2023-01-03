@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,6 +53,7 @@ import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.NotificationHandler;
 import com.sun.nio.sctp.SctpChannel;
 import com.sun.nio.sctp.SctpSocketOption;
+import sun.net.util.IPAddressUtil;
 import sun.nio.ch.DirectBuffer;
 import sun.nio.ch.IOStatus;
 import sun.nio.ch.IOUtil;
@@ -70,6 +71,7 @@ import static sun.nio.ch.sctp.ResultContainer.SHUTDOWN;
 /**
  * An implementation of an SctpChannel
  */
+@SuppressWarnings("removal")
 public class SctpChannelImpl extends SctpChannel
     implements SelChImpl
 {
@@ -465,7 +467,7 @@ public class SctpChannelImpl extends SctpChannel
                     if (state != ChannelState.PENDING)
                         throw new NoConnectionPendingException();
                 }
-                int n = 0;
+                boolean connected = false;
                 try {
                     try {
                         begin();
@@ -477,26 +479,11 @@ public class SctpChannelImpl extends SctpChannel
                                 receiverThread = NativeThread.current();
                             }
                             if (!isBlocking()) {
-                                for (;;) {
-                                    n = checkConnect(fd, false, readyToConnect);
-                                    if (  (n == IOStatus.INTERRUPTED)
-                                          && isOpen())
-                                        continue;
-                                    break;
-                                }
+                                connected = Net.pollConnect(fd, 0);
                             } else {
-                                for (;;) {
-                                    n = checkConnect(fd, true, readyToConnect);
-                                    if (n == 0) {
-                                        // Loop in case of
-                                        // spurious notifications
-                                        continue;
-                                    }
-                                    if (  (n == IOStatus.INTERRUPTED)
-                                          && isOpen())
-                                        continue;
-                                    break;
-                                }
+                                do {
+                                    connected = Net.pollConnect(fd, -1);
+                                } while (!connected && isOpen());
                             }
                         }
                     } finally {
@@ -504,16 +491,10 @@ public class SctpChannelImpl extends SctpChannel
                             receiverThread = 0;
                             if (state == ChannelState.KILLPENDING) {
                                 kill();
-                                /* poll()/getsockopt() does not report
-                                 * error (throws exception, with n = 0)
-                                 * on Linux platform after dup2 and
-                                 * signal-wakeup. Force n to 0 so the
-                                 * end() can throw appropriate exception */
-                                n = 0;
+                                connected = false;
                             }
                         }
-                        end((n > 0) || (n == IOStatus.UNAVAILABLE));
-                        assert IOStatus.check(n);
+                        end(connected);
                     }
                 } catch (IOException x) {
                     /* If an exception was thrown, close the channel after
@@ -523,7 +504,7 @@ public class SctpChannelImpl extends SctpChannel
                     throw x;
                 }
 
-                if (n > 0) {
+                if (connected) {
                     synchronized (stateLock) {
                         state = ChannelState.CONNECTED;
                         if (!isBound()) {
@@ -1033,6 +1014,9 @@ public class SctpChannelImpl extends SctpChannel
         if (target != null) {
             InetSocketAddress isa = Net.checkAddress(target);
             addr = isa.getAddress();
+            if (addr.isLinkLocalAddress()) {
+                addr = IPAddressUtil.toScopedAddress(addr);
+            }
             port = isa.getPort();
         }
 
@@ -1103,9 +1087,6 @@ public class SctpChannelImpl extends SctpChannel
     static native int send0(int fd, long address, int length,
             InetAddress addr, int port, int assocId, int streamNumber,
             boolean unordered, int ppid) throws IOException;
-
-    private static native int checkConnect(FileDescriptor fd, boolean block,
-            boolean ready) throws IOException;
 
     static {
         IOUtil.load();   /* loads nio & net native libraries */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -91,10 +92,12 @@ import org.checkerframework.framework.qual.CFComment;
  * passed to a static factory method result in {@code IllegalArgumentException}.
  * <li>The iteration order of set elements is unspecified and is subject to change.
  * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
- * Callers should make no assumptions about the identity of the returned instances.
- * Factories are free to create new instances or reuse existing ones. Therefore,
- * identity-sensitive operations on these instances (reference equality ({@code ==}),
- * identity hash code, and synchronization) are unreliable and should be avoided.
+ * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+ * as interchangeable and should not use them for synchronization, or
+ * unpredictable behavior may occur. For example, in a future release,
+ * synchronization may fail. Callers should make no assumptions
+ * about the identity of the returned instances. Factories are free to
+ * create new instances or reuse existing ones.
  * <li>They are serialized as specified on the
  * <a href="{@docRoot}/serialized-form.html#java.util.CollSer">Serialized Form</a>
  * page.
@@ -158,7 +161,7 @@ public interface Set<E> extends Collection<E> {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(@GuardSatisfied Set<E> this, @GuardSatisfied Object o);
+    boolean contains(@GuardSatisfied Set<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this set.  The elements are
@@ -291,7 +294,7 @@ public interface Set<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this set
      */
-    boolean remove(@GuardSatisfied Set<E> this, Object o);
+    boolean remove(@GuardSatisfied Set<E> this, @UnknownSignedness Object o);
 
 
     // Bulk Operations
@@ -316,7 +319,7 @@ public interface Set<E> extends Collection<E> {
      * @see    #contains(Object)
      */
     @Pure
-    boolean containsAll(@GuardSatisfied Set<E> this, @GuardSatisfied Collection<?> c);
+    boolean containsAll(@GuardSatisfied Set<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Adds all of the elements in the specified collection to this set if
@@ -363,7 +366,7 @@ public interface Set<E> extends Collection<E> {
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    boolean retainAll(@GuardSatisfied Set<E> this, Collection<?> c);
+    boolean retainAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes from this set all of its elements that are contained in the
@@ -386,7 +389,7 @@ public interface Set<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied Set<E> this, Collection<?> c);
+    boolean removeAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements from this set (optional operation).
@@ -468,8 +471,9 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     static <E> Set<E> of() {
-        return ImmutableCollections.emptySet();
+        return (Set<E>) ImmutableCollections.EMPTY_SET;
     }
 
     /**
@@ -712,7 +716,9 @@ public interface Set<E> extends Collection<E> {
     static <E> Set<E> of(E... elements) {
         switch (elements.length) { // implicit null check of elements
             case 0:
-                return ImmutableCollections.emptySet();
+                @SuppressWarnings("unchecked")
+                var set = (Set<E>) ImmutableCollections.EMPTY_SET;
+                return set;
             case 1:
                 return new ImmutableCollections.Set12<>(elements[0]);
             case 2:

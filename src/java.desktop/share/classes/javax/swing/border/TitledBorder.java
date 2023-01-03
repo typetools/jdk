@@ -42,6 +42,8 @@ import javax.swing.JLabel;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicHTML;
 
+import jdk.internal.ref.CleanerFactory;
+
 /**
  * A class which implements an arbitrary border
  * with the addition of a String title in a
@@ -63,7 +65,7 @@ import javax.swing.plaf.basic.BasicHTML;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -759,22 +761,19 @@ public class TitledBorder extends AbstractBorder
 
     private void installPropertyChangeListeners() {
         final WeakReference<TitledBorder> weakReference = new WeakReference<TitledBorder>(this);
-        final PropertyChangeListener listener = new PropertyChangeListener() {
-            @Override
-            public void propertyChange(PropertyChangeEvent evt) {
-                if (weakReference.get() == null) {
-                    UIManager.removePropertyChangeListener(this);
-                    UIManager.getDefaults().removePropertyChangeListener(this);
-                } else {
-                    String prop = evt.getPropertyName();
-                    if ("lookAndFeel".equals(prop) || "LabelUI".equals(prop)) {
-                        label.updateUI();
-                    }
-                }
+        final PropertyChangeListener listener = evt -> {
+            TitledBorder tb = weakReference.get();
+            String prop = evt.getPropertyName();
+            if (tb != null && ("lookAndFeel".equals(prop) || "LabelUI".equals(prop))) {
+                tb.label.updateUI();
             }
         };
 
         UIManager.addPropertyChangeListener(listener);
         UIManager.getDefaults().addPropertyChangeListener(listener);
+        CleanerFactory.cleaner().register(this, () -> {
+            UIManager.removePropertyChangeListener(listener);
+            UIManager.getDefaults().removePropertyChangeListener(listener);
+        });
     }
 }

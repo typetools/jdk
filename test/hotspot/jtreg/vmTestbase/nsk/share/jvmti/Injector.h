@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,8 +62,7 @@ enum {
     ACC_NATIVE                   = 0x00000100,
     ACC_INTERFACE                = 0x00000200,
     ACC_ABSTRACT                 = 0x00000400,
-    ACC_SUPER                    = 0x00000020,
-    ACC_STRICT                   = 0x00000800
+    ACC_SUPER                    = 0x00000020
 };
 
 /* Opcodes */
@@ -279,9 +278,7 @@ enum {
     BCI_MODE_ALLOC  = 2
 };
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 /**
  * Class file transformer. Transforms a classfile image from old_bytes
@@ -305,8 +302,6 @@ extern "C" {
 int Inject(const u1* old_bytes, const jint old_length,
     u1** new_bytes, jint* new_length, int bci_mode);
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif /* _NSK_SHARE_JVMTI_INJECTOR_H_ */

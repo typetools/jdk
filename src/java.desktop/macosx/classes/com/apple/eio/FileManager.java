@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,6 +53,7 @@ import java.io.*;
  *
  * @since 1.4
  */
+@SuppressWarnings("removal")
 public class FileManager {
     static {
         java.security.AccessController.doPrivileged(
@@ -110,7 +111,7 @@ public class FileManager {
         public static int OSTypeToInt(String type) {
         int result = 0;
 
-                byte b[] = { (byte) 0, (byte) 0, (byte) 0, (byte) 0 };
+                byte[] b = { (byte) 0, (byte) 0, (byte) 0, (byte) 0 };
                 int len = type.length();
                 if (len > 0) {
                         if (len > 4) len = 4;

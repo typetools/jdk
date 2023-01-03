@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_NATIVE_CALL_STACK_HPP
-#define SHARE_VM_UTILITIES_NATIVE_CALL_STACK_HPP
+#ifndef SHARE_UTILITIES_NATIVECALLSTACK_HPP
+#define SHARE_UTILITIES_NATIVECALLSTACK_HPP
 
 #include "memory/allocation.hpp"
 #include "services/nmtCommon.hpp"
@@ -54,20 +54,20 @@
 class MemTracker;
 
 class NativeCallStack : public StackObj {
-  friend class MemTracker;
-
 private:
   address       _stack[NMT_TrackingStackDepth];
-  unsigned int  _hash_value;
-
-  static NativeCallStack EMPTY_STACK;
+  static const NativeCallStack _empty_stack;
 public:
-  NativeCallStack(int toSkip = 0, bool fillStack = false);
+  // Default ctor creates an empty stack.
+  // (it may make sense to remove this altogether but its used in a few places).
+  NativeCallStack() {
+    memset(_stack, 0, sizeof(_stack));
+  }
+
+  NativeCallStack(int toSkip);
   NativeCallStack(address* pc, int frameCount);
 
-  static inline const NativeCallStack& empty_stack() {
-    return EMPTY_STACK;
-  }
+  static inline const NativeCallStack& empty_stack() { return _empty_stack; }
 
   // if it is an empty stack
   inline bool is_empty() const {
@@ -82,9 +82,6 @@ public:
   }
 
   inline bool equals(const NativeCallStack& other) const {
-    // compare hash values
-    if (hash() != other.hash()) return false;
-    // compare each frame
     return compare(other) == 0;
   }
 
@@ -93,11 +90,17 @@ public:
     return _stack[index];
   }
 
-  // Hash code. Any better algorithm?
-  unsigned int hash() const;
+  // Helper; calculates a hash value over the stack frames in this stack
+  unsigned int calculate_hash() const {
+    uintptr_t hash = 0;
+    for (int i = 0; i < NMT_TrackingStackDepth; i++) {
+      hash += (uintptr_t)_stack[i];
+    }
+    return hash;
+  }
 
   void print_on(outputStream* out) const;
   void print_on(outputStream* out, int indent) const;
 };
 
-#endif
+#endif // SHARE_UTILITIES_NATIVECALLSTACK_HPP

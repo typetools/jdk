@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,9 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_VERIFICATIONTYPE_HPP
-#define SHARE_VM_CLASSFILE_VERIFICATIONTYPE_HPP
+#ifndef SHARE_CLASSFILE_VERIFICATIONTYPE_HPP
+#define SHARE_CLASSFILE_VERIFICATIONTYPE_HPP
 
-#include "classfile/systemDictionary.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/oop.hpp"
 #include "oops/symbol.hpp"
@@ -207,26 +206,26 @@ class VerificationType {
   bool is_check() const { return (_u._data & TypeQuery) == TypeQuery; }
 
   bool is_x_array(char sig) const {
-    return is_null() || (is_array() && (name()->byte_at(1) == sig));
+    return is_null() || (is_array() && (name()->char_at(1) == sig));
   }
-  bool is_int_array() const { return is_x_array('I'); }
-  bool is_byte_array() const { return is_x_array('B'); }
-  bool is_bool_array() const { return is_x_array('Z'); }
-  bool is_char_array() const { return is_x_array('C'); }
-  bool is_short_array() const { return is_x_array('S'); }
-  bool is_long_array() const { return is_x_array('J'); }
-  bool is_float_array() const { return is_x_array('F'); }
-  bool is_double_array() const { return is_x_array('D'); }
-  bool is_object_array() const { return is_x_array('L'); }
-  bool is_array_array() const { return is_x_array('['); }
+  bool is_int_array() const { return is_x_array(JVM_SIGNATURE_INT); }
+  bool is_byte_array() const { return is_x_array(JVM_SIGNATURE_BYTE); }
+  bool is_bool_array() const { return is_x_array(JVM_SIGNATURE_BOOLEAN); }
+  bool is_char_array() const { return is_x_array(JVM_SIGNATURE_CHAR); }
+  bool is_short_array() const { return is_x_array(JVM_SIGNATURE_SHORT); }
+  bool is_long_array() const { return is_x_array(JVM_SIGNATURE_LONG); }
+  bool is_float_array() const { return is_x_array(JVM_SIGNATURE_FLOAT); }
+  bool is_double_array() const { return is_x_array(JVM_SIGNATURE_DOUBLE); }
+  bool is_object_array() const { return is_x_array(JVM_SIGNATURE_CLASS); }
+  bool is_array_array() const { return is_x_array(JVM_SIGNATURE_ARRAY); }
   bool is_reference_array() const
     { return is_object_array() || is_array_array(); }
   bool is_object() const
     { return (is_reference() && !is_null() && name()->utf8_length() >= 1 &&
-              name()->byte_at(0) != '['); }
+              name()->char_at(0) != JVM_SIGNATURE_ARRAY); }
   bool is_array() const
     { return (is_reference() && !is_null() && name()->utf8_length() >= 2 &&
-              name()->byte_at(0) == '['); }
+              name()->char_at(0) == JVM_SIGNATURE_ARRAY); }
   bool is_uninitialized() const
     { return ((_u._data & Uninitialized) == Uninitialized); }
   bool is_uninitialized_this() const
@@ -312,17 +311,17 @@ class VerificationType {
         case Short:
           return false;
         default:
-          return is_assignable_from(from, context, from_field_is_protected, CHECK_false);
+          return is_assignable_from(from, context, from_field_is_protected, THREAD);
       }
     }
   }
 
-  VerificationType get_component(ClassVerifier* context, TRAPS) const;
+  VerificationType get_component(ClassVerifier* context) const;
 
   int dimensions() const {
     assert(is_array(), "Must be an array");
     int index = 0;
-    while (name()->byte_at(index) == '[') index++;
+    while (name()->char_at(index) == JVM_SIGNATURE_ARRAY) index++;
     return index;
   }
 
@@ -341,4 +340,4 @@ class VerificationType {
                                               TRAPS);
 };
 
-#endif // SHARE_VM_CLASSFILE_VERIFICATIONTYPE_HPP
+#endif // SHARE_CLASSFILE_VERIFICATIONTYPE_HPP

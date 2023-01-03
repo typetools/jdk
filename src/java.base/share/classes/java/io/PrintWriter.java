@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -442,8 +442,7 @@ public class PrintWriter extends Writer {
         if (out != null) {
             flush();
         }
-        if (out instanceof java.io.PrintWriter) {
-            PrintWriter pw = (PrintWriter) out;
+        if (out instanceof PrintWriter pw) {
             return pw.checkError();
         } else if (psOut != null) {
             return psOut.checkError();
@@ -714,9 +713,8 @@ public class PrintWriter extends Writer {
 
     /**
      * Terminates the current line by writing the line separator string.  The
-     * line separator string is defined by the system property
-     * {@code line.separator}, and is not necessarily a single newline
-     * character ({@code '\n'}).
+     * line separator is {@link System#lineSeparator()} and is not necessarily
+     * a single newline character ({@code '\n'}).
      */
     public void println(@GuardSatisfied PrintWriter this) {
         newLine();
@@ -874,7 +872,7 @@ public class PrintWriter extends Writer {
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -928,7 +926,7 @@ public class PrintWriter extends Writer {
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -973,7 +971,7 @@ public class PrintWriter extends Writer {
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -1034,7 +1032,7 @@ public class PrintWriter extends Writer {
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.

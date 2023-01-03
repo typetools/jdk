@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,10 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_MALLOC_SITE_TABLE_HPP
-#define SHARE_VM_SERVICES_MALLOC_SITE_TABLE_HPP
+#ifndef SHARE_SERVICES_MALLOCSITETABLE_HPP
+#define SHARE_SERVICES_MALLOCSITETABLE_HPP
+
+#include "utilities/macros.hpp"
 
 #if INCLUDE_NMT
 
@@ -36,39 +38,32 @@
 
 // MallocSite represents a code path that eventually calls
 // os::malloc() to allocate memory
-class MallocSite : public AllocationSite<MemoryCounter> {
- private:
-  MEMFLAGS _flags;
-
+class MallocSite : public AllocationSite {
+  MemoryCounter _c;
  public:
-  MallocSite() :
-    AllocationSite<MemoryCounter>(NativeCallStack::empty_stack()), _flags(mtNone) {}
-
   MallocSite(const NativeCallStack& stack, MEMFLAGS flags) :
-    AllocationSite<MemoryCounter>(stack), _flags(flags) {}
+    AllocationSite(stack, flags) {}
 
-
-  void allocate(size_t size)      { data()->allocate(size);   }
-  void deallocate(size_t size)    { data()->deallocate(size); }
+  void allocate(size_t size)      { _c.allocate(size);   }
+  void deallocate(size_t size)    { _c.deallocate(size); }
 
   // Memory allocated from this code path
-  size_t size()  const { return peek()->size(); }
+  size_t size()  const { return _c.size(); }
   // The number of calls were made
-  size_t count() const { return peek()->count(); }
-  MEMFLAGS flags() const  { return (MEMFLAGS)_flags; }
+  size_t count() const { return _c.count(); }
 };
 
 // Malloc site hashtable entry
 class MallocSiteHashtableEntry : public CHeapObj<mtNMT> {
  private:
   MallocSite                         _malloc_site;
+  const unsigned int                 _hash;
   MallocSiteHashtableEntry* volatile _next;
 
  public:
-  MallocSiteHashtableEntry() : _next(NULL) { }
 
   MallocSiteHashtableEntry(NativeCallStack stack, MEMFLAGS flags):
-    _malloc_site(stack, flags), _next(NULL) {
+    _malloc_site(stack, flags), _hash(stack.calculate_hash()), _next(NULL) {
     assert(flags != mtNone, "Expect a real memory type");
   }
 
@@ -81,17 +76,11 @@ class MallocSiteHashtableEntry : public CHeapObj<mtNMT> {
   // The operation can be failed due to contention from other thread.
   bool atomic_insert(MallocSiteHashtableEntry* entry);
 
-  void set_callsite(const MallocSite& site) {
-    _malloc_site = site;
-  }
+  unsigned int hash() const { return _hash; }
 
   inline const MallocSite* peek() const { return &_malloc_site; }
   inline MallocSite* data()             { return &_malloc_site; }
 
-  inline long hash() const { return _malloc_site.hash(); }
-  inline bool equals(const NativeCallStack& stack) const {
-    return _malloc_site.equals(stack);
-  }
   // Allocation/deallocation on this allocation site
   inline void allocate(size_t size)   { _malloc_site.allocate(size);   }
   inline void deallocate(size_t size) { _malloc_site.deallocate(size); }
@@ -146,7 +135,7 @@ class MallocSiteTable : AllStatic {
     volatile int*  _lock;
    public:
     AccessLock(volatile int* lock) :
-      _lock(lock), _lock_state(NoLock) {
+      _lock_state(NoLock), _lock(lock) {
     }
 
     ~AccessLock() {
@@ -157,7 +146,7 @@ class MallocSiteTable : AllStatic {
     // Acquire shared lock.
     // Return true if shared access is granted.
     inline bool sharedLock() {
-      jint res = Atomic::add(1, _lock);
+      jint res = Atomic::add(_lock, 1);
       if (res < 0) {
         Atomic::dec(_lock);
         return false;
@@ -231,6 +220,8 @@ class MallocSiteTable : AllStatic {
   // Walk this table.
   static bool walk_malloc_site(MallocSiteWalker* walker);
 
+  static void print_tuning_statistics(outputStream* st);
+
  private:
   static MallocSiteHashtableEntry* new_entry(const NativeCallStack& key, MEMFLAGS flags);
   static void reset();
@@ -247,7 +238,13 @@ class MallocSiteTable : AllStatic {
   }
 
   static inline const NativeCallStack* hash_entry_allocation_stack() {
-    return (NativeCallStack*)_hash_entry_allocation_stack;
+    assert(_hash_entry_allocation_stack != NULL, "Must be set");
+    return _hash_entry_allocation_stack;
+  }
+
+  static inline const MallocSiteHashtableEntry* hash_entry_allocation_site() {
+    assert(_hash_entry_allocation_site != NULL, "Must be set");
+    return _hash_entry_allocation_site;
   }
 
  private:
@@ -256,17 +253,13 @@ class MallocSiteTable : AllStatic {
 
   // The callsite hashtable. It has to be a static table,
   // since malloc call can come from C runtime linker.
-  static MallocSiteHashtableEntry*   _table[table_size];
+  static MallocSiteHashtableEntry*        _table[table_size];
+  static const NativeCallStack*           _hash_entry_allocation_stack;
+  static const MallocSiteHashtableEntry*  _hash_entry_allocation_site;
 
 
-  // Reserve enough memory for placing the objects
-
-  // The memory for hashtable entry allocation stack object
-  static size_t _hash_entry_allocation_stack[CALC_OBJ_SIZE_IN_TYPE(NativeCallStack, size_t)];
-  // The memory for hashtable entry allocation callsite object
-  static size_t _hash_entry_allocation_site[CALC_OBJ_SIZE_IN_TYPE(MallocSiteHashtableEntry, size_t)];
   NOT_PRODUCT(static int     _peak_count;)
 };
 
 #endif // INCLUDE_NMT
-#endif // SHARE_VM_SERVICES_MALLOC_SITE_TABLE_HPP
+#endif // SHARE_SERVICES_MALLOCSITETABLE_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,8 +33,8 @@ import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import jdk.internal.misc.JavaIOFileDescriptorAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaIOFileDescriptorAccess;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * Defines extended socket options, beyond those defined in
@@ -58,15 +58,6 @@ public final class ExtendedSocketOptions {
     }
 
     private ExtendedSocketOptions() { }
-
-    /**
-     * Service level properties. When a security manager is installed,
-     * setting or getting this option requires a {@link NetworkPermission}
-     * {@code ("setOption.SO_FLOW_SLA")} or {@code "getOption.SO_FLOW_SLA"}
-     * respectively.
-     */
-    public static final SocketOption<SocketFlow> SO_FLOW_SLA = new
-        ExtSocketOption<SocketFlow>("SO_FLOW_SLA", SocketFlow.class);
 
     /**
      * Disable Delayed Acknowledgements.
@@ -161,27 +152,79 @@ public final class ExtendedSocketOptions {
     public static final SocketOption<Integer> TCP_KEEPCOUNT
             = new ExtSocketOption<Integer>("TCP_KEEPCOUNT", Integer.class);
 
+    /**
+     * Identifies the receive queue that the last incoming packet for the socket
+     * was received on.
+     *
+     * <p> The value of this socket option is a positive {@code Integer} that
+     * identifies a receive queue that the application can use to split the
+     * incoming flows among threads based on the queue identifier. The value is
+     * {@code 0} when the socket is not bound, a packet has not been received,
+     * or more generally, when there is no receive queue to identify.
+     * The socket option is supported by both stream-oriented and datagram-oriented
+     * sockets.
+     *
+     * <p> The socket option is read-only and an attempt to set the socket option
+     * will throw {@code SocketException}.
+     *
+     * @apiNote
+     * Network devices may have multiple queues or channels to transmit and receive
+     * network packets. The {@code SO_INCOMING_NAPI_ID} socket option provides a hint
+     * to the application to indicate the receive queue on which an incoming socket
+     * connection or packets for that connection are directed to. An application may
+     * take advantage of this by handling all socket connections assigned to a
+     * specific queue on one thread.
+     *
+     * @since 15
+     */
+    public static final SocketOption<Integer> SO_INCOMING_NAPI_ID
+            = new ExtSocketOption<Integer>("SO_INCOMING_NAPI_ID", Integer.class);
+
+    /**
+     * Unix Domain peer credentials.
+     *
+     * <p> The value of this socket option is a {@link UnixDomainPrincipal} that
+     * represents the credentials of a peer connected to a Unix Domain socket.
+     * The credentials are those that applied at the time the socket was first
+     * connected or accepted.
+     *
+     * <p> The socket option is read-only and an attempt to set the socket option
+     * will throw {@code SocketException}. {@code SocketException} is also thrown
+     * when attempting to get the value of the socket option on an unconnected Unix
+     * Domain socket.
+     *
+     * @since 16
+     */
+    public static final SocketOption<UnixDomainPrincipal> SO_PEERCRED
+        = new ExtSocketOption<UnixDomainPrincipal>
+            ("SO_PEERCRED", UnixDomainPrincipal.class);
+
     private static final PlatformSocketOptions platformSocketOptions =
             PlatformSocketOptions.get();
 
-    private static final boolean flowSupported =
-            platformSocketOptions.flowSupported();
     private static final boolean quickAckSupported =
             platformSocketOptions.quickAckSupported();
     private static final boolean keepAliveOptSupported =
             platformSocketOptions.keepAliveOptionsSupported();
+    private static final boolean peerCredentialsSupported =
+            platformSocketOptions.peerCredentialsSupported();
+    private static final boolean incomingNapiIdOptSupported  =
+            platformSocketOptions.incomingNapiIdSupported();
     private static final Set<SocketOption<?>> extendedOptions = options();
 
     static Set<SocketOption<?>> options() {
         Set<SocketOption<?>> options = new HashSet<>();
-        if (flowSupported) {
-            options.add(SO_FLOW_SLA);
-        }
         if (quickAckSupported) {
             options.add(TCP_QUICKACK);
         }
+        if (incomingNapiIdOptSupported) {
+            options.add(SO_INCOMING_NAPI_ID);
+        }
         if (keepAliveOptSupported) {
             options.addAll(Set.of(TCP_KEEPCOUNT, TCP_KEEPIDLE, TCP_KEEPINTERVAL));
+        }
+        if (peerCredentialsSupported) {
+            options.add(SO_PEERCRED);
         }
         return Collections.unmodifiableSet(options);
     }
@@ -192,23 +235,16 @@ public final class ExtendedSocketOptions {
                 new sun.net.ext.ExtendedSocketOptions(extendedOptions) {
 
             @Override
+            @SuppressWarnings("removal")
             public void setOption(FileDescriptor fd,
                                   SocketOption<?> option,
                                   Object value)
                 throws SocketException
             {
-                SecurityManager sm = System.getSecurityManager();
-                if (sm != null)
-                    sm.checkPermission(new NetworkPermission("setOption." + option.name()));
-
                 if (fd == null || !fd.valid())
                     throw new SocketException("socket closed");
 
-                if (option == SO_FLOW_SLA) {
-                    assert flowSupported;
-                    SocketFlow flow = checkValueType(value, option.type());
-                    setFlowOption(fd, flow);
-                } else if (option == TCP_QUICKACK) {
+                if (option == TCP_QUICKACK) {
                     setQuickAckOption(fd, (boolean) value);
                 } else if (option == TCP_KEEPCOUNT) {
                     setTcpkeepAliveProbes(fd, (Integer) value);
@@ -216,29 +252,28 @@ public final class ExtendedSocketOptions {
                     setTcpKeepAliveTime(fd, (Integer) value);
                 } else if (option == TCP_KEEPINTERVAL) {
                     setTcpKeepAliveIntvl(fd, (Integer) value);
+                } else if (option == SO_INCOMING_NAPI_ID) {
+                    if (!incomingNapiIdOptSupported)
+                        throw new UnsupportedOperationException("Attempt to set unsupported option " + option);
+                    else
+                        throw new SocketException("Attempt to set read only option " + option);
+                } else if (option == SO_PEERCRED) {
+                    throw new SocketException("SO_PEERCRED cannot be set ");
                 } else {
                     throw new InternalError("Unexpected option " + option);
                 }
             }
 
             @Override
+            @SuppressWarnings("removal")
             public Object getOption(FileDescriptor fd,
                                     SocketOption<?> option)
                 throws SocketException
             {
-                SecurityManager sm = System.getSecurityManager();
-                if (sm != null)
-                    sm.checkPermission(new NetworkPermission("getOption." + option.name()));
-
                 if (fd == null || !fd.valid())
                     throw new SocketException("socket closed");
 
-                if (option == SO_FLOW_SLA) {
-                    assert flowSupported;
-                    SocketFlow flow = SocketFlow.create();
-                    getFlowOption(fd, flow);
-                    return flow;
-                } else if (option == TCP_QUICKACK) {
+                if (option == TCP_QUICKACK) {
                     return getQuickAckOption(fd);
                 } else if (option == TCP_KEEPCOUNT) {
                     return getTcpkeepAliveProbes(fd);
@@ -246,6 +281,10 @@ public final class ExtendedSocketOptions {
                     return getTcpKeepAliveTime(fd);
                 } else if (option == TCP_KEEPINTERVAL) {
                     return getTcpKeepAliveIntvl(fd);
+                } else if (option == SO_PEERCRED) {
+                    return getSoPeerCred(fd);
+                } else if (option == SO_INCOMING_NAPI_ID) {
+                    return getIncomingNapiId(fd);
                 } else {
                     throw new InternalError("Unexpected option " + option);
                 }
@@ -253,36 +292,17 @@ public final class ExtendedSocketOptions {
         });
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T checkValueType(Object value, Class<?> type) {
-        if (!type.isAssignableFrom(value.getClass())) {
-            String s = "Found: " + value.getClass() + ", Expected: " + type;
-            throw new IllegalArgumentException(s);
-        }
-        return (T) value;
-    }
-
     private static final JavaIOFileDescriptorAccess fdAccess =
             SharedSecrets.getJavaIOFileDescriptorAccess();
-
-    private static void setFlowOption(FileDescriptor fd, SocketFlow f)
-        throws SocketException
-    {
-        int status = platformSocketOptions.setFlowOption(fdAccess.get(fd),
-                                                         f.priority(),
-                                                         f.bandwidth());
-        f.status(status);  // augment the given flow with the status
-    }
-
-    private static void getFlowOption(FileDescriptor fd, SocketFlow f)
-            throws SocketException {
-        int status = platformSocketOptions.getFlowOption(fdAccess.get(fd), f);
-        f.status(status);  // augment the given flow with the status
-    }
 
     private static void setQuickAckOption(FileDescriptor fd, boolean enable)
             throws SocketException {
         platformSocketOptions.setQuickAck(fdAccess.get(fd), enable);
+    }
+
+    private static Object getSoPeerCred(FileDescriptor fd)
+            throws SocketException {
+        return platformSocketOptions.getSoPeerCred(fdAccess.get(fd));
     }
 
     private static Object getQuickAckOption(FileDescriptor fd)
@@ -317,6 +337,10 @@ public final class ExtendedSocketOptions {
         return platformSocketOptions.getTcpKeepAliveIntvl(fdAccess.get(fd));
     }
 
+    private static int getIncomingNapiId(FileDescriptor fd) throws SocketException {
+        return platformSocketOptions.getIncomingNapiId(fdAccess.get(fd));
+    }
+
     static class PlatformSocketOptions {
 
         protected PlatformSocketOptions() {}
@@ -333,15 +357,14 @@ public final class ExtendedSocketOptions {
         }
 
         private static PlatformSocketOptions create() {
+            @SuppressWarnings("removal")
             String osname = AccessController.doPrivileged(
                     new PrivilegedAction<String>() {
                         public String run() {
                             return System.getProperty("os.name");
                         }
                     });
-            if ("SunOS".equals(osname)) {
-                return newInstance("jdk.net.SolarisSocketOptions");
-            } else if ("Linux".equals(osname)) {
+            if ("Linux".equals(osname)) {
                 return newInstance("jdk.net.LinuxSocketOptions");
             } else if (osname.startsWith("Mac")) {
                 return newInstance("jdk.net.MacOSXSocketOptions");
@@ -356,17 +379,7 @@ public final class ExtendedSocketOptions {
             return instance;
         }
 
-        int setFlowOption(int fd, int priority, long bandwidth)
-            throws SocketException
-        {
-            throw new UnsupportedOperationException("unsupported socket option");
-        }
-
-        int getFlowOption(int fd, SocketFlow f) throws SocketException {
-            throw new UnsupportedOperationException("unsupported socket option");
-        }
-
-        boolean flowSupported() {
+        boolean peerCredentialsSupported() {
             return false;
         }
 
@@ -394,6 +407,10 @@ public final class ExtendedSocketOptions {
             throw new UnsupportedOperationException("unsupported TCP_KEEPIDLE option");
         }
 
+        UnixDomainPrincipal getSoPeerCred(int fd) throws SocketException {
+            throw new UnsupportedOperationException("unsupported SO_PEERCRED option");
+        }
+
         void setTcpKeepAliveIntvl(int fd, final int value) throws SocketException {
             throw new UnsupportedOperationException("unsupported TCP_KEEPINTVL option");
         }
@@ -408,6 +425,14 @@ public final class ExtendedSocketOptions {
 
         int getTcpKeepAliveIntvl(int fd) throws SocketException {
             throw new UnsupportedOperationException("unsupported TCP_KEEPINTVL option");
+        }
+
+        boolean incomingNapiIdSupported() {
+            return false;
+        }
+
+        int getIncomingNapiId(int fd) throws SocketException {
+            throw new UnsupportedOperationException("unsupported SO_INCOMING_NAPI_ID socket option");
         }
     }
 }

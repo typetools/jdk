@@ -41,6 +41,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import java.lang.invoke.VarHandle;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
+import jdk.internal.misc.Unsafe;
 
 /**
  * An {@code int} value that may be updated atomically.  See the
@@ -62,8 +63,9 @@ public @UsesObjectEquals class AtomicInteger extends Number implements java.io.S
      * This class intended to be implemented using VarHandles, but there
      * are unresolved cyclic startup dependencies.
      */
-    private static final jdk.internal.misc.Unsafe U = jdk.internal.misc.Unsafe.getUnsafe();
-    private static final long VALUE = U.objectFieldOffset(AtomicInteger.class, "value");
+    private static final Unsafe U = Unsafe.getUnsafe();
+    private static final long VALUE
+        = U.objectFieldOffset(AtomicInteger.class, "value");
 
     private volatile int value;
 
@@ -364,7 +366,7 @@ public @UsesObjectEquals class AtomicInteger extends Number implements java.io.S
      * Returns the current value of this {@code AtomicInteger} as a
      * {@code long} after a widening primitive conversion,
      * with memory effects as specified by {@link VarHandle#getVolatile}.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     public long longValue() {
         return (long)get();
@@ -374,7 +376,7 @@ public @UsesObjectEquals class AtomicInteger extends Number implements java.io.S
      * Returns the current value of this {@code AtomicInteger} as a
      * {@code float} after a widening primitive conversion,
      * with memory effects as specified by {@link VarHandle#getVolatile}.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     public float floatValue() {
         return (float)get();
@@ -384,7 +386,7 @@ public @UsesObjectEquals class AtomicInteger extends Number implements java.io.S
      * Returns the current value of this {@code AtomicInteger} as a
      * {@code double} after a widening primitive conversion,
      * with memory effects as specified by {@link VarHandle#getVolatile}.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     public double doubleValue() {
         return (double)get();

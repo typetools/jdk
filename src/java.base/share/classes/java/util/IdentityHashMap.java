@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -40,7 +41,7 @@ import java.lang.reflect.Array;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * This class implements the {@code Map} interface with a hash table, using
@@ -126,16 +127,18 @@ import jdk.internal.misc.SharedSecrets;
  * exception for its correctness: <i>fail-fast iterators should be used only
  * to detect bugs.</i>
  *
- * <p>Implementation note: This is a simple <i>linear-probe</i> hash table,
- * as described for example in texts by Sedgewick and Knuth.  The array
- * alternates holding keys and values.  (This has better locality for large
- * tables than does using separate arrays.)  For many JRE implementations
- * and operation mixes, this class will yield better performance than
- * {@link HashMap} (which uses <i>chaining</i> rather than linear-probing).
- *
  * <p>This class is a member of the
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
+ *
+ * @implNote
+ * <p>This is a simple <i>linear-probe</i> hash table,
+ * as described for example in texts by Sedgewick and Knuth.  The array
+ * contains alternating keys and values, with keys at even indexes and values
+ * at odd indexes. (This arrangement has better locality for large
+ * tables than does using separate arrays.)  For many Java implementations
+ * and operation mixes, this class will yield better performance than
+ * {@link HashMap}, which uses <i>chaining</i> rather than linear-probing.
  *
  * @see     System#identityHashCode(Object)
  * @see     Object#hashCode()
@@ -308,7 +311,7 @@ public class IdentityHashMap<K,V>
      */
     private static int hash(Object x, int length) {
         int h = System.identityHashCode(x);
-        // Multiply by -127, and left-shift to use least bit as part of hash
+        // Multiply by -254 to use the hash LSB and to ensure index is even
         return ((h << 1) - (h << 8)) & (length - 1);
     }
 
@@ -338,7 +341,7 @@ public class IdentityHashMap<K,V>
      */
     @Pure
     @SuppressWarnings("unchecked")
-    public @Nullable V get(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied IdentityHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
@@ -364,7 +367,7 @@ public class IdentityHashMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public boolean containsKey(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
@@ -389,7 +392,7 @@ public class IdentityHashMap<K,V>
      * @see     #containsKey(Object)
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         Object[] tab = table;
         for (int i = 1; i < tab.length; i += 2)
             if (tab[i] == value && tab[i - 1] != null)
@@ -406,7 +409,7 @@ public class IdentityHashMap<K,V>
      * @return  {@code true} if and only if the specified key-value
      *          mapping is in the map
      */
-    private boolean containsMapping(Object key, Object value) {
+    private boolean containsMapping(@UnknownSignedness @GuardSatisfied @Nullable Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
@@ -536,7 +539,7 @@ public class IdentityHashMap<K,V>
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
-    public @Nullable V remove(@GuardSatisfied IdentityHashMap<K, V> this, @Nullable Object key) {
+    public @Nullable V remove(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
@@ -568,7 +571,7 @@ public class IdentityHashMap<K,V>
      * @return  {@code true} if and only if the specified key-value
      *          mapping was in the map
      */
-    private boolean removeMapping(Object key, Object value) {
+    private boolean removeMapping(@UnknownSignedness @GuardSatisfied @Nullable Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
@@ -658,11 +661,10 @@ public class IdentityHashMap<K,V>
      * @see Object#equals(Object)
      */
     @Pure
-    public boolean equals(@GuardSatisfied @Nullable IdentityHashMap<K, V> this, @GuardSatisfied Object o) {
+    public boolean equals(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable Object o) {
         if (o == this) {
             return true;
-        } else if (o instanceof IdentityHashMap) {
-            IdentityHashMap<?,?> m = (IdentityHashMap<?,?>) o;
+        } else if (o instanceof IdentityHashMap<?, ?> m) {
             if (m.size() != size)
                 return false;
 
@@ -673,8 +675,7 @@ public class IdentityHashMap<K,V>
                     return false;
             }
             return true;
-        } else if (o instanceof Map) {
-            Map<?,?> m = (Map<?,?>)o;
+        } else if (o instanceof Map<?, ?> m) {
             return entrySet().equals(m.entrySet());
         } else {
             return false;  // o is not a Map
@@ -909,11 +910,9 @@ public class IdentityHashMap<K,V>
                 if (index < 0)
                     return super.equals(o);
 
-                if (!(o instanceof Map.Entry))
-                    return false;
-                Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-                return (e.getKey() == unmaskNull(traversalTable[index]) &&
-                       e.getValue() == traversalTable[index+1]);
+                return o instanceof Map.Entry<?, ?> e
+                        && e.getKey() == unmaskNull(traversalTable[index])
+                        && e.getValue() == traversalTable[index+1];
             }
 
             public int hashCode() {
@@ -1005,10 +1004,10 @@ public class IdentityHashMap<K,V>
         public @NonNegative int size() {
             return size;
         }
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             int oldSize = size;
             IdentityHashMap.this.remove(o);
             return size != oldSize;
@@ -1018,7 +1017,7 @@ public class IdentityHashMap<K,V>
          * the former contains an optimization that results in incorrect
          * behavior when c is a smaller "normal" (non-identity-based) Set.
          */
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             boolean modified = false;
             for (Iterator<K> i = iterator(); i.hasNext(); ) {
@@ -1117,10 +1116,10 @@ public class IdentityHashMap<K,V>
         public @NonNegative int size() {
             return size;
         }
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             for (Iterator<V> i = iterator(); i.hasNext(); ) {
                 if (i.next() == o) {
                     i.remove();
@@ -1223,17 +1222,13 @@ public class IdentityHashMap<K,V>
         public Iterator<Map.Entry<K,V>> iterator() {
             return new EntryIterator();
         }
-        public boolean contains(@Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
-            return containsMapping(entry.getKey(), entry.getValue());
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
+            return o instanceof Entry<?, ?> entry
+                    && containsMapping(entry.getKey(), entry.getValue());
         }
-        public boolean remove(@Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
-            return removeMapping(entry.getKey(), entry.getValue());
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
+            return o instanceof Entry<?, ?> entry
+                    && removeMapping(entry.getKey(), entry.getValue());
         }
         @Pure
         public @NonNegative int size() {
@@ -1247,7 +1242,7 @@ public class IdentityHashMap<K,V>
          * the former contains an optimization that results in incorrect
          * behavior when c is a smaller "normal" (non-identity-based) Set.
          */
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             boolean modified = false;
             for (Iterator<Map.Entry<K,V>> i = iterator(); i.hasNext(); ) {
@@ -1300,7 +1295,7 @@ public class IdentityHashMap<K,V>
         }
     }
 
-
+    @java.io.Serial
     private static final long serialVersionUID = 8188218128353913216L;
 
     /**
@@ -1313,6 +1308,7 @@ public class IdentityHashMap<K,V>
      *          IdentityHashMap.  The key-value mappings are emitted in no
      *          particular order.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException  {
         // Write out and any hidden stuff
@@ -1336,6 +1332,7 @@ public class IdentityHashMap<K,V>
      * Reconstitutes the {@code IdentityHashMap} instance from a stream (i.e.,
      * deserializes it).
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException  {
         // Read in any hidden stuff

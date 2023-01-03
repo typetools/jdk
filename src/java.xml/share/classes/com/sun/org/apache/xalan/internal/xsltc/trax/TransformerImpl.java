@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,7 +20,6 @@
 
 package com.sun.org.apache.xalan.internal.xsltc.trax;
 
-import com.sun.org.apache.xalan.internal.XalanConstants;
 import com.sun.org.apache.xalan.internal.utils.XMLSecurityManager;
 import com.sun.org.apache.xalan.internal.xsltc.DOM;
 import com.sun.org.apache.xalan.internal.xsltc.DOMCache;
@@ -49,6 +48,8 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownServiceException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -81,8 +82,15 @@ import javax.xml.transform.stax.StAXResult;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import jdk.xml.internal.JdkConstants;
+import static jdk.xml.internal.JdkConstants.SP_XSLTC_IS_STANDALONE;
+import jdk.xml.internal.JdkProperty;
 import jdk.xml.internal.JdkXmlFeatures;
 import jdk.xml.internal.JdkXmlUtils;
+import jdk.xml.internal.JdkProperty.ImplPropMap;
+import jdk.xml.internal.JdkProperty.State;
+import jdk.xml.internal.SecuritySupport;
+import jdk.xml.internal.TransformErrorListener;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -93,10 +101,10 @@ import org.xml.sax.ext.LexicalHandler;
  * @author Morten Jorgensen
  * @author G. Todd Miller
  * @author Santiago Pericas-Geertsen
- * @LastModified: Nov 2017
+ * @LastModified: June 2021
  */
 public final class TransformerImpl extends Transformer
-    implements DOMCache, ErrorListener
+    implements DOMCache
 {
 
     private final static String LEXICAL_HANDLER_PROPERTY =
@@ -129,9 +137,14 @@ public final class TransformerImpl extends Transformer
     private String _sourceSystemId = null;
 
     /**
+     * Default error listener
+     */
+    private final ErrorListener _defaultListener = new TransformErrorListener();
+
+    /**
      * An error listener for runtime errors.
      */
-    private ErrorListener _errorListener = this;
+    private ErrorListener _errorListener = _defaultListener;
 
     /**
      * A reference to a URI resolver for calls to document().
@@ -204,7 +217,7 @@ public final class TransformerImpl extends Transformer
      /**
      * protocols allowed for external DTD references in source file and/or stylesheet.
      */
-    private String _accessExternalDTD = XalanConstants.EXTERNAL_ACCESS_DEFAULT;
+    private String _accessExternalDTD = JdkConstants.EXTERNAL_ACCESS_DEFAULT;
 
     private XMLSecurityManager _securityManager;
     /**
@@ -221,7 +234,10 @@ public final class TransformerImpl extends Transformer
     // Catalog is enabled by default
     boolean _useCatalog = true;
 
-    int _cdataChunkSize = JdkXmlUtils.CDATA_CHUNK_SIZE_DEFAULT;
+    int _cdataChunkSize = JdkConstants.CDATA_CHUNK_SIZE_DEFAULT;
+
+    // OutputProperty/Impl-specific property: xsltcIsStandalone
+    JdkProperty<String> _xsltcIsStandalone;
 
     /**
      * This class wraps an ErrorListener into a MessageHandler in order to
@@ -250,6 +266,10 @@ public final class TransformerImpl extends Transformer
                 }
             }
         }
+
+        public ErrorListener getErrorListener() {
+            return _errorListener;
+        }
     }
 
     protected TransformerImpl(Properties outputProperties, int indentNumber,
@@ -264,20 +284,27 @@ public final class TransformerImpl extends Transformer
         int indentNumber, TransformerFactoryImpl tfactory)
     {
         _translet = (AbstractTranslet) translet;
+        if (_translet != null) {
+            _translet.setMessageHandler(new MessageHandler(_errorListener));
+        }
         _properties = createOutputProperties(outputProperties);
+        String isStandalone = SecuritySupport.getJAXPSystemProperty(
+                String.class, SP_XSLTC_IS_STANDALONE, "no");
+        _xsltcIsStandalone = new JdkProperty<>(ImplPropMap.XSLTCISSTANDALONE,
+                isStandalone, State.DEFAULT);
         _propertiesClone = (Properties) _properties.clone();
         _indentNumber = indentNumber;
         _tfactory = tfactory;
         _overrideDefaultParser = _tfactory.overrideDefaultParser();
         _accessExternalDTD = (String)_tfactory.getAttribute(XMLConstants.ACCESS_EXTERNAL_DTD);
-        _securityManager = (XMLSecurityManager)_tfactory.getAttribute(XalanConstants.SECURITY_MANAGER);
+        _securityManager = (XMLSecurityManager)_tfactory.getAttribute(JdkConstants.SECURITY_MANAGER);
         _readerManager = XMLReaderManager.getInstance(_overrideDefaultParser);
         _readerManager.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, _accessExternalDTD);
         _readerManager.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, _isSecureProcessing);
-        _readerManager.setProperty(XalanConstants.SECURITY_MANAGER, _securityManager);
-        _cdataChunkSize = JdkXmlUtils.getValue(_tfactory.getAttribute(JdkXmlUtils.CDATA_CHUNK_SIZE),
-                JdkXmlUtils.CDATA_CHUNK_SIZE_DEFAULT);
-        _readerManager.setProperty(JdkXmlUtils.CDATA_CHUNK_SIZE, _cdataChunkSize);
+        _readerManager.setProperty(JdkConstants.SECURITY_MANAGER, _securityManager);
+        _cdataChunkSize = JdkXmlUtils.getValue(_tfactory.getAttribute(JdkConstants.CDATA_CHUNK_SIZE),
+                JdkConstants.CDATA_CHUNK_SIZE_DEFAULT);
+        _readerManager.setProperty(JdkConstants.CDATA_CHUNK_SIZE, _cdataChunkSize);
 
         _useCatalog = _tfactory.getFeature(XMLConstants.USE_CATALOG);
         if (_useCatalog) {
@@ -400,7 +427,8 @@ public final class TransformerImpl extends Transformer
         // Get encoding using getProperty() to use defaults
         _encoding = _properties.getProperty(OutputKeys.ENCODING);
 
-        _tohFactory = TransletOutputHandlerFactory.newInstance(_overrideDefaultParser);
+        _tohFactory = TransletOutputHandlerFactory
+                .newInstance(_overrideDefaultParser, _errorListener);
         _tohFactory.setEncoding(_encoding);
         if (_method != null) {
             _tohFactory.setOutputMethod(_method);
@@ -484,35 +512,15 @@ public final class TransformerImpl extends Transformer
                 // or (3) just a filename on the local system.
                 URL url;
                 if (systemId.startsWith("file:")) {
-                    // if StreamResult(File) or setSystemID(File) was used,
-                    // the systemId will be URI encoded as a result of File.toURI(),
-                    // it must be decoded for use by URL
                     try{
-                        URI uri = new URI(systemId) ;
-                        systemId = "file:";
-
-                        String host = uri.getHost(); // decoded String
-                        String path = uri.getPath(); //decoded String
-                        if (path == null) {
-                         path = "";
-                        }
-
-                        // if host (URI authority) then file:// + host + path
-                        // else just path (may be absolute or relative)
-                        if (host != null) {
-                         systemId += "//" + host + path;
-                        } else {
-                         systemId += "//" + path;
-                        }
+                        Path p = Paths.get(new URI(systemId));
+                        _ostream = new FileOutputStream(p.toFile());
+                        _tohFactory.setOutputStream(_ostream);
+                        return _tohFactory.getSerializationHandler();
                     }
-                    catch (Exception  exception) {
-                        // URI exception which means nothing can be done so OK to ignore
+                    catch (Exception e) {
+                        throw new TransformerException(e);
                     }
-
-                    url = new URL(systemId);
-                    _ostream = new FileOutputStream(url.getFile());
-                    _tohFactory.setOutputStream(_ostream);
-                    return _tohFactory.getSerializationHandler();
                 }
                 else if (systemId.startsWith("http:")) {
                     url = new URL(systemId);
@@ -829,8 +837,8 @@ public final class TransformerImpl extends Transformer
         _errorListener = listener;
 
         // Register a message handler to report xsl:messages
-    if (_translet != null)
-        _translet.setMessageHandler(new MessageHandler(_errorListener));
+        if (_translet != null)
+            _translet.setMessageHandler(new MessageHandler(_errorListener));
     }
 
     /**
@@ -886,6 +894,9 @@ public final class TransformerImpl extends Transformer
     public String getOutputProperty(String name)
         throws IllegalArgumentException
     {
+        if (ImplPropMap.XSLTCISSTANDALONE.is(name)) {
+            return _xsltcIsStandalone.getValue();
+        }
         if (!validOutputProperty(name)) {
             ErrorMsg err = new ErrorMsg(ErrorMsg.JAXP_UNKNOWN_PROP_ERR, name);
             throw new IllegalArgumentException(err.toString());
@@ -925,7 +936,7 @@ public final class TransformerImpl extends Transformer
             }
         }
         else {
-            _properties = _propertiesClone;
+            _properties = (Properties)_propertiesClone.clone();
         }
     }
 
@@ -947,7 +958,12 @@ public final class TransformerImpl extends Transformer
             ErrorMsg err = new ErrorMsg(ErrorMsg.JAXP_UNKNOWN_PROP_ERR, name);
             throw new IllegalArgumentException(err.toString());
         }
-        _properties.setProperty(name, value);
+
+        if (ImplPropMap.XSLTCISSTANDALONE.is(name)) {
+            _xsltcIsStandalone.setValue(name, value, State.APIPROPERTY);
+        } else {
+            _properties.setProperty(name, value);
+        }
     }
 
     /**
@@ -1018,11 +1034,9 @@ public final class TransformerImpl extends Transformer
                     }
                 }
             }
-            else if (name.equals(OutputPropertiesFactory.ORACLE_IS_STANDALONE)) {
-                 if (value != null && value.equals("yes")) {
-                     translet._isStandalone = true;
-                 }
-            }
+        }
+        if (_xsltcIsStandalone.getValue().equals("yes")) {
+            translet._isStandalone = true;
         }
     }
 
@@ -1082,11 +1096,6 @@ public final class TransformerImpl extends Transformer
                     handler.setIndentAmount(Integer.parseInt(value));
                 }
             }
-            else if (name.equals(OutputPropertiesFactory.ORACLE_IS_STANDALONE)) {
-                if (value != null && value.equals("yes")) {
-                    handler.setIsStandalone(true);
-                }
-            }
             else if (name.equals(OutputKeys.CDATA_SECTION_ELEMENTS)) {
                 if (value != null) {
                     StringTokenizer e = new StringTokenizer(value);
@@ -1124,6 +1133,10 @@ public final class TransformerImpl extends Transformer
         // Call setDoctype() if needed
         if (doctypePublic != null || doctypeSystem != null) {
             handler.setDoctype(doctypeSystem, doctypePublic);
+        }
+
+        if (_xsltcIsStandalone.getValue().equals("yes")) {
+            handler.setIsStandalone(true);
         }
     }
 
@@ -1200,7 +1213,7 @@ public final class TransformerImpl extends Transformer
                 name.equals(OutputKeys.OMIT_XML_DECLARATION)   ||
                 name.equals(OutputKeys.STANDALONE) ||
                 name.equals(OutputKeys.VERSION) ||
-                name.equals(OutputPropertiesFactory.ORACLE_IS_STANDALONE) ||
+                ImplPropMap.XSLTCISSTANDALONE.is(name) ||
                 name.charAt(0) == '{');
     }
 
@@ -1353,90 +1366,6 @@ public final class TransformerImpl extends Transformer
     }
 
     /**
-     * Receive notification of a recoverable error.
-     * The transformer must continue to provide normal parsing events after
-     * invoking this method. It should still be possible for the application
-     * to process the document through to the end.
-     *
-     * @param e The warning information encapsulated in a transformer
-     * exception.
-     * @throws TransformerException if the application chooses to discontinue
-     * the transformation (always does in our case).
-     */
-    @Override
-    public void error(TransformerException e)
-        throws TransformerException
-    {
-        Throwable wrapped = e.getException();
-        if (wrapped != null) {
-            System.err.println(new ErrorMsg(ErrorMsg.ERROR_PLUS_WRAPPED_MSG,
-                                            e.getMessageAndLocation(),
-                                            wrapped.getMessage()));
-        } else {
-            System.err.println(new ErrorMsg(ErrorMsg.ERROR_MSG,
-                                            e.getMessageAndLocation()));
-        }
-        throw e;
-    }
-
-    /**
-     * Receive notification of a non-recoverable error.
-     * The application must assume that the transformation cannot continue
-     * after the Transformer has invoked this method, and should continue
-     * (if at all) only to collect addition error messages. In fact,
-     * Transformers are free to stop reporting events once this method has
-     * been invoked.
-     *
-     * @param e The warning information encapsulated in a transformer
-     * exception.
-     * @throws TransformerException if the application chooses to discontinue
-     * the transformation (always does in our case).
-     */
-    @Override
-    public void fatalError(TransformerException e)
-        throws TransformerException
-    {
-        Throwable wrapped = e.getException();
-        if (wrapped != null) {
-            System.err.println(new ErrorMsg(ErrorMsg.FATAL_ERR_PLUS_WRAPPED_MSG,
-                                            e.getMessageAndLocation(),
-                                            wrapped.getMessage()));
-        } else {
-            System.err.println(new ErrorMsg(ErrorMsg.FATAL_ERR_MSG,
-                                            e.getMessageAndLocation()));
-        }
-        throw e;
-    }
-
-    /**
-     * Receive notification of a warning.
-     * Transformers can use this method to report conditions that are not
-     * errors or fatal errors. The default behaviour is to take no action.
-     * After invoking this method, the Transformer must continue with the
-     * transformation. It should still be possible for the application to
-     * process the document through to the end.
-     *
-     * @param e The warning information encapsulated in a transformer
-     * exception.
-     * @throws TransformerException if the application chooses to discontinue
-     * the transformation (never does in our case).
-     */
-    @Override
-    public void warning(TransformerException e)
-        throws TransformerException
-    {
-        Throwable wrapped = e.getException();
-        if (wrapped != null) {
-            System.err.println(new ErrorMsg(ErrorMsg.WARNING_PLUS_WRAPPED_MSG,
-                                            e.getMessageAndLocation(),
-                                            wrapped.getMessage()));
-        } else {
-            System.err.println(new ErrorMsg(ErrorMsg.WARNING_MSG,
-                                            e.getMessageAndLocation()));
-        }
-    }
-
-    /**
      * This method resets  the Transformer to its original configuration
      * Transformer code is reset to the same state it was when it was
      * created
@@ -1448,7 +1377,7 @@ public final class TransformerImpl extends Transformer
         _method = null;
         _encoding = null;
         _sourceSystemId = null;
-        _errorListener = this;
+        _errorListener = _defaultListener;
         _uriResolver = null;
         _dom = null;
         _parameters = null;

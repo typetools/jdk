@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,25 +21,30 @@
  * questions.
  */
 
+package gc.g1;
+
 import jdk.test.lib.Asserts;
 import jdk.test.lib.Platform;
+import jdk.test.lib.Utils;
 import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.process.OutputAnalyzer;
-import jdk.test.lib.Utils;
+import jtreg.SkippedException;
+
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import jdk.internal.misc.Unsafe; // for ADDRESS_SIZE
 import sun.hotspot.WhiteBox;
 
 public class TestShrinkAuxiliaryData {
+    private static final Random RNG = Utils.getRandomInstance();
 
     private static final int REGION_SIZE = 1024 * 1024;
 
@@ -64,15 +69,14 @@ public class TestShrinkAuxiliaryData {
     }
 
     protected void test() throws Exception {
-        ArrayList<String> vmOpts = new ArrayList();
+        ArrayList<String> vmOpts = new ArrayList<>();
         Collections.addAll(vmOpts, initialOpts);
 
         int maxCacheSize = Math.max(0, Math.min(31, getMaxCacheSize()));
         if (maxCacheSize < hotCardTableSize) {
-            System.out.format("Skiping test for %d cache size due max cache size %d",
-                    hotCardTableSize, maxCacheSize
-            );
-            return;
+            throw new SkippedException(String.format(
+                    "Skiping test for %d cache size due max cache size %d",
+                    hotCardTableSize, maxCacheSize));
         }
 
         printTestInfo(maxCacheSize);
@@ -81,14 +85,14 @@ public class TestShrinkAuxiliaryData {
 
         // for 32 bits ObjectAlignmentInBytes is not a option
         if (Platform.is32bit()) {
-            ArrayList<String> vmOptsWithoutAlign = new ArrayList(vmOpts);
+            ArrayList<String> vmOptsWithoutAlign = new ArrayList<>(vmOpts);
             vmOptsWithoutAlign.add(ShrinkAuxiliaryDataTest.class.getName());
             performTest(vmOptsWithoutAlign);
             return;
         }
 
         for (int alignment = 3; alignment <= 8; alignment++) {
-            ArrayList<String> vmOptsWithAlign = new ArrayList(vmOpts);
+            ArrayList<String> vmOptsWithAlign = new ArrayList<>(vmOpts);
             vmOptsWithAlign.add("-XX:ObjectAlignmentInBytes="
                     + (int) Math.pow(2, alignment));
             vmOptsWithAlign.add(ShrinkAuxiliaryDataTest.class.getName());
@@ -98,10 +102,7 @@ public class TestShrinkAuxiliaryData {
     }
 
     private void performTest(List<String> opts) throws Exception {
-        ProcessBuilder pb
-                = ProcessTools.createJavaProcessBuilder(true,
-                        opts.toArray(new String[opts.size()])
-                );
+        ProcessBuilder pb = ProcessTools.createTestJvm(opts);
 
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
         System.out.println(output.getStdout());
@@ -152,7 +153,7 @@ public class TestShrinkAuxiliaryData {
 
     static class ShrinkAuxiliaryDataTest {
 
-        public static void main(String[] args) throws IOException {
+        public static void main(String[] args) throws Exception {
 
             ShrinkAuxiliaryDataTest testCase = new ShrinkAuxiliaryDataTest();
 
@@ -199,8 +200,8 @@ public class TestShrinkAuxiliaryData {
 
         class GarbageObject {
 
-            private final List<byte[]> payload = new ArrayList();
-            private final List<GarbageObject> ref = new LinkedList();
+            private final List<byte[]> payload = new ArrayList<>();
+            private final List<GarbageObject> ref = new LinkedList<>();
 
             public GarbageObject(int size) {
                 payload.add(new byte[size]);
@@ -212,14 +213,14 @@ public class TestShrinkAuxiliaryData {
 
             public void mutate() {
                 if (!payload.isEmpty() && payload.get(0).length > 0) {
-                    payload.get(0)[0] = (byte) (Math.random() * Byte.MAX_VALUE);
+                    payload.get(0)[0] = (byte) (RNG.nextDouble() * Byte.MAX_VALUE);
                 }
             }
         }
 
-        private final List<GarbageObject> garbage = new ArrayList();
+        private final List<GarbageObject> garbage = new ArrayList<>();
 
-        public void test() throws IOException {
+        public void test() throws Exception {
 
             MemoryUsage muFull, muFree, muAuxDataFull, muAuxDataFree;
             float auxFull, auxFree;
@@ -240,6 +241,14 @@ public class TestShrinkAuxiliaryData {
 
             deallocate();
             System.gc();
+
+            if (WhiteBox.getWhiteBox().g1HasRegionsToUncommit()) {
+                System.out.println("Waiting for concurrent uncommit to complete");
+                do {
+                    Thread.sleep(1000);
+                } while(WhiteBox.getWhiteBox().g1HasRegionsToUncommit());
+                System.out.println("Concurrent uncommit done");
+            }
 
             muFree = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
             muAuxDataFree = WhiteBox.getWhiteBox().g1AuxiliaryMemoryUsage();
@@ -293,12 +302,12 @@ public class TestShrinkAuxiliaryData {
                 for (int i = 0; i < NUM_LINKS; i++) {
                     int regionToLink;
                     do {
-                        regionToLink = (int) (Math.random() * REGIONS_TO_ALLOCATE);
+                        regionToLink = (int) (RNG.nextDouble() * REGIONS_TO_ALLOCATE);
                     } while (regionToLink == regionNumber);
 
                     // get random garbage object from random region
                     garbage.get(ig).addRef(garbage.get(regionToLink
-                            * NUM_OBJECTS_PER_REGION + (int) (Math.random()
+                            * NUM_OBJECTS_PER_REGION + (int) (RNG.nextDouble()
                             * NUM_OBJECTS_PER_REGION)));
                 }
             }

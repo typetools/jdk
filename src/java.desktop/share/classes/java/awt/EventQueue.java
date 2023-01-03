@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,8 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.security.AccessControlContext;
 
-import jdk.internal.misc.SharedSecrets;
-import jdk.internal.misc.JavaSecurityAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.access.JavaSecurityAccess;
 
 /**
  * {@code EventQueue} is a platform-independent class
@@ -102,8 +102,9 @@ import jdk.internal.misc.JavaSecurityAccess;
  */
 @UIType
 @AnnotatedFor({"interning"})
+@SuppressWarnings("removal")
 public @UsesObjectEquals class EventQueue {
-    private static final AtomicInteger threadInitNumber = new AtomicInteger(0);
+    private static final AtomicInteger threadInitNumber = new AtomicInteger();
 
     private static final int LOW_PRIORITY = 0;
     private static final int NORM_PRIORITY = 1;
@@ -1027,8 +1028,8 @@ public @UsesObjectEquals class EventQueue {
     }
 
     private class FwSecondaryLoopWrapper implements SecondaryLoop {
-        final private SecondaryLoop loop;
-        final private EventFilter filter;
+        private final SecondaryLoop loop;
+        private final EventFilter filter;
 
         public FwSecondaryLoopWrapper(SecondaryLoop loop, EventFilter filter) {
             this.loop = loop;
@@ -1113,6 +1114,7 @@ public @UsesObjectEquals class EventQueue {
         }
     }
 
+    @SuppressWarnings({"deprecation", "removal"})
     final void initDispatchThread() {
         pushPopLock.lock();
         try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -281,13 +281,16 @@ final class XTextFieldPeer extends XComponentPeer implements TextFieldPeer {
 
     @Override
     public void setFont(Font f) {
+        boolean isChanged = false;
         synchronized (getStateLock()) {
             font = f;
             if (xtext != null && xtext.getFont() != f) {
                 xtext.setFont(font);
+                isChanged = true;
             }
         }
-        xtext.validate();
+        if (isChanged)
+            xtext.validate();
     }
 
     /**
@@ -639,17 +642,14 @@ final class XTextFieldPeer extends XComponentPeer implements TextFieldPeer {
             processMouseMotionEvent(e);
         }
 
-        // Fix for 4915454 - override the default implementation to avoid
-        // loading SystemFlavorMap and associated classes.
         @Override
-        public void setTransferHandler(TransferHandler newHandler) {
-            TransferHandler oldHandler = (TransferHandler)
-                getClientProperty(AWTAccessor.getClientPropertyKeyAccessor()
-                                      .getJComponent_TRANSFER_HANDLER());
-            putClientProperty(AWTAccessor.getClientPropertyKeyAccessor()
-                                  .getJComponent_TRANSFER_HANDLER(),
-                              newHandler);
-
+        public void setTransferHandler(final TransferHandler newHandler) {
+            // override the default implementation to avoid loading
+            // SystemFlavorMap and associated classes
+            Object key = AWTAccessor.getClientPropertyKeyAccessor()
+                                    .getJComponent_TRANSFER_HANDLER();
+            Object oldHandler = getClientProperty(key);
+            putClientProperty(key, newHandler);
             firePropertyChange("transferHandler", oldHandler, newHandler);
         }
 

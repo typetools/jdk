@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -127,7 +128,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws NullPointerException {@inheritDoc}
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied Object value) {
+    public boolean containsValue(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
         if (value==null) {
             while (i.hasNext()) {
@@ -161,7 +162,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied Object key) {
+    public boolean containsKey(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Map.Entry<K,V>> i = entrySet().iterator();
         if (key==null) {
             while (i.hasNext()) {
@@ -194,7 +195,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws NullPointerException          {@inheritDoc}
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied Object key) {
+    public @Nullable V get(@GuardSatisfied AbstractMap<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
         if (key==null) {
             while (i.hasNext()) {
@@ -255,7 +256,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws ClassCastException            {@inheritDoc}
      * @throws NullPointerException          {@inheritDoc}
      */
-    public @Nullable V remove(@GuardSatisfied AbstractMap<K, V> this, Object key) {
+    public @Nullable V remove(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
         Entry<K,V> correctEntry = null;
         if (key==null) {
@@ -404,7 +405,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                public boolean contains(Object k) {
+                public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
                 }
             };
@@ -466,7 +467,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                public boolean contains(Object v) {
+                public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
                 }
             };
@@ -508,9 +509,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         if (o == this)
             return true;
 
-        if (!(o instanceof Map))
+        if (!(o instanceof Map<?, ?> m))
             return false;
-        Map<?,?> m = (Map<?,?>) o;
         if (m.size() != size())
             return false;
 
@@ -627,8 +627,11 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
 
     /**
      * An Entry maintaining a key and a value.  The value may be
-     * changed using the {@code setValue} method.  This class
-     * facilitates the process of building custom map
+     * changed using the {@code setValue} method. Instances of
+     * this class are not associated with any map's entry-set view.
+     *
+     * @apiNote
+     * This class facilitates the process of building custom map
      * implementations. For example, it may be convenient to return
      * arrays of {@code SimpleEntry} instances in method
      * {@code Map.entrySet().toArray}.
@@ -638,9 +641,12 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
     public static class SimpleEntry<K,V>
         implements Entry<K,V>, java.io.Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = -8499721149061103585L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final K key;
+        @SuppressWarnings("serial") // Conditionally serializable
         private V value;
 
         /**
@@ -722,10 +728,9 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          */
         @Pure
         public boolean equals(AbstractMap.@GuardSatisfied SimpleEntry<K, V> this, @GuardSatisfied @Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-            return eq(key, e.getKey()) && eq(value, e.getValue());
+            return o instanceof Map.Entry<?, ?> e
+                    && eq(key, e.getKey())
+                    && eq(value, e.getValue());
         }
 
         /**
@@ -763,19 +768,33 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
     }
 
     /**
-     * An Entry maintaining an immutable key and value.  This class
-     * does not support method {@code setValue}.  This class may be
-     * convenient in methods that return thread-safe snapshots of
-     * key-value mappings.
+     * An unmodifiable Entry maintaining a key and a value.  This class
+     * does not support the {@code setValue} method. Instances of
+     * this class are not associated with any map's entry-set view.
+     *
+     * @apiNote
+     * Instances of this class are not necessarily immutable, as the key
+     * and value may be mutable. An instance of <i>this specific class</i>
+     * is unmodifiable, because the key and value references cannot be
+     * changed. A reference of this <i>type</i> may not be unmodifiable,
+     * as a subclass may be modifiable or may provide the appearance of modifiability.
+     * <p>
+     * This class may be convenient in methods that return thread-safe snapshots of
+     * key-value mappings. For alternatives, see the
+     * {@link Map#entry Map::entry} and {@link Map.Entry#copyOf Map.Entry::copyOf}
+     * methods.
      *
      * @since 1.6
      */
     public static class SimpleImmutableEntry<K,V>
         implements Entry<K,V>, java.io.Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 7138329143949025153L;
 
+        @SuppressWarnings("serial") // Not statically typed as Serializable
         private final K key;
+        @SuppressWarnings("serial") // Not statically typed as Serializable
         private final V value;
 
         /**
@@ -825,7 +844,10 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          * Replaces the value corresponding to this entry with the specified
          * value (optional operation).  This implementation simply throws
          * {@code UnsupportedOperationException}, as this class implements
-         * an <i>immutable</i> map entry.
+         * an unmodifiable map entry.
+         *
+         * @implSpec
+         * The implementation in this class always throws {@code UnsupportedOperationException}.
          *
          * @param value new value to be stored in this entry
          * @return (Does not return)
@@ -858,10 +880,9 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          */
         @Pure
         public boolean equals(AbstractMap.@GuardSatisfied SimpleImmutableEntry<K, V> this, @GuardSatisfied @Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-            return eq(key, e.getKey()) && eq(value, e.getValue());
+            return o instanceof Map.Entry<?, ?> e
+                    && eq(key, e.getKey())
+                    && eq(value, e.getValue());
         }
 
         /**

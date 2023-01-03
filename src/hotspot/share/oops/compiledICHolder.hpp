@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_COMPILEDICHOLDEROOP_HPP
-#define SHARE_VM_OOPS_COMPILEDICHOLDEROOP_HPP
+#ifndef SHARE_OOPS_COMPILEDICHOLDER_HPP
+#define SHARE_OOPS_COMPILEDICHOLDER_HPP
 
 #include "oops/oop.hpp"
 #include "utilities/macros.hpp"
@@ -65,25 +65,13 @@ class CompiledICHolder : public CHeapObj<mtCompiler> {
   Klass*    holder_klass()  const     { return _holder_klass; }
   Metadata* holder_metadata() const   { return _holder_metadata; }
 
-  void set_holder_metadata(Metadata* m) { _holder_metadata = m; }
-  void set_holder_klass(Klass* k)     { _holder_klass = k; }
-
   static int holder_metadata_offset() { return offset_of(CompiledICHolder, _holder_metadata); }
   static int holder_klass_offset()    { return offset_of(CompiledICHolder, _holder_klass); }
 
   CompiledICHolder* next()     { return _next; }
   void set_next(CompiledICHolder* n) { _next = n; }
 
-  inline bool is_loader_alive() {
-    Klass* k = _is_metadata_method ? ((Method*)_holder_metadata)->method_holder() : (Klass*)_holder_metadata;
-    if (!k->is_loader_alive()) {
-      return false;
-    }
-    if (!_holder_klass->is_loader_alive()) {
-      return false;
-    }
-    return true;
-  }
+  inline bool is_loader_alive();
 
   // Verify
   void verify_on(outputStream* st);
@@ -97,4 +85,4 @@ class CompiledICHolder : public CHeapObj<mtCompiler> {
   void claim() NOT_DEBUG_RETURN;
 };
 
-#endif // SHARE_VM_OOPS_COMPILEDICHOLDEROOP_HPP
+#endif // SHARE_OOPS_COMPILEDICHOLDER_HPP

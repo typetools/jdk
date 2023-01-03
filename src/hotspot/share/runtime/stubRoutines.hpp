@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_STUBROUTINES_HPP
-#define SHARE_VM_RUNTIME_STUBROUTINES_HPP
+#ifndef SHARE_RUNTIME_STUBROUTINES_HPP
+#define SHARE_RUNTIME_STUBROUTINES_HPP
 
 #include "code/codeBlob.hpp"
 #include "memory/allocation.hpp"
+#include "prims/vectorSupport.hpp"
 #include "runtime/frame.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/stubCodeGenerator.hpp"
@@ -74,14 +75,55 @@
 // 4. implement the corresponding generator function in the platform-dependent
 //    stubGenerator_<arch>.cpp file and call the function in generate_all() of that file
 
+class UnsafeCopyMemory : public CHeapObj<mtCode> {
+ private:
+  address _start_pc;
+  address _end_pc;
+  address _error_exit_pc;
+ public:
+  static address           _common_exit_stub_pc;
+  static UnsafeCopyMemory* _table;
+  static int               _table_length;
+  static int               _table_max_length;
+  UnsafeCopyMemory() : _start_pc(NULL), _end_pc(NULL), _error_exit_pc(NULL) {}
+  void    set_start_pc(address pc)      { _start_pc = pc; }
+  void    set_end_pc(address pc)        { _end_pc = pc; }
+  void    set_error_exit_pc(address pc) { _error_exit_pc = pc; }
+  address start_pc()      const { return _start_pc; }
+  address end_pc()        const { return _end_pc; }
+  address error_exit_pc() const { return _error_exit_pc; }
+
+  static void    set_common_exit_stub_pc(address pc) { _common_exit_stub_pc = pc; }
+  static address common_exit_stub_pc()               { return _common_exit_stub_pc; }
+
+  static UnsafeCopyMemory* add_to_table(address start_pc, address end_pc, address error_exit_pc) {
+    guarantee(_table_length < _table_max_length, "Incorrect UnsafeCopyMemory::_table_max_length");
+    UnsafeCopyMemory* entry = &_table[_table_length];
+    entry->set_start_pc(start_pc);
+    entry->set_end_pc(end_pc);
+    entry->set_error_exit_pc(error_exit_pc);
+
+    _table_length++;
+    return entry;
+  }
+
+  static bool    contains_pc(address pc);
+  static address page_error_continue_pc(address pc);
+  static void    create_table(int max_size);
+};
+
+class UnsafeCopyMemoryMark : public StackObj {
+ private:
+  UnsafeCopyMemory*  _ucm_entry;
+  StubCodeGenerator* _cgen;
+ public:
+  UnsafeCopyMemoryMark(StubCodeGenerator* cgen, bool add_entry, bool continue_at_scope_end, address error_exit_pc = NULL);
+  ~UnsafeCopyMemoryMark();
+};
 
 class StubRoutines: AllStatic {
 
  public:
-  enum platform_independent_constants {
-    max_size_of_parameters = 256                           // max. parameter size supported by megamorphic lookups
-  };
-
   // Dependencies
   friend class StubGenerator;
 
@@ -109,16 +151,6 @@ class StubRoutines: AllStatic {
   static address _atomic_add_entry;
   static address _atomic_add_long_entry;
   static address _fence_entry;
-  static address _d2i_wrapper;
-  static address _d2l_wrapper;
-
-  static jint    _fpu_cntrl_wrd_std;
-  static jint    _fpu_cntrl_wrd_24;
-  static jint    _fpu_cntrl_wrd_64;
-  static jint    _fpu_cntrl_wrd_trunc;
-  static jint    _mxcsr_std;
-  static jint    _fpu_subnormal_bias1[3];
-  static jint    _fpu_subnormal_bias2[3];
 
   static BufferBlob* _code1;                               // code buffer for initial routines
   static BufferBlob* _code2;                               // code buffer for all other routines
@@ -151,6 +183,10 @@ class StubRoutines: AllStatic {
   static address _arrayof_jlong_disjoint_arraycopy;
   static address _arrayof_oop_disjoint_arraycopy, _arrayof_oop_disjoint_arraycopy_uninit;
 
+  // cache line writeback
+  static address _data_cache_writeback;
+  static address _data_cache_writeback_sync;
+
   // these are recommended but optional:
   static address _checkcast_arraycopy, _checkcast_arraycopy_uninit;
   static address _unsafe_arraycopy;
@@ -163,23 +199,27 @@ class StubRoutines: AllStatic {
   static address _arrayof_jshort_fill;
   static address _arrayof_jint_fill;
 
-  // zero heap space aligned to jlong (8 bytes)
-  static address _zero_aligned_words;
-
   static address _aescrypt_encryptBlock;
   static address _aescrypt_decryptBlock;
   static address _cipherBlockChaining_encryptAESCrypt;
   static address _cipherBlockChaining_decryptAESCrypt;
+  static address _electronicCodeBook_encryptAESCrypt;
+  static address _electronicCodeBook_decryptAESCrypt;
   static address _counterMode_AESCrypt;
   static address _ghash_processBlocks;
   static address _base64_encodeBlock;
+  static address _base64_decodeBlock;
 
+  static address _md5_implCompress;
+  static address _md5_implCompressMB;
   static address _sha1_implCompress;
   static address _sha1_implCompressMB;
   static address _sha256_implCompress;
   static address _sha256_implCompressMB;
   static address _sha512_implCompress;
   static address _sha512_implCompressMB;
+  static address _sha3_implCompress;
+  static address _sha3_implCompressMB;
 
   static address _updateBytesCRC32;
   static address _crc_table_adr;
@@ -193,6 +233,8 @@ class StubRoutines: AllStatic {
   static address _mulAdd;
   static address _montgomeryMultiply;
   static address _montgomerySquare;
+  static address _bigIntegerRightShiftWorker;
+  static address _bigIntegerLeftShiftWorker;
 
   static address _vectorizedMismatch;
 
@@ -207,18 +249,6 @@ class StubRoutines: AllStatic {
   static address _dlibm_tan_cot_huge;
   static address _dtan;
 
-  // These are versions of the java.lang.Math methods which perform
-  // the same operations as the intrinsic version.  They are used for
-  // constant folding in the compiler to ensure equivalence.  If the
-  // intrinsic version returns the same result as the strict version
-  // then they can be set to the appropriate function from
-  // SharedRuntime.
-  static double (*_intrinsic_log10)(double);
-  static double (*_intrinsic_pow)(double, double);
-  static double (*_intrinsic_sin)(double);
-  static double (*_intrinsic_cos)(double);
-  static double (*_intrinsic_tan)(double);
-
   // Safefetch stubs.
   static address _safefetch32_entry;
   static address _safefetch32_fault_pc;
@@ -226,6 +256,10 @@ class StubRoutines: AllStatic {
   static address _safefetchN_entry;
   static address _safefetchN_fault_pc;
   static address _safefetchN_continuation_pc;
+
+  // Vector Math Routines
+  static address _vector_f_math[VectorSupport::NUM_VEC_SIZES][VectorSupport::NUM_SVML_OP];
+  static address _vector_d_math[VectorSupport::NUM_VEC_SIZES][VectorSupport::NUM_SVML_OP];
 
  public:
   // Initialization/Testing
@@ -284,18 +318,6 @@ class StubRoutines: AllStatic {
   static address atomic_add_long_entry()                   { return _atomic_add_long_entry; }
   static address fence_entry()                             { return _fence_entry; }
 
-  static address d2i_wrapper()                             { return _d2i_wrapper; }
-  static address d2l_wrapper()                             { return _d2l_wrapper; }
-  static jint    fpu_cntrl_wrd_std()                       { return _fpu_cntrl_wrd_std;   }
-  static address addr_fpu_cntrl_wrd_std()                  { return (address)&_fpu_cntrl_wrd_std;   }
-  static address addr_fpu_cntrl_wrd_24()                   { return (address)&_fpu_cntrl_wrd_24;   }
-  static address addr_fpu_cntrl_wrd_64()                   { return (address)&_fpu_cntrl_wrd_64;   }
-  static address addr_fpu_cntrl_wrd_trunc()                { return (address)&_fpu_cntrl_wrd_trunc; }
-  static address addr_mxcsr_std()                          { return (address)&_mxcsr_std; }
-  static address addr_fpu_subnormal_bias1()                { return (address)&_fpu_subnormal_bias1; }
-  static address addr_fpu_subnormal_bias2()                { return (address)&_fpu_subnormal_bias2; }
-
-
   static address select_arraycopy_function(BasicType t, bool aligned, bool disjoint, const char* &name, bool dest_uninitialized);
 
   static address jbyte_arraycopy()  { return _jbyte_arraycopy; }
@@ -328,11 +350,22 @@ class StubRoutines: AllStatic {
   static address arrayof_oop_disjoint_arraycopy(bool dest_uninitialized = false) {
     return dest_uninitialized ? _arrayof_oop_disjoint_arraycopy_uninit : _arrayof_oop_disjoint_arraycopy;
   }
+  static address data_cache_writeback()              { return _data_cache_writeback; }
+  static address data_cache_writeback_sync()         { return _data_cache_writeback_sync; }
+
+  typedef void (*DataCacheWritebackStub)(void *);
+  static DataCacheWritebackStub DataCacheWriteback_stub()         { return CAST_TO_FN_PTR(DataCacheWritebackStub,  _data_cache_writeback); }
+  typedef void (*DataCacheWritebackSyncStub)(bool);
+  static DataCacheWritebackSyncStub DataCacheWritebackSync_stub() { return CAST_TO_FN_PTR(DataCacheWritebackSyncStub,  _data_cache_writeback_sync); }
 
   static address checkcast_arraycopy(bool dest_uninitialized = false) {
     return dest_uninitialized ? _checkcast_arraycopy_uninit : _checkcast_arraycopy;
   }
-  static address unsafe_arraycopy()    { return _unsafe_arraycopy; }
+  static address unsafe_arraycopy()     { return _unsafe_arraycopy; }
+
+  typedef void (*UnsafeArrayCopyStub)(const void* src, void* dst, size_t count);
+  static UnsafeArrayCopyStub UnsafeArrayCopy_stub()         { return CAST_TO_FN_PTR(UnsafeArrayCopyStub,  _unsafe_arraycopy); }
+
   static address generic_arraycopy()   { return _generic_arraycopy; }
 
   static address jbyte_fill()          { return _jbyte_fill; }
@@ -346,15 +379,22 @@ class StubRoutines: AllStatic {
   static address aescrypt_decryptBlock()                { return _aescrypt_decryptBlock; }
   static address cipherBlockChaining_encryptAESCrypt()  { return _cipherBlockChaining_encryptAESCrypt; }
   static address cipherBlockChaining_decryptAESCrypt()  { return _cipherBlockChaining_decryptAESCrypt; }
+  static address electronicCodeBook_encryptAESCrypt()   { return _electronicCodeBook_encryptAESCrypt; }
+  static address electronicCodeBook_decryptAESCrypt()   { return _electronicCodeBook_decryptAESCrypt; }
   static address counterMode_AESCrypt()  { return _counterMode_AESCrypt; }
   static address ghash_processBlocks()   { return _ghash_processBlocks; }
   static address base64_encodeBlock()    { return _base64_encodeBlock; }
+  static address base64_decodeBlock()    { return _base64_decodeBlock; }
+  static address md5_implCompress()      { return _md5_implCompress; }
+  static address md5_implCompressMB()    { return _md5_implCompressMB; }
   static address sha1_implCompress()     { return _sha1_implCompress; }
   static address sha1_implCompressMB()   { return _sha1_implCompressMB; }
   static address sha256_implCompress()   { return _sha256_implCompress; }
   static address sha256_implCompressMB() { return _sha256_implCompressMB; }
   static address sha512_implCompress()   { return _sha512_implCompress; }
   static address sha512_implCompressMB() { return _sha512_implCompressMB; }
+  static address sha3_implCompress()     { return _sha3_implCompress; }
+  static address sha3_implCompressMB()   { return _sha3_implCompressMB; }
 
   static address updateBytesCRC32()    { return _updateBytesCRC32; }
   static address crc_table_addr()      { return _crc_table_adr; }
@@ -368,6 +408,8 @@ class StubRoutines: AllStatic {
   static address mulAdd()              { return _mulAdd; }
   static address montgomeryMultiply()  { return _montgomeryMultiply; }
   static address montgomerySquare()    { return _montgomerySquare; }
+  static address bigIntegerRightShift() { return _bigIntegerRightShiftWorker; }
+  static address bigIntegerLeftShift()  { return _bigIntegerLeftShiftWorker; }
 
   static address vectorizedMismatch()  { return _vectorizedMismatch; }
 
@@ -383,29 +425,6 @@ class StubRoutines: AllStatic {
   static address dtan()                { return _dtan; }
 
   static address select_fill_function(BasicType t, bool aligned, const char* &name);
-
-  static address zero_aligned_words()  { return _zero_aligned_words; }
-
-  static double  intrinsic_log10(double d) {
-    assert(_intrinsic_log10 != NULL, "must be defined");
-    return _intrinsic_log10(d);
-  }
-  static double  intrinsic_pow(double d, double d2) {
-    assert(_intrinsic_pow != NULL, "must be defined");
-    return _intrinsic_pow(d, d2);
-  }
-  static double  intrinsic_sin(double d) {
-    assert(_intrinsic_sin != NULL, "must be defined");
-    return _intrinsic_sin(d);
-  }
-  static double  intrinsic_cos(double d) {
-    assert(_intrinsic_cos != NULL, "must be defined");
-    return _intrinsic_cos(d);
-  }
-  static double  intrinsic_tan(double d) {
-    assert(_intrinsic_tan != NULL, "must be defined");
-    return _intrinsic_tan(d);
-  }
 
   //
   // Safefetch stub support
@@ -454,24 +473,4 @@ class StubRoutines: AllStatic {
   static void arrayof_oop_copy_uninit(HeapWord* src, HeapWord* dest, size_t count);
 };
 
-// Safefetch allows to load a value from a location that's not known
-// to be valid. If the load causes a fault, the error value is returned.
-inline int SafeFetch32(int* adr, int errValue) {
-  assert(StubRoutines::SafeFetch32_stub(), "stub not yet generated");
-  return StubRoutines::SafeFetch32_stub()(adr, errValue);
-}
-inline intptr_t SafeFetchN(intptr_t* adr, intptr_t errValue) {
-  assert(StubRoutines::SafeFetchN_stub(), "stub not yet generated");
-  return StubRoutines::SafeFetchN_stub()(adr, errValue);
-}
-
-
-// returns true if SafeFetch32 and SafeFetchN can be used safely (stubroutines are already generated)
-inline bool CanUseSafeFetch32() {
-  return StubRoutines::SafeFetch32_stub() ? true : false;
-}
-
-inline bool CanUseSafeFetchN() {
-  return StubRoutines::SafeFetchN_stub() ? true : false;
-}
-#endif // SHARE_VM_RUNTIME_STUBROUTINES_HPP
+#endif // SHARE_RUNTIME_STUBROUTINES_HPP

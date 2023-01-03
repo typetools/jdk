@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,9 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "gc/shared/gcTimer.hpp"
 #include "gc/shared/gcTrace.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "memory/iterator.inline.hpp"
+#include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/instanceClassLoaderKlass.inline.hpp"
@@ -48,7 +50,7 @@ Stack<oop, mtGC>              MarkSweep::_marking_stack;
 Stack<ObjArrayTask, mtGC>     MarkSweep::_objarray_stack;
 
 Stack<oop, mtGC>              MarkSweep::_preserved_oop_stack;
-Stack<markOop, mtGC>          MarkSweep::_preserved_mark_stack;
+Stack<markWord, mtGC>         MarkSweep::_preserved_mark_stack;
 size_t                  MarkSweep::_preserved_count = 0;
 size_t                  MarkSweep::_preserved_count_max = 0;
 PreservedMark*          MarkSweep::_preserved_marks = NULL;
@@ -58,9 +60,9 @@ SerialOldTracer*        MarkSweep::_gc_tracer       = NULL;
 
 MarkSweep::FollowRootClosure  MarkSweep::follow_root_closure;
 
-MarkAndPushClosure            MarkSweep::mark_and_push_closure;
-CLDToOopClosure               MarkSweep::follow_cld_closure(&mark_and_push_closure);
-CLDToOopClosure               MarkSweep::adjust_cld_closure(&adjust_pointer_closure);
+MarkAndPushClosure MarkSweep::mark_and_push_closure;
+CLDToOopClosure    MarkSweep::follow_cld_closure(&mark_and_push_closure, ClassLoaderData::_claim_strong);
+CLDToOopClosure    MarkSweep::adjust_cld_closure(&adjust_pointer_closure, ClassLoaderData::_claim_strong);
 
 template <class T> inline void MarkSweep::KeepAliveClosure::do_oop_work(T* p) {
   mark_and_push(p);
@@ -126,12 +128,12 @@ MarkSweep::FollowStackClosure MarkSweep::follow_stack_closure;
 void MarkSweep::FollowStackClosure::do_void() { follow_stack(); }
 
 template <class T> inline void MarkSweep::follow_root(T* p) {
-  assert(!Universe::heap()->is_in_reserved(p),
+  assert(!Universe::heap()->is_in(p),
          "roots shouldn't be things within the heap");
   T heap_oop = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(heap_oop)) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
-    if (!obj->mark_raw()->is_marked()) {
+    if (!obj->mark().is_marked()) {
       mark_object(obj);
       follow_object(obj);
     }
@@ -147,13 +149,13 @@ void PreservedMark::adjust_pointer() {
 }
 
 void PreservedMark::restore() {
-  _obj->set_mark_raw(_mark);
+  _obj->set_mark(_mark);
 }
 
 // We preserve the mark which should be replaced at the end and the location
-// that it will go.  Note that the object that this markOop belongs to isn't
+// that it will go.  Note that the object that this markWord belongs to isn't
 // currently at that address but it will be after phase4
-void MarkSweep::preserve_mark(oop obj, markOop mark) {
+void MarkSweep::preserve_mark(oop obj, markWord mark) {
   // We try to store preserved marks in the to space of the new generation since
   // this is storage which should be available.  Most of the time this should be
   // sufficient space for the marks we need to preserve but if it isn't we fall
@@ -203,8 +205,8 @@ void MarkSweep::restore_marks() {
   // deal with the overflow
   while (!_preserved_oop_stack.is_empty()) {
     oop obj       = _preserved_oop_stack.pop();
-    markOop mark  = _preserved_mark_stack.pop();
-    obj->set_mark_raw(mark);
+    markWord mark = _preserved_mark_stack.pop();
+    obj->set_mark(mark);
   }
 }
 

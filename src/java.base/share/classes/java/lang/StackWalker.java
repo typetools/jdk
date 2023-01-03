@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -100,7 +100,7 @@ public final class StackWalker {
      */
     public interface StackFrame {
         /**
-         * Gets the <a href="ClassLoader.html#name">binary name</a>
+         * Gets the <a href="ClassLoader.html#binary-name">binary name</a>
          * of the declaring class of the method represented by this stack frame.
          *
          * @return the binary name of the declaring class of the method
@@ -290,7 +290,7 @@ public final class StackWalker {
 
     static final EnumSet<Option> DEFAULT_EMPTY_OPTION = EnumSet.noneOf(Option.class);
 
-    private final static StackWalker DEFAULT_WALKER =
+    private static final StackWalker DEFAULT_WALKER =
         new StackWalker(DEFAULT_EMPTY_OPTION);
 
     private final Set<Option> options;
@@ -418,6 +418,7 @@ public final class StackWalker {
 
     private static void checkPermission(Set<Option> options) {
         Objects.requireNonNull(options);
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             if (options.contains(Option.RETAIN_CLASS_REFERENCE)) {

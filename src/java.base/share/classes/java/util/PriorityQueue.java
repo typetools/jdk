@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -38,7 +39,8 @@ import org.checkerframework.framework.qual.CFComment;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.util.ArraysSupport;
 
 /**
  * An unbounded priority {@linkplain Queue queue} based on a priority heap.
@@ -99,6 +101,7 @@ import jdk.internal.misc.SharedSecrets;
 public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     implements java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7720805057305804111L;
 
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
@@ -122,6 +125,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * The comparator, or null if priority queue uses elements'
      * natural ordering.
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private final Comparator<? super E> comparator;
 
     /**
@@ -273,8 +277,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     private void initElementsFromCollection(Collection<? extends E> c) {
         Object[] es = c.toArray();
         int len = es.length;
-        // If c.toArray incorrectly doesn't return Object[], copy it.
-        if (es.getClass() != Object[].class)
+        if (c.getClass() != ArrayList.class)
             es = Arrays.copyOf(es, len, Object[].class);
         if (len == 1 || this.comparator != null)
             for (Object e : es)
@@ -295,14 +298,6 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     }
 
     /**
-     * The maximum size of array to allocate.
-     * Some VMs reserve some header words in an array.
-     * Attempts to allocate larger arrays may result in
-     * OutOfMemoryError: Requested array size exceeds VM limit
-     */
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-    /**
      * Increases the capacity of the array.
      *
      * @param minCapacity the desired minimum capacity
@@ -310,21 +305,11 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     private void grow(int minCapacity) {
         int oldCapacity = queue.length;
         // Double size if small; else grow by 50%
-        int newCapacity = oldCapacity + ((oldCapacity < 64) ?
-                                         (oldCapacity + 2) :
-                                         (oldCapacity >> 1));
-        // overflow-conscious code
-        if (newCapacity - MAX_ARRAY_SIZE > 0)
-            newCapacity = hugeCapacity(minCapacity);
+        int newCapacity = ArraysSupport.newLength(oldCapacity,
+                minCapacity - oldCapacity, /* minimum growth */
+                oldCapacity < 64 ? oldCapacity + 2 : oldCapacity >> 1
+                                           /* preferred growth */);
         queue = Arrays.copyOf(queue, newCapacity);
-    }
-
-    private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) // overflow
-            throw new OutOfMemoryError();
-        return (minCapacity > MAX_ARRAY_SIZE) ?
-            Integer.MAX_VALUE :
-            MAX_ARRAY_SIZE;
     }
 
     /**
@@ -365,7 +350,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
         return (E) queue[0];
     }
 
-    private int indexOf(Object o) {
+    private int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o != null) {
             final Object[] es = queue;
             for (int i = 0, n = size; i < n; i++)
@@ -386,7 +371,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@GuardSatisfied PriorityQueue<E> this, @Nullable Object o) {
+    public boolean remove(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         int i = indexOf(o);
         if (i == -1)
             return false;
@@ -420,7 +405,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -791,6 +776,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      *             emitted (int), followed by all of its elements
      *             (each an {@code Object}) in the proper order.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         // Write out element count, and any hidden stuff
@@ -814,6 +800,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      *         could not be found
      * @throws java.io.IOException if an I/O error occurs
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         // Read in size, and any hidden stuff
@@ -931,7 +918,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -939,7 +926,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

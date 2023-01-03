@@ -43,7 +43,7 @@ import org.w3c.dom.Text;
  * @see com.sun.org.apache.xml.internal.security.transforms.implementations.TransformBase64Decode
  */
 @Deprecated
-public class Base64 {
+public final class Base64 {
 
     /** Field BASE64DEFAULTLENGTH */
     public static final int BASE64DEFAULTLENGTH = 76;
@@ -148,7 +148,8 @@ public class Base64 {
      * @return String with Base64 encoding
      */
     public static final String encode(BigInteger big) {
-        return encode(getBytes(big, big.bitLength()));
+        byte[] bytes = XMLUtils.getBytes(big, big.bitLength());
+        return XMLUtils.encodeToString(bytes);
     }
 
     /**
@@ -210,13 +211,13 @@ public class Base64 {
 
     /**
      * Decode a base 64 string into a {@link BigInteger}
-     * @param base64str Base 64 encoded string.
+     * @param text Base 64 encoded text.
      * @return a decoded BigInteger
      * @throws Base64DecodingException
      */
-    public static BigInteger decodeBigIntegerFromString(String base64str)
-            throws Base64DecodingException {
-        return new BigInteger(1, Base64.decode(base64str));
+    public static final BigInteger decodeBigIntegerFromText(Text text)
+        throws Base64DecodingException {
+        return new BigInteger(1, Base64.decode(text.getData()));
     }
 
     /**
@@ -376,12 +377,12 @@ public class Base64 {
             return "";
         }
 
-        long fewerThan24bits = lengthDataBits % ((long) TWENTYFOURBITGROUP);
+        long fewerThan24bits = lengthDataBits % (TWENTYFOURBITGROUP);
         int numberTriplets = (int) (lengthDataBits / TWENTYFOURBITGROUP);
         int numberQuartet = fewerThan24bits != 0L ? numberTriplets + 1 : numberTriplets;
         int quartesPerLine = length / 4;
         int numberLines = (numberQuartet - 1) / quartesPerLine;
-        char encodedData[] = null;
+        char[] encodedData = null;
 
         encodedData = new char[numberQuartet * 4 + numberLines * 2];
 
@@ -512,7 +513,7 @@ public class Base64 {
             return new byte[0];
         }
 
-        byte decodedData[] = null;
+        byte[] decodedData = null;
         byte b1 = 0, b2 = 0, b3 = 0, b4 = 0;
 
         int i = 0;
@@ -627,7 +628,7 @@ public class Base64 {
             return;
         }
 
-        //byte decodedData[] = null;
+        //byte[] decodedData = null;
         byte b1 = 0, b2 = 0, b3 = 0, b4 = 0;
 
         int i = 0;
@@ -694,7 +695,7 @@ public class Base64 {
      */
     public static final void decode(InputStream is, OutputStream os)
         throws Base64DecodingException, IOException {
-        //byte decodedData[] = null;
+        //byte[] decodedData = null;
         byte b1 = 0, b2 = 0, b3 = 0, b4 = 0;
 
         int index = 0;

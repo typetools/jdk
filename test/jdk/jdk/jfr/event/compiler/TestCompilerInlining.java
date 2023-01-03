@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -56,8 +54,7 @@ import java.util.stream.IntStream;
  *          jdk.jfr
  *
  * @build sun.hotspot.WhiteBox
- * @run main ClassFileInstaller sun.hotspot.WhiteBox
- *     sun.hotspot.WhiteBox$WhiteBoxPermission
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller sun.hotspot.WhiteBox
  * @run main/othervm -Xbootclasspath/a:.
  *     -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI
  *     -Xbatch jdk.jfr.event.compiler.TestCompilerInlining
@@ -372,7 +369,7 @@ class InlineCalls {
             throw new Error("TESTBUG : unexpected IOE during class reading", e);
         }
         cw = new ClassWriter(cr, 0);
-        ClassVisitor cv = new ClassVisitor(Opcodes.ASM5, cw) {
+        ClassVisitor cv = new ClassVisitor(Opcodes.ASM7, cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String descriptor, String[] exceptions) {
                 System.out.println("Method: " +name);
@@ -390,7 +387,7 @@ class InlineCalls {
         private Collection<Call> calls;
 
         public CallTracer(Class<?> aClass, String name, String desc, MethodVisitor mv, Collection<Call> calls) {
-            super(Opcodes.ASM5, mv);
+            super(Opcodes.ASM7, mv);
             caller = new MethodDesc(aClass.getName(), name, desc);
             this.calls = calls;
         }

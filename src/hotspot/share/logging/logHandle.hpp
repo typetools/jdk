@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,8 +21,8 @@
  * questions.
  *
  */
-#ifndef SHARE_VM_LOGGING_LOGHANDLE_HPP
-#define SHARE_VM_LOGGING_LOGHANDLE_HPP
+#ifndef SHARE_LOGGING_LOGHANDLE_HPP
+#define SHARE_LOGGING_LOGHANDLE_HPP
 
 #include "logging/log.hpp"
 
@@ -91,7 +91,9 @@ public:
   void print(const char* fmt, ...) ATTRIBUTE_PRINTF(2, 3) {
     va_list args;
     va_start(args, fmt);
-    _tagset->vwrite(_level, fmt, args);
+    if (is_enabled()) {
+      _tagset->vwrite(_level, fmt, args);
+    }
     va_end(args);
   }
 
@@ -101,4 +103,4 @@ public:
 
 };
 
-#endif // SHARE_VM_LOGGING_LOGHANDLE_HPP
+#endif // SHARE_LOGGING_LOGHANDLE_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -150,7 +150,7 @@ public class Main {
      * pflag: preserve/don't strip leading slash and .. component from file name
      * dflag: print module descriptor
      */
-    boolean cflag, uflag, xflag, tflag, vflag, flag0, Mflag, iflag, nflag, pflag, dflag;
+    boolean cflag, uflag, xflag, tflag, vflag, flag0, Mflag, iflag, pflag, dflag, validate;
 
     boolean suppressDeprecateMsg = false;
 
@@ -193,7 +193,7 @@ public class Main {
         try {
             return (rsrc.getString(key));
         } catch (MissingResourceException e) {
-            throw new Error("Error in message file");
+            throw new Error("Error in message file", e);
         }
     }
 
@@ -318,34 +318,6 @@ public class Main {
                 try (OutputStream out = new FileOutputStream(tmpFile)) {
                     create(new BufferedOutputStream(out, 4096), manifest);
                 }
-                if (nflag) {
-                    if (!suppressDeprecateMsg) {
-                        warn(formatMsg("warn.flag.is.deprecated", "-n"));
-                    }
-                    File packFile = createTemporaryFile(tmpbase, ".pack");
-                    try {
-                        java.util.jar.Pack200.Packer packer = java.util.jar.Pack200.newPacker();
-                        Map<String, String> p = packer.properties();
-                        p.put(java.util.jar.Pack200.Packer.EFFORT, "1"); // Minimal effort to conserve CPU
-                        try (JarFile jarFile = new JarFile(tmpFile.getCanonicalPath());
-                             OutputStream pack = new FileOutputStream(packFile))
-                        {
-                            packer.pack(jarFile, pack);
-                        }
-                        if (tmpFile.exists()) {
-                            tmpFile.delete();
-                        }
-                        tmpFile = createTemporaryFile(tmpbase, ".jar");
-                        try (OutputStream out = new FileOutputStream(tmpFile);
-                             JarOutputStream jos = new JarOutputStream(out))
-                        {
-                            java.util.jar.Pack200.Unpacker unpacker = java.util.jar.Pack200.newUnpacker();
-                            unpacker.unpack(packFile, jos);
-                        }
-                    } finally {
-                        Files.deleteIfExists(packFile.toPath());
-                    }
-                }
                 validateAndClose(tmpFile);
             } else if (uflag) {
                 File inputFile = null;
@@ -429,6 +401,17 @@ public class Main {
                 }
                 if (!found)
                     error(getMsg("error.module.descriptor.not.found"));
+            } else if (validate) {
+                File file;
+                if (fname != null) {
+                    file = new File(fname);
+                } else {
+                    file = createTemporaryFile("tmpJar", ".jar");
+                    try (InputStream in = new FileInputStream(FileDescriptor.in)) {
+                        Files.copy(in, file.toPath());
+                    }
+                }
+                ok = validateJar(file);
             }
         } catch (IOException e) {
             fatalError(e);
@@ -448,15 +431,20 @@ public class Main {
         return ok;
     }
 
+    private boolean validateJar(File file) throws IOException {
+        try (ZipFile zf = new ZipFile(file)) {
+            return Validator.validate(this, zf);
+        } catch (IOException e) {
+            error(formatMsg2("error.validator.jarfile.exception", fname, e.getMessage()));
+            return true;
+        }
+    }
+
     private void validateAndClose(File tmpfile) throws IOException {
         if (ok && isMultiRelease) {
-            try (ZipFile zf = new ZipFile(tmpfile)) {
-                ok = Validator.validate(this, zf);
-                if (!ok) {
-                    error(formatMsg("error.validator.jarfile.invalid", fname));
-                }
-            } catch (IOException e) {
-                error(formatMsg2("error.validator.jarfile.exception", fname, e.getMessage()));
+            ok = validateJar(tmpfile);
+            if (!ok) {
+                error(formatMsg("error.validator.jarfile.invalid", fname));
             }
         }
         Path path = tmpfile.toPath();
@@ -587,9 +575,6 @@ public class Main {
                             rootjar = args[count++];
                             iflag = true;
                             break;
-                        case 'n':
-                            nflag = true;
-                            break;
                         case 'e':
                             ename = args[count++];
                             break;
@@ -607,7 +592,7 @@ public class Main {
             usageError(getMsg("main.usage.summary"));
             return false;
         }
-        if (!cflag && !tflag && !xflag && !uflag && !iflag && !dflag) {
+        if (!cflag && !tflag && !xflag && !uflag && !iflag && !dflag && !validate) {
             usageError(getMsg("error.bad.option"));
             return false;
         }
@@ -633,10 +618,15 @@ public class Main {
                         dir = (dir.endsWith(File.separator) ?
                                dir : (dir + File.separator));
                         dir = dir.replace(File.separatorChar, '/');
+
+                        boolean hasUNC = (File.separatorChar == '\\'&&  dir.startsWith("//"));
                         while (dir.indexOf("//") > -1) {
                             dir = dir.replace("//", "/");
                         }
-                        pathsMap.get(version).add(dir.replace(File.separatorChar, '/'));
+                        if (hasUNC) { // Restore Windows UNC path.
+                            dir = "/" + dir;
+                        }
+                        pathsMap.get(version).add(dir);
                         nameBuf[k++] = dir + args[++i];
                     } else if (args[i].startsWith("--release")) {
                         int v = BASE_VERSION;
@@ -688,7 +678,7 @@ public class Main {
             usageError(getMsg("error.bad.cflag"));
             return false;
         } else if (uflag) {
-            if ((mname != null) || (ename != null)) {
+            if ((mname != null) || (ename != null) || moduleVersion != null) {
                 /* just want to update the manifest */
                 return true;
             } else {
@@ -939,11 +929,10 @@ public class Main {
                     // Don't read from the newManifest InputStream, as we
                     // might need it below, and we can't re-read the same data
                     // twice.
-                    FileInputStream fis = new FileInputStream(mname);
-                    boolean ambiguous = isAmbiguousMainClass(new Manifest(fis));
-                    fis.close();
-                    if (ambiguous) {
-                        return false;
+                    try (FileInputStream fis = new FileInputStream(mname)) {
+                        if (isAmbiguousMainClass(new Manifest(fis))) {
+                            return false;
+                        }
                     }
                 }
                 // Update the manifest.
@@ -1175,7 +1164,7 @@ public class Main {
         String name = entry.name;
         boolean isDir = entry.isDir;
 
-        if (name.equals("") || name.equals(".") || name.equals(zname)) {
+        if (name.isEmpty() || name.equals(".") || name.equals(zname)) {
             return;
         } else if ((name.equals(MANIFEST_DIR) || name.equals(MANIFEST_NAME))
                    && !Mflag) {
@@ -1764,7 +1753,7 @@ public class Main {
         /** Returns an optional containing the effective URI. */
         @Override public Optional<String> uriString() {
             String uri = (Paths.get(zipFile.getName())).toUri().toString();
-            uri = "jar:" + uri + "/!" + entry.getName();
+            uri = "jar:" + uri + "!/" + entry.getName();
             return Optional.of(uri);
         }
     }
@@ -1881,7 +1870,7 @@ public class Main {
                 .map(ModuleInfoEntry::name)
                 .map(Main::versionFromEntryName)
                 .collect(joining(" "));
-        if (!releases.equals(""))
+        if (!releases.isEmpty())
             output("releases: " + releases + "\n");
 
         // Describe the operative descriptor for the specified --release, if any
@@ -1950,7 +1939,7 @@ public class Main {
 
         sb.append(md.toNameAndVersion());
 
-        if (!uriString.equals(""))
+        if (!uriString.isEmpty())
             sb.append(" ").append(uriString);
         if (md.isOpen())
             sb.append(" open");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -84,7 +85,7 @@ public class BufferedReader extends Reader {
 
     private Reader in;
 
-    private char cb[];
+    private char[] cb;
     private int nChars, nextChar;
 
     private static final int INVALIDATED = -2;
@@ -108,7 +109,7 @@ public class BufferedReader extends Reader {
      * @param  in   A Reader
      * @param  sz   Input-buffer size
      *
-     * @exception  IllegalArgumentException  If {@code sz <= 0}
+     * @throws IllegalArgumentException  If {@code sz <= 0}
      */
     public @MustCallAlias BufferedReader(@MustCallAlias Reader in, @Positive int sz) {
         super(in);
@@ -159,7 +160,7 @@ public class BufferedReader extends Reader {
                     dst = delta;
                 } else {
                     /* Reallocate buffer to accommodate read-ahead limit */
-                    char ncb[] = new char[readAheadLimit];
+                    char[] ncb = new char[readAheadLimit];
                     System.arraycopy(cb, markedChar, ncb, 0, delta);
                     cb = ncb;
                     markedChar = 0;
@@ -185,7 +186,7 @@ public class BufferedReader extends Reader {
      * @return The character read, as an integer in the range
      *         0 to 65535 ({@code 0x00-0xffff}), or -1 if the
      *         end of the stream has been reached
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     public @GTENegativeOne int read(@GuardSatisfied BufferedReader this) throws IOException {
         synchronized (lock) {
@@ -245,25 +246,27 @@ public class BufferedReader extends Reader {
      * Reads characters into a portion of an array.
      *
      * <p> This method implements the general contract of the corresponding
-     * <code>{@link Reader#read(char[], int, int) read}</code> method of the
-     * <code>{@link Reader}</code> class.  As an additional convenience, it
+     * {@link Reader#read(char[], int, int) read} method of the
+     * {@link Reader} class.  As an additional convenience, it
      * attempts to read as many characters as possible by repeatedly invoking
-     * the <code>read</code> method of the underlying stream.  This iterated
-     * <code>read</code> continues until one of the following conditions becomes
-     * true: <ul>
+     * the {@code read} method of the underlying stream.  This iterated
+     * {@code read} continues until one of the following conditions becomes
+     * true:
+     * <ul>
      *
      *   <li> The specified number of characters have been read,
      *
-     *   <li> The <code>read</code> method of the underlying stream returns
-     *   <code>-1</code>, indicating end-of-file, or
+     *   <li> The {@code read} method of the underlying stream returns
+     *   {@code -1}, indicating end-of-file, or
      *
-     *   <li> The <code>ready</code> method of the underlying stream
-     *   returns <code>false</code>, indicating that further input requests
+     *   <li> The {@code ready} method of the underlying stream
+     *   returns {@code false}, indicating that further input requests
      *   would block.
      *
-     * </ul> If the first <code>read</code> on the underlying stream returns
-     * <code>-1</code> to indicate end-of-file then this method returns
-     * <code>-1</code>.  Otherwise this method returns the number of characters
+     * </ul>
+     * If the first {@code read} on the underlying stream returns
+     * {@code -1} to indicate end-of-file then this method returns
+     * {@code -1}.  Otherwise this method returns the number of characters
      * actually read.
      *
      * <p> Subclasses of this class are encouraged, but not required, to
@@ -274,26 +277,23 @@ public class BufferedReader extends Reader {
      * however, the buffer is empty, the mark is not valid, and the requested
      * length is at least as large as the buffer, then this method will read
      * characters directly from the underlying stream into the given array.
-     * Thus redundant <code>BufferedReader</code>s will not copy data
+     * Thus redundant {@code BufferedReader}s will not copy data
      * unnecessarily.
      *
-     * @param      cbuf  Destination buffer
-     * @param      off   Offset at which to start storing characters
-     * @param      len   Maximum number of characters to read
+     * @param      cbuf  {@inheritDoc}
+     * @param      off   {@inheritDoc}
+     * @param      len   {@inheritDoc}
      *
-     * @return     The number of characters read, or -1 if the end of the
-     *             stream has been reached
+     * @return     {@inheritDoc}
      *
-     * @exception  IOException  If an I/O error occurs
-     * @exception  IndexOutOfBoundsException {@inheritDoc}
+     * @throws     IndexOutOfBoundsException {@inheritDoc}
+     * @throws     IOException  {@inheritDoc}
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied BufferedReader this, char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied BufferedReader this, char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
-            if ((off < 0) || (off > cbuf.length) || (len < 0) ||
-                ((off + len) > cbuf.length) || ((off + len) < 0)) {
-                throw new IndexOutOfBoundsException();
-            } else if (len == 0) {
+            Objects.checkFromIndexSize(off, len, cbuf.length);
+            if (len == 0) {
                 return 0;
             }
 
@@ -315,6 +315,8 @@ public class BufferedReader extends Reader {
      * (EOF).
      *
      * @param      ignoreLF  If true, the next '\n' will be skipped
+     * @param      term      Output: Whether a line terminator was encountered
+     *                       while reading the line; may be {@code null}.
      *
      * @return     A String containing the contents of the line, not including
      *             any line-termination characters, or null if the end of the
@@ -322,15 +324,16 @@ public class BufferedReader extends Reader {
      *
      * @see        java.io.LineNumberReader#readLine()
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
-    String readLine(@GuardSatisfied BufferedReader this, boolean ignoreLF) throws IOException {
-        StringBuffer s = null;
+    String readLine(@GuardSatisfied BufferedReader this, boolean ignoreLF, boolean @Nullable [] term) throws IOException {
+        StringBuilder s = null;
         int startChar;
 
         synchronized (lock) {
             ensureOpen();
             boolean omitLF = ignoreLF || skipLF;
+            if (term != null) term[0] = false;
 
         bufferLoop:
             for (;;) {
@@ -357,6 +360,7 @@ public class BufferedReader extends Reader {
                 for (i = nextChar; i < nChars; i++) {
                     c = cb[i];
                     if ((c == '\n') || (c == '\r')) {
+                        if (term != null) term[0] = true;
                         eol = true;
                         break charLoop;
                     }
@@ -381,7 +385,7 @@ public class BufferedReader extends Reader {
                 }
 
                 if (s == null)
-                    s = new StringBuffer(defaultExpectedLineLength);
+                    s = new StringBuilder(defaultExpectedLineLength);
                 s.append(cb, startChar, i - startChar);
             }
         }
@@ -397,23 +401,16 @@ public class BufferedReader extends Reader {
      *             any line-termination characters, or null if the end of the
      *             stream has been reached without reading any characters
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      *
      * @see java.nio.file.Files#readAllLines
      */
     public @Nullable String readLine(@GuardSatisfied BufferedReader this) throws IOException {
-        return readLine(false);
+        return readLine(false, null);
     }
 
     /**
-     * Skips characters.
-     *
-     * @param  n  The number of characters to skip
-     *
-     * @return    The number of characters actually skipped
-     *
-     * @exception  IllegalArgumentException  If <code>n</code> is negative.
-     * @exception  IOException  If an I/O error occurs
+     * {@inheritDoc}
      */
     public @NonNegative long skip(@GuardSatisfied BufferedReader this, @NonNegative long n) throws IOException {
         if (n < 0L) {
@@ -453,7 +450,7 @@ public class BufferedReader extends Reader {
      * stream is ready if the buffer is not empty, or if the underlying
      * character stream is ready.
      *
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IOException  If an I/O error occurs
      */
     @EnsuresNonNullIf(expression={"readLine()"}, result=true)
     @Pure
@@ -502,8 +499,8 @@ public class BufferedReader extends Reader {
      *                         whose size is no smaller than limit.
      *                         Therefore large values should be used with care.
      *
-     * @exception  IllegalArgumentException  If {@code readAheadLimit < 0}
-     * @exception  IOException  If an I/O error occurs
+     * @throws     IllegalArgumentException  If {@code readAheadLimit < 0}
+     * @throws     IOException  If an I/O error occurs
      */
     public void mark(@GuardSatisfied BufferedReader this, @NonNegative int readAheadLimit) throws IOException {
         if (readAheadLimit < 0) {
@@ -520,7 +517,7 @@ public class BufferedReader extends Reader {
     /**
      * Resets the stream to the most recent mark.
      *
-     * @exception  IOException  If the stream has never been marked,
+     * @throws     IOException  If the stream has never been marked,
      *                          or if the mark has been invalidated
      */
     public void reset(@GuardSatisfied BufferedReader this) throws IOException {

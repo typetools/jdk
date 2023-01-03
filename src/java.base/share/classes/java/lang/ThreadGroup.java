@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,6 @@ import org.checkerframework.framework.qual.CFComment;
 
 import java.io.PrintStream;
 import java.util.Arrays;
-import jdk.internal.misc.VM;
 
 /**
  * A thread group represents a set of threads. In addition, a thread
@@ -49,7 +48,6 @@ import jdk.internal.misc.VM;
  * group, but not to access information about its thread group's
  * parent thread group or any other thread groups.
  *
- * @author  unascribed
  * @since   1.0
  */
 /* The locking strategy for this code is to try to lock only one level of the
@@ -64,8 +62,7 @@ import jdk.internal.misc.VM;
  * while we work on the children.
  */
 @AnnotatedFor({"index", "interning", "lock", "nullness"})
-public
-@UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHandler {
+public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHandler {
     private final ThreadGroup parent;
     String name;
     int maxPriority;
@@ -199,8 +196,14 @@ public
      * @return  {@code true} if this thread group is a daemon thread group;
      *          {@code false} otherwise.
      * @since   1.0
+     *
+     * @deprecated The API and mechanism for destroying a ThreadGroup is inherently
+     *             flawed. The ability to explicitly or automatically destroy a
+     *             thread group, and the concept of daemon thread group, will be
+     *             removed in a future release.
      */
     @Pure
+    @Deprecated(since="16", forRemoval=true)
     public final boolean isDaemon(@GuardSatisfied ThreadGroup this) {
         return daemon;
     }
@@ -210,8 +213,13 @@ public
      *
      * @return  true if this object is destroyed
      * @since   1.1
+     *
+     * @deprecated The API and mechanism for destroying a ThreadGroup is inherently
+     *             flawed. The ability to explicitly or automatically destroy a
+     *             thread group will be removed in a future release.
      */
     @Pure
+    @Deprecated(since="16", forRemoval=true)
     public synchronized boolean isDestroyed(@GuardSatisfied ThreadGroup this) {
         return destroyed;
     }
@@ -233,7 +241,13 @@ public
      * @see        java.lang.SecurityException
      * @see        java.lang.ThreadGroup#checkAccess()
      * @since      1.0
+     *
+     * @deprecated The API and mechanism for destroying a ThreadGroup is inherently
+     *             flawed. The ability to explicitly or automatically destroy a
+     *             thread group, and the concept of daemon thread group, will be
+     *             removed in a future release.
      */
+    @Deprecated(since="16", forRemoval=true)
     public final void setDaemon(boolean daemon) {
         checkAccess();
         this.daemon = daemon;
@@ -322,8 +336,16 @@ public
      *               access this thread group.
      * @see        java.lang.SecurityManager#checkAccess(java.lang.ThreadGroup)
      * @since      1.0
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @Deprecated(since="17", forRemoval=true)
     public final void checkAccess() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkAccess(this);
@@ -449,7 +471,7 @@ public
         ThreadGroup[] groupsSnapshot = null;
         synchronized (this) {
             if (destroyed) {
-                return 0;
+                return n;
             }
             int nt = nthreads;
             if (nt > list.length - n) {
@@ -589,7 +611,7 @@ public
         ThreadGroup[] groupsSnapshot = null;
         synchronized (this) {
             if (destroyed) {
-                return 0;
+                return n;
             }
             int ng = ngroups;
             if (ng > list.length - n) {
@@ -635,7 +657,7 @@ public
      * @deprecated    This method is inherently unsafe.  See
      *     {@link Thread#stop} for details.
      */
-    @Deprecated(since="1.2")
+    @Deprecated(since="1.2", forRemoval=true)
     public final void stop() {
         if (stopOrSuspend(false))
             Thread.currentThread().stop();
@@ -700,8 +722,8 @@ public
      * @deprecated    This method is inherently deadlock-prone.  See
      *     {@link Thread#suspend} for details.
      */
-    @Deprecated(since="1.2")
-    @SuppressWarnings("deprecation")
+    @Deprecated(since="1.2", forRemoval=true)
+    @SuppressWarnings("removal")
     public final void suspend() {
         if (stopOrSuspend(true))
             Thread.currentThread().suspend();
@@ -716,7 +738,7 @@ public
      */
     @CFComment({"index: groupSnapshot.length = ngroupsSnapshot by #0.1",
                 "for the else case, ngroupsSnapshot will be null and it will never enter the group as nGroups will be 0"})
-    @SuppressWarnings({"deprecation", "index:array.access.unsafe.high"})
+    @SuppressWarnings({"deprecation", "removal", "index:array.access.unsafe.high"})
     private boolean stopOrSuspend(boolean suspend) {
         boolean suicide = false;
         Thread us = Thread.currentThread();
@@ -767,8 +789,8 @@ public
      */
     @CFComment({"index:  // groupSnapshot.length = ngroupsSnapshot by #0.1",
                 "for the else case, ngroupsSnapshot will be null and it will never enter the group as nGroups will be 0"})
-    @Deprecated(since="1.2")
-    @SuppressWarnings({"deprecation", "index:array.access.unsafe.high"})
+    @Deprecated(since="1.2", forRemoval=true)
+    @SuppressWarnings({"removal", "index:array.access.unsafe.high"})
     public final void resume() {
         int ngroupsSnapshot;
         ThreadGroup[] groupsSnapshot;
@@ -803,10 +825,15 @@ public
      *               thread group.
      * @see        java.lang.ThreadGroup#checkAccess()
      * @since      1.0
+     *
+     * @deprecated The API and mechanism for destroying a ThreadGroup is inherently
+     *             flawed. The ability to explicitly or automatically destroy a
+     *             thread group will be removed in a future release.
      */
     @CFComment({"index: groupSnapshot.length = ngroupsSnapshot by #0.1",
                 "for the else case, ngroupsSnapshot will be null and it will never enter the group as nGroups will be 0"})
     @SuppressWarnings("index:array.access.unsafe.high")
+    @Deprecated(since="16", forRemoval=true)
     public final void destroy() {
         int ngroupsSnapshot;
         ThreadGroup[] groupsSnapshot;
@@ -843,7 +870,7 @@ public
      * @throws  IllegalThreadStateException If the Thread group has been destroyed.
      */
     @CFComment({"index: #1: If ngroups = groups.length, length of group is doubled"})
-    @SuppressWarnings({"index:array.access.unsafe.high", "index:compound.assignment.type.incompatible"})
+    @SuppressWarnings({"index:array.access.unsafe.high", "index:compound.assignment"})
     private final void add(ThreadGroup g){
         synchronized (this) {
             if (destroyed) {
@@ -868,7 +895,7 @@ public
      * @return if this Thread has already been destroyed.
      */
     @CFComment({"index: #1: ngroups - i <= groups.length - i"})
-    @SuppressWarnings("index:argument.type.incompatible")
+    @SuppressWarnings("index:argument")
     private void remove(ThreadGroup g) {
         synchronized (this) {
             if (destroyed) {
@@ -926,7 +953,7 @@ public
      *          if the Thread group has been destroyed
      */
     @CFComment({"index: #1: If nthreads = threads.length, length of threads is doubled"})
-    @SuppressWarnings({"index:array.access.unsafe.high", "index:compound.assignment.type.incompatible"})
+    @SuppressWarnings({"index:array.access.unsafe.high", "index:compound.assignment"})
     void add(Thread t) {
         synchronized (this) {
             if (destroyed) {
@@ -1004,7 +1031,7 @@ public
      *         the Thread to be removed
      */
     @CFComment({"index: #1: --nthreads - i < threads.length - i, also, --nthreads - i is @NonNegative as --nthreads >= i"})
-    @SuppressWarnings("index:argument.type.incompatible")
+    @SuppressWarnings("index:argument")
     private void remove(Thread t) {
         synchronized (this) {
             if (destroyed) {
@@ -1122,7 +1149,7 @@ public
      *             which is deprecated.  Further, the behavior of this call
      *             was never specified.
      */
-    @Deprecated(since="1.2")
+    @Deprecated(since="1.2", forRemoval=true)
     public boolean allowThreadSuspension(boolean b) {
         return true;
     }

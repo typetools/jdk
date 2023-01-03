@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,10 @@
  *
  */
 
-#ifndef OS_BSD_VM_SEMAPHORE_BSD_HPP
-#define OS_BSD_VM_SEMAPHORE_BSD_HPP
+#ifndef OS_BSD_SEMAPHORE_BSD_HPP
+#define OS_BSD_SEMAPHORE_BSD_HPP
+
+#include "utilities/globalDefinitions.hpp"
 
 #ifndef __APPLE__
 // Use POSIX semaphores.
@@ -37,9 +39,7 @@
 class OSXSemaphore : public CHeapObj<mtInternal>{
   semaphore_t _semaphore;
 
-  // Prevent copying and assignment.
-  OSXSemaphore(const OSXSemaphore&);
-  OSXSemaphore& operator=(const OSXSemaphore&);
+  NONCOPYABLE(OSXSemaphore);
 
  public:
   OSXSemaphore(uint value = 0);
@@ -50,14 +50,13 @@ class OSXSemaphore : public CHeapObj<mtInternal>{
   void wait();
 
   bool trywait();
-  bool timedwait(unsigned int sec, int nsec);
 
- private:
-  static int64_t currenttime();
+  // wait until the given relative time elapses
+  bool timedwait(int64_t millis);
 };
 
 typedef OSXSemaphore SemaphoreImpl;
 
 #endif // __APPLE__
 
-#endif // OS_BSD_VM_SEMAPHORE_BSD_HPP
+#endif // OS_BSD_SEMAPHORE_BSD_HPP

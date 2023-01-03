@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,20 +24,25 @@
 
 #include "precompiled.hpp"
 #include "asm/codeBuffer.hpp"
+#include "asm/macroAssembler.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "prims/vectorSupport.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/timerTrace.hpp"
+#include "runtime/safefetch.inline.hpp"
 #include "runtime/sharedRuntime.hpp"
-#include "runtime/stubRoutines.hpp"
 #include "utilities/align.hpp"
 #include "utilities/copy.hpp"
-#include "utilities/vmError.hpp"
 #ifdef COMPILER2
 #include "opto/runtime.hpp"
 #endif
 
+UnsafeCopyMemory* UnsafeCopyMemory::_table                      = NULL;
+int UnsafeCopyMemory::_table_length                             = 0;
+int UnsafeCopyMemory::_table_max_length                         = 0;
+address UnsafeCopyMemory::_common_exit_stub_pc                  = NULL;
 
 // Implementation of StubRoutines - for a description
 // of how to extend it, see the header file.
@@ -68,16 +73,6 @@ address StubRoutines::_atomic_cmpxchg_long_entry                = NULL;
 address StubRoutines::_atomic_add_entry                         = NULL;
 address StubRoutines::_atomic_add_long_entry                    = NULL;
 address StubRoutines::_fence_entry                              = NULL;
-address StubRoutines::_d2i_wrapper                              = NULL;
-address StubRoutines::_d2l_wrapper                              = NULL;
-
-jint    StubRoutines::_fpu_cntrl_wrd_std                        = 0;
-jint    StubRoutines::_fpu_cntrl_wrd_24                         = 0;
-jint    StubRoutines::_fpu_cntrl_wrd_64                         = 0;
-jint    StubRoutines::_fpu_cntrl_wrd_trunc                      = 0;
-jint    StubRoutines::_mxcsr_std                                = 0;
-jint    StubRoutines::_fpu_subnormal_bias1[3]                   = { 0, 0, 0 };
-jint    StubRoutines::_fpu_subnormal_bias2[3]                   = { 0, 0, 0 };
 
 // Compiled code entry points default values
 // The default functions don't have separate disjoint versions.
@@ -107,13 +102,13 @@ address StubRoutines::_arrayof_jlong_disjoint_arraycopy  = CAST_FROM_FN_PTR(addr
 address StubRoutines::_arrayof_oop_disjoint_arraycopy    = CAST_FROM_FN_PTR(address, StubRoutines::arrayof_oop_copy);
 address StubRoutines::_arrayof_oop_disjoint_arraycopy_uninit  = CAST_FROM_FN_PTR(address, StubRoutines::arrayof_oop_copy_uninit);
 
-address StubRoutines::_zero_aligned_words = CAST_FROM_FN_PTR(address, Copy::zero_to_words);
+address StubRoutines::_data_cache_writeback              = NULL;
+address StubRoutines::_data_cache_writeback_sync         = NULL;
 
 address StubRoutines::_checkcast_arraycopy               = NULL;
 address StubRoutines::_checkcast_arraycopy_uninit        = NULL;
 address StubRoutines::_unsafe_arraycopy                  = NULL;
 address StubRoutines::_generic_arraycopy                 = NULL;
-
 
 address StubRoutines::_jbyte_fill;
 address StubRoutines::_jshort_fill;
@@ -126,16 +121,23 @@ address StubRoutines::_aescrypt_encryptBlock               = NULL;
 address StubRoutines::_aescrypt_decryptBlock               = NULL;
 address StubRoutines::_cipherBlockChaining_encryptAESCrypt = NULL;
 address StubRoutines::_cipherBlockChaining_decryptAESCrypt = NULL;
+address StubRoutines::_electronicCodeBook_encryptAESCrypt  = NULL;
+address StubRoutines::_electronicCodeBook_decryptAESCrypt  = NULL;
 address StubRoutines::_counterMode_AESCrypt                = NULL;
 address StubRoutines::_ghash_processBlocks                 = NULL;
 address StubRoutines::_base64_encodeBlock                  = NULL;
+address StubRoutines::_base64_decodeBlock                  = NULL;
 
+address StubRoutines::_md5_implCompress      = NULL;
+address StubRoutines::_md5_implCompressMB    = NULL;
 address StubRoutines::_sha1_implCompress     = NULL;
 address StubRoutines::_sha1_implCompressMB   = NULL;
 address StubRoutines::_sha256_implCompress   = NULL;
 address StubRoutines::_sha256_implCompressMB = NULL;
 address StubRoutines::_sha512_implCompress   = NULL;
 address StubRoutines::_sha512_implCompressMB = NULL;
+address StubRoutines::_sha3_implCompress     = NULL;
+address StubRoutines::_sha3_implCompressMB   = NULL;
 
 address StubRoutines::_updateBytesCRC32 = NULL;
 address StubRoutines::_crc_table_adr =    NULL;
@@ -149,6 +151,8 @@ address StubRoutines::_squareToLen = NULL;
 address StubRoutines::_mulAdd = NULL;
 address StubRoutines::_montgomeryMultiply = NULL;
 address StubRoutines::_montgomerySquare = NULL;
+address StubRoutines::_bigIntegerRightShiftWorker = NULL;
+address StubRoutines::_bigIntegerLeftShiftWorker = NULL;
 
 address StubRoutines::_vectorizedMismatch = NULL;
 
@@ -163,17 +167,15 @@ address StubRoutines::_dlibm_reduce_pi04l = NULL;
 address StubRoutines::_dlibm_tan_cot_huge = NULL;
 address StubRoutines::_dtan = NULL;
 
-double (* StubRoutines::_intrinsic_log10 )(double) = NULL;
-double (* StubRoutines::_intrinsic_sin   )(double) = NULL;
-double (* StubRoutines::_intrinsic_cos   )(double) = NULL;
-double (* StubRoutines::_intrinsic_tan   )(double) = NULL;
-
 address StubRoutines::_safefetch32_entry                 = NULL;
 address StubRoutines::_safefetch32_fault_pc              = NULL;
 address StubRoutines::_safefetch32_continuation_pc       = NULL;
 address StubRoutines::_safefetchN_entry                  = NULL;
 address StubRoutines::_safefetchN_fault_pc               = NULL;
 address StubRoutines::_safefetchN_continuation_pc        = NULL;
+
+address StubRoutines::_vector_f_math[VectorSupport::NUM_VEC_SIZES][VectorSupport::NUM_SVML_OP] = {{NULL}, {NULL}};
+address StubRoutines::_vector_d_math[VectorSupport::NUM_VEC_SIZES][VectorSupport::NUM_SVML_OP] = {{NULL}, {NULL}};
 
 // Initialization
 //
@@ -182,6 +184,31 @@ address StubRoutines::_safefetchN_continuation_pc        = NULL;
 // The second phase includes all other stubs (which may depend on universe being initialized.)
 
 extern void StubGenerator_generate(CodeBuffer* code, bool all); // only interface to generators
+
+void UnsafeCopyMemory::create_table(int max_size) {
+  UnsafeCopyMemory::_table = new UnsafeCopyMemory[max_size];
+  UnsafeCopyMemory::_table_max_length = max_size;
+}
+
+bool UnsafeCopyMemory::contains_pc(address pc) {
+  for (int i = 0; i < UnsafeCopyMemory::_table_length; i++) {
+    UnsafeCopyMemory* entry = &UnsafeCopyMemory::_table[i];
+    if (pc >= entry->start_pc() && pc < entry->end_pc()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+address UnsafeCopyMemory::page_error_continue_pc(address pc) {
+  for (int i = 0; i < UnsafeCopyMemory::_table_length; i++) {
+    UnsafeCopyMemory* entry = &UnsafeCopyMemory::_table[i];
+    if (pc >= entry->start_pc() && pc < entry->end_pc()) {
+      return entry->error_exit_pc();
+    }
+  }
+  return NULL;
+}
 
 void StubRoutines::initialize1() {
   if (_code1 == NULL) {
@@ -235,40 +262,7 @@ static void test_arraycopy_func(address func, int alignment) {
     assert(fbuffer[i] == v && fbuffer2[i] == v2, "shouldn't have copied anything");
   }
 }
-
-// simple test for SafeFetch32
-static void test_safefetch32() {
-  if (CanUseSafeFetch32()) {
-    int dummy = 17;
-    int* const p_invalid = (int*) VMError::get_segfault_address();
-    int* const p_valid = &dummy;
-    int result_invalid = SafeFetch32(p_invalid, 0xABC);
-    assert(result_invalid == 0xABC, "SafeFetch32 error");
-    int result_valid = SafeFetch32(p_valid, 0xABC);
-    assert(result_valid == 17, "SafeFetch32 error");
-  }
-}
-
-// simple test for SafeFetchN
-static void test_safefetchN() {
-  if (CanUseSafeFetchN()) {
-#ifdef _LP64
-    const intptr_t v1 = UCONST64(0xABCD00000000ABCD);
-    const intptr_t v2 = UCONST64(0xDEFD00000000DEFD);
-#else
-    const intptr_t v1 = 0xABCDABCD;
-    const intptr_t v2 = 0xDEFDDEFD;
-#endif
-    intptr_t dummy = v1;
-    intptr_t* const p_invalid = (intptr_t*) VMError::get_segfault_address();
-    intptr_t* const p_valid = &dummy;
-    intptr_t result_invalid = SafeFetchN(p_invalid, v2);
-    assert(result_invalid == v2, "SafeFetchN error");
-    intptr_t result_valid = SafeFetchN(p_valid, v2);
-    assert(result_valid == v1, "SafeFetchN error");
-  }
-}
-#endif
+#endif // ASSERT
 
 void StubRoutines::initialize2() {
   if (_code2 == NULL) {
@@ -286,6 +280,8 @@ void StubRoutines::initialize2() {
   }
 
 #ifdef ASSERT
+
+  MACOS_AARCH64_ONLY(os::current_thread_enable_wx(WXExec));
 
 #define TEST_ARRAYCOPY(type)                                                    \
   test_arraycopy_func(          type##_arraycopy(),          sizeof(type));     \
@@ -360,12 +356,7 @@ void StubRoutines::initialize2() {
   test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::aligned_conjoint_words), sizeof(jlong));
   test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::aligned_disjoint_words), sizeof(jlong));
 
-  // test safefetch routines
-  // Not on Windows 32bit until 8074860 is fixed
-#if ! (defined(_WIN32) && defined(_M_IX86))
-  test_safefetch32();
-  test_safefetchN();
-#endif
+  MACOS_AARCH64_ONLY(os::current_thread_enable_wx(WXWrite));
 
 #endif
 }
@@ -491,6 +482,7 @@ address StubRoutines::select_fill_function(BasicType t, bool aligned, const char
   case T_NARROWOOP:
   case T_NARROWKLASS:
   case T_ADDRESS:
+  case T_VOID:
     // Currently unsupported
     return NULL;
 
@@ -522,8 +514,8 @@ StubRoutines::select_arraycopy_function(BasicType t, bool aligned, bool disjoint
   name = #xxx_arraycopy; \
   return StubRoutines::xxx_arraycopy(); }
 
-#define RETURN_STUB_PARM(xxx_arraycopy, parm) {           \
-  name = #xxx_arraycopy; \
+#define RETURN_STUB_PARM(xxx_arraycopy, parm) { \
+  name = parm ? #xxx_arraycopy "_uninit": #xxx_arraycopy; \
   return StubRoutines::xxx_arraycopy(parm); }
 
   switch (t) {
@@ -574,4 +566,26 @@ StubRoutines::select_arraycopy_function(BasicType t, bool aligned, bool disjoint
 
 #undef RETURN_STUB
 #undef RETURN_STUB_PARM
+}
+
+UnsafeCopyMemoryMark::UnsafeCopyMemoryMark(StubCodeGenerator* cgen, bool add_entry, bool continue_at_scope_end, address error_exit_pc) {
+  _cgen = cgen;
+  _ucm_entry = NULL;
+  if (add_entry) {
+    address err_exit_pc = NULL;
+    if (!continue_at_scope_end) {
+      err_exit_pc = error_exit_pc != NULL ? error_exit_pc : UnsafeCopyMemory::common_exit_stub_pc();
+    }
+    assert(err_exit_pc != NULL || continue_at_scope_end, "error exit not set");
+    _ucm_entry = UnsafeCopyMemory::add_to_table(_cgen->assembler()->pc(), NULL, err_exit_pc);
+  }
+}
+
+UnsafeCopyMemoryMark::~UnsafeCopyMemoryMark() {
+  if (_ucm_entry != NULL) {
+    _ucm_entry->set_end_pc(_cgen->assembler()->pc());
+    if (_ucm_entry->error_exit_pc() == NULL) {
+      _ucm_entry->set_error_exit_pc(_cgen->assembler()->pc());
+    }
+  }
 }

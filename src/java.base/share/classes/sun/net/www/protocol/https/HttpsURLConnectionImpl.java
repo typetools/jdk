@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,17 +23,7 @@
  * questions.
  */
 
-/*
- * NOTE: This class lives in the package sun.net.www.protocol.https.
- * There is a copy in com.sun.net.ssl.internal.www.protocol.https for JSSE
- * 1.0.2 compatibility. It is 100% identical except the package and extends
- * lines. Any changes should be made to be class in sun.net.* and then copied
- * to com.sun.net.*.
- */
-
-// For both copies of the file, uncomment one line and comment the other
 package sun.net.www.protocol.https;
-// package com.sun.net.ssl.internal.www.protocol.https;
 
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -52,6 +42,8 @@ import java.security.Permission;
 import java.security.Principal;
 import java.util.Map;
 import java.util.List;
+import java.util.Optional;
+import sun.net.util.IPAddressUtil;
 import sun.net.www.http.HttpClient;
 
 /**
@@ -69,21 +61,12 @@ import sun.net.www.http.HttpClient;
  * the way to Object.
  *
  */
-
-// For both copies of the file, uncomment one line and comment the
-// other. The differences between the two copies are introduced for
-// plugin, and it is marked as such.
 public class HttpsURLConnectionImpl
         extends javax.net.ssl.HttpsURLConnection {
-// public class HttpsURLConnectionOldImpl
-//      extends com.sun.net.ssl.HttpsURLConnection {
 
-    // NOTE: made protected for plugin so that subclass can set it.
-    protected DelegateHttpsURLConnection delegate;
+    private final DelegateHttpsURLConnection delegate;
 
-// For both copies of the file, uncomment one line and comment the other
     HttpsURLConnectionImpl(URL u, Handler handler) throws IOException {
-//    HttpsURLConnectionOldImpl(URL u, Handler handler) throws IOException {
         this(u, null, handler);
     }
 
@@ -93,20 +76,16 @@ public class HttpsURLConnectionImpl
                 throw new MalformedURLException("Illegal character in URL");
             }
         }
+        String s = IPAddressUtil.checkAuthority(u);
+        if (s != null) {
+            throw new MalformedURLException(s);
+        }
         return u;
     }
-// For both copies of the file, uncomment one line and comment the other
+
     HttpsURLConnectionImpl(URL u, Proxy p, Handler handler) throws IOException {
-//    HttpsURLConnectionOldImpl(URL u, Proxy p, Handler handler) throws IOException {
         super(checkURL(u));
         delegate = new DelegateHttpsURLConnection(url, p, handler, this);
-    }
-
-    // NOTE: introduced for plugin
-    // subclass needs to overwrite this to set delegate to
-    // the appropriate delegatee
-    protected HttpsURLConnectionImpl(URL u) throws IOException {
-        super(u);
     }
 
     /**
@@ -243,11 +222,11 @@ public class HttpsURLConnectionImpl
      * - get input, [read input,] get output, [write output]
      */
 
-    public synchronized OutputStream getOutputStream() throws IOException {
+    public OutputStream getOutputStream() throws IOException {
         return delegate.getOutputStream();
     }
 
-    public synchronized InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() throws IOException {
         return delegate.getInputStream();
     }
 
@@ -321,7 +300,7 @@ public class HttpsURLConnectionImpl
      * @param   key     the keyword by which the request is known
      *                  (e.g., "<code>accept</code>").
      * @param   value  the value associated with it.
-     * @see #getRequestProperties(java.lang.String)
+     * @see #getRequestProperty(java.lang.String)
      * @since 1.4
      */
     public void addRequestProperty(String key, String value) {
@@ -488,16 +467,6 @@ public class HttpsURLConnectionImpl
         delegate.setDefaultUseCaches(defaultusecaches);
     }
 
-    /*
-     * finalize (dispose) the delegated object.  Otherwise
-     * sun.net.www.protocol.http.HttpURLConnection's finalize()
-     * would have to be made public.
-     */
-    @SuppressWarnings("deprecation")
-    protected void finalize() throws Throwable {
-        delegate.dispose();
-    }
-
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -540,5 +509,10 @@ public class HttpsURLConnectionImpl
     @Override
     public void setAuthenticator(Authenticator auth) {
         delegate.setAuthenticator(auth);
+    }
+
+    @Override
+    public Optional<SSLSession> getSSLSession() {
+        return Optional.ofNullable(delegate.getSSLSession());
     }
 }

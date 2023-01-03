@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_ADLC_FORMSOPT_HPP
-#define SHARE_VM_ADLC_FORMSOPT_HPP
+#ifndef SHARE_ADLC_FORMSOPT_HPP
+#define SHARE_ADLC_FORMSOPT_HPP
 
 // FORMSOPT.HPP - ADL Parser Target Specific Optimization Forms Classes
 
@@ -104,6 +104,7 @@ public:
 
   AllocClass *addAllocClass(char *allocName);
   void        addSpillRegClass();
+  void        addDynamicRegClass();
 
   // Provide iteration over all register definitions
   // in the order used by the register allocator
@@ -242,9 +243,6 @@ public:
   char* code_snippet() {
     return _code_snippet;
   }
-  void set_stack_version(bool flag) {
-    assert(false, "User defined register classes are not allowed to spill to the stack.");
-  }
   void declare_register_masks(FILE* fp);
   void build_register_masks(FILE* fp) {
     // We do not need to generate register masks because we select at runtime
@@ -336,10 +334,8 @@ private:
 
 public:
   // Public Data
-  bool  _direction;                // Direction of stack growth
   char *_sync_stack_slots;
   char *_inline_cache_reg;
-  char *_interpreter_method_oop_reg;
   char *_interpreter_frame_pointer_reg;
   char *_cisc_spilling_operand_name;
   char *_frame_pointer;
@@ -349,10 +345,7 @@ public:
   bool  _c_return_addr_loc;
   char *_return_addr;
   char *_c_return_addr;
-  char *_in_preserve_slots;
   char *_varargs_C_out_slots_killed;
-  char *_calling_convention;
-  char *_c_calling_convention;
   char *_return_value;
   char *_c_return_value;
 
@@ -674,4 +667,4 @@ public:
   void output(FILE *fp);
 };
 
-#endif // SHARE_VM_ADLC_FORMSOPT_HPP
+#endif // SHARE_ADLC_FORMSOPT_HPP

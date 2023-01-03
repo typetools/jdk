@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,10 +29,13 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+
+import jdk.internal.util.ArraysSupport;
 
 /**
  * This class provides a skeletal implementation of the {@code Collection}
@@ -85,11 +88,9 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      *
      * @return an iterator over the elements contained in this collection
      */
-    @Override
     @SideEffectFree
     public abstract Iterator<E> iterator();
 
-    @Override
     @Pure
     public abstract @NonNegative int size(@GuardSatisfied AbstractCollection<E> this);
 
@@ -99,7 +100,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @implSpec
      * This implementation returns {@code size() == 0}.
      */
-    @Override
     @Pure
     public boolean isEmpty(@GuardSatisfied AbstractCollection<E> this) {
         return size() == 0;
@@ -115,9 +115,8 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws ClassCastException   {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    @Override
     @Pure
-    public boolean contains(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         Iterator<E> it = iterator();
         if (o==null) {
             while (it.hasNext())
@@ -154,7 +153,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * return list.toArray();
      * }</pre>
      */
-    @Override
     @SideEffectFree
     public @PolyNull Object[] toArray(AbstractCollection<@PolyNull E> this) {
         // Estimate size of array; be prepared to see more or fewer elements
@@ -196,7 +194,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws ArrayStoreException  {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    @Override
     @SideEffectFree
     @SuppressWarnings("unchecked")
     public <T> @Nullable T @PolyNull [] toArray(@Nullable T @PolyNull [] a) {
@@ -228,14 +225,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
     }
 
     /**
-     * The maximum size of array to allocate.
-     * Some VMs reserve some header words in an array.
-     * Attempts to allocate larger arrays may result in
-     * OutOfMemoryError: Requested array size exceeds VM limit
-     */
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-    /**
      * Reallocates the array being used within toArray when the iterator
      * returned more elements than expected, and finishes filling it from
      * the iterator.
@@ -247,29 +236,19 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      */
     @SuppressWarnings("unchecked")
     private static <T> T[] finishToArray(T[] r, Iterator<?> it) {
-        int i = r.length;
+        int len = r.length;
+        int i = len;
         while (it.hasNext()) {
-            int cap = r.length;
-            if (i == cap) {
-                int newCap = cap + (cap >> 1) + 1;
-                // overflow-conscious code
-                if (newCap - MAX_ARRAY_SIZE > 0)
-                    newCap = hugeCapacity(cap + 1);
-                r = Arrays.copyOf(r, newCap);
+            if (i == len) {
+                len = ArraysSupport.newLength(len,
+                        1,             /* minimum growth */
+                        (len >> 1) + 1 /* preferred growth */);
+                r = Arrays.copyOf(r, len);
             }
             r[i++] = (T)it.next();
         }
         // trim if overallocated
-        return (i == r.length) ? r : Arrays.copyOf(r, i);
-    }
-
-    private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) // overflow
-            throw new OutOfMemoryError
-                ("Required array size too large");
-        return (minCapacity > MAX_ARRAY_SIZE) ?
-            Integer.MAX_VALUE :
-            MAX_ARRAY_SIZE;
+        return (i == len) ? r : Arrays.copyOf(r, i);
     }
 
     // Modification Operations
@@ -287,7 +266,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IllegalStateException         {@inheritDoc}
      */
-    @Override
     public boolean add(@GuardSatisfied AbstractCollection<E> this, E e) {
         throw new UnsupportedOperationException();
     }
@@ -309,8 +287,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws ClassCastException            {@inheritDoc}
      * @throws NullPointerException          {@inheritDoc}
      */
-    @Override
-    public boolean remove(@GuardSatisfied AbstractCollection<E> this, Object o) {
+    public boolean remove(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         Iterator<E> it = iterator();
         if (o==null) {
             while (it.hasNext()) {
@@ -346,9 +323,8 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws NullPointerException          {@inheritDoc}
      * @see #contains(Object)
      */
-    @Override
     @Pure
-    public boolean containsAll(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied Collection<?> c) {
+    public boolean containsAll(@GuardSatisfied AbstractCollection<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c) {
         for (Object e : c)
             if (!contains(e))
                 return false;
@@ -374,7 +350,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      *
      * @see #add(Object)
      */
-    @Override
     public boolean addAll(@GuardSatisfied AbstractCollection<E> this, Collection<? extends E> c) {
         boolean modified = false;
         for (E e : c)
@@ -405,8 +380,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    @Override
-    public boolean removeAll(@GuardSatisfied AbstractCollection<E> this, Collection<?> c) {
+    public boolean removeAll(@GuardSatisfied AbstractCollection<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<?> it = iterator();
@@ -441,8 +415,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    @Override
-    public boolean retainAll(@GuardSatisfied AbstractCollection<E> this, Collection<?> c) {
+    public boolean retainAll(@GuardSatisfied AbstractCollection<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<E> it = iterator();
@@ -471,7 +444,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      *
      * @throws UnsupportedOperationException {@inheritDoc}
      */
-    @Override
     public void clear(@GuardSatisfied AbstractCollection<E> this) {
         Iterator<E> it = iterator();
         while (it.hasNext()) {
@@ -493,7 +465,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      *
      * @return a string representation of this collection
      */
-    @Override
     @SideEffectFree
     public String toString(@GuardSatisfied AbstractCollection<E> this) {
         Iterator<E> it = iterator();

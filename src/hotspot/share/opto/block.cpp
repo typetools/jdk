@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@
 #include "opto/opcodes.hpp"
 #include "opto/rootnode.hpp"
 #include "utilities/copy.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 void Block_Array::grow( uint i ) {
   assert(i >= Max(), "must be an overflow");
@@ -47,7 +48,7 @@ void Block_Array::grow( uint i ) {
     _blocks[0] = NULL;
   }
   uint old = _size;
-  while( i >= _size ) _size <<= 1;      // Double to fit
+  _size = next_power_of_2(i);
   _blocks = (Block**)_arena->Arealloc( _blocks, old*sizeof(Block*),_size*sizeof(Block*));
   Copy::zero_to_bytes( &_blocks[old], (_size-old)*sizeof(Block*) );
 }
@@ -267,7 +268,7 @@ bool PhaseCFG::is_uncommon(const Block* block) {
 
 #ifndef PRODUCT
 void Block::dump_bidx(const Block* orig, outputStream* st) const {
-  if (_pre_order) st->print("B%d",_pre_order);
+  if (_pre_order) st->print("B%d", _pre_order);
   else st->print("N%d", head()->_idx);
 
   if (Verbose && orig != this) {
@@ -291,30 +292,36 @@ void Block::dump_pred(const PhaseCFG* cfg, Block* orig, outputStream* st) const 
 }
 
 void Block::dump_head(const PhaseCFG* cfg, outputStream* st) const {
-  // Print the basic block
+  // Print the basic block.
   dump_bidx(this, st);
-  st->print(": #\t");
+  st->print(": ");
 
-  // Print the incoming CFG edges and the outgoing CFG edges
+  // Print the outgoing CFG edges.
+  st->print("#\tout( ");
   for( uint i=0; i<_num_succs; i++ ) {
     non_connector_successor(i)->dump_bidx(_succs[i], st);
     st->print(" ");
   }
-  st->print("<- ");
+
+  // Print the incoming CFG edges.
+  st->print(") <- ");
   if( head()->is_block_start() ) {
+    st->print("in( ");
     for (uint i=1; i<num_preds(); i++) {
       Node *s = pred(i);
       if (cfg != NULL) {
         Block *p = cfg->get_block_for_node(s);
         p->dump_pred(cfg, p, st);
       } else {
-        while (!s->is_block_start())
+        while (!s->is_block_start()) {
           s = s->in(0);
+        }
         st->print("N%d ", s->_idx );
       }
     }
+    st->print(") ");
   } else {
-    st->print("BLOCK HEAD IS JUNK  ");
+    st->print("BLOCK HEAD IS JUNK ");
   }
 
   // Print loop, if any
@@ -327,12 +334,15 @@ void Block::dump_head(const PhaseCFG* cfg, outputStream* st) const {
     while (bx->is_connector()) {
       bx = cfg->get_block_for_node(bx->pred(1));
     }
-    st->print("\tLoop: B%d-B%d ", bhead->_pre_order, bx->_pre_order);
+    st->print("Loop( B%d-B%d ", bhead->_pre_order, bx->_pre_order);
     // Dump any loop-specific bits, especially for CountedLoops.
     loop->dump_spec(st);
+    st->print(")");
   } else if (has_loop_alignment()) {
-    st->print(" top-of-loop");
+    st->print("top-of-loop");
   }
+
+  // Print frequency and other optimization-relevant information
   st->print(" Freq: %g",_freq);
   if( Verbose || WizardMode ) {
     st->print(" IDom: %d/#%d", _idom ? _idom->_pre_order : 0, _dom_depth);
@@ -359,10 +369,10 @@ void Block::dump(const PhaseCFG* cfg) const {
 
 PhaseCFG::PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher)
 : Phase(CFG)
+, _root(root)
 , _block_arena(arena)
 , _regalloc(NULL)
 , _scheduling_for_pressure(false)
-, _root(root)
 , _matcher(matcher)
 , _node_to_block_mapping(arena)
 , _node_latency(NULL)
@@ -393,11 +403,10 @@ PhaseCFG::PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher)
 // The RootNode both starts and ends it's own block.  Do this with a recursive
 // backwards walk over the control edges.
 uint PhaseCFG::build_cfg() {
-  Arena *a = Thread::current()->resource_area();
-  VectorSet visited(a);
+  VectorSet visited;
 
   // Allocate stack with enough space to avoid frequent realloc
-  Node_Stack nstack(a, C->live_nodes() >> 1);
+  Node_Stack nstack(C->live_nodes() >> 1);
   nstack.push(_root, 0);
   uint sum = 0;                 // Counter for blocks
 
@@ -1198,9 +1207,26 @@ void PhaseCFG::dump_headers() {
     }
   }
 }
+#endif // !PRODUCT
+
+#ifdef ASSERT
+void PhaseCFG::verify_memory_writer_placement(const Block* b, const Node* n) const {
+  if (!n->is_memory_writer()) {
+    return;
+  }
+  CFGLoop* home_or_ancestor = find_block_for_node(n->in(0))->_loop;
+  bool found = false;
+  do {
+    if (b->_loop == home_or_ancestor) {
+      found = true;
+      break;
+    }
+    home_or_ancestor = home_or_ancestor->parent();
+  } while (home_or_ancestor != NULL);
+  assert(found, "block b is not in n's home loop or an ancestor of it");
+}
 
 void PhaseCFG::verify() const {
-#ifdef ASSERT
   // Verify sane CFG
   for (uint i = 0; i < number_of_blocks(); i++) {
     Block* block = get_block(i);
@@ -1212,18 +1238,25 @@ void PhaseCFG::verify() const {
       if (j >= 1 && n->is_Mach() && n->as_Mach()->ideal_Opcode() == Op_CreateEx) {
         assert(j == 1 || block->get_node(j-1)->is_Phi(), "CreateEx must be first instruction in block");
       }
+      verify_memory_writer_placement(block, n);
       if (n->needs_anti_dependence_check()) {
         verify_anti_dependences(block, n);
       }
       for (uint k = 0; k < n->req(); k++) {
         Node *def = n->in(k);
         if (def && def != n) {
-          assert(get_block_for_node(def) || def->is_Con(), "must have block; constants for debug info ok");
-          // Verify that instructions in the block is in correct order.
+          Block* def_block = get_block_for_node(def);
+          assert(def_block || def->is_Con(), "must have block; constants for debug info ok");
+          // Verify that all definitions dominate their uses (except for virtual
+          // instructions merging multiple definitions).
+          assert(n->is_Root() || n->is_Region() || n->is_Phi() || n->is_MachMerge() ||
+                 def_block->dominates(block),
+                 "uses must be dominated by definitions");
+          // Verify that instructions in the block are in correct order.
           // Uses must follow their definition if they are at the same block.
           // Mostly done to check that MachSpillCopy nodes are placed correctly
           // when CreateEx node is moved in build_ifg_physical().
-          if (get_block_for_node(def) == block && !(block->head()->is_Loop() && n->is_Phi()) &&
+          if (def_block == block && !(block->head()->is_Loop() && n->is_Phi()) &&
               // See (+++) comment in reg_split.cpp
               !(n->jvms() != NULL && n->jvms()->is_monitor_use(k))) {
             bool is_loop = false;
@@ -1238,6 +1271,14 @@ void PhaseCFG::verify() const {
             assert(is_loop || block->find_node(def) < j, "uses must follow definitions");
           }
         }
+      }
+      if (n->is_Proj()) {
+        assert(j >= 1, "a projection cannot be the first instruction in a block");
+        Node* pred = block->get_node(j - 1);
+        Node* parent = n->in(0);
+        assert(parent != NULL, "projections must have a parent");
+        assert(pred == parent || (pred->is_Proj() && pred->in(0) == parent),
+               "projections must follow their parents or other sibling projections");
       }
     }
 
@@ -1254,9 +1295,8 @@ void PhaseCFG::verify() const {
       assert(block->_num_succs == 2, "Conditional branch must have two targets");
     }
   }
-#endif
 }
-#endif
+#endif // ASSERT
 
 UnionFind::UnionFind( uint max ) : _cnt(max), _max(max), _indices(NEW_RESOURCE_ARRAY(uint,max)) {
   Copy::zero_to_bytes( _indices, sizeof(uint)*max );

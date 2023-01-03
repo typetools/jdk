@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -681,10 +681,6 @@ public class Test {
 
         test("ftp://ftp.is.co.za/rfc/rfc1808.txt")
             .s("ftp").h("ftp.is.co.za").p("/rfc/rfc1808.txt").z();
-
-        test("gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles")
-            .s("gopher").h("spinaltap.micro.umn.edu")
-            .p("/00/Weather/California/Los%20Angeles").z();
 
         test("http://www.math.uio.no/faq/compression-faq/part1.html")
             .s("http").h("www.math.uio.no").p("/faq/compression-faq/part1.html").z();
@@ -1416,7 +1412,19 @@ public class Test {
         lt(new URI(s), new URI(t));
     }
 
-   static void gt(URI u, URI v) throws URISyntaxException {
+    static void gt0(URI u, URI v) throws URISyntaxException {
+        ne0(u, v);
+        int c = u.compareTo(v);
+        if (c <= 0) {
+            show(u);
+            show(v);
+            throw new RuntimeException("Not greater than: " + u + " " + v
+                    + " " + c);
+        }
+        out.println(u + " < " + v);
+    }
+
+    static void gt(URI u, URI v) throws URISyntaxException {
         lt(v, u);
     }
 
@@ -1427,10 +1435,12 @@ public class Test {
         URI o = new URI("mailto:foo@bar.com");
         URI r = new URI("reg://some%20registry/b/c/d?q#f");
         URI s = new URI("http://jag:cafebabe@java.sun.com:94/b/c/d?q#f");
+        URI t = new URI("http://example.com/%5bsegment%5d");
         eq(o, o);
         lt(o, r);
         lt(s, o);
         lt(s, r);
+
         eq(o, new URI("MaILto:foo@bar.com"));
         gt(o, new URI("mailto:foo@bar.COM"));
         eq(r, new URI("rEg://some%20registry/b/c/d?q#f"));
@@ -1440,6 +1450,9 @@ public class Test {
         gt(s, new URI("http://jag:CafeBabe@java.sun.com:94/b/c/d?q#f"));
         lt(s, new URI("http://jag:cafebabe@java.sun.com:94/b/c/d?r#f"));
         lt(s, new URI("http://jag:cafebabe@java.sun.com:94/b/c/d?q#g"));
+        cmp0(t, new URI("http://example.com/%5Bsegment%5D"), true);
+        gt0(t, new URI("http://example.com/%5BSegment%5D"));
+        lt(new URI("http://example.com/%5Asegment%5D"), new URI("http://example.com/%5Bsegment%5D"));
         eq(new URI("http://host/a%00bcd"), new URI("http://host/a%00bcd"));
         ne(new URI("http://host/a%00bcd"), new URI("http://host/aZ00bcd"));
         eq0(new URI("http://host/abc%e2def%C3ghi"),

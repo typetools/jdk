@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,10 +43,21 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *
  *
  * @since 1.6
+ * @deprecated This class is only useful in conjunction with
+ *       {@linkplain SecurityManager the Security Manager}, which is deprecated
+ *       and subject to removal in a future release. Consequently, this class
+ *       is also deprecated and subject to removal. There is no replacement for
+ *       the Security Manager or this class.
  */
 
 @AnnotatedFor({"interning"})
+@Deprecated(since="17", forRemoval=true)
 public abstract @UsesObjectEquals class PolicySpi {
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    public PolicySpi() {}
 
     /**
      * Check whether the policy has granted a Permission to a ProtectionDomain.
@@ -91,6 +102,7 @@ public abstract @UsesObjectEquals class PolicySpi {
      *          If this operation is not supported,
      *          Policy.UNSUPPORTED_EMPTY_COLLECTION is returned.
      */
+    @SuppressWarnings("removal")
     protected PermissionCollection engineGetPermissions
                                         (CodeSource codesource) {
         return Policy.UNSUPPORTED_EMPTY_COLLECTION;
@@ -115,6 +127,7 @@ public abstract @UsesObjectEquals class PolicySpi {
      *          If this operation is not supported,
      *          Policy.UNSUPPORTED_EMPTY_COLLECTION is returned.
      */
+    @SuppressWarnings("removal")
     protected PermissionCollection engineGetPermissions
                                         (ProtectionDomain domain) {
         return Policy.UNSUPPORTED_EMPTY_COLLECTION;

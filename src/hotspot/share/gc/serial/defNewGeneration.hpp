@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SERIAL_DEFNEWGENERATION_HPP
-#define SHARE_VM_GC_SERIAL_DEFNEWGENERATION_HPP
+#ifndef SHARE_GC_SERIAL_DEFNEWGENERATION_HPP
+#define SHARE_GC_SERIAL_DEFNEWGENERATION_HPP
 
 #include "gc/serial/cSpaceCounters.hpp"
 #include "gc/shared/ageTable.hpp"
@@ -31,15 +31,17 @@
 #include "gc/shared/generation.hpp"
 #include "gc/shared/generationCounters.hpp"
 #include "gc/shared/preservedMarks.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "utilities/align.hpp"
 #include "utilities/stack.hpp"
 
 class ContiguousSpace;
-class ScanClosure;
-class STWGCTimer;
 class CSpaceCounters;
+class DefNewYoungerGenClosure;
+class DefNewScanClosure;
 class ScanWeakRefClosure;
 class SerialHeap;
+class STWGCTimer;
 
 // DefNewGeneration is a young generation containing eden, from- and
 // to-space.
@@ -181,18 +183,21 @@ protected:
 
   class FastEvacuateFollowersClosure: public VoidClosure {
     SerialHeap* _heap;
-    FastScanClosure* _scan_cur_or_nonheap;
-    FastScanClosure* _scan_older;
+    DefNewScanClosure* _scan_cur_or_nonheap;
+    DefNewYoungerGenClosure* _scan_older;
   public:
     FastEvacuateFollowersClosure(SerialHeap* heap,
-                                 FastScanClosure* cur,
-                                 FastScanClosure* older);
+                                 DefNewScanClosure* cur,
+                                 DefNewYoungerGenClosure* older);
     void do_void();
   };
 
  public:
-  DefNewGeneration(ReservedSpace rs, size_t initial_byte_size,
-                   const char* policy="Copy");
+  DefNewGeneration(ReservedSpace rs,
+                   size_t initial_byte_size,
+                   size_t min_byte_size,
+                   size_t max_byte_size,
+                   const char* policy="Serial young collection pauses");
 
   virtual void ref_processor_init();
 
@@ -238,8 +243,6 @@ protected:
 
   // Iteration
   void object_iterate(ObjectClosure* blk);
-
-  void younger_refs_iterate(OopsInGenClosure* cl, uint n_threads);
 
   void space_iterate(SpaceClosure* blk, bool usedOnly = false);
 
@@ -346,4 +349,4 @@ protected:
   void swap_spaces();
 };
 
-#endif // SHARE_VM_GC_SERIAL_DEFNEWGENERATION_HPP
+#endif // SHARE_GC_SERIAL_DEFNEWGENERATION_HPP

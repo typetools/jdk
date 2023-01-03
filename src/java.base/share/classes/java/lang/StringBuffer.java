@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,8 +37,9 @@ import org.checkerframework.common.aliasing.qual.Unique;
 import org.checkerframework.common.aliasing.qual.LeakedToResult;
 import org.checkerframework.common.aliasing.qual.NonLeaked;
 
+import java.io.IOException;
 import java.util.Arrays;
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
  * A thread-safe, mutable sequence of characters.
@@ -128,13 +129,14 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     private transient String toStringCache;
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     static final long serialVersionUID = 3388685877147921107L;
 
     /**
      * Constructs a string buffer with no characters in it and an
      * initial capacity of 16 characters.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public @Unique StringBuffer() {
         super(16);
     }
@@ -147,7 +149,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * @throws     NegativeArraySizeException  if the {@code capacity}
      *             argument is less than {@code 0}.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public @Unique StringBuffer(@NonNegative int capacity) {
         super(capacity);
     }
@@ -159,10 +161,9 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      *
      * @param   str   the initial contents of the buffer.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public @Unique StringBuffer(String str) {
-        super(str.length() + 16);
-        append(str);
+        super(str);
     }
 
     /**
@@ -170,17 +171,12 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      * as the specified {@code CharSequence}. The initial capacity of
      * the string buffer is {@code 16} plus the length of the
      * {@code CharSequence} argument.
-     * <p>
-     * If the length of the specified {@code CharSequence} is
-     * less than or equal to zero, then an empty buffer of capacity
-     * {@code 16} is returned.
      *
      * @param      seq   the sequence to copy.
      * @since 1.5
      */
     public @Unique StringBuffer(CharSequence seq) {
-        this(seq.length() + 16);
-        append(seq);
+        super(seq);
     }
 
     /**
@@ -320,7 +316,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked @Nullable String str) {
         toStringCache = null;
         super.append(str);
@@ -432,7 +428,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked char c) {
         toStringCache = null;
         super.append(c);
@@ -440,7 +436,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public synchronized StringBuffer append(@LeakedToResult StringBuffer this, @NonLeaked int i) {
         toStringCache = null;
         super.append(i);
@@ -727,7 +723,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 
     @SideEffectFree
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public synchronized String toString(@GuardSatisfied StringBuffer this) {
         if (toStringCache == null) {
             return toStringCache =
@@ -748,6 +744,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
      *              A flag indicating whether the backing array is shared.
      *              The value is ignored upon deserialization.
      */
+    @java.io.Serial
     private static final java.io.ObjectStreamField[] serialPersistentFields =
     {
         new java.io.ObjectStreamField("value", char[].class),
@@ -756,9 +753,13 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     };
 
     /**
-     * readObject is called to restore the state of the StringBuffer from
+     * The {@code writeObject} method is called to write the state of the {@code StringBuffer} to
      * a stream.
+     *
+     * @param  s the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @java.io.Serial
     private synchronized void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         java.io.ObjectOutputStream.PutField fields = s.putFields();
@@ -775,9 +776,14 @@ import jdk.internal.HotSpotIntrinsicCandidate;
     }
 
     /**
-     * readObject is called to restore the state of the StringBuffer from
+     * The {@code readObject} method is called to restore the state of the {@code StringBuffer} from
      * a stream.
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         java.io.ObjectInputStream.GetField fields = s.readFields();

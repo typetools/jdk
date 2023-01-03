@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,16 +38,15 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * only occur at run time if the definition of a class has
  * incompatibly changed.
  *
- * @author  unascribed
  * @since   1.0
  */
 @AnnotatedFor({"nullness"})
-public
-class NoSuchMethodError extends IncompatibleClassChangeError {
+public class NoSuchMethodError extends IncompatibleClassChangeError {
+    @java.io.Serial
     private static final long serialVersionUID = -3765521442372831335L;
 
     /**
-     * Constructs a <code>NoSuchMethodError</code> with no detail message.
+     * Constructs a {@code NoSuchMethodError} with no detail message.
      */
     @SideEffectFree
     public NoSuchMethodError() {
@@ -55,7 +54,7 @@ class NoSuchMethodError extends IncompatibleClassChangeError {
     }
 
     /**
-     * Constructs a <code>NoSuchMethodError</code> with the
+     * Constructs a {@code NoSuchMethodError} with the
      * specified detail message.
      *
      * @param   s   the detail message.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_OBJARRAYKLASS_HPP
-#define SHARE_VM_OOPS_OBJARRAYKLASS_HPP
+#ifndef SHARE_OOPS_OBJARRAYKLASS_HPP
+#define SHARE_OOPS_OBJARRAYKLASS_HPP
 
-#include "classfile/classLoaderData.hpp"
 #include "oops/arrayKlass.hpp"
 #include "utilities/macros.hpp"
+
+class ClassLoaderData;
 
 // ObjArrayKlass is the klass for objArrays
 
@@ -69,14 +70,13 @@ class ObjArrayKlass : public ArrayKlass {
   // Dispatched operation
   bool can_be_primary_super_slow() const;
   GrowableArray<Klass*>* compute_secondary_supers(int num_extra_slots,
-                                                  Array<Klass*>* transitive_interfaces);
-  bool compute_is_subtype_of(Klass* k);
+                                                  Array<InstanceKlass*>* transitive_interfaces);
   DEBUG_ONLY(bool is_objArray_klass_slow()  const  { return true; })
   int oop_size(oop obj) const;
 
   // Allocation
-  static Klass* allocate_objArray_klass(ClassLoaderData* loader_data,
-                                          int n, Klass* element_klass, TRAPS);
+  static ObjArrayKlass* allocate_objArray_klass(ClassLoaderData* loader_data,
+                                                int n, Klass* element_klass, TRAPS);
 
   objArrayOop allocate(int length, TRAPS);
   oop multi_allocate(int rank, jint* sizes, TRAPS);
@@ -95,14 +95,14 @@ class ObjArrayKlass : public ArrayKlass {
   void do_copy(arrayOop s, size_t src_offset,
                arrayOop d, size_t dst_offset,
                int length, TRAPS);
- protected:
+ public:
   // Returns the ObjArrayKlass for n'th dimension.
-  virtual Klass* array_klass_impl(bool or_null, int n, TRAPS);
+  virtual Klass* array_klass(int n, TRAPS);
+  virtual Klass* array_klass_or_null(int n);
 
   // Returns the array class with this class as element type.
-  virtual Klass* array_klass_impl(bool or_null, TRAPS);
-
- public:
+  virtual Klass* array_klass(TRAPS);
+  virtual Klass* array_klass_or_null();
 
   static ObjArrayKlass* cast(Klass* k) {
     return const_cast<ObjArrayKlass*>(cast(const_cast<const Klass*>(k)));
@@ -119,16 +119,6 @@ class ObjArrayKlass : public ArrayKlass {
 
   // Initialization (virtual from Klass)
   void initialize(TRAPS);
-
-  // GC specific object visitors
-  //
-#if INCLUDE_PARALLELGC
-  // Parallel Scavenge
-  void oop_ps_push_contents(  oop obj, PSPromotionManager* pm);
-  // Parallel Compact
-  void oop_pc_follow_contents(oop obj, ParCompactionManager* cm);
-  void oop_pc_update_pointers(oop obj, ParCompactionManager* cm);
-#endif
 
   // Oop fields (and metadata) iterators
   //
@@ -164,8 +154,7 @@ class ObjArrayKlass : public ArrayKlass {
   inline void oop_oop_iterate_elements_bounded(objArrayOop a, OopClosureType* closure, MemRegion mr);
 
  public:
-  // JVM support
-  jint compute_modifier_flags(TRAPS) const;
+  jint compute_modifier_flags() const;
 
  public:
   // Printing
@@ -185,4 +174,4 @@ class ObjArrayKlass : public ArrayKlass {
   void oop_verify_on(oop obj, outputStream* st);
 };
 
-#endif // SHARE_VM_OOPS_OBJARRAYKLASS_HPP
+#endif // SHARE_OOPS_OBJARRAYKLASS_HPP

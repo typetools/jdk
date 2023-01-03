@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import jdk.jfr.MetadataDefinition;
 import jdk.jfr.Name;
 import jdk.jfr.Timespan;
 import jdk.jfr.internal.PlatformEventType;
-import jdk.jfr.internal.Control;
 import jdk.jfr.internal.Type;
 import jdk.jfr.internal.Utils;
 @MetadataDefinition
@@ -42,33 +41,38 @@ import jdk.jfr.internal.Utils;
 @Name(Type.SETTINGS_PREFIX + "Threshold")
 @Description("Record event with duration above or equal to threshold")
 @Timespan
-public final class ThresholdSetting extends Control {
-    private final static long typeId = Type.getTypeId(ThresholdSetting.class);
+public final class ThresholdSetting extends JDKSettingControl {
+    private static final long typeId = Type.getTypeId(ThresholdSetting.class);
     private String value = "0 ns";
     private final PlatformEventType eventType;
 
-    public ThresholdSetting(PlatformEventType eventType, String defaultValue) {
-       super(defaultValue);
+    public ThresholdSetting(PlatformEventType eventType) {
        this.eventType = Objects.requireNonNull(eventType);
     }
 
     @Override
     public String combine(Set<String> values) {
-        long min = Long.MAX_VALUE;
-        String text = "0 ns";
+        Long min = null;
+        String text = null;
         for (String value : values) {
-            long l = Utils.parseTimespan(value);
-            if (l < min) {
-                text = value;
+            long l = Utils.parseTimespanWithInfinity(value);
+            // always accept first value
+            if (min == null) {
                 min = l;
+                text = value;
+            } else {
+                if (l < min) {
+                    text = value;
+                    min = l;
+                }
             }
         }
-        return text;
+        return text == null ? "0 ns" : text;
     }
 
     @Override
     public void setValue(String value) {
-        long l = Utils.parseTimespan(value);
+        long l = Utils.parseTimespanWithInfinity(value);
         this.value = value;
         eventType.setThreshold(l);
     }

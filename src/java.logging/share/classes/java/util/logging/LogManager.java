@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,8 +43,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import jdk.internal.misc.JavaAWTAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaAWTAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.util.logging.internal.LoggingProviderImpl;
 import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
 
@@ -68,7 +68,7 @@ import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
  * At startup the LogManager class is located using the
  * java.util.logging.manager system property.
  *
- * <h3>LogManager Configuration</h3>
+ * <h2>LogManager Configuration</h2>
  *
  * A LogManager initializes the logging configuration via
  * the {@link #readConfiguration()} method during LogManager initialization.
@@ -80,8 +80,8 @@ import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
  * the initial configuration, as specified in the {@link #readConfiguration()}
  * method:
  * <ul>
- * <li>"java.util.logging.config.class"
- * <li>"java.util.logging.config.file"
+ * <li>{@systemProperty java.util.logging.config.class}
+ * <li>{@systemProperty java.util.logging.config.file}
  * </ul>
  * <p>
  * These two system properties may be specified on the command line to the "java"
@@ -158,8 +158,6 @@ import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
 
 @AnnotatedFor({"index", "interning", "signature"})
 public @UsesObjectEquals class LogManager {
-    // The global LogManager object
-    private static final LogManager manager;
 
     // 'props' is assigned within a lock but accessed without it.
     // Declaring it volatile makes sure that another thread will not
@@ -169,7 +167,7 @@ public @UsesObjectEquals class LogManager {
     // open for props.getProperties() to be called before the construcor
     // of Hashtable is actually completed).
     private volatile Properties props = new Properties();
-    private final static Level defaultLevel = Level.INFO;
+    private static final Level defaultLevel = Level.INFO;
 
     // LoggerContext for system loggers and user loggers
     private final LoggerContext systemContext = new SystemLoggerContext();
@@ -224,39 +222,40 @@ public @UsesObjectEquals class LogManager {
     private final Map<Object, Runnable> listeners =
             Collections.synchronizedMap(new IdentityHashMap<>());
 
-    static {
-        manager = AccessController.doPrivileged(new PrivilegedAction<LogManager>() {
-            @Override
-            public LogManager run() {
-                LogManager mgr = null;
-                @BinaryName String cname = null;
-                try {
-                    cname = System.getProperty("java.util.logging.manager");
-                    if (cname != null) {
-                        try {
-                            @SuppressWarnings("deprecation")
-                            Object tmp = ClassLoader.getSystemClassLoader()
-                                .loadClass(cname).newInstance();
-                            mgr = (LogManager) tmp;
-                        } catch (ClassNotFoundException ex) {
-                            @SuppressWarnings("deprecation")
-                            Object tmp = Thread.currentThread()
-                                .getContextClassLoader().loadClass(cname).newInstance();
-                            mgr = (LogManager) tmp;
+    // The global LogManager object
+    @SuppressWarnings("removal")
+    private static final LogManager manager = AccessController.doPrivileged(
+            new PrivilegedAction<LogManager>() {
+                @Override
+                public LogManager run() {
+                    LogManager mgr = null;
+                    @BinaryName String cname = null;
+                    try {
+                        cname = System.getProperty("java.util.logging.manager");
+                        if (cname != null) {
+                            try {
+                                @SuppressWarnings("deprecation")
+                                Object tmp = ClassLoader.getSystemClassLoader()
+                                        .loadClass(cname).newInstance();
+                                mgr = (LogManager) tmp;
+                            } catch (ClassNotFoundException ex) {
+                                @SuppressWarnings("deprecation")
+                                Object tmp = Thread.currentThread()
+                                        .getContextClassLoader().loadClass(cname).newInstance();
+                                mgr = (LogManager) tmp;
+                            }
                         }
+                    } catch (Exception ex) {
+                        System.err.println("Could not load Logmanager \"" + cname + "\"");
+                        ex.printStackTrace();
                     }
-                } catch (Exception ex) {
-                    System.err.println("Could not load Logmanager \"" + cname + "\"");
-                    ex.printStackTrace();
-                }
-                if (mgr == null) {
-                    mgr = new LogManager();
-                }
-                return mgr;
+                    if (mgr == null) {
+                        mgr = new LogManager();
+                    }
+                    return mgr;
 
-            }
-        });
-    }
+                }
+            });
 
     // This private class is used as a shutdown hook.
     // It does a "reset" to close all open handlers.
@@ -311,6 +310,7 @@ public @UsesObjectEquals class LogManager {
     }
 
     private static Void checkSubclassPermissions() {
+        @SuppressWarnings("removal")
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             // These permission will be checked in the LogManager constructor,
@@ -342,6 +342,7 @@ public @UsesObjectEquals class LogManager {
      */
     private boolean initializedCalled = false;
     private volatile boolean initializationDone = false;
+    @SuppressWarnings("removal")
     final void ensureLogManagerInitialized() {
         final LogManager owner = this;
         if (initializationDone || owner != manager) {
@@ -466,6 +467,7 @@ public @UsesObjectEquals class LogManager {
     private LoggerContext getUserContext() {
         LoggerContext context = null;
 
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         JavaAWTAccess javaAwtAccess = SharedSecrets.getJavaAWTAccess();
         if (sm != null && javaAwtAccess != null) {
@@ -555,6 +557,7 @@ public @UsesObjectEquals class LogManager {
         return demandSystemLogger(name, resourceBundleName, module);
     }
 
+    @SuppressWarnings("removal")
     Logger demandSystemLogger(String name, String resourceBundleName, Module module) {
         // Add a system logger in the system context's namespace
         final Logger sysLogger = getSystemContext()
@@ -782,7 +785,7 @@ public @UsesObjectEquals class LogManager {
             }
             LoggerWeakRef ref = namedLoggers.get(name);
             if (ref != null) {
-                if (ref.get() == null) {
+                if (ref.refersTo(null)) {
                     // It's possible that the Logger was GC'ed after a
                     // drainLoggerRefQueueBounded() call above so allow
                     // a new one to be registered.
@@ -857,6 +860,7 @@ public @UsesObjectEquals class LogManager {
 
         // If logger.getUseParentHandlers() returns 'true' and any of the logger's
         // parents have levels or handlers defined, make sure they are instantiated.
+        @SuppressWarnings("removal")
         private void processParentHandlers(final Logger logger, final String name,
                Predicate<Logger> visited) {
             final LogManager owner = getOwner();
@@ -895,7 +899,7 @@ public @UsesObjectEquals class LogManager {
         // Gets a node in our tree of logger nodes.
         // If necessary, create it.
         LogNode getNode(String name) {
-            if (name == null || name.equals("")) {
+            if (name == null || name.isEmpty()) {
                 return root;
             }
             LogNode node = root;
@@ -965,6 +969,7 @@ public @UsesObjectEquals class LogManager {
     // We need to raise privilege here. All our decisions will
     // be made based on the logging configuration, which can
     // only be modified by trusted code.
+    @SuppressWarnings("removal")
     private void loadLoggerHandlers(final Logger logger, final String name,
                                     final String handlersPropertyName)
     {
@@ -1158,7 +1163,7 @@ public @UsesObjectEquals class LogManager {
     //   - minimum: 0.02 ms
     //   - maximum: 10.9 ms
     //
-    private final static int MAX_ITERATIONS = 400;
+    private static final int MAX_ITERATIONS = 400;
     final void drainLoggerRefQueueBounded() {
         for (int i = 0; i < MAX_ITERATIONS; i++) {
             if (loggerRefQueue == null) {
@@ -1189,7 +1194,7 @@ public @UsesObjectEquals class LogManager {
      * @param   logger the new logger.
      * @return  true if the argument logger was registered successfully,
      *          false if a logger of that name already exists.
-     * @exception NullPointerException if the logger name is null.
+     * @throws NullPointerException if the logger name is null.
      */
     public boolean addLogger(Logger logger) {
         final String name = logger.getName();
@@ -1230,6 +1235,7 @@ public @UsesObjectEquals class LogManager {
 
     // Private method to set a level on a logger.
     // If necessary, we raise privilege before doing the call.
+    @SuppressWarnings("removal")
     private static void doSetLevel(final Logger logger, final Level level) {
         SecurityManager sm = System.getSecurityManager();
         if (sm == null) {
@@ -1249,6 +1255,7 @@ public @UsesObjectEquals class LogManager {
 
     // Private method to set a parent on a logger.
     // If necessary, we raise privilege before doing the setParent call.
+    @SuppressWarnings("removal")
     private static void doSetParent(final Logger logger, final Logger parent) {
         SecurityManager sm = System.getSecurityManager();
         if (sm == null) {
@@ -1491,7 +1498,7 @@ public @UsesObjectEquals class LogManager {
 
         // Reset Logger level
         String name = logger.getName();
-        if (name != null && name.equals("")) {
+        if (name != null && name.isEmpty()) {
             // This is the root logger.
             logger.setLevel(defaultLevel);
         } else {
@@ -1926,7 +1933,7 @@ public @UsesObjectEquals class LogManager {
      * </thead>
      * <tbody>
      * <tr>
-     * <th scope="row" valign="top">{@code <logger>.level}</th>
+     * <th scope="row" style="vertical-align:top">{@code <logger>.level}</th>
      * <td>
      * <ul>
      *   <li>If the resulting configuration defines a level for a logger and
@@ -1947,7 +1954,7 @@ public @UsesObjectEquals class LogManager {
      * </ul>
      * </td>
      * <tr>
-     * <th scope="row" valign="top">{@code <logger>.useParentHandlers}</th>
+     * <th scope="row" style="vertical-align:top">{@code <logger>.useParentHandlers}</th>
      * <td>
      * <ul>
      *   <li>If either the resulting or the old value for the useParentHandlers
@@ -1961,7 +1968,7 @@ public @UsesObjectEquals class LogManager {
      * </td>
      * </tr>
      * <tr>
-     * <th scope="row" valign="top">{@code <logger>.handlers}</th>
+     * <th scope="row" style="vertical-align:top">{@code <logger>.handlers}</th>
      * <td>
      * <ul>
      *   <li>If the resulting configuration defines a list of handlers for a
@@ -1985,7 +1992,7 @@ public @UsesObjectEquals class LogManager {
      * </td>
      * </tr>
      * <tr>
-     * <th scope="row" valign="top">{@code <handler-name>.*}</th>
+     * <th scope="row" style="vertical-align:top">{@code <handler-name>.*}</th>
      * <td>
      * <ul>
      *   <li>Properties configured/changed on handler classes will only affect
@@ -1997,7 +2004,7 @@ public @UsesObjectEquals class LogManager {
      * </td>
      * </tr>
      * <tr>
-     * <th scope="row" valign="top">{@code config} and any other property</th>
+     * <th scope="row" style="vertical-align:top">{@code config} and any other property</th>
      * <td>
      * <ul>
      *   <li>The resulting value for these property will be stored in the
@@ -2434,6 +2441,7 @@ public @UsesObjectEquals class LogManager {
             new LoggingPermission("control", null);
 
     void checkPermission() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkPermission(controlPermission);
@@ -2446,9 +2454,16 @@ public @UsesObjectEquals class LogManager {
      * If the check fails we throw a SecurityException, otherwise
      * we return normally.
      *
-     * @exception  SecurityException  if a security manager exists and if
+     * @throws  SecurityException  if a security manager exists and if
      *             the caller does not have LoggingPermission("control").
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @Deprecated(since="17", forRemoval=true)
     public void checkAccess() throws SecurityException {
         checkPermission();
     }
@@ -2557,7 +2572,7 @@ public @UsesObjectEquals class LogManager {
      *
      * @since 1.5
      */
-    public final static String LOGGING_MXBEAN_NAME
+    public static final String LOGGING_MXBEAN_NAME
         = "java.util.logging:type=Logging";
 
     /**
@@ -2612,11 +2627,14 @@ public @UsesObjectEquals class LogManager {
     public LogManager addConfigurationListener(Runnable listener) {
         final Runnable r = Objects.requireNonNull(listener);
         checkPermission();
+        @SuppressWarnings("removal")
         final SecurityManager sm = System.getSecurityManager();
+        @SuppressWarnings("removal")
         final AccessControlContext acc =
                 sm == null ? null : AccessController.getContext();
         final PrivilegedAction<Void> pa =
                 acc == null ? null : () -> { r.run() ; return null; };
+        @SuppressWarnings("removal")
         final Runnable pr =
                 acc == null ? r : () -> AccessController.doPrivileged(pa, acc);
         // Will do nothing if already registered.
@@ -2709,6 +2727,7 @@ public @UsesObjectEquals class LogManager {
             }
             Objects.requireNonNull(name);
             Objects.requireNonNull(module);
+            @SuppressWarnings("removal")
             SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
                 sm.checkPermission(controlPermission);
@@ -2731,6 +2750,11 @@ public @UsesObjectEquals class LogManager {
     }
 
     static {
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
         AccessController.doPrivileged(LoggingProviderAccess.INSTANCE, null,
                                       controlPermission);
     }

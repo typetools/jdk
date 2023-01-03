@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -197,6 +198,38 @@ import java.util.stream.StreamSupport;
  * or if the only reference to the backing collection is through an
  * unmodifiable view, the view can be considered effectively immutable.
  *
+ * <h2><a id="serializable">Serializability of Collections</a></h2>
+ *
+ * <p>Serializability of collections is optional. As such, none of the collections
+ * interfaces are declared to implement the {@link java.io.Serializable} interface.
+ * However, serializability is regarded as being generally useful, so most collection
+ * implementations are serializable.
+ *
+ * <p>The collection implementations that are public classes (such as {@code ArrayList}
+ * or {@code HashMap}) are declared to implement the {@code Serializable} interface if they
+ * are in fact serializable. Some collections implementations are not public classes,
+ * such as the <a href="#unmodifiable">unmodifiable collections.</a> In such cases, the
+ * serializability of such collections is described in the specification of the method
+ * that creates them, or in some other suitable place. In cases where the serializability
+ * of a collection is not specified, there is no guarantee about the serializability of such
+ * collections. In particular, many <a href="#view">view collections</a> are not serializable.
+ *
+ * <p>A collection implementation that implements the {@code Serializable} interface cannot
+ * be guaranteed to be serializable. The reason is that in general, collections
+ * contain elements of other types, and it is not possible to determine statically
+ * whether instances of some element type are actually serializable. For example, consider
+ * a serializable {@code Collection<E>}, where {@code E} does not implement the
+ * {@code Serializable} interface. The collection may be serializable, if it contains only
+ * elements of some serializable subtype of {@code E}, or if it is empty. Collections are
+ * thus said to be <i>conditionally serializable,</i> as the serializability of the collection
+ * as a whole depends on whether the collection itself is serializable and on whether all
+ * contained elements are also serializable.
+ *
+ * <p>An additional case occurs with instances of {@link SortedSet} and {@link SortedMap}.
+ * These collections can be created with a {@link Comparator} that imposes an ordering on
+ * the set elements or map keys. Such a collection is serializable only if the provided
+ * {@code Comparator} is also serializable.
+ *
  * <p>This interface is a member of the
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
@@ -268,7 +301,7 @@ public interface Collection<E> extends Iterable<E> {
      */
     @CFComment({"lock: not true, because map could contain nulls:  AssertParametersNonNull(\"get(#1)\")"})
     @Pure
-    boolean contains(@GuardSatisfied Collection<E> this, @GuardSatisfied Object o);
+    boolean contains(@GuardSatisfied Collection<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this collection.  There are no
@@ -460,7 +493,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this collection
      */
-    boolean remove(@GuardSatisfied Collection<E> this, Object o);
+    boolean remove(@GuardSatisfied Collection<E> this, @UnknownSignedness Object o);
 
 
     // Bulk Operations
@@ -484,7 +517,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see    #contains(Object)
      */
     @Pure
-    boolean containsAll(@GuardSatisfied Collection<E> this, @GuardSatisfied Collection<?> c);
+    boolean containsAll(@GuardSatisfied Collection<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Adds all of the elements in the specified collection to this collection
@@ -535,7 +568,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied Collection<E> this, Collection<?> c);
+    boolean removeAll(@GuardSatisfied Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements of this collection that satisfy the given
@@ -594,7 +627,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@GuardSatisfied Collection<E> this, Collection<?> c);
+    boolean retainAll(@GuardSatisfied Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements from this collection (optional operation).
@@ -642,7 +675,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see List#equals(Object)
      */
     @Pure
-    boolean equals(@GuardSatisfied Collection<E> this, @GuardSatisfied @Nullable Object o);
+    boolean equals(@GuardSatisfied Collection<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o);
 
     /**
      * Returns the hash code value for this collection.  While the

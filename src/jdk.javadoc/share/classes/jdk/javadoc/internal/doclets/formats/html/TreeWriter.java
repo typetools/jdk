@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,13 +30,13 @@ import java.util.SortedSet;
 
 import javax.lang.model.element.PackageElement;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
+import jdk.javadoc.internal.doclets.formats.html.markup.BodyContents;
+import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
-import jdk.javadoc.internal.doclets.formats.html.markup.Navigation;
-import jdk.javadoc.internal.doclets.formats.html.markup.Navigation.PageMode;
-import jdk.javadoc.internal.doclets.formats.html.markup.StringContent;
+import jdk.javadoc.internal.doclets.formats.html.Navigation.PageMode;
+import jdk.javadoc.internal.doclets.formats.html.markup.Text;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.ClassTree;
 import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
@@ -53,9 +53,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocPaths;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Atul M Dambalkar
- * @author Bhavesh Patel (Modified)
  */
 public class TreeWriter extends AbstractTreeWriter {
 
@@ -70,7 +67,7 @@ public class TreeWriter extends AbstractTreeWriter {
      */
     private final boolean classesOnly;
 
-    private final Navigation navBar;
+    protected BodyContents bodyContents;
 
     /**
      * Constructor to construct TreeWriter object.
@@ -83,7 +80,7 @@ public class TreeWriter extends AbstractTreeWriter {
         super(configuration, filename, classtree);
         packages = configuration.packages;
         classesOnly = packages.isEmpty();
-        this.navBar = new Navigation(null, configuration, fixedNavDiv, PageMode.TREE, path);
+        this.bodyContents = new BodyContents();
     }
 
     /**
@@ -109,36 +106,20 @@ public class TreeWriter extends AbstractTreeWriter {
     public void generateTreeFile() throws DocFileIOException {
         HtmlTree body = getTreeHeader();
         Content headContent = contents.hierarchyForAllPackages;
-        Content heading = HtmlTree.HEADING(HtmlConstants.TITLE_HEADING, false,
+        Content heading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING,
                 HtmlStyle.title, headContent);
         Content div = HtmlTree.DIV(HtmlStyle.header, heading);
         addPackageTreeLinks(div);
-        HtmlTree htmlTree = (configuration.allowTag(HtmlTag.MAIN))
-                ? HtmlTree.MAIN()
-                : body;
-        htmlTree.addContent(div);
-        HtmlTree divTree = new HtmlTree(HtmlTag.DIV);
-        divTree.setStyle(HtmlStyle.contentContainer);
-        addTree(classtree.baseClasses(), "doclet.Class_Hierarchy", divTree);
-        addTree(classtree.baseInterfaces(), "doclet.Interface_Hierarchy", divTree);
-        addTree(classtree.baseAnnotationTypes(), "doclet.Annotation_Type_Hierarchy", divTree);
-        addTree(classtree.baseEnums(), "doclet.Enum_Hierarchy", divTree, true);
-        htmlTree.addContent(divTree);
-        if (configuration.allowTag(HtmlTag.MAIN)) {
-            body.addContent(htmlTree);
-        }
-        if (configuration.allowTag(HtmlTag.FOOTER)) {
-            htmlTree = HtmlTree.FOOTER();
-        } else {
-            htmlTree = body;
-        }
-        navBar.setUserFooter(getUserHeaderFooter(false));
-        htmlTree.addContent(navBar.getContent(false));
-        addBottom(htmlTree);
-        if (configuration.allowTag(HtmlTag.FOOTER)) {
-            body.addContent(htmlTree);
-        }
-        printHtmlDocument(null, true, body);
+        Content mainContent = new ContentBuilder();
+        mainContent.add(div);
+        addTree(classtree.baseClasses(), "doclet.Class_Hierarchy", mainContent);
+        addTree(classtree.baseInterfaces(), "doclet.Interface_Hierarchy", mainContent);
+        addTree(classtree.baseAnnotationTypes(), "doclet.Annotation_Type_Hierarchy", mainContent);
+        addTree(classtree.baseEnums(), "doclet.Enum_Hierarchy", mainContent, true);
+        body.add(bodyContents
+                .addMainContent(mainContent)
+                .setFooter(getFooter()));
+        printHtmlDocument(null, "class tree", body);
     }
 
     /**
@@ -154,8 +135,8 @@ public class TreeWriter extends AbstractTreeWriter {
         if (!classesOnly) {
             Content span = HtmlTree.SPAN(HtmlStyle.packageHierarchyLabel,
                     contents.packageHierarchies);
-            contentTree.addContent(span);
-            HtmlTree ul = new HtmlTree(HtmlTag.UL);
+            contentTree.add(span);
+            HtmlTree ul = new HtmlTree(TagName.UL);
             ul.setStyle(HtmlStyle.horizontal);
             int i = 0;
             for (PackageElement pkg : packages) {
@@ -163,20 +144,20 @@ public class TreeWriter extends AbstractTreeWriter {
                 // is set and the package is marked as deprecated, do not include
                 // the page in the list of package hierarchies.
                 if (pkg.isUnnamed() ||
-                        (configuration.nodeprecated && utils.isDeprecated(pkg))) {
+                        (options.noDeprecated() && utils.isDeprecated(pkg))) {
                     i++;
                     continue;
                 }
                 DocPath link = pathString(pkg, DocPaths.PACKAGE_TREE);
                 Content li = HtmlTree.LI(links.createLink(link,
-                        new StringContent(utils.getPackageName(pkg))));
+                        getLocalizedPackageName(pkg)));
                 if (i < packages.size() - 1) {
-                    li.addContent(", ");
+                    li.add(", ");
                 }
-                ul.addContent(li);
+                ul.add(li);
                 i++;
             }
-            contentTree.addContent(ul);
+            contentTree.add(ul);
         }
     }
 
@@ -186,17 +167,9 @@ public class TreeWriter extends AbstractTreeWriter {
      * @return a content tree for the tree header
      */
     protected HtmlTree getTreeHeader() {
-        String title = configuration.getText("doclet.Window_Class_Hierarchy");
-        HtmlTree bodyTree = getBody(true, getWindowTitle(title));
-        HtmlTree htmlTree = (configuration.allowTag(HtmlTag.HEADER))
-                ? HtmlTree.HEADER()
-                : bodyTree;
-        addTop(htmlTree);
-        navBar.setUserHeader(getUserHeaderFooter(true));
-        htmlTree.addContent(navBar.getContent(true));
-        if (configuration.allowTag(HtmlTag.HEADER)) {
-            bodyTree.addContent(htmlTree);
-        }
+        String title = resources.getText("doclet.Window_Class_Hierarchy");
+        HtmlTree bodyTree = getBody(getWindowTitle(title));
+        bodyContents.setHeader(getHeader(PageMode.TREE));
         return bodyTree;
     }
 

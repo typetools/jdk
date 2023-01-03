@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,15 +24,13 @@
  */
 package jdk.jshell;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+
 import com.sun.source.tree.ArrayTypeTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
@@ -44,15 +42,12 @@ import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
-import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.Pretty;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
+
 import jdk.jshell.ExpressionToTypeInfo.ExpressionInfo;
 import jdk.jshell.ExpressionToTypeInfo.ExpressionInfo.AnonymousDescription;
 import jdk.jshell.ExpressionToTypeInfo.ExpressionInfo.AnonymousDescription.VariableDesc;
@@ -76,11 +71,12 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import jdk.jshell.spi.ExecutionControl.ResolutionException;
 import jdk.jshell.spi.ExecutionControl.RunException;
 import jdk.jshell.spi.ExecutionControl.UserException;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.Collections.singletonList;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import static jdk.internal.jshell.debug.InternalDebugControl.DBG_GEN;
+import static jdk.jshell.Snippet.Status.RECOVERABLE_DEFINED;
+import static jdk.jshell.Snippet.Status.VALID;
 import static jdk.jshell.Util.DOIT_METHOD_NAME;
 import static jdk.jshell.Util.PREFIX_PATTERN;
 import static jdk.jshell.Util.expunge;
@@ -98,6 +94,7 @@ import static jdk.jshell.Snippet.SubKind.STATIC_IMPORT_ON_DEMAND_SUBKIND;
 class Eval {
 
     private static final Pattern IMPORT_PATTERN = Pattern.compile("import\\p{javaWhitespace}+(?<static>static\\p{javaWhitespace}+)?(?<fullname>[\\p{L}\\p{N}_\\$\\.]+\\.(?<name>[\\p{L}\\p{N}_\\$]+|\\*))");
+    private static final Pattern DEFAULT_PREFIX = Pattern.compile("\\p{javaWhitespace}*(default)\\p{javaWhitespace}+");
 
     // for uses that should not change state -- non-evaluations
     private boolean preserveState = false;
@@ -201,33 +198,41 @@ class Eval {
             }
             Tree unitTree = units.get(0);
             if (pt.getDiagnostics().hasOtherThanNotStatementErrors()) {
-                return compileFailResult(pt, userSource, kindOfTree(unitTree));
+                Matcher matcher = DEFAULT_PREFIX.matcher(compileSource);
+                DiagList dlist = matcher.lookingAt()
+                        ? new DiagList(new ModifierDiagnostic(true,
+                            state.messageFormat("jshell.diag.modifier.single.fatal", "'default'"),
+                            matcher.start(1), matcher.end(1)))
+                        : pt.getDiagnostics();
+                return compileFailResult(dlist, userSource, kindOfTree(unitTree));
             }
 
             // Erase illegal/ignored modifiers
             String compileSourceInt = new MaskCommentsAndModifiers(compileSource, true).cleared();
 
             state.debug(DBG_GEN, "Kind: %s -- %s\n", unitTree.getKind(), unitTree);
-            switch (unitTree.getKind()) {
-                case IMPORT:
-                    return processImport(userSource, compileSourceInt);
-                case VARIABLE:
-                    return processVariables(userSource, units, compileSourceInt, pt);
-                case EXPRESSION_STATEMENT:
-                    return processExpression(userSource, unitTree, compileSourceInt, pt);
-                case CLASS:
-                    return processClass(userSource, unitTree, compileSourceInt, SubKind.CLASS_SUBKIND, pt);
-                case ENUM:
-                    return processClass(userSource, unitTree, compileSourceInt, SubKind.ENUM_SUBKIND, pt);
-                case ANNOTATION_TYPE:
-                    return processClass(userSource, unitTree, compileSourceInt, SubKind.ANNOTATION_TYPE_SUBKIND, pt);
-                case INTERFACE:
-                    return processClass(userSource, unitTree, compileSourceInt, SubKind.INTERFACE_SUBKIND, pt);
-                case METHOD:
-                    return processMethod(userSource, unitTree, compileSourceInt, pt);
-                default:
-                    return processStatement(userSource, compileSourceInt);
-            }
+            return switch (unitTree.getKind()) {
+                case IMPORT
+                    -> processImport(userSource, compileSourceInt);
+                case VARIABLE
+                    -> processVariables(userSource, units, compileSourceInt, pt);
+                case EXPRESSION_STATEMENT
+                    -> processExpression(userSource, unitTree, compileSourceInt, pt);
+                case CLASS
+                    -> processClass(userSource, unitTree, compileSourceInt, SubKind.CLASS_SUBKIND, pt);
+                case ENUM
+                    -> processClass(userSource, unitTree, compileSourceInt, SubKind.ENUM_SUBKIND, pt);
+                case ANNOTATION_TYPE
+                    -> processClass(userSource, unitTree, compileSourceInt, SubKind.ANNOTATION_TYPE_SUBKIND, pt);
+                case INTERFACE
+                    -> processClass(userSource, unitTree, compileSourceInt, SubKind.INTERFACE_SUBKIND, pt);
+                case RECORD
+                    -> processClass(userSource, unitTree, compileSourceInt, SubKind.RECORD_SUBKIND, pt);
+                case METHOD
+                    -> processMethod(userSource, unitTree, compileSourceInt, pt);
+                default
+                    -> processStatement(userSource, compileSourceInt);
+            };
         });
     }
 
@@ -294,6 +299,7 @@ class Eval {
         for (Tree unitTree : units) {
             VariableTree vt = (VariableTree) unitTree;
             String name = vt.getName().toString();
+//            String name = userReadableName(vt.getName(), compileSource);
             String typeName;
             String fullTypeName;
             String displayType;
@@ -327,7 +333,7 @@ class Eval {
                     String initCode = rinit.part(compileSource);
                     ExpressionInfo ei =
                             ExpressionToTypeInfo.localVariableTypeForInitializer(initCode, state, false);
-                    if (ei != null) {
+                    if (ei != null && ei.declareTypeName != null) {
                         typeName = ei.declareTypeName;
                         fullTypeName = ei.fullTypeName;
                         displayType = ei.displayTypeName;
@@ -361,15 +367,32 @@ class Eval {
                 winit = winit == null ? Wrap.rangeWrap(compileSource, rinit) : winit;
                 nameMax = rinit.begin - 1;
             } else {
+                String sinit = switch (typeName) {
+                    case "byte",
+                         "short",
+                         "int"     -> "0";
+                    case "long"    -> "0L";
+                    case "float"   -> "0.0f";
+                    case "double"  -> "0.0d";
+                    case "boolean" -> "false";
+                    case "char"    -> "'\\u0000'";
+                    default        -> "null";
+                };
+                winit = Wrap.simpleWrap(sinit);
                 subkind = SubKind.VAR_DECLARATION_SUBKIND;
             }
+            Wrap wname;
             int nameStart = compileSource.lastIndexOf(name, nameMax);
             if (nameStart < 0) {
-                throw new AssertionError("Name '" + name + "' not found");
+                // the name has been transformed (e.g. unicode).
+                // Use it directly
+                wname = Wrap.identityWrap(name);
+            } else {
+                int nameEnd = nameStart + name.length();
+                Range rname = new Range(nameStart, nameEnd);
+                wname = new Wrap.RangeWrap(compileSource, rname);
             }
-            int nameEnd = nameStart + name.length();
-            Range rname = new Range(nameStart, nameEnd);
-            Wrap guts = Wrap.varWrap(compileSource, typeWrap, sbBrackets.toString(), rname,
+            Wrap guts = Wrap.varWrap(compileSource, typeWrap, sbBrackets.toString(), wname,
                                      winit, enhancedDesugaring, anonDeclareWrap);
             DiagList modDiag = modifierDiagnostics(vt.getModifiers(), dis, true);
             Snippet snip = new VarSnippet(state.keyMap.keyForVariable(name), userSource, guts,
@@ -378,6 +401,26 @@ class Eval {
             snippets.add(snip);
         }
         return snippets;
+    }
+
+    private String userReadableName(Name nn, String compileSource) {
+        String s = nn.toString();
+        if (s.length() > 0 && Character.isJavaIdentifierStart(s.charAt(0)) && compileSource.contains(s)) {
+            return s;
+        }
+        String l = nameInUnicode(nn, false);
+        if (compileSource.contains(l)) {
+            return l;
+        }
+        return nameInUnicode(nn, true);
+    }
+
+    private String nameInUnicode(Name nn, boolean upper) {
+        return nn.codePoints()
+                .mapToObj(cp -> (cp > 0x7F)
+                        ? String.format(upper ? "\\u%04X" : "\\u%04x", cp)
+                        : "" + (char) cp)
+                .collect(Collectors.joining());
     }
 
     /**Convert anonymous classes in "init" to member classes, based
@@ -588,7 +631,6 @@ class Eval {
                         name = "$" + ++varNumber;
                     }
                 }
-                TreeDissector dis = TreeDissector.createByFirstClass(pt);
                 ExpressionInfo varEI =
                         ExpressionToTypeInfo.localVariableTypeForInitializer(compileSource, state, true);
                 String declareTypeName;
@@ -600,6 +642,7 @@ class Eval {
                     fullTypeName = varEI.fullTypeName;
                     displayTypeName = varEI.displayTypeName;
 
+                    TreeDissector dis = TreeDissector.createByFirstClass(pt);
                     Pair<Wrap, Wrap> anonymous2Member =
                             anonymous2Member(varEI, compileSource, new Range(0, compileSource.length()), dis, expr.getExpression());
                     guts = Wrap.tempVarWrap(anonymous2Member.second.wrapped(), declareTypeName, name, anonymous2Member.first);
@@ -623,6 +666,10 @@ class Eval {
             if (ei == null) {
                 // We got no type info, check for not a statement by trying
                 DiagList dl = trialCompile(guts);
+                if (dl.hasUnreachableError()) {
+                    guts = Wrap.methodUnreachableWrap(compileSource);
+                    dl = trialCompile(guts);
+                }
                 if (dl.hasNotStatement()) {
                     guts = Wrap.methodReturnWrap(compileSource);
                     dl = trialCompile(guts);
@@ -643,11 +690,12 @@ class Eval {
         TreeDissector dis = TreeDissector.createByFirstClass(pt);
 
         ClassTree klassTree = (ClassTree) unitTree;
+//        String name = userReadableName(klassTree.getSimpleName(), compileSource);
         String name = klassTree.getSimpleName().toString();
         DiagList modDiag = modifierDiagnostics(klassTree.getModifiers(), dis, false);
         TypeDeclKey key = state.keyMap.keyForClass(name);
-        // Corralling mutates.  Must be last use of pt, unitTree, klassTree
-        Wrap corralled = new Corraller(key.index(), pt.getContext()).corralType(klassTree);
+        // Corralling
+        Wrap corralled = new Corraller(dis, key.index(), compileSource).corralType(klassTree);
 
         Wrap guts = Wrap.classMemberWrap(compileSource);
         Snippet snip = new TypeDeclSnippet(key, userSource, guts,
@@ -693,6 +741,7 @@ class Eval {
         final TreeDissector dis = TreeDissector.createByFirstClass(pt);
 
         final MethodTree mt = (MethodTree) unitTree;
+        //String name = userReadableName(mt.getName(), compileSource);
         final String name = mt.getName().toString();
         if (objectMethods.contains(name)) {
             // The name matches a method on Object, short of an overhaul, this
@@ -716,21 +765,40 @@ class Eval {
                 .map(param -> dis.treeToRange(param.getType()).part(compileSource))
                 .collect(Collectors.joining(","));
         Tree returnType = mt.getReturnType();
-        DiagList modDiag = modifierDiagnostics(mt.getModifiers(), dis, true);
-        MethodKey key = state.keyMap.keyForMethod(name, parameterTypes);
-        // Corralling mutates.  Must be last use of pt, unitTree, mt
-        Wrap corralled = new Corraller(key.index(), pt.getContext()).corralMethod(mt);
-
+        DiagList modDiag = modifierDiagnostics(mt.getModifiers(), dis, false);
         if (modDiag.hasErrors()) {
             return compileFailResult(modDiag, userSource, Kind.METHOD);
         }
-        Wrap guts = Wrap.classMemberWrap(compileSource);
+        MethodKey key = state.keyMap.keyForMethod(name, parameterTypes);
+
+        Wrap corralled;
+        Wrap guts;
+        String unresolvedSelf;
+        if (mt.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
+            if (mt.getBody() == null) {
+                // abstract method -- pre-corral
+                corralled = null; // no fall-back
+                guts = new Corraller(dis, key.index(), compileSource).corralMethod(mt);
+                unresolvedSelf = "method " + name + "(" + parameterTypes + ")";
+            } else {
+                // abstract with body, don't pollute the error message
+                corralled = null;
+                guts = Wrap.simpleWrap(compileSource);
+                unresolvedSelf = null;
+            }
+        } else {
+            // normal method
+            corralled = new Corraller(dis, key.index(), compileSource).corralMethod(mt);
+            guts = Wrap.classMemberWrap(compileSource);
+            unresolvedSelf = null;
+        }
         Range typeRange = dis.treeToRange(returnType);
         String signature = "(" + parameterTypes + ")" + typeRange.part(compileSource);
 
         Snippet snip = new MethodSnippet(key, userSource, guts,
                 name, signature,
-                corralled, tds.declareReferences(), tds.bodyReferences(), modDiag);
+                corralled, tds.declareReferences(), tds.bodyReferences(),
+                unresolvedSelf, modDiag);
         return singletonList(snip);
     }
 
@@ -780,23 +848,14 @@ class Eval {
 
         // Install  wrapper for query by SourceCodeAnalysis.wrapper
         String compileSource = Util.trimEnd(new MaskCommentsAndModifiers(userSource, true).cleared());
-        OuterWrap outer;
-        switch (probableKind) {
-            case IMPORT:
-                outer = state.outerMap.wrapImport(Wrap.simpleWrap(compileSource), snip);
-                break;
-            case EXPRESSION:
-                outer = state.outerMap.wrapInTrialClass(Wrap.methodReturnWrap(compileSource));
-                break;
-            case VAR:
-            case TYPE_DECL:
-            case METHOD:
-                outer = state.outerMap.wrapInTrialClass(Wrap.classMemberWrap(compileSource));
-                break;
-            default:
-                outer = state.outerMap.wrapInTrialClass(Wrap.methodWrap(compileSource));
-                break;
-        }
+        OuterWrap outer = switch (probableKind) {
+            case IMPORT     -> state.outerMap.wrapImport(Wrap.simpleWrap(compileSource), snip);
+            case EXPRESSION -> state.outerMap.wrapInTrialClass(Wrap.methodReturnWrap(compileSource));
+            case VAR,
+                 TYPE_DECL,
+                 METHOD     -> state.outerMap.wrapInTrialClass(Wrap.classMemberWrap(compileSource));
+            default         -> state.outerMap.wrapInTrialClass(Wrap.methodWrap(compileSource));
+        };
         snip.setOuterWrap(outer);
 
         return singletonList(snip);
@@ -830,6 +889,18 @@ class Eval {
         ins.add(c);
         Set<Unit> outs = compileAndLoad(ins);
 
+        if (si.status().isActive() && si instanceof MethodSnippet) {
+            // special processing for abstract methods
+            MethodSnippet msi = (MethodSnippet) si;
+            String unresolvedSelf = msi.unresolvedSelf;
+            if (unresolvedSelf != null) {
+                List<String> unresolved = new ArrayList<>(si.unresolved());
+                unresolved.add(unresolvedSelf);
+                si.setCompilationStatus(si.status() == VALID ? RECOVERABLE_DEFINED : si.status(),
+                        unresolved, si.diagnostics());
+            }
+        }
+
         if (!si.status().isDefined()
                 && si.diagnostics().isEmpty()
                 && si.unresolved().isEmpty()) {
@@ -860,28 +931,6 @@ class Eval {
                 } catch (EngineTerminationException ex) {
                     state.debug(ex, "termination");
                     state.closeDown();
-                }
-            } else if (si.subKind() == SubKind.VAR_DECLARATION_SUBKIND) {
-                switch (((VarSnippet) si).typeName()) {
-                    case "byte":
-                    case "short":
-                    case "int":
-                    case "long":
-                        value = "0";
-                        break;
-                    case "float":
-                    case "double":
-                        value = "0.0";
-                        break;
-                    case "boolean":
-                        value = "false";
-                        break;
-                    case "char":
-                        value = "''";
-                        break;
-                    default:
-                        value = "null";
-                        break;
                 }
             }
         }
@@ -932,11 +981,11 @@ class Eval {
                 .filter(u -> u != c)
                 .map(u -> u.event(null, null))
                 .filter(this::interestingEvent)
-                .collect(Collectors.toList()));
+                .toList());
         events.addAll(outs.stream()
                 .flatMap(u -> u.secondaryEvents().stream())
                 .filter(this::interestingEvent)
-                .collect(Collectors.toList()));
+                .toList());
         //System.err.printf("Events: %s\n", events);
         return events;
     }
@@ -962,7 +1011,7 @@ class Eval {
                 ins.stream().forEach(u -> u.setDiagnostics(at));
 
                 // corral any Snippets that need it
-                if (ins.stream().anyMatch(u -> u.corralIfNeeded(ins))) {
+                if (ins.stream().filter(u -> u.corralIfNeeded(ins)).count() > 0) {
                     // if any were corralled, re-analyze everything
                     state.taskFactory.analyze(outerWrapSet(ins), cat -> {
                         ins.stream().forEach(u -> u.setCorralledDiagnostics(cat));
@@ -979,7 +1028,7 @@ class Eval {
             while (true) {
                 List<Unit> legit = ins.stream()
                         .filter(Unit::isDefined)
-                        .collect(toList());
+                        .toList();
                 state.debug(DBG_GEN, "compileAndLoad ins = %s -- legit = %s\n",
                         ins, legit);
                 if (legit.isEmpty()) {
@@ -1011,7 +1060,7 @@ class Eval {
                         // attempt to redefine the remaining classes
                         List<Unit> toReplace = legit.stream()
                                 .filter(u -> !u.doRedefines())
-                                .collect(toList());
+                                .toList();
 
                         // prevent alternating redefine/replace cyclic dependency
                         // loop by replacing all that have been replaced
@@ -1038,7 +1087,7 @@ class Eval {
             // add any new dependencies to the working set
             List<Unit> newDependencies = ins.stream()
                     .flatMap(Unit::effectedDependents)
-                    .collect(toList());
+                    .toList();
             state.debug(DBG_GEN, "compileAndLoad %s -- deps: %s  success: %s\n",
                     ins, newDependencies, success);
             if (!ins.addAll(newDependencies) && success) {
@@ -1095,7 +1144,7 @@ class Eval {
                 Snippet sn = outer.wrapLineToSnippet(wln);
                 String file = "#" + sn.id();
                 elems[i] = new StackTraceElement(klass, method, file, line);
-            } else if (r.getFileName().equals("<none>")) {
+            } else if ("<none>".equals(r.getFileName())) {
                 elems[i] = new StackTraceElement(r.getClassName(), r.getMethodName(), null, r.getLineNumber());
             } else {
                 elems[i] = r;
@@ -1149,34 +1198,21 @@ class Eval {
         };
     }
 
-    private DiagList modifierDiagnostics(ModifiersTree modtree,
-            final TreeDissector dis, boolean isAbstractProhibited) {
-
-        class ModifierDiagnostic extends Diag {
+    private class ModifierDiagnostic extends Diag {
 
             final boolean fatal;
             final String message;
-            long start;
-            long end;
+            final long start;
+            final long end;
 
-            ModifierDiagnostic(List<Modifier> list, boolean fatal) {
+            ModifierDiagnostic(boolean fatal,
+                    final String message,
+                    long start,
+                    long end) {
                 this.fatal = fatal;
-                StringBuilder sb = new StringBuilder();
-                for (Modifier mod : list) {
-                    sb.append("'");
-                    sb.append(mod.toString());
-                    sb.append("' ");
-                }
-                String key = (list.size() > 1)
-                        ? fatal
-                            ? "jshell.diag.modifier.plural.fatal"
-                            : "jshell.diag.modifier.plural.ignore"
-                        : fatal
-                            ? "jshell.diag.modifier.single.fatal"
-                            : "jshell.diag.modifier.single.ignore";
-                this.message = state.messageFormat(key, sb.toString());
-                start = dis.getStartPosition(modtree);
-                end = dis.getEndPosition(modtree);
+                this.message = message;
+                this.start = start;
+                this.end = end;
             }
 
             @Override
@@ -1210,7 +1246,10 @@ class Eval {
             public String getMessage(Locale locale) {
                 return message;
             }
-        }
+    }
+
+    private DiagList modifierDiagnostics(ModifiersTree modtree,
+                                         final TreeDissector dis, boolean isAbstractProhibited) {
 
         List<Modifier> list = new ArrayList<>();
         boolean fatal = false;
@@ -1222,6 +1261,9 @@ class Eval {
                     fatal = true;
                     break;
                 case ABSTRACT:
+                    // for classes, abstract is valid
+                    // for variables, generate an error message
+                    // for methods, we generate a placeholder method
                     if (isAbstractProhibited) {
                         list.add(mod);
                         fatal = true;
@@ -1232,15 +1274,35 @@ class Eval {
                 case PRIVATE:
                     // quietly ignore, user cannot see effects one way or the other
                     break;
-                case STATIC:
                 case FINAL:
-                    list.add(mod);
+                    //OK to declare an element final
+                    //final classes needed for sealed classes
+                    break;
+                case STATIC:
+                    // everything is static -- warning just adds noise when pasting
                     break;
             }
         }
-        return list.isEmpty()
-                ? new DiagList()
-                : new DiagList(new ModifierDiagnostic(list, fatal));
+        if (list.isEmpty()) {
+            return new DiagList();
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Modifier mod : list) {
+                sb.append("'");
+                sb.append(mod.toString());
+                sb.append("' ");
+            }
+            String key = (list.size() > 1)
+                    ? fatal
+                    ? "jshell.diag.modifier.plural.fatal"
+                    : "jshell.diag.modifier.plural.ignore"
+                    : fatal
+                    ? "jshell.diag.modifier.single.fatal"
+                    : "jshell.diag.modifier.single.ignore";
+            String message = state.messageFormat(key, sb.toString().trim());
+            return new DiagList(new ModifierDiagnostic(fatal, message,
+                    dis.getStartPosition(modtree), dis.getEndPosition(modtree)));
+        }
     }
 
     String computeDeclareName(TypeSymbol ts) {

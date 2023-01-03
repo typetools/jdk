@@ -63,6 +63,16 @@ ProjNode* MultiNode::proj_out_or_null(uint which_proj) const {
   return NULL;
 }
 
+ProjNode* MultiNode::proj_out_or_null(uint which_proj, bool is_io_use) const {
+  for (DUIterator_Fast imax, i = fast_outs(imax); i < imax; i++) {
+    ProjNode* proj = fast_out(i)->isa_Proj();
+    if (proj != NULL && (proj->_con == which_proj) && (proj->_is_io_use == is_io_use)) {
+      return proj;
+    }
+  }
+  return NULL;
+}
+
 // Get a named projection
 ProjNode* MultiNode::proj_out(uint which_proj) const {
   ProjNode* p = proj_out_or_null(which_proj);
@@ -76,7 +86,7 @@ uint ProjNode::hash() const {
   // only one input
   return (uintptr_t)in(TypeFunc::Control) + (_con << 1) + (_is_io_use ? 1 : 0);
 }
-uint ProjNode::cmp( const Node &n ) const { return _con == ((ProjNode&)n)._con && ((ProjNode&)n)._is_io_use == _is_io_use; }
+bool ProjNode::cmp( const Node &n ) const { return _con == ((ProjNode&)n)._con && ((ProjNode&)n)._is_io_use == _is_io_use; }
 uint ProjNode::size_of() const { return sizeof(ProjNode); }
 
 // Test if we propagate interesting control along this projection
@@ -130,7 +140,7 @@ void ProjNode::dump_spec(outputStream *st) const { st->print("#%d",_con); if(_is
 void ProjNode::dump_compact_spec(outputStream *st) const {
   for (DUIterator i = this->outs(); this->has_out(i); i++) {
     Node* o = this->out(i);
-    if (NotANode(o)) {
+    if (not_a_node(o)) {
       st->print("[?]");
     } else if (o == NULL) {
       st->print("[_]");

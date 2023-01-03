@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -246,7 +247,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      */
     @Pure
-    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied Object o) {
+    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.containsKey(o);
     }
 
@@ -288,7 +289,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
      */
-    public boolean remove(@GuardSatisfied TreeSet<E> this, Object o) {
+    public boolean remove(@GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.remove(o)==PRESENT;
     }
 
@@ -315,12 +316,9 @@ public class TreeSet<E> extends AbstractSet<E>
         // Use linear-time version if applicable
         if (m.size()==0 && c.size() > 0 &&
             c instanceof SortedSet &&
-            m instanceof TreeMap) {
+                m instanceof TreeMap<E, Object> map) {
             SortedSet<? extends E> set = (SortedSet<? extends E>) c;
-            TreeMap<E,Object> map = (TreeMap<E, Object>) m;
-            Comparator<?> cc = set.comparator();
-            Comparator<? super E> mc = map.comparator();
-            if (cc==mc || (cc != null && cc.equals(mc))) {
+            if (Objects.equals(set.comparator(), map.comparator())) {
                 map.addAllForTreeSet(set, PRESENT);
                 return true;
             }
@@ -520,6 +518,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *             set's Comparator, or by the elements' natural ordering if
      *             the set has no Comparator).
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         // Write out any hidden stuff
@@ -540,6 +539,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * Reconstitute the {@code TreeSet} instance from a stream (that is,
      * deserialize it).
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         // Read in any hidden stuff
@@ -582,5 +582,6 @@ public class TreeSet<E> extends AbstractSet<E>
         return TreeMap.keySpliteratorFor(m);
     }
 
+    @java.io.Serial
     private static final long serialVersionUID = -2479143000061671589L;
 }

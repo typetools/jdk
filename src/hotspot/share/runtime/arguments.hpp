@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,21 +22,21 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_ARGUMENTS_HPP
-#define SHARE_VM_RUNTIME_ARGUMENTS_HPP
+#ifndef SHARE_RUNTIME_ARGUMENTS_HPP
+#define SHARE_RUNTIME_ARGUMENTS_HPP
 
 #include "logging/logLevel.hpp"
 #include "logging/logTag.hpp"
 #include "memory/allocation.hpp"
-#include "runtime/flags/jvmFlag.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/java.hpp"
 #include "runtime/os.hpp"
-#include "runtime/perfData.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/vmEnums.hpp"
 
 // Arguments parses the command line and recognizes options
 
-// Invocation API hook typedefs (these should really be defined in jni.hpp)
+// Invocation API hook typedefs (these should really be defined in jni.h)
 extern "C" {
   typedef void (JNICALL *abort_hook_t)(void);
   typedef void (JNICALL *exit_hook_t)(jint code);
@@ -119,6 +119,11 @@ class SystemProperty : public PathString {
       return set_value(value);
     }
     return false;
+  }
+  void append_writeable_value(const char *value) {
+    if (writeable()) {
+      append_value(value);
+    }
   }
 
   // Constructor
@@ -221,19 +226,6 @@ class AgentLibraryList {
 // Helper class for controlling the lifetime of JavaVMInitArgs objects.
 class ScopedVMInitArgs;
 
-// Most logging functions require 5 tags. Some of them may be _NO_TAG.
-typedef struct {
-  const char* alias_name;
-  LogLevelType level;
-  bool exactMatch;
-  LogTagType tag0;
-  LogTagType tag1;
-  LogTagType tag2;
-  LogTagType tag3;
-  LogTagType tag4;
-  LogTagType tag5;
-} AliasedLoggingFlag;
-
 class Arguments : AllStatic {
   friend class VMStructs;
   friend class JvmtiExport;
@@ -322,9 +314,6 @@ class Arguments : AllStatic {
   // java launcher
   static const char* _sun_java_launcher;
 
-  // sun.java.launcher.pid, private property
-  static int    _sun_java_launcher_pid;
-
   // was this VM created via the -XXaltjvm=<path> option
   static bool   _sun_java_launcher_is_altjvm;
 
@@ -332,8 +321,6 @@ class Arguments : AllStatic {
   static const char*  _gc_log_filename;
   // Value of the conservative maximum heap alignment needed
   static size_t  _conservative_max_heap_alignment;
-
-  static size_t  _min_heap_size;
 
   // -Xrun arguments
   static AgentLibraryList _libraryList;
@@ -346,7 +333,6 @@ class Arguments : AllStatic {
 
   // Late-binding agents not started via arguments
   static void add_loaded_agent(AgentLibrary *agentLib);
-  static void add_loaded_agent(const char* name, char* options, bool absolute_path, void* os_lib);
 
   // Operation modi
   static Mode _mode;
@@ -368,19 +354,17 @@ class Arguments : AllStatic {
   static bool _UseOnStackReplacement;
   static bool _BackgroundCompilation;
   static bool _ClipInlining;
-  static bool _CIDynamicCompilePriority;
-  static intx _Tier3InvokeNotifyFreqLog;
-  static intx _Tier4InvocationThreshold;
 
   // GC ergonomics
   static void set_conservative_max_heap_alignment();
   static void set_use_compressed_oops();
   static void set_use_compressed_klass_ptrs();
   static jint set_ergonomics_flags();
-  static void set_shared_spaces_flags();
-  // limits the given memory size by the maximum amount of memory this process is
-  // currently allowed to allocate or reserve.
-  static julong limit_by_allocatable_memory(julong size);
+  static jint set_shared_spaces_flags_and_archive_paths();
+  // Limits the given heap size by the maximum amount of virtual
+  // memory this process is currently allowed to use. It also takes
+  // the virtual-to-physical ratio of the current GC into account.
+  static size_t limit_heap_by_allocatable_memory(size_t size);
   // Setup heap size
   static void set_heap_size();
 
@@ -396,8 +380,11 @@ class Arguments : AllStatic {
   static bool add_property(const char* prop, PropertyWriteable writeable=WriteableProperty,
                            PropertyInternal internal=ExternalProperty);
 
-  static bool create_property(const char* prop_name, const char* prop_value, PropertyInternal internal);
-  static bool create_numbered_property(const char* prop_base_name, const char* prop_value, unsigned int count);
+  // Used for module system related properties: converted from command-line flags.
+  // Basic properties are writeable as they operate as "last one wins" and will get overwritten.
+  // Numbered properties are never writeable, and always internal.
+  static bool create_module_property(const char* prop_name, const char* prop_value, PropertyInternal internal);
+  static bool create_numbered_module_property(const char* prop_base_name, const char* prop_value, unsigned int count);
 
   static int process_patch_mod_option(const char* patch_mod_tail, bool* patch_mod_javabase);
 
@@ -407,9 +394,8 @@ class Arguments : AllStatic {
   static jint set_aggressive_heap_flags();
 
   // Argument parsing
-  static void do_pd_flag_adjustments();
-  static bool parse_argument(const char* arg, JVMFlag::Flags origin);
-  static bool process_argument(const char* arg, jboolean ignore_unrecognized, JVMFlag::Flags origin);
+  static bool parse_argument(const char* arg, JVMFlagOrigin origin);
+  static bool process_argument(const char* arg, jboolean ignore_unrecognized, JVMFlagOrigin origin);
   static void process_java_launcher_argument(const char*, void*);
   static void process_java_compiler_argument(const char* arg);
   static jint parse_options_environment_variable(const char* name, ScopedVMInitArgs* vm_args);
@@ -432,12 +418,11 @@ class Arguments : AllStatic {
 
   static bool handle_deprecated_print_gc_flags();
 
-  static void handle_extra_cms_flags(const char* msg);
-
-  static jint parse_vm_init_args(const JavaVMInitArgs *java_tool_options_args,
+  static jint parse_vm_init_args(const JavaVMInitArgs *vm_options_args,
+                                 const JavaVMInitArgs *java_tool_options_args,
                                  const JavaVMInitArgs *java_options_args,
                                  const JavaVMInitArgs *cmd_line_args);
-  static jint parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_mod_javabase, JVMFlag::Flags origin);
+  static jint parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_mod_javabase, JVMFlagOrigin origin);
   static jint finalize_vm_init_args(bool patch_mod_javabase);
   static bool is_bad_option(const JavaVMOption* option, jboolean ignore, const char* option_type);
 
@@ -449,12 +434,6 @@ class Arguments : AllStatic {
   static ArgsRange check_memory_size(julong size, julong min_size, julong max_size);
   static ArgsRange parse_memory_size(const char* s, julong* long_arg,
                                      julong min_size, julong max_size = max_uintx);
-  // Parse a string for a unsigned integer.  Returns true if value
-  // is an unsigned integer greater than or equal to the minimum
-  // parameter passed and returns the value in uintx_arg.  Returns
-  // false otherwise, with uintx_arg undefined.
-  static bool parse_uintx(const char* value, uintx* uintx_arg,
-                          uintx min_size);
 
   // methods to build strings from individual args
   static void build_jvm_args(const char* arg);
@@ -466,10 +445,6 @@ class Arguments : AllStatic {
   // In this case the 'version' buffer is filled in with
   // the version number when the flag became obsolete.
   static bool is_obsolete_flag(const char* flag_name, JDK_Version* version);
-
-#ifndef PRODUCT
-  static const char* removed_develop_logging_flag_name(const char* name);
-#endif // PRODUCT
 
   // Returns 1 if the flag is deprecated (and not yet obsolete or expired).
   //     In this case the 'version' buffer is filled in with the version number when
@@ -484,21 +459,29 @@ class Arguments : AllStatic {
   // Return the "real" name for option arg if arg is an alias, and print a warning if arg is deprecated.
   // Return NULL if the arg has expired.
   static const char* handle_aliases_and_deprecation(const char* arg, bool warn);
-  static bool lookup_logging_aliases(const char* arg, char* buffer);
-  static AliasedLoggingFlag catch_logging_aliases(const char* name, bool on);
 
   static char*  SharedArchivePath;
+  static char*  SharedDynamicArchivePath;
+  static size_t _default_SharedBaseAddress; // The default value specified in globals.hpp
+  static int num_archives(const char* archive_path) NOT_CDS_RETURN_(0);
+  static void extract_shared_archive_paths(const char* archive_path,
+                                         char** base_archive_path,
+                                         char** top_archive_path) NOT_CDS_RETURN;
 
  public:
   // Parses the arguments, first phase
   static jint parse(const JavaVMInitArgs* args);
+  // Parse a string for a unsigned integer.  Returns true if value
+  // is an unsigned integer greater than or equal to the minimum
+  // parameter passed and returns the value in uintx_arg.  Returns
+  // false otherwise, with uintx_arg undefined.
+  static bool parse_uintx(const char* value, uintx* uintx_arg,
+                          uintx min_size);
   // Apply ergonomics
   static jint apply_ergo();
   // Adjusts the arguments after the OS have adjusted the arguments
   static jint adjust_after_os();
 
-  // Check for consistency in the selection of the garbage collector.
-  static bool check_gc_consistency();        // Check user-selected gc
   // Check consistency or otherwise of VM argument settings
   static bool check_vm_args_consistency();
   // Used by os_solaris
@@ -547,12 +530,6 @@ class Arguments : AllStatic {
   static bool created_by_java_launcher();
   // -Dsun.java.launcher.is_altjvm
   static bool sun_java_launcher_is_altjvm();
-  // -Dsun.java.launcher.pid
-  static int sun_java_launcher_pid()        { return _sun_java_launcher_pid; }
-
-  // -Xms
-  static size_t min_heap_size()             { return _min_heap_size; }
-  static void  set_min_heap_size(size_t v)  { _min_heap_size = v;  }
 
   // -Xrun
   static AgentLibrary* libraries()          { return _libraryList.first(); }
@@ -571,7 +548,8 @@ class Arguments : AllStatic {
   static vfprintf_hook_t vfprintf_hook()    { return _vfprintf_hook; }
 
   static const char* GetSharedArchivePath() { return SharedArchivePath; }
-
+  static const char* GetSharedDynamicArchivePath() { return SharedDynamicArchivePath; }
+  static size_t default_SharedBaseAddress() { return _default_SharedBaseAddress; }
   // Java launcher properties
   static void process_sun_java_launcher_properties(JavaVMInitArgs* args);
 
@@ -633,10 +611,14 @@ class Arguments : AllStatic {
   static char* get_appclasspath() { return _java_class_path->value(); }
   static void  fix_appclasspath();
 
+  static char* get_default_shared_archive_path() NOT_CDS_RETURN_(NULL);
+  static bool  init_shared_archive_paths() NOT_CDS_RETURN_(false);
 
   // Operation modi
-  static Mode mode()                        { return _mode; }
-  static bool is_interpreter_only() { return mode() == _int; }
+  static Mode mode()                { return _mode;           }
+  static bool is_interpreter_only() { return mode() == _int;  }
+  static bool is_compiler_only()    { return mode() == _comp; }
+
 
   // preview features
   static void set_enable_preview() { _enable_preview = true; }
@@ -650,6 +632,16 @@ class Arguments : AllStatic {
   static bool check_unsupported_cds_runtime_properties() NOT_CDS_RETURN0;
 
   static bool atojulong(const char *s, julong* result);
+
+  static bool has_jfr_option() NOT_JFR_RETURN_(false);
+
+  static bool is_dumping_archive() { return DumpSharedSpaces || DynamicDumpSharedSpaces; }
+
+  static void assert_is_dumping_archive() {
+    assert(Arguments::is_dumping_archive(), "dump time only");
+  }
+
+  DEBUG_ONLY(static bool verify_special_jvm_flags(bool check_globals);)
 };
 
 // Disable options not supported in this release, with a warning if they
@@ -664,4 +656,25 @@ do {                                                     \
   }                                                      \
 } while(0)
 
-#endif // SHARE_VM_RUNTIME_ARGUMENTS_HPP
+// similar to UNSUPPORTED_OPTION but sets flag to NULL
+#define UNSUPPORTED_OPTION_NULL(opt)                     \
+do {                                                     \
+  if (opt) {                                             \
+    if (FLAG_IS_CMDLINE(opt)) {                          \
+      warning("-XX flag " #opt " not supported in this VM"); \
+    }                                                    \
+    FLAG_SET_DEFAULT(opt, NULL);                         \
+  }                                                      \
+} while(0)
+
+// Initialize options not supported in this release, with a warning
+// if they were explicitly requested on the command-line
+#define UNSUPPORTED_OPTION_INIT(opt, value)              \
+do {                                                     \
+  if (FLAG_IS_CMDLINE(opt)) {                            \
+    warning("-XX flag " #opt " not supported in this VM"); \
+  }                                                      \
+  FLAG_SET_DEFAULT(opt, value);                          \
+} while(0)
+
+#endif // SHARE_RUNTIME_ARGUMENTS_HPP

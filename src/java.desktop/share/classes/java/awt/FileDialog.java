@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.awt;
 
 import java.awt.peer.FileDialogPeer;
+import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.File;
+import java.io.Serial;
+
 import sun.awt.AWTAccessor;
 
 /**
@@ -60,38 +63,38 @@ public class FileDialog extends Dialog {
      */
     public static final int SAVE = 1;
 
-    /*
+    /**
      * There are two {@code FileDialog} modes: {@code LOAD} and
      * {@code SAVE}.
      * This integer will represent one or the other.
      * If the mode is not specified it will default to {@code LOAD}.
      *
      * @serial
-     * @see getMode()
-     * @see setMode()
+     * @see #getMode
+     * @see #setMode
      * @see java.awt.FileDialog#LOAD
      * @see java.awt.FileDialog#SAVE
      */
     int mode;
 
-    /*
+    /**
      * The string specifying the directory to display
      * in the file dialog.  This variable may be {@code null}.
      *
      * @serial
-     * @see getDirectory()
-     * @see setDirectory()
+     * @see #getDirectory
+     * @see #setDirectory
      */
     String dir;
 
-    /*
+    /**
      * The string specifying the initial value of the
      * filename text field in the file dialog.
      * This variable may be {@code null}.
      *
      * @serial
-     * @see getFile()
-     * @see setFile()
+     * @see #getFile
+     * @see #setFile
      */
     String file;
 
@@ -114,25 +117,27 @@ public class FileDialog extends Dialog {
      */
     private boolean multipleMode = false;
 
-    /*
+    /**
      * The filter used as the file dialog's filename filter.
      * The file dialog will only be displaying files whose
      * names are accepted by this filter.
      * This variable may be {@code null}.
      *
      * @serial
-     * @see #getFilenameFilter()
-     * @see #setFilenameFilter()
-     * @see FileNameFilter
+     * @see #getFilenameFilter
+     * @see #setFilenameFilter
+     * @see FilenameFilter
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     FilenameFilter filter;
 
     private static final String base = "filedlg";
     private static int nameCounter = 0;
 
-    /*
-     * JDK 1.1 serialVersionUID
+    /**
+     * Use serialVersionUID from JDK 1.1 for interoperability.
      */
+     @Serial
      private static final long serialVersionUID = 5035145889651310422L;
 
 
@@ -147,7 +152,7 @@ public class FileDialog extends Dialog {
     static {
         AWTAccessor.setFileDialogAccessor(
             new AWTAccessor.FileDialogAccessor() {
-                public void setFiles(FileDialog fileDialog, File files[]) {
+                public void setFiles(FileDialog fileDialog, File[] files) {
                     fileDialog.setFiles(files);
                 }
                 public void setFile(FileDialog fileDialog, String file) {
@@ -444,7 +449,7 @@ public class FileDialog extends Dialog {
      * @see       java.awt.FileDialog#getDirectory
      */
     public void setDirectory(String dir) {
-        this.dir = (dir != null && dir.equals("")) ? null : dir;
+        this.dir = (dir != null && dir.isEmpty()) ? null : dir;
         FileDialogPeer peer = (FileDialogPeer)this.peer;
         if (peer != null) {
             peer.setDirectory(this.dir);
@@ -497,7 +502,7 @@ public class FileDialog extends Dialog {
      * @see #getFiles
      * @since 1.7
      */
-    private void setFiles(File files[]) {
+    private void setFiles(File[] files) {
         synchronized (getObjectLock()) {
             this.files = files;
         }
@@ -524,7 +529,7 @@ public class FileDialog extends Dialog {
      * @see      #getFiles
      */
     public void setFile(String file) {
-        this.file = (file != null && file.equals("")) ? null : file;
+        this.file = (file != null && file.isEmpty()) ? null : file;
         FileDialogPeer peer = (FileDialogPeer)this.peer;
         if (peer != null) {
             peer.setFile(this.file);
@@ -597,18 +602,22 @@ public class FileDialog extends Dialog {
      * either a {@code dir} or a {@code file}
      * equal to an empty string to {@code null}.
      *
-     * @param s the {@code ObjectInputStream} to read
+     * @param  s the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
      */
+    @Serial
     private void readObject(ObjectInputStream s)
         throws ClassNotFoundException, IOException
     {
         s.defaultReadObject();
 
         // 1.1 Compatibility: "" is not converted to null in 1.1
-        if (dir != null && dir.equals("")) {
+        if (dir != null && dir.isEmpty()) {
             dir = null;
         }
-        if (file != null && file.equals("")) {
+        if (file != null && file.isEmpty()) {
             file = null;
         }
     }

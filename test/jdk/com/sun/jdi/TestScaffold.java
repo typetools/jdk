@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -542,7 +542,9 @@ abstract public class TestScaffold extends TargetAdapter {
                                 redefine(mainStartClass);
                             }
                         } else {
-                            redefine(rt);
+                            if (!name.startsWith("jdk.")) {
+                                redefine(rt);
+                            }
                         }
                     }
                 }
@@ -784,9 +786,16 @@ abstract public class TestScaffold extends TargetAdapter {
     }
 
     public BreakpointEvent resumeTo(Location loc) {
+        return resumeTo(loc, false);
+    }
+
+    public BreakpointEvent resumeTo(Location loc, boolean suspendThread) {
         final BreakpointRequest request =
-            requestManager.createBreakpointRequest(loc);
+                requestManager.createBreakpointRequest(loc);
         request.addCountFilter(1);
+        if (suspendThread) {
+            request.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
+        }
         request.enable();
         return (BreakpointEvent)waitForRequestedEvent(request);
     }
@@ -830,6 +839,12 @@ abstract public class TestScaffold extends TargetAdapter {
 
     public BreakpointEvent resumeTo(String clsName, String methodName,
                                          String methodSignature) {
+        return resumeTo(clsName, methodName, methodSignature, false /* suspendThread */);
+    }
+
+    public BreakpointEvent resumeTo(String clsName, String methodName,
+                                    String methodSignature,
+                                    boolean suspendThread) {
         ReferenceType rt = findReferenceType(clsName);
         if (rt == null) {
             rt = resumeToPrepareOf(clsName).referenceType();
@@ -841,16 +856,20 @@ abstract public class TestScaffold extends TargetAdapter {
                     + clsName + "." + methodName + ":" + methodSignature);
         }
 
-        return resumeTo(method.location());
+        return resumeTo(method.location(), suspendThread);
     }
 
     public BreakpointEvent resumeTo(String clsName, int lineNumber) throws AbsentInformationException {
+        return resumeTo(clsName, lineNumber, false);
+    }
+
+    public BreakpointEvent resumeTo(String clsName, int lineNumber, boolean suspendThread) throws AbsentInformationException {
         ReferenceType rt = findReferenceType(clsName);
         if (rt == null) {
             rt = resumeToPrepareOf(clsName).referenceType();
         }
 
-        return resumeTo(findLocation(rt, lineNumber));
+        return resumeTo(findLocation(rt, lineNumber), suspendThread);
     }
 
     public ClassPrepareEvent resumeToPrepareOf(String className) {

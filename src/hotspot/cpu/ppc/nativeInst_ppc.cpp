@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2015 SAP SE. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,14 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "code/compiledIC.hpp"
 #include "memory/resourceArea.hpp"
 #include "nativeInst_ppc.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/orderAccess.hpp"
+#include "runtime/safepoint.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/ostream.hpp"
@@ -38,10 +40,9 @@
 #include "c1/c1_Runtime1.hpp"
 #endif
 
-// We use an illtrap for marking a method as not_entrant or zombie iff !UseSIGTRAP
+// We use an illtrap for marking a method as not_entrant or zombie
 // Work around a C++ compiler bug which changes 'this'
 bool NativeInstruction::is_sigill_zombie_not_entrant_at(address addr) {
-  assert(!UseSIGTRAP, "precondition");
   if (*(int*)addr != 0 /*illtrap*/) return false;
   CodeBlob* cb = CodeCache::find_blob_unsafe(addr);
   if (cb == NULL || !cb->is_nmethod()) return false;
@@ -94,7 +95,8 @@ address NativeCall::destination() const {
 // during code generation, where no patching lock is needed.
 void NativeCall::set_destination_mt_safe(address dest, bool assert_lock) {
   assert(!assert_lock ||
-         (Patching_lock->is_locked() || SafepointSynchronize::is_at_safepoint()),
+         (Patching_lock->is_locked() || SafepointSynchronize::is_at_safepoint()) ||
+         CompiledICLocker::is_safe(addr_at(0)),
          "concurrent code patching");
 
   ResourceMark rm;
@@ -176,6 +178,7 @@ void NativeFarCall::verify() {
 address NativeMovConstReg::next_instruction_address() const {
 #ifdef ASSERT
   CodeBlob* nm = CodeCache::find_blob(instruction_address());
+  assert(nm != NULL, "Could not find code blob");
   assert(!MacroAssembler::is_set_narrow_oop(addr_at(0), nm->content_begin()), "Should not patch narrow oop here");
 #endif
 
@@ -194,9 +197,14 @@ intptr_t NativeMovConstReg::data() const {
   }
 
   CodeBlob* cb = CodeCache::find_blob_unsafe(addr);
+  assert(cb != NULL, "Could not find code blob");
   if (MacroAssembler::is_set_narrow_oop(addr, cb->content_begin())) {
-    narrowOop no = (narrowOop)MacroAssembler::get_narrow_oop(addr, cb->content_begin());
-    return cast_from_oop<intptr_t>(CompressedOops::decode(no));
+    narrowOop no = MacroAssembler::get_narrow_oop(addr, cb->content_begin());
+    // We can reach here during GC with 'no' pointing to new object location
+    // while 'heap()->is_in' still reports false (e.g. with SerialGC).
+    // Therefore we use raw decoding.
+    if (CompressedOops::is_null(no)) return 0;
+    return cast_from_oop<intptr_t>(CompressedOops::decode_raw(no));
   } else {
     assert(MacroAssembler::is_load_const_from_method_toc_at(addr), "must be load_const_from_pool");
 
@@ -292,10 +300,12 @@ void NativeMovConstReg::set_data(intptr_t data) {
 void NativeMovConstReg::set_narrow_oop(narrowOop data, CodeBlob *code /* = NULL */) {
   address   inst2_addr = addr_at(0);
   CodeBlob* cb = (code) ? code : CodeCache::find_blob(instruction_address());
-  if (MacroAssembler::get_narrow_oop(inst2_addr, cb->content_begin()) == (long)data)
+  assert(cb != NULL, "Could not find code blob");
+  if (MacroAssembler::get_narrow_oop(inst2_addr, cb->content_begin()) == data) {
     return;
+  }
   const address inst1_addr =
-    MacroAssembler::patch_set_narrow_oop(inst2_addr, cb->content_begin(), (long)data);
+    MacroAssembler::patch_set_narrow_oop(inst2_addr, cb->content_begin(), data);
   assert(inst1_addr != NULL && inst1_addr < inst2_addr, "first instruction must be found");
   const int range = inst2_addr - inst1_addr + BytesPerInstWord;
   ICache::ppc64_flush_icache_bytes(inst1_addr, range);
@@ -333,13 +343,8 @@ void NativeJump::patch_verified_entry(address entry, address verified_entry, add
     a->b(dest);
   } else {
     // The signal handler will continue at dest=OptoRuntime::handle_wrong_method_stub().
-    if (TrapBasedNotEntrantChecks) {
-      // We use a special trap for marking a method as not_entrant or zombie.
-      a->trap_zombie_not_entrant();
-    } else {
-      // We use an illtrap for marking a method as not_entrant or zombie.
-      a->illtrap();
-    }
+    // We use an illtrap for marking a method as not_entrant or zombie.
+    a->illtrap();
   }
   ICache::ppc64_flush_icache_bytes(verified_entry, code_size);
 }
@@ -360,8 +365,8 @@ void NativeJump::verify() {
 
 void NativeGeneralJump::insert_unconditional(address code_pos, address entry) {
   CodeBuffer cb(code_pos, BytesPerInstWord + 1);
-  MacroAssembler* a = new MacroAssembler(&cb);
-  a->b(entry);
+  MacroAssembler a(&cb);
+  a.b(entry);
   ICache::ppc64_flush_icache_bytes(code_pos, NativeGeneralJump::instruction_size);
 }
 
@@ -372,7 +377,7 @@ void NativeGeneralJump::replace_mt_safe(address instr_addr, address code_buffer)
   // Finally patch out the jump.
   volatile juint *jump_addr = (volatile juint*)instr_addr;
   // Release not needed because caller uses invalidate_range after copying the remaining bytes.
-  //OrderAccess::release_store(jump_addr, *((juint*)code_buffer));
+  //Atomic::release_store(jump_addr, *((juint*)code_buffer));
   *jump_addr = *((juint*)code_buffer); // atomically store code over branch instruction
   ICache::ppc64_flush_icache_bytes(instr_addr, NativeGeneralJump::instruction_size);
 }
@@ -402,6 +407,7 @@ address NativeCallTrampolineStub::encoded_destination_addr() const {
 
 address NativeCallTrampolineStub::destination(nmethod *nm) const {
   CodeBlob* cb = nm ? nm : CodeCache::find_blob_unsafe(addr_at(0));
+  assert(cb != NULL, "Could not find code blob");
   address ctable = cb->content_begin();
 
   return *(address*)(ctable + destination_toc_offset());
@@ -413,6 +419,7 @@ int NativeCallTrampolineStub::destination_toc_offset() const {
 
 void NativeCallTrampolineStub::set_destination(address new_destination) {
   CodeBlob* cb = CodeCache::find_blob(addr_at(0));
+  assert(cb != NULL, "Could not find code blob");
   address ctable = cb->content_begin();
 
   *(address*)(ctable + destination_toc_offset()) = new_destination;

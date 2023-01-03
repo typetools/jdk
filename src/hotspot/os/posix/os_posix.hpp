@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,8 @@
  *
  */
 
-#include "runtime/os.hpp"
-
-#ifndef OS_POSIX_VM_OS_POSIX_HPP
-#define OS_POSIX_VM_OS_POSIX_HPP
+#ifndef OS_POSIX_OS_POSIX_HPP
+#define OS_POSIX_OS_POSIX_HPP
 
 // File conventions
 static const char* file_separator() { return "/"; }
@@ -41,6 +39,7 @@ protected:
   static void print_uname_info(outputStream* st);
   static void print_libversion_info(outputStream* st);
   static void print_load_average(outputStream* st);
+  static void print_uptime_info(outputStream* st);
 
   // Minimum stack size a thread can be created with (allowing
   // the VM to completely create the thread and enter user code).
@@ -62,40 +61,6 @@ public:
   static jint set_minimum_stack_sizes();
   static size_t get_initial_stack_size(ThreadType thr_type, size_t req_stack_size);
 
-  // Returns true if signal is valid.
-  static bool is_valid_signal(int sig);
-  static bool is_sig_ignored(int sig);
-
-  // Helper function, returns a string (e.g. "SIGILL") for a signal.
-  // Returned string is a constant. For unknown signals "UNKNOWN" is returned.
-  static const char* get_signal_name(int sig, char* out, size_t outlen);
-
-  // Helper function, returns a signal number for a given signal name, e.g. 11
-  // for "SIGSEGV". Name can be given with or without "SIG" prefix, so both
-  // "SEGV" or "SIGSEGV" work. Name must be uppercase.
-  // Returns -1 for an unknown signal name.
-  static int get_signal_number(const char* signal_name);
-
-  // Returns one-line short description of a signal set in a user provided buffer.
-  static const char* describe_signal_set_short(const sigset_t* set, char* buffer, size_t size);
-
-  // Prints a short one-line description of a signal set.
-  static void print_signal_set_short(outputStream* st, const sigset_t* set);
-
-  // unblocks the signal masks for current thread
-  static int unblock_thread_signal_mask(const sigset_t *set);
-
-  // Writes a one-line description of a combination of sigaction.sa_flags
-  // into a user provided buffer. Returns that buffer.
-  static const char* describe_sa_flags(int flags, char* buffer, size_t size);
-
-  // Prints a one-line description of a combination of sigaction.sa_flags.
-  static void print_sa_flags(outputStream* st, int flags);
-
-  static address ucontext_get_pc(const ucontext_t* ctx);
-  // Set PC into context. Needed for continuation after signal.
-  static void ucontext_set_pc(ucontext_t* ctx, address pc);
-
   // Helper function; describes pthread attributes as short string. String is written
   // to buf with len buflen; buf is returned.
   static char* describe_pthread_attr(char* buf, size_t buflen, const pthread_attr_t* attr);
@@ -116,15 +81,24 @@ public:
   // Returns true if either given uid is effective uid and given gid is
   // effective gid, or if given uid is root.
   static bool matches_effective_uid_and_gid_or_root(uid_t uid, gid_t gid);
+
+  static void print_umask(outputStream* st, mode_t umsk);
+
+  static void print_user_info(outputStream* st);
+
+  // Set PC into context. Needed for continuation after signal.
+  static address ucontext_get_pc(const ucontext_t* ctx);
+  static void    ucontext_set_pc(ucontext_t* ctx, address pc);
+
+  static void to_RTC_abstime(timespec* abstime, int64_t millis);
+
+  static bool handle_stack_overflow(JavaThread* thread, address addr, address pc,
+                                    const void* ucVoid,
+                                    address* stub);
 };
 
-// On POSIX platforms the signal handler is global so we just do the write.
-static void write_memory_serialize_page_with_handler(JavaThread* thread) {
-  write_memory_serialize_page(thread);
-}
-
 /*
- * Crash protection for the watcher thread. Wrap the callback
+ * Crash protection for the JfrSampler thread. Wrap the callback
  * with a sigsetjmp and in case of a SIGSEGV/SIGBUS we siglongjmp
  * back.
  * To be able to use this - don't take locks, don't rely on destructors,
@@ -145,12 +119,9 @@ public:
 private:
   static Thread* _protected_thread;
   static ThreadCrashProtection* _crash_protection;
-  static volatile intptr_t _crash_mux;
   void restore();
   sigjmp_buf _jmpbuf;
 };
-
-#ifndef SOLARIS
 
 /*
  * This is the platform-specific implementation underpinning
@@ -159,7 +130,7 @@ private:
  * These event objects are type-stable and immortal - we never delete them.
  * Events are associated with a thread for the lifetime of the thread.
  */
-class PlatformEvent : public CHeapObj<mtInternal> {
+class PlatformEvent : public CHeapObj<mtSynchronizer> {
  private:
   double cachePad[4];        // Increase odds that _mutex is sole occupant of cache line
   volatile int _event;       // Event count/permit: -1, 0 or 1
@@ -194,23 +165,127 @@ class PlatformEvent : public CHeapObj<mtInternal> {
 // API updates of course). But Parker methods use fastpaths that break that
 // level of encapsulation - so combining the two remains a future project.
 
-class PlatformParker : public CHeapObj<mtInternal> {
+class PlatformParker {
+  NONCOPYABLE(PlatformParker);
  protected:
   enum {
     REL_INDEX = 0,
     ABS_INDEX = 1
   };
+  volatile int _counter;
   int _cur_index;  // which cond is in use: -1, 0, 1
   pthread_mutex_t _mutex[1];
   pthread_cond_t  _cond[2]; // one for relative times and one for absolute
 
- public:       // TODO-FIXME: make dtor private
-  ~PlatformParker() { guarantee(false, "invariant"); }
-
  public:
   PlatformParker();
+  ~PlatformParker();
 };
 
-#endif // !SOLARIS
+// Workaround for a bug in macOSX kernel's pthread support (fixed in Mojave?).
+// Avoid ever allocating a pthread_mutex_t at the same address as one of our
+// former pthread_cond_t, by using freelists of mutexes and condvars.
+// Conditional to avoid extra indirection and padding loss on other platforms.
+#ifdef __APPLE__
+#define PLATFORM_MONITOR_IMPL_INDIRECT 1
+#else
+#define PLATFORM_MONITOR_IMPL_INDIRECT 0
+#endif
 
-#endif // OS_POSIX_VM_OS_POSIX_HPP
+// Platform specific implementations that underpin VM Mutex/Monitor classes.
+// Note that we use "normal" pthread_mutex_t attributes so that recursive
+// locking is not supported, which matches the expected semantics of the
+// VM Mutex class.
+
+class PlatformMutex : public CHeapObj<mtSynchronizer> {
+#if PLATFORM_MONITOR_IMPL_INDIRECT
+  class Mutex : public CHeapObj<mtSynchronizer> {
+   public:
+    pthread_mutex_t _mutex;
+    Mutex* _next;
+
+    Mutex();
+    ~Mutex();
+  };
+
+  Mutex* _impl;
+
+  static pthread_mutex_t _freelist_lock; // used for mutex and cond freelists
+  static Mutex* _mutex_freelist;
+
+ protected:
+  class WithFreeListLocked;
+  pthread_mutex_t* mutex() { return &(_impl->_mutex); }
+
+ public:
+  PlatformMutex();              // Use freelist allocation of impl.
+  ~PlatformMutex();
+
+  static void init();           // Initialize the freelist.
+
+#else
+
+  pthread_mutex_t _mutex;
+
+ protected:
+  pthread_mutex_t* mutex() { return &_mutex; }
+
+ public:
+  static void init() {}         // Nothing needed for the non-indirect case.
+
+  PlatformMutex();
+  ~PlatformMutex();
+
+#endif // PLATFORM_MONITOR_IMPL_INDIRECT
+
+ private:
+  NONCOPYABLE(PlatformMutex);
+
+ public:
+  void lock();
+  void unlock();
+  bool try_lock();
+};
+
+class PlatformMonitor : public PlatformMutex {
+#if PLATFORM_MONITOR_IMPL_INDIRECT
+  class Cond : public CHeapObj<mtSynchronizer> {
+   public:
+    pthread_cond_t _cond;
+    Cond* _next;
+
+    Cond();
+    ~Cond();
+  };
+
+  Cond* _impl;
+
+  static Cond* _cond_freelist;
+
+  pthread_cond_t* cond() { return &(_impl->_cond); }
+
+ public:
+  PlatformMonitor();            // Use freelist allocation of impl.
+  ~PlatformMonitor();
+
+#else
+
+  pthread_cond_t _cond;
+  pthread_cond_t* cond() { return &_cond; }
+
+ public:
+  PlatformMonitor();
+  ~PlatformMonitor();
+
+#endif // PLATFORM_MONITOR_IMPL_INDIRECT
+
+ private:
+  NONCOPYABLE(PlatformMonitor);
+
+ public:
+  int wait(jlong millis);
+  void notify();
+  void notify_all();
+};
+
+#endif // OS_POSIX_OS_POSIX_HPP

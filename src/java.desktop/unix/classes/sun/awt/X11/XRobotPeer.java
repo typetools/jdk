@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,21 +22,25 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package sun.awt.X11;
 
-import java.awt.*;
-import java.awt.peer.*;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.peer.RobotPeer;
 import java.security.AccessController;
-import sun.security.action.GetPropertyAction;
 
 import sun.awt.AWTAccessor;
 import sun.awt.SunToolkit;
 import sun.awt.UNIXToolkit;
 import sun.awt.X11GraphicsConfig;
+import sun.awt.X11GraphicsDevice;
+import sun.security.action.GetPropertyAction;
 
-class XRobotPeer implements RobotPeer {
+@SuppressWarnings("removal")
+final class XRobotPeer implements RobotPeer {
 
-    static final boolean tryGtk;
+    private static final boolean tryGtk;
     static {
         loadNativeLibraries();
         tryGtk = Boolean.parseBoolean(
@@ -45,16 +49,10 @@ class XRobotPeer implements RobotPeer {
                             ));
     }
     private static volatile boolean useGtk;
-    private X11GraphicsConfig   xgc = null;
+    private final X11GraphicsConfig  xgc;
 
-    /*
-     * native implementation uses some static shared data (pipes, processes)
-     * so use a class lock to synchronize native method calls
-     */
-    static Object robotLock = new Object();
-
-    XRobotPeer(GraphicsConfiguration gc) {
-        this.xgc = (X11GraphicsConfig)gc;
+    XRobotPeer(X11GraphicsDevice gd) {
+        xgc = (X11GraphicsConfig) gd.getDefaultConfiguration();
         SunToolkit tk = (SunToolkit)Toolkit.getDefaultToolkit();
         setup(tk.getNumberOfButtons(),
                 AWTAccessor.getInputEventAccessor().getButtonDownMasks());
@@ -67,11 +65,6 @@ class XRobotPeer implements RobotPeer {
         }
 
         useGtk = (tryGtk && isGtkSupported);
-    }
-
-    @Override
-    public void dispose() {
-        // does nothing
     }
 
     @Override
@@ -106,14 +99,14 @@ class XRobotPeer implements RobotPeer {
 
     @Override
     public int getRGBPixel(int x, int y) {
-        int pixelArray[] = new int[1];
+        int[] pixelArray = new int[1];
         getRGBPixelsImpl(xgc, x, y, 1, 1, pixelArray, useGtk);
         return pixelArray[0];
     }
 
     @Override
     public int [] getRGBPixels(Rectangle bounds) {
-        int pixelArray[] = new int[bounds.width*bounds.height];
+        int[] pixelArray = new int[bounds.width*bounds.height];
         getRGBPixelsImpl(xgc, bounds.x, bounds.y, bounds.width, bounds.height,
                             pixelArray, useGtk);
         return pixelArray;
@@ -131,5 +124,5 @@ class XRobotPeer implements RobotPeer {
     private static synchronized native void keyReleaseImpl(int keycode);
 
     private static synchronized native void getRGBPixelsImpl(X11GraphicsConfig xgc,
-            int x, int y, int width, int height, int pixelArray[], boolean isGtkSupported);
+            int x, int y, int width, int height, int[] pixelArray, boolean isGtkSupported);
 }

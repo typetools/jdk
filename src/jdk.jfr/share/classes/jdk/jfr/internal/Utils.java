@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,10 +43,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,7 @@ import java.util.Objects;
 
 import jdk.internal.org.objectweb.asm.ClassReader;
 import jdk.internal.org.objectweb.asm.util.CheckClassAdapter;
+import jdk.internal.platform.Metrics;
 import jdk.jfr.Event;
 import jdk.jfr.FlightRecorderPermission;
 import jdk.jfr.Recording;
@@ -65,17 +68,37 @@ import jdk.jfr.internal.settings.ThresholdSetting;
 
 public final class Utils {
 
-    private static Boolean SAVE_GENERATED;
-
+    private static final Object flushObject = new Object();
+    private static final String INFINITY = "infinity";
+    private static final String OFF = "off";
     public static final String EVENTS_PACKAGE_NAME = "jdk.jfr.events";
     public static final String INSTRUMENT_PACKAGE_NAME = "jdk.jfr.internal.instrument";
     public static final String HANDLERS_PACKAGE_NAME = "jdk.jfr.internal.handlers";
     public static final String REGISTER_EVENT = "registerEvent";
     public static final String ACCESS_FLIGHT_RECORDER = "accessFlightRecorder";
+    private static final String LEGACY_EVENT_NAME_PREFIX = "com.oracle.jdk.";
 
-    private final static String LEGACY_EVENT_NAME_PREFIX = "com.oracle.jdk.";
+    private static Boolean SAVE_GENERATED;
+
+    private static final Duration MICRO_SECOND = Duration.ofNanos(1_000);
+    private static final Duration SECOND = Duration.ofSeconds(1);
+    private static final Duration MINUTE = Duration.ofMinutes(1);
+    private static final Duration HOUR = Duration.ofHours(1);
+    private static final Duration DAY = Duration.ofDays(1);
+    private static final int NANO_SIGNIFICANT_FIGURES = 9;
+    private static final int MILL_SIGNIFICANT_FIGURES = 3;
+    private static final int DISPLAY_NANO_DIGIT = 3;
+    private static final int BASE = 10;
+    private static long THROTTLE_OFF = -2;
+
+    /*
+     * This field will be lazily initialized and the access is not synchronized.
+     * The possible data race is benign and is worth of not introducing any contention here.
+     */
+    private static Metrics[] metrics;
 
     public static void checkAccessFlightRecorder() throws SecurityException {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new FlightRecorderPermission(ACCESS_FLIGHT_RECORDER));
@@ -83,6 +106,7 @@ public final class Utils {
     }
 
     public static void checkRegisterPermission() throws SecurityException {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new FlightRecorderPermission(REGISTER_EVENT));
@@ -101,20 +125,57 @@ public final class Utils {
         }
     }
 
-    public static String formatBytes(long bytes, String separation) {
-        if (bytes < 1024) {
-            return bytes + " bytes";
-        }
-        int exp = (int) (Math.log(bytes) / Math.log(1024));
-        char bytePrefix = "kMGTPE".charAt(exp - 1);
-        return String.format("%.1f%s%cB", bytes / Math.pow(1024, exp), separation, bytePrefix);
+    // Tjis method can't handle Long.MIN_VALUE because absolute value is negative
+    private static String formatDataAmount(String formatter, long amount) {
+        int exp = (int) (Math.log(Math.abs(amount)) / Math.log(1024));
+        char unitPrefix = "kMGTPE".charAt(exp - 1);
+        return String.format(formatter, amount / Math.pow(1024, exp), unitPrefix);
     }
 
+    public static String formatBytesCompact(long bytes) {
+        if (bytes < 1024) {
+            return String.valueOf(bytes);
+        }
+        return formatDataAmount("%.1f%cB", bytes);
+    }
+
+    public static String formatBits(long bits) {
+        if (bits == 1 || bits == -1) {
+            return bits + " bit";
+        }
+        if (bits < 1024 && bits > -1024) {
+            return bits + " bits";
+        }
+        return formatDataAmount("%.1f %cbit", bits);
+    }
+
+    public static String formatBytes(long bytes) {
+        if (bytes == 1 || bytes == -1) {
+            return bytes + " byte";
+        }
+        if (bytes < 1024 && bytes > -1024) {
+            return bytes + " bytes";
+        }
+        return formatDataAmount("%.1f %cB", bytes);
+    }
+
+    public static String formatBytesPerSecond(long bytes) {
+        if (bytes < 1024 && bytes > -1024) {
+            return bytes + " byte/s";
+        }
+        return formatDataAmount("%.1f %cB/s", bytes);
+    }
+
+    public static String formatBitsPerSecond(long bits) {
+        if (bits < 1024 && bits > -1024) {
+            return bits + " bps";
+        }
+        return formatDataAmount("%.1f %cbps", bits);
+    }
     public static String formatTimespan(Duration dValue, String separation) {
         if (dValue == null) {
             return "0";
         }
-
         long value = dValue.toNanos();
         TimespanUnit result = TimespanUnit.NANOSECONDS;
         for (TimespanUnit unit : TimespanUnit.values()) {
@@ -126,6 +187,123 @@ public final class Utils {
             value /= amount;
         }
         return String.format("%d%s%s", value, separation, result.text);
+    }
+
+    // This method reduces the number of loaded classes
+    // compared to DateTimeFormatter
+    public static String formatDateTime(LocalDateTime time) {
+        StringBuilder sb = new StringBuilder(19);
+        sb.append(time.getYear() / 100);
+        appendPadded(sb, time.getYear() % 100, true);
+        appendPadded(sb, time.getMonth().getValue(), true);
+        appendPadded(sb, time.getDayOfMonth(), true);
+        appendPadded(sb, time.getHour(), true);
+        appendPadded(sb, time.getMinute(), true);
+        appendPadded(sb, time.getSecond(), false);
+        return sb.toString();
+    }
+
+    private static void appendPadded(StringBuilder text, int number, boolean separator) {
+        if (number < 10) {
+            text.append('0');
+        }
+        text.append(number);
+        if (separator) {
+            text.append('_');
+        }
+    }
+
+    enum ThrottleUnit {
+        NANOSECONDS("ns", TimeUnit.SECONDS.toNanos(1), TimeUnit.SECONDS.toMillis(1)),
+        MICROSECONDS("us", TimeUnit.SECONDS.toNanos(1) / 1000, TimeUnit.SECONDS.toMillis(1)),
+        MILLISECONDS("ms", TimeUnit.SECONDS.toMillis(1), TimeUnit.SECONDS.toMillis(1)),
+        SECONDS("s", 1, TimeUnit.SECONDS.toMillis(1)),
+        MINUTES("m", 1, TimeUnit.MINUTES.toMillis(1)),
+        HOUR("h", 1, TimeUnit.HOURS.toMillis(1)),
+        DAY("d", 1, TimeUnit.DAYS.toMillis(1));
+
+        private final String text;
+        private final long factor;
+        private final long millis;
+
+        ThrottleUnit(String t, long factor, long millis) {
+            this.text = t;
+            this.factor = factor;
+            this.millis = millis;
+        }
+
+        private static ThrottleUnit parse(String s) {
+            if (s.equals(OFF)) {
+                return MILLISECONDS;
+            }
+            return unit(parseThrottleString(s, false));
+        }
+
+        private static ThrottleUnit unit(String s) {
+            if (s.endsWith("ns") || s.endsWith("us") || s.endsWith("ms")) {
+                return value(s.substring(s.length() - 2));
+            }
+            if (s.endsWith("s") || s.endsWith("m") || s.endsWith("h") || s.endsWith("d")) {
+                return value(s.substring(s.length() - 1));
+            }
+            throw new NumberFormatException("'" + s + "' is not a valid time unit.");
+        }
+
+        private static ThrottleUnit value(String s) {
+            for (ThrottleUnit t : values()) {
+                if (t.text.equals(s)) {
+                    return t;
+                }
+            }
+            throw new NumberFormatException("'" + s + "' is not a valid time unit.");
+        }
+
+        static long asMillis(String s) {
+            return parse(s).millis;
+        }
+
+        static long normalizeValueAsMillis(long value, String s) {
+            return value * parse(s).factor;
+        }
+    }
+
+    private static void throwThrottleNumberFormatException(String s) {
+        throw new NumberFormatException("'" + s + "' is not valid. Should be a non-negative numeric value followed by a delimiter. i.e. '/', and then followed by a unit e.g. 100/s.");
+    }
+
+    // Expected input format is "x/y" where x is a non-negative long
+    // and y is a time unit. Split the string at the delimiter.
+    private static String parseThrottleString(String s, boolean value) {
+        String[] split = s.split("/");
+        if (split.length != 2) {
+            throwThrottleNumberFormatException(s);
+        }
+        return value ? split[0].trim() : split[1].trim();
+    }
+
+    public static long parseThrottleValue(String s) {
+        if (s.equals(OFF)) {
+            return THROTTLE_OFF;
+        }
+        String parsedValue = parseThrottleString(s, true);
+        long normalizedValue = 0;
+        try {
+            normalizedValue = ThrottleUnit.normalizeValueAsMillis(Long.parseLong(parsedValue), s);
+        } catch (NumberFormatException nfe) {
+            throwThrottleNumberFormatException(s);
+        }
+        return normalizedValue;
+    }
+
+    public static long parseThrottleTimeUnit(String s) {
+        return ThrottleUnit.asMillis(s);
+    }
+
+    public static long parseTimespanWithInfinity(String s) {
+        if (INFINITY.equals(s)) {
+            return Long.MAX_VALUE;
+        }
+        return parseTimespan(s);
     }
 
     public static long parseTimespan(String s) {
@@ -154,7 +332,7 @@ public final class Utils {
         try {
             Long.parseLong(s);
         } catch (NumberFormatException nfe) {
-            throw new NumberFormatException("'" + s + "' is not a valid timespan. Shoule be numeric value followed by a unit, i.e. 20 ms. Valid units are ns, us, s, m, h and d.");
+            throw new NumberFormatException("'" + s + "' is not a valid timespan. Should be numeric value followed by a unit, i.e. 20 ms. Valid units are ns, us, s, m, h and d.");
         }
         // Only accept values with units
         throw new NumberFormatException("Timespan + '" + s + "' is missing unit. Valid units are ns, us, s, m, h and d.");
@@ -192,9 +370,7 @@ public final class Utils {
                 }
             }
         }
-        List<Annotation> annos = new ArrayList<>();
-        annos.add(a);
-        return annos;
+        return List.of(a);
     }
 
     static boolean isAfter(RecordingState stateToTest, RecordingState b) {
@@ -267,25 +443,19 @@ public final class Utils {
         return (long) (nanos * JVM.getJVM().getTimeConversionFactor());
     }
 
-    static synchronized EventHandler getHandler(Class<? extends Event> eventClass) {
+    public static synchronized EventHandler getHandler(Class<? extends jdk.internal.event.Event> eventClass) {
         Utils.ensureValidEventSubclass(eventClass);
-        try {
-            Field f = eventClass.getDeclaredField(EventInstrumentation.FIELD_EVENT_HANDLER);
-            SecuritySupport.setAccessible(f);
-            return (EventHandler) f.get(null);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError("Could not access event handler");
+        Object handler = JVM.getJVM().getHandler(eventClass);
+        if (handler == null || handler instanceof EventHandler) {
+            return (EventHandler) handler;
         }
+        throw new InternalError("Could not access event handler");
     }
 
-    static synchronized void setHandler(Class<? extends Event> eventClass, EventHandler handler) {
+    static synchronized void setHandler(Class<? extends jdk.internal.event.Event> eventClass, EventHandler handler) {
         Utils.ensureValidEventSubclass(eventClass);
-        try {
-            Field field = eventClass.getDeclaredField(EventInstrumentation.FIELD_EVENT_HANDLER);
-            SecuritySupport.setAccessible(field);
-            field.set(null, handler);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError("Could not access event handler");
+        if (!JVM.getJVM().setHandler(eventClass, handler)) {
+            throw new InternalError("Could not set event handler");
         }
     }
 
@@ -322,7 +492,7 @@ public final class Utils {
     static List<Field> getVisibleEventFields(Class<?> clazz) {
         Utils.ensureValidEventSubclass(clazz);
         List<Field> fields = new ArrayList<>();
-        for (Class<?> c = clazz; c != Event.class; c = c.getSuperclass()) {
+        for (Class<?> c = clazz; c != jdk.internal.event.Event.class; c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
                 // skip private field in base classes
                 if (c == clazz || !Modifier.isPrivate(field.getModifiers())) {
@@ -334,10 +504,10 @@ public final class Utils {
     }
 
     public static void ensureValidEventSubclass(Class<?> eventClass) {
-        if (Event.class.isAssignableFrom(eventClass) && Modifier.isAbstract(eventClass.getModifiers())) {
+        if (jdk.internal.event.Event.class.isAssignableFrom(eventClass) && Modifier.isAbstract(eventClass.getModifiers())) {
             throw new IllegalArgumentException("Abstract event classes are not allowed");
         }
-        if (eventClass == Event.class || !Event.class.isAssignableFrom(eventClass)) {
+        if (eventClass == Event.class || eventClass == jdk.internal.event.Event.class || !jdk.internal.event.Event.class.isAssignableFrom(eventClass)) {
             throw new IllegalArgumentException("Must be a subclass to " + Event.class.getName());
         }
     }
@@ -366,7 +536,7 @@ public final class Utils {
         }
     }
 
-    public static void ensureInitialized(Class<? extends Event> eventClass) {
+    public static void ensureInitialized(Class<? extends jdk.internal.event.Event> eventClass) {
         SecuritySupport.ensureClassIsInitialized(eventClass);
     }
 
@@ -435,13 +605,13 @@ public final class Utils {
     }
 
     public static boolean isSettingVisible(Control c, boolean hasEventHook) {
-        if (c instanceof ThresholdSetting) {
+        if (c.isType(ThresholdSetting.class)) {
             return !hasEventHook;
         }
-        if (c instanceof PeriodSetting) {
+        if (c.isType(PeriodSetting.class)) {
             return hasEventHook;
         }
-        if (c instanceof StackTraceSetting) {
+        if (c.isType(StackTraceSetting.class)) {
             return !hasEventHook;
         }
         return true;
@@ -476,16 +646,6 @@ public final class Utils {
         return knownType;
     }
 
-    public static <T> List<T> smallUnmodifiable(List<T> list) {
-        if (list.isEmpty()) {
-            return Collections.emptyList();
-        }
-        if (list.size() == 1) {
-            return Collections.singletonList(list.get(0));
-        }
-        return Collections.unmodifiableList(list);
-    }
-
     public static String upgradeLegacyJDKEvent(String eventName) {
         if (eventName.length() <= LEGACY_EVENT_NAME_PREFIX.length()) {
             return eventName;
@@ -499,10 +659,186 @@ public final class Utils {
         return eventName;
     }
 
+    public static void verifyMirror(Class<?> mirror, Class<?> real) {
+        Class<?> cMirror = Objects.requireNonNull(mirror);
+        Class<?> cReal = Objects.requireNonNull(real);
+
+        Map<String, Field> mirrorFields = new HashMap<>();
+        while (cMirror != null) {
+            for (Field f : cMirror.getDeclaredFields()) {
+                if (isSupportedType(f.getType())) {
+                    mirrorFields.put(f.getName(), f);
+                }
+            }
+            cMirror = cMirror.getSuperclass();
+        }
+        while (cReal != null) {
+            for (Field realField : cReal.getDeclaredFields()) {
+                if (isSupportedType(realField.getType())) {
+                    String fieldName = realField.getName();
+                    Field mirrorField = mirrorFields.get(fieldName);
+                    if (mirrorField == null) {
+                        throw new InternalError("Missing mirror field for " + cReal.getName() + "#" + fieldName);
+                    }
+                    if (realField.getType() != mirrorField.getType()) {
+                        throw new InternalError("Incorrect type for mirror field " + fieldName);
+                    }
+                    if (realField.getModifiers() != mirrorField.getModifiers()) {
+                        throw new InternalError("Incorrect modifier for mirror field " + fieldName);
+                    }
+                    mirrorFields.remove(fieldName);
+                }
+            }
+            cReal = cReal.getSuperclass();
+        }
+
+        if (!mirrorFields.isEmpty()) {
+            throw new InternalError("Found additional fields in mirror class " + mirrorFields.keySet());
+        }
+    }
+
+    private static boolean isSupportedType(Class<?> type) {
+        if (Modifier.isTransient(type.getModifiers()) || Modifier.isStatic(type.getModifiers())) {
+            return false;
+        }
+        return Type.isValidJavaFieldType(type.getName());
+    }
+
     public static String makeFilename(Recording recording) {
         String pid = JVM.getJVM().getPid();
-        String date = Repository.REPO_DATE_FORMAT.format(LocalDateTime.now());
+        String date = formatDateTime(LocalDateTime.now());
         String idText = recording == null ? "" :  "-id-" + Long.toString(recording.getId());
         return "hotspot-" + "pid-" + pid + idText + "-" + date + ".jfr";
+    }
+
+    public static String formatDuration(Duration d) {
+        Duration roundedDuration = roundDuration(d);
+        if (roundedDuration.equals(Duration.ZERO)) {
+            return "0 s";
+        } else if(roundedDuration.isNegative()){
+            return "-" + formatPositiveDuration(roundedDuration.abs());
+        } else {
+            return formatPositiveDuration(roundedDuration);
+        }
+    }
+
+    public static boolean shouldSkipBytecode(String eventName, Class<?> superClass) {
+        if (superClass.getClassLoader() != null || !superClass.getName().equals("jdk.jfr.events.AbstractJDKEvent")) {
+            return false;
+        }
+        return eventName.startsWith("jdk.Container") && getMetrics() == null;
+    }
+
+    private static Metrics getMetrics() {
+        if (metrics == null) {
+            metrics = new Metrics[]{Metrics.systemMetrics()};
+        }
+        return metrics[0];
+    }
+
+    private static String formatPositiveDuration(Duration d){
+        if (d.compareTo(MICRO_SECOND) < 0) {
+            // 0.000001 ms - 0.000999 ms
+            double outputMs = (double) d.toNanosPart() / 1_000_000;
+            return String.format("%.6f ms",  outputMs);
+        } else if (d.compareTo(SECOND) < 0) {
+            // 0.001 ms - 999 ms
+            int valueLength = countLength(d.toNanosPart());
+            int outputDigit = NANO_SIGNIFICANT_FIGURES - valueLength;
+            double outputMs = (double) d.toNanosPart() / 1_000_000;
+            return String.format("%." + outputDigit + "f ms",  outputMs);
+        } else if (d.compareTo(MINUTE) < 0) {
+            // 1.00 s - 59.9 s
+            int valueLength = countLength(d.toSecondsPart());
+            int outputDigit = MILL_SIGNIFICANT_FIGURES - valueLength;
+            double outputSecond = d.toSecondsPart() + (double) d.toMillisPart() / 1_000;
+            return String.format("%." + outputDigit + "f s",  outputSecond);
+        } else if (d.compareTo(HOUR) < 0) {
+            // 1 m 0 s - 59 m 59 s
+            return String.format("%d m %d s",  d.toMinutesPart(), d.toSecondsPart());
+        } else if (d.compareTo(DAY) < 0) {
+            // 1 h 0 m - 23 h 59 m
+            return String.format("%d h %d m",  d.toHoursPart(), d.toMinutesPart());
+        } else {
+            // 1 d 0 h -
+            return String.format("%d d %d h",  d.toDaysPart(), d.toHoursPart());
+        }
+    }
+
+    private static int countLength(long value){
+        return (int) Math.log10(value) + 1;
+    }
+
+    private static Duration roundDuration(Duration d) {
+        if (d.equals(Duration.ZERO)) {
+            return d;
+        } else if(d.isNegative()){
+            Duration roundedPositiveDuration = roundPositiveDuration(d.abs());
+            return roundedPositiveDuration.negated();
+        } else {
+            return roundPositiveDuration(d);
+        }
+    }
+
+    private static Duration roundPositiveDuration(Duration d){
+        if (d.compareTo(MICRO_SECOND) < 0) {
+            // No round
+            return d;
+        } else if (d.compareTo(SECOND) < 0) {
+            // Round significant figures to three digits
+            int valueLength = countLength(d.toNanosPart());
+            int roundValue = (int) Math.pow(BASE, valueLength - DISPLAY_NANO_DIGIT);
+            long roundedNanos = Math.round((double) d.toNanosPart() / roundValue) * roundValue;
+            return d.truncatedTo(ChronoUnit.SECONDS).plusNanos(roundedNanos);
+        } else if (d.compareTo(MINUTE) < 0) {
+            // Round significant figures to three digits
+            int valueLength = countLength(d.toSecondsPart());
+            int roundValue = (int) Math.pow(BASE, valueLength);
+            long roundedMills = Math.round((double) d.toMillisPart() / roundValue) * roundValue;
+            return d.truncatedTo(ChronoUnit.SECONDS).plusMillis(roundedMills);
+        } else if (d.compareTo(HOUR) < 0) {
+            // Round for more than 500 ms or less
+            return d.plusMillis(SECOND.dividedBy(2).toMillisPart()).truncatedTo(ChronoUnit.SECONDS);
+        } else if (d.compareTo(DAY) < 0) {
+            // Round for more than 30 seconds or less
+            return d.plusSeconds(MINUTE.dividedBy(2).toSecondsPart()).truncatedTo(ChronoUnit.MINUTES);
+        } else {
+            // Round for more than 30 minutes or less
+            return d.plusMinutes(HOUR.dividedBy(2).toMinutesPart()).truncatedTo(ChronoUnit.HOURS);
+        }
+    }
+
+
+    public static void takeNap(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // ok
+        }
+    }
+
+    public static void notifyFlush() {
+        synchronized (flushObject) {
+            flushObject.notifyAll();
+        }
+    }
+
+    public static void waitFlush(long timeOut) {
+        synchronized (flushObject) {
+            try {
+                flushObject.wait(timeOut);
+            } catch (InterruptedException e) {
+                // OK
+            }
+        }
+
+    }
+
+    public static Instant epochNanosToInstant(long epochNanos) {
+        return Instant.ofEpochSecond(0, epochNanos);
+    }
+
+    public static long timeToNanos(Instant timestamp) {
+        return timestamp.getEpochSecond() * 1_000_000_000L + timestamp.getNano();
     }
 }

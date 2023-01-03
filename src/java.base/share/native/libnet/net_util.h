@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,9 +61,7 @@ JNIEXPORT void JNICALL initInetAddressIDs(JNIEnv *env);
  * get_ methods that return int/boolean, return -1 on error
  * get_ methods that return objects return NULL on error.
  */
-extern jobject getInet6Address_scopeifname(JNIEnv *env, jobject ia6Obj);
 extern jboolean setInet6Address_scopeifname(JNIEnv *env, jobject ia6Obj, jobject scopeifname);
-extern jboolean getInet6Address_scopeid_set(JNIEnv *env, jobject ia6Obj);
 extern unsigned int getInet6Address_scopeid(JNIEnv *env, jobject ia6Obj);
 extern jboolean setInet6Address_scopeid(JNIEnv *env, jobject ia6Obj, int scopeid);
 extern jboolean getInet6Address_ipaddress(JNIEnv *env, jobject ia6Obj, char *dest);
@@ -74,7 +72,6 @@ extern void setInetAddress_family(JNIEnv *env, jobject iaObj, int family);
 extern void setInetAddress_hostName(JNIEnv *env, jobject iaObj, jobject h);
 extern int getInetAddress_addr(JNIEnv *env, jobject iaObj);
 extern int getInetAddress_family(JNIEnv *env, jobject iaObj);
-extern jobject getInetAddress_hostName(JNIEnv *env, jobject iaObj);
 
 extern jclass ia4_class;
 extern jmethodID ia4_ctrID;
@@ -107,7 +104,6 @@ extern jclass ia6_class;
 extern jfieldID ia6_holder6ID;
 extern jfieldID ia6_ipaddressID;
 extern jfieldID ia6_scopeidID;
-extern jfieldID ia6_cachedscopeidID;
 extern jfieldID ia6_scopeidsetID;
 extern jfieldID ia6_scopeifnameID;
 extern jmethodID ia6_ctrID;
@@ -122,12 +118,11 @@ JNIEXPORT void JNICALL Java_java_net_NetworkInterface_init(JNIEnv *env, jclass c
 
 JNIEXPORT void JNICALL NET_ThrowNew(JNIEnv *env, int errorNum, char *msg);
 
-int NET_GetError();
-
 void NET_ThrowCurrent(JNIEnv *env, char *msg);
 
 jfieldID NET_GetFileDescriptorID(JNIEnv *env);
 
+JNIEXPORT jint JNICALL ipv4_available();
 JNIEXPORT jint JNICALL ipv6_available();
 
 JNIEXPORT jint JNICALL reuseport_available();
@@ -161,8 +156,6 @@ NET_SockaddrToInetAddress(JNIEnv *env, SOCKETADDRESS *sa, int *port);
 
 void platformInit();
 
-void parseExclusiveBindProperty(JNIEnv *env);
-
 JNIEXPORT jint JNICALL NET_GetPortFromSockaddr(SOCKETADDRESS *sa);
 
 JNIEXPORT jboolean JNICALL
@@ -181,6 +174,9 @@ int NET_IsZeroAddr(jbyte* caddr);
  * These work just like the system calls, except that they may do some
  * platform-specific pre/post processing of the arguments and/or results.
  */
+
+JNIEXPORT int JNICALL
+NET_SocketAvailable(int fd, int *pbytes);
 
 JNIEXPORT int JNICALL
 NET_GetSockOpt(int fd, int level, int opt, void *result, int *len);
@@ -202,7 +198,6 @@ NET_EnableFastTcpLoopback(int fd);
 
 unsigned short in_cksum(unsigned short *addr, int len);
 
-JNIEXPORT jint JNICALL
-NET_Wait(JNIEnv *env, jint fd, jint flags, jint timeout);
+jint NET_Wait(JNIEnv *env, jint fd, jint flags, jint timeout);
 
 #endif /* NET_UTILS_H */

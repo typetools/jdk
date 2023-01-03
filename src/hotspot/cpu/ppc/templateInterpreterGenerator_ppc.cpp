@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2018, SAP SE. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "classfile/javaClasses.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "interpreter/bytecodeHistogram.hpp"
 #include "interpreter/interpreter.hpp"
@@ -41,11 +42,13 @@
 #include "runtime/arguments.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.inline.hpp"
+#include "runtime/jniHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "runtime/synchronizer.hpp"
 #include "runtime/timer.hpp"
 #include "runtime/vframeArray.hpp"
+#include "runtime/vm_version.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/macros.hpp"
 
@@ -150,7 +153,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
     // dereference it as in case of ints, floats, etc.
     __ mr(R4_ARG2, arg_java);
     __ addi(arg_java, arg_java, -BytesPerWord);
-    __ std(R4_ARG2, _abi(carg_2), target_sp);
+    __ std(R4_ARG2, _abi0(carg_2), target_sp);
     __ bind(L);
   }
 
@@ -158,7 +161,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
   // corresponds to 3rd C argument.
   __ li(argcnt, -1);
   // arg_c points to 3rd C argument
-  __ addi(arg_c, target_sp, _abi(carg_3));
+  __ addi(arg_c, target_sp, _abi0(carg_3));
   // no floating-point args parsed so far
   __ li(fpcnt, 0);
 
@@ -216,7 +219,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
 
   __ bind(do_dontreachhere);
 
-  __ unimplemented("ShouldNotReachHere in slow_signature_handler", 120);
+  __ unimplemented("ShouldNotReachHere in slow_signature_handler");
 
   __ bind(do_array);
 
@@ -403,7 +406,7 @@ address TemplateInterpreterGenerator::generate_result_handler_for(BasicType type
      break;
   case T_OBJECT:
     // JNIHandles::resolve result.
-    __ resolve_jobject(R3_RET, R11_scratch1, R31, /* needs_frame */ true); // kills R31
+    __ resolve_jobject(R3_RET, R11_scratch1, R31, MacroAssembler::PRESERVATION_FRAME_LR); // kills R31
     break;
   case T_FLOAT:
      break;
@@ -507,8 +510,7 @@ address TemplateInterpreterGenerator::generate_Reference_get_entry(void) {
 
   address entry = __ pc();
 
-  const int referent_offset = java_lang_ref_Reference::referent_offset;
-  guarantee(referent_offset > 0, "referent offset not initialized");
+  const int referent_offset = java_lang_ref_Reference::referent_offset();
 
   Label slow_path;
 
@@ -525,21 +527,17 @@ address TemplateInterpreterGenerator::generate_Reference_get_entry(void) {
   __ beq(CCR0, slow_path);
 
   __ load_heap_oop(R3_RET, referent_offset, R3_RET,
-                   /* non-volatile temp */ R31, R11_scratch1, true, ON_WEAK_OOP_REF);
+                   /* non-volatile temp */ R31, R11_scratch1,
+                   MacroAssembler::PRESERVATION_FRAME_LR,
+                   ON_WEAK_OOP_REF);
 
   // Generate the G1 pre-barrier code to log the value of
   // the referent field in an SATB buffer. Note with
   // these parameters the pre-barrier does not generate
   // the load of the previous value.
 
-  // Restore caller sp for c2i case.
-#ifdef ASSERT
-  __ ld(R9_ARG7, 0, R1_SP);
-  __ ld(R10_ARG8, 0, R21_sender_SP);
-  __ cmpd(CCR0, R9_ARG7, R10_ARG8);
-  __ asm_assert_eq("backlink", 0x544);
-#endif // ASSERT
-  __ mr(R1_SP, R21_sender_SP); // Cut the stack back to where the caller started.
+  // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
+  __ resize_frame_absolute(R21_sender_SP, R11_scratch1, R0);
 
   __ blr();
 
@@ -598,10 +596,10 @@ address TemplateInterpreterGenerator::generate_exception_handler_common(const ch
   __ load_const_optimized(R4_ARG2, (address) name, R11_scratch1);
   if (pass_oop) {
     __ mr(R5_ARG3, Rexception);
-    __ call_VM(Rexception, CAST_FROM_FN_PTR(address, InterpreterRuntime::create_klass_exception), false);
+    __ call_VM(Rexception, CAST_FROM_FN_PTR(address, InterpreterRuntime::create_klass_exception));
   } else {
     __ load_const_optimized(R5_ARG3, (address) message, R11_scratch1);
-    __ call_VM(Rexception, CAST_FROM_FN_PTR(address, InterpreterRuntime::create_exception), false);
+    __ call_VM(Rexception, CAST_FROM_FN_PTR(address, InterpreterRuntime::create_exception));
   }
 
   // Throw exception.
@@ -717,79 +715,44 @@ address TemplateInterpreterGenerator::generate_safept_entry_for(TosState state, 
 // Note: checking for negative value instead of overflow
 //       so we have a 'sticky' overflow test.
 //
-void TemplateInterpreterGenerator::generate_counter_incr(Label* overflow, Label* profile_method, Label* profile_method_continue) {
+void TemplateInterpreterGenerator::generate_counter_incr(Label* overflow) {
   // Note: In tiered we increment either counters in method or in MDO depending if we're profiling or not.
   Register Rscratch1   = R11_scratch1;
   Register Rscratch2   = R12_scratch2;
   Register R3_counters = R3_ARG1;
   Label done;
 
-  if (TieredCompilation) {
-    const int increment = InvocationCounter::count_increment;
-    Label no_mdo;
-    if (ProfileInterpreter) {
-      const Register Rmdo = R3_counters;
-      // If no method data exists, go to profile_continue.
-      __ ld(Rmdo, in_bytes(Method::method_data_offset()), R19_method);
-      __ cmpdi(CCR0, Rmdo, 0);
-      __ beq(CCR0, no_mdo);
+  const int increment = InvocationCounter::count_increment;
+  Label no_mdo;
+  if (ProfileInterpreter) {
+    const Register Rmdo = R3_counters;
+    __ ld(Rmdo, in_bytes(Method::method_data_offset()), R19_method);
+    __ cmpdi(CCR0, Rmdo, 0);
+    __ beq(CCR0, no_mdo);
 
-      // Increment invocation counter in the MDO.
-      const int mdo_ic_offs = in_bytes(MethodData::invocation_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
-      __ lwz(Rscratch2, mdo_ic_offs, Rmdo);
-      __ lwz(Rscratch1, in_bytes(MethodData::invoke_mask_offset()), Rmdo);
-      __ addi(Rscratch2, Rscratch2, increment);
-      __ stw(Rscratch2, mdo_ic_offs, Rmdo);
-      __ and_(Rscratch1, Rscratch2, Rscratch1);
-      __ bne(CCR0, done);
-      __ b(*overflow);
-    }
-
-    // Increment counter in MethodCounters*.
-    const int mo_ic_offs = in_bytes(MethodCounters::invocation_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
-    __ bind(no_mdo);
-    __ get_method_counters(R19_method, R3_counters, done);
-    __ lwz(Rscratch2, mo_ic_offs, R3_counters);
-    __ lwz(Rscratch1, in_bytes(MethodCounters::invoke_mask_offset()), R3_counters);
+    // Increment invocation counter in the MDO.
+    const int mdo_ic_offs = in_bytes(MethodData::invocation_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
+    __ lwz(Rscratch2, mdo_ic_offs, Rmdo);
+    __ lwz(Rscratch1, in_bytes(MethodData::invoke_mask_offset()), Rmdo);
     __ addi(Rscratch2, Rscratch2, increment);
-    __ stw(Rscratch2, mo_ic_offs, R3_counters);
+    __ stw(Rscratch2, mdo_ic_offs, Rmdo);
     __ and_(Rscratch1, Rscratch2, Rscratch1);
-    __ beq(CCR0, *overflow);
-
-    __ bind(done);
-
-  } else {
-
-    // Update standard invocation counters.
-    Register Rsum_ivc_bec = R4_ARG2;
-    __ get_method_counters(R19_method, R3_counters, done);
-    __ increment_invocation_counter(R3_counters, Rsum_ivc_bec, R12_scratch2);
-    // Increment interpreter invocation counter.
-    if (ProfileInterpreter) {  // %%% Merge this into methodDataOop.
-      __ lwz(R12_scratch2, in_bytes(MethodCounters::interpreter_invocation_counter_offset()), R3_counters);
-      __ addi(R12_scratch2, R12_scratch2, 1);
-      __ stw(R12_scratch2, in_bytes(MethodCounters::interpreter_invocation_counter_offset()), R3_counters);
-    }
-    // Check if we must create a method data obj.
-    if (ProfileInterpreter && profile_method != NULL) {
-      const Register profile_limit = Rscratch1;
-      __ lwz(profile_limit, in_bytes(MethodCounters::interpreter_profile_limit_offset()), R3_counters);
-      // Test to see if we should create a method data oop.
-      __ cmpw(CCR0, Rsum_ivc_bec, profile_limit);
-      __ blt(CCR0, *profile_method_continue);
-      // If no method data exists, go to profile_method.
-      __ test_method_data_pointer(*profile_method);
-    }
-    // Finally check for counter overflow.
-    if (overflow) {
-      const Register invocation_limit = Rscratch1;
-      __ lwz(invocation_limit, in_bytes(MethodCounters::interpreter_invocation_limit_offset()), R3_counters);
-      __ cmpw(CCR0, Rsum_ivc_bec, invocation_limit);
-      __ bge(CCR0, *overflow);
-    }
-
-    __ bind(done);
+    __ bne(CCR0, done);
+    __ b(*overflow);
   }
+
+  // Increment counter in MethodCounters*.
+  const int mo_ic_offs = in_bytes(MethodCounters::invocation_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
+  __ bind(no_mdo);
+  __ get_method_counters(R19_method, R3_counters, done);
+  __ lwz(Rscratch2, mo_ic_offs, R3_counters);
+  __ lwz(Rscratch1, in_bytes(MethodCounters::invoke_mask_offset()), R3_counters);
+  __ addi(Rscratch2, Rscratch2, increment);
+  __ stw(Rscratch2, mo_ic_offs, R3_counters);
+  __ and_(Rscratch1, Rscratch2, Rscratch1);
+  __ beq(CCR0, *overflow);
+
+  __ bind(done);
 }
 
 // Generate code to initiate compilation on invocation counter overflow.
@@ -835,12 +798,17 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(Register Rmem_f
   assert(StubRoutines::throw_StackOverflowError_entry() != NULL, "generated in wrong order");
   __ load_const_optimized(Rscratch1, (StubRoutines::throw_StackOverflowError_entry()), R0);
   __ mtctr(Rscratch1);
-  // Restore caller_sp.
+  // Restore caller_sp (c2i adapter may exist, but no shrinking of interpreted caller frame).
 #ifdef ASSERT
+  Label frame_not_shrunk;
+  __ cmpld(CCR0, R1_SP, R21_sender_SP);
+  __ ble(CCR0, frame_not_shrunk);
+  __ stop("frame shrunk");
+  __ bind(frame_not_shrunk);
   __ ld(Rscratch1, 0, R1_SP);
   __ ld(R0, 0, R21_sender_SP);
   __ cmpd(CCR0, R0, Rscratch1);
-  __ asm_assert_eq("backlink", 0x547);
+  __ asm_assert_eq("backlink");
 #endif // ASSERT
   __ mr(R1_SP, R21_sender_SP);
   __ bctr();
@@ -885,7 +853,7 @@ void TemplateInterpreterGenerator::lock_method(Register Rflags, Register Rscratc
 
     __ bind(Lstatic); // Static case: Lock the java mirror
     // Load mirror from interpreter frame.
-    __ ld(Robj_to_lock, _abi(callers_sp), R1_SP);
+    __ ld(Robj_to_lock, _abi0(callers_sp), R1_SP);
     __ ld(Robj_to_lock, _ijava_state_neg(mirror), Robj_to_lock);
 
     __ bind(Ldone);
@@ -965,11 +933,14 @@ void TemplateInterpreterGenerator::lock_method(Register Rflags, Register Rscratc
 // state_size: We save the current state of the interpreter to this area.
 //
 void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Register Rsize_of_parameters, Register Rsize_of_locals) {
-  Register parent_frame_resize = R6_ARG4, // Frame will grow by this number of bytes.
-           top_frame_size      = R7_ARG5,
-           Rconst_method       = R8_ARG6;
+  Register Rparent_frame_resize = R6_ARG4, // Frame will grow by this number of bytes.
+           Rtop_frame_size      = R7_ARG5,
+           Rconst_method        = R8_ARG6,
+           Rconst_pool          = R9_ARG7,
+           Rmirror              = R10_ARG8;
 
-  assert_different_registers(Rsize_of_parameters, Rsize_of_locals, parent_frame_resize, top_frame_size);
+  assert_different_registers(Rsize_of_parameters, Rsize_of_locals, Rparent_frame_resize, Rtop_frame_size,
+                             Rconst_method, Rconst_pool);
 
   __ ld(Rconst_method, method_(const));
   __ lhz(Rsize_of_parameters /* number of params */,
@@ -980,35 +951,35 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
     // We add two slots to the parameter_count, one for the jni
     // environment and one for a possible native mirror.
     Label skip_native_calculate_max_stack;
-    __ addi(top_frame_size, Rsize_of_parameters, 2);
-    __ cmpwi(CCR0, top_frame_size, Argument::n_register_parameters);
+    __ addi(Rtop_frame_size, Rsize_of_parameters, 2);
+    __ cmpwi(CCR0, Rtop_frame_size, Argument::n_register_parameters);
     __ bge(CCR0, skip_native_calculate_max_stack);
-    __ li(top_frame_size, Argument::n_register_parameters);
+    __ li(Rtop_frame_size, Argument::n_register_parameters);
     __ bind(skip_native_calculate_max_stack);
     __ sldi(Rsize_of_parameters, Rsize_of_parameters, Interpreter::logStackElementSize);
-    __ sldi(top_frame_size, top_frame_size, Interpreter::logStackElementSize);
-    __ sub(parent_frame_resize, R1_SP, R15_esp); // <0, off by Interpreter::stackElementSize!
+    __ sldi(Rtop_frame_size, Rtop_frame_size, Interpreter::logStackElementSize);
+    __ sub(Rparent_frame_resize, R1_SP, R15_esp); // <0, off by Interpreter::stackElementSize!
     assert(Rsize_of_locals == noreg, "Rsize_of_locals not initialized"); // Only relevant value is Rsize_of_parameters.
   } else {
     __ lhz(Rsize_of_locals /* number of params */, in_bytes(ConstMethod::size_of_locals_offset()), Rconst_method);
     __ sldi(Rsize_of_parameters, Rsize_of_parameters, Interpreter::logStackElementSize);
     __ sldi(Rsize_of_locals, Rsize_of_locals, Interpreter::logStackElementSize);
-    __ lhz(top_frame_size, in_bytes(ConstMethod::max_stack_offset()), Rconst_method);
+    __ lhz(Rtop_frame_size, in_bytes(ConstMethod::max_stack_offset()), Rconst_method);
     __ sub(R11_scratch1, Rsize_of_locals, Rsize_of_parameters); // >=0
-    __ sub(parent_frame_resize, R1_SP, R15_esp); // <0, off by Interpreter::stackElementSize!
-    __ sldi(top_frame_size, top_frame_size, Interpreter::logStackElementSize);
-    __ add(parent_frame_resize, parent_frame_resize, R11_scratch1);
+    __ sub(Rparent_frame_resize, R1_SP, R15_esp); // <0, off by Interpreter::stackElementSize!
+    __ sldi(Rtop_frame_size, Rtop_frame_size, Interpreter::logStackElementSize);
+    __ add(Rparent_frame_resize, Rparent_frame_resize, R11_scratch1);
   }
 
   // Compute top frame size.
-  __ addi(top_frame_size, top_frame_size, frame::abi_reg_args_size + frame::ijava_state_size);
+  __ addi(Rtop_frame_size, Rtop_frame_size, frame::abi_reg_args_size + frame::ijava_state_size);
 
   // Cut back area between esp and max_stack.
-  __ addi(parent_frame_resize, parent_frame_resize, frame::abi_minframe_size - Interpreter::stackElementSize);
+  __ addi(Rparent_frame_resize, Rparent_frame_resize, frame::abi_minframe_size - Interpreter::stackElementSize);
 
-  __ round_to(top_frame_size, frame::alignment_in_bytes);
-  __ round_to(parent_frame_resize, frame::alignment_in_bytes);
-  // parent_frame_resize = (locals-parameters) - (ESP-SP-ABI48) Rounded to frame alignment size.
+  __ round_to(Rtop_frame_size, frame::alignment_in_bytes);
+  __ round_to(Rparent_frame_resize, frame::alignment_in_bytes);
+  // Rparent_frame_resize = (locals-parameters) - (ESP-SP-ABI48) Rounded to frame alignment size.
   // Enlarge by locals-parameters (not in case of native_call), shrink by ESP-SP-ABI48.
 
   if (!native_call) {
@@ -1016,15 +987,15 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
     // Native calls don't need the stack size check since they have no
     // expression stack and the arguments are already on the stack and
     // we only add a handful of words to the stack.
-    __ add(R11_scratch1, parent_frame_resize, top_frame_size);
+    __ add(R11_scratch1, Rparent_frame_resize, Rtop_frame_size);
     generate_stack_overflow_check(R11_scratch1, R12_scratch2);
   }
 
   // Set up interpreter state registers.
 
   __ add(R18_locals, R15_esp, Rsize_of_parameters);
-  __ ld(R27_constPoolCache, in_bytes(ConstMethod::constants_offset()), Rconst_method);
-  __ ld(R27_constPoolCache, ConstantPool::cache_offset_in_bytes(), R27_constPoolCache);
+  __ ld(Rconst_pool, in_bytes(ConstMethod::constants_offset()), Rconst_method);
+  __ ld(R27_constPoolCache, ConstantPool::cache_offset_in_bytes(), Rconst_pool);
 
   // Set method data pointer.
   if (ProfileInterpreter) {
@@ -1044,24 +1015,23 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
 
   // Resize parent frame.
   __ mflr(R12_scratch2);
-  __ neg(parent_frame_resize, parent_frame_resize);
-  __ resize_frame(parent_frame_resize, R11_scratch1);
-  __ std(R12_scratch2, _abi(lr), R1_SP);
+  __ neg(Rparent_frame_resize, Rparent_frame_resize);
+  __ resize_frame(Rparent_frame_resize, R11_scratch1);
+  __ std(R12_scratch2, _abi0(lr), R1_SP);
 
   // Get mirror and store it in the frame as GC root for this Method*.
-  __ load_mirror_from_const_method(R12_scratch2, Rconst_method);
+  __ ld(Rmirror, ConstantPool::pool_holder_offset_in_bytes(), Rconst_pool);
+  __ ld(Rmirror, in_bytes(Klass::java_mirror_offset()), Rmirror);
+  __ resolve_oop_handle(Rmirror, R11_scratch1, R12_scratch2, MacroAssembler::PRESERVATION_FRAME_LR_GP_REGS);
 
-  __ addi(R26_monitor, R1_SP, - frame::ijava_state_size);
-  __ addi(R15_esp, R26_monitor, - Interpreter::stackElementSize);
+  __ addi(R26_monitor, R1_SP, -frame::ijava_state_size);
+  __ addi(R15_esp, R26_monitor, -Interpreter::stackElementSize);
 
   // Store values.
-  // R15_esp, R14_bcp, R26_monitor, R28_mdx are saved at java calls
-  // in InterpreterMacroAssembler::call_from_interpreter.
   __ std(R19_method, _ijava_state_neg(method), R1_SP);
-  __ std(R12_scratch2, _ijava_state_neg(mirror), R1_SP);
-  __ std(R21_sender_SP, _ijava_state_neg(sender_sp), R1_SP);
-  __ std(R27_constPoolCache, _ijava_state_neg(cpoolCache), R1_SP);
+  __ std(Rmirror, _ijava_state_neg(mirror), R1_SP);
   __ std(R18_locals, _ijava_state_neg(locals), R1_SP);
+  __ std(R27_constPoolCache, _ijava_state_neg(cpoolCache), R1_SP);
 
   // Note: esp, bcp, monitor, mdx live in registers. Hence, the correct version can only
   // be found in the frame after save_interpreter_state is done. This is always true
@@ -1069,35 +1039,24 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
   // because e.g. frame::interpreter_frame_bcp() will not access the correct value
   // (Enhanced Stack Trace).
   // The signal handler does not save the interpreter state into the frame.
+
+  // We have to initialize some of these frame slots for native calls (accessed by GC).
+  // Also initialize them for non-native calls for better tool support (even though
+  // you may not get the most recent version as described above).
   __ li(R0, 0);
-#ifdef ASSERT
-  // Fill remaining slots with constants.
-  __ load_const_optimized(R11_scratch1, 0x5afe);
-  __ load_const_optimized(R12_scratch2, 0xdead);
-#endif
-  // We have to initialize some frame slots for native calls (accessed by GC).
-  if (native_call) {
-    __ std(R26_monitor, _ijava_state_neg(monitors), R1_SP);
-    __ std(R14_bcp, _ijava_state_neg(bcp), R1_SP);
-    if (ProfileInterpreter) { __ std(R28_mdx, _ijava_state_neg(mdx), R1_SP); }
-  }
-#ifdef ASSERT
-  else {
-    __ std(R12_scratch2, _ijava_state_neg(monitors), R1_SP);
-    __ std(R12_scratch2, _ijava_state_neg(bcp), R1_SP);
-    __ std(R12_scratch2, _ijava_state_neg(mdx), R1_SP);
-  }
-  __ std(R11_scratch1, _ijava_state_neg(ijava_reserved), R1_SP);
-  __ std(R12_scratch2, _ijava_state_neg(esp), R1_SP);
-  __ std(R12_scratch2, _ijava_state_neg(lresult), R1_SP);
-  __ std(R12_scratch2, _ijava_state_neg(fresult), R1_SP);
-#endif
-  __ subf(R12_scratch2, top_frame_size, R1_SP);
-  __ std(R0, _ijava_state_neg(oop_tmp), R1_SP);
+  __ std(R26_monitor, _ijava_state_neg(monitors), R1_SP);
+  __ std(R14_bcp, _ijava_state_neg(bcp), R1_SP);
+  if (ProfileInterpreter) { __ std(R28_mdx, _ijava_state_neg(mdx), R1_SP); }
+  __ std(R15_esp, _ijava_state_neg(esp), R1_SP);
+  __ std(R0, _ijava_state_neg(oop_tmp), R1_SP); // only used for native_call
+
+  // Store sender's SP and this frame's top SP.
+  __ subf(R12_scratch2, Rtop_frame_size, R1_SP);
+  __ std(R21_sender_SP, _ijava_state_neg(sender_sp), R1_SP);
   __ std(R12_scratch2, _ijava_state_neg(top_frame_sp), R1_SP);
 
   // Push top frame.
-  __ push_frame(top_frame_size, R11_scratch1);
+  __ push_frame(Rtop_frame_size, R11_scratch1);
 }
 
 // End of helpers
@@ -1155,15 +1114,6 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
     }
   }
 
-  // Pop c2i arguments (if any) off when we return.
-#ifdef ASSERT
-  __ ld(R9_ARG7, 0, R1_SP);
-  __ ld(R10_ARG8, 0, R21_sender_SP);
-  __ cmpd(CCR0, R9_ARG7, R10_ARG8);
-  __ asm_assert_eq("backlink", 0x545);
-#endif // ASSERT
-  __ mr(R1_SP, R21_sender_SP); // Cut the stack back to where the caller started.
-
   if (use_instruction) {
     switch (kind) {
       case Interpreter::java_lang_math_sqrt: __ fsqrt(F1_RET, F1);          break;
@@ -1188,6 +1138,8 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
     __ restore_LR_CR(R0);
   }
 
+  // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
+  __ resize_frame_absolute(R21_sender_SP, R11_scratch1, R0);
   __ blr();
 
   __ flush();
@@ -1207,14 +1159,12 @@ void TemplateInterpreterGenerator::bang_stack_shadow_pages(bool native_call) {
   // Bang each page in the shadow zone. We can't assume it's been done for
   // an interpreter frame with greater than a page of locals, so each page
   // needs to be checked.  Only true for non-native.
-  if (UseStackBanging) {
-    const int page_size = os::vm_page_size();
-    const int n_shadow_pages = ((int)JavaThread::stack_shadow_zone_size()) / page_size;
-    const int start_page = native_call ? n_shadow_pages : 1;
-    BLOCK_COMMENT("bang_stack_shadow_pages:");
-    for (int pages = start_page; pages <= n_shadow_pages; pages++) {
-      __ bang_stack_with_offset(pages*page_size);
-    }
+  const int page_size = os::vm_page_size();
+  const int n_shadow_pages = ((int)StackOverflow::stack_shadow_zone_size()) / page_size;
+  const int start_page = native_call ? n_shadow_pages : 1;
+  BLOCK_COMMENT("bang_stack_shadow_pages:");
+  for (int pages = start_page; pages <= n_shadow_pages; pages++) {
+    __ bang_stack_with_offset(pages*page_size);
   }
 }
 
@@ -1289,7 +1239,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
       __ li(R0, 1);
       __ stb(R0, in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()), R16_thread);
     }
-    generate_counter_incr(&invocation_counter_overflow, NULL, NULL);
+    generate_counter_incr(&invocation_counter_overflow);
 
     BIND(continue_after_compile);
   }
@@ -1409,7 +1359,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ testbitdi(CCR0, R0, access_flags, JVM_ACC_STATIC_BIT);
     __ bfalse(CCR0, method_is_not_static);
 
-    __ ld(R11_scratch1, _abi(callers_sp), R1_SP);
+    __ ld(R11_scratch1, _abi0(callers_sp), R1_SP);
     // Load mirror from interpreter frame.
     __ ld(R12_scratch2, _ijava_state_neg(mirror), R11_scratch1);
     // R4_ARG2 = &state->_oop_temp;
@@ -1486,16 +1436,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ li(R0/*thread_state*/, _thread_in_native_trans);
   __ release();
   __ stw(R0/*thread_state*/, thread_(thread_state));
-  if (UseMembar) {
-    __ fence();
-  }
-  // Write serialization page so that the VM thread can do a pseudo remote
-  // membar. We use the current thread pointer to calculate a thread
-  // specific offset to write to within the page. This minimizes bus
-  // traffic due to cache line collision.
-  else {
-    __ serialize_memory(R16_thread, R11_scratch1, R12_scratch2);
-  }
+  __ fence();
 
   // Now before we return to java we must look for a current safepoint
   // (a new safepoint can not start since we entered native_trans).
@@ -1508,7 +1449,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   Label do_safepoint, sync_check_done;
   // No synchronization in progress nor yet synchronized.
-  __ safepoint_poll(do_safepoint, sync_state);
+  __ safepoint_poll(do_safepoint, sync_state, true /* at_return */, false /* in_nmethod */);
 
   // Not suspended.
   // TODO PPC port assert(4 == Thread::sz_suspend_flags(), "unexpected field size");
@@ -1581,9 +1522,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // Handle exceptions
 
   if (synchronized) {
-    // Don't check for exceptions since we're still in the i2n frame. Do that
-    // manually afterwards.
-    __ unlock_object(R26_monitor, false); // Can also unlock methods.
+    __ unlock_object(R26_monitor); // Can also unlock methods.
   }
 
   // Reset active handles after returning from native.
@@ -1624,16 +1563,14 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   BIND(exception_return_sync_check);
 
   if (synchronized) {
-    // Don't check for exceptions since we're still in the i2n frame. Do that
-    // manually afterwards.
-    __ unlock_object(R26_monitor, false); // Can also unlock methods.
+    __ unlock_object(R26_monitor); // Can also unlock methods.
   }
   BIND(exception_return_sync_check_already_unlocked);
 
   const Register return_pc = R31;
 
   __ ld(return_pc, 0, R1_SP);
-  __ ld(return_pc, _abi(lr), return_pc);
+  __ ld(return_pc, _abi0(lr), return_pc);
 
   // Get the address of the exception handler.
   __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address),
@@ -1706,9 +1643,8 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   // --------------------------------------------------------------------------
   // Counter increment and overflow check.
-  Label invocation_counter_overflow,
-        profile_method,
-        profile_method_continue;
+  Label invocation_counter_overflow;
+  Label continue_after_compile;
   if (inc_counter || ProfileInterpreter) {
 
     Register Rdo_not_unlock_if_synchronized_addr = R11_scratch1;
@@ -1730,10 +1666,10 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
     // Increment invocation counter and check for overflow.
     if (inc_counter) {
-      generate_counter_incr(&invocation_counter_overflow, &profile_method, &profile_method_continue);
+      generate_counter_incr(&invocation_counter_overflow);
     }
 
-    __ bind(profile_method_continue);
+    __ bind(continue_after_compile);
   }
 
   bang_stack_shadow_pages(false);
@@ -1757,7 +1693,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
     Label Lok;
     __ lwz(R0, in_bytes(Method::access_flags_offset()), R19_method);
     __ andi_(R0, R0, JVM_ACC_SYNCHRONIZED);
-    __ asm_assert_eq("method needs synchronization", 0x8521);
+    __ asm_assert_eq("method needs synchronization");
     __ bind(Lok);
   }
 #endif // ASSERT
@@ -1773,19 +1709,10 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   __ dispatch_next(vtos);
 
   // --------------------------------------------------------------------------
-  // Out of line counter overflow and MDO creation code.
-  if (ProfileInterpreter) {
-    // We have decided to profile this method in the interpreter.
-    __ bind(profile_method);
-    __ call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::profile_method));
-    __ set_method_data_pointer_for_bcp();
-    __ b(profile_method_continue);
-  }
-
   if (inc_counter) {
     // Handle invocation counter overflow.
     __ bind(invocation_counter_overflow);
-    generate_counter_overflow(profile_method_continue);
+    generate_counter_overflow(continue_after_compile);
   }
   return entry;
 }
@@ -1822,7 +1749,7 @@ address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
 
     // Safepoint check
     const Register sync_state = R11_scratch1;
-    __ safepoint_poll(slow_path, sync_state);
+    __ safepoint_poll(slow_path, sync_state, false /* at_return */, false /* in_nmethod */);
 
     // We don't generate local frame and don't align stack because
     // we not even call stub code (we generate the code inline)
@@ -1832,28 +1759,26 @@ address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
     // R15_esp is callers operand stack pointer, i.e. it points to the parameters.
     const Register argP    = R15_esp;
     const Register crc     = R3_ARG1;  // crc value
-    const Register data    = R4_ARG2;  // address of java byte value (kernel_crc32 needs address)
-    const Register dataLen = R5_ARG3;  // source data len (1 byte). Not used because calling the single-byte emitter.
-    const Register table   = R6_ARG4;  // address of crc32 table
-    const Register tmp     = dataLen;  // Reuse unused len register to show we don't actually need a separate tmp here.
+    const Register data    = R4_ARG2;
+    const Register table   = R5_ARG3;  // address of crc32 table
 
     BLOCK_COMMENT("CRC32_update {");
 
     // Arguments are reversed on java expression stack
 #ifdef VM_LITTLE_ENDIAN
-    __ addi(data, argP, 0+1*wordSize); // (stack) address of byte value. Emitter expects address, not value.
+    int data_offs = 0+1*wordSize;      // (stack) address of byte value. Emitter expects address, not value.
                                        // Being passed as an int, the single byte is at offset +0.
 #else
-    __ addi(data, argP, 3+1*wordSize); // (stack) address of byte value. Emitter expects address, not value.
+    int data_offs = 3+1*wordSize;      // (stack) address of byte value. Emitter expects address, not value.
                                        // Being passed from java as an int, the single byte is at offset +3.
 #endif
-    __ lwz(crc,  2*wordSize, argP);    // Current crc state, zero extend to 64 bit to have a clean register.
+    __ lwz(crc, 2*wordSize, argP);     // Current crc state, zero extend to 64 bit to have a clean register.
+    __ lbz(data, data_offs, argP);     // Byte from buffer, zero-extended.
+    __ load_const_optimized(table, StubRoutines::crc_table_addr(), R0);
+    __ kernel_crc32_singleByteReg(crc, data, table, true);
 
-    StubRoutines::ppc64::generate_load_crc_table_addr(_masm, table);
-    __ kernel_crc32_singleByte(crc, data, dataLen, table, tmp, true);
-
-    // Restore caller sp for c2i case and return.
-    __ mr(R1_SP, R21_sender_SP); // Cut the stack back to where the caller started.
+    // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
+    __ resize_frame_absolute(R21_sender_SP, R11_scratch1, R0);
     __ blr();
 
     // Generate a vanilla native entry as the slow path.
@@ -1878,7 +1803,7 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
 
     // Safepoint check
     const Register sync_state = R11_scratch1;
-    __ safepoint_poll(slow_path, sync_state);
+    __ safepoint_poll(slow_path, sync_state, false /* at_return */, false /* in_nmethod */);
 
     // We don't generate local frame and don't align stack because
     // we not even call stub code (we generate the code inline)
@@ -1890,19 +1815,7 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
     const Register crc     = R3_ARG1;  // crc value
     const Register data    = R4_ARG2;  // address of java byte array
     const Register dataLen = R5_ARG3;  // source data len
-    const Register table   = R6_ARG4;  // address of crc32 table
-
-    const Register t0      = R9;       // scratch registers for crc calculation
-    const Register t1      = R10;
-    const Register t2      = R11;
-    const Register t3      = R12;
-
-    const Register tc0     = R2;       // registers to hold pre-calculated column addresses
-    const Register tc1     = R7;
-    const Register tc2     = R8;
-    const Register tc3     = table;    // table address is reconstructed at the end of kernel_crc32_* emitters
-
-    const Register tmp     = t0;       // Only used very locally to calculate byte buffer address.
+    const Register tmp     = R11_scratch1;
 
     // Arguments are reversed on java expression stack.
     // Calculate address of start element.
@@ -1933,15 +1846,10 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
       __ addi(data, data, arrayOopDesc::base_offset_in_bytes(T_BYTE));
     }
 
-    StubRoutines::ppc64::generate_load_crc_table_addr(_masm, table);
+    __ crc32(crc, data, dataLen, R2, R6, R7, R8, R9, R10, R11, R12, false);
 
-    // Performance measurements show the 1word and 2word variants to be almost equivalent,
-    // with very light advantages for the 1word variant. We chose the 1word variant for
-    // code compactness.
-    __ kernel_crc32_1word(crc, data, dataLen, table, t0, t1, t2, t3, tc0, tc1, tc2, tc3, true);
-
-    // Restore caller sp for c2i case and return.
-    __ mr(R1_SP, R21_sender_SP); // Cut the stack back to where the caller started.
+    // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
+    __ resize_frame_absolute(R21_sender_SP, R11_scratch1, R0);
     __ blr();
 
     // Generate a vanilla native entry as the slow path.
@@ -1976,19 +1884,7 @@ address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(Abstract
     const Register crc     = R3_ARG1;  // crc value
     const Register data    = R4_ARG2;  // address of java byte array
     const Register dataLen = R5_ARG3;  // source data len
-    const Register table   = R6_ARG4;  // address of crc32c table
-
-    const Register t0      = R9;       // scratch registers for crc calculation
-    const Register t1      = R10;
-    const Register t2      = R11;
-    const Register t3      = R12;
-
-    const Register tc0     = R2;       // registers to hold pre-calculated column addresses
-    const Register tc1     = R7;
-    const Register tc2     = R8;
-    const Register tc3     = table;    // table address is reconstructed at the end of kernel_crc32_* emitters
-
-    const Register tmp     = t0;       // Only used very locally to calculate byte buffer address.
+    const Register tmp     = R11_scratch1;
 
     // Arguments are reversed on java expression stack.
     // Calculate address of start element.
@@ -2021,15 +1917,10 @@ address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(Abstract
       __ addi(data, data, arrayOopDesc::base_offset_in_bytes(T_BYTE));
     }
 
-    StubRoutines::ppc64::generate_load_crc32c_table_addr(_masm, table);
+    __ crc32(crc, data, dataLen, R2, R6, R7, R8, R9, R10, R11, R12, true);
 
-    // Performance measurements show the 1word and 2word variants to be almost equivalent,
-    // with very light advantages for the 1word variant. We chose the 1word variant for
-    // code compactness.
-    __ kernel_crc32_1word(crc, data, dataLen, table, t0, t1, t2, t3, tc0, tc1, tc2, tc3, false);
-
-    // Restore caller sp for c2i case and return.
-    __ mr(R1_SP, R21_sender_SP); // Cut the stack back to where the caller started.
+    // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
+    __ resize_frame_absolute(R21_sender_SP, R11_scratch1, R0);
     __ blr();
 
     BLOCK_COMMENT("} CRC32C_update{Bytes|DirectByteBuffer}");
@@ -2117,7 +2008,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     Label Lcaller_not_deoptimized;
     Register return_pc = R3_ARG1;
     __ ld(return_pc, 0, R1_SP);
-    __ ld(return_pc, _abi(lr), return_pc);
+    __ ld(return_pc, _abi0(lr), return_pc);
     __ call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::interpreter_contains), return_pc);
     __ cmpdi(CCR0, R3_RET, 0);
     __ bne(CCR0, Lcaller_not_deoptimized);
@@ -2172,8 +2063,8 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     // The member name argument must be restored if _invokestatic is re-executed after a PopFrame call.
     // Detect such a case in the InterpreterRuntime function and return the member name argument, or NULL.
     __ ld(R4_ARG2, 0, R18_locals);
-    __ MacroAssembler::call_VM(R4_ARG2, CAST_FROM_FN_PTR(address, InterpreterRuntime::member_name_arg_or_null), R4_ARG2, R19_method, R14_bcp, false);
-    __ restore_interpreter_state(R11_scratch1, /*bcp_and_mdx_only*/ true);
+    __ call_VM(R4_ARG2, CAST_FROM_FN_PTR(address, InterpreterRuntime::member_name_arg_or_null), R4_ARG2, R19_method, R14_bcp);
+
     __ cmpdi(CCR0, R4_ARG2, 0);
     __ beq(CCR0, L_done);
     __ std(R4_ARG2, wordSize, R15_esp);
@@ -2210,7 +2101,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
 
     Register return_pc = R31; // Needs to survive the runtime call.
     __ ld(return_pc, 0, R1_SP);
-    __ ld(return_pc, _abi(lr), return_pc);
+    __ ld(return_pc, _abi0(lr), return_pc);
     __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), R16_thread, return_pc);
 
     // Remove the current activation.

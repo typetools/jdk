@@ -64,7 +64,7 @@ final class JIMethodMergeAdapter extends ClassVisitor {
      * @param typeMappings - while merging, type references in the methods will be changed according to this map
      */
     public JIMethodMergeAdapter(ClassVisitor cv, ClassNode cn, List<Method> methodFilter, JITypeMapping[] typeMappings) {
-        super(Opcodes.ASM5, cv);
+        super(Opcodes.ASM7, cv);
         this.cn = cn;
         this.methodFilter = methodFilter;
 
@@ -96,8 +96,10 @@ final class JIMethodMergeAdapter extends ClassVisitor {
         for (MethodNode mn : cn.methods) {
             // Check if the method is in the list of methods to copy
             if (methodInFilter(mn.name, mn.desc)) {
-                Logger.log(LogTag.JFR_SYSTEM_BYTECODE, LogLevel.DEBUG, "Copying method: " + mn.name + mn.desc);
-                Logger.log(LogTag.JFR_SYSTEM_BYTECODE, LogLevel.DEBUG,  "   with mapper: " + typeMap);
+                if (Logger.shouldLog(LogTag.JFR_SYSTEM_BYTECODE, LogLevel.DEBUG)) {
+                    Logger.log(LogTag.JFR_SYSTEM_BYTECODE, LogLevel.DEBUG, "Copying method: " + mn.name + mn.desc);
+                    Logger.log(LogTag.JFR_SYSTEM_BYTECODE, LogLevel.DEBUG, "   with mapper: " + typeMap);
+                }
 
                 String[] exceptions = new String[mn.exceptions.size()];
                 mn.exceptions.toArray(exceptions);

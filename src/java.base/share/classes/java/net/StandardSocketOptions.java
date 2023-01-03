@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -295,7 +295,6 @@ public final @UsesObjectEquals class StandardSocketOptions {
      * is system dependent.
      *
      * @see java.nio.channels.MulticastChannel
-     * @see MulticastSocket#setInterface
      */
     public static final SocketOption<NetworkInterface> IP_MULTICAST_IF =
         new StdSocketOption<NetworkInterface>("IP_MULTICAST_IF", NetworkInterface.class);
@@ -347,7 +346,6 @@ public final @UsesObjectEquals class StandardSocketOptions {
      * binding the socket is system dependent.
      *
      * @see java.nio.channels.MulticastChannel
-     *  @see MulticastSocket#setLoopbackMode
      */
     public static final SocketOption<Boolean> IP_MULTICAST_LOOP =
         new StdSocketOption<Boolean>("IP_MULTICAST_LOOP", Boolean.class);

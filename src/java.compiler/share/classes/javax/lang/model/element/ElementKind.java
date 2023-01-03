@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,7 @@ package javax.lang.model.element;
  *
  * <p>Note that it is possible additional element kinds will be added
  * to accommodate new, currently unknown, language structures added to
- * future versions of the Java&trade; programming language.
+ * future versions of the Java programming language.
  *
  * @author Joseph D. Darcy
  * @author Scott Seligman
@@ -44,11 +44,15 @@ public enum ElementKind {
     PACKAGE,
 
     // Declared types
-    /** An enum type. */
+    /** An enum class. */
     ENUM,
-    /** A class not described by a more specific kind (like {@code ENUM}). */
+    /**
+     * A class not described by a more specific kind (like {@code
+     * ENUM} or {@code RECORD}).
+     */
     CLASS,
-    /** An annotation type. */
+
+    /** An annotation interface. (Formerly known as an annotation type.) */
     ANNOTATION_TYPE,
     /**
      * An interface not described by a more specific kind (like
@@ -90,6 +94,8 @@ public enum ElementKind {
      */
     OTHER,
 
+    // Constants added since initial release
+
     /**
      * A resource variable.
      * @since 1.7
@@ -99,19 +105,36 @@ public enum ElementKind {
     /**
      * A module.
      * @since 9
-     * @spec JPMS
      */
-     MODULE;
+     MODULE,
 
+    /**
+     * A record class.
+     * @since 16
+     */
+    RECORD,
+
+    /**
+     * A record component of a {@code record}.
+     * @since 16
+     */
+    RECORD_COMPONENT,
+
+    /**
+     * A binding variable in a pattern.
+     * @since 16
+     */
+    BINDING_VARIABLE;
 
     /**
      * Returns {@code true} if this is a kind of class:
-     * either {@code CLASS} or {@code ENUM}.
+     * either {@code CLASS} or {@code ENUM} or {@code RECORD}.
      *
      * @return {@code true} if this is a kind of class
      */
+    @SuppressWarnings("preview")
     public boolean isClass() {
-        return this == CLASS || this == ENUM;
+        return this == CLASS || this == ENUM || this == RECORD;
     }
 
     /**

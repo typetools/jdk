@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -284,19 +284,28 @@ final class P11ECKeyFactory extends P11KeyFactory {
 
     <T extends KeySpec> T implGetPublicKeySpec(P11Key key, Class<T> keySpec,
             Session[] session) throws PKCS11Exception, InvalidKeySpecException {
-        if (ECPublicKeySpec.class.isAssignableFrom(keySpec)) {
+        if (keySpec.isAssignableFrom(ECPublicKeySpec.class)) {
             session[0] = token.getObjSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_EC_POINT),
                 new CK_ATTRIBUTE(CKA_EC_PARAMS),
             };
-            token.p11.C_GetAttributeValue(session[0].id(), key.keyID, attributes);
+            long keyID = key.getKeyID();
             try {
+                token.p11.C_GetAttributeValue(session[0].id(), keyID, attributes);
                 ECParameterSpec params = decodeParameters(attributes[1].getByteArray());
-                ECPoint point = decodePoint(attributes[0].getByteArray(), params.getCurve());
+                ECPoint point;
+
+                if (!token.config.getUseEcX963Encoding()) {
+                    point = decodePoint(new DerValue(attributes[0].getByteArray()).getOctetString(), params.getCurve());
+                } else {
+                    point = decodePoint(attributes[0].getByteArray(), params.getCurve());
+                }
                 return keySpec.cast(new ECPublicKeySpec(point, params));
             } catch (IOException e) {
                 throw new InvalidKeySpecException("Could not parse key", e);
+            } finally {
+                key.releaseKeyID();
             }
         } else { // X.509 handled in superclass
             throw new InvalidKeySpecException("Only ECPublicKeySpec and "
@@ -306,19 +315,22 @@ final class P11ECKeyFactory extends P11KeyFactory {
 
     <T extends KeySpec> T implGetPrivateKeySpec(P11Key key, Class<T> keySpec,
             Session[] session) throws PKCS11Exception, InvalidKeySpecException {
-        if (ECPrivateKeySpec.class.isAssignableFrom(keySpec)) {
+        if (keySpec.isAssignableFrom(ECPrivateKeySpec.class)) {
             session[0] = token.getObjSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_VALUE),
                 new CK_ATTRIBUTE(CKA_EC_PARAMS),
             };
-            token.p11.C_GetAttributeValue(session[0].id(), key.keyID, attributes);
+            long keyID = key.getKeyID();
             try {
+                token.p11.C_GetAttributeValue(session[0].id(), keyID, attributes);
                 ECParameterSpec params = decodeParameters(attributes[1].getByteArray());
                 return keySpec.cast(
                     new ECPrivateKeySpec(attributes[0].getBigInteger(), params));
             } catch (IOException e) {
                 throw new InvalidKeySpecException("Could not parse key", e);
+            } finally {
+                key.releaseKeyID();
             }
         } else { // PKCS#8 handled in superclass
             throw new InvalidKeySpecException("Only ECPrivateKeySpec "

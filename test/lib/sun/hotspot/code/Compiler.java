@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
 
 package sun.hotspot.code;
 
+import java.lang.reflect.Executable;
 import sun.hotspot.WhiteBox;
 
 /**
@@ -32,6 +33,29 @@ import sun.hotspot.WhiteBox;
 public class Compiler {
 
     private static final WhiteBox WB = WhiteBox.getWhiteBox();
+
+    /**
+     * Check if C2 or JVMCI were included in the VM build
+     *
+     * @return true if either C2 or JVMCI were included in the VM build.
+     */
+    public static boolean isC2OrJVMCIIncluded() {
+        return WB.isC2OrJVMCIIncluded();
+    }
+
+    /**
+     * Check if JVMCI is enabled.
+     *
+     * @return true if JVMCI is enabled
+     */
+    public static boolean isJVMCIEnabled() {
+        Boolean enableJvmci = WB.getBooleanVMFlag("EnableJVMCI");
+        if (enableJvmci == null || !enableJvmci) {
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * Check if Graal is used as JIT compiler.
@@ -52,11 +76,6 @@ public class Compiler {
         }
         Boolean useJvmciComp = WB.getBooleanVMFlag("UseJVMCICompiler");
         if (useJvmciComp == null || !useJvmciComp) {
-            return false;
-        }
-        // This check might be redundant but let's keep it for now.
-        String jvmciCompiler = System.getProperty("jvmci.Compiler");
-        if (jvmciCompiler == null || !jvmciCompiler.equals("graal")) {
             return false;
         }
 
@@ -132,5 +151,21 @@ public class Compiler {
             return false;
         }
         return true;
+    }
+
+    /*
+     * Determine if the compiler corresponding to the compilation level 'compLevel'
+     * provides an intrinsic for 'class'.'method'.
+     */
+    public static boolean isIntrinsicAvailable(int compLevel, String klass, String method, Class<?>... parameterTypes) {
+        Executable intrinsicMethod;
+        try {
+            intrinsicMethod = Class.forName(klass).getDeclaredMethod(method, parameterTypes);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Test bug, '" + method + "' method unavailable. " + e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Test bug, '" + klass + "' class unavailable. " + e);
+        }
+        return WB.isIntrinsicAvailable(intrinsicMethod, compLevel);
     }
 }

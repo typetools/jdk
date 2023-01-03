@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,13 +52,14 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
     private final ThreadGroup mainGroupForJDI;
     private ResourceBundle messages = null;
     private int vmSequenceNumber = 0;
-    private static final int majorVersion = 11;
+    private static final int majorVersion = Runtime.version().feature();
     private static final int minorVersion = 0;
 
     private static final Object lock = new Object();
     private static VirtualMachineManagerImpl vmm;
 
     public static VirtualMachineManager virtualMachineManager() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             JDIPermission vmmPermission =

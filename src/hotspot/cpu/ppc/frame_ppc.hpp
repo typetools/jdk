@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2015 SAP SE. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_PPC_VM_FRAME_PPC_HPP
-#define CPU_PPC_VM_FRAME_PPC_HPP
+#ifndef CPU_PPC_FRAME_PPC_HPP
+#define CPU_PPC_FRAME_PPC_HPP
 
 #include "runtime/synchronizer.hpp"
 
@@ -118,7 +118,7 @@
     abi_reg_args_size = sizeof(abi_reg_args)
   };
 
-  #define _abi(_component) \
+  #define _abi0(_component) \
           (offset_of(frame::abi_reg_args, _component))
 
   struct abi_reg_args_spill : abi_reg_args {
@@ -250,9 +250,6 @@
         (offset_of(frame::top_ijava_frame_abi, _component))
 
   struct ijava_state {
-#ifdef ASSERT
-    uint64_t ijava_reserved; // Used for assertion.
-#endif
     uint64_t method;
     uint64_t mirror;
     uint64_t locals;
@@ -359,12 +356,12 @@
   //            ...
   //
 
-  // frame pointer for this frame
-  intptr_t* _fp;
-
   // The frame's stack pointer before it has been extended by a c2i adapter;
   // needed by deoptimization
   intptr_t* _unextended_sp;
+
+  // frame pointer for this frame
+  intptr_t* _fp;
 
  public:
 
@@ -409,12 +406,6 @@
   // The size of a cInterpreter object.
   static inline int interpreter_frame_cinterpreterstate_size_in_bytes();
 
- private:
-
-  ConstantPoolCache** interpreter_frame_cpoolcache_addr() const;
-
- public:
-
   // Additional interface for entry frames:
   inline entry_frame_locals* get_entry_frame_locals() const {
     return (entry_frame_locals*) (((address) fp()) - entry_frame_locals_size);
@@ -427,4 +418,7 @@
 
   static jint interpreter_frame_expression_stack_direction() { return -1; }
 
-#endif // CPU_PPC_VM_FRAME_PPC_HPP
+  // returns the sending frame, without applying any barriers
+  frame sender_raw(RegisterMap* map) const;
+
+#endif // CPU_PPC_FRAME_PPC_HPP

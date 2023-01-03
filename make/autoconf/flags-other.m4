@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -31,9 +31,7 @@
 AC_DEFUN([FLAGS_SETUP_ARFLAGS],
 [
   # FIXME: figure out if we should select AR flags depending on OS or toolchain.
-  if test "x$OPENJDK_TARGET_OS" = xmacosx; then
-    ARFLAGS="-r -mmacosx-version-min=$MACOSX_VERSION_MIN"
-  elif test "x$OPENJDK_TARGET_OS" = xaix; then
+  if test "x$OPENJDK_TARGET_OS" = xaix; then
     ARFLAGS="-X64"
   elif test "x$OPENJDK_TARGET_OS" = xwindows; then
     # lib.exe is used as AR to create static libraries.
@@ -49,12 +47,10 @@ AC_DEFUN([FLAGS_SETUP_STRIPFLAGS],
 [
   ## Setup strip.
   # FIXME: should this really be per platform, or should it be per toolchain type?
-  # strip is not provided by clang or solstudio; so guessing platform makes most sense.
+  # strip is not provided by clang; so guessing platform makes most sense.
   # FIXME: we should really only export STRIPFLAGS from here, not POST_STRIP_CMD.
   if test "x$OPENJDK_TARGET_OS" = xlinux; then
     STRIPFLAGS="-g"
-  elif test "x$OPENJDK_TARGET_OS" = xsolaris; then
-    STRIPFLAGS="-x"
   elif test "x$OPENJDK_TARGET_OS" = xmacosx; then
     STRIPFLAGS="-S"
   elif test "x$OPENJDK_TARGET_OS" = xaix; then
@@ -68,47 +64,38 @@ AC_DEFUN([FLAGS_SETUP_RCFLAGS],
 [
   # On Windows, we need to set RC flags.
   if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
-    RC_FLAGS="-nologo -l0x409"
-    JVM_RCFLAGS="-nologo"
+    RCFLAGS="-nologo"
     if test "x$DEBUG_LEVEL" = xrelease; then
-      RC_FLAGS="$RC_FLAGS -DNDEBUG"
-      JVM_RCFLAGS="$JVM_RCFLAGS -DNDEBUG"
+      RCFLAGS="$RCFLAGS -DNDEBUG"
     fi
-
-    # The version variables used to create RC_FLAGS may be overridden
-    # in a custom configure script, or possibly the command line.
-    # Let those variables be expanded at make time in spec.gmk.
-    # The \$ are escaped to the shell, and the $(...) variables
-    # are evaluated by make.
-    RC_FLAGS="$RC_FLAGS \
-        -D\"JDK_VERSION_STRING=\$(VERSION_STRING)\" \
-        -D\"JDK_COMPANY=\$(COMPANY_NAME)\" \
-        -D\"JDK_COMPONENT=\$(PRODUCT_NAME) \$(JDK_RC_PLATFORM_NAME) binary\" \
-        -D\"JDK_VER=\$(VERSION_NUMBER)\" \
-        -D\"JDK_COPYRIGHT=Copyright \xA9 $COPYRIGHT_YEAR\" \
-        -D\"JDK_NAME=\$(PRODUCT_NAME) \$(JDK_RC_PLATFORM_NAME) \$(VERSION_FEATURE)\" \
-        -D\"JDK_FVER=\$(subst .,\$(COMMA),\$(VERSION_NUMBER_FOUR_POSITIONS))\""
-
-    JVM_RCFLAGS="$JVM_RCFLAGS \
-        -D\"HS_BUILD_ID=\$(VERSION_STRING)\" \
-        -D\"HS_COMPANY=\$(COMPANY_NAME)\" \
-        -D\"JDK_DOTVER=\$(VERSION_NUMBER_FOUR_POSITIONS)\" \
-        -D\"HS_COPYRIGHT=Copyright $COPYRIGHT_YEAR\" \
-        -D\"HS_NAME=\$(PRODUCT_NAME) \$(VERSION_SHORT)\" \
-        -D\"JDK_VER=\$(subst .,\$(COMMA),\$(VERSION_NUMBER_FOUR_POSITIONS))\" \
-        -D\"HS_FNAME=jvm.dll\" \
-        -D\"HS_INTERNAL_NAME=jvm\""
   fi
-  AC_SUBST(RC_FLAGS)
-  AC_SUBST(JVM_RCFLAGS)
+  AC_SUBST(RCFLAGS)
 ])
 
 ################################################################################
 # platform independent
 AC_DEFUN([FLAGS_SETUP_ASFLAGS],
 [
+  if test "x$TOOLCHAIN_TYPE" = xgcc || test "x$TOOLCHAIN_TYPE" = xclang; then
+    # Force preprocessor to run, just to make sure
+    BASIC_ASFLAGS="-x assembler-with-cpp"
+  elif test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
+    BASIC_ASFLAGS="-nologo -c"
+  fi
+  AC_SUBST(BASIC_ASFLAGS)
+
   if test "x$OPENJDK_TARGET_OS" = xmacosx; then
-    JVM_BASIC_ASFLAGS="-x assembler-with-cpp -mno-omit-leaf-frame-pointer -mstack-alignment=16"
+    JVM_BASIC_ASFLAGS="-mno-omit-leaf-frame-pointer -mstack-alignment=16"
+
+    # Fix linker warning.
+    # Code taken from make/autoconf/flags-cflags.m4 and adapted.
+    JVM_BASIC_ASFLAGS+="-DMAC_OS_X_VERSION_MIN_REQUIRED=$MACOSX_VERSION_MIN_NODOTS \
+        -mmacosx-version-min=$MACOSX_VERSION_MIN"
+
+    if test -n "$MACOSX_VERSION_MAX"; then
+        JVM_BASIC_ASFLAGS+="$OS_CFLAGS \
+            -DMAC_OS_X_VERSION_MAX_ALLOWED=$MACOSX_VERSION_MAX_NODOTS"
+    fi
   fi
 ])
 
@@ -120,6 +107,12 @@ AC_DEFUN([FLAGS_SETUP_ASFLAGS_CPU_DEP],
 [
   # Misuse EXTRA_CFLAGS to mimic old behavior
   $2JVM_ASFLAGS="$JVM_BASIC_ASFLAGS ${$2EXTRA_CFLAGS}"
+
+  if test "x$1" = "xTARGET" && \
+      test "x$TOOLCHAIN_TYPE" = xgcc && \
+      test "x$OPENJDK_TARGET_CPU" = xarm; then
+    $2JVM_ASFLAGS="${$2JVM_ASFLAGS} $ARM_ARCH_TYPE_ASFLAGS $ARM_FLOAT_TYPE_ASFLAGS"
+  fi
 
   AC_SUBST($2JVM_ASFLAGS)
 ])

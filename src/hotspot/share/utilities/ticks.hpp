@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+* Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
 * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef SHARE_VM_UTILITIES_TICKS_HPP
-#define SHARE_VM_UTILITIES_TICKS_HPP
+#ifndef SHARE_UTILITIES_TICKS_HPP
+#define SHARE_UTILITIES_TICKS_HPP
 
 #include "jni.h"
 #include "memory/allocation.hpp"
@@ -233,9 +233,11 @@ class TimeInstant : public Rep<TimeSource> {
   TimeInstant(jlong ticks) : Rep<TimeSource>(ticks) {}
   friend class GranularTimer;
   friend class ObjectSample;
-  //  GC VM tests
-  friend class TimePartitionPhasesIteratorTest;
+  friend class EventEmitter;
+  // GC unit tests
+  friend class TimePartitionsTest;
   friend class GCTimerTest;
+  friend class CompilerEvent;
 };
 
 #if INCLUDE_JFR
@@ -246,4 +248,4 @@ typedef TimeInstant<CounterRepresentation, ElapsedCounterSource> Ticks;
 typedef TimeInterval<CounterRepresentation, ElapsedCounterSource> Tickspan;
 #endif
 
-#endif // SHARE_VM_UTILITIES_TICKS_HPP
+#endif // SHARE_UTILITIES_TICKS_HPP

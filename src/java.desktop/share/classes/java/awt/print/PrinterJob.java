@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,24 +72,12 @@ public abstract @UsesObjectEquals class PrinterJob {
      *          method disallows this thread from creating a print job request
      */
     public static PrinterJob getPrinterJob() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPrintJobAccess();
         }
-        return java.security.AccessController.doPrivileged(
-            new java.security.PrivilegedAction<PrinterJob>() {
-            public PrinterJob run() {
-                String nm = System.getProperty("java.awt.printerjob", null);
-                try {
-                    return (PrinterJob)Class.forName(nm).
-                                             getConstructor().newInstance();
-                } catch (ClassNotFoundException e) {
-                    throw new AWTError("PrinterJob not found: " + nm);
-                } catch (ReflectiveOperationException e) {
-                 throw new AWTError("Could not instantiate PrinterJob: " + nm);
-                }
-            }
-        });
+        return sun.print.PlatformPrinterJobProxy.getPrinterJob();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,7 +53,6 @@ import static java.util.stream.Collectors.toList;
  *
  * Supports http/https/ftp.proxyHost, http/https/ftp.proxyPort,
  * proxyHost, proxyPort, and http/https/ftp.nonProxyHost, and socks.
- * NOTE: need to do gopher as well
  */
 public class DefaultProxySelector extends ProxySelector {
 
@@ -82,7 +81,6 @@ public class DefaultProxySelector extends ProxySelector {
         {"http", "http.proxy", "proxy", "socksProxy"},
         {"https", "https.proxy", "proxy", "socksProxy"},
         {"ftp", "ftp.proxy", "ftpProxy", "proxy", "socksProxy"},
-        {"gopher", "gopherProxy", "socksProxy"},
         {"socket", "socksProxy"}
     };
 
@@ -94,23 +92,19 @@ public class DefaultProxySelector extends ProxySelector {
 
     static {
         final String key = "java.net.useSystemProxies";
+        @SuppressWarnings("removal")
         Boolean b = AccessController.doPrivileged(
             new PrivilegedAction<Boolean>() {
                 public Boolean run() {
                     return NetProperties.getBoolean(key);
                 }});
         if (b != null && b.booleanValue()) {
-            java.security.AccessController.doPrivileged(
-                new java.security.PrivilegedAction<Void>() {
-                    public Void run() {
-                        System.loadLibrary("net");
-                        return null;
-                    }
-                });
+            jdk.internal.loader.BootLoader.loadLibrary("net");
             hasSystemProxies = init();
         }
     }
 
+    @SuppressWarnings("removal")
     public static int socksProxyVersion() {
         return AccessController.doPrivileged(
                 new PrivilegedAction<Integer>() {
@@ -219,6 +213,7 @@ public class DefaultProxySelector extends ProxySelector {
          * System properties it does help having only 1 call to doPrivileged.
          * Be mindful what you do in here though!
          */
+        @SuppressWarnings("removal")
         Proxy[] proxyArray = AccessController.doPrivileged(
             new PrivilegedAction<Proxy[]>() {
                 public Proxy[] run() {
@@ -240,7 +235,7 @@ public class DefaultProxySelector extends ProxySelector {
                                 if (phost != null && phost.length() != 0)
                                     break;
                             }
-                            if (phost == null || phost.length() == 0) {
+                            if (phost == null || phost.isEmpty()) {
                                 /**
                                  * No system property defined for that
                                  * protocol. Let's check System Proxy
@@ -269,7 +264,7 @@ public class DefaultProxySelector extends ProxySelector {
                                             nprop.hostsSource = null;
                                             nprop.pattern = null;
                                         }
-                                    } else if (nphosts.length() != 0) {
+                                    } else if (!nphosts.isEmpty()) {
                                         // add the required default patterns
                                         // but only if property no set. If it
                                         // is empty, leave empty.
@@ -350,8 +345,6 @@ public class DefaultProxySelector extends ProxySelector {
             return 80;
         } else if ("socket".equalsIgnoreCase(protocol)) {
             return 1080;
-        } else if ("gopher".equalsIgnoreCase(protocol)) {
-            return 80;
         } else {
             return -1;
         }
@@ -395,7 +388,9 @@ public class DefaultProxySelector extends ProxySelector {
      */
     static String disjunctToRegex(String disjunct) {
         String regex;
-        if (disjunct.startsWith("*") && disjunct.endsWith("*")) {
+        if (disjunct.equals("*")) {
+            regex = ".*";
+        } else if (disjunct.startsWith("*") && disjunct.endsWith("*")) {
             regex = ".*" + quote(disjunct.substring(1, disjunct.length() - 1)) + ".*";
         } else if (disjunct.startsWith("*")) {
             regex = ".*" + quote(disjunct.substring(1));

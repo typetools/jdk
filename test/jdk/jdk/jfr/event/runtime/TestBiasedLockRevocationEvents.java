@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -43,7 +41,7 @@ import java.util.stream.Collectors;
  * @requires vm.hasJFR
  * @library /test/lib
  *
- * @run main/othervm jdk.jfr.event.runtime.TestBiasedLockRevocationEvents
+ * @run main/othervm -XX:+UseBiasedLocking jdk.jfr.event.runtime.TestBiasedLockRevocationEvents
  */
 public class TestBiasedLockRevocationEvents {
 
@@ -101,8 +99,9 @@ public class TestBiasedLockRevocationEvents {
     }
 
     // Retrieve all biased lock revocation events related to the provided lock class, sorted by start time
-    static List<RecordedEvent> getRevocationEvents(Recording recording, String fieldName, Class<?> lockClass) throws Throwable {
+    static List<RecordedEvent> getRevocationEvents(Recording recording, String eventTypeName, String fieldName, Class<?> lockClass) throws Throwable {
         return Events.fromRecording(recording).stream()
+                .filter(e -> e.getEventType().getName().equals(eventTypeName))
                 .filter(e -> ((RecordedClass)e.getValue(fieldName)).getName().equals(lockClass.getName()))
                 .sorted(Comparator.comparing(RecordedEvent::getStartTime))
                 .collect(Collectors.toList());
@@ -119,7 +118,7 @@ public class TestBiasedLockRevocationEvents {
         Thread biasBreaker = triggerRevocation(1, MyLock.class);
 
         recording.stop();
-        List<RecordedEvent> events = getRevocationEvents(recording, "lockClass", MyLock.class);
+        List<RecordedEvent> events = getRevocationEvents(recording, EventNames.BiasedLockRevocation, "lockClass", MyLock.class);
         Asserts.assertEQ(events.size(), 1);
 
         RecordedEvent event = events.get(0);
@@ -143,7 +142,7 @@ public class TestBiasedLockRevocationEvents {
         Thread biasBreaker = triggerRevocation(BULK_REVOKE_THRESHOLD, MyLock.class);
 
         recording.stop();
-        List<RecordedEvent> events = getRevocationEvents(recording, "revokedClass", MyLock.class);
+        List<RecordedEvent> events = getRevocationEvents(recording, EventNames.BiasedLockClassRevocation, "revokedClass", MyLock.class);
         Asserts.assertEQ(events.size(), 1);
 
         RecordedEvent event = events.get(0);
@@ -169,7 +168,7 @@ public class TestBiasedLockRevocationEvents {
         Thread.holdsLock(l);
 
         recording.stop();
-        List<RecordedEvent> events = getRevocationEvents(recording, "lockClass", MyLock.class);
+        List<RecordedEvent> events = getRevocationEvents(recording, EventNames.BiasedLockSelfRevocation, "lockClass", MyLock.class);
         Asserts.assertEQ(events.size(), 1);
 
         RecordedEvent event = events.get(0);
@@ -211,7 +210,7 @@ public class TestBiasedLockRevocationEvents {
         touch(l);
 
         recording.stop();
-        List<RecordedEvent> events = getRevocationEvents(recording, "lockClass", MyLock.class);
+        List<RecordedEvent> events = getRevocationEvents(recording, EventNames.BiasedLockRevocation, "lockClass", MyLock.class);
         Asserts.assertEQ(events.size(), 1);
 
         RecordedEvent event = events.get(0);
@@ -237,7 +236,7 @@ public class TestBiasedLockRevocationEvents {
         Thread biasBreaker1 = triggerRevocation(BULK_REVOKE_THRESHOLD, MyLock.class);
 
         recording.stop();
-        List<RecordedEvent> events = getRevocationEvents(recording, "revokedClass", MyLock.class);
+        List<RecordedEvent> events = getRevocationEvents(recording, EventNames.BiasedLockClassRevocation, "revokedClass", MyLock.class);
         Asserts.assertEQ(events.size(), 2);
 
         // The rebias event should occur before the noRebias one
@@ -264,7 +263,6 @@ public class TestBiasedLockRevocationEvents {
 
         Recording recording = new Recording();
 
-        recording.enable(EventNames.BiasedLockRevocation);
         recording.enable(EventNames.BiasedLockClassRevocation);
         recording.enable(EventNames.ExecuteVMOperation);
         recording.start();
@@ -274,37 +272,26 @@ public class TestBiasedLockRevocationEvents {
         recording.stop();
         List<RecordedEvent> events = Events.fromRecording(recording);
 
-        // Determine which safepoints included single and bulk revocation VM operations
-        Set<Integer> vmOperationsSingle = new HashSet<>();
-        Set<Integer> vmOperationsBulk = new HashSet<>();
+        // Determine which safepoints included bulk revocation VM operations
+        Set<Long> vmOperationsBulk = new HashSet<>();
 
         for (RecordedEvent event : events) {
             if (event.getEventType().getName().equals(EventNames.ExecuteVMOperation)) {
                 String operation = event.getValue("operation");
-                Integer safepointId = event.getValue("safepointId");
+                Long safepointId = event.getValue("safepointId");
 
-                if (operation.equals("RevokeBias")) {
-                    vmOperationsSingle.add(safepointId);
-                } else if (operation.equals("BulkRevokeBias")) {
+                if (operation.equals("BulkRevokeBias")) {
                     vmOperationsBulk.add(safepointId);
                 }
             }
         }
 
-        int revokeCount = 0;
         int bulkRevokeCount = 0;
 
         // Match all revoke events to a corresponding VMOperation event
         for (RecordedEvent event : events) {
-            if (event.getEventType().getName().equals(EventNames.BiasedLockRevocation)) {
-                Integer safepointId = event.getValue("safepointId");
-                String lockClass = ((RecordedClass)event.getValue("lockClass")).getName();
-                if (lockClass.equals(MyLock.class.getName())) {
-                    Asserts.assertTrue(vmOperationsSingle.contains(safepointId));
-                    revokeCount++;
-                }
-            } else if (event.getEventType().getName().equals(EventNames.BiasedLockClassRevocation)) {
-                Integer safepointId = event.getValue("safepointId");
+            if (event.getEventType().getName().equals(EventNames.BiasedLockClassRevocation)) {
+                Long safepointId = event.getValue("safepointId");
                 String lockClass = ((RecordedClass)event.getValue("revokedClass")).getName();
                 if (lockClass.toString().equals(MyLock.class.getName())) {
                     Asserts.assertTrue(vmOperationsBulk.contains(safepointId));
@@ -314,6 +301,5 @@ public class TestBiasedLockRevocationEvents {
         }
 
         Asserts.assertGT(bulkRevokeCount, 0);
-        Asserts.assertGT(revokeCount, bulkRevokeCount);
     }
 }

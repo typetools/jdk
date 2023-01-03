@@ -37,6 +37,7 @@ package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -216,4 +217,9 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue, or {@code null} if this queue is empty
      */
     @Nullable E peek();
+
+    @CFComment("Copied from Collection to make it annotatable")
+    @Pure
+    // @EnsuresNonNullIf(expression={"poll()", "peek()"}, result=true)
+    boolean isEmpty(@GuardSatisfied Queue<E> this);
 }

@@ -132,13 +132,13 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
 
 // Transient variables (recalculated each time TabbedPane is layed out)
     /** Tab runs */
-    protected int tabRuns[] = new int[10];
+    protected int[] tabRuns = new int[10];
     /** Run count */
     protected int runCount = 0;
     /** Selected run */
     protected int selectedRun = -1;
     /** Tab rects */
-    protected Rectangle rects[] = new Rectangle[0];
+    protected Rectangle[] rects = new Rectangle[0];
     /** Maximum tab height */
     protected int maxTabHeight;
     /** Maximum tab width */
@@ -209,6 +209,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
     private int baseline;
 
 // UI creation
+
+    /**
+     * Constructs a {@code BasicTabbedPaneUI}.
+     */
+    public BasicTabbedPaneUI() {}
 
     /**
      * Create a UI.
@@ -986,8 +991,8 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * subtracting xCropLen[i] from (tab.y + tab.height) and adding yCropLen[i]
      * to (tab.x).
      */
-    private static int xCropLen[] = {1,1,0,0,1,1,2,2};
-    private static int yCropLen[] = {0,3,3,6,6,9,9,12};
+    private static int[] xCropLen = {1,1,0,0,1,1,2,2};
+    private static int[] yCropLen = {0,3,3,6,6,9,9,12};
     private static final int CROP_SEGMENT = 12;
 
     private static Polygon createCroppedTabShape(int tabPlacement, Rectangle tabRect, int cropline) {
@@ -1017,8 +1022,8 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
             rcnt++;
         }
         int npts = 2 + (rcnt*8);
-        int xp[] = new int[npts];
-        int yp[] = new int[npts];
+        int[] xp = new int[npts];
+        int[] yp = new int[npts];
         int pcnt = 0;
 
         xp[pcnt] = ostart;
@@ -2657,6 +2662,10 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * Instantiate it only within subclasses of BasicTabbedPaneUI.
      */
     public class TabbedPaneLayout implements LayoutManager {
+        /**
+         * Constructs a {@code TabbedPaneLayout}.
+         */
+        public TabbedPaneLayout() {}
 
         public void addLayoutComponent(String name, Component comp) {}
 
@@ -3322,11 +3331,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
     private class TabbedPaneScrollLayout extends TabbedPaneLayout {
 
         protected int preferredTabAreaHeight(int tabPlacement, int width) {
-            return calculateMaxTabHeight(tabPlacement);
+            return calculateTabAreaHeight(tabPlacement, 1, calculateMaxTabHeight(tabPlacement));
         }
 
         protected int preferredTabAreaWidth(int tabPlacement, int height) {
-            return calculateMaxTabWidth(tabPlacement);
+            return calculateTabAreaWidth(tabPlacement, 1, calculateMaxTabWidth(tabPlacement));
         }
 
         @SuppressWarnings("deprecation")
@@ -3907,11 +3916,13 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
         public ScrollableTabPanel() {
             super(null);
             setOpaque(tabPane.isOpaque());
-            Color bgColor = UIManager.getColor("TabbedPane.tabAreaBackground");
-            if (bgColor == null) {
-                bgColor = tabPane.getBackground();
+            Color background = tabPane.getBackground();
+            Color tabAreaBackground = UIManager.getColor("TabbedPane.tabAreaBackground");
+            if (background instanceof UIResource && tabAreaBackground != null) {
+                setBackground(tabAreaBackground);
+            } else {
+                setBackground(background);
             }
-            setBackground(bgColor);
         }
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -4193,6 +4204,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * Instantiate it only within subclasses of BasicTabbedPaneUI.
      */
     public class PropertyChangeHandler implements PropertyChangeListener {
+        /**
+         * Constructs a {@code PropertyChangeHandler}.
+         */
+        public PropertyChangeHandler() {}
+
         // NOTE: This class exists only for backward compatibility. All
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
@@ -4207,6 +4223,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * Instantiate it only within subclasses of BasicTabbedPaneUI.
      */
     public class TabSelectionHandler implements ChangeListener {
+        /**
+         * Constructs a {@code TabSelectionHandler}.
+         */
+        public TabSelectionHandler() {}
+
         // NOTE: This class exists only for backward compatibility. All
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
@@ -4221,6 +4242,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
      * Instantiate it only within subclasses of BasicTabbedPaneUI.
      */
     public class MouseHandler extends MouseAdapter {
+        /**
+         * Constructs a {@code MouseHandler}.
+         */
+        public MouseHandler() {}
+
         // NOTE: This class exists only for backward compatibility. All
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
@@ -4239,6 +4265,11 @@ public class BasicTabbedPaneUI extends TabbedPaneUI implements SwingConstants {
         // its functionality has been moved into Handler. If you need to add
         // new functionality add it to the Handler, but make sure this
         // class calls into the Handler.
+        /**
+         * Constructs a {@code FocusHandler}.
+         */
+        public FocusHandler() {}
+
         public void focusGained(FocusEvent e) {
             getHandler().focusGained(e);
         }

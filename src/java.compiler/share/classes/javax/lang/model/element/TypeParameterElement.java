@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,13 +41,18 @@ import javax.lang.model.type.TypeVariable;
  * @since 1.6
  */
 public interface TypeParameterElement extends Element {
+    /**
+     * {@return the {@linkplain TypeVariable type variable}
+     * corresponding to this type parameter element}
+     *
+     * @see TypeVariable
+     */
+    @Override
+    TypeMirror asType();
 
     /**
-     * Returns the generic class, interface, method, or constructor that is
-     * parameterized by this type parameter.
-     *
-     * @return the generic class, interface, method, or constructor that is
-     * parameterized by this type parameter
+     * {@return the generic class, interface, method, or constructor that is
+     * parameterized by this type parameter}
      */
     Element getGenericElement();
 
@@ -64,9 +69,8 @@ public interface TypeParameterElement extends Element {
     List<? extends TypeMirror> getBounds();
 
     /**
-     * Returns the {@linkplain TypeParameterElement#getGenericElement generic element} of this type parameter.
-     *
-     * @return the generic element of this type parameter
+     * {@return the {@linkplain TypeParameterElement#getGenericElement
+     * generic element} of this type parameter}
      */
     @Override
     Element getEnclosingElement();

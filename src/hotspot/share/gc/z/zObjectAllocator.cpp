@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,43 +22,67 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/shared/threadLocalAllocBuffer.inline.hpp"
-#include "gc/z/zCollectedHeap.hpp"
 #include "gc/z/zGlobals.hpp"
 #include "gc/z/zHeap.inline.hpp"
+#include "gc/z/zHeuristics.hpp"
 #include "gc/z/zObjectAllocator.hpp"
 #include "gc/z/zPage.inline.hpp"
+#include "gc/z/zPageTable.inline.hpp"
 #include "gc/z/zStat.hpp"
-#include "gc/z/zThread.hpp"
-#include "gc/z/zUtils.inline.hpp"
+#include "gc/z/zThread.inline.hpp"
+#include "gc/z/zValue.inline.hpp"
 #include "logging/log.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/safepoint.hpp"
-#include "runtime/thread.hpp"
-#include "runtime/threadSMR.hpp"
 #include "utilities/align.hpp"
 #include "utilities/debug.hpp"
 
 static const ZStatCounter ZCounterUndoObjectAllocationSucceeded("Memory", "Undo Object Allocation Succeeded", ZStatUnitOpsPerSecond);
 static const ZStatCounter ZCounterUndoObjectAllocationFailed("Memory", "Undo Object Allocation Failed", ZStatUnitOpsPerSecond);
-static const ZStatSubPhase ZSubPhasePauseRetireTLABS("Pause Retire TLABS");
-static const ZStatSubPhase ZSubPhasePauseRemapTLABS("Pause Remap TLABS");
 
-ZObjectAllocator::ZObjectAllocator(uint nworkers) :
-    _nworkers(nworkers),
+ZObjectAllocator::ZObjectAllocator() :
+    _use_per_cpu_shared_small_pages(ZHeuristics::use_per_cpu_shared_small_pages()),
     _used(0),
+    _undone(0),
+    _alloc_for_relocation(0),
+    _undo_alloc_for_relocation(0),
     _shared_medium_page(NULL),
-    _shared_small_page(NULL),
-    _worker_small_page(NULL) {}
+    _shared_small_page(NULL) {}
+
+ZPage** ZObjectAllocator::shared_small_page_addr() {
+  return _use_per_cpu_shared_small_pages ? _shared_small_page.addr() : _shared_small_page.addr(0);
+}
+
+ZPage* const* ZObjectAllocator::shared_small_page_addr() const {
+  return _use_per_cpu_shared_small_pages ? _shared_small_page.addr() : _shared_small_page.addr(0);
+}
+
+void ZObjectAllocator::register_alloc_for_relocation(const ZPageTable* page_table, uintptr_t addr, size_t size) {
+  const ZPage* const page = page_table->get(addr);
+  const size_t aligned_size = align_up(size, page->object_alignment());
+  Atomic::add(_alloc_for_relocation.addr(), aligned_size);
+}
+
+void ZObjectAllocator::register_undo_alloc_for_relocation(const ZPage* page, size_t size) {
+  const size_t aligned_size = align_up(size, page->object_alignment());
+  Atomic::add(_undo_alloc_for_relocation.addr(), aligned_size);
+}
 
 ZPage* ZObjectAllocator::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
   ZPage* const page = ZHeap::heap()->alloc_page(type, size, flags);
   if (page != NULL) {
     // Increment used bytes
-    Atomic::add(size, _used.addr());
+    Atomic::add(_used.addr(), size);
   }
 
   return page;
+}
+
+void ZObjectAllocator::undo_alloc_page(ZPage* page) {
+  // Increment undone bytes
+  Atomic::add(_undone.addr(), page->size());
+
+  ZHeap::heap()->undo_alloc_page(page);
 }
 
 uintptr_t ZObjectAllocator::alloc_object_in_shared_page(ZPage** shared_page,
@@ -67,7 +91,7 @@ uintptr_t ZObjectAllocator::alloc_object_in_shared_page(ZPage** shared_page,
                                                         size_t size,
                                                         ZAllocationFlags flags) {
   uintptr_t addr = 0;
-  ZPage* page = *shared_page;
+  ZPage* page = Atomic::load_acquire(shared_page);
 
   if (page != NULL) {
     addr = page->alloc_object_atomic(size);
@@ -82,7 +106,7 @@ uintptr_t ZObjectAllocator::alloc_object_in_shared_page(ZPage** shared_page,
 
     retry:
       // Install new page
-      ZPage* const prev_page = Atomic::cmpxchg(new_page, shared_page, page);
+      ZPage* const prev_page = Atomic::cmpxchg(shared_page, page, new_page);
       if (prev_page != page) {
         if (prev_page == NULL) {
           // Previous page was retired, retry installing the new page
@@ -102,7 +126,7 @@ uintptr_t ZObjectAllocator::alloc_object_in_shared_page(ZPage** shared_page,
         addr = prev_addr;
 
         // Undo new page allocation
-        ZHeap::heap()->undo_alloc_page(new_page);
+        undo_alloc_page(new_page);
       }
     }
   }
@@ -111,12 +135,10 @@ uintptr_t ZObjectAllocator::alloc_object_in_shared_page(ZPage** shared_page,
 }
 
 uintptr_t ZObjectAllocator::alloc_large_object(size_t size, ZAllocationFlags flags) {
-  assert(ZThread::is_java(), "Should be a Java thread");
-
   uintptr_t addr = 0;
 
   // Allocate new large page
-  const size_t page_size = align_up(size, ZPageSizeMin);
+  const size_t page_size = align_up(size, ZGranuleSize);
   ZPage* const page = alloc_page(ZPageTypeLarge, page_size, flags);
   if (page != NULL) {
     // Allocate the object
@@ -130,43 +152,8 @@ uintptr_t ZObjectAllocator::alloc_medium_object(size_t size, ZAllocationFlags fl
   return alloc_object_in_shared_page(_shared_medium_page.addr(), ZPageTypeMedium, ZPageSizeMedium, size, flags);
 }
 
-uintptr_t ZObjectAllocator::alloc_small_object_from_nonworker(size_t size, ZAllocationFlags flags) {
-  assert(ZThread::is_java() || ZThread::is_vm(), "Should be a Java or VM thread");
-
-  // Non-worker small page allocation can never use the reserve
-  flags.set_no_reserve();
-
-  return alloc_object_in_shared_page(_shared_small_page.addr(), ZPageTypeSmall, ZPageSizeSmall, size, flags);
-}
-
-uintptr_t ZObjectAllocator::alloc_small_object_from_worker(size_t size, ZAllocationFlags flags) {
-  assert(ZThread::is_worker(), "Should be a worker thread");
-
-  ZPage* page = _worker_small_page.get();
-  uintptr_t addr = 0;
-
-  if (page != NULL) {
-    addr = page->alloc_object(size);
-  }
-
-  if (addr == 0) {
-    // Allocate new page
-    page = alloc_page(ZPageTypeSmall, ZPageSizeSmall, flags);
-    if (page != NULL) {
-      addr = page->alloc_object(size);
-    }
-    _worker_small_page.set(page);
-  }
-
-  return addr;
-}
-
 uintptr_t ZObjectAllocator::alloc_small_object(size_t size, ZAllocationFlags flags) {
-  if (flags.worker_thread()) {
-    return alloc_small_object_from_worker(size, flags);
-  } else {
-    return alloc_small_object_from_nonworker(size, flags);
-  }
+  return alloc_object_in_shared_page(shared_small_page_addr(), ZPageTypeSmall, ZPageSizeSmall, size, flags);
 }
 
 uintptr_t ZObjectAllocator::alloc_object(size_t size, ZAllocationFlags flags) {
@@ -183,109 +170,60 @@ uintptr_t ZObjectAllocator::alloc_object(size_t size, ZAllocationFlags flags) {
 }
 
 uintptr_t ZObjectAllocator::alloc_object(size_t size) {
-  assert(ZThread::is_java(), "Must be a Java thread");
-
   ZAllocationFlags flags;
-  flags.set_no_reserve();
-
-  if (!ZStallOnOutOfMemory) {
-    flags.set_non_blocking();
-  }
-
   return alloc_object(size, flags);
 }
 
-uintptr_t ZObjectAllocator::alloc_object_for_relocation(size_t size) {
-  assert(ZThread::is_java() || ZThread::is_worker() || ZThread::is_vm(), "Unknown thread");
-
+uintptr_t ZObjectAllocator::alloc_object_for_relocation(const ZPageTable* page_table, size_t size) {
   ZAllocationFlags flags;
-  flags.set_relocation();
   flags.set_non_blocking();
 
-  if (ZThread::is_worker()) {
-    flags.set_worker_thread();
+  const uintptr_t addr = alloc_object(size, flags);
+  if (addr != 0) {
+    register_alloc_for_relocation(page_table, addr, size);
   }
 
-  return alloc_object(size, flags);
-}
-
-bool ZObjectAllocator::undo_alloc_large_object(ZPage* page) {
-  assert(page->type() == ZPageTypeLarge, "Invalid page type");
-
-  // Undo page allocation
-  ZHeap::heap()->undo_alloc_page(page);
-  return true;
-}
-
-bool ZObjectAllocator::undo_alloc_medium_object(ZPage* page, uintptr_t addr, size_t size) {
-  assert(page->type() == ZPageTypeMedium, "Invalid page type");
-
-  // Try atomic undo on shared page
-  return page->undo_alloc_object_atomic(addr, size);
-}
-
-bool ZObjectAllocator::undo_alloc_small_object_from_nonworker(ZPage* page, uintptr_t addr, size_t size) {
-  assert(page->type() == ZPageTypeSmall, "Invalid page type");
-
-  // Try atomic undo on shared page
-  return page->undo_alloc_object_atomic(addr, size);
-}
-
-bool ZObjectAllocator::undo_alloc_small_object_from_worker(ZPage* page, uintptr_t addr, size_t size) {
-  assert(page->type() == ZPageTypeSmall, "Invalid page type");
-  assert(page == _worker_small_page.get(), "Invalid page");
-
-  // Non-atomic undo on worker-local page
-  const bool success = page->undo_alloc_object(addr, size);
-  assert(success, "Should always succeed");
-  return success;
-}
-
-bool ZObjectAllocator::undo_alloc_small_object(ZPage* page, uintptr_t addr, size_t size) {
-  if (ZThread::is_worker()) {
-    return undo_alloc_small_object_from_worker(page, addr, size);
-  } else {
-    return undo_alloc_small_object_from_nonworker(page, addr, size);
-  }
-}
-
-bool ZObjectAllocator::undo_alloc_object(ZPage* page, uintptr_t addr, size_t size) {
-  const uint8_t type = page->type();
-
-  if (type == ZPageTypeSmall) {
-    return undo_alloc_small_object(page, addr, size);
-  } else if (type == ZPageTypeMedium) {
-    return undo_alloc_medium_object(page, addr, size);
-  } else {
-    return undo_alloc_large_object(page);
-  }
+  return addr;
 }
 
 void ZObjectAllocator::undo_alloc_object_for_relocation(ZPage* page, uintptr_t addr, size_t size) {
-  if (undo_alloc_object(page, addr, size)) {
+  const uint8_t type = page->type();
+
+  if (type == ZPageTypeLarge) {
+    register_undo_alloc_for_relocation(page, size);
+    undo_alloc_page(page);
     ZStatInc(ZCounterUndoObjectAllocationSucceeded);
   } else {
-    ZStatInc(ZCounterUndoObjectAllocationFailed);
-    log_trace(gc)("Failed to undo object allocation: " PTR_FORMAT ", Size: " SIZE_FORMAT ", Thread: " PTR_FORMAT " (%s)",
-                  addr, size, ZThread::id(), ZThread::name());
+    if (page->undo_alloc_object_atomic(addr, size)) {
+      register_undo_alloc_for_relocation(page, size);
+      ZStatInc(ZCounterUndoObjectAllocationSucceeded);
+    } else {
+      ZStatInc(ZCounterUndoObjectAllocationFailed);
+    }
   }
 }
 
 size_t ZObjectAllocator::used() const {
   size_t total_used = 0;
+  size_t total_undone = 0;
 
-  ZPerCPUConstIterator<size_t> iter(&_used);
-  for (const size_t* cpu_used; iter.next(&cpu_used);) {
+  ZPerCPUConstIterator<size_t> iter_used(&_used);
+  for (const size_t* cpu_used; iter_used.next(&cpu_used);) {
     total_used += *cpu_used;
   }
 
-  return total_used;
+  ZPerCPUConstIterator<size_t> iter_undone(&_undone);
+  for (const size_t* cpu_undone; iter_undone.next(&cpu_undone);) {
+    total_undone += *cpu_undone;
+  }
+
+  return total_used - total_undone;
 }
 
 size_t ZObjectAllocator::remaining() const {
   assert(ZThread::is_java(), "Should be a Java thread");
 
-  ZPage* page = _shared_small_page.get();
+  const ZPage* const page = Atomic::load_acquire(shared_small_page_addr());
   if (page != NULL) {
     return page->remaining();
   }
@@ -293,38 +231,37 @@ size_t ZObjectAllocator::remaining() const {
   return 0;
 }
 
-void ZObjectAllocator::retire_tlabs() {
-  ZStatTimer timer(ZSubPhasePauseRetireTLABS);
-  assert(SafepointSynchronize::is_at_safepoint(), "Should be at safepoint");
+size_t ZObjectAllocator::relocated() const {
+  size_t total_alloc = 0;
+  size_t total_undo_alloc = 0;
 
-  // Retire TLABs
-  if (UseTLAB) {
-    ZCollectedHeap* heap = ZCollectedHeap::heap();
-    heap->accumulate_statistics_all_tlabs();
-    heap->ensure_parsability(true /* retire_tlabs */);
-    heap->resize_all_tlabs();
+  ZPerCPUConstIterator<size_t> iter_alloc(&_alloc_for_relocation);
+  for (const size_t* alloc; iter_alloc.next(&alloc);) {
+    total_alloc += Atomic::load(alloc);
   }
 
-  // Reset used
+  ZPerCPUConstIterator<size_t> iter_undo_alloc(&_undo_alloc_for_relocation);
+  for (const size_t* undo_alloc; iter_undo_alloc.next(&undo_alloc);) {
+    total_undo_alloc += Atomic::load(undo_alloc);
+  }
+
+  assert(total_alloc >= total_undo_alloc, "Mismatch");
+
+  return total_alloc - total_undo_alloc;
+}
+
+void ZObjectAllocator::retire_pages() {
+  assert(SafepointSynchronize::is_at_safepoint(), "Should be at safepoint");
+
+  // Reset used and undone bytes
   _used.set_all(0);
+  _undone.set_all(0);
+
+  // Reset relocated bytes
+  _alloc_for_relocation.set_all(0);
+  _undo_alloc_for_relocation.set_all(0);
 
   // Reset allocation pages
   _shared_medium_page.set(NULL);
   _shared_small_page.set_all(NULL);
-  _worker_small_page.set_all(NULL);
-}
-
-static void remap_tlab_address(HeapWord** p) {
-  *p = (HeapWord*)ZAddress::good_or_null((uintptr_t)*p);
-}
-
-void ZObjectAllocator::remap_tlabs() {
-  ZStatTimer timer(ZSubPhasePauseRemapTLABS);
-  assert(SafepointSynchronize::is_at_safepoint(), "Should be at safepoint");
-
-  if (UseTLAB) {
-    for (JavaThreadIteratorWithHandle iter; JavaThread* thread = iter.next(); ) {
-      thread->tlab().addresses_do(remap_tlab_address);
-    }
-  }
 }

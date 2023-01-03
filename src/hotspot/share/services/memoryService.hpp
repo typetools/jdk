@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,15 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_MEMORYSERVICE_HPP
-#define SHARE_VM_SERVICES_MEMORYSERVICE_HPP
+#ifndef SHARE_SERVICES_MEMORYSERVICE_HPP
+#define SHARE_SERVICES_MEMORYSERVICE_HPP
 
 #include "gc/shared/gcCause.hpp"
 #include "logging/log.hpp"
 #include "memory/allocation.hpp"
 #include "runtime/handles.hpp"
 #include "services/memoryUsage.hpp"
+#include "utilities/growableArray.hpp"
 
 // Forward declaration
 class MemoryPool;
@@ -105,8 +106,6 @@ public:
                      GCCause::Cause cause,
                      bool allMemoryPoolsAffected);
 
-  static void oops_do(OopClosure* f);
-
   static bool get_verbose() { return log_is_enabled(Info, gc); }
   static bool set_verbose(bool verbose);
 
@@ -153,4 +152,4 @@ public:
   ~TraceMemoryManagerStats();
 };
 
-#endif // SHARE_VM_SERVICES_MEMORYSERVICE_HPP
+#endif // SHARE_SERVICES_MEMORYSERVICE_HPP

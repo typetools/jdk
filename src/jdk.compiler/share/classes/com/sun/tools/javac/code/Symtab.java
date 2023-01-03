@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +42,7 @@ import com.sun.tools.javac.code.Symbol.CompletionFailure;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.ModuleSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
+import com.sun.tools.javac.code.Symbol.RootPackageSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Type.BottomType;
@@ -53,6 +54,7 @@ import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.code.Type.UnknownType;
 import com.sun.tools.javac.code.Types.UniqueType;
 import com.sun.tools.javac.comp.Modules;
+import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.util.Assert;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Convert;
@@ -160,6 +162,7 @@ public class Symtab {
     /** Predefined types.
      */
     public final Type objectType;
+    public final Type objectMethodsType;
     public final Type objectsType;
     public final Type classType;
     public final Type classLoaderType;
@@ -184,6 +187,7 @@ public class Symtab {
     public final Type noClassDefFoundErrorType;
     public final Type noSuchFieldErrorType;
     public final Type assertionErrorType;
+    public final Type incompatibleClassChangeErrorType;
     public final Type cloneNotSupportedExceptionType;
     public final Type annotationType;
     public final TypeSymbol enumSym;
@@ -212,6 +216,12 @@ public class Symtab {
     public final Type documentedType;
     public final Type elementTypeType;
     public final Type functionalInterfaceType;
+    public final Type previewFeatureType;
+    public final Type previewFeatureInternalType;
+    public final Type typeDescriptorType;
+    public final Type recordType;
+    public final Type switchBootstrapsType;
+    public final Type valueBasedType;
 
     /** The symbol representing the length field of an array.
      */
@@ -381,7 +391,12 @@ public class Symtab {
 
         messages = JavacMessages.instance(context);
 
-        rootPackage = new PackageSymbol(names.empty, null);
+        MissingInfoHandler missingInfoHandler = MissingInfoHandler.instance(context);
+
+        Target target = Target.instance(context);
+        rootPackage = new RootPackageSymbol(names.empty, null,
+                                            missingInfoHandler,
+                                            target.runtimeUseNestAccess());
 
         // create the basic builtin symbols
         unnamedModule = new ModuleSymbol(names.empty, null) {
@@ -504,6 +519,7 @@ public class Symtab {
 
         // Enter predefined classes. All are assumed to be in the java.base module.
         objectType = enterClass("java.lang.Object");
+        objectMethodsType = enterClass("java.lang.runtime.ObjectMethods");
         objectsType = enterClass("java.util.Objects");
         classType = enterClass("java.lang.Class");
         stringType = enterClass("java.lang.String");
@@ -526,6 +542,7 @@ public class Symtab {
         noClassDefFoundErrorType = enterClass("java.lang.NoClassDefFoundError");
         noSuchFieldErrorType = enterClass("java.lang.NoSuchFieldError");
         assertionErrorType = enterClass("java.lang.AssertionError");
+        incompatibleClassChangeErrorType = enterClass("java.lang.IncompatibleClassChangeError");
         cloneNotSupportedExceptionType = enterClass("java.lang.CloneNotSupportedException");
         annotationType = enterClass("java.lang.annotation.Annotation");
         classLoaderType = enterClass("java.lang.ClassLoader");
@@ -565,6 +582,12 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
+        previewFeatureType = enterClass("jdk.internal.javac.PreviewFeature");
+        previewFeatureInternalType = enterSyntheticAnnotation("jdk.internal.PreviewFeature+Annotation");
+        typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
+        recordType = enterClass("java.lang.Record");
+        switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
+        valueBasedType = enterClass("jdk.internal.ValueBased");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);
@@ -648,6 +671,10 @@ public class Symtab {
     }
 
     public PackageSymbol lookupPackage(ModuleSymbol msym, Name flatName) {
+        return lookupPackage(msym, flatName, false);
+    }
+
+    private PackageSymbol lookupPackage(ModuleSymbol msym, Name flatName, boolean onlyExisting) {
         Assert.checkNonNull(msym);
 
         if (flatName.isEmpty()) {
@@ -670,7 +697,7 @@ public class Symtab {
 
         pack = getPackage(msym, flatName);
 
-        if (pack != null && pack.exists())
+        if ((pack != null && pack.exists()) || onlyExisting)
             return pack;
 
         boolean dependsOnUnnamed = msym.requires != null &&
@@ -742,7 +769,8 @@ public class Symtab {
      */
     public boolean packageExists(ModuleSymbol msym, Name fullname) {
         Assert.checkNonNull(msym);
-        return lookupPackage(msym, fullname).exists();
+        PackageSymbol pack = lookupPackage(msym, fullname, true);
+        return pack != null && pack.exists();
     }
 
     /** Make a package, given its fully qualified name.
@@ -778,6 +806,7 @@ public class Symtab {
         unnamedPackage.modle = module;
         //we cannot use a method reference below, as initialCompleter might be null now
         unnamedPackage.completer = s -> initialCompleter.complete(s);
+        unnamedPackage.flags_field |= EXISTS;
         module.unnamedPackage = unnamedPackage;
     }
 

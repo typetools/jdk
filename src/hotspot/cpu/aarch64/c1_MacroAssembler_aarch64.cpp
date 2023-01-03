@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,11 +26,12 @@
 #include "precompiled.hpp"
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
-#include "classfile/systemDictionary.hpp"
+#include "gc/shared/barrierSetAssembler.hpp"
 #include "gc/shared/collectedHeap.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "interpreter/interpreter.hpp"
 #include "oops/arrayOop.hpp"
-#include "oops/markOop.hpp"
+#include "oops/markWord.hpp"
 #include "runtime/basicLock.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/os.hpp"
@@ -64,7 +65,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   const int aligned_mask = BytesPerWord -1;
   const int hdr_offset = oopDesc::mark_offset_in_bytes();
   assert(hdr != obj && hdr != disp_hdr && obj != disp_hdr, "registers must be different");
-  Label done, fail;
+  Label done;
   int null_check_offset = -1;
 
   verify_oop(obj);
@@ -72,17 +73,24 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   // save object being locked into the BasicObjectLock
   str(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
 
+  null_check_offset = offset();
+
+  if (DiagnoseSyncOnValueBasedClasses != 0) {
+    load_klass(hdr, obj);
+    ldrw(hdr, Address(hdr, Klass::access_flags_offset()));
+    tstw(hdr, JVM_ACC_IS_VALUE_BASED_CLASS);
+    br(Assembler::NE, slow_case);
+  }
+
   if (UseBiasedLocking) {
     assert(scratch != noreg, "should have scratch register at this point");
-    null_check_offset = biased_locking_enter(disp_hdr, obj, hdr, scratch, false, done, &slow_case);
-  } else {
-    null_check_offset = offset();
+    biased_locking_enter(disp_hdr, obj, hdr, scratch, false, done, &slow_case);
   }
 
   // Load object header
   ldr(hdr, Address(obj, hdr_offset));
   // and mark it as unlocked
-  orr(hdr, hdr, markOopDesc::unlocked_value);
+  orr(hdr, hdr, markWord::unlocked_value);
   // save unlocked object header into the displaced header location on the stack
   str(hdr, Address(disp_hdr, 0));
   // test if object header is still the same (i.e. unlocked), and if so, store the
@@ -176,7 +184,7 @@ void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register
     ldr(t1, Address(klass, Klass::prototype_header_offset()));
   } else {
     // This assumes that all prototype bits fit in an int32_t
-    mov(t1, (int32_t)(intptr_t)markOopDesc::prototype());
+    mov(t1, (int32_t)(intptr_t)markWord::prototype().value());
   }
   str(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
 
@@ -331,30 +339,28 @@ void C1_MacroAssembler::inline_cache_check(Register receiver, Register iCache) {
 
 
 void C1_MacroAssembler::build_frame(int framesize, int bang_size_in_bytes) {
+  assert(bang_size_in_bytes >= framesize, "stack bang size incorrect");
+  // Make sure there is enough stack space for this method's activation.
+  // Note that we do this before creating a frame.
+  generate_stack_overflow_check(bang_size_in_bytes);
+  MacroAssembler::build_frame(framesize);
+
+  // Insert nmethod entry barrier into frame.
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->nmethod_entry_barrier(this);
+}
+
+void C1_MacroAssembler::remove_frame(int framesize) {
+  MacroAssembler::remove_frame(framesize);
+}
+
+
+void C1_MacroAssembler::verified_entry() {
   // If we have to make this method not-entrant we'll overwrite its
   // first instruction with a jump.  For this action to be legal we
   // must ensure that this first instruction is a B, BL, NOP, BKPT,
   // SVC, HVC, or SMC.  Make it a NOP.
   nop();
-  assert(bang_size_in_bytes >= framesize, "stack bang size incorrect");
-  // Make sure there is enough stack space for this method's activation.
-  // Note that we do this before doing an enter().
-  generate_stack_overflow_check(bang_size_in_bytes);
-  MacroAssembler::build_frame(framesize + 2 * wordSize);
-  if (NotifySimulator) {
-    notify(Assembler::method_entry);
-  }
-}
-
-void C1_MacroAssembler::remove_frame(int framesize) {
-  MacroAssembler::remove_frame(framesize + 2 * wordSize);
-  if (NotifySimulator) {
-    notify(Assembler::method_reentry);
-  }
-}
-
-
-void C1_MacroAssembler::verified_entry() {
 }
 
 void C1_MacroAssembler::load_parameter(int offset_in_words, Register reg) {

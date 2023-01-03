@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@
 // $Id: SAXException.java,v 1.3 2004/11/03 22:55:32 jsuttor Exp $
 
 package jdk.internal.org.xml.sax;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.InvalidClassException;
@@ -153,7 +155,7 @@ public class SAXException extends Exception {
      *
      * @return Return the cause of the exception
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return super.getCause();
     }
 
@@ -178,6 +180,7 @@ public class SAXException extends Exception {
     // Internal state.
     //////////////////////////////////////////////////////////////////////
 
+    @java.io.Serial
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField( "exception", Exception.class )
     };
@@ -188,6 +191,7 @@ public class SAXException extends Exception {
      * @param out stream used for serialization.
      * @throws IOException thrown by <code>ObjectOutputStream</code>
      */
+    @java.io.Serial
     private void writeObject(ObjectOutputStream out)
             throws IOException {
         ObjectOutputStream.PutField fields = out.putFields();
@@ -204,6 +208,7 @@ public class SAXException extends Exception {
      * @throws IOException            thrown by <code>ObjectInputStream</code>
      * @throws ClassNotFoundException thrown by <code>ObjectInputStream</code>
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream in)
             throws IOException, ClassNotFoundException {
         ObjectInputStream.GetField fields = in.readFields();
@@ -233,6 +238,7 @@ public class SAXException extends Exception {
     }
 
     // Added serialVersionUID to preserve binary compatibility
+    @java.io.Serial
     static final long serialVersionUID = 583241635256073760L;
 }
 

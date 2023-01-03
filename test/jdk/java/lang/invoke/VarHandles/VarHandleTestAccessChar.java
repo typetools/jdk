@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,6 +50,14 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
     char v;
 
+    static final char static_final_v2 = '\u0123';
+
+    static char static_v2;
+
+    final char final_v2 = '\u0123';
+
+    char v2;
+
     VarHandle vhFinalField;
 
     VarHandle vhField;
@@ -60,6 +68,41 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
     VarHandle vhArray;
 
+
+    VarHandle[] allocate(boolean same) {
+        List<VarHandle> vhs = new ArrayList<>();
+
+        String postfix = same ? "" : "2";
+        VarHandle vh;
+        try {
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessChar.class, "final_v" + postfix, char.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessChar.class, "v" + postfix, char.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessChar.class, "static_final_v" + postfix, char.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessChar.class, "static_v" + postfix, char.class);
+            vhs.add(vh);
+
+            if (same) {
+                vh = MethodHandles.arrayElementVarHandle(char[].class);
+            }
+            else {
+                vh = MethodHandles.arrayElementVarHandle(String[].class);
+            }
+            vhs.add(vh);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+        return vhs.toArray(new VarHandle[0]);
+    }
 
     @BeforeClass
     public void setup() throws Exception {
@@ -87,6 +130,26 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         vhs.add(vhArray);
 
         return vhs.stream().map(tc -> new Object[]{tc}).toArray(Object[][]::new);
+    }
+
+    @Test
+    public void testEquals() {
+        VarHandle[] vhs1 = allocate(true);
+        VarHandle[] vhs2 = allocate(true);
+
+        for (int i = 0; i < vhs1.length; i++) {
+            for (int j = 0; j < vhs1.length; j++) {
+                if (i != j) {
+                    assertNotEquals(vhs1[i], vhs1[j]);
+                    assertNotEquals(vhs1[i], vhs2[j]);
+                }
+            }
+        }
+
+        VarHandle[] vhs3 = allocate(false);
+        for (int i = 0; i < vhs1.length; i++) {
+            assertNotEquals(vhs1[i], vhs3[i]);
+        }
     }
 
     @Test(dataProvider = "varHandlesProvider")
@@ -1167,127 +1230,127 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         for (int i : new int[]{-1, Integer.MIN_VALUE, 10, 11, Integer.MAX_VALUE}) {
             final int ci = i;
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char x = (char) vh.get(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.set(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char x = (char) vh.getVolatile(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setVolatile(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char x = (char) vh.getAcquire(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setRelease(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char x = (char) vh.getOpaque(array, ci);
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.compareAndSet(array, ci, '\u0123', '\u4567');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char r = (char) vh.compareAndExchange(array, ci, '\u4567', '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char r = (char) vh.compareAndExchangeAcquire(array, ci, '\u4567', '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char r = (char) vh.compareAndExchangeRelease(array, ci, '\u4567', '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetPlain(array, ci, '\u0123', '\u4567');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSet(array, ci, '\u0123', '\u4567');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetAcquire(array, ci, '\u0123', '\u4567');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 boolean r = vh.weakCompareAndSetRelease(array, ci, '\u0123', '\u4567');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndSet(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndSetAcquire(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndSetRelease(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndAdd(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndAddAcquire(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndAddRelease(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseOr(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseOrAcquire(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseOrRelease(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseAnd(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseAndAcquire(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseAndRelease(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseXor(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseXorAcquire(array, ci, '\u0123');
             });
 
-            checkIOOBE(() -> {
+            checkAIOOBE(() -> {
                 char o = (char) vh.getAndBitwiseXorRelease(array, ci, '\u0123');
             });
         }

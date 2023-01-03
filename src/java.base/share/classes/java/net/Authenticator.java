@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -79,6 +79,11 @@ public abstract
     private final String key = AuthenticatorKeys.computeKey(this);
 
     /**
+     * Constructor for subclasses to call.
+     */
+    public Authenticator() {}
+
+    /**
      * The type of the entity requesting authentication.
      *
      * @since 1.5
@@ -127,6 +132,7 @@ public abstract
      * @see java.net.NetPermission
      */
     public static synchronized void setDefault(Authenticator a) {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission setDefaultPermission
@@ -157,6 +163,7 @@ public abstract
      * @see java.net.NetPermission
      */
     public static Authenticator getDefault() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission requestPermission
@@ -200,6 +207,7 @@ public abstract
                                             String prompt,
                                             String scheme) {
 
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission requestPermission
@@ -262,6 +270,7 @@ public abstract
                                             String prompt,
                                             String scheme) {
 
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission requestPermission
@@ -329,6 +338,7 @@ public abstract
                                     URL url,
                                     RequestorType reqType) {
 
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission requestPermission
@@ -402,6 +412,7 @@ public abstract
                                     URL url,
                                     RequestorType reqType) {
 
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             NetPermission requestPermission

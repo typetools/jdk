@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,6 +83,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
     private static final String FORCE_PIPE_PROP = "sun.print.ippdebug";
 
     static {
+        @SuppressWarnings("removal")
         String debugStr = java.security.AccessController.doPrivileged(
                   new sun.security.action.GetPropertyAction(FORCE_PIPE_PROP));
 
@@ -471,6 +472,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
 
 
     public DocPrintJob createPrintJob() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkPrintJobAccess();
@@ -575,6 +577,9 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                         Finishings[] fAll = (Finishings[])
                             (new ExtFinishing(100)).getAll();
                         for (int j=0; j<fAll.length; j++) {
+                            if (fAll[j] == null) {
+                                continue;
+                            }
                             if (finArray[i] == fAll[j].getValue()) {
                                 finSup[i] = fAll[j];
                                 break;
@@ -587,7 +592,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
         } else if (category == JobName.class) {
             return new JobName("Java Printing", null);
         } else if (category == JobSheets.class) {
-            JobSheets arr[] = new JobSheets[2];
+            JobSheets[] arr = new JobSheets[2];
             arr[0] = JobSheets.NONE;
             arr[1] = JobSheets.STANDARD;
             return arr;
@@ -1352,7 +1357,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                 flavor.equals(DocFlavor.SERVICE_FORMATTED.PRINTABLE)) {
                 URI uri = ((Destination)attr).getURI();
                 if ("file".equals(uri.getScheme()) &&
-                    !(uri.getSchemeSpecificPart().equals(""))) {
+                    !uri.getSchemeSpecificPart().isEmpty()) {
                     return true;
                 }
             }
@@ -1509,7 +1514,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
             if (mediaSizeNames.length == 0) {
                 String defaultCountry = Locale.getDefault().getCountry();
                 if (defaultCountry != null &&
-                    (defaultCountry.equals("") ||
+                    (defaultCountry.isEmpty() ||
                      defaultCountry.equals(Locale.US.getCountry()) ||
                      defaultCountry.equals(Locale.CANADA.getCountry()))) {
                     return MediaSizeName.NA_LETTER;
@@ -1546,7 +1551,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                  String defaultCountry = Locale.getDefault().getCountry();
                  float iw, ih;
                  if (defaultCountry != null &&
-                     (defaultCountry.equals("") ||
+                     (defaultCountry.isEmpty() ||
                       defaultCountry.equals(Locale.US.getCountry()) ||
                       defaultCountry.equals(Locale.CANADA.getCountry()))) {
                      iw = MediaSize.NA.LETTER.getX(Size2DSyntax.INCH) - 0.5f;
@@ -1764,17 +1769,18 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
         try {
             debug_println(debugPrefix+"opGetAttributes myURI "+myURI+" myURL "+myURL);
 
-            AttributeClass attClNoUri[] = {
+            AttributeClass[] attClNoUri = {
                 AttributeClass.ATTRIBUTES_CHARSET,
                 AttributeClass.ATTRIBUTES_NATURAL_LANGUAGE};
 
-            AttributeClass attCl[] = {
+            AttributeClass[] attCl = {
                 AttributeClass.ATTRIBUTES_CHARSET,
                 AttributeClass.ATTRIBUTES_NATURAL_LANGUAGE,
                 new AttributeClass("printer-uri",
                                    AttributeClass.TAG_URI,
                                    ""+myURI)};
 
+            @SuppressWarnings("removal")
             OutputStream os = java.security.AccessController.
                 doPrivileged(new java.security.PrivilegedAction<OutputStream>() {
                     public OutputStream run() {
@@ -1890,7 +1896,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
             return null;
         }
 
-        byte response[] = new byte[MAX_ATTRIBUTE_LENGTH];
+        byte[] response = new byte[MAX_ATTRIBUTE_LENGTH];
         try {
 
             DataInputStream ois = new DataInputStream(inputStream);
@@ -1937,7 +1943,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                             outObj.write(counter);
                             outObj.flush();
                             outObj.close();
-                            byte outArray[] = outObj.toByteArray();
+                            byte[] outArray = outObj.toByteArray();
 
                             // if key exists, new HashMap
                             if (responseMap.containsKey(attribStr)) {
@@ -2001,7 +2007,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                             responseMap = new HashMap<>();
                         }
 
-                        byte outArray[] = outObj.toByteArray();
+                        byte[] outArray = outObj.toByteArray();
 
                         AttributeClass ac =
                             new AttributeClass(attribStr,

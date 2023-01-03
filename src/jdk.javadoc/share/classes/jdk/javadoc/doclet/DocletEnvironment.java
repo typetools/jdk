@@ -26,6 +26,7 @@
 package jdk.javadoc.doclet;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Set;
 
 import javax.lang.model.SourceVersion;
@@ -141,6 +142,9 @@ public interface DocletEnvironment {
      */
     Kind getFileKind(TypeElement type);
 
+    /**
+     * The mode specifying the level of detail of module documentation.
+     */
     enum ModuleMode {
         /** Indicate API level documentation is required */
         API,

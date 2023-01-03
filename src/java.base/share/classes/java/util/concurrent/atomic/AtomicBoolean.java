@@ -72,7 +72,8 @@ public @UsesObjectEquals class AtomicBoolean implements java.io.Serializable {
      * @param initialValue the initial value
      */
     public AtomicBoolean(boolean initialValue) {
-        value = initialValue ? 1 : 0;
+        if (initialValue)
+            value = 1;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,6 @@
  */
 
 #include "precompiled.hpp"
-#include "classfile/systemDictionary.hpp"
-#include "gc/parallel/gcTaskManager.hpp"
 #include "gc/parallel/objectStartArray.hpp"
 #include "gc/parallel/parMarkBitMap.inline.hpp"
 #include "gc/parallel/parallelScavengeHeap.hpp"
@@ -40,20 +38,20 @@
 #include "oops/instanceMirrorKlass.inline.hpp"
 #include "oops/objArrayKlass.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "runtime/atomic.hpp"
 
-PSOldGen*            ParCompactionManager::_old_gen = NULL;
+PSOldGen*               ParCompactionManager::_old_gen = NULL;
 ParCompactionManager**  ParCompactionManager::_manager_array = NULL;
 
-OopTaskQueueSet*     ParCompactionManager::_stack_array = NULL;
-ParCompactionManager::ObjArrayTaskQueueSet*
-  ParCompactionManager::_objarray_queues = NULL;
+ParCompactionManager::OopTaskQueueSet*      ParCompactionManager::_oop_task_queues = NULL;
+ParCompactionManager::ObjArrayTaskQueueSet* ParCompactionManager::_objarray_task_queues = NULL;
+ParCompactionManager::RegionTaskQueueSet*   ParCompactionManager::_region_task_queues = NULL;
+
 ObjectStartArray*    ParCompactionManager::_start_array = NULL;
 ParMarkBitMap*       ParCompactionManager::_mark_bitmap = NULL;
-RegionTaskQueueSet*  ParCompactionManager::_region_array = NULL;
+GrowableArray<size_t >* ParCompactionManager::_shadow_region_array = NULL;
+Monitor*                ParCompactionManager::_shadow_region_monitor = NULL;
 
-ParCompactionManager::ParCompactionManager() :
-    _action(CopyAndUpdate) {
+ParCompactionManager::ParCompactionManager() {
 
   ParallelScavengeHeap* heap = ParallelScavengeHeap::heap();
 
@@ -68,175 +66,53 @@ ParCompactionManager::ParCompactionManager() :
 }
 
 void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
-  assert(PSParallelCompact::gc_task_manager() != NULL,
+  assert(ParallelScavengeHeap::heap() != NULL,
     "Needed for initialization");
 
   _mark_bitmap = mbm;
 
-  uint parallel_gc_threads = PSParallelCompact::gc_task_manager()->workers();
+  uint parallel_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();
 
   assert(_manager_array == NULL, "Attempt to initialize twice");
   _manager_array = NEW_C_HEAP_ARRAY(ParCompactionManager*, parallel_gc_threads+1, mtGC);
-  guarantee(_manager_array != NULL, "Could not allocate manager_array");
 
-  _stack_array = new OopTaskQueueSet(parallel_gc_threads);
-  guarantee(_stack_array != NULL, "Could not allocate stack_array");
-  _objarray_queues = new ObjArrayTaskQueueSet(parallel_gc_threads);
-  guarantee(_objarray_queues != NULL, "Could not allocate objarray_queues");
-  _region_array = new RegionTaskQueueSet(parallel_gc_threads);
-  guarantee(_region_array != NULL, "Could not allocate region_array");
+  _oop_task_queues = new OopTaskQueueSet(parallel_gc_threads);
+  _objarray_task_queues = new ObjArrayTaskQueueSet(parallel_gc_threads);
+  _region_task_queues = new RegionTaskQueueSet(parallel_gc_threads);
 
   // Create and register the ParCompactionManager(s) for the worker threads.
   for(uint i=0; i<parallel_gc_threads; i++) {
     _manager_array[i] = new ParCompactionManager();
-    guarantee(_manager_array[i] != NULL, "Could not create ParCompactionManager");
-    stack_array()->register_queue(i, _manager_array[i]->marking_stack());
-    _objarray_queues->register_queue(i, &_manager_array[i]->_objarray_stack);
-    region_array()->register_queue(i, _manager_array[i]->region_stack());
+    oop_task_queues()->register_queue(i, _manager_array[i]->marking_stack());
+    _objarray_task_queues->register_queue(i, &_manager_array[i]->_objarray_stack);
+    region_task_queues()->register_queue(i, _manager_array[i]->region_stack());
   }
 
   // The VMThread gets its own ParCompactionManager, which is not available
   // for work stealing.
   _manager_array[parallel_gc_threads] = new ParCompactionManager();
-  guarantee(_manager_array[parallel_gc_threads] != NULL,
-    "Could not create ParCompactionManager");
-  assert(PSParallelCompact::gc_task_manager()->workers() != 0,
+  assert(ParallelScavengeHeap::heap()->workers().total_workers() != 0,
     "Not initialized?");
+
+  _shadow_region_array = new (ResourceObj::C_HEAP, mtGC) GrowableArray<size_t >(10, mtGC);
+
+  _shadow_region_monitor = new Monitor(Mutex::barrier, "CompactionManager monitor",
+                                       Mutex::_allow_vm_block_flag, Monitor::_safepoint_check_never);
 }
 
 void ParCompactionManager::reset_all_bitmap_query_caches() {
-  uint parallel_gc_threads = PSParallelCompact::gc_task_manager()->workers();
+  uint parallel_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();
   for (uint i=0; i<=parallel_gc_threads; i++) {
     _manager_array[i]->reset_bitmap_query_cache();
   }
 }
 
-bool ParCompactionManager::should_update() {
-  assert(action() != NotValid, "Action is not set");
-  return (action() == ParCompactionManager::Update) ||
-         (action() == ParCompactionManager::CopyAndUpdate) ||
-         (action() == ParCompactionManager::UpdateAndCopy);
-}
-
-bool ParCompactionManager::should_copy() {
-  assert(action() != NotValid, "Action is not set");
-  return (action() == ParCompactionManager::Copy) ||
-         (action() == ParCompactionManager::CopyAndUpdate) ||
-         (action() == ParCompactionManager::UpdateAndCopy);
-}
 
 ParCompactionManager*
 ParCompactionManager::gc_thread_compaction_manager(uint index) {
   assert(index < ParallelGCThreads, "index out of range");
   assert(_manager_array != NULL, "Sanity");
   return _manager_array[index];
-}
-
-void InstanceKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  assert(obj != NULL, "can't follow the content of NULL object");
-
-  cm->follow_klass(this);
-  // Only mark the header and let the scan of the meta-data mark
-  // everything else.
-
-  ParCompactionManager::MarkAndPushClosure cl(cm);
-  if (UseCompressedOops) {
-    InstanceKlass::oop_oop_iterate_oop_maps<narrowOop>(obj, &cl);
-  } else {
-    InstanceKlass::oop_oop_iterate_oop_maps<oop>(obj, &cl);
-  }
-}
-
-void InstanceMirrorKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  InstanceKlass::oop_pc_follow_contents(obj, cm);
-
-  // Follow the klass field in the mirror.
-  Klass* klass = java_lang_Class::as_Klass(obj);
-  if (klass != NULL) {
-    // An anonymous class doesn't have its own class loader, so the call
-    // to follow_klass will mark and push its java mirror instead of the
-    // class loader. When handling the java mirror for an anonymous class
-    // we need to make sure its class loader data is claimed, this is done
-    // by calling follow_class_loader explicitly. For non-anonymous classes
-    // the call to follow_class_loader is made when the class loader itself
-    // is handled.
-    if (klass->is_instance_klass() && InstanceKlass::cast(klass)->is_anonymous()) {
-      cm->follow_class_loader(klass->class_loader_data());
-    } else {
-      cm->follow_klass(klass);
-    }
-  } else {
-    // If klass is NULL then this a mirror for a primitive type.
-    // We don't have to follow them, since they are handled as strong
-    // roots in Universe::oops_do.
-    assert(java_lang_Class::is_primitive(obj), "Sanity check");
-  }
-
-  ParCompactionManager::MarkAndPushClosure cl(cm);
-  if (UseCompressedOops) {
-    oop_oop_iterate_statics<narrowOop>(obj, &cl);
-  } else {
-    oop_oop_iterate_statics<oop>(obj, &cl);
-  }
-}
-
-void InstanceClassLoaderKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  InstanceKlass::oop_pc_follow_contents(obj, cm);
-
-  ClassLoaderData * const loader_data = java_lang_ClassLoader::loader_data(obj);
-  if (loader_data != NULL) {
-    cm->follow_class_loader(loader_data);
-  }
-}
-
-template <class T>
-static void oop_pc_follow_contents_specialized(InstanceRefKlass* klass, oop obj, ParCompactionManager* cm) {
-  T* referent_addr = (T*)java_lang_ref_Reference::referent_addr_raw(obj);
-  T heap_oop = RawAccess<>::oop_load(referent_addr);
-  log_develop_trace(gc, ref)("InstanceRefKlass::oop_pc_follow_contents " PTR_FORMAT, p2i(obj));
-  if (!CompressedOops::is_null(heap_oop)) {
-    oop referent = CompressedOops::decode_not_null(heap_oop);
-    if (PSParallelCompact::mark_bitmap()->is_unmarked(referent) &&
-        PSParallelCompact::ref_processor()->discover_reference(obj, klass->reference_type())) {
-      // reference already enqueued, referent will be traversed later
-      klass->InstanceKlass::oop_pc_follow_contents(obj, cm);
-      log_develop_trace(gc, ref)("       Non NULL enqueued " PTR_FORMAT, p2i(obj));
-      return;
-    } else {
-      // treat referent as normal oop
-      log_develop_trace(gc, ref)("       Non NULL normal " PTR_FORMAT, p2i(obj));
-      cm->mark_and_push(referent_addr);
-    }
-  }
-  // Treat discovered as normal oop.
-  T* discovered_addr = (T*)java_lang_ref_Reference::discovered_addr_raw(obj);
-  cm->mark_and_push(discovered_addr);
-  klass->InstanceKlass::oop_pc_follow_contents(obj, cm);
-}
-
-
-void InstanceRefKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  if (UseCompressedOops) {
-    oop_pc_follow_contents_specialized<narrowOop>(this, obj, cm);
-  } else {
-    oop_pc_follow_contents_specialized<oop>(this, obj, cm);
-  }
-}
-
-void ObjArrayKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  cm->follow_klass(this);
-
-  if (UseCompressedOops) {
-    oop_pc_follow_contents_specialized<narrowOop>(objArrayOop(obj), 0, cm);
-  } else {
-    oop_pc_follow_contents_specialized<oop>(objArrayOop(obj), 0, cm);
-  }
-}
-
-void TypeArrayKlass::oop_pc_follow_contents(oop obj, ParCompactionManager* cm) {
-  assert(obj->is_typeArray(),"must be a type array");
-  // Performance tweak: We skip iterating over the klass pointer since we
-  // know that Universe::TypeArrayKlass never moves.
 }
 
 void ParCompactionManager::follow_marking_stacks() {
@@ -253,7 +129,7 @@ void ParCompactionManager::follow_marking_stacks() {
     // Process ObjArrays one at a time to avoid marking stack bloat.
     ObjArrayTask task;
     if (_objarray_stack.pop_overflow(task) || _objarray_stack.pop_local(task)) {
-      follow_contents((objArrayOop)task.obj(), task.index());
+      follow_array((objArrayOop)task.obj(), task.index());
     }
   } while (!marking_stacks_empty());
 
@@ -273,3 +149,49 @@ void ParCompactionManager::drain_region_stacks() {
     }
   } while (!region_stack()->is_empty());
 }
+
+size_t ParCompactionManager::pop_shadow_region_mt_safe(PSParallelCompact::RegionData* region_ptr) {
+  MonitorLocker ml(_shadow_region_monitor, Mutex::_no_safepoint_check_flag);
+  while (true) {
+    if (!_shadow_region_array->is_empty()) {
+      return _shadow_region_array->pop();
+    }
+    // Check if the corresponding heap region is available now.
+    // If so, we don't need to get a shadow region anymore, and
+    // we return InvalidShadow to indicate such a case.
+    if (region_ptr->claimed()) {
+      return InvalidShadow;
+    }
+    ml.wait(1);
+  }
+}
+
+void ParCompactionManager::push_shadow_region_mt_safe(size_t shadow_region) {
+  MonitorLocker ml(_shadow_region_monitor, Mutex::_no_safepoint_check_flag);
+  _shadow_region_array->push(shadow_region);
+  ml.notify();
+}
+
+void ParCompactionManager::push_shadow_region(size_t shadow_region) {
+  _shadow_region_array->push(shadow_region);
+}
+
+void ParCompactionManager::remove_all_shadow_regions() {
+  _shadow_region_array->clear();
+}
+
+#ifdef ASSERT
+void ParCompactionManager::verify_all_marking_stack_empty() {
+  uint parallel_gc_threads = ParallelGCThreads;
+  for (uint i = 0; i <= parallel_gc_threads; i++) {
+    assert(_manager_array[i]->marking_stacks_empty(), "Marking stack should be empty");
+  }
+}
+
+void ParCompactionManager::verify_all_region_stack_empty() {
+  uint parallel_gc_threads = ParallelGCThreads;
+  for (uint i = 0; i <= parallel_gc_threads; i++) {
+    assert(_manager_array[i]->region_stack()->is_empty(), "Region stack should be empty");
+  }
+}
+#endif

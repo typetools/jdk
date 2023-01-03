@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,9 +23,10 @@
  */
 
 
-#ifndef SHARE_VM_PRIMS_STACKWALK_HPP
-#define SHARE_VM_PRIMS_STACKWALK_HPP
+#ifndef SHARE_PRIMS_STACKWALK_HPP
+#define SHARE_PRIMS_STACKWALK_HPP
 
+#include "jvm.h"
 #include "oops/oop.hpp"
 #include "runtime/vframe.hpp"
 
@@ -157,4 +158,4 @@ public:
                              int frame_count, int start_index,
                              objArrayHandle frames_array, TRAPS);
 };
-#endif // SHARE_VM_PRIMS_STACKWALK_HPP
+#endif // SHARE_PRIMS_STACKWALK_HPP

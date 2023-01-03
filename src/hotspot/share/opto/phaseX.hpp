@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_PHASEX_HPP
-#define SHARE_VM_OPTO_PHASEX_HPP
+#ifndef SHARE_OPTO_PHASEX_HPP
+#define SHARE_OPTO_PHASEX_HPP
 
 #include "libadt/dict.hpp"
 #include "libadt/vectset.hpp"
@@ -91,7 +91,7 @@ public:
     return _table[table_index];
   }
 
-  void   remove_useless_nodes(VectorSet &useful); // replace with sentinel
+  void   remove_useless_nodes(VectorSet& useful); // replace with sentinel
   void   replace_with(NodeHash* nh);
   void   check_no_speculative_types(); // Check no speculative part for type nodes in table
 
@@ -157,6 +157,16 @@ public:
 // Phase that first performs a PhaseRemoveUseless, then it renumbers compiler
 // structures accordingly.
 class PhaseRenumberLive : public PhaseRemoveUseless {
+protected:
+  Type_Array _new_type_array; // Storage for the updated type information.
+  GrowableArray<int> _old2new_map;
+  Node_List _delayed;
+  bool _is_pass_finished;
+  uint _live_node_count;
+
+  int update_embedded_ids(Node* n);
+  int new_index(int old_idx);
+
 public:
   PhaseRenumberLive(PhaseGVN* gvn,
                     Unique_Node_List* worklist, Unique_Node_List* new_worklist,
@@ -264,6 +274,7 @@ public:
   // Fast int or long constant.  Same as TypeInt::make(i) or TypeLong::make(l).
   ConINode* intcon(jint i);
   ConLNode* longcon(jlong l);
+  ConNode* integercon(jlong l, BasicType bt);
 
   // Fast zero or null constant.  Same as makecon(Type::get_zero_type(bt)).
   ConNode* zerocon(BasicType bt);
@@ -271,11 +282,6 @@ public:
   // Return a node which computes the same function as this node, but
   // in a faster or cheaper fashion.
   virtual Node *transform( Node *n ) = 0;
-
-  // Return whether two Nodes are equivalent.
-  // Must not be recursive, since the recursive version is built from this.
-  // For pessimistic optimizations this is simply pointer equivalence.
-  bool eqv(const Node* n1, const Node* n2) const { return n1 == n2; }
 
   // For pessimistic passes, the return type must monotonically narrow.
   // For optimistic  passes, the return type must monotonically widen.
@@ -329,9 +335,6 @@ public:
                                const Type* limit_type) const
   { ShouldNotCallThis(); return NULL; }
 
-  // Delayed node rehash if this is an IGVN phase
-  virtual void igvn_rehash_node_delayed(Node* n) {}
-
   // true if CFG node d dominates CFG node n
   virtual bool is_dominator(Node *d, Node *n) { fatal("unimplemented for this pass"); return false; };
 
@@ -363,19 +366,18 @@ public:
 class PhaseValues : public PhaseTransform {
 protected:
   NodeHash  _table;             // Hash table for value-numbering
-
+  bool      _iterGVN;
 public:
-  PhaseValues( Arena *arena, uint est_max_size );
-  PhaseValues( PhaseValues *pt );
-  PhaseValues( PhaseValues *ptv, const char *dummy );
-  NOT_PRODUCT( ~PhaseValues(); )
-  virtual PhaseIterGVN *is_IterGVN() { return 0; }
+  PhaseValues(Arena* arena, uint est_max_size);
+  PhaseValues(PhaseValues* pt);
+  NOT_PRODUCT(~PhaseValues();)
+  PhaseIterGVN* is_IterGVN() { return (_iterGVN) ? (PhaseIterGVN*)this : NULL; }
 
   // Some Ideal and other transforms delete --> modify --> insert values
-  bool   hash_delete(Node *n)     { return _table.hash_delete(n); }
-  void   hash_insert(Node *n)     { _table.hash_insert(n); }
-  Node  *hash_find_insert(Node *n){ return _table.hash_find_insert(n); }
-  Node  *hash_find(const Node *n) { return _table.hash_find(n); }
+  bool   hash_delete(Node* n)     { return _table.hash_delete(n); }
+  void   hash_insert(Node* n)     { _table.hash_insert(n); }
+  Node*  hash_find_insert(Node* n){ return _table.hash_find_insert(n); }
+  Node*  hash_find(const Node* n) { return _table.hash_find(n); }
 
   // Used after parsing to eliminate values that are no longer in program
   void   remove_useless_nodes(VectorSet &useful) {
@@ -386,8 +388,8 @@ public:
 
   virtual ConNode* uncached_makecon(const Type* t);  // override from PhaseTransform
 
-  virtual const Type* saturate(const Type* new_type, const Type* old_type,
-                               const Type* limit_type) const
+  const Type* saturate(const Type* new_type, const Type* old_type,
+                       const Type* limit_type) const
   { return new_type; }
 
 #ifndef PRODUCT
@@ -408,7 +410,6 @@ protected:
 public:
   PhaseGVN( Arena *arena, uint est_max_size ) : PhaseValues( arena, est_max_size ) {}
   PhaseGVN( PhaseGVN *gvn ) : PhaseValues( gvn ) {}
-  PhaseGVN( PhaseGVN *gvn, const char *dummy ) : PhaseValues( gvn, dummy ) {}
 
   // Return a node which computes the same function as this node, but
   // in a faster or cheaper fashion.
@@ -425,8 +426,14 @@ public:
 
   bool is_dominator(Node *d, Node *n) { return is_dominator_helper(d, n, true); }
 
+  // Helper to call Node::Ideal() and BarrierSetC2::ideal_node().
+  Node* apply_ideal(Node* i, bool can_reshape);
+
+#ifdef ASSERT
+  void dump_infinite_loop_info(Node* n, const char* where);
   // Check for a simple dead loop when a data node references itself.
-  DEBUG_ONLY(void dead_loop_check(Node *n);)
+  void dead_loop_check(Node *n);
+#endif
 };
 
 //------------------------------PhaseIterGVN-----------------------------------
@@ -444,11 +451,10 @@ private:
   void subsume_node( Node *old, Node *nn );
 
   Node_Stack _stack;      // Stack used to avoid recursion
-
 protected:
 
-  // Warm up hash table, type table and initial worklist
-  void init_worklist( Node *a_root );
+  // Shuffle worklist, for stress testing
+  void shuffle_worklist();
 
   virtual const Type* saturate(const Type* new_type, const Type* old_type,
                                const Type* limit_type) const;
@@ -456,15 +462,12 @@ protected:
   // improvement, such that it would take many (>>10) steps to reach 2**32.
 
 public:
-  PhaseIterGVN( PhaseIterGVN *igvn ); // Used by CCP constructor
-  PhaseIterGVN( PhaseGVN *gvn ); // Used after Parser
-  PhaseIterGVN( PhaseIterGVN *igvn, const char *dummy ); // Used after +VerifyOpto
+  PhaseIterGVN(PhaseIterGVN* igvn); // Used by CCP constructor
+  PhaseIterGVN(PhaseGVN* gvn); // Used after Parser
 
   // Idealize new Node 'n' with respect to its inputs and its value
   virtual Node *transform( Node *a_node );
   virtual void record_for_igvn(Node *n) { }
-
-  virtual PhaseIterGVN *is_IterGVN() { return this; }
 
   Unique_Node_List _worklist;       // Iterative worklist
 
@@ -480,7 +483,7 @@ public:
 #endif
 
 #ifdef ASSERT
-  void dump_infinite_loop_info(Node* n);
+  void dump_infinite_loop_info(Node* n, const char* where);
   void trace_PhaseIterGVN_verbose(Node* n, int num_processed);
 #endif
 
@@ -521,14 +524,10 @@ public:
     _worklist.push(n);
   }
 
-  void igvn_rehash_node_delayed(Node* n) {
-    rehash_node_delayed(n);
-  }
-
   // Replace ith edge of "n" with "in"
   void replace_input_of(Node* n, int i, Node* in) {
     rehash_node_delayed(n);
-    n->set_req(i, in);
+    n->set_req_X(i, in, this);
   }
 
   // Delete ith edge of "n"
@@ -543,19 +542,13 @@ public:
     _delay_transform = delay;
   }
 
-  // Clone loop predicates. Defined in loopTransform.cpp.
-  Node* clone_loop_predicates(Node* old_entry, Node* new_entry, bool clone_limit_check);
-  // Create a new if below new_entry for the predicate to be cloned
-  ProjNode* create_new_if_for_predicate(ProjNode* cont_proj, Node* new_entry,
-                                        Deoptimization::DeoptReason reason,
-                                        int opcode);
-
   void remove_speculative_types();
   void check_no_speculative_types() {
     _table.check_no_speculative_types();
   }
 
   bool is_dominator(Node *d, Node *n) { return is_dominator_helper(d, n, false); }
+  bool no_dependent_zero_check(Node* n) const;
 
 #ifndef PRODUCT
 protected:
@@ -633,4 +626,4 @@ public:
 #endif
 };
 
-#endif // SHARE_VM_OPTO_PHASEX_HPP
+#endif // SHARE_OPTO_PHASEX_HPP

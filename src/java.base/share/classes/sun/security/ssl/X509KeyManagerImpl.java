@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.*;
 import sun.security.provider.certpath.AlgorithmChecker;
 import sun.security.validator.Validator;
+import sun.security.util.KnownOIDs;
 
 /**
  * The new X509 key manager implementation. The main differences to the
@@ -90,6 +91,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
     // LinkedHashMap with a max size of 10
     // see LinkedHashMap JavaDocs
     private static class SizedMap<K,V> extends LinkedHashMap<K,V> {
+        @java.io.Serial
         private static final long serialVersionUID = -8211222668790986062L;
 
         @Override protected boolean removeEldestEntry(Map.Entry<K,V> eldest) {
@@ -267,9 +269,9 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
             String keyStoreAlias = alias.substring(secondDot + 1);
             Builder builder = builders.get(builderIndex);
             KeyStore ks = builder.getKeyStore();
-            Entry newEntry = ks.getEntry
-                    (keyStoreAlias, builder.getProtectionParameter(alias));
-            if (newEntry instanceof PrivateKeyEntry == false) {
+            Entry newEntry = ks.getEntry(keyStoreAlias,
+                    builder.getProtectionParameter(keyStoreAlias));
+            if (!(newEntry instanceof PrivateKeyEntry)) {
                 // unexpected type of entry
                 return null;
             }
@@ -521,14 +523,19 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
 
         // enum constant for "tls client" check
         // valid EKU for TLS client: any, tls_client
-        CLIENT(new HashSet<String>(Arrays.asList(new String[] {
-            "2.5.29.37.0", "1.3.6.1.5.5.7.3.2" }))),
+        CLIENT(new HashSet<String>(List.of(
+            KnownOIDs.anyExtendedKeyUsage.value(),
+            KnownOIDs.clientAuth.value()
+        ))),
 
         // enum constant for "tls server" check
         // valid EKU for TLS server: any, tls_server, ns_sgc, ms_sgc
-        SERVER(new HashSet<String>(Arrays.asList(new String[] {
-            "2.5.29.37.0", "1.3.6.1.5.5.7.3.1", "2.16.840.1.113730.4.1",
-            "1.3.6.1.4.1.311.10.3.3" })));
+        SERVER(new HashSet<String>(List.of(
+            KnownOIDs.anyExtendedKeyUsage.value(),
+            KnownOIDs.serverAuth.value(),
+            KnownOIDs.NETSCAPE_ExportApproved.value(),
+            KnownOIDs.MICROSOFT_ExportApproved.value()
+        )));
 
         // set of valid EKU values for this type
         final Set<String> validEku;
@@ -574,7 +581,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
                             // require either signature bit
                             // or if server also allow key encipherment bit
                             if (!supportsDigitalSignature) {
-                                if (this == CLIENT || getBit(ku, 2) == false) {
+                                if (this == CLIENT || !getBit(ku, 2)) {
                                     return CheckResult.EXTENSION_MISMATCH;
                                 }
                             }
@@ -592,7 +599,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
                             break;
                         case "DH":
                             // require keyagreement bit
-                            if (getBit(ku, 4) == false) {
+                            if (!getBit(ku, 4)) {
                                 return CheckResult.EXTENSION_MISMATCH;
                             }
                             break;
@@ -607,7 +614,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
                             // exchange and not ephemeral ECDH. We leave it in
                             // for now until there are signs that this check
                             // causes problems for real world EC certificates.
-                            if ((this == SERVER) && (getBit(ku, 4) == false)) {
+                            if (this == SERVER && !getBit(ku, 4)) {
                                 return CheckResult.EXTENSION_MISMATCH;
                             }
                             break;
@@ -741,7 +748,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
 
             boolean incompatible = false;
             for (Certificate cert : chain) {
-                if (cert instanceof X509Certificate == false) {
+                if (!(cert instanceof X509Certificate)) {
                     // not an X509Certificate, ignore this alias
                     incompatible = true;
                     break;
@@ -778,7 +785,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
                         break;
                     }
                 }
-                if (found == false) {
+                if (!found) {
                     if (SSLLogger.isOn && SSLLogger.isOn("keymanager")) {
                         SSLLogger.fine(
                                 "Ignore alias " + alias
@@ -813,7 +820,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
             if (!preferred && checkResult == CheckResult.OK && keyIndex == 0) {
                 preferred = true;
             }
-            if (preferred && (findAll == false)) {
+            if (preferred && !findAll) {
                 // if we have a good match and do not need all matches,
                 // return immediately
                 return Collections.singletonList(status);
@@ -831,8 +838,7 @@ final class X509KeyManagerImpl extends X509ExtendedKeyManager
             AlgorithmConstraints constraints, Certificate[] chain,
             String variant) {
 
-        AlgorithmChecker checker =
-                new AlgorithmChecker(constraints, null, variant);
+        AlgorithmChecker checker = new AlgorithmChecker(constraints, variant);
         try {
             checker.init(false);
         } catch (CertPathValidatorException cpve) {

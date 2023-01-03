@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,9 +32,10 @@
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/os.hpp"
 #include "runtime/thread.hpp"
-#include "runtime/vm_operations.hpp"
+#include "runtime/vmOperations.hpp"
 #include "runtime/vmThread.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/formatBuffer.hpp"
 #include "utilities/ostream.hpp"
 #include "utilities/ticks.hpp"
 
@@ -45,9 +46,6 @@
 // parallel iteration with varying numbers of threads on an storage
 // object containing a large number of entries, and logs some stats
 // about the distribution and performance of the iteration.
-
-// Parallel iteration not available unless INCLUDE_ALL_GCS
-#if INCLUDE_ALL_GCS
 
 const uint _max_workers = 10;
 static uint _num_workers = 0;
@@ -70,11 +68,6 @@ public:
 
   static WorkGang* _workers;
 
-  static const int _active_rank = Mutex::leaf - 1;
-  static const int _allocate_rank = Mutex::leaf;
-
-  Mutex _allocate_mutex;
-  Mutex _active_mutex;
   OopStorage _storage;
   oop* _entries[_storage_entries];
 };
@@ -95,15 +88,7 @@ WorkGang* OopStorageParIterPerf::workers() const {
 }
 
 OopStorageParIterPerf::OopStorageParIterPerf() :
-  _allocate_mutex(_allocate_rank,
-                  "test_OopStorage_parperf_allocate",
-                  false,
-                  Mutex::_safepoint_check_never),
-  _active_mutex(_active_rank,
-                "test_OopStorage_parperf_active",
-                false,
-                Mutex::_safepoint_check_never),
-  _storage("Test Storage", &_allocate_mutex, &_active_mutex)
+  _storage("Test Storage", mtGC)
 {
   for (size_t i = 0; i < _storage_entries; ++i) {
     _entries[i] = _storage.allocate();
@@ -229,5 +214,3 @@ TEST_VM_F(OopStorageParIterPerf, test) {
     LogConfiguration::configure_stdout(old_level, true, LOG_TAGS(TEST_TAGS));
   }
 }
-
-#endif // INCLUDE_ALL_GCS

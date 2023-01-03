@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,9 +24,6 @@
  */
 
 package sun.nio.fs;
-
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  * Linux specific system calls.
@@ -54,7 +51,17 @@ class LinuxNativeDispatcher extends UnixNativeDispatcher {
     /**
      * int getmntent(FILE *fp, struct mnttab *mp, int len);
      */
-    static native int getmntent(long fp, UnixMountEntry entry)
+
+    static int getmntent(long fp, UnixMountEntry entry, int buflen) throws UnixException {
+        NativeBuffer buffer = NativeBuffers.getNativeBuffer(buflen);
+        try {
+            return getmntent0(fp, entry, buffer.address(), buflen);
+        } finally {
+            buffer.release();
+        }
+    }
+
+    static native int getmntent0(long fp, UnixMountEntry entry, long buffer, int bufLen)
         throws UnixException;
 
     /**
@@ -62,70 +69,11 @@ class LinuxNativeDispatcher extends UnixNativeDispatcher {
      */
     static native void endmntent(long stream) throws UnixException;
 
-    /**
-     * ssize_t fgetxattr(int filedes, const char *name, void *value, size_t size);
-     */
-    static int fgetxattr(int filedes, byte[] name, long valueAddress,
-                         int valueLen) throws UnixException
-    {
-        NativeBuffer buffer = NativeBuffers.asNativeBuffer(name);
-        try {
-            return fgetxattr0(filedes, buffer.address(), valueAddress, valueLen);
-        } finally {
-            buffer.release();
-        }
-    }
-
-    private static native int fgetxattr0(int filedes, long nameAddress,
-        long valueAddress, int valueLen) throws UnixException;
-
-    /**
-     *  fsetxattr(int filedes, const char *name, const void *value, size_t size, int flags);
-     */
-    static void fsetxattr(int filedes, byte[] name, long valueAddress,
-        int valueLen) throws UnixException
-    {
-        NativeBuffer buffer = NativeBuffers.asNativeBuffer(name);
-        try {
-            fsetxattr0(filedes, buffer.address(), valueAddress, valueLen);
-        } finally {
-            buffer.release();
-        }
-    }
-
-    private static native void fsetxattr0(int filedes, long nameAddress,
-        long valueAddress, int valueLen) throws UnixException;
-
-    /**
-     * fremovexattr(int filedes, const char *name);
-     */
-    static void fremovexattr(int filedes, byte[] name) throws UnixException {
-        NativeBuffer buffer = NativeBuffers.asNativeBuffer(name);
-        try {
-            fremovexattr0(filedes, buffer.address());
-        } finally {
-            buffer.release();
-        }
-    }
-
-    private static native void fremovexattr0(int filedes, long nameAddress)
-        throws UnixException;
-
-    /**
-     * size_t flistxattr(int filedes, const char *list, size_t size)
-     */
-    static native int flistxattr(int filedes, long listAddress, int size)
-        throws UnixException;
-
     // initialize
     private static native void init();
 
     static {
-        AccessController.doPrivileged(new PrivilegedAction<>() {
-            public Void run() {
-                System.loadLibrary("nio");
-                return null;
-        }});
+        jdk.internal.loader.BootLoader.loadLibrary("nio");
         init();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_MEMORY_ITERATOR_INLINE_HPP
-#define SHARE_VM_MEMORY_ITERATOR_INLINE_HPP
+#ifndef SHARE_MEMORY_ITERATOR_INLINE_HPP
+#define SHARE_MEMORY_ITERATOR_INLINE_HPP
+
+#include "memory/iterator.hpp"
 
 #include "classfile/classLoaderData.hpp"
-#include "memory/iterator.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/klass.hpp"
@@ -38,31 +39,18 @@
 #include "oops/typeArrayKlass.inline.hpp"
 #include "utilities/debug.hpp"
 
-inline void MetadataVisitingOopIterateClosure::do_cld(ClassLoaderData* cld) {
-  bool claim = true;  // Must claim the class loader data before processing.
-  cld->oops_do(this, claim);
+// Defaults to strong claiming.
+inline MetadataVisitingOopIterateClosure::MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd) :
+    ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, rd) {}
+
+inline void ClaimMetadataVisitingOopIterateClosure::do_cld(ClassLoaderData* cld) {
+  cld->oops_do(this, _claim);
 }
 
-inline void MetadataVisitingOopIterateClosure::do_klass(Klass* k) {
+inline void ClaimMetadataVisitingOopIterateClosure::do_klass(Klass* k) {
   ClassLoaderData* cld = k->class_loader_data();
-  MetadataVisitingOopIterateClosure::do_cld(cld);
+  ClaimMetadataVisitingOopIterateClosure::do_cld(cld);
 }
-
-#ifdef ASSERT
-// This verification is applied to all visited oops.
-// The closures can turn is off by overriding should_verify_oops().
-template <typename T>
-void OopIterateClosure::verify(T* p) {
-  if (should_verify_oops()) {
-    T heap_oop = RawAccess<>::oop_load(p);
-    if (!CompressedOops::is_null(heap_oop)) {
-      oop o = CompressedOops::decode_not_null(heap_oop);
-      assert(Universe::heap()->is_in_closed_subset(o),
-             "should be in closed *p " PTR_FORMAT " " PTR_FORMAT, p2i(p), p2i(o));
-    }
-  }
-}
-#endif
 
 // Implementation of the non-virtual do_oop dispatch.
 //
@@ -120,15 +108,8 @@ call_do_oop(void (Receiver::*)(T*), void (Base::*)(T*), OopClosureType* closure,
 }
 
 template <typename OopClosureType, typename T>
-inline void Devirtualizer::do_oop_no_verify(OopClosureType* closure, T* p) {
-  call_do_oop<T>(&OopClosureType::do_oop, &OopClosure::do_oop, closure, p);
-}
-
-template <typename OopClosureType, typename T>
 inline void Devirtualizer::do_oop(OopClosureType* closure, T* p) {
-  debug_only(closure->verify(p));
-
-  do_oop_no_verify(closure, p);
+  call_do_oop<T>(&OopClosureType::do_oop, &OopClosure::do_oop, closure, p);
 }
 
 // Implementation of the non-virtual do_metadata dispatch.
@@ -226,6 +207,8 @@ void Devirtualizer::do_cld(OopClosureType* closure, ClassLoaderData* cld) {
 template <typename OopClosureType>
 class OopOopIterateDispatch : public AllStatic {
 private:
+  typedef void (*FunctionType)(OopClosureType*, oop, Klass*);
+
   class Table {
   private:
     template <typename KlassType, typename T>
@@ -262,7 +245,7 @@ private:
     }
 
   public:
-    void (*_function[KLASS_ID_COUNT])(OopClosureType*, oop, Klass*);
+    FunctionType _function[KLASS_ID_COUNT];
 
     Table(){
       set_init_function<InstanceKlass>();
@@ -277,7 +260,7 @@ private:
   static Table _table;
 public:
 
-  static void (*function(Klass* klass))(OopClosureType*, oop, Klass*) {
+  static FunctionType function(Klass* klass) {
     return _table._function[klass->id()];
   }
 };
@@ -289,6 +272,8 @@ typename OopOopIterateDispatch<OopClosureType>::Table OopOopIterateDispatch<OopC
 template <typename OopClosureType>
 class OopOopIterateBoundedDispatch {
 private:
+  typedef void (*FunctionType)(OopClosureType*, oop, Klass*, MemRegion);
+
   class Table {
   private:
     template <typename KlassType, typename T>
@@ -322,7 +307,7 @@ private:
     }
 
   public:
-    void (*_function[KLASS_ID_COUNT])(OopClosureType*, oop, Klass*, MemRegion);
+    FunctionType _function[KLASS_ID_COUNT];
 
     Table(){
       set_init_function<InstanceKlass>();
@@ -337,7 +322,7 @@ private:
   static Table _table;
 public:
 
-  static void (*function(Klass* klass))(OopClosureType*, oop, Klass*, MemRegion) {
+  static FunctionType function(Klass* klass) {
     return _table._function[klass->id()];
   }
 };
@@ -349,6 +334,8 @@ typename OopOopIterateBoundedDispatch<OopClosureType>::Table OopOopIterateBounde
 template <typename OopClosureType>
 class OopOopIterateBackwardsDispatch {
 private:
+  typedef void (*FunctionType)(OopClosureType*, oop, Klass*);
+
   class Table {
   private:
     template <typename KlassType, typename T>
@@ -382,7 +369,7 @@ private:
     }
 
   public:
-    void (*_function[KLASS_ID_COUNT])(OopClosureType*, oop, Klass*);
+    FunctionType _function[KLASS_ID_COUNT];
 
     Table(){
       set_init_function<InstanceKlass>();
@@ -397,7 +384,7 @@ private:
   static Table _table;
 public:
 
-  static void (*function(Klass* klass))(OopClosureType*, oop, Klass*) {
+  static FunctionType function(Klass* klass) {
     return _table._function[klass->id()];
   }
 };
@@ -421,4 +408,4 @@ void OopIteratorClosureDispatch::oop_oop_iterate_backwards(OopClosureType* cl, o
   OopOopIterateBackwardsDispatch<OopClosureType>::function(klass)(cl, obj, klass);
 }
 
-#endif // SHARE_VM_MEMORY_ITERATOR_INLINE_HPP
+#endif // SHARE_MEMORY_ITERATOR_INLINE_HPP

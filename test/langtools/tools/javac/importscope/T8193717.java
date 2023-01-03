@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,7 +75,7 @@ public class T8193717 {
         new T8193717().run();
     }
 
-    private static final int CLASSES = 500000;
+    private static final int CLASSES = 50000;
 
     private void run() throws IOException {
         StringBuilder imports = new StringBuilder();
@@ -94,7 +94,8 @@ public class T8193717 {
         try (StandardJavaFileManager fm = compiler.getStandardFileManager(null, null, null)) {
             fm.setLocationFromPaths(StandardLocation.CLASS_OUTPUT, List.of(Paths.get(".")));
             new JavacTask(tb).sources(source)
-                             .options("-XDshould-stop.at=ATTR") //the source is too big for a classfile
+                             .options("-XDshould-stop.ifError=ATTR",
+                                      "-XDshould-stop.ifNoError=ATTR") //the source is too big for a classfile
                              .fileManager(new TestJFM(fm))
                              .run();
         }

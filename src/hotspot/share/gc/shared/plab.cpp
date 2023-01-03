@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,12 @@
 
 #include "precompiled.hpp"
 #include "gc/shared/collectedHeap.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "gc/shared/plab.inline.hpp"
 #include "gc/shared/threadLocalAllocBuffer.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "logging/log.hpp"
-#include "oops/arrayOop.hpp"
+#include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
 
 size_t PLAB::min_size() {
@@ -43,8 +45,7 @@ PLAB::PLAB(size_t desired_plab_sz_) :
   _word_sz(desired_plab_sz_), _bottom(NULL), _top(NULL),
   _end(NULL), _hard_end(NULL), _allocated(0), _wasted(0), _undo_wasted(0)
 {
-  // ArrayOopDesc::header_size depends on command line initialization.
-  AlignmentReserve = oopDesc::header_size() > MinObjAlignment ? align_object_size(arrayOopDesc::header_size(T_INT)) : 0;
+  AlignmentReserve = Universe::heap()->tlab_alloc_reserve();
   assert(min_size() > AlignmentReserve,
          "Minimum PLAB size " SIZE_FORMAT " must be larger than alignment reserve " SIZE_FORMAT " "
          "to be able to contain objects", min_size(), AlignmentReserve);
@@ -136,7 +137,10 @@ void PLABStats::log_sizing(size_t calculated_words, size_t net_desired_words) {
 
 // Calculates plab size for current number of gc worker threads.
 size_t PLABStats::desired_plab_sz(uint no_of_gc_workers) {
-  return align_object_size(MIN2(MAX2(min_size(), _desired_net_plab_sz / no_of_gc_workers), max_size()));
+  if (!ResizePLAB) {
+      return _default_plab_sz;
+  }
+  return align_object_size(clamp(_desired_net_plab_sz / no_of_gc_workers, min_size(), max_size()));
 }
 
 // Compute desired plab size for one gc worker thread and latch result for later

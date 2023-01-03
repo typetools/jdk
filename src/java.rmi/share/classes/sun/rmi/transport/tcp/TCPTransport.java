@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,7 +83,7 @@ import sun.rmi.transport.TransportConstants;
  * @author Ann Wollrath
  * @author Peter Jones
  */
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"removal","deprecation"})
 public class TCPTransport extends Transport {
 
     /* tcp package log */
@@ -115,7 +115,7 @@ public class TCPTransport extends Transport {
             });
 
     /** total connections handled */
-    private static final AtomicInteger connectionCount = new AtomicInteger(0);
+    private static final AtomicInteger connectionCount = new AtomicInteger();
 
     /** client host for the current thread's connection */
     private static final ThreadLocal<ConnectionHandler>
@@ -273,12 +273,23 @@ public class TCPTransport extends Transport {
     private void decrementExportCount() {
         assert Thread.holdsLock(this);
         exportCount--;
+        if (tcpLog.isLoggable(Log.VERBOSE)) {
+            tcpLog.log(Log.VERBOSE,
+                    "server socket: " + server + ", exportCount: " + exportCount);
+        }
         if (exportCount == 0 && getEndpoint().getListenPort() != 0) {
             ServerSocket ss = server;
             server = null;
             try {
+                if (tcpLog.isLoggable(Log.BRIEF)) {
+                    tcpLog.log(Log.BRIEF, "server socket close: " + ss);
+                }
                 ss.close();
             } catch (IOException e) {
+                if (tcpLog.isLoggable(Log.BRIEF)) {
+                    tcpLog.log(Log.BRIEF,
+                            "server socket close throws: " + e);
+                }
             }
         }
     }
@@ -366,6 +377,10 @@ public class TCPTransport extends Transport {
                 executeAcceptLoop();
             } finally {
                 try {
+                    if (tcpLog.isLoggable(Log.BRIEF)) {
+                        tcpLog.log(Log.BRIEF,
+                                "server socket close: " + serverSocket);
+                    }
                     /*
                      * Only one accept loop is started per server
                      * socket, so after no more connections will be
@@ -374,6 +389,10 @@ public class TCPTransport extends Transport {
                      */
                     serverSocket.close();
                 } catch (IOException e) {
+                    if (tcpLog.isLoggable(Log.BRIEF)) {
+                        tcpLog.log(Log.BRIEF,
+                                "server socket close throws: " + e);
+                    }
                 }
             }
         }
@@ -524,9 +543,15 @@ public class TCPTransport extends Transport {
     /** close socket and eat exception */
     private static void closeSocket(Socket sock) {
         try {
+            if (tcpLog.isLoggable(Log.BRIEF)) {
+                tcpLog.log(Log.BRIEF, "socket close: " + sock);
+            }
             sock.close();
         } catch (IOException ex) {
             // eat exception
+            if (tcpLog.isLoggable(Log.BRIEF)) {
+                tcpLog.log(Log.BRIEF, "socket close throws: " + ex);
+            }
         }
     }
 
@@ -591,6 +616,9 @@ public class TCPTransport extends Transport {
                 conn.close();
             } catch (IOException ex) {
                 // eat exception
+                if (tcpLog.isLoggable(Log.BRIEF)) {
+                    tcpLog.log(Log.BRIEF, "Connection close throws " + ex);
+                }
             }
         }
     }
@@ -723,6 +751,10 @@ public class TCPTransport extends Transport {
                     // just close socket: this would recurse if we marshal an
                     // exception to the client and the protocol at other end
                     // doesn't match.
+                    if (tcpLog.isLoggable(Log.BRIEF)) {
+                        tcpLog.log(Log.BRIEF, "magic or version not match: "
+                                                  + magic + ", " + version);
+                    }
                     closeSocket(socket);
                     return;
                 }

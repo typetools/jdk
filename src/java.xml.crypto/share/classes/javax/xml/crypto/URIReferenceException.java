@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,8 @@
  * $Id: URIReferenceException.java,v 1.4 2005/05/10 15:47:42 mullan Exp $
  */
 package javax.xml.crypto;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -57,6 +59,10 @@ public class URIReferenceException extends Exception {
      */
     private Throwable cause;
 
+    /**
+     * The {@code URIReference} that was being dereferenced
+     * when the exception was thrown, or {@code null} if not specified.
+     */
     private URIReference uriReference;
 
     /**
@@ -151,7 +157,7 @@ public class URIReferenceException extends Exception {
      * @return the cause of this {@code URIReferenceException} or
      *    {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

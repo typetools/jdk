@@ -70,7 +70,7 @@ import sun.awt.SunToolkit;
  * }</pre>
  * <p>
  * For more information on full-screen exclusive mode API, see the
- * <a href="http://docs.oracle.com/javase/tutorial/extra/fullscreen/index.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/extra/fullscreen/index.html">
  * Full-Screen Exclusive Mode API Tutorial</a>.
  *
  * @see GraphicsEnvironment
@@ -164,7 +164,7 @@ public abstract @UsesObjectEquals class GraphicsDevice {
      * {@code GraphicsEnvironment}.  Although there is
      * no public method to set this {@code String}, a programmer can
      * use the {@code String} for debugging purposes.  Vendors of
-     * the Java&trade; Runtime Environment can
+     * the Java Runtime Environment can
      * format the return value of the {@code String}.  To determine
      * how to interpret the value of the {@code String}, contact the
      * vendor of your Java Runtime.  To find out who the vendor is, from

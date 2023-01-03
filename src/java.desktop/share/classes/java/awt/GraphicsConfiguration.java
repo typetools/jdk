@@ -107,8 +107,6 @@ import sun.awt.image.SunVolatileImage;
  * implements the interface for that capability.
  *
  */
-
-
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class GraphicsConfiguration {
 

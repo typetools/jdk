@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import java.util.Objects;
 
 /**
  * Piped character-input streams.
@@ -67,8 +68,8 @@ public class PipedReader extends Reader {
     /**
      * The index of the position in the circular buffer at which the
      * next character of data will be stored when received from the connected
-     * piped writer. <code>in&lt;0</code> implies the buffer is empty,
-     * <code>in==out</code> implies the buffer is full
+     * piped writer. {@code in < 0} implies the buffer is empty,
+     * {@code in == out} implies the buffer is full
      */
     int in = -1;
 
@@ -79,28 +80,28 @@ public class PipedReader extends Reader {
     int out = 0;
 
     /**
-     * Creates a <code>PipedReader</code> so
+     * Creates a {@code PipedReader} so
      * that it is connected to the piped writer
-     * <code>src</code>. Data written to <code>src</code>
+     * {@code src}. Data written to {@code src}
      * will then be available as input from this stream.
      *
      * @param      src   the stream to connect to.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      */
     public PipedReader(PipedWriter src) throws IOException {
         this(src, DEFAULT_PIPE_SIZE);
     }
 
     /**
-     * Creates a <code>PipedReader</code> so that it is connected
-     * to the piped writer <code>src</code> and uses the specified
-     * pipe size for the pipe's buffer. Data written to <code>src</code>
+     * Creates a {@code PipedReader} so that it is connected
+     * to the piped writer {@code src} and uses the specified
+     * pipe size for the pipe's buffer. Data written to {@code src}
      * will then be  available as input from this stream.
-
+     *
      * @param      src       the stream to connect to.
      * @param      pipeSize  the size of the pipe's buffer.
-     * @exception  IOException  if an I/O error occurs.
-     * @exception  IllegalArgumentException if {@code pipeSize <= 0}.
+     * @throws     IOException  if an I/O error occurs.
+     * @throws     IllegalArgumentException if {@code pipeSize <= 0}.
      * @since      1.6
      */
     public PipedReader(PipedWriter src, @Positive int pipeSize) throws IOException {
@@ -110,10 +111,10 @@ public class PipedReader extends Reader {
 
 
     /**
-     * Creates a <code>PipedReader</code> so
+     * Creates a {@code PipedReader} so
      * that it is not yet {@linkplain #connect(java.io.PipedWriter)
      * connected}. It must be {@linkplain java.io.PipedWriter#connect(
-     * java.io.PipedReader) connected} to a <code>PipedWriter</code>
+     * java.io.PipedReader) connected} to a {@code PipedWriter}
      * before being used.
      */
     public PipedReader() {
@@ -121,16 +122,16 @@ public class PipedReader extends Reader {
     }
 
     /**
-     * Creates a <code>PipedReader</code> so that it is not yet
+     * Creates a {@code PipedReader} so that it is not yet
      * {@link #connect(java.io.PipedWriter) connected} and uses
      * the specified pipe size for the pipe's buffer.
      * It must be  {@linkplain java.io.PipedWriter#connect(
-     * java.io.PipedReader) connected} to a <code>PipedWriter</code>
+     * java.io.PipedReader) connected} to a {@code PipedWriter}
      * before being used.
      *
      * @param   pipeSize the size of the pipe's buffer.
-     * @exception  IllegalArgumentException if {@code pipeSize <= 0}.
-     * @since      1.6
+     * @throws  IllegalArgumentException if {@code pipeSize <= 0}.
+     * @since   1.6
      */
     public PipedReader(@Positive int pipeSize) {
         initPipe(pipeSize);
@@ -145,26 +146,26 @@ public class PipedReader extends Reader {
 
     /**
      * Causes this piped reader to be connected
-     * to the piped  writer <code>src</code>.
+     * to the piped  writer {@code src}.
      * If this object is already connected to some
-     * other piped writer, an <code>IOException</code>
+     * other piped writer, an {@code IOException}
      * is thrown.
      * <p>
-     * If <code>src</code> is an
-     * unconnected piped writer and <code>snk</code>
+     * If {@code src} is an
+     * unconnected piped writer and {@code snk}
      * is an unconnected piped reader, they
      * may be connected by either the call:
      *
-     * <pre><code>snk.connect(src)</code> </pre>
+     * <pre>{@code snk.connect(src)} </pre>
      * <p>
      * or the call:
      *
-     * <pre><code>src.connect(snk)</code> </pre>
+     * <pre>{@code src.connect(snk)} </pre>
      * <p>
      * The two calls have the same effect.
      *
      * @param      src   The piped writer to connect to.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      */
     public void connect(PipedWriter src) throws IOException {
         src.connect(this);
@@ -228,14 +229,14 @@ public class PipedReader extends Reader {
     /**
      * Reads the next character of data from this piped stream.
      * If no character is available because the end of the stream
-     * has been reached, the value <code>-1</code> is returned.
+     * has been reached, the value {@code -1} is returned.
      * This method blocks until input data is available, the end of
      * the stream is detected, or an exception is thrown.
      *
-     * @return     the next character of data, or <code>-1</code> if the end of the
-     *             stream is reached.
-     * @exception  IOException  if the pipe is
-     *          <a href=PipedInputStream.html#BROKEN> <code>broken</code></a>,
+     * @return  the next character of data, or {@code -1} if the end of the
+     *          stream is reached.
+     * @throws  IOException  if the pipe is
+     *          <a href=PipedInputStream.html#BROKEN> {@code broken}</a>,
      *          {@link #connect(java.io.PipedWriter) unconnected}, closed,
      *          or an I/O error occurs.
      */
@@ -279,23 +280,22 @@ public class PipedReader extends Reader {
     }
 
     /**
-     * Reads up to <code>len</code> characters of data from this piped
-     * stream into an array of characters. Less than <code>len</code> characters
-     * will be read if the end of the data stream is reached or if
-     * <code>len</code> exceeds the pipe's buffer size. This method
-     * blocks until at least one character of input is available.
+     * {@inheritDoc}
      *
-     * @param      cbuf     the buffer into which the data is read.
-     * @param      off   the start offset of the data.
-     * @param      len   the maximum number of characters read.
-     * @return     the total number of characters read into the buffer, or
-     *             <code>-1</code> if there is no more data because the end of
-     *             the stream has been reached.
-     * @exception  IOException  if the pipe is
-     *                  <a href=PipedInputStream.html#BROKEN> <code>broken</code></a>,
-     *                  {@link #connect(java.io.PipedWriter) unconnected}, closed,
-     *                  or an I/O error occurs.
-     * @exception  IndexOutOfBoundsException {@inheritDoc}
+     * <p> Fewer than {@code len} characters will be read if
+     * {@code len} exceeds the pipe's buffer size.
+     *
+     * @param      cbuf  {@inheritDoc}
+     * @param      off   {@inheritDoc}
+     * @param      len   {@inheritDoc}
+     *
+     * @return     {@inheritDoc}
+     *
+     * @throws     IndexOutOfBoundsException {@inheritDoc}
+     * @throws     IOException  if the pipe is
+     *             <a href=PipedInputStream.html#BROKEN> {@code broken}</a>,
+     *             {@link #connect(java.io.PipedWriter) unconnected}, closed,
+     *             or an I/O error occurs.
      */
     public synchronized @GTENegativeOne @LTEqLengthOf({"#1"}) int read(char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len)  throws IOException {
         if (!connected) {
@@ -307,10 +307,8 @@ public class PipedReader extends Reader {
             throw new IOException("Write end dead");
         }
 
-        if ((off < 0) || (off > cbuf.length) || (len < 0) ||
-            ((off + len) > cbuf.length) || ((off + len) < 0)) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+        Objects.checkFromIndexSize(off, len, cbuf.length);
+        if (len == 0) {
             return 0;
         }
 
@@ -339,9 +337,9 @@ public class PipedReader extends Reader {
      * Tell whether this stream is ready to be read.  A piped character
      * stream is ready if the circular buffer is not empty.
      *
-     * @exception  IOException  if the pipe is
-     *                  <a href=PipedInputStream.html#BROKEN> <code>broken</code></a>,
-     *                  {@link #connect(java.io.PipedWriter) unconnected}, or closed.
+     * @throws     IOException  if the pipe is
+     *             <a href=PipedInputStream.html#BROKEN> {@code broken}</a>,
+     *             {@link #connect(java.io.PipedWriter) unconnected}, or closed.
      */
     public synchronized boolean ready() throws IOException {
         if (!connected) {
@@ -363,7 +361,7 @@ public class PipedReader extends Reader {
      * Closes this piped stream and releases any system resources
      * associated with the stream.
      *
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      */
     public void close()  throws IOException {
         in = -1;

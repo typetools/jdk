@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,8 @@
 #ifndef SHARE_GC_G1_G1FULLGCOOPCLOSURES_HPP
 #define SHARE_GC_G1_G1FULLGCOOPCLOSURES_HPP
 
+#include "gc/shared/verifyOption.hpp"
 #include "memory/iterator.hpp"
-#include "memory/universe.hpp"
 
 class G1CollectedHeap;
 class G1FullCollector;
@@ -35,10 +35,13 @@ class G1FullGCMarker;
 
 // Below are closures used by the G1 Full GC.
 class G1IsAliveClosure : public BoolObjectClosure {
+  G1FullCollector* _collector;
   G1CMBitMap* _bitmap;
 
 public:
-  G1IsAliveClosure(G1CMBitMap* bitmap) : _bitmap(bitmap) { }
+  G1IsAliveClosure(G1FullCollector* collector);
+  G1IsAliveClosure(G1FullCollector* collector, G1CMBitMap* bitmap) :
+    _collector(collector), _bitmap(bitmap) { }
 
   virtual bool do_object_b(oop p);
 };
@@ -61,9 +64,9 @@ class G1MarkAndPushClosure : public OopIterateClosure {
 
 public:
   G1MarkAndPushClosure(uint worker, G1FullGCMarker* marker, ReferenceDiscoverer* ref) :
+    OopIterateClosure(ref),
     _marker(marker),
-    _worker_id(worker),
-    OopIterateClosure(ref) { }
+    _worker_id(worker) { }
 
   template <class T> inline void do_oop_work(T* p);
   virtual void do_oop(oop* p);
@@ -75,8 +78,11 @@ public:
 };
 
 class G1AdjustClosure : public BasicOopIterateClosure {
-  template <class T> static inline void adjust_pointer(T* p);
+  G1FullCollector* _collector;
+
+  template <class T> inline void adjust_pointer(T* p);
 public:
+  G1AdjustClosure(G1FullCollector* collector) : _collector(collector) { }
   template <class T> void do_oop_work(T* p) { adjust_pointer(p); }
   virtual void do_oop(oop* p);
   virtual void do_oop(narrowOop* p);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_SPACE_HPP
-#define SHARE_VM_GC_SHARED_SPACE_HPP
+#ifndef SHARE_GC_SHARED_SPACE_HPP
+#define SHARE_GC_SHARED_SPACE_HPP
 
 #include "gc/shared/blockOffsetTable.hpp"
 #include "gc/shared/cardTable.hpp"
@@ -31,7 +31,7 @@
 #include "memory/allocation.hpp"
 #include "memory/iterator.hpp"
 #include "memory/memRegion.hpp"
-#include "oops/markOop.hpp"
+#include "oops/markWord.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "utilities/align.hpp"
 #include "utilities/macros.hpp"
@@ -69,11 +69,6 @@ class Space: public CHeapObj<mtGC> {
   // Used in support of save_marks()
   HeapWord* _saved_mark_word;
 
-  // A sequential tasks done structure. This supports
-  // parallel GC, where we have threads dynamically
-  // claiming sub-tasks from a larger parallel task.
-  SequentialSubTasksDone _par_seq_tasks;
-
   Space():
     _bottom(NULL), _end(NULL) { }
 
@@ -91,11 +86,7 @@ class Space: public CHeapObj<mtGC> {
   // Returns true if this object has been allocated since a
   // generation's "save_marks" call.
   virtual bool obj_allocated_since_save_marks(const oop obj) const {
-    return (HeapWord*)obj >= saved_mark_word();
-  }
-
-  virtual MemRegionClosure* preconsumptionDirtyCardClosure() const {
-    return NULL;
+    return cast_from_oop<HeapWord*>(obj) >= saved_mark_word();
   }
 
   // Returns a subregion of the space containing only the allocated objects in
@@ -175,9 +166,6 @@ class Space: public CHeapObj<mtGC> {
   // each.  Objects allocated by applications of the closure are not
   // included in the iteration.
   virtual void object_iterate(ObjectClosure* blk) = 0;
-  // Similar to object_iterate() except only iterates over
-  // objects whose internal references point to objects in the space.
-  virtual void safe_object_iterate(ObjectClosure* blk) = 0;
 
   // Create and return a new dirty card to oop closure. Can be
   // overridden to return the appropriate type of closure
@@ -185,8 +173,7 @@ class Space: public CHeapObj<mtGC> {
   // operate. ResourceArea allocated.
   virtual DirtyCardToOopClosure* new_dcto_cl(OopIterateClosure* cl,
                                              CardTable::PrecisionStyle precision,
-                                             HeapWord* boundary,
-                                             bool parallel);
+                                             HeapWord* boundary);
 
   // If "p" is in the space, returns the address of the start of the
   // "block" that contains "p".  We say "block" instead of "object" since
@@ -231,9 +218,6 @@ class Space: public CHeapObj<mtGC> {
   virtual void print_short() const;
   virtual void print_short_on(outputStream* st) const;
 
-
-  // Accessor for parallel sequential tasks.
-  SequentialSubTasksDone* par_seq_tasks() { return &_par_seq_tasks; }
 
   // IF "this" is a ContiguousSpace, return it, else return NULL.
   virtual ContiguousSpace* toContiguousSpace() {
@@ -289,7 +273,7 @@ public:
   DirtyCardToOopClosure(Space* sp, OopIterateClosure* cl,
                         CardTable::PrecisionStyle precision,
                         HeapWord* boundary) :
-    _sp(sp), _cl(cl), _precision(precision), _boundary(boundary),
+    _cl(cl), _sp(sp), _precision(precision), _boundary(boundary),
     _min_done(NULL) {
     NOT_PRODUCT(_last_bottom = NULL);
     NOT_PRODUCT(_last_explicit_min_done = NULL);
@@ -356,7 +340,6 @@ public:
 // definition of scanned_block_size/scanned_block_is_obj respectively.
 class CompactibleSpace: public Space {
   friend class VMStructs;
-  friend class CompactibleFreeListSpace;
 private:
   HeapWord* _compaction_top;
   CompactibleSpace* _next_compaction_space;
@@ -462,9 +445,6 @@ protected:
   HeapWord* _first_dead;
   HeapWord* _end_of_live;
 
-  // Minimum size of a free block.
-  virtual size_t minimum_free_block_size() const { return 0; }
-
   // This the function is invoked when an allocation of an object covering
   // "start" to "end occurs crosses the threshold; returns the next
   // threshold.  (The default implementation does nothing.)
@@ -519,7 +499,6 @@ class ContiguousSpace: public CompactibleSpace {
 
  protected:
   HeapWord* _top;
-  HeapWord* _concurrent_iteration_safe_limit;
   // A helper for mangling the unused area of the space in debug builds.
   GenSpaceMangler* _mangler;
 
@@ -579,52 +558,21 @@ class ContiguousSpace: public CompactibleSpace {
   // Allocation (return NULL if full)
   virtual HeapWord* allocate(size_t word_size);
   virtual HeapWord* par_allocate(size_t word_size);
-  HeapWord* allocate_aligned(size_t word_size);
 
   // Iteration
   void oop_iterate(OopIterateClosure* cl);
   void object_iterate(ObjectClosure* blk);
-  // For contiguous spaces this method will iterate safely over objects
-  // in the space (i.e., between bottom and top) when at a safepoint.
-  void safe_object_iterate(ObjectClosure* blk);
-
-  // Iterate over as many initialized objects in the space as possible,
-  // calling "cl.do_object_careful" on each. Return NULL if all objects
-  // in the space (at the start of the iteration) were iterated over.
-  // Return an address indicating the extent of the iteration in the
-  // event that the iteration had to return because of finding an
-  // uninitialized object in the space, or if the closure "cl"
-  // signaled early termination.
-  HeapWord* object_iterate_careful(ObjectClosureCareful* cl);
-  HeapWord* concurrent_iteration_safe_limit() {
-    assert(_concurrent_iteration_safe_limit <= top(),
-           "_concurrent_iteration_safe_limit update missed");
-    return _concurrent_iteration_safe_limit;
-  }
-  // changes the safe limit, all objects from bottom() to the new
-  // limit should be properly initialized
-  void set_concurrent_iteration_safe_limit(HeapWord* new_limit) {
-    assert(new_limit <= top(), "uninitialized objects in the safe range");
-    _concurrent_iteration_safe_limit = new_limit;
-  }
-
-  // In support of parallel oop_iterate.
-  template <typename OopClosureType>
-  void par_oop_iterate(MemRegion mr, OopClosureType* blk);
 
   // Compaction support
   virtual void reset_after_compaction() {
     assert(compaction_top() >= bottom() && compaction_top() <= end(), "should point inside space");
     set_top(compaction_top());
-    // set new iteration safe limit
-    set_concurrent_iteration_safe_limit(compaction_top());
   }
 
   // Override.
   DirtyCardToOopClosure* new_dcto_cl(OopIterateClosure* cl,
                                      CardTable::PrecisionStyle precision,
-                                     HeapWord* boundary,
-                                     bool parallel);
+                                     HeapWord* boundary);
 
   // Apply "blk->do_oop" to the addresses of all reference fields in objects
   // starting with the _saved_mark_word, which was noted during a generation's
@@ -782,4 +730,4 @@ class TenuredSpace: public OffsetTableContigSpace {
                MemRegion mr) :
     OffsetTableContigSpace(sharedOffsetArray, mr) {}
 };
-#endif // SHARE_VM_GC_SHARED_SPACE_HPP
+#endif // SHARE_GC_SHARED_SPACE_HPP

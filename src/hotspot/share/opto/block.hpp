@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_BLOCK_HPP
-#define SHARE_VM_OPTO_BLOCK_HPP
+#ifndef SHARE_OPTO_BLOCK_HPP
+#define SHARE_OPTO_BLOCK_HPP
 
 #include "opto/multnode.hpp"
 #include "opto/node.hpp"
 #include "opto/phase.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 // Optimization - Graph Style
 
@@ -55,7 +56,7 @@ protected:
   void grow( uint i );          // Grow array node to fit
 
 public:
-  Block_Array(Arena *a) : _arena(a), _size(OptoBlockListSize) {
+  Block_Array(Arena *a) : _size(OptoBlockListSize), _arena(a) {
     debug_only(_limit=0);
     _blocks = NEW_ARENA_ARRAY( a, Block *, OptoBlockListSize );
     for( int i = 0; i < OptoBlockListSize; i++ ) {
@@ -317,7 +318,7 @@ public:
   uint find_node( const Node *n ) const;
   // Find and remove n from block list
   void find_remove( const Node *n );
-  // Check wether the node is in the block.
+  // Check whether the node is in the block.
   bool contains (const Node *n) const;
 
   // Return the empty status of a block
@@ -499,7 +500,10 @@ class PhaseCFG : public Phase {
 
   CFGLoop* create_loop_tree();
   bool is_dominator(Node* dom_node, Node* node);
-
+  bool is_CFG(Node* n);
+  bool is_control_proj_or_safepoint(Node* n) const;
+  Block* find_block_for_node(Node* n) const;
+  bool is_dominating_control(Node* dom_ctrl, Node* n);
   #ifndef PRODUCT
   bool _trace_opto_pipelining;  // tracing flag
   #endif
@@ -616,11 +620,15 @@ class PhaseCFG : public Phase {
   // Debugging print of CFG
   void dump( ) const;           // CFG only
   void _dump_cfg( const Node *end, VectorSet &visited  ) const;
-  void verify() const;
   void dump_headers();
 #else
   bool trace_opto_pipelining() const { return false; }
 #endif
+
+  // Check that block b is in the home loop (or an ancestor) of n, if n is a
+  // memory writer.
+  void verify_memory_writer_placement(const Block* b, const Node* n) const NOT_DEBUG_RETURN;
+  void verify() const NOT_DEBUG_RETURN;
 };
 
 
@@ -715,6 +723,7 @@ class CFGLoop : public CFGElement {
   double trip_count() const { return 1.0 / _exit_prob; }
   virtual bool is_loop()  { return true; }
   int id() { return _id; }
+  int depth() { return _depth; }
 
 #ifndef PRODUCT
   void dump( ) const;
@@ -752,7 +761,7 @@ class CFGEdge : public ResourceObj {
 
   CFGEdge(Block *from, Block *to, double freq, int from_pct, int to_pct) :
     _from(from), _to(to), _freq(freq),
-    _from_pct(from_pct), _to_pct(to_pct), _state(open) {
+    _state(open), _from_pct(from_pct), _to_pct(to_pct) {
     _infrequent = from_infrequent() || to_infrequent();
   }
 
@@ -800,11 +809,11 @@ class Trace : public ResourceObj {
  public:
 
   Trace(Block *b, Block **next_list, Block **prev_list) :
-    _first(b),
-    _last(b),
+    _id(b->_pre_order),
     _next_list(next_list),
     _prev_list(prev_list),
-    _id(b->_pre_order) {
+    _first(b),
+    _last(b) {
     set_next(b, NULL);
     set_prev(b, NULL);
   };
@@ -887,4 +896,4 @@ class PhaseBlockLayout : public Phase {
   void union_traces(Trace* from, Trace* to);
 };
 
-#endif // SHARE_VM_OPTO_BLOCK_HPP
+#endif // SHARE_OPTO_BLOCK_HPP

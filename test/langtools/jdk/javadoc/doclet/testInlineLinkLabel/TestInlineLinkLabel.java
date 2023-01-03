@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,13 @@
  * @test
  * @bug 4524136
  * @summary Test to make sure label is used for inline links.
- * @author jamieh
- * @library ../lib
+ * @library ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
- * @build JavadocTester
+ * @build javadoc.tester.*
  * @run main TestInlineLinkLabel
  */
+
+import javadoc.tester.JavadocTester;
 
 public class TestInlineLinkLabel extends JavadocTester {
 
@@ -40,7 +41,7 @@ public class TestInlineLinkLabel extends JavadocTester {
     }
 
     @Test
-    void test() {
+    public void test() {
         javadoc("-d", "out",
                 "-sourcepath", testSrc,
                 "pkg");
@@ -48,8 +49,10 @@ public class TestInlineLinkLabel extends JavadocTester {
 
         checkOutput("pkg/C1.html", true,
                 //Search for the label to the package link.
-                "<a href=\"package-summary.html\"><code>Here is a link to a package</code></a>",
+                """
+                    <a href="package-summary.html"><code>Here is a link to a package</code></a>""",
                 //Search for the label to the class link
-                "<a href=\"C2.html\" title=\"class in pkg\"><code>Here is a link to a class</code></a>");
+                """
+                    <a href="C2.html" title="class in pkg"><code>Here is a link to a class</code></a>""");
     }
 }

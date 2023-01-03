@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,9 +28,9 @@ package java.awt;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.awt.Component;
-import java.awt.Image;
 import java.awt.image.ImageObserver;
+import java.io.Serial;
+
 import sun.awt.image.MultiResolutionToolkitImage;
 
 /**
@@ -189,11 +189,13 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @see #addImage(Image, int)
      * @see #removeImage(Image)
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     MediaEntry head;
 
-    /*
-     * JDK 1.1 serialVersionUID
+    /**
+     * Use serialVersionUID from JDK 1.1 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = -483174189758638095L;
 
     /**
@@ -373,7 +375,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
         if (numerrors == 0) {
             return null;
         }
-        Object errors[] = new Object[numerrors];
+        Object[] errors = new Object[numerrors];
         cur = head;
         numerrors = 0;
         while (cur != null) {
@@ -602,7 +604,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
         if (numerrors == 0) {
             return null;
         }
-        Object errors[] = new Object[numerrors];
+        Object[] errors = new Object[numerrors];
         cur = head;
         numerrors = 0;
         while (cur != null) {
@@ -926,15 +928,22 @@ abstract class MediaEntry {
     }
 }
 
+/**
+ * The entry of the list of {@code Images} that is being tracked by the
+ * {@code MediaTracker}.
+ */
+@SuppressWarnings("serial") // MediaEntry does not have a no-arg ctor
 class ImageMediaEntry extends MediaEntry implements ImageObserver,
 java.io.Serializable {
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     Image image;
     int width;
     int height;
 
-    /*
-     * JDK 1.1 serialVersionUID
+    /**
+     * Use serialVersionUID from JDK 1.1 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = 4739377000350280650L;
 
     ImageMediaEntry(MediaTracker mt, Image img, int c, int w, int h) {

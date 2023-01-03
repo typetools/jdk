@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,12 +51,12 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since   1.0
  */
 @AnnotatedFor({"nullness"})
-public
-class InterruptedException extends Exception {
+public class InterruptedException extends Exception {
+    @java.io.Serial
     private static final long serialVersionUID = 6700697376100628473L;
 
     /**
-     * Constructs an <code>InterruptedException</code> with no detail  message.
+     * Constructs an {@code InterruptedException} with no detail  message.
      */
     @SideEffectFree
     public InterruptedException() {
@@ -64,7 +64,7 @@ class InterruptedException extends Exception {
     }
 
     /**
-     * Constructs an <code>InterruptedException</code> with the
+     * Constructs an {@code InterruptedException} with the
      * specified detail message.
      *
      * @param   s   the detail message.

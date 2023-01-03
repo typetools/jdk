@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,16 @@
  *
  */
 
-#ifndef SHARE_VM_COMPILER_COMPILEBROKER_HPP
-#define SHARE_VM_COMPILER_COMPILEBROKER_HPP
+#ifndef SHARE_COMPILER_COMPILEBROKER_HPP
+#define SHARE_COMPILER_COMPILEBROKER_HPP
 
 #include "ci/compilerInterface.hpp"
 #include "compiler/abstractCompiler.hpp"
 #include "compiler/compileTask.hpp"
 #include "compiler/compilerDirectives.hpp"
-#include "runtime/perfData.hpp"
+#include "compiler/compilerThread.hpp"
+#include "runtime/atomic.hpp"
+#include "runtime/perfDataTypes.hpp"
 #include "utilities/stack.hpp"
 #if INCLUDE_JVMCI
 #include "jvmci/jvmciCompiler.hpp"
@@ -173,10 +175,6 @@ class CompileBroker: AllStatic {
   static volatile jint _compilation_id;
   static volatile jint _osr_compilation_id;
 
-  static int  _last_compile_type;
-  static int  _last_compile_level;
-  static char _last_method_compiled[name_buffer_length];
-
   static CompileQueue* _c2_compile_queue;
   static CompileQueue* _c1_compile_queue;
 
@@ -227,16 +225,21 @@ class CompileBroker: AllStatic {
   static int _sum_nmethod_code_size;
   static long _peak_compilation_time;
 
+  static CompilerStatistics _stats_per_level[];
+
   static volatile int _print_compilation_warning;
 
+  enum ThreadType {
+    compiler_t,
+    sweeper_t,
+    deoptimizer_t
+  };
+
   static Handle create_thread_oop(const char* name, TRAPS);
-  static JavaThread* make_thread(jobject thread_oop, CompileQueue* queue,
-                                 AbstractCompiler* comp, bool compiler_thread, TRAPS);
+  static JavaThread* make_thread(ThreadType type, jobject thread_oop, CompileQueue* queue, AbstractCompiler* comp, JavaThread* THREAD);
   static void init_compiler_sweeper_threads();
-  static void possibly_add_compiler_threads();
-  static bool compilation_is_complete  (const methodHandle& method, int osr_bci, int comp_level);
+  static void possibly_add_compiler_threads(JavaThread* THREAD);
   static bool compilation_is_prohibited(const methodHandle& method, int osr_bci, int comp_level, bool excluded);
-  static void preload_classes          (const methodHandle& method, TRAPS);
 
   static CompileTask* create_compile_task(CompileQueue*       queue,
                                           int                 compile_id,
@@ -253,8 +256,10 @@ class CompileBroker: AllStatic {
 #endif
 
   static void invoke_compiler_on_method(CompileTask* task);
-  static void post_compile(CompilerThread* thread, CompileTask* task, bool success, ciEnv* ci_env);
-  static void set_last_compile(CompilerThread *thread, const methodHandle& method, bool is_osr, int comp_level);
+  static void post_compile(CompilerThread* thread, CompileTask* task, bool success, ciEnv* ci_env,
+                           int compilable, const char* failure_reason);
+  static void update_compile_perf_data(CompilerThread *thread, const methodHandle& method, bool is_osr);
+
   static void push_jni_handle_block();
   static void pop_jni_handle_block();
   static void collect_statistics(CompilerThread* thread, elapsedTimer time, CompileTask* task);
@@ -273,10 +278,6 @@ class CompileBroker: AllStatic {
   static void shutdown_compiler_runtime(AbstractCompiler* comp, CompilerThread* thread);
 
 public:
-
-  static DirectivesStack* dirstack();
-  static void set_dirstack(DirectivesStack* stack);
-
   enum {
     // The entry bci used for non-OSR compilations.
     standard_entry_bci = InvocationEntryBci
@@ -288,14 +289,14 @@ public:
     return NULL;
   }
 
+  static bool compilation_is_complete(const methodHandle& method, int osr_bci, int comp_level);
   static bool compilation_is_in_queue(const methodHandle& method);
   static void print_compile_queues(outputStream* st);
-  static void print_directives(outputStream* st);
   static int queue_size(int comp_level) {
     CompileQueue *q = compile_queue(comp_level);
     return q != NULL ? q->size() : 0;
   }
-  static void compilation_init_phase1(TRAPS);
+  static void compilation_init_phase1(JavaThread* THREAD);
   static void compilation_init_phase2();
   static void init_compiler_thread_log();
   static nmethod* compile_method(const methodHandle& method,
@@ -304,7 +305,7 @@ public:
                                  const methodHandle& hot_method,
                                  int hot_count,
                                  CompileTask::CompileReason compile_reason,
-                                 Thread* thread);
+                                 TRAPS);
 
   static nmethod* compile_method(const methodHandle& method,
                                    int osr_bci,
@@ -313,7 +314,7 @@ public:
                                    int hot_count,
                                    CompileTask::CompileReason compile_reason,
                                    DirectiveSet* directive,
-                                   Thread* thread);
+                                   TRAPS);
 
   // Acquire any needed locks and assign a compile id
   static uint assign_compile_id_unlocked(Thread* thread, const methodHandle& method, int osr_bci);
@@ -339,7 +340,7 @@ public:
   static bool should_compile_new_jobs() { return UseCompiler && (_should_compile_new_jobs == run_compilation); }
   static bool set_should_compile_new_jobs(jint new_state) {
     // Return success if the current caller set it
-    jint old = Atomic::cmpxchg(new_state, &_should_compile_new_jobs, 1-new_state);
+    jint old = Atomic::cmpxchg(&_should_compile_new_jobs, 1-new_state, new_state);
     bool success = (old == (1-new_state));
     if (success) {
       if (new_state == run_compilation) {
@@ -354,7 +355,7 @@ public:
   static void disable_compilation_forever() {
     UseCompiler               = false;
     AlwaysCompileLoopMethods  = false;
-    Atomic::xchg(jint(shutdown_compilation), &_should_compile_new_jobs);
+    Atomic::xchg(&_should_compile_new_jobs, jint(shutdown_compilation));
   }
 
   static bool is_compilation_disabled_forever() {
@@ -363,27 +364,20 @@ public:
   static void handle_full_code_cache(int code_blob_type);
   // Ensures that warning is only printed once.
   static bool should_print_compiler_warning() {
-    jint old = Atomic::cmpxchg(1, &_print_compilation_warning, 0);
+    jint old = Atomic::cmpxchg(&_print_compilation_warning, 0, 1);
     return old == 0;
   }
   // Return total compilation ticks
-  static jlong total_compilation_ticks() {
-    return _perf_total_compilation != NULL ? _perf_total_compilation->get_value() : 0;
-  }
+  static jlong total_compilation_ticks();
 
   // Redefine Classes support
   static void mark_on_stack();
 
-#if INCLUDE_JVMCI
   // Print curent compilation time stats for a given compiler
-  static void print_times(AbstractCompiler* comp);
-#endif
+  static void print_times(const char* name, CompilerStatistics* stats);
 
   // Print a detailed accounting of compilation time
   static void print_times(bool per_compiler = true, bool aggregate = true);
-
-  // Debugging output for failure
-  static void print_last_compile();
 
   // compiler name for debugging
   static const char* compiler_name(int comp_level);
@@ -400,6 +394,11 @@ public:
     assert(idx < _c2_count, "oob");
     return _compiler2_objects[idx];
   }
+
+  static AbstractCompiler* compiler1() { return _compilers[0]; }
+  static AbstractCompiler* compiler2() { return _compilers[1]; }
+
+  static bool can_remove(CompilerThread *ct, bool do_it);
 
   static CompileLog* get_log(CompilerThread* ct);
 
@@ -423,7 +422,7 @@ public:
 
   // CodeHeap State Analytics.
   static void print_info(outputStream *out);
-  static void print_heapinfo(outputStream *out, const char* function, const char* granularity );
+  static void print_heapinfo(outputStream *out, const char* function, size_t granularity);
 };
 
-#endif // SHARE_VM_COMPILER_COMPILEBROKER_HPP
+#endif // SHARE_COMPILER_COMPILEBROKER_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import sun.invoke.WrapperInstance;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import sun.reflect.misc.ReflectUtil;
@@ -52,8 +54,10 @@ public class MethodHandleProxies {
      * A single-method interface is an interface which declares a uniquely named method.
      * When determining the uniquely named method of a single-method interface,
      * the public {@code Object} methods ({@code toString}, {@code equals}, {@code hashCode})
-     * are disregarded.  For example, {@link java.util.Comparator} is a single-method interface,
-     * even though it re-declares the {@code Object.equals} method.
+     * are disregarded as are any default (non-abstract) methods.
+     * For example, {@link java.util.Comparator} is a single-method interface,
+     * even though it re-declares the {@code Object.equals} method and also
+     * declares default methods, such as {@code Comparator.reverse}.
      * <p>
      * The interface must be public.  No additional access checks are performed.
      * <p>
@@ -147,9 +151,9 @@ public class MethodHandleProxies {
     // entry points, must be covered by hand-written or automatically
     // generated adapter classes.
     //
+    @SuppressWarnings("removal")
     @CallerSensitive
-    public static
-    <T> T asInterfaceInstance(final Class<T> intfc, final MethodHandle target) {
+    public static <T> T asInterfaceInstance(final Class<T> intfc, final MethodHandle target) {
         if (!intfc.isInterface() || !Modifier.isPublic(intfc.getModifiers()))
             throw newIllegalArgumentException("not a public interface", intfc.getName());
         final MethodHandle mh;
@@ -177,6 +181,8 @@ public class MethodHandleProxies {
             checkTarget = checkTarget.asType(checkTarget.type().changeReturnType(Object.class));
             vaTargets[i] = checkTarget.asSpreader(Object[].class, smMT.parameterCount());
         }
+        final ConcurrentHashMap<Method, MethodHandle> defaultMethodMap =
+                hasDefaultMethods(intfc) ? new ConcurrentHashMap<>() : null;
         final InvocationHandler ih = new InvocationHandler() {
                 private Object getArg(String name) {
                     if ((Object)name == "getWrapperInstanceTarget")  return target;
@@ -192,6 +198,9 @@ public class MethodHandleProxies {
                         return getArg(method.getName());
                     if (isObjectMethod(method))
                         return callObjectMethod(proxy, method, args);
+                    if (isDefaultMethod(method)) {
+                        return callDefaultMethod(defaultMethodMap, proxy, intfc, method, args);
+                    }
                     throw newInternalError("bad proxy method: "+method);
                 }
             };
@@ -226,8 +235,7 @@ public class MethodHandleProxies {
      * @param x any reference
      * @return true if the reference is not null and points to an object produced by {@code asInterfaceInstance}
      */
-    public static
-    boolean isWrapperInstance(Object x) {
+    public static boolean isWrapperInstance(Object x) {
         return x instanceof WrapperInstance;
     }
 
@@ -249,8 +257,7 @@ public class MethodHandleProxies {
      * @return a method handle implementing the unique method
      * @throws IllegalArgumentException if the reference x is not to a wrapper instance
      */
-    public static
-    MethodHandle wrapperInstanceTarget(Object x) {
+    public static MethodHandle wrapperInstanceTarget(Object x) {
         return asWrapperInstance(x).getWrapperInstanceTarget();
     }
 
@@ -262,44 +269,34 @@ public class MethodHandleProxies {
      * @return the single-method interface type for which the wrapper was created
      * @throws IllegalArgumentException if the reference x is not to a wrapper instance
      */
-    public static
-    Class<?> wrapperInstanceType(Object x) {
+    public static Class<?> wrapperInstanceType(Object x) {
         return asWrapperInstance(x).getWrapperInstanceType();
     }
 
-    private static
-    boolean isObjectMethod(Method m) {
-        switch (m.getName()) {
-        case "toString":
-            return (m.getReturnType() == String.class
-                    && m.getParameterTypes().length == 0);
-        case "hashCode":
-            return (m.getReturnType() == int.class
-                    && m.getParameterTypes().length == 0);
-        case "equals":
-            return (m.getReturnType() == boolean.class
-                    && m.getParameterTypes().length == 1
-                    && m.getParameterTypes()[0] == Object.class);
-        }
-        return false;
+    private static boolean isObjectMethod(Method m) {
+        return switch (m.getName()) {
+            case "toString" -> m.getReturnType() == String.class
+                               && m.getParameterCount() == 0;
+            case "hashCode" -> m.getReturnType() == int.class
+                               && m.getParameterCount() == 0;
+            case "equals"   -> m.getReturnType() == boolean.class
+                               && m.getParameterCount() == 1
+                               && m.getParameterTypes()[0] == Object.class;
+            default -> false;
+        };
     }
 
-    private static
-    Object callObjectMethod(Object self, Method m, Object[] args) {
+    private static Object callObjectMethod(Object self, Method m, Object[] args) {
         assert(isObjectMethod(m)) : m;
-        switch (m.getName()) {
-        case "toString":
-            return self.getClass().getName() + "@" + Integer.toHexString(self.hashCode());
-        case "hashCode":
-            return System.identityHashCode(self);
-        case "equals":
-            return (self == args[0]);
-        }
-        return null;
+        return switch (m.getName()) {
+            case "toString" -> self.getClass().getName() + "@" + Integer.toHexString(self.hashCode());
+            case "hashCode" -> System.identityHashCode(self);
+            case "equals"   -> (self == args[0]);
+            default -> null;
+        };
     }
 
-    private static
-    Method[] getSingleNameMethods(Class<?> intfc) {
+    private static Method[] getSingleNameMethods(Class<?> intfc) {
         ArrayList<Method> methods = new ArrayList<>();
         String uniqueName = null;
         for (Method m : intfc.getMethods()) {
@@ -314,5 +311,43 @@ public class MethodHandleProxies {
         }
         if (uniqueName == null)  return null;
         return methods.toArray(new Method[methods.size()]);
+    }
+
+    private static boolean isDefaultMethod(Method m) {
+        return !Modifier.isAbstract(m.getModifiers());
+    }
+
+    private static boolean hasDefaultMethods(Class<?> intfc) {
+        for (Method m : intfc.getMethods()) {
+            if (!isObjectMethod(m) &&
+                !Modifier.isAbstract(m.getModifiers())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Object callDefaultMethod(ConcurrentHashMap<Method, MethodHandle> defaultMethodMap,
+                             Object self, Class<?> intfc, Method m, Object[] args) throws Throwable {
+        assert(isDefaultMethod(m) && !isObjectMethod(m)) : m;
+
+        // Lazily compute the associated method handle from the method
+        MethodHandle dmh = defaultMethodMap.computeIfAbsent(m, mk -> {
+            try {
+                // Look up the default method for special invocation thereby
+                // avoiding recursive invocation back to the proxy
+                MethodHandle mh = MethodHandles.Lookup.IMPL_LOOKUP.findSpecial(
+                        intfc, mk.getName(),
+                        MethodType.methodType(mk.getReturnType(), mk.getParameterTypes()),
+                        self.getClass());
+                return mh.asSpreader(Object[].class, mk.getParameterCount());
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                // The method is known to exist and should be accessible, this
+                // method would not be called unless the invokeinterface to the
+                // default (public) method passed access control checks
+                throw new InternalError(e);
+            }
+        });
+        return dmh.invoke(self, args);
     }
 }

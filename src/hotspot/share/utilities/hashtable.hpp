@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,60 +22,37 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_HASHTABLE_HPP
-#define SHARE_VM_UTILITIES_HASHTABLE_HPP
+#ifndef SHARE_UTILITIES_HASHTABLE_HPP
+#define SHARE_UTILITIES_HASHTABLE_HPP
 
-#include "classfile/classLoaderData.hpp"
 #include "memory/allocation.hpp"
-#include "oops/oop.hpp"
 #include "oops/symbol.hpp"
 #include "runtime/handles.hpp"
+#include "utilities/tableStatistics.hpp"
 
-// This is a generic hashtable, designed to be used for the symbol
-// and string tables.
-//
-// It is implemented as an open hash table with a fixed number of buckets.
-//
-// %note:
-//  - TableEntrys are allocated in blocks to reduce the space overhead.
+// This is a generic hashtable which is implemented as an open hash table with
+// a fixed number of buckets.
 
-
-
-template <MEMFLAGS F> class BasicHashtableEntry : public CHeapObj<F> {
+template <MEMFLAGS F> class BasicHashtableEntry {
   friend class VMStructs;
 private:
   unsigned int         _hash;           // 32-bit hash for item
 
-  // Link to next element in the linked list for this bucket.  EXCEPT
-  // bit 0 set indicates that this entry is shared and must not be
-  // unlinked from the table. Bit 0 is set during the dumping of the
-  // archive. Since shared entries are immutable, _next fields in the
-  // shared entries will not change.  New entries will always be
-  // unshared and since pointers are align, bit 0 will always remain 0
-  // with no extra effort.
+  // Link to next element in the linked list for this bucket.
   BasicHashtableEntry<F>* _next;
 
-  // Windows IA64 compiler requires subclasses to be able to access these
-protected:
-  // Entry objects should not be created, they should be taken from the
-  // free list with BasicHashtable.new_entry().
-  BasicHashtableEntry() { ShouldNotReachHere(); }
-  // Entry objects should not be destroyed.  They should be placed on
-  // the free list instead with BasicHashtable.free_entry().
-  ~BasicHashtableEntry() { ShouldNotReachHere(); }
-
 public:
+  BasicHashtableEntry(unsigned int hashValue) : _hash(hashValue), _next(nullptr) {}
+  // Still should not call this. Entries are placement new allocated, so are
+  // deleted with free_entry.
+  ~BasicHashtableEntry() { ShouldNotReachHere(); }
 
   unsigned int hash() const             { return _hash; }
   void set_hash(unsigned int hash)      { _hash = hash; }
   unsigned int* hash_addr()             { return &_hash; }
 
-  static BasicHashtableEntry<F>* make_ptr(BasicHashtableEntry<F>* p) {
-    return (BasicHashtableEntry*)((intptr_t)p & -2);
-  }
-
   BasicHashtableEntry<F>* next() const {
-    return make_ptr(_next);
+    return _next;
   }
 
   void set_next(BasicHashtableEntry<F>* next) {
@@ -84,14 +61,6 @@ public:
 
   BasicHashtableEntry<F>** next_addr() {
     return &_next;
-  }
-
-  bool is_shared() const {
-    return ((intptr_t)_next & 1) != 0;
-  }
-
-  void set_shared() {
-    _next = (BasicHashtableEntry<F>*)((intptr_t)_next | 1);
   }
 };
 
@@ -103,6 +72,8 @@ private:
   T               _literal;          // ref to item in table.
 
 public:
+  HashtableEntry(unsigned int hashValue, T value) : BasicHashtableEntry<F>(hashValue), _literal(value) {}
+
   // Literal
   T literal() const                   { return _literal; }
   T* literal_addr()                   { return &_literal; }
@@ -146,12 +117,7 @@ public:
   BasicHashtable(int table_size, int entry_size);
   BasicHashtable(int table_size, int entry_size,
                  HashtableBucket<F>* buckets, int number_of_entries);
-
-  // Sharing support.
-  size_t count_bytes_for_buckets();
-  size_t count_bytes_for_table();
-  void copy_buckets(char* top, char* end);
-  void copy_table(char* top, char* end);
+  ~BasicHashtable();
 
   // Bucket handling
   int hash_to_index(unsigned int full_hash) const {
@@ -162,15 +128,14 @@ public:
 
 private:
   // Instance variables
-  int               _table_size;
-  HashtableBucket<F>*     _buckets;
-  BasicHashtableEntry<F>* volatile _free_list;
-  char*             _first_free_entry;
-  char*             _end_block;
-  int               _entry_size;
-  volatile int      _number_of_entries;
+  int                              _table_size;
+  HashtableBucket<F>*              _buckets;
+  int                              _entry_size;
+  volatile int                     _number_of_entries;
 
 protected:
+
+  TableRateStatistics _stats_rate;
 
   void initialize(int table_size, int entry_size, int number_of_entries);
 
@@ -183,50 +148,18 @@ protected:
   // The following method is not MT-safe and must be done under lock.
   BasicHashtableEntry<F>** bucket_addr(int i) { return _buckets[i].entry_addr(); }
 
-  // Attempt to get an entry from the free list
-  BasicHashtableEntry<F>* new_entry_free_list();
-
   // Table entry management
   BasicHashtableEntry<F>* new_entry(unsigned int hashValue);
 
-  // Used when moving the entry to another table
-  // Clean up links, but do not add to free_list
+  // Used when moving the entry to another table or deleting entry.
+  // Clean up links.
   void unlink_entry(BasicHashtableEntry<F>* entry) {
     entry->set_next(NULL);
     --_number_of_entries;
   }
 
-  // Move over freelist and free block for allocation
-  void copy_freelist(BasicHashtable* src) {
-    _free_list = src->_free_list;
-    src->_free_list = NULL;
-    _first_free_entry = src->_first_free_entry;
-    src->_first_free_entry = NULL;
-    _end_block = src->_end_block;
-    src->_end_block = NULL;
-  }
-
   // Free the buckets in this hashtable
   void free_buckets();
-
-  // Helper data structure containing context for the bucket entry unlink process,
-  // storing the unlinked buckets in a linked list.
-  // Also avoids the need to pass around these four members as parameters everywhere.
-  struct BucketUnlinkContext {
-    int _num_processed;
-    int _num_removed;
-    // Head and tail pointers for the linked list of removed entries.
-    BasicHashtableEntry<F>* _removed_head;
-    BasicHashtableEntry<F>* _removed_tail;
-
-    BucketUnlinkContext() : _num_processed(0), _num_removed(0), _removed_head(NULL), _removed_tail(NULL) {
-    }
-
-    void free_entry(BasicHashtableEntry<F>* entry);
-  };
-  // Add of bucket entries linked together in the given context to the global free list. This method
-  // is mt-safe wrt. to other calls of this method.
-  void bulk_free_entries(BucketUnlinkContext* context);
 public:
   int table_size() const { return _table_size; }
   void set_entry(int index, BasicHashtableEntry<F>* entry);
@@ -237,7 +170,11 @@ public:
 
   int number_of_entries() const { return _number_of_entries; }
 
+  int calculate_resize(bool use_large_table_sizes) const;
   bool resize(int new_size);
+
+  // Grow the number of buckets if the average entries per bucket is over the load_factor
+  bool maybe_grow(int max_size, int load_factor = 8);
 
   template <class T> void verify_table(const char* table_name) PRODUCT_RETURN;
 };
@@ -265,14 +202,12 @@ public:
     return this->hash_to_index(compute_hash(name));
   }
 
+  TableStatistics statistics_calculate(T (*literal_load_barrier)(HashtableEntry<T, F>*) = NULL);
   void print_table_statistics(outputStream* st, const char *table_name, T (*literal_load_barrier)(HashtableEntry<T, F>*) = NULL);
 
  protected:
 
-  // Table entry management
   HashtableEntry<T, F>* new_entry(unsigned int hashValue, T obj);
-  // Don't create and use freelist of HashtableEntry.
-  HashtableEntry<T, F>* allocate_new_entry(unsigned int hashValue, T obj);
 
   // The following method is MT-safe and may be used with caution.
   HashtableEntry<T, F>* bucket(int i) const {
@@ -285,38 +220,94 @@ public:
   }
 };
 
-template <class T, MEMFLAGS F> class RehashableHashtable : public Hashtable<T, F> {
- friend class VMStructs;
- protected:
-
-  enum {
-    rehash_count = 100,
-    rehash_multiple = 60
+// A subclass of BasicHashtable that allows you to do a simple K -> V mapping
+// without using tons of boilerplate code.
+template<
+    typename K, typename V, MEMFLAGS F,
+    unsigned (*HASH)  (K const&)           = primitive_hash<K>,
+    bool     (*EQUALS)(K const&, K const&) = primitive_equals<K>
+    >
+class KVHashtable : public BasicHashtable<F> {
+  class KVHashtableEntry : public BasicHashtableEntry<F> {
+  public:
+    K _key;
+    V _value;
+    KVHashtableEntry* next() {
+      return (KVHashtableEntry*)BasicHashtableEntry<F>::next();
+    }
   };
 
-  // Check that the table is unbalanced
-  bool check_rehash_table(int count);
+protected:
+  KVHashtableEntry* bucket(int i) const {
+    return (KVHashtableEntry*)BasicHashtable<F>::bucket(i);
+  }
 
- public:
-  RehashableHashtable(int table_size, int entry_size)
-    : Hashtable<T, F>(table_size, entry_size) { }
+  KVHashtableEntry* new_entry(unsigned int hashValue, K key, V value) {
+    KVHashtableEntry* entry = (KVHashtableEntry*)BasicHashtable<F>::new_entry(hashValue);
+    entry->_key   = key;
+    entry->_value = value;
+    return entry;
+  }
 
-  RehashableHashtable(int table_size, int entry_size,
-                   HashtableBucket<F>* buckets, int number_of_entries)
-    : Hashtable<T, F>(table_size, entry_size, buckets, number_of_entries) { }
+public:
+  KVHashtable(int table_size) : BasicHashtable<F>(table_size, sizeof(KVHashtableEntry)) {}
 
+  V* add(K key, V value) {
+    unsigned int hash = HASH(key);
+    KVHashtableEntry* entry = new_entry(hash, key, value);
+    BasicHashtable<F>::add_entry(BasicHashtable<F>::hash_to_index(hash), entry);
+    return &(entry->_value);
+  }
 
-  // Function to move these elements into the new table.
-  void move_to(RehashableHashtable<T, F>* new_table);
-  static bool use_alternate_hashcode();
-  static juint seed();
+  V* lookup(K key) const {
+    unsigned int hash = HASH(key);
+    int index = BasicHashtable<F>::hash_to_index(hash);
+    for (KVHashtableEntry* e = bucket(index); e != NULL; e = e->next()) {
+      if (e->hash() == hash && EQUALS(e->_key, key)) {
+        return &(e->_value);
+      }
+    }
+    return NULL;
+  }
 
- private:
-  static juint _seed;
+  // Look up the key.
+  // If an entry for the key exists, leave map unchanged and return a pointer to its value.
+  // If no entry for the key exists, create a new entry from key and value and return a
+  //  pointer to the value.
+  // *p_created is true if entry was created, false if entry pre-existed.
+  V* add_if_absent(K key, V value, bool* p_created) {
+    unsigned int hash = HASH(key);
+    int index = BasicHashtable<F>::hash_to_index(hash);
+    for (KVHashtableEntry* e = bucket(index); e != NULL; e = e->next()) {
+      if (e->hash() == hash && EQUALS(e->_key, key)) {
+        *p_created = false;
+        return &(e->_value);
+      }
+    }
+
+    KVHashtableEntry* entry = new_entry(hash, key, value);
+    BasicHashtable<F>::add_entry(BasicHashtable<F>::hash_to_index(hash), entry);
+    *p_created = true;
+    return &(entry->_value);
+  }
+
+  int table_size() const {
+    return BasicHashtable<F>::table_size();
+  }
+
+  // ITER contains bool do_entry(K, V const&), which will be
+  // called for each entry in the table.  If do_entry() returns false,
+  // the iteration is cancelled.
+  template<class ITER>
+  void iterate(ITER* iter) const {
+    for (int index = 0; index < table_size(); index++) {
+      for (KVHashtableEntry* e = bucket(index); e != NULL; e = e->next()) {
+        bool cont = iter->do_entry(e->_key, &e->_value);
+        if (!cont) { return; }
+      }
+    }
+  }
 };
 
-template <class T, MEMFLAGS F> juint RehashableHashtable<T, F>::_seed = 0;
-template <class T, MEMFLAGS F> juint RehashableHashtable<T, F>::seed() { return _seed; };
-template <class T, MEMFLAGS F> bool  RehashableHashtable<T, F>::use_alternate_hashcode() { return _seed != 0; };
 
-#endif // SHARE_VM_UTILITIES_HASHTABLE_HPP
+#endif // SHARE_UTILITIES_HASHTABLE_HPP

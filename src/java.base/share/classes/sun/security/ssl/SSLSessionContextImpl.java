@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,37 @@ import java.util.Enumeration;
 import java.util.Locale;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSessionContext;
+
+import sun.security.action.GetIntegerAction;
+import sun.security.action.GetPropertyAction;
 import sun.security.util.Cache;
 
 
+/**
+ * @systemProperty jdk.tls.server.enableSessionTicketExtension} determines if the
+ * server will provide stateless session tickets, if the client supports it,
+ * as described in RFC 5077 and RFC 8446.  a stateless session ticket
+ * contains the encrypted server's state which saves server resources.
+ *
+ * {@systemProperty jdk.tls.client.enableSessionTicketExtension} determines if the
+ * client will send an extension in the ClientHello in the pre-TLS 1.3.
+ * This extension allows the client to accept the server's session state for
+ * Server Side stateless resumption (RFC 5077).  Setting the property to
+ * "true" turns this on, by default it is false.  For TLS 1.3, the system
+ * property is not needed as this support is part of the spec.
+ *
+ * {@systemProperty jdk.tls.server.sessionTicketTimeout} determines how long
+ * a session in the server cache or the stateless resumption tickets are
+ * available for use.  The value set by the property can be modified by
+ * {@code SSLSessionContext.setSessionTimeout()} during runtime.
+ *
+ */
+
 final class SSLSessionContextImpl implements SSLSessionContext {
+    private static final int DEFAULT_MAX_CACHE_SIZE = 20480;
+    // Default lifetime of a session. 24 hours
+    static final int DEFAULT_SESSION_TIMEOUT = 86400;
+
     private final Cache<SessionId, SSLSessionImpl> sessionCache;
                                         // session cache, session id as key
     private final Cache<String, SSLSessionImpl> sessionHostPortCache;
@@ -42,14 +69,22 @@ final class SSLSessionContextImpl implements SSLSessionContext {
     private int cacheLimit;             // the max cache size
     private int timeout;                // timeout in seconds
 
+    // Default setting for stateless session resumption support (RFC 5077)
+    private boolean statelessSession = true;
+
     // package private
-    SSLSessionContextImpl() {
-        cacheLimit = getDefaultCacheLimit();    // default cache size
-        timeout = 86400;                        // default, 24 hours
+    SSLSessionContextImpl(boolean server) {
+        timeout = DEFAULT_SESSION_TIMEOUT;
+        cacheLimit = getDefaults(server);    // default cache size
 
         // use soft reference
         sessionCache = Cache.newSoftMemoryCache(cacheLimit, timeout);
         sessionHostPortCache = Cache.newSoftMemoryCache(cacheLimit, timeout);
+    }
+
+    // Stateless sessions when available, but there is a cache
+    boolean statelessEnabled() {
+        return statelessSession;
     }
 
     /**
@@ -140,6 +175,15 @@ final class SSLSessionContextImpl implements SSLSessionContext {
         return (SSLSessionImpl)getSession(id);
     }
 
+    // package-private method, find and remove session from cache
+    // return found session
+    SSLSessionImpl pull(byte[] id) {
+        if (id != null) {
+            return sessionCache.pull(new SessionId(id));
+        }
+        return null;
+    }
+
     // package-private method, used ONLY by ClientHandshaker
     SSLSessionImpl get(String hostname, int port) {
         /*
@@ -159,8 +203,7 @@ final class SSLSessionContextImpl implements SSLSessionContext {
     }
 
     private static String getKey(String hostname, int port) {
-        return (hostname + ":" +
-            String.valueOf(port)).toLowerCase(Locale.ENGLISH);
+        return (hostname + ":" + port).toLowerCase(Locale.ENGLISH);
     }
 
     // cache a SSLSession
@@ -193,23 +236,74 @@ final class SSLSessionContextImpl implements SSLSessionContext {
         }
     }
 
-    private static int getDefaultCacheLimit() {
-        int defaultCacheLimit = 0;
+    private int getDefaults(boolean server) {
         try {
-            String s = java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction<String>() {
-                    @Override
-                    public String run() {
-                        return System.getProperty(
-                            "javax.net.ssl.sessionCacheSize");
+            String st;
+
+            // Property for Session Cache state
+            if (server) {
+                st = GetPropertyAction.privilegedGetProperty(
+                        "jdk.tls.server.enableSessionTicketExtension", "true");
+            } else {
+                st = GetPropertyAction.privilegedGetProperty(
+                        "jdk.tls.client.enableSessionTicketExtension", "true");
+            }
+
+            if (st.compareToIgnoreCase("false") == 0) {
+                statelessSession = false;
+            }
+
+            // Property for Session Ticket Timeout.  The value can be changed
+            // by SSLSessionContext.setSessionTimeout(int)
+            String s = GetPropertyAction.privilegedGetProperty(
+                    "jdk.tls.server.sessionTicketTimeout");
+            if (s != null) {
+                try {
+                    int t = Integer.parseInt(s);
+                    if (t < 0 ||
+                            t > NewSessionTicket.MAX_TICKET_LIFETIME) {
+                        timeout = DEFAULT_SESSION_TIMEOUT;
+                        if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                            SSLLogger.warning("Invalid timeout given " +
+                                    "jdk.tls.server.sessionTicketTimeout: " + t +
+                                    ".  Set to default value " + timeout);
+                        }
+                    } else {
+                        timeout = t;
                     }
-                });
-                defaultCacheLimit = (s != null) ? Integer.parseInt(s) : 0;
+                } catch (NumberFormatException e) {
+                    setSessionTimeout(DEFAULT_SESSION_TIMEOUT);
+                    if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                        SSLLogger.warning("Invalid timeout for " +
+                                "jdk.tls.server.sessionTicketTimeout: " + s +
+                                ".  Set to default value " + timeout);
+
+                    }
+                }
+            }
+
+            int defaultCacheLimit = GetIntegerAction.privilegedGetProperty(
+                    "javax.net.ssl.sessionCacheSize", DEFAULT_MAX_CACHE_SIZE);
+
+            if (defaultCacheLimit >= 0) {
+                return defaultCacheLimit;
+            } else if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                SSLLogger.warning(
+                    "invalid System Property javax.net.ssl.sessionCacheSize, " +
+                    "use the default session cache size (" +
+                    DEFAULT_MAX_CACHE_SIZE + ") instead");
+            }
         } catch (Exception e) {
-            // swallow the exception
+            // unlikely, log it for safe
+            if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                SSLLogger.warning(
+                    "the System Property javax.net.ssl.sessionCacheSize is " +
+                    "not available, use the default value (" +
+                    DEFAULT_MAX_CACHE_SIZE + ") instead");
+            }
         }
 
-        return (defaultCacheLimit > 0) ? defaultCacheLimit : 0;
+        return DEFAULT_MAX_CACHE_SIZE;
     }
 
     private boolean isTimedout(SSLSession sess) {

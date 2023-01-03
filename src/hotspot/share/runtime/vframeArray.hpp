@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,15 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_VFRAMEARRAY_HPP
-#define SHARE_VM_RUNTIME_VFRAMEARRAY_HPP
+#ifndef SHARE_RUNTIME_VFRAMEARRAY_HPP
+#define SHARE_RUNTIME_VFRAMEARRAY_HPP
 
 #include "memory/allocation.hpp"
 #include "oops/arrayOop.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.hpp"
 #include "runtime/monitorChunk.hpp"
+#include "runtime/registerMap.hpp"
 #include "utilities/growableArray.hpp"
 
 // A vframeArray is an array used for momentarily storing off stack Java method activations
@@ -228,4 +229,4 @@ class vframeArray: public CHeapObj<mtCompiler> {
 
 };
 
-#endif // SHARE_VM_RUNTIME_VFRAMEARRAY_HPP
+#endif // SHARE_RUNTIME_VFRAMEARRAY_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -161,17 +161,6 @@ public class JavaCompiler {
      */
     protected static enum CompilePolicy {
         /**
-         * Just attribute the parse trees.
-         */
-        ATTR_ONLY,
-
-        /**
-         * Just attribute and do flow analysis on the parse trees.
-         * This should catch most user errors.
-         */
-        CHECK_ONLY,
-
-        /**
          * Attribute everything, then do flow analysis for everything,
          * then desugar everything, and only then generate output.
          * This means no output will be generated if there are any
@@ -198,10 +187,6 @@ public class JavaCompiler {
         static CompilePolicy decode(String option) {
             if (option == null)
                 return DEFAULT_COMPILE_POLICY;
-            else if (option.equals("attr"))
-                return ATTR_ONLY;
-            else if (option.equals("check"))
-                return CHECK_ONLY;
             else if (option.equals("simple"))
                 return SIMPLE;
             else if (option.equals("byfile"))
@@ -443,11 +428,7 @@ public class JavaCompiler {
 
         verboseCompilePolicy = options.isSet("verboseCompilePolicy");
 
-        if (options.isSet("should-stop.at") &&
-            CompileState.valueOf(options.get("should-stop.at")) == CompileState.ATTR)
-            compilePolicy = CompilePolicy.ATTR_ONLY;
-        else
-            compilePolicy = CompilePolicy.decode(options.get("compilePolicy"));
+        compilePolicy = CompilePolicy.decode(options.get("compilePolicy"));
 
         implicitSourcePolicy = ImplicitSourcePolicy.decode(options.get("-implicit"));
 
@@ -805,9 +786,8 @@ public class JavaCompiler {
      */
     public void readSourceFile(JCCompilationUnit tree, ClassSymbol c) throws CompletionFailure {
         if (completionFailureName == c.fullname) {
-            JCDiagnostic msg =
-                    diagFactory.fragment(Fragments.UserSelectedCompletionFailure);
-            throw new CompletionFailure(c, msg, dcfh);
+            throw new CompletionFailure(
+                c, () -> diagFactory.fragment(Fragments.UserSelectedCompletionFailure), dcfh);
         }
         JavaFileObject filename = c.classfile;
         JavaFileObject prev = log.useSource(filename);
@@ -835,7 +815,7 @@ public class JavaCompiler {
         // have enough modules available to access java.lang, and
         // so risk getting FatalError("no.java.lang") from MemberEnter.
         if (!modules.enter(List.of(tree), c)) {
-            throw new CompletionFailure(c, diags.fragment(Fragments.CantResolveModules), dcfh);
+            throw new CompletionFailure(c, () -> diags.fragment(Fragments.CantResolveModules), dcfh);
         }
 
         enter.complete(List.of(tree), c);
@@ -935,8 +915,8 @@ public class JavaCompiler {
             // These method calls must be chained to avoid memory leaks
             processAnnotations(
                 enterTrees(
-                        stopIfError(CompileState.PARSE,
-                                initModules(stopIfError(CompileState.PARSE, parseFiles(sourceFileObjects))))
+                        stopIfError(CompileState.ENTER,
+                                initModules(stopIfError(CompileState.ENTER, parseFiles(sourceFileObjects))))
                 ),
                 classnames
             );
@@ -947,34 +927,28 @@ public class JavaCompiler {
                 todo.retainFiles(inputFiles);
             }
 
-            switch (compilePolicy) {
-            case ATTR_ONLY:
-                attribute(todo);
-                break;
+            if (!CompileState.ATTR.isAfter(shouldStopPolicyIfNoError)) {
+                switch (compilePolicy) {
+                case SIMPLE:
+                    generate(desugar(flow(attribute(todo))));
+                    break;
 
-            case CHECK_ONLY:
-                flow(attribute(todo));
-                break;
-
-            case SIMPLE:
-                generate(desugar(flow(attribute(todo))));
-                break;
-
-            case BY_FILE: {
-                    Queue<Queue<Env<AttrContext>>> q = todo.groupByFile();
-                    while (!q.isEmpty() && !shouldStop(CompileState.ATTR)) {
-                        generate(desugar(flow(attribute(q.remove()))));
+                case BY_FILE: {
+                        Queue<Queue<Env<AttrContext>>> q = todo.groupByFile();
+                        while (!q.isEmpty() && !shouldStop(CompileState.ATTR)) {
+                            generate(desugar(flow(attribute(q.remove()))));
+                        }
                     }
+                    break;
+
+                case BY_TODO:
+                    while (!todo.isEmpty())
+                        generate(desugar(flow(attribute(todo.remove()))));
+                    break;
+
+                default:
+                    Assert.error("unknown compile policy");
                 }
-                break;
-
-            case BY_TODO:
-                while (!todo.isEmpty())
-                    generate(desugar(flow(attribute(todo.remove()))));
-                break;
-
-            default:
-                Assert.error("unknown compile policy");
             }
         } catch (Abort ex) {
             if (devVerbose)
@@ -990,6 +964,8 @@ public class JavaCompiler {
             if (!log.hasDiagnosticListener()) {
                 printCount("error", errorCount());
                 printCount("warn", warningCount());
+                printSuppressedCount(errorCount(), log.nsuppressederrors, "count.error.recompile");
+                printSuppressedCount(warningCount(), log.nsuppressedwarns, "count.warn.recompile");
             }
             if (!taskListener.isEmpty()) {
                 taskListener.finished(new TaskEvent(TaskEvent.Kind.COMPILATION));
@@ -1014,7 +990,11 @@ public class JavaCompiler {
      * Parses a list of files.
      */
    public List<JCCompilationUnit> parseFiles(Iterable<JavaFileObject> fileObjects) {
-       if (shouldStop(CompileState.PARSE))
+       return parseFiles(fileObjects, false);
+   }
+
+   public List<JCCompilationUnit> parseFiles(Iterable<JavaFileObject> fileObjects, boolean force) {
+       if (!force && shouldStop(CompileState.PARSE))
            return List.nil();
 
         //parse all files
@@ -1029,16 +1009,12 @@ public class JavaCompiler {
         return trees.toList();
     }
 
-    /**
-     * Enter the symbols found in a list of parse trees if the compilation
-     * is expected to proceed beyond anno processing into attr.
-     * As a side-effect, this puts elements on the "todo" list.
-     * Also stores a list of all top level classes in rootClasses.
-     */
-    public List<JCCompilationUnit> enterTreesIfNeeded(List<JCCompilationUnit> roots) {
-       if (shouldStop(CompileState.ATTR))
-           return List.nil();
-        return enterTrees(initModules(roots));
+   /**
+    * Returns true iff the compilation will continue after annotation processing
+    * is done.
+    */
+    public boolean continueAfterProcessAnnotations() {
+        return !shouldStop(CompileState.ATTR);
     }
 
     public List<JCCompilationUnit> initModules(List<JCCompilationUnit> roots) {
@@ -1083,8 +1059,8 @@ public class JavaCompiler {
                 for (List<JCTree> defs = unit.defs;
                      defs.nonEmpty();
                      defs = defs.tail) {
-                    if (defs.head instanceof JCClassDecl)
-                        cdefs.append((JCClassDecl)defs.head);
+                    if (defs.head instanceof JCClassDecl classDecl)
+                        cdefs.append(classDecl);
                 }
             }
             rootClasses = cdefs.toList();
@@ -1174,7 +1150,7 @@ public class JavaCompiler {
             // Unless all the errors are resolve errors, the errors were parse errors
             // or other errors during enter which cannot be fixed by running
             // any annotation processors.
-            if (unrecoverableError()) {
+            if (processAnnotations) {
                 deferredDiagnosticHandler.reportDeferredDiagnostics();
                 log.popDiagnosticHandler(deferredDiagnosticHandler);
                 return ;
@@ -1485,7 +1461,7 @@ public class JavaCompiler {
                             } finally {
                                 /*
                                  * ignore any updates to hasLambdas made during
-                                 * the nested scan, this ensures an initalized
+                                 * the nested scan, this ensures an initialized
                                  * LambdaToMethod is available only to those
                                  * classes that contain lambdas
                                  */
@@ -1553,6 +1529,12 @@ public class JavaCompiler {
             env.tree = transTypes.translateTopLevelClass(env.tree, localMake);
             compileStates.put(env, CompileState.TRANSTYPES);
 
+            if (shouldStop(CompileState.TRANSPATTERNS))
+                return;
+
+            env.tree = TransPatterns.instance(context).translateTopLevelClass(env, env.tree, localMake);
+            compileStates.put(env, CompileState.TRANSPATTERNS);
+
             if (Feature.LAMBDA.allowedInSource(source) && scanner.hasLambdas) {
                 if (shouldStop(CompileState.UNLAMBDA))
                     return;
@@ -1568,8 +1550,8 @@ public class JavaCompiler {
                 //emit standard Java source file, only for compilation
                 //units enumerated explicitly on the command line
                 JCClassDecl cdef = (JCClassDecl)env.tree;
-                if (untranslated instanceof JCClassDecl &&
-                    rootClasses.contains((JCClassDecl)untranslated)) {
+                if (untranslated instanceof JCClassDecl classDecl &&
+                    rootClasses.contains(classDecl)) {
                     results.add(new Pair<>(env, cdef));
                 }
                 return;
@@ -1761,6 +1743,7 @@ public class JavaCompiler {
     private Name parseAndGetName(JavaFileObject fo,
                                  Function<JCTree.JCCompilationUnit, Name> tree2Name) {
         DiagnosticHandler dh = new DiscardDiagnosticHandler(log);
+        JavaFileObject prevSource = log.useSource(fo);
         try {
             JCTree.JCCompilationUnit t = parse(fo, fo.getCharContent(false));
             return tree2Name.apply(t);
@@ -1768,6 +1751,7 @@ public class JavaCompiler {
             return null;
         } finally {
             log.popDiagnosticHandler(dh);
+            log.useSource(prevSource);
         }
     }
 
@@ -1805,17 +1789,21 @@ public class JavaCompiler {
                 names.dispose();
             names = null;
 
+            FatalError fatalError = null;
             for (Closeable c: closeables) {
                 try {
                     c.close();
                 } catch (IOException e) {
-                    // When javac uses JDK 7 as a baseline, this code would be
-                    // better written to set any/all exceptions from all the
-                    // Closeables as suppressed exceptions on the FatalError
-                    // that is thrown.
-                    JCDiagnostic msg = diagFactory.fragment(Fragments.FatalErrCantClose);
-                    throw new FatalError(msg, e);
+                    if (fatalError == null) {
+                        JCDiagnostic msg = diagFactory.fragment(Fragments.FatalErrCantClose);
+                        fatalError = new FatalError(msg, e);
+                    } else {
+                        fatalError.addSuppressed(e);
+                    }
                 }
+            }
+            if (fatalError != null) {
+                throw fatalError;
             }
             closeables = List.nil();
         }
@@ -1835,6 +1823,15 @@ public class JavaCompiler {
             else
                 key = "count." + kind + ".plural";
             log.printLines(WriterKind.ERROR, key, String.valueOf(count));
+            log.flush(Log.WriterKind.ERROR);
+        }
+    }
+
+    private void printSuppressedCount(int shown, int suppressed, String diagKey) {
+        if (suppressed > 0) {
+            int total = shown + suppressed;
+            log.printLines(WriterKind.ERROR, diagKey,
+                    String.valueOf(shown), String.valueOf(total));
             log.flush(Log.WriterKind.ERROR);
         }
     }

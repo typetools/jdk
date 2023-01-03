@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_AARCH64_VM_VMSTRUCTS_AARCH64_HPP
-#define CPU_AARCH64_VM_VMSTRUCTS_AARCH64_HPP
+#ifndef CPU_AARCH64_VMSTRUCTS_AARCH64_HPP
+#define CPU_AARCH64_VMSTRUCTS_AARCH64_HPP
 
 // These are the CPU-specific fields, types and integer
 // constants required by the Serviceability Agent. This file is
@@ -39,4 +39,7 @@
 
 #define VM_LONG_CONSTANTS_CPU(declare_constant, declare_preprocessor_constant, declare_c1_constant, declare_c2_constant, declare_c2_preprocessor_constant)
 
-#endif // CPU_AARCH64_VM_VMSTRUCTS_AARCH64_HPP
+#define DECLARE_INT_CPU_FEATURE_CONSTANT(id, name, bit) GENERATE_VM_INT_CONSTANT_ENTRY(VM_Version::CPU_##id)
+#define VM_INT_CPU_FEATURE_CONSTANTS CPU_FEATURE_FLAGS(DECLARE_INT_CPU_FEATURE_CONSTANT)
+
+#endif // CPU_AARCH64_VMSTRUCTS_AARCH64_HPP

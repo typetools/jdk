@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -302,9 +303,10 @@ public abstract class Rectangle2D extends RectangularShape {
                 ",h=" + height + "]";
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 3798716824173675777L;
     }
 
@@ -496,9 +498,10 @@ public abstract class Rectangle2D extends RectangularShape {
                 ",h=" + height + "]";
         }
 
-        /*
-         * JDK 1.6 serialVersionUID
+        /**
+         * Use serialVersionUID from JDK 1.6 for interoperability.
          */
+        @Serial
         private static final long serialVersionUID = 7771313791441850493L;
     }
 
@@ -797,7 +800,7 @@ public abstract class Rectangle2D extends RectangularShape {
      * {@code true}. The {@code contains} method does not
      * return {@code true} for points on the right or bottom
      * edges of a rectangle. Therefore, if the added point falls on
-     * the left or bottom edge of the enlarged rectangle,
+     * the right or bottom edge of the enlarged rectangle,
      * {@code contains} returns {@code false} for that point.
      * @param newx the X coordinate of the new point
      * @param newy the Y coordinate of the new point
@@ -823,7 +826,7 @@ public abstract class Rectangle2D extends RectangularShape {
      * {@code true}. The {@code contains}
      * method does not return {@code true} for points on the right
      * or bottom edges of a rectangle. Therefore, if the added point falls
-     * on the left or bottom edge of the enlarged rectangle,
+     * on the right or bottom edge of the enlarged rectangle,
      * {@code contains} returns {@code false} for that point.
      * @param     pt the new {@code Point2D} to add to this
      * {@code Rectangle2D}.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1BARRIERSET_INLINE_HPP
-#define SHARE_VM_GC_G1_G1BARRIERSET_INLINE_HPP
+#ifndef SHARE_GC_G1_G1BARRIERSET_INLINE_HPP
+#define SHARE_GC_G1_G1BARRIERSET_INLINE_HPP
 
 #include "gc/g1/g1BarrierSet.hpp"
+
 #include "gc/g1/g1CardTable.hpp"
 #include "gc/shared/accessBarrierSupport.inline.hpp"
 #include "oops/access.inline.hpp"
@@ -39,7 +40,7 @@ inline void G1BarrierSet::write_ref_field_pre(T* field) {
     return;
   }
 
-  T heap_oop = RawAccess<MO_VOLATILE>::oop_load(field);
+  T heap_oop = RawAccess<MO_RELAXED>::oop_load(field);
   if (!CompressedOops::is_null(heap_oop)) {
     enqueue(CompressedOops::decode_not_null(heap_oop));
   }
@@ -47,7 +48,7 @@ inline void G1BarrierSet::write_ref_field_pre(T* field) {
 
 template <DecoratorSet decorators, typename T>
 inline void G1BarrierSet::write_ref_field_post(T* field, oop new_val) {
-  volatile jbyte* byte = _card_table->byte_for(field);
+  volatile CardValue* byte = _card_table->byte_for(field);
   if (*byte != G1CardTable::g1_young_card_val()) {
     // Take a slow path for cards in old
     write_ref_field_post_slow(byte);
@@ -105,4 +106,4 @@ oop_store_not_in_heap(T* addr, oop new_value) {
   Raw::oop_store(addr, new_value);
 }
 
-#endif // SHARE_VM_GC_G1_G1BARRIERSET_INLINE_HPP
+#endif // SHARE_GC_G1_G1BARRIERSET_INLINE_HPP

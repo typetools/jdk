@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -148,12 +148,12 @@ import java.util.Objects;
  * of a {@code LocalDateTime} and a {@code ZoneId}. The {@code ZoneOffset} is
  * a vital, but secondary, piece of information, used to ensure that the class
  * represents an instant, especially during a daylight savings overlap.
- *
  * <p>
  * This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
- * class; use of identity-sensitive operations (including reference equality
- * ({@code ==}), identity hash code, or synchronization) on instances of
- * {@code ZonedDateTime} may have unpredictable results and should be avoided.
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
  * The {@code equals} method should be used for comparisons.
  *
  * @implSpec
@@ -167,12 +167,14 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@jdk.internal.ValueBased
 public final class ZonedDateTime
         implements Temporal, ChronoZonedDateTime<LocalDate>, Serializable {
 
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = -6260982410461394882L;
 
     /**
@@ -817,8 +819,8 @@ public final class ZonedDateTime
      */
     @Override  // override for Javadoc and performance
     public int get(TemporalField field) {
-        if (field instanceof ChronoField) {
-            switch ((ChronoField) field) {
+        if (field instanceof ChronoField chronoField) {
+            switch (chronoField) {
                 case INSTANT_SECONDS:
                     throw new UnsupportedTemporalTypeException("Invalid field 'InstantSeconds' for get() method, use getLong() instead");
                 case OFFSET_SECONDS:
@@ -854,8 +856,8 @@ public final class ZonedDateTime
      */
     @Override
     public long getLong(TemporalField field) {
-        if (field instanceof ChronoField) {
-            switch ((ChronoField) field) {
+        if (field instanceof ChronoField chronoField) {
+            switch (chronoField) {
                 case INSTANT_SECONDS: return toEpochSecond();
                 case OFFSET_SECONDS: return getOffset().getTotalSeconds();
             }
@@ -1240,11 +1242,9 @@ public final class ZonedDateTime
             return resolveLocal(LocalDateTime.of(dateTime.toLocalDate(), (LocalTime) adjuster));
         } else if (adjuster instanceof LocalDateTime) {
             return resolveLocal((LocalDateTime) adjuster);
-        } else if (adjuster instanceof OffsetDateTime) {
-            OffsetDateTime odt = (OffsetDateTime) adjuster;
+        } else if (adjuster instanceof OffsetDateTime odt) {
             return ofLocal(odt.toLocalDateTime(), zone, odt.getOffset());
-        } else if (adjuster instanceof Instant) {
-            Instant instant = (Instant) adjuster;
+        } else if (adjuster instanceof Instant instant) {
             return create(instant.getEpochSecond(), instant.getNano(), zone);
         } else if (adjuster instanceof ZoneOffset) {
             return resolveOffset((ZoneOffset) adjuster);
@@ -1306,13 +1306,12 @@ public final class ZonedDateTime
      */
     @Override
     public ZonedDateTime with(TemporalField field, long newValue) {
-        if (field instanceof ChronoField) {
-            ChronoField f = (ChronoField) field;
-            switch (f) {
+        if (field instanceof ChronoField chronoField) {
+            switch (chronoField) {
                 case INSTANT_SECONDS:
                     return create(newValue, getNano(), zone);
                 case OFFSET_SECONDS:
-                    ZoneOffset offset = ZoneOffset.ofTotalSeconds(f.checkValidIntValue(newValue));
+                    ZoneOffset offset = ZoneOffset.ofTotalSeconds(chronoField.checkValidIntValue(newValue));
                     return resolveOffset(offset);
             }
             return resolveLocal(dateTime.with(field, newValue));
@@ -1557,8 +1556,7 @@ public final class ZonedDateTime
      */
     @Override
     public ZonedDateTime plus(TemporalAmount amountToAdd) {
-        if (amountToAdd instanceof Period) {
-            Period periodToAdd = (Period) amountToAdd;
+        if (amountToAdd instanceof Period periodToAdd) {
             return resolveLocal(dateTime.plus(periodToAdd));
         }
         Objects.requireNonNull(amountToAdd, "amountToAdd");
@@ -1814,8 +1812,7 @@ public final class ZonedDateTime
      */
     @Override
     public ZonedDateTime minus(TemporalAmount amountToSubtract) {
-        if (amountToSubtract instanceof Period) {
-            Period periodToSubtract = (Period) amountToSubtract;
+        if (amountToSubtract instanceof Period periodToSubtract) {
             return resolveLocal(dateTime.minus(periodToSubtract));
         }
         Objects.requireNonNull(amountToSubtract, "amountToSubtract");
@@ -2135,11 +2132,17 @@ public final class ZonedDateTime
     public long until(Temporal endExclusive, TemporalUnit unit) {
         ZonedDateTime end = ZonedDateTime.from(endExclusive);
         if (unit instanceof ChronoUnit) {
-            end = end.withZoneSameInstant(zone);
+            ZonedDateTime start = this;
+            try {
+                end = end.withZoneSameInstant(zone);
+            } catch (DateTimeException ex) {
+                // end may be out of valid range. Adjust to end's zone.
+                start = withZoneSameInstant(end.zone);
+            }
             if (unit.isDateBased()) {
-                return dateTime.until(end.dateTime, unit);
+                return start.dateTime.until(end.dateTime, unit);
             } else {
-                return toOffsetDateTime().until(end.toOffsetDateTime(), unit);
+                return start.toOffsetDateTime().until(end.toOffsetDateTime(), unit);
             }
         }
         return unit.between(this, end);
@@ -2190,13 +2193,10 @@ public final class ZonedDateTime
         if (this == obj) {
             return true;
         }
-        if (obj instanceof ZonedDateTime) {
-            ZonedDateTime other = (ZonedDateTime) obj;
-            return dateTime.equals(other.dateTime) &&
-                offset.equals(other.offset) &&
-                zone.equals(other.zone);
-        }
-        return false;
+        return obj instanceof ZonedDateTime other
+                && dateTime.equals(other.dateTime)
+                && offset.equals(other.offset)
+                && zone.equals(other.zone);
     }
 
     /**
@@ -2232,17 +2232,18 @@ public final class ZonedDateTime
     //-----------------------------------------------------------------------
     /**
      * Writes the object using a
-     * <a href="../../serialized-form.html#java.time.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(6);  // identifies a ZonedDateTime
-     *  // the <a href="../../serialized-form.html#java.time.LocalDateTime">dateTime</a> excluding the one byte header
-     *  // the <a href="../../serialized-form.html#java.time.ZoneOffset">offset</a> excluding the one byte header
-     *  // the <a href="../../serialized-form.html#java.time.ZoneId">zone ID</a> excluding the one byte header
+     *  // the <a href="{@docRoot}/serialized-form.html#java.time.LocalDateTime">dateTime</a> excluding the one byte header
+     *  // the <a href="{@docRoot}/serialized-form.html#java.time.ZoneOffset">offset</a> excluding the one byte header
+     *  // the <a href="{@docRoot}/serialized-form.html#java.time.ZoneId">zone ID</a> excluding the one byte header
      * </pre>
      *
      * @return the instance of {@code Ser}, not null
      */
+    @java.io.Serial
     private Object writeReplace() {
         return new Ser(Ser.ZONE_DATE_TIME_TYPE, this);
     }
@@ -2253,6 +2254,7 @@ public final class ZonedDateTime
      * @param s the stream to read
      * @throws InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s) throws InvalidObjectException {
         throw new InvalidObjectException("Deserialization via serialization delegate");
     }

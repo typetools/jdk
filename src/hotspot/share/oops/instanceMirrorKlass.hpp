@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_INSTANCEMIRRORKLASS_HPP
-#define SHARE_VM_OOPS_INSTANCEMIRRORKLASS_HPP
+#ifndef SHARE_OOPS_INSTANCEMIRRORKLASS_HPP
+#define SHARE_OOPS_INSTANCEMIRRORKLASS_HPP
 
-#include "classfile/systemDictionary.hpp"
+#include "classfile/vmClasses.hpp"
 #include "oops/instanceKlass.hpp"
 #include "runtime/handles.hpp"
 #include "utilities/macros.hpp"
@@ -50,16 +50,18 @@ class InstanceMirrorKlass: public InstanceKlass {
  private:
   static int _offset_of_static_fields;
 
-  InstanceMirrorKlass(const ClassFileParser& parser) : InstanceKlass(parser, InstanceKlass::_misc_kind_mirror, ID) {}
+  InstanceMirrorKlass(const ClassFileParser& parser) : InstanceKlass(parser, InstanceKlass::_kind_mirror, ID) {}
 
  public:
   InstanceMirrorKlass() { assert(DumpSharedSpaces || UseSharedSpaces, "only for CDS"); }
 
-  // Casting from Klass*
   static InstanceMirrorKlass* cast(Klass* k) {
-    assert(InstanceKlass::cast(k)->is_mirror_instance_klass(),
-           "cast to InstanceMirrorKlass");
-    return static_cast<InstanceMirrorKlass*>(k);
+    return const_cast<InstanceMirrorKlass*>(cast(const_cast<const Klass*>(k)));
+  }
+
+  static const InstanceMirrorKlass* cast(const Klass* k) {
+    assert(InstanceKlass::cast(k)->is_mirror_instance_klass(), "cast to InstanceMirrorKlass");
+    return static_cast<const InstanceMirrorKlass*>(k);
   }
 
   // Returns the size of the instance including the extra static fields.
@@ -74,7 +76,7 @@ class InstanceMirrorKlass: public InstanceKlass {
   static void init_offset_of_static_fields() {
     // Cache the offset of the static fields in the Class instance
     assert(_offset_of_static_fields == 0, "once");
-    _offset_of_static_fields = InstanceMirrorKlass::cast(SystemDictionary::Class_klass())->size_helper() << LogHeapWordSize;
+    _offset_of_static_fields = InstanceMirrorKlass::cast(vmClasses::Class_klass())->size_helper() << LogHeapWordSize;
   }
 
   static int offset_of_static_fields() {
@@ -89,15 +91,7 @@ class InstanceMirrorKlass: public InstanceKlass {
   // allocation
   instanceOop allocate_instance(Klass* k, TRAPS);
 
-  // GC specific object visitors
-  //
-#if INCLUDE_PARALLELGC
-  // Parallel Scavenge
-  void oop_ps_push_contents(  oop obj, PSPromotionManager* pm);
-  // Parallel Compact
-  void oop_pc_follow_contents(oop obj, ParCompactionManager* cm);
-  void oop_pc_update_pointers(oop obj, ParCompactionManager* cm);
-#endif
+  static void serialize_offsets(class SerializeClosure* f) NOT_CDS_RETURN;
 
   // Oop fields (and metadata) iterators
   //
@@ -129,4 +123,4 @@ class InstanceMirrorKlass: public InstanceKlass {
   inline void oop_oop_iterate_statics_bounded(oop obj, OopClosureType* closure, MemRegion mr);
 };
 
-#endif // SHARE_VM_OOPS_INSTANCEMIRRORKLASS_HPP
+#endif // SHARE_OOPS_INSTANCEMIRRORKLASS_HPP

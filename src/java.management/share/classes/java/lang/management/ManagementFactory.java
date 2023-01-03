@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,10 +42,6 @@ import javax.management.InstanceNotFoundException;
 import javax.management.MalformedObjectNameException;
 import javax.management.StandardEmitterMBean;
 import javax.management.StandardMBean;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
 import java.security.AccessController;
 import java.security.Permission;
 import java.security.PrivilegedAction;
@@ -53,11 +49,15 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
-import static java.util.stream.Collectors.toMap;
 import java.util.stream.Stream;
 import javax.management.JMX;
 import sun.management.Util;
@@ -72,7 +72,7 @@ import sun.management.spi.PlatformMBeanProvider.PlatformComponent;
  * the management interface of a component of the Java virtual
  * machine.
  *
- * <h3><a id="MXBean">Platform MXBeans</a></h3>
+ * <h2><a id="MXBean">Platform MXBeans</a></h2>
  * <p>
  * A platform MXBean is a <i>managed bean</i> that
  * conforms to the <a href="../../../javax/management/package-summary.html">JMX</a>
@@ -98,7 +98,7 @@ import sun.management.spi.PlatformMBeanProvider.PlatformComponent;
  *
  * <p>
  * An application can access a platform MXBean in the following ways:
- * <h4>1. Direct access to an MXBean interface</h4>
+ * <h3>1. Direct access to an MXBean interface</h3>
  * <blockquote>
  * <ul>
  *     <li>Get an MXBean instance by calling the
@@ -118,7 +118,7 @@ import sun.management.spi.PlatformMBeanProvider.PlatformComponent;
  *         an MXBean of another running virtual machine.
  *         </li>
  * </ul>
- * <h4>2. Indirect access to an MXBean interface via MBeanServer</h4>
+ * <h3>2. Indirect access to an MXBean interface via MBeanServer</h3>
  * <ul>
  *     <li>Go through the platform {@code MBeanServer} to access MXBeans
  *         locally or a specific {@code MBeanServerConnection} to access
@@ -252,6 +252,7 @@ import sun.management.spi.PlatformMBeanProvider.PlatformComponent;
  * @since   1.5
  */
 @AnnotatedFor({"interning", "mustcall"})
+@SuppressWarnings("removal")
 public @UsesObjectEquals class ManagementFactory {
     // A class with only static fields and methods.
     private ManagementFactory() {};
@@ -260,42 +261,42 @@ public @UsesObjectEquals class ManagementFactory {
      * String representation of the
      * {@code ObjectName} for the {@link ClassLoadingMXBean}.
      */
-    public final static String CLASS_LOADING_MXBEAN_NAME =
+    public static final String CLASS_LOADING_MXBEAN_NAME =
         "java.lang:type=ClassLoading";
 
     /**
      * String representation of the
      * {@code ObjectName} for the {@link CompilationMXBean}.
      */
-    public final static String COMPILATION_MXBEAN_NAME =
+    public static final String COMPILATION_MXBEAN_NAME =
         "java.lang:type=Compilation";
 
     /**
      * String representation of the
      * {@code ObjectName} for the {@link MemoryMXBean}.
      */
-    public final static String MEMORY_MXBEAN_NAME =
+    public static final String MEMORY_MXBEAN_NAME =
         "java.lang:type=Memory";
 
     /**
      * String representation of the
      * {@code ObjectName} for the {@link OperatingSystemMXBean}.
      */
-    public final static String OPERATING_SYSTEM_MXBEAN_NAME =
+    public static final String OPERATING_SYSTEM_MXBEAN_NAME =
         "java.lang:type=OperatingSystem";
 
     /**
      * String representation of the
      * {@code ObjectName} for the {@link RuntimeMXBean}.
      */
-    public final static String RUNTIME_MXBEAN_NAME =
+    public static final String RUNTIME_MXBEAN_NAME =
         "java.lang:type=Runtime";
 
     /**
      * String representation of the
      * {@code ObjectName} for the {@link ThreadMXBean}.
      */
-    public final static String THREAD_MXBEAN_NAME =
+    public static final String THREAD_MXBEAN_NAME =
         "java.lang:type=Threading";
 
     /**
@@ -305,7 +306,7 @@ public @UsesObjectEquals class ManagementFactory {
      * can be formed by appending this string with
      * "{@code ,name=}<i>collector's name</i>".
      */
-    public final static String GARBAGE_COLLECTOR_MXBEAN_DOMAIN_TYPE =
+    public static final String GARBAGE_COLLECTOR_MXBEAN_DOMAIN_TYPE =
         "java.lang:type=GarbageCollector";
 
     /**
@@ -315,7 +316,7 @@ public @UsesObjectEquals class ManagementFactory {
      * can be formed by appending this string with
      * "{@code ,name=}<i>manager's name</i>".
      */
-    public final static String MEMORY_MANAGER_MXBEAN_DOMAIN_TYPE=
+    public static final String MEMORY_MANAGER_MXBEAN_DOMAIN_TYPE=
         "java.lang:type=MemoryManager";
 
     /**
@@ -325,7 +326,7 @@ public @UsesObjectEquals class ManagementFactory {
      * can be formed by appending this string with
      * {@code ,name=}<i>pool's name</i>.
      */
-    public final static String MEMORY_POOL_MXBEAN_DOMAIN_TYPE=
+    public static final String MEMORY_POOL_MXBEAN_DOMAIN_TYPE=
         "java.lang:type=MemoryPool";
 
     /**
@@ -471,7 +472,7 @@ public @UsesObjectEquals class ManagementFactory {
      *         MXBeans are registered into the platform {@code MBeanServer}
      *         at the first time this method is called.
      *
-     * @exception SecurityException if there is a security manager
+     * @throws SecurityException if there is a security manager
      * and the caller does not have the permission required by
      * {@link javax.management.MBeanServerFactory#createMBeanServer}.
      *
@@ -878,12 +879,13 @@ public @UsesObjectEquals class ManagementFactory {
     public static Set<Class<? extends PlatformManagedObject>>
            getPlatformManagementInterfaces()
     {
-        return platformComponents()
+        // local variable required here; see JDK-8223553
+        Stream<Class<? extends PlatformManagedObject>> pmos = platformComponents()
                 .stream()
                 .flatMap(pc -> pc.mbeanInterfaces().stream())
                 .filter(clazz -> PlatformManagedObject.class.isAssignableFrom(clazz))
-                .map(clazz -> clazz.asSubclass(PlatformManagedObject.class))
-                .collect(Collectors.toSet());
+                .map(clazz -> clazz.asSubclass(PlatformManagedObject.class));
+        return pmos.collect(Collectors.toSet());
     }
 
     private static final String NOTIF_EMITTER =
@@ -919,53 +921,48 @@ public @UsesObjectEquals class ManagementFactory {
         return PlatformMBeanFinder.getMap().values();
     }
 
-    private static class PlatformMBeanFinder
-    {
+    private static class PlatformMBeanFinder {
         private static final Map<String, PlatformComponent<?>> componentMap;
+
         static {
             // get all providers
             List<PlatformMBeanProvider> providers = AccessController.doPrivileged(
-                (PrivilegedAction<List<PlatformMBeanProvider>>) () -> {
-                     List<PlatformMBeanProvider> all = new ArrayList<>();
-                     ServiceLoader.loadInstalled(PlatformMBeanProvider.class)
-                                  .forEach(all::add);
-                     all.add(new DefaultPlatformMBeanProvider());
-                     return all;
+                new PrivilegedAction<List<PlatformMBeanProvider>>() {
+                    @Override
+                    public List<PlatformMBeanProvider> run() {
+                        List<PlatformMBeanProvider> all = new ArrayList<>();
+                        for (PlatformMBeanProvider provider : ServiceLoader.loadInstalled(PlatformMBeanProvider.class)) {
+                            all.add(provider);
+                        }
+                        all.add(new DefaultPlatformMBeanProvider());
+                        return all;
+                    }
                 }, null, new FilePermission("<<ALL FILES>>", "read"),
-                         new RuntimePermission("sun.management.spi.PlatformMBeanProvider.subclass"));
+                new RuntimePermission("sun.management.spi.PlatformMBeanProvider.subclass"));
 
             // load all platform components into a map
-            componentMap = providers.stream()
-                .flatMap(p -> toPlatformComponentStream(p))
-                // The first one wins if multiple PlatformComponents
-                // with same ObjectName pattern,
-                .collect(toMap(PlatformComponent::getObjectNamePattern,
-                               Function.identity(),
-                              (p1, p2) -> p1));
+            var map = new HashMap<String, PlatformComponent<?>>();
+            for (PlatformMBeanProvider provider : providers) {
+                // For each provider, ensure that two different components are not declared
+                // with the same object name pattern.
+                var names = new HashSet<String>();
+                for (PlatformComponent<?> component : provider.getPlatformComponentList()) {
+                    String name = component.getObjectNamePattern();
+                    if (!names.add(name)) {
+                        throw new InternalError(name +
+                                " has been used as key by this provider" +
+                                ", it cannot be reused for " + component);
+                    }
+                    // The first one wins if multiple PlatformComponents defined by
+                    // different providers use the same ObjectName pattern
+                    map.putIfAbsent(name, component);
+                }
+            }
+            componentMap = map;
         }
 
         static Map<String, PlatformComponent<?>> getMap() {
             return componentMap;
-        }
-
-        // Loads all platform components from a provider into a stream
-        // Ensures that two different components are not declared with the same
-        // object name pattern. Throws InternalError if the provider incorrectly
-        // declares two platform components with the same pattern.
-        private static Stream<PlatformComponent<?>>
-            toPlatformComponentStream(PlatformMBeanProvider provider)
-        {
-            return provider.getPlatformComponentList()
-                           .stream()
-                           .collect(toMap(PlatformComponent::getObjectNamePattern,
-                                          Function.identity(),
-                                          (p1, p2) -> {
-                                              throw new InternalError(
-                                                 p1.getObjectNamePattern() +
-                                                 " has been used as key for " + p1 +
-                                                 ", it cannot be reused for " + p2);
-                                          }))
-                           .values().stream();
         }
 
         // Finds the first PlatformComponent whose mbeanInterfaceNames() list

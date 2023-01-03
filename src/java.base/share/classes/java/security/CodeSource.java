@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,8 @@ import java.util.Hashtable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.*;
+import java.util.Objects;
+
 import sun.net.util.URLUtil;
 import sun.security.util.IOUtils;
 
@@ -56,6 +58,7 @@ import sun.security.util.IOUtils;
 
 public class CodeSource implements java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = 4977541819976013951L;
 
     /**
@@ -63,7 +66,7 @@ public class CodeSource implements java.io.Serializable {
      *
      * @serial
      */
-    private URL location;
+    private final URL location;
 
     /*
      * The code signers.
@@ -164,22 +167,9 @@ public class CodeSource implements java.io.Serializable {
             return true;
 
         // objects types must be equal
-        if (!(obj instanceof CodeSource))
-            return false;
-
-        CodeSource cs = (CodeSource) obj;
-
-        // URLs must match
-        if (location == null) {
-            // if location is null, then cs.location must be null as well
-            if (cs.location != null) return false;
-        } else {
-            // if location is not null, then it must equal cs.location
-            if (!location.equals(cs.location)) return false;
-        }
-
-        // certs must match
-        return matchCerts(cs, true);
+        return (obj instanceof CodeSource other)
+                && Objects.equals(location, other.location)
+                && matchCerts(other, true);
     }
 
     /**
@@ -317,13 +307,13 @@ public class CodeSource implements java.io.Serializable {
      * <p>
      * For example, the codesource objects with the following locations
      * and null certificates all imply
-     * the codesource with the location "http://java.sun.com/classes/foo.jar"
+     * the codesource with the location "http://www.example.com/classes/foo.jar"
      * and null certificates:
      * <pre>
      *     http:
-     *     http://*.sun.com/classes/*
-     *     http://java.sun.com/classes/-
-     *     http://java.sun.com/classes/foo.jar
+     *     http://*.example.com/classes/*
+     *     http://www.example.com/classes/-
+     *     http://www.example.com/classes/foo.jar
      * </pre>
      *
      * Note that if this CodeSource has a null location and a null
@@ -529,7 +519,11 @@ public class CodeSource implements java.io.Serializable {
      * followed by the certificate encoding itself which is written out as an
      * array of bytes. Finally, if any code signers are present then the array
      * of code signers is serialized and written out too.
+     *
+     * @param  oos the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream oos)
         throws IOException
     {
@@ -563,7 +557,12 @@ public class CodeSource implements java.io.Serializable {
 
     /**
      * Restores this object from a stream (i.e., deserializes it).
+     *
+     * @param  ois the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream ois)
         throws IOException, ClassNotFoundException
     {
@@ -603,7 +602,7 @@ public class CodeSource implements java.io.Serializable {
                 cfs.put(certType, cf);
             }
             // parse the certificate
-            byte[] encoded = IOUtils.readNBytes(ois, ois.readInt());
+            byte[] encoded = IOUtils.readExactlyNBytes(ois, ois.readInt());
             ByteArrayInputStream bais = new ByteArrayInputStream(encoded);
             try {
                 certList.add(cf.generateCertificate(bais));

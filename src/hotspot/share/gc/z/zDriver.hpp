@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,18 +28,46 @@
 #include "gc/shared/gcCause.hpp"
 #include "gc/z/zMessagePort.hpp"
 
-class ZOperationClosure;
+class VM_ZOperation;
+
+class ZDriverRequest {
+private:
+  GCCause::Cause _cause;
+  uint           _nworkers;
+
+public:
+  ZDriverRequest();
+  ZDriverRequest(GCCause::Cause cause);
+  ZDriverRequest(GCCause::Cause cause, uint nworkers);
+
+  bool operator==(const ZDriverRequest& other) const;
+
+  GCCause::Cause cause() const;
+  uint nworkers() const;
+};
 
 class ZDriver : public ConcurrentGCThread {
 private:
-  ZMessagePort<GCCause::Cause> _gc_cycle_port;
+  ZMessagePort<ZDriverRequest> _gc_cycle_port;
   ZRendezvousPort              _gc_locker_port;
 
-  bool vm_operation(ZOperationClosure* cl);
+  template <typename T> bool pause();
 
-  GCCause::Cause start_gc_cycle();
-  void run_gc_cycle(GCCause::Cause cause);
-  void end_gc_cycle();
+  void pause_mark_start();
+  void concurrent_mark();
+  bool pause_mark_end();
+  void concurrent_mark_continue();
+  void concurrent_mark_free();
+  void concurrent_process_non_strong_references();
+  void concurrent_reset_relocation_set();
+  void pause_verify();
+  void concurrent_select_relocation_set();
+  void pause_relocate_start();
+  void concurrent_relocate();
+
+  void check_out_of_memory();
+
+  void gc(const ZDriverRequest& request);
 
 protected:
   virtual void run_service();
@@ -48,7 +76,9 @@ protected:
 public:
   ZDriver();
 
-  void collect(GCCause::Cause cause);
+  bool is_busy() const;
+
+  void collect(const ZDriverRequest& request);
 };
 
 #endif // SHARE_GC_Z_ZDRIVER_HPP

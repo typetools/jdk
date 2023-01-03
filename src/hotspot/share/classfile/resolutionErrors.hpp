@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_RESOLUTIONERRORS_HPP
-#define SHARE_VM_CLASSFILE_RESOLUTIONERRORS_HPP
+#ifndef SHARE_CLASSFILE_RESOLUTIONERRORS_HPP
+#define SHARE_CLASSFILE_RESOLUTIONERRORS_HPP
 
 #include "oops/constantPool.hpp"
 #include "utilities/hashtable.hpp"
@@ -41,12 +41,11 @@ const int CPCACHE_INDEX_MANGLE_VALUE = 1000000;
 
 class ResolutionErrorTable : public Hashtable<ConstantPool*, mtClass> {
 
+private:
+  void free_entry(ResolutionErrorEntry *entry);
+
 public:
   ResolutionErrorTable(int table_size);
-
-  ResolutionErrorEntry* new_entry(int hash, ConstantPool* pool, int cp_index,
-                                  Symbol* error, Symbol* message);
-  void free_entry(ResolutionErrorEntry *entry);
 
   ResolutionErrorEntry* bucket(int i) {
     return (ResolutionErrorEntry*)Hashtable<ConstantPool*, mtClass>::bucket(i);
@@ -62,8 +61,11 @@ public:
   }
 
   void add_entry(int index, unsigned int hash,
-                 const constantPoolHandle& pool, int which, Symbol* error, Symbol* message);
+                 const constantPoolHandle& pool, int which, Symbol* error, Symbol* message,
+                 Symbol* cause, Symbol* cause_msg);
 
+  void add_entry(int index, unsigned int hash,
+                 const constantPoolHandle& pool, int which, const char* message);
 
   // find error given the constant pool and constant pool index
   ResolutionErrorEntry* find_entry(int index, unsigned int hash,
@@ -95,6 +97,9 @@ class ResolutionErrorEntry : public HashtableEntry<ConstantPool*, mtClass> {
   int               _cp_index;
   Symbol*           _error;
   Symbol*           _message;
+  Symbol*           _cause;
+  Symbol*           _cause_msg;
+  const char*       _nest_host_error;
 
  public:
   ConstantPool*      pool() const               { return literal(); }
@@ -108,6 +113,15 @@ class ResolutionErrorEntry : public HashtableEntry<ConstantPool*, mtClass> {
   Symbol*            message() const            { return _message; }
   void               set_message(Symbol* c);
 
+  Symbol*            cause() const              { return _cause; }
+  void               set_cause(Symbol* c);
+
+  Symbol*            cause_msg() const          { return _cause_msg; }
+  void               set_cause_msg(Symbol* c);
+
+  const char*        nest_host_error() const    { return _nest_host_error; }
+  void               set_nest_host_error(const char* message);
+
   ResolutionErrorEntry* next() const {
     return (ResolutionErrorEntry*)HashtableEntry<ConstantPool*, mtClass>::next();
   }
@@ -117,4 +131,4 @@ class ResolutionErrorEntry : public HashtableEntry<ConstantPool*, mtClass> {
   }
 };
 
-#endif // SHARE_VM_CLASSFILE_RESOLUTIONERRORS_HPP
+#endif // SHARE_CLASSFILE_RESOLUTIONERRORS_HPP

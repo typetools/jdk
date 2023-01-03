@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -551,6 +551,8 @@ public @UsesObjectEquals class InputContext extends java.awt.im.InputContext
                 if (inputMethod instanceof InputMethodAdapter) {
                     ((InputMethodAdapter) inputMethod).setClientComponent(null);
                 }
+                if (null == currentClientComponent.getInputMethodRequests())
+                    wasCompositionEnabledSupported = false;
             }
             savedLocale = inputMethod.getLocale();
 
@@ -567,6 +569,7 @@ public @UsesObjectEquals class InputContext extends java.awt.im.InputContext
             enableClientWindowNotification(inputMethod, false);
             if (this == inputMethodWindowContext) {
                 inputMethod.hideWindows();
+                inputMethod.removeNotify();
                 inputMethodWindowContext = null;
             }
             inputMethodLocator = null;
@@ -774,7 +777,7 @@ public @UsesObjectEquals class InputContext extends java.awt.im.InputContext
                                           getStartupLocale());
         }
 
-        if (inputMethodInfo != null && !inputMethodInfo.equals("")) {
+        if (inputMethodInfo != null && !inputMethodInfo.isEmpty()) {
             return inputMethodInfo;
         }
 
@@ -1037,6 +1040,7 @@ public @UsesObjectEquals class InputContext extends java.awt.im.InputContext
     /**
      * Initializes the input method selection key definition in preference trees
      */
+    @SuppressWarnings("removal")
     private void initializeInputMethodSelectionKey() {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
             public Object run() {

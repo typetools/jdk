@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,19 +24,27 @@
 
 #include "precompiled.hpp"
 #include "classfile/classLoaderData.inline.hpp"
-#include "classfile/dictionary.inline.hpp"
+#include "classfile/dictionary.hpp"
+#include "classfile/javaClasses.hpp"
 #include "classfile/protectionDomainCache.hpp"
 #include "classfile/systemDictionary.hpp"
-#include "classfile/systemDictionaryShared.hpp"
+#include "classfile/vmSymbols.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
 #include "memory/iterator.hpp"
 #include "memory/metaspaceClosure.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
+#include "oops/klass.inline.hpp"
+#include "oops/method.hpp"
 #include "oops/oop.inline.hpp"
-#include "runtime/atomic.hpp"
-#include "runtime/orderAccess.hpp"
+#include "oops/oopHandle.inline.hpp"
+#include "runtime/arguments.hpp"
+#include "runtime/handles.inline.hpp"
+#include "runtime/javaCalls.hpp"
+#include "runtime/mutexLocker.hpp"
 #include "runtime/safepointVerifiers.hpp"
+#include "utilities/growableArray.hpp"
 #include "utilities/hashtable.inline.hpp"
 
 // Optimization: if any dictionary needs resizing, we set this flag,
@@ -44,25 +52,17 @@
 // needs resizing, which is costly to do at Safepoint.
 bool Dictionary::_some_dictionary_needs_resizing = false;
 
-size_t Dictionary::entry_size() {
-  if (DumpSharedSpaces) {
-    return SystemDictionaryShared::dictionary_entry_size();
-  } else {
-    return sizeof(DictionaryEntry);
-  }
-}
-
 Dictionary::Dictionary(ClassLoaderData* loader_data, int table_size, bool resizable)
-  : _loader_data(loader_data), _resizable(resizable), _needs_resizing(false),
-  Hashtable<InstanceKlass*, mtClass>(table_size, (int)entry_size()) {
+  : Hashtable<InstanceKlass*, mtClass>(table_size, (int)sizeof(DictionaryEntry)),
+    _resizable(resizable), _needs_resizing(false), _loader_data(loader_data) {
 };
 
 
 Dictionary::Dictionary(ClassLoaderData* loader_data,
                        int table_size, HashtableBucket<mtClass>* t,
                        int number_of_entries, bool resizable)
-  : _loader_data(loader_data), _resizable(resizable), _needs_resizing(false),
-  Hashtable<InstanceKlass*, mtClass>(table_size, (int)entry_size(), t, number_of_entries) {
+  : Hashtable<InstanceKlass*, mtClass>(table_size, (int)sizeof(DictionaryEntry), t, number_of_entries),
+    _resizable(resizable), _needs_resizing(false), _loader_data(loader_data) {
 };
 
 Dictionary::~Dictionary() {
@@ -75,52 +75,29 @@ Dictionary::~Dictionary() {
     }
   }
   assert(number_of_entries() == 0, "should have removed all entries");
-  assert(new_entry_free_list() == NULL, "entry present on Dictionary's free list");
-  free_buckets();
 }
 
 DictionaryEntry* Dictionary::new_entry(unsigned int hash, InstanceKlass* klass) {
-  DictionaryEntry* entry = (DictionaryEntry*)Hashtable<InstanceKlass*, mtClass>::allocate_new_entry(hash, klass);
-  entry->set_pd_set(NULL);
+  DictionaryEntry* entry = (DictionaryEntry*)Hashtable<InstanceKlass*, mtClass>::new_entry(hash, klass);
+  entry->release_set_pd_set(NULL);
   assert(klass->is_instance_klass(), "Must be");
-  if (DumpSharedSpaces) {
-    SystemDictionaryShared::init_shared_dictionary_entry(klass, entry);
-  }
   return entry;
 }
-
 
 void Dictionary::free_entry(DictionaryEntry* entry) {
   // avoid recursion when deleting linked list
   // pd_set is accessed during a safepoint.
-  while (entry->pd_set() != NULL) {
-    ProtectionDomainEntry* to_delete = entry->pd_set();
-    entry->set_pd_set(to_delete->next());
+  // This doesn't require a lock because nothing is reading this
+  // entry anymore.  The ClassLoader is dead.
+  while (entry->pd_set_acquire() != NULL) {
+    ProtectionDomainEntry* to_delete = entry->pd_set_acquire();
+    entry->release_set_pd_set(to_delete->next_acquire());
     delete to_delete;
   }
-  // Unlink from the Hashtable prior to freeing
-  unlink_entry(entry);
-  FREE_C_HEAP_ARRAY(char, entry);
+  BasicHashtable<mtClass>::free_entry(entry);
 }
 
 const int _resize_load_trigger = 5;       // load factor that will trigger the resize
-const double _resize_factor    = 2.0;     // by how much we will resize using current number of entries
-const int _resize_max_size     = 40423;   // the max dictionary size allowed
-const int _primelist[] = {107, 1009, 2017, 4049, 5051, 10103, 20201, _resize_max_size};
-const int _prime_array_size = sizeof(_primelist)/sizeof(int);
-
-// Calculate next "good" dictionary size based on requested count
-static int calculate_dictionary_size(int requested) {
-  int newsize = _primelist[0];
-  int index = 0;
-  for (newsize = _primelist[index]; index < (_prime_array_size - 1);
-       newsize = _primelist[++index]) {
-    if (requested <= newsize) {
-      break;
-    }
-  }
-  return newsize;
-}
 
 bool Dictionary::does_any_dictionary_needs_resizing() {
   return Dictionary::_some_dictionary_needs_resizing;
@@ -136,15 +113,14 @@ void Dictionary::check_if_needs_resize() {
 }
 
 bool Dictionary::resize_if_needed() {
+  assert(SafepointSynchronize::is_at_safepoint(), "must be at safepoint");
   int desired_size = 0;
   if (_needs_resizing == true) {
-    desired_size = calculate_dictionary_size((int)(_resize_factor*number_of_entries()));
-    if (desired_size >= _resize_max_size) {
-      desired_size = _resize_max_size;
-      // We have reached the limit, turn resizing off
-      _resizable = false;
-    }
-    if ((desired_size != 0) && (desired_size != table_size())) {
+    desired_size = calculate_resize(false);
+    assert(desired_size != 0, "bug in calculate_resize");
+    if (desired_size == table_size()) {
+      _resizable = false; // hit max
+    } else {
       if (!resize(desired_size)) {
         // Something went wrong, turn resizing off
         _resizable = false;
@@ -158,15 +134,34 @@ bool Dictionary::resize_if_needed() {
   return (desired_size != 0);
 }
 
+bool DictionaryEntry::is_valid_protection_domain(Handle protection_domain) {
+
+  return protection_domain() == NULL || !java_lang_System::allow_security_manager()
+        ? true
+        : contains_protection_domain(protection_domain());
+}
+
+// Reading the pd_set on each DictionaryEntry is lock free and cannot safepoint.
+// Adding and deleting entries is under the SystemDictionary_lock
+// Deleting unloaded entries on ClassLoaderData for dictionaries that are not unloaded
+// is a three step process:
+//     moving the entries to a separate list, handshake to wait for
+//     readers to complete (see NSV here), and then actually deleting the entries.
+// Deleting entries is done by the ServiceThread when triggered by class unloading.
+
 bool DictionaryEntry::contains_protection_domain(oop protection_domain) const {
+  assert(Thread::current()->is_Java_thread() || SafepointSynchronize::is_at_safepoint(),
+         "can only be called by a JavaThread or at safepoint");
+  // This cannot safepoint while reading the protection domain set.
+  NoSafepointVerifier nsv;
 #ifdef ASSERT
-  if (oopDesc::equals(protection_domain, instance_klass()->protection_domain())) {
+  if (protection_domain == instance_klass()->protection_domain()) {
     // Ensure this doesn't show up in the pd_set (invariant)
     bool in_pd_set = false;
     for (ProtectionDomainEntry* current = pd_set_acquire();
                                 current != NULL;
-                                current = current->next()) {
-      if (oopDesc::equals(current->object_no_keepalive(), protection_domain)) {
+                                current = current->next_acquire()) {
+      if (current->object_no_keepalive() == protection_domain) {
         in_pd_set = true;
         break;
       }
@@ -178,125 +173,41 @@ bool DictionaryEntry::contains_protection_domain(oop protection_domain) const {
   }
 #endif /* ASSERT */
 
-  if (oopDesc::equals(protection_domain, instance_klass()->protection_domain())) {
+  if (protection_domain == instance_klass()->protection_domain()) {
     // Succeeds trivially
     return true;
   }
 
   for (ProtectionDomainEntry* current = pd_set_acquire();
                               current != NULL;
-                              current = current->next()) {
-    if (oopDesc::equals(current->object_no_keepalive(), protection_domain)) return true;
+                              current = current->next_acquire()) {
+    if (current->object_no_keepalive() == protection_domain) {
+      return true;
+    }
   }
   return false;
 }
 
-
-void DictionaryEntry::add_protection_domain(Dictionary* dict, Handle protection_domain) {
-  assert_locked_or_safepoint(SystemDictionary_lock);
+void DictionaryEntry::add_protection_domain(ClassLoaderData* loader_data, Handle protection_domain) {
+  assert_lock_strong(SystemDictionary_lock);
   if (!contains_protection_domain(protection_domain())) {
-    ProtectionDomainCacheEntry* entry = SystemDictionary::cache_get(protection_domain);
-    ProtectionDomainEntry* new_head =
-                new ProtectionDomainEntry(entry, pd_set());
-    // Warning: Preserve store ordering.  The SystemDictionary is read
-    //          without locks.  The new ProtectionDomainEntry must be
-    //          complete before other threads can be allowed to see it
-    //          via a store to _pd_set.
+    ProtectionDomainCacheEntry* entry = SystemDictionary::pd_cache_table()->get(protection_domain);
+    // Additions and deletions hold the SystemDictionary_lock, readers are lock-free
+    ProtectionDomainEntry* new_head = new ProtectionDomainEntry(entry, _pd_set);
     release_set_pd_set(new_head);
   }
   LogTarget(Trace, protectiondomain) lt;
   if (lt.is_enabled()) {
+    ResourceMark rm;
     LogStream ls(lt);
+    ls.print("adding protection domain for class %s", instance_klass()->name()->as_C_string());
+    ls.print(" class loader: ");
+    loader_data->class_loader()->print_value_on(&ls);
+    ls.print(" protection domain: ");
+    protection_domain->print_value_on(&ls);
+    ls.print(" ");
     print_count(&ls);
-  }
-}
-
-// During class loading we may have cached a protection domain that has
-// since been unreferenced, so this entry should be cleared.
-void Dictionary::clean_cached_protection_domains(DictionaryEntry* probe) {
-  assert_locked_or_safepoint(SystemDictionary_lock);
-
-  ProtectionDomainEntry* current = probe->pd_set();
-  ProtectionDomainEntry* prev = NULL;
-  while (current != NULL) {
-    if (current->object_no_keepalive() == NULL) {
-      LogTarget(Debug, protectiondomain) lt;
-      if (lt.is_enabled()) {
-        ResourceMark rm;
-        // Print out trace information
-        LogStream ls(lt);
-        ls.print_cr("PD in set is not alive:");
-        ls.print("class loader: "); loader_data()->class_loader()->print_value_on(&ls);
-        ls.print(" loading: "); probe->instance_klass()->print_value_on(&ls);
-        ls.cr();
-      }
-      if (probe->pd_set() == current) {
-        probe->set_pd_set(current->next());
-      } else {
-        assert(prev != NULL, "should be set by alive entry");
-        prev->set_next(current->next());
-      }
-      ProtectionDomainEntry* to_delete = current;
-      current = current->next();
-      delete to_delete;
-    } else {
-      prev = current;
-      current = current->next();
-    }
-  }
-}
-
-
-void Dictionary::do_unloading() {
-  assert(SafepointSynchronize::is_at_safepoint(), "must be at safepoint");
-
-  // The NULL class loader doesn't initiate loading classes from other class loaders
-  if (loader_data() == ClassLoaderData::the_null_class_loader_data()) {
-    return;
-  }
-
-  // Remove unloaded entries and classes from this dictionary
-  DictionaryEntry* probe = NULL;
-  for (int index = 0; index < table_size(); index++) {
-    for (DictionaryEntry** p = bucket_addr(index); *p != NULL; ) {
-      probe = *p;
-      InstanceKlass* ik = probe->instance_klass();
-      ClassLoaderData* k_def_class_loader_data = ik->class_loader_data();
-
-      // If the klass that this loader initiated is dead,
-      // (determined by checking the defining class loader)
-      // remove this entry.
-      if (k_def_class_loader_data->is_unloading()) {
-        assert(k_def_class_loader_data != loader_data(),
-               "cannot have live defining loader and unreachable klass");
-        *p = probe->next();
-        free_entry(probe);
-        continue;
-      }
-      // Clean pd_set
-      clean_cached_protection_domains(probe);
-      p = probe->next_addr();
-    }
-  }
-}
-
-void Dictionary::remove_classes_in_error_state() {
-  assert(DumpSharedSpaces, "supported only when dumping");
-  DictionaryEntry* probe = NULL;
-  for (int index = 0; index < table_size(); index++) {
-    for (DictionaryEntry** p = bucket_addr(index); *p != NULL; ) {
-      probe = *p;
-      InstanceKlass* ik = probe->instance_klass();
-      if (ik->is_in_error_state()) { // purge this entry
-        *p = probe->next();
-        free_entry(probe);
-        ResourceMark rm;
-        tty->print_cr("Preload Warning: Removed error class: %s", ik->external_name());
-        continue;
-      }
-
-      p = probe->next_addr();
-    }
+    ls.cr();
   }
 }
 
@@ -330,26 +241,25 @@ void Dictionary::classes_do(void f(InstanceKlass*, TRAPS), TRAPS) {
 }
 
 // All classes, and their class loaders, including initiating class loaders
-void Dictionary::all_entries_do(void f(InstanceKlass*, ClassLoaderData*)) {
+void Dictionary::all_entries_do(KlassClosure* closure) {
   for (int index = 0; index < table_size(); index++) {
     for (DictionaryEntry* probe = bucket(index);
                           probe != NULL;
                           probe = probe->next()) {
       InstanceKlass* k = probe->instance_klass();
-      f(k, loader_data());
+      closure->do_klass(k);
     }
   }
 }
 
 // Used to scan and relocate the classes during CDS archive dump.
 void Dictionary::classes_do(MetaspaceClosure* it) {
-  assert(DumpSharedSpaces, "dump-time only");
+  Arguments::assert_is_dumping_archive();
   for (int index = 0; index < table_size(); index++) {
     for (DictionaryEntry* probe = bucket(index);
                           probe != NULL;
                           probe = probe->next()) {
       it->push(probe->klass_addr());
-      ((SharedDictionaryEntry*)probe)->metaspace_pointers_do(it);
     }
   }
 }
@@ -389,14 +299,13 @@ DictionaryEntry* Dictionary::get_entry(int index, unsigned int hash,
   for (DictionaryEntry* entry = bucket(index);
                         entry != NULL;
                         entry = entry->next()) {
-    if (entry->hash() == hash && entry->equals(class_name)) {
-      if (!DumpSharedSpaces || SystemDictionaryShared::is_builtin(entry)) {
-        return entry;
-      }
+    if (entry->hash() == hash && entry->instance_klass()->name() == class_name) {
+      return entry;
     }
   }
   return NULL;
 }
+
 
 
 InstanceKlass* Dictionary::find(unsigned int hash, Symbol* name,
@@ -412,33 +321,21 @@ InstanceKlass* Dictionary::find(unsigned int hash, Symbol* name,
   }
 }
 
-
-InstanceKlass* Dictionary::find_class(int index, unsigned int hash,
+InstanceKlass* Dictionary::find_class(unsigned int hash,
                                       Symbol* name) {
   assert_locked_or_safepoint(SystemDictionary_lock);
+
+  int index = hash_to_index(hash);
   assert (index == index_for(name), "incorrect index?");
 
   DictionaryEntry* entry = get_entry(index, hash, name);
   return (entry != NULL) ? entry->instance_klass() : NULL;
 }
-
-
-// Variant of find_class for shared classes.  No locking required, as
-// that table is static.
-
-InstanceKlass* Dictionary::find_shared_class(int index, unsigned int hash,
-                                             Symbol* name) {
-  assert (index == index_for(name), "incorrect index?");
-
-  DictionaryEntry* entry = get_entry(index, hash, name);
-  return (entry != NULL) ? entry->instance_klass() : NULL;
-}
-
 
 void Dictionary::add_protection_domain(int index, unsigned int hash,
                                        InstanceKlass* klass,
-                                       Handle protection_domain,
-                                       TRAPS) {
+                                       Handle protection_domain) {
+  assert(java_lang_System::allow_security_manager(), "only needed if security manager allowed");
   Symbol*  klass_name = klass->name();
   DictionaryEntry* entry = get_entry(index, hash, klass_name);
 
@@ -446,7 +343,7 @@ void Dictionary::add_protection_domain(int index, unsigned int hash,
   assert(protection_domain() != NULL,
          "real protection domain should be present");
 
-  entry->add_protection_domain(this, protection_domain);
+  entry->add_protection_domain(loader_data(), protection_domain);
 
 #ifdef ASSERT
   assert(loader_data() != ClassLoaderData::the_null_class_loader_data(), "doesn't make sense");
@@ -457,7 +354,7 @@ void Dictionary::add_protection_domain(int index, unsigned int hash,
 }
 
 
-bool Dictionary::is_valid_protection_domain(unsigned int hash,
+inline bool Dictionary::is_valid_protection_domain(unsigned int hash,
                                             Symbol* name,
                                             Handle protection_domain) {
   int index = hash_to_index(hash);
@@ -465,69 +362,156 @@ bool Dictionary::is_valid_protection_domain(unsigned int hash,
   return entry->is_valid_protection_domain(protection_domain);
 }
 
-#if INCLUDE_CDS
-static bool is_jfr_event_class(Klass *k) {
-  while (k) {
-    if (k->name()->equals("jdk/jfr/Event")) {
-      return true;
-    }
-    k = k->super();
+void Dictionary::validate_protection_domain(unsigned int name_hash,
+                                            InstanceKlass* klass,
+                                            Handle class_loader,
+                                            Handle protection_domain,
+                                            TRAPS) {
+
+  assert(class_loader() != NULL, "Should not call this");
+  assert(protection_domain() != NULL, "Should not call this");
+
+  if (!java_lang_System::allow_security_manager() ||
+      is_valid_protection_domain(name_hash, klass->name(), protection_domain)) {
+    return;
   }
-  return false;
-}
 
-void Dictionary::reorder_dictionary_for_sharing() {
+  // We only have to call checkPackageAccess if there's a security manager installed.
+  if (java_lang_System::has_security_manager()) {
 
-  // Copy all the dictionary entries into a single master list.
-  assert(DumpSharedSpaces, "Should only be used at dump time");
+    // This handle and the class_loader handle passed in keeps this class from
+    // being unloaded through several GC points.
+    // The class_loader handle passed in is the initiating loader.
+    Handle mirror(THREAD, klass->java_mirror());
 
-  DictionaryEntry* master_list = NULL;
-  for (int i = 0; i < table_size(); ++i) {
-    DictionaryEntry* p = bucket(i);
-    while (p != NULL) {
-      DictionaryEntry* next = p->next();
-      InstanceKlass*ik = p->instance_klass();
-      if (ik->has_signer_and_not_archived()) {
-        // We cannot include signed classes in the archive because the certificates
-        // used during dump time may be different than those used during
-        // runtime (due to expiration, etc).
-        ResourceMark rm;
-        tty->print_cr("Preload Warning: Skipping %s from signed JAR",
-                       ik->name()->as_C_string());
-        free_entry(p);
-      } else if (is_jfr_event_class(ik)) {
-        // We cannot include JFR event classes because they need runtime-specific
-        // instrumentation in order to work with -XX:FlightRecorderOptions=retransform=false.
-        // There are only a small number of these classes, so it's not worthwhile to
-        // support them and make CDS more complicated.
-        ResourceMark rm;
-        tty->print_cr("Skipping JFR event class %s", ik->name()->as_C_string());
-        free_entry(p);
+    // Now we have to call back to java to check if the initating class has access
+    InstanceKlass* system_loader = vmClasses::ClassLoader_klass();
+    JavaValue result(T_VOID);
+    JavaCalls::call_special(&result,
+                           class_loader,
+                           system_loader,
+                           vmSymbols::checkPackageAccess_name(),
+                           vmSymbols::class_protectiondomain_signature(),
+                           mirror,
+                           protection_domain,
+                           THREAD);
+
+    LogTarget(Debug, protectiondomain) lt;
+    if (lt.is_enabled()) {
+      ResourceMark rm(THREAD);
+      // Print out trace information
+      LogStream ls(lt);
+      ls.print_cr("Checking package access");
+      ls.print("class loader: ");
+      class_loader()->print_value_on(&ls);
+      ls.print(" protection domain: ");
+      protection_domain()->print_value_on(&ls);
+      ls.print(" loading: "); klass->print_value_on(&ls);
+      if (HAS_PENDING_EXCEPTION) {
+        ls.print_cr(" DENIED !!!!!!!!!!!!!!!!!!!!!");
       } else {
-        p->set_next(master_list);
-        master_list = p;
+        ls.print_cr(" granted");
       }
-      p = next;
     }
-    set_entry(i, NULL);
+
+    if (HAS_PENDING_EXCEPTION) return;
   }
 
-  // Add the dictionary entries back to the list in the correct buckets.
-  while (master_list != NULL) {
-    DictionaryEntry* p = master_list;
-    master_list = master_list->next();
-    p->set_next(NULL);
-    Symbol* class_name = p->instance_klass()->name();
-    // Since the null class loader data isn't copied to the CDS archive,
-    // compute the hash with NULL for loader data.
-    unsigned int hash = compute_hash(class_name);
-    int index = hash_to_index(hash);
-    p->set_hash(hash);
-    p->set_next(bucket(index));
-    set_entry(index, p);
+  // If no exception has been thrown, we have validated the protection domain
+  // Insert the protection domain of the initiating class into the set.
+  // We still have to add the protection_domain to the dictionary in case a new
+  // security manager is installed later. Calls to load the same class with class loader
+  // and protection domain are expected to succeed.
+  {
+    MutexLocker mu(THREAD, SystemDictionary_lock);
+    int d_index = hash_to_index(name_hash);
+    add_protection_domain(d_index, name_hash, klass,
+                          protection_domain);
   }
 }
-#endif
+
+// During class loading we may have cached a protection domain that has
+// since been unreferenced, so this entry should be cleared.
+void Dictionary::clean_cached_protection_domains(GrowableArray<ProtectionDomainEntry*>* delete_list) {
+  assert(Thread::current()->is_Java_thread(), "only called by JavaThread");
+  assert_lock_strong(SystemDictionary_lock);
+  assert(!loader_data()->has_class_mirror_holder(), "cld should have a ClassLoader holder not a Class holder");
+
+  if (loader_data()->is_the_null_class_loader_data()) {
+    // Classes in the boot loader are not loaded with protection domains
+    return;
+  }
+
+  for (int index = 0; index < table_size(); index++) {
+    for (DictionaryEntry* probe = bucket(index);
+                          probe != NULL;
+                          probe = probe->next()) {
+      Klass* e = probe->instance_klass();
+
+      ProtectionDomainEntry* current = probe->pd_set_acquire();
+      ProtectionDomainEntry* prev = NULL;
+      while (current != NULL) {
+        if (current->object_no_keepalive() == NULL) {
+          LogTarget(Debug, protectiondomain) lt;
+          if (lt.is_enabled()) {
+            ResourceMark rm;
+            // Print out trace information
+            LogStream ls(lt);
+            ls.print_cr("PD in set is not alive:");
+            ls.print("class loader: "); loader_data()->class_loader()->print_value_on(&ls);
+            ls.print(" loading: "); probe->instance_klass()->print_value_on(&ls);
+            ls.cr();
+          }
+          if (probe->pd_set_acquire() == current) {
+            probe->release_set_pd_set(current->next_acquire());
+          } else {
+            assert(prev != NULL, "should be set by alive entry");
+            prev->release_set_next(current->next_acquire());
+          }
+          // Mark current for deletion but in the meantime it can still be
+          // traversed.
+          delete_list->push(current);
+          current = current->next_acquire();
+        } else {
+          prev = current;
+          current = current->next_acquire();
+        }
+      }
+    }
+  }
+}
+
+oop SymbolPropertyEntry::method_type() const {
+  return _method_type.resolve();
+}
+
+void SymbolPropertyEntry::set_method_type(oop p) {
+  _method_type = OopHandle(Universe::vm_global(), p);
+}
+
+void SymbolPropertyEntry::free_entry() {
+  // decrement Symbol refcount here because hashtable doesn't.
+  literal()->decrement_refcount();
+  // Free OopHandle
+  _method_type.release(Universe::vm_global());
+}
+
+void SymbolPropertyEntry::print_entry(outputStream* st) const {
+  symbol()->print_value_on(st);
+  st->print("/mode=" INTX_FORMAT, symbol_mode());
+  st->print(" -> ");
+  bool printed = false;
+  if (method() != NULL) {
+    method()->print_value_on(st);
+    printed = true;
+  }
+  if (method_type() != NULL) {
+    if (printed)  st->print(" and ");
+    st->print(INTPTR_FORMAT, p2i((void *)method_type()));
+    printed = true;
+  }
+  st->print_cr(printed ? "" : "(empty)");
+}
 
 SymbolPropertyTable::SymbolPropertyTable(int table_size)
   : Hashtable<Symbol*, mtSymbol>(table_size, sizeof(SymbolPropertyEntry))
@@ -564,16 +548,6 @@ SymbolPropertyEntry* SymbolPropertyTable::add_entry(int index, unsigned int hash
   return p;
 }
 
-void SymbolPropertyTable::oops_do(OopClosure* f) {
-  for (int index = 0; index < table_size(); index++) {
-    for (SymbolPropertyEntry* p = bucket(index); p != NULL; p = p->next()) {
-      if (p->method_type() != NULL) {
-        f->do_oop(p->method_type_addr());
-      }
-    }
-  }
-}
-
 void SymbolPropertyTable::methods_do(void f(Method*)) {
   for (int index = 0; index < table_size(); index++) {
     for (SymbolPropertyEntry* p = bucket(index); p != NULL; p = p->next()) {
@@ -585,6 +559,30 @@ void SymbolPropertyTable::methods_do(void f(Method*)) {
   }
 }
 
+void SymbolPropertyTable::free_entry(SymbolPropertyEntry* entry) {
+  entry->free_entry();
+  BasicHashtable<mtSymbol>::free_entry(entry);
+}
+
+void DictionaryEntry::verify_protection_domain_set() {
+  assert(SafepointSynchronize::is_at_safepoint(), "must only be called as safepoint");
+  for (ProtectionDomainEntry* current = pd_set_acquire(); // accessed at a safepoint
+                              current != NULL;
+                              current = current->next_acquire()) {
+    guarantee(oopDesc::is_oop_or_null(current->object_no_keepalive()), "Invalid oop");
+  }
+}
+
+void DictionaryEntry::print_count(outputStream *st) {
+  assert_locked_or_safepoint(SystemDictionary_lock);
+  int count = 0;
+  for (ProtectionDomainEntry* current = pd_set_acquire();
+                              current != NULL;
+                              current = current->next_acquire()) {
+    count++;
+  }
+  st->print("pd set count = #%d", count);
+}
 
 // ----------------------------------------------------------------------------
 
@@ -592,8 +590,9 @@ void Dictionary::print_on(outputStream* st) const {
   ResourceMark rm;
 
   assert(loader_data() != NULL, "loader data should not be null");
-  st->print_cr("Java dictionary (table_size=%d, classes=%d)",
-               table_size(), number_of_entries());
+  assert(!loader_data()->has_class_mirror_holder(), "cld should have a ClassLoader holder not a Class holder");
+  st->print_cr("Java dictionary (table_size=%d, classes=%d, resizable=%s)",
+               table_size(), number_of_entries(), BOOL_TO_STR(_resizable));
   st->print_cr("^ indicates that initiating loader is different from defining loader");
 
   for (int index = 0; index < table_size(); index++) {
@@ -605,14 +604,13 @@ void Dictionary::print_on(outputStream* st) const {
          (loader_data() == e->class_loader_data());
       st->print("%4d: %s%s", index, is_defining_class ? " " : "^", e->external_name());
       ClassLoaderData* cld = e->class_loader_data();
-      if (cld == NULL) {
-        // Shared class not restored yet in shared dictionary
-        st->print(", loader data <shared, not restored>");
-      } else if (!loader_data()->is_the_null_class_loader_data()) {
+      if (!loader_data()->is_the_null_class_loader_data()) {
         // Class loader output for the dictionary for the null class loader data is
         // redundant and obvious.
         st->print(", ");
         cld->print_value_on(st);
+        st->print(", ");
+        probe->print_count(st);
       }
       st->cr();
     }
@@ -634,9 +632,8 @@ void Dictionary::verify() {
   ClassLoaderData* cld = loader_data();
   // class loader must be present;  a null class loader is the
   // boostrap loader
-  guarantee(cld != NULL || DumpSharedSpaces ||
-            cld->class_loader() == NULL ||
-            cld->class_loader()->is_instance(),
+  guarantee(cld != NULL &&
+            (cld->the_null_class_loader_data() || cld->class_loader()->is_instance()),
             "checking type of class_loader");
 
   ResourceMark rm;

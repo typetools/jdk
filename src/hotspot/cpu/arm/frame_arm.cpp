@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,18 @@
  */
 
 #include "precompiled.hpp"
+#include "compiler/oopMap.hpp"
 #include "interpreter/interpreter.hpp"
 #include "memory/resourceArea.hpp"
-#include "oops/markOop.hpp"
+#include "memory/universe.hpp"
+#include "oops/markWord.hpp"
 #include "oops/method.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/javaCalls.hpp"
 #include "runtime/monitorChunk.hpp"
+#include "runtime/os.inline.hpp"
 #include "runtime/signature.hpp"
 #include "runtime/stubCodeGenerator.hpp"
 #include "runtime/stubRoutines.hpp"
@@ -55,31 +58,19 @@ bool frame::safe_for_sender(JavaThread *thread) {
   address   fp = (address)_fp;
   address   unextended_sp = (address)_unextended_sp;
 
-  static size_t stack_guard_size = os::uses_stack_guard_pages() ?
-    (JavaThread::stack_red_zone_size() + JavaThread::stack_yellow_zone_size()) : 0;
-  size_t usable_stack_size = thread->stack_size() - stack_guard_size;
-
+  // consider stack guards when trying to determine "safe" stack pointers
   // sp must be within the usable part of the stack (not in guards)
-  bool sp_safe = (sp != NULL &&
-                 (sp <= thread->stack_base()) &&
-                 (sp >= thread->stack_base() - usable_stack_size));
-
-  if (!sp_safe) {
+  if (!thread->is_in_usable_stack(sp)) {
     return false;
   }
 
-  bool unextended_sp_safe = (unextended_sp != NULL &&
-                             (unextended_sp <= thread->stack_base()) &&
-                             (unextended_sp >= sp));
-  if (!unextended_sp_safe) {
+  if (!thread->is_in_stack_range_incl(unextended_sp, sp)) {
     return false;
   }
 
   // We know sp/unextended_sp are safe. Only fp is questionable here.
 
-  bool fp_safe = (fp != NULL &&
-                  (fp <= thread->stack_base()) &&
-                  fp >= sp);
+  bool fp_safe = thread->is_in_stack_range_incl(fp, sp);
 
   if (_cb != NULL ) {
 
@@ -123,7 +114,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
 
       sender_sp = _unextended_sp + _cb->frame_size();
       // Is sender_sp safe?
-      if ((address)sender_sp >= thread->stack_base()) {
+      if (!thread->is_in_full_stack_checked((address)sender_sp)) {
         return false;
       }
       // With our calling conventions, the return_address should
@@ -146,9 +137,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
       // is really a frame pointer.
 
       intptr_t *saved_fp = (intptr_t*)*(sender_sp - frame::sender_sp_offset + link_offset);
-      bool saved_fp_safe = ((address)saved_fp <= thread->stack_base()) && (saved_fp > sender_sp);
-
-      if (!saved_fp_safe) {
+      if (!thread->is_in_stack_range_excl((address)saved_fp, (address)sender_sp)) {
         return false;
       }
 
@@ -176,9 +165,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
     // Could be the call_stub
     if (StubRoutines::returns_to_call_stub(sender_pc)) {
       intptr_t *saved_fp = (intptr_t*)*(sender_sp - frame::sender_sp_offset + link_offset);
-      bool saved_fp_safe = ((address)saved_fp <= thread->stack_base()) && (saved_fp >= sender_sp);
-
-      if (!saved_fp_safe) {
+      if (!thread->is_in_stack_range_excl((address)saved_fp, (address)sender_sp)) {
         return false;
       }
 
@@ -189,9 +176,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
       // Validate the JavaCallWrapper an entry frame must have
       address jcw = (address)sender.entry_frame_call_wrapper();
 
-      bool jcw_safe = (jcw <= thread->stack_base()) && (jcw > (address)sender.fp());
-
-      return jcw_safe;
+      return thread->is_in_stack_range_excl(jcw, (address)sender.fp());
     }
 
     // If the frame size is 0 something (or less) is bad because every nmethod has a non-zero frame size
@@ -239,13 +224,13 @@ bool frame::safe_for_sender(JavaThread *thread) {
 
 
 void frame::patch_pc(Thread* thread, address pc) {
+  assert(_cb == CodeCache::find_blob(pc), "unexpected pc");
   address* pc_addr = &((address *)sp())[-sender_sp_offset+return_addr_offset];
   if (TracePcPatching) {
     tty->print_cr("patch_pc at address" INTPTR_FORMAT " [" INTPTR_FORMAT " -> " INTPTR_FORMAT "] ",
                   p2i(pc_addr), p2i(*pc_addr), p2i(pc));
   }
   *pc_addr = pc;
-  _cb = CodeCache::find_blob(pc);
   address original_pc = CompiledMethod::get_deopt_original_pc(this);
   if (original_pc != NULL) {
     assert(original_pc == _pc, "expected original PC to be stored before patching");
@@ -304,26 +289,12 @@ void frame::interpreter_frame_set_monitor_end(BasicObjectLock* value) {
   *((BasicObjectLock**)addr_at(interpreter_frame_monitor_block_top_offset)) = value;
 }
 
-#ifdef AARCH64
-
-// Used by template based interpreter deoptimization
-void frame::interpreter_frame_set_stack_top(intptr_t* stack_top) {
-  *((intptr_t**)addr_at(interpreter_frame_stack_top_offset)) = stack_top;
-}
-
-// Used by template based interpreter deoptimization
-void frame::interpreter_frame_set_extended_sp(intptr_t* sp) {
-  *((intptr_t**)addr_at(interpreter_frame_extended_sp_offset)) = sp;
-}
-
-#else
 
 // Used by template based interpreter deoptimization
 void frame::interpreter_frame_set_last_sp(intptr_t* sp) {
     *((intptr_t**)addr_at(interpreter_frame_last_sp_offset)) = sp;
 }
 
-#endif // AARCH64
 
 frame frame::sender_for_entry_frame(RegisterMap* map) const {
   assert(map != NULL, "map must be set");
@@ -334,18 +305,12 @@ frame frame::sender_for_entry_frame(RegisterMap* map) const {
   assert(jfa->last_Java_sp() > sp(), "must be above this frame on stack");
   map->clear();
   assert(map->include_argument_oops(), "should be set by clear");
-#ifdef AARCH64
-  assert (jfa->last_Java_pc() != NULL, "pc should be stored");
-  frame fr(jfa->last_Java_sp(), jfa->last_Java_fp(), jfa->last_Java_pc());
-  return fr;
-#else
   if (jfa->last_Java_pc() != NULL) {
     frame fr(jfa->last_Java_sp(), jfa->last_Java_fp(), jfa->last_Java_pc());
     return fr;
   }
   frame fr(jfa->last_Java_sp(), jfa->last_Java_fp());
   return fr;
-#endif // AARCH64
 }
 
 //------------------------------------------------------------------------------
@@ -403,10 +368,6 @@ void frame::adjust_unextended_sp() {
 void frame::update_map_with_saved_link(RegisterMap* map, intptr_t** link_addr) {
   // see x86 for comments
   map->set_location(FP->as_VMReg(), (address) link_addr);
-#ifdef AARCH64
-  // also adjust a high part of register
-  map->set_location(FP->as_VMReg()->next(), (address) link_addr);
-#endif // AARCH64
 }
 
 frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
@@ -500,7 +461,7 @@ bool frame::is_interpreted_frame_valid(JavaThread* thread) const {
   Method* m = *interpreter_frame_method_addr();
 
   // validate the method we'd find in this potential sender
-  if (!m->is_valid_method()) return false;
+  if (!Method::is_valid_method(m)) return false;
 
   // stack frames shouldn't be much larger than max_stack elements
 
@@ -517,17 +478,12 @@ bool frame::is_interpreted_frame_valid(JavaThread* thread) const {
 
   // validate ConstantPoolCache*
   ConstantPoolCache* cp = *interpreter_frame_cache_addr();
-  if (cp == NULL || !cp->is_metaspace_object()) return false;
+  if (MetaspaceObj::is_valid(cp) == false) return false;
 
   // validate locals
 
   address locals =  (address) *interpreter_frame_locals_addr();
-
-  if (locals > thread->stack_base() || locals < (address) fp()) return false;
-
-  // We'd have to be pretty unlucky to be mislead at this point
-
-  return true;
+  return thread->is_in_stack_range_incl(locals, (address)fp());
 }
 
 BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result) {
@@ -539,14 +495,6 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
   if (method->is_native()) {
     // Prior to calling into the runtime to report the method_exit both of
     // the possible return value registers are saved.
-#ifdef AARCH64
-    // Return value registers are saved into the frame
-    if (type == T_FLOAT || type == T_DOUBLE) {
-      res_addr = addr_at(interpreter_frame_fp_saved_result_offset);
-    } else {
-      res_addr = addr_at(interpreter_frame_gp_saved_result_offset);
-    }
-#else
     // Return value registers are pushed to the native stack
     res_addr = (intptr_t*)sp();
 #ifdef __ABI_HARD__
@@ -555,7 +503,6 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
       res_addr += 2;
     }
 #endif // __ABI_HARD__
-#endif // AARCH64
   } else {
     res_addr = (intptr_t*)interpreter_frame_tos_address();
   }
@@ -569,7 +516,7 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
       } else {
         obj = *(oop*)res_addr;
       }
-      assert(obj == NULL || Universe::heap()->is_in(obj), "sanity check");
+      assert(Universe::is_in_heap_or_null(obj), "sanity check");
       *oop_result = obj;
       break;
     }
@@ -602,12 +549,7 @@ intptr_t* frame::interpreter_frame_tos_at(jint offset) const {
 void frame::describe_pd(FrameValues& values, int frame_no) {
   if (is_interpreted_frame()) {
     DESCRIBE_FP_OFFSET(interpreter_frame_sender_sp);
-#ifdef AARCH64
-    DESCRIBE_FP_OFFSET(interpreter_frame_stack_top);
-    DESCRIBE_FP_OFFSET(interpreter_frame_extended_sp);
-#else
     DESCRIBE_FP_OFFSET(interpreter_frame_last_sp);
-#endif // AARCH64
     DESCRIBE_FP_OFFSET(interpreter_frame_method);
     DESCRIBE_FP_OFFSET(interpreter_frame_mdp);
     DESCRIBE_FP_OFFSET(interpreter_frame_cache);
@@ -631,7 +573,6 @@ intptr_t *frame::initial_deoptimization_info() {
 }
 
 intptr_t* frame::real_fp() const {
-#ifndef AARCH64
   if (is_entry_frame()) {
     // Work-around: FP (currently) does not conform to the ABI for entry
     // frames (see generate_call_stub). Might be worth fixing as another CR.
@@ -644,7 +585,6 @@ intptr_t* frame::real_fp() const {
 #endif
     return new_fp;
   }
-#endif // !AARCH64
   if (_cb != NULL) {
     // use the frame size if valid
     int size = _cb->frame_size();

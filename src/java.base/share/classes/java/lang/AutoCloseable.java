@@ -27,6 +27,7 @@ package java.lang;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 /**
  * An object that may hold resources (such as file or socket handles)
@@ -51,7 +52,11 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Josh Bloch
  * @since 1.7
  */
-@AnnotatedFor({"lock"})
+@AnnotatedFor({"lock", "mustcall", "nullness"})
+@CFComment({"MustCall:  Do not write @InheritableMustCall(close) because doing so requires",
+  "writing @InheritableMustCall({}) on Stream, and that leads to a `annotations.on.use` error at",
+  "every type use like `@MustCall(close) Stream.  Instead, write `@MustCall(close)` on every",
+  "appropriate class that implements AutoCloseable (which includes a few, but not most, Streams)."})
 public interface AutoCloseable {
     /**
      * Closes this resource, relinquishing any underlying resources.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_UTF8_HPP
-#define SHARE_VM_UTILITIES_UTF8_HPP
+#ifndef SHARE_UTILITIES_UTF8_HPP
+#define SHARE_UTILITIES_UTF8_HPP
 
 #include "memory/allocation.hpp"
 
@@ -54,9 +54,11 @@ class UTF8 : AllStatic {
   // converts a utf8 string to quoted ascii
   static void as_quoted_ascii(const char* utf8_str, int utf8_length, char* buf, int buflen);
 
+#ifndef PRODUCT
   // converts a quoted ascii string to utf8 string.  returns the original
   // string unchanged if nothing needs to be done.
   static const char* from_quoted_ascii(const char* quoted_ascii_string);
+#endif
 
   // decodes the current utf8 character, stores the result in value,
   // and returns the end of the current utf8 chararacter.
@@ -68,7 +70,16 @@ class UTF8 : AllStatic {
   static char* next_character(const char* str, jint* value);
 
   // Utility methods
-  static const jbyte* strrchr(const jbyte* base, int length, jbyte c);
+
+  // Returns NULL if 'c' it not found. This only works as long
+  // as 'c' is an ASCII character
+  static const jbyte* strrchr(const jbyte* base, int length, jbyte c) {
+    assert(length >= 0, "sanity check");
+    assert(c >= 0, "does not work for non-ASCII characters");
+    // Skip backwards in string until 'c' is found or end is reached
+    while(--length >= 0 && base[length] != c);
+    return (length < 0) ? NULL : &base[length];
+  }
   static bool   equal(const jbyte* base1, int length1, const jbyte* base2,int length2);
   static bool   is_supplementary_character(const unsigned char* str);
   static jint   get_supplementary_character(const unsigned char* str);
@@ -90,14 +101,14 @@ class UNICODE : AllStatic {
   static bool is_latin1(jchar c);
 
   // checks if the given string can be encoded as latin1
-  static bool is_latin1(jchar* base, int length);
+  static bool is_latin1(const jchar* base, int length);
 
   // returns the utf8 size of a unicode character
   static int utf8_size(jchar c);
   static int utf8_size(jbyte c);
 
   // returns the utf8 length of a unicode string
-  template<typename T> static int utf8_length(T* base, int length);
+  template<typename T> static int utf8_length(const T* base, int length);
 
   // converts a unicode string to utf8 string
   static void convert_to_utf8(const jchar* base, int length, char* utf8_buffer);
@@ -105,15 +116,15 @@ class UNICODE : AllStatic {
   // converts a unicode string to a utf8 string; result is allocated
   // in resource area unless a buffer is provided. The unicode 'length'
   // parameter is set to the length of the result utf8 string.
-  template<typename T> static char* as_utf8(T* base, int& length);
-  static char* as_utf8(jchar* base, int length, char* buf, int buflen);
-  static char* as_utf8(jbyte* base, int length, char* buf, int buflen);
+  template<typename T> static char* as_utf8(const T* base, int& length);
+  static char* as_utf8(const jchar* base, int length, char* buf, int buflen);
+  static char* as_utf8(const jbyte* base, int length, char* buf, int buflen);
 
   // returns the quoted ascii length of a unicode string
-  template<typename T> static int quoted_ascii_length(T* base, int length);
+  template<typename T> static int quoted_ascii_length(const T* base, int length);
 
   // converts a unicode string to quoted ascii
   template<typename T> static void as_quoted_ascii(const T* base, int length, char* buf, int buflen);
 };
 
-#endif // SHARE_VM_UTILITIES_UTF8_HPP
+#endif // SHARE_UTILITIES_UTF8_HPP

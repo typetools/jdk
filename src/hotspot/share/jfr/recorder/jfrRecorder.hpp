@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_JFR_RECORDER_JFRRECORDER_HPP
-#define SHARE_VM_JFR_RECORDER_JFRRECORDER_HPP
+#ifndef SHARE_JFR_RECORDER_JFRRECORDER_HPP
+#define SHARE_JFR_RECORDER_JFRRECORDER_HPP
 
 #include "jfr/utilities/jfrAllocation.hpp"
 
@@ -36,11 +36,16 @@ class Thread;
 //
 class JfrRecorder : public JfrCHeapObj {
   friend class Jfr;
-  friend void recorderthread_entry(JavaThread*, Thread*);
+  friend void recorderthread_entry(JavaThread*, JavaThread*);
  private:
+  static bool on_create_vm_1();
+  static bool on_create_vm_2();
+  static bool on_create_vm_3();
   static bool create_checkpoint_manager();
   static bool create_chunk_repository();
+  static bool create_java_event_writer();
   static bool create_jvmti_agent();
+  static bool create_oop_storages();
   static bool create_os_interface();
   static bool create_post_box();
   static bool create_recorder_thread();
@@ -48,11 +53,10 @@ class JfrRecorder : public JfrCHeapObj {
   static bool create_storage();
   static bool create_stringpool();
   static bool create_thread_sampling();
+  static bool create_event_throttler();
   static bool create_components();
   static void destroy_components();
   static void on_recorder_thread_exit();
-  static bool on_vm_start();
-  static bool on_vm_init();
 
  public:
   static bool is_enabled();
@@ -65,4 +69,4 @@ class JfrRecorder : public JfrCHeapObj {
   static void stop_recording();
 };
 
-#endif // SHARE_VM_JFR_RECORDER_JFRRECORDER_HPP
+#endif // SHARE_JFR_RECORDER_JFRRECORDER_HPP

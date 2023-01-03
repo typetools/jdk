@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,7 +60,7 @@ import com.sun.jndi.ldap.Connection;
  * @see StartTlsRequest
  * @author Vincent Ryan
  */
-final public class StartTlsResponseImpl extends StartTlsResponse {
+public final class StartTlsResponseImpl extends StartTlsResponse {
 
     private static final boolean debug = false;
 
@@ -268,7 +268,7 @@ final public class StartTlsResponseImpl extends StartTlsResponse {
 
         // Replace SSL streams with the original streams
         ldapConnection.replaceStreams(
-                        originalInputStream, originalOutputStream);
+                originalInputStream, originalOutputStream, false);
 
         if (debug) {
             System.out.println("StartTLS: closing SSL Socket");
@@ -288,7 +288,8 @@ final public class StartTlsResponseImpl extends StartTlsResponse {
      */
     public void setConnection(Connection ldapConnection, String hostname) {
         this.ldapConnection = ldapConnection;
-        this.hostname = (hostname != null) ? hostname : ldapConnection.host;
+        this.hostname = (hostname == null || hostname.isEmpty())
+            ? ldapConnection.host : hostname;
         originalInputStream = ldapConnection.inStream;
         originalOutputStream = ldapConnection.outStream;
     }
@@ -350,6 +351,7 @@ final public class StartTlsResponseImpl extends StartTlsResponse {
                 System.out.println(
                         "StartTLS: Calling sslSocket.startHandshake");
             }
+            ldapConnection.setHandshakeCompletedListener(sslSocket);
             sslSocket.startHandshake();
             if (debug) {
                 System.out.println(
@@ -358,7 +360,7 @@ final public class StartTlsResponseImpl extends StartTlsResponse {
 
             // Replace original streams with the new SSL streams
             ldapConnection.replaceStreams(sslSocket.getInputStream(),
-                sslSocket.getOutputStream());
+                    sslSocket.getOutputStream(), true);
             if (debug) {
                 System.out.println("StartTLS: Replaced IO Streams");
             }

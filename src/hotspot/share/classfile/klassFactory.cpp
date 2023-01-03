@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+* Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
 * This code is free software; you can redistribute it and/or modify it
@@ -23,17 +23,18 @@
 */
 
 #include "precompiled.hpp"
+#include "cds/filemap.hpp"
 #include "classfile/classFileParser.hpp"
 #include "classfile/classFileStream.hpp"
 #include "classfile/classLoader.hpp"
 #include "classfile/classLoaderData.hpp"
 #include "classfile/classLoaderData.inline.hpp"
+#include "classfile/classLoadInfo.hpp"
 #include "classfile/klassFactory.hpp"
-#include "memory/filemap.hpp"
-#include "memory/metaspaceShared.hpp"
 #include "memory/resourceArea.hpp"
 #include "prims/jvmtiEnvBase.hpp"
 #include "prims/jvmtiRedefineClasses.hpp"
+#include "runtime/arguments.hpp"
 #include "runtime/handles.inline.hpp"
 #include "utilities/macros.hpp"
 #if INCLUDE_JFR
@@ -46,22 +47,21 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
                                           InstanceKlass* ik,
                                           Symbol* class_name,
                                           Handle class_loader,
-                                          Handle protection_domain, TRAPS) {
+                                          Handle protection_domain,
+                                          const ClassFileStream *cfs,
+                                          TRAPS) {
 #if INCLUDE_CDS && INCLUDE_JVMTI
   assert(ik != NULL, "sanity");
   assert(ik->is_shared(), "expecting a shared class");
-
   if (JvmtiExport::should_post_class_file_load_hook()) {
-    assert(THREAD->is_Java_thread(), "must be JavaThread");
 
     // Post the CFLH
     JvmtiCachedClassFileData* cached_class_file = NULL;
-    JvmtiCachedClassFileData* archived_class_data = ik->get_archived_class_data();
-    assert(archived_class_data != NULL, "shared class has no archived class data");
-    unsigned char* ptr =
-        VM_RedefineClasses::get_cached_class_file_bytes(archived_class_data);
-    unsigned char* end_ptr =
-        ptr + VM_RedefineClasses::get_cached_class_file_len(archived_class_data);
+    if (cfs == NULL) {
+      cfs = FileMapInfo::open_stream_for_jvmti(ik, class_loader, CHECK_NULL);
+    }
+    unsigned char* ptr = (unsigned char*)cfs->buffer();
+    unsigned char* end_ptr = ptr + cfs->length();
     unsigned char* old_ptr = ptr;
     JvmtiExport::post_class_file_load_hook(class_name,
                                            class_loader,
@@ -75,43 +75,28 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
       ClassLoaderData* loader_data =
         ClassLoaderData::class_loader_data(class_loader());
       int path_index = ik->shared_classpath_index();
-      const char* pathname;
-      if (path_index < 0) {
-        // shared classes loaded by user defined class loader
-        // do not have shared_classpath_index
-        ModuleEntry* mod_entry = ik->module();
-        if (mod_entry != NULL && (mod_entry->location() != NULL)) {
-          ResourceMark rm;
-          pathname = (const char*)(mod_entry->location()->as_C_string());
-        } else {
-          pathname = "";
-        }
-      } else {
-        SharedClassPathEntry* ent =
-          (SharedClassPathEntry*)FileMapInfo::shared_path(path_index);
-        pathname = ent == NULL ? NULL : ent->name();
-      }
       ClassFileStream* stream = new ClassFileStream(ptr,
                                                     end_ptr - ptr,
-                                                    pathname,
+                                                    cfs->source(),
                                                     ClassFileStream::verify);
+      ClassLoadInfo cl_info(protection_domain);
       ClassFileParser parser(stream,
                              class_name,
                              loader_data,
-                             protection_domain,
-                             NULL,
-                             NULL,
+                             &cl_info,
                              ClassFileParser::BROADCAST, // publicity level
                              CHECK_NULL);
-      InstanceKlass* new_ik = parser.create_instance_klass(true /* changed_by_loadhook */,
+      const ClassInstanceInfo* cl_inst_info = cl_info.class_hidden_info_ptr();
+      InstanceKlass* new_ik = parser.create_instance_klass(true, // changed_by_loadhook
+                                                           *cl_inst_info,  // dynamic_nest_host and classData
                                                            CHECK_NULL);
+
       if (cached_class_file != NULL) {
         new_ik->set_cached_class_file(cached_class_file);
       }
 
       if (class_loader.is_null()) {
-        ResourceMark rm;
-        ClassLoader::add_package(class_name->as_C_string(), path_index, THREAD);
+        new_ik->set_classpath_index(path_index);
       }
 
       return new_ik;
@@ -133,8 +118,7 @@ static ClassFileStream* check_class_file_load_hook(ClassFileStream* stream,
   assert(stream != NULL, "invariant");
 
   if (JvmtiExport::should_post_class_file_load_hook()) {
-    assert(THREAD->is_Java_thread(), "must be a JavaThread");
-    const JavaThread* jt = (JavaThread*)THREAD;
+    const JavaThread* jt = THREAD;
 
     Handle class_loader(THREAD, loader_data->class_loader());
 
@@ -182,16 +166,13 @@ static ClassFileStream* check_class_file_load_hook(ClassFileStream* stream,
 InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
                                                 Symbol* name,
                                                 ClassLoaderData* loader_data,
-                                                Handle protection_domain,
-                                                const InstanceKlass* host_klass,
-                                                GrowableArray<Handle>* cp_patches,
+                                                const ClassLoadInfo& cl_info,
                                                 TRAPS) {
   assert(stream != NULL, "invariant");
   assert(loader_data != NULL, "invariant");
-  assert(THREAD->is_Java_thread(), "must be a JavaThread");
 
-  ResourceMark rm;
-  HandleMark hm;
+  ResourceMark rm(THREAD);
+  HandleMark hm(THREAD);
 
   JvmtiCachedClassFileData* cached_class_file = NULL;
 
@@ -200,12 +181,12 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
   // increment counter
   THREAD->statistical_info().incr_define_class_count();
 
-  // Skip this processing for VM anonymous classes
-  if (host_klass == NULL) {
+  // Skip this processing for VM hidden classes
+  if (!cl_info.is_hidden()) {
     stream = check_class_file_load_hook(stream,
                                         name,
                                         loader_data,
-                                        protection_domain,
+                                        cl_info.protection_domain(),
                                         &cached_class_file,
                                         CHECK_NULL);
   }
@@ -213,51 +194,24 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
   ClassFileParser parser(stream,
                          name,
                          loader_data,
-                         protection_domain,
-                         host_klass,
-                         cp_patches,
+                         &cl_info,
                          ClassFileParser::BROADCAST, // publicity level
                          CHECK_NULL);
 
-  InstanceKlass* result = parser.create_instance_klass(old_stream != stream, CHECK_NULL);
-  assert(result == parser.create_instance_klass(old_stream != stream, THREAD), "invariant");
-
-  if (result == NULL) {
-    return NULL;
-  }
+  const ClassInstanceInfo* cl_inst_info = cl_info.class_hidden_info_ptr();
+  InstanceKlass* result = parser.create_instance_klass(old_stream != stream, *cl_inst_info, CHECK_NULL);
+  assert(result != NULL, "result cannot be null with no pending exception");
 
   if (cached_class_file != NULL) {
     // JVMTI: we have an InstanceKlass now, tell it about the cached bytes
     result->set_cached_class_file(cached_class_file);
   }
 
-  if (result->should_store_fingerprint()) {
-    result->store_fingerprint(stream->compute_fingerprint());
-  }
-
   JFR_ONLY(ON_KLASS_CREATION(result, parser, THREAD);)
 
 #if INCLUDE_CDS
-  if (DumpSharedSpaces) {
-    ClassLoader::record_result(result, stream, THREAD);
-#if INCLUDE_JVMTI
-    assert(cached_class_file == NULL, "Sanity");
-    // Archive the class stream data into the optional data section
-    JvmtiCachedClassFileData *p;
-    int len;
-    const unsigned char *bytes;
-    // event based tracing might set cached_class_file
-    if ((bytes = result->get_cached_class_file_bytes()) != NULL) {
-      len = result->get_cached_class_file_len();
-    } else {
-      len = stream->length();
-      bytes = stream->buffer();
-    }
-    p = (JvmtiCachedClassFileData*)os::malloc(offset_of(JvmtiCachedClassFileData, data) + len, mtInternal);
-    p->length = len;
-    memcpy(p->data, bytes, len);
-    result->set_archived_class_data(p);
-#endif // INCLUDE_JVMTI
+  if (Arguments::is_dumping_archive()) {
+    ClassLoader::record_result(THREAD, result, stream);
   }
 #endif // INCLUDE_CDS
 

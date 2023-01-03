@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -157,7 +157,7 @@ import sun.security.action.GetPropertyAction;
  */
 public abstract class URLConnection {
 
-   /**
+    /**
      * The URL represents the remote object on the World Wide Web to
      * which this connection is opened.
      * <p>
@@ -172,7 +172,7 @@ public abstract class URLConnection {
      */
     protected URL url;
 
-   /**
+    /**
      * This variable is set by the {@code setDoInput} method. Its
      * value is returned by the {@code getDoInput} method.
      * <p>
@@ -187,7 +187,7 @@ public abstract class URLConnection {
      */
     protected boolean doInput = true;
 
-   /**
+    /**
      * This variable is set by the {@code setDoOutput} method. Its
      * value is returned by the {@code getDoOutput} method.
      * <p>
@@ -204,7 +204,7 @@ public abstract class URLConnection {
 
     private static boolean defaultAllowUserInteraction = false;
 
-   /**
+    /**
      * If {@code true}, this {@code URL} is being examined in
      * a context in which it makes sense to allow user interactions such
      * as popping up an authentication dialog. If {@code false},
@@ -225,7 +225,7 @@ public abstract class URLConnection {
 
     private static volatile boolean defaultUseCaches = true;
 
-   /**
+    /**
      * If {@code true}, the protocol is allowed to use caching
      * whenever it can. If {@code false}, the protocol must always
      * try to get a fresh copy of the object.
@@ -248,7 +248,7 @@ public abstract class URLConnection {
     private static final ConcurrentHashMap<String,Boolean> defaultCaching =
         new ConcurrentHashMap<>();
 
-   /**
+    /**
      * Some protocols support skipping the fetching of the object unless
      * the object has been modified more recently than a certain time.
      * <p>
@@ -268,7 +268,7 @@ public abstract class URLConnection {
      */
     protected long ifModifiedSince = 0;
 
-   /**
+    /**
      * If {@code false}, this connection object has not created a
      * communications link to the specified URL. If {@code true},
      * the communications link has been established.
@@ -286,9 +286,9 @@ public abstract class URLConnection {
      */
     private MessageHeader requests;
 
-   /**
-    * @since   1.1
-    */
+    /**
+     * @since 1.1
+     */
     private static volatile FileNameMap fileNameMap;
 
     /**
@@ -327,13 +327,14 @@ public abstract class URLConnection {
      * This could result in a SecurityException.
      *
      * @param map the FileNameMap to be set
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkSetFactory} method doesn't allow the operation.
      * @see        SecurityManager#checkSetFactory
      * @see #getFileNameMap()
      * @since 1.2
      */
     public static void setFileNameMap(FileNameMap map) {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) sm.checkSetFactory();
         fileNameMap = map;
@@ -357,7 +358,7 @@ public abstract class URLConnection {
      *
      * @throws SocketTimeoutException if the timeout expires before
      *               the connection can be established
-     * @exception  IOException  if an I/O error occurs while opening the
+     * @throws     IOException  if an I/O error occurs while opening the
      *               connection.
      * @see java.net.URLConnection#connected
      * @see #getConnectTimeout()
@@ -372,7 +373,7 @@ public abstract class URLConnection {
      * connection can be established, a
      * java.net.SocketTimeoutException is raised. A timeout of zero is
      * interpreted as an infinite timeout.
-
+     *
      * <p> Some non-standard implementation of this method may ignore
      * the specified timeout. To see the connect timeout set, please
      * call getConnectTimeout().
@@ -416,7 +417,7 @@ public abstract class URLConnection {
      * for read, a java.net.SocketTimeoutException is raised. A
      * timeout of zero is interpreted as an infinite timeout.
      *
-     *<p> Some non-standard implementation of this method ignores the
+     * <p> Some non-standard implementation of this method ignores the
      * specified timeout. To see the read timeout set, please call
      * getReadTimeout().
      *
@@ -667,12 +668,15 @@ public abstract class URLConnection {
 
     /**
      * Returns the key for the {@code n}<sup>th</sup> header field.
-     * It returns {@code null} if there are fewer than {@code n+1} fields.
+     * Some implementations may treat the {@code 0}<sup>th</sup>
+     * header field as special, in which case, {@link #getHeaderField(int) getHeaderField(0)}
+     * may return some value, but {@code getHeaderFieldKey(0)} returns {@code null}.
+     * For {@code n > 0 } it returns {@code null} if there are fewer than {@code n+1} fields.
      *
      * @param   n   an index, where {@code n>=0}
      * @return  the key for the {@code n}<sup>th</sup> header field,
      *          or {@code null} if there are fewer than {@code n+1}
-     *          fields.
+     *          fields when {@code n > 0}.
      */
     public String getHeaderFieldKey(int n) {
         return null;
@@ -681,7 +685,7 @@ public abstract class URLConnection {
     /**
      * Returns the value for the {@code n}<sup>th</sup> header field.
      * It returns {@code null} if there are fewer than
-     * {@code n+1}fields.
+     * {@code n+1} fields.
      * <p>
      * This method can be used in conjunction with the
      * {@link #getHeaderFieldKey(int) getHeaderFieldKey} method to iterate through all
@@ -734,9 +738,9 @@ public abstract class URLConnection {
      * @return     the object fetched. The {@code instanceof} operator
      *               should be used to determine the specific kind of object
      *               returned.
-     * @exception  IOException              if an I/O error occurs while
+     * @throws     IOException              if an I/O error occurs while
      *               getting the content.
-     * @exception  UnknownServiceException  if the protocol does not support
+     * @throws     UnknownServiceException  if the protocol does not support
      *               the content type.
      * @see        java.net.ContentHandlerFactory#createContentHandler(java.lang.String)
      * @see        java.net.URLConnection#getContentType()
@@ -760,9 +764,9 @@ public abstract class URLConnection {
      *               the requested types are supported.
      *               The {@code instanceof} operator should be used to
      *               determine the specific kind of object returned.
-     * @exception  IOException              if an I/O error occurs while
+     * @throws     IOException              if an I/O error occurs while
      *               getting the content.
-     * @exception  UnknownServiceException  if the protocol does not support
+     * @throws     UnknownServiceException  if the protocol does not support
      *               the content type.
      * @see        java.net.URLConnection#getContent()
      * @see        java.net.ContentHandlerFactory#createContentHandler(java.lang.String)
@@ -813,7 +817,7 @@ public abstract class URLConnection {
      * necessary to make the connection represented by this
      * URLConnection.
      *
-     * @exception IOException if the computation of the permission
+     * @throws    IOException if the computation of the permission
      * requires network or file I/O and an exception occurs while
      * computing it.
      */
@@ -829,9 +833,9 @@ public abstract class URLConnection {
      * is available for read.
      *
      * @return     an input stream that reads from this open connection.
-     * @exception  IOException              if an I/O error occurs while
+     * @throws     IOException              if an I/O error occurs while
      *               creating the input stream.
-     * @exception  UnknownServiceException  if the protocol does not support
+     * @throws     UnknownServiceException  if the protocol does not support
      *               input.
      * @see #setReadTimeout(int)
      * @see #getReadTimeout()
@@ -844,9 +848,9 @@ public abstract class URLConnection {
      * Returns an output stream that writes to this connection.
      *
      * @return     an output stream that writes to this connection.
-     * @exception  IOException              if an I/O error occurs while
+     * @throws     IOException              if an I/O error occurs while
      *               creating the output stream.
-     * @exception  UnknownServiceException  if the protocol does not support
+     * @throws     UnknownServiceException  if the protocol does not support
      *               output.
      */
     public OutputStream getOutputStream() throws IOException {
@@ -1032,7 +1036,7 @@ public abstract class URLConnection {
         return ifModifiedSince;
     }
 
-   /**
+    /**
      * Returns the default value of a {@code URLConnection}'s
      * {@code useCaches} flag.
      * <p>
@@ -1049,7 +1053,7 @@ public abstract class URLConnection {
         return defaultUseCaches;
     }
 
-   /**
+    /**
      * Sets the default value of the {@code useCaches} field to the
      * specified value. This default value can be over-ridden
      * per protocol using {@link #setDefaultUseCaches(String,boolean)}
@@ -1061,7 +1065,7 @@ public abstract class URLConnection {
         defaultUseCaches = defaultusecaches;
     }
 
-   /**
+    /**
      * Sets the default value of the {@code useCaches} field for the named
      * protocol to the given value. This value overrides any default setting
      * set by {@link #setDefaultUseCaches(boolean)} for the given protocol.
@@ -1078,7 +1082,7 @@ public abstract class URLConnection {
         defaultCaching.put(protocol, defaultVal);
     }
 
-   /**
+    /**
      * Returns the default value of the {@code useCaches} flag for the given protocol. If
      * {@link #setDefaultUseCaches(String,boolean)} was called for the given protocol,
      * then that value is returned. Otherwise, if {@link #setDefaultUseCaches(boolean)}
@@ -1250,8 +1254,8 @@ public abstract class URLConnection {
      * This could result in a SecurityException.
      *
      * @param      fac   the desired factory.
-     * @exception  Error  if the factory has already been defined.
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     Error  if the factory has already been defined.
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkSetFactory} method doesn't allow the operation.
      * @see        java.net.ContentHandlerFactory
      * @see        java.net.URLConnection#getContent()
@@ -1261,6 +1265,7 @@ public abstract class URLConnection {
         if (factory != null) {
             throw new Error("factory already defined");
         }
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
             security.checkSetFactory();
@@ -1374,6 +1379,7 @@ public abstract class URLConnection {
         return UnknownContentHandler.INSTANCE;
     }
 
+    @SuppressWarnings("removal")
     private ContentHandler lookupContentHandlerViaProvider(String contentType) {
         return AccessController.doPrivileged(
                 new PrivilegedAction<>() {
@@ -1479,7 +1485,7 @@ public abstract class URLConnection {
      * @param      is   an input stream that supports marks.
      * @return     a guess at the content type, or {@code null} if none
      *             can be determined.
-     * @exception  IOException  if an I/O error occurs while reading the
+     * @throws     IOException  if an I/O error occurs while reading the
      *               input stream.
      * @see        java.io.InputStream#mark(int)
      * @see        java.io.InputStream#markSupported()

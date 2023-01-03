@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_CI_CIINSTANCEKLASS_HPP
-#define SHARE_VM_CI_CIINSTANCEKLASS_HPP
+#ifndef SHARE_CI_CIINSTANCEKLASS_HPP
+#define SHARE_CI_CIINSTANCEKLASS_HPP
 
 #include "ci/ciConstantPoolCache.hpp"
 #include "ci/ciFlags.hpp"
 #include "ci/ciKlass.hpp"
 #include "ci/ciSymbol.hpp"
+#include "oops/instanceKlass.hpp"
 
 // ciInstanceKlass
 //
@@ -44,16 +45,19 @@ class ciInstanceKlass : public ciKlass {
   friend class ciField;
 
 private:
+  enum SubklassValue { subklass_unknown, subklass_false, subklass_true };
+
   jobject                _loader;
   jobject                _protection_domain;
 
   InstanceKlass::ClassState _init_state;           // state of class
   bool                   _is_shared;
   bool                   _has_finalizer;
-  bool                   _has_subklass;
+  SubklassValue          _has_subklass;
   bool                   _has_nonstatic_fields;
   bool                   _has_nonstatic_concrete_methods;
-  bool                   _is_anonymous;
+  bool                   _is_hidden;
+  bool                   _is_record;
 
   ciFlags                _flags;
   jint                   _nonstatic_field_size;
@@ -70,7 +74,7 @@ private:
   // The possible values of the _implementor fall into following three cases:
   //   NULL: no implementor.
   //   A ciInstanceKlass that's not itself: one implementor.
-  //   Itsef: more than one implementors.
+  //   Itself: more than one implementor.
   ciInstanceKlass*       _implementor;
 
   void compute_injected_fields();
@@ -118,6 +122,10 @@ public:
     update_if_shared(InstanceKlass::fully_initialized);
     return _init_state == InstanceKlass::fully_initialized;
   }
+  bool                   is_not_initialized() {
+    update_if_shared(InstanceKlass::fully_initialized);
+    return _init_state < InstanceKlass::being_initialized;
+  }
   // Is this klass being initialized?
   bool                   is_being_initialized() {
     update_if_shared(InstanceKlass::being_initialized);
@@ -127,6 +135,11 @@ public:
   bool                   is_linked() {
     update_if_shared(InstanceKlass::linked);
     return _init_state >= InstanceKlass::linked;
+  }
+  // Is this klass in error state?
+  bool                   is_in_error_state() {
+    update_if_shared(InstanceKlass::initialization_error);
+    return _init_state == InstanceKlass::initialization_error;
   }
 
   // General klass information.
@@ -139,15 +152,19 @@ public:
     return _has_finalizer; }
   bool                   has_subklass()   {
     assert(is_loaded(), "must be loaded");
-    if (_is_shared && !_has_subklass) {
-      if (flags().is_final()) {
-        return false;
-      } else {
-        return compute_shared_has_subklass();
-      }
+    // Ignore cached subklass_false case.
+    // It could be invalidated by concurrent class loading and
+    // can result in type paradoxes during compilation when
+    // a subclass is observed, but has_subklass() returns false.
+    if (_has_subklass == subklass_true) {
+      return true;
     }
-    return _has_subklass;
+    if (flags().is_final()) {
+      return false;
+    }
+    return compute_shared_has_subklass();
   }
+
   jint                   size_helper()  {
     return (Klass::layout_helper_size_in_bytes(layout_helper())
             >> LogHeapWordSize);
@@ -179,8 +196,12 @@ public:
     return _has_nonstatic_concrete_methods;
   }
 
-  bool is_anonymous() {
-    return _is_anonymous;
+  bool is_hidden() const {
+    return _is_hidden;
+  }
+
+  bool is_record() const {
+    return _is_record;
   }
 
   ciInstanceKlass* get_canonical_holder(int offset);
@@ -202,6 +223,8 @@ public:
     return _has_injected_fields > 0 ? true : false;
   }
 
+  bool has_object_fields() const;
+
   // nth nonstatic field (presented by ascending address)
   ciField* nonstatic_field_at(int i) {
     assert(_nonstatic_fields != NULL, "");
@@ -211,9 +234,7 @@ public:
   ciInstanceKlass* unique_concrete_subklass();
   bool has_finalizable_subclass();
 
-  bool contains_field_offset(int offset) {
-    return instanceOopDesc::contains_field_offset(offset, nonstatic_field_size());
-  }
+  bool contains_field_offset(int offset);
 
   // Get the instance of java.lang.Class corresponding to
   // this klass.  This instance is used for locking of
@@ -234,6 +255,12 @@ public:
   bool is_leaf_type();
   ciInstanceKlass* implementor();
 
+  ciInstanceKlass* unique_implementor() {
+    assert(is_loaded(), "must be loaded");
+    ciInstanceKlass* impl = implementor();
+    return (impl != this ? impl : NULL);
+  }
+
   // Is the defining class loader of this class the default loader?
   bool uses_default_loader() const;
 
@@ -242,6 +269,7 @@ public:
   BasicType box_klass_type() const;
   bool is_box_klass() const;
   bool is_boxed_value_offset(int offset) const;
+  bool is_box_cache_valid() const;
 
   // Is this klass in the given package?
   bool is_in_package(const char* packagename) {
@@ -260,8 +288,6 @@ public:
     return NULL;
   }
 
-  ciInstanceKlass* host_klass();
-
   bool can_be_instantiated() {
     assert(is_loaded(), "must be loaded");
     return !is_interface() && !is_abstract();
@@ -269,6 +295,11 @@ public:
 
   // Dump the current state of this klass for compilation replay.
   virtual void dump_replay_data(outputStream* out);
+
+#ifdef ASSERT
+  bool debug_final_field_at(int offset);
+  bool debug_stable_field_at(int offset);
+#endif
 };
 
-#endif // SHARE_VM_CI_CIINSTANCEKLASS_HPP
+#endif // SHARE_CI_CIINSTANCEKLASS_HPP

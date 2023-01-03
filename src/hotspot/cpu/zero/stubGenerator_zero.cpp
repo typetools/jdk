@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2007, 2008, 2010, 2015 Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -24,8 +24,7 @@
  */
 
 #include "precompiled.hpp"
-#include "asm/assembler.hpp"
-#include "assembler_zero.inline.hpp"
+#include "asm/assembler.inline.hpp"
 #include "interpreter/interpreter.hpp"
 #include "nativeInst_zero.hpp"
 #include "oops/instanceOop.hpp"
@@ -72,7 +71,7 @@ class StubGenerator: public StubCodeGenerator {
     intptr_t*        parameters,
     int              parameter_words,
     TRAPS) {
-    JavaThread *thread = (JavaThread *) THREAD;
+    JavaThread *thread = THREAD;
     ZeroStack *stack = thread->zero_stack();
 
     // Make sure we have no pending exceptions
@@ -156,8 +155,10 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_oop_arraycopy             = ShouldNotCallThisStub();
 
     StubRoutines::_checkcast_arraycopy       = ShouldNotCallThisStub();
-    StubRoutines::_unsafe_arraycopy          = ShouldNotCallThisStub();
     StubRoutines::_generic_arraycopy         = ShouldNotCallThisStub();
+
+    // Shared code tests for "NULL" to discover the stub is not generated.
+    StubRoutines::_unsafe_arraycopy          = NULL;
 
     // We don't generate specialized code for HeapWord-aligned source
     // arrays, so just use the code we've already generated
@@ -314,7 +315,7 @@ EntryFrame *EntryFrame::build(const intptr_t*  parameters,
                               JavaCallWrapper* call_wrapper,
                               TRAPS) {
 
-  ZeroStack *stack = ((JavaThread *) THREAD)->zero_stack();
+  ZeroStack *stack = THREAD->zero_stack();
   stack->overflow_check(header_words + parameter_words, CHECK_NULL);
 
   stack->push(0); // next_frame, filled in later

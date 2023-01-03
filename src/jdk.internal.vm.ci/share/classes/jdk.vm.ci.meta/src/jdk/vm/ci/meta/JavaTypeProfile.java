@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
 import jdk.vm.ci.meta.JavaTypeProfile.ProfiledType;
@@ -154,7 +155,7 @@ public final class JavaTypeProfile extends AbstractJavaProfile<ProfiledType, Res
 
         public ProfiledType(ResolvedJavaType type, double probability) {
             super(type, probability);
-            assert type.isArray() || type.isConcrete() : type;
+            assert type.isArray() || type.isConcrete() : type + " " + Modifier.toString(type.getModifiers());
         }
 
         /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,18 +28,16 @@ package java.lang.reflect;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.security.AccessController;
 import java.util.StringJoiner;
-import jdk.internal.reflect.LangReflectAccess;
-import jdk.internal.reflect.ReflectionFactory;
 
 /**
  * The Modifier class provides {@code static} methods and
  * constants to decode class and member access modifiers.  The sets of
  * modifiers are represented as integers with distinct bit positions
  * representing different modifiers.  The values for the constants
- * representing the modifiers are taken from the tables in sections 4.1, 4.4, 4.5, and 4.7 of
- * <cite>The Java&trade; Virtual Machine Specification</cite>.
+ * representing the modifiers are taken from the tables in sections
+ * {@jvms 4.1}, {@jvms 4.4}, {@jvms 4.5}, and {@jvms 4.7} of
+ * <cite>The Java Virtual Machine Specification</cite>.
  *
  * @see Class#getModifiers()
  * @see Member#getModifiers()
@@ -50,16 +48,11 @@ import jdk.internal.reflect.ReflectionFactory;
  */
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class Modifier {
-
-    /*
-     * Bootstrapping protocol between java.lang and java.lang.reflect
-     *  packages
+    /**
+     * Do not call.
      */
-    static {
-        ReflectionFactory factory = AccessController.doPrivileged(
-                new ReflectionFactory.GetReflectionFactoryAction());
-        factory.setLangReflectAccess(new java.lang.reflect.ReflectAccess());
-    }
+    private Modifier() {throw new AssertionError();}
+
 
     /**
      * Return {@code true} if the integer argument includes the
@@ -213,7 +206,7 @@ public @UsesObjectEquals class Modifier {
      * </pre></blockquote>
      * The modifier names are returned in an order consistent with the
      * suggested modifier orderings given in sections 8.1.1, 8.3.1, 8.4.3, 8.8.3, and 9.1.1 of
-     * <cite>The Java&trade; Language Specification</cite>.
+     * <cite>The Java Language Specification</cite>.
      * The full modifier ordering used by this method is:
      * <blockquote> {@code
      * public protected private abstract static final transient
@@ -259,7 +252,7 @@ public @UsesObjectEquals class Modifier {
 
     /*
      * Access modifier flag constants from tables 4.1, 4.4, 4.5, and 4.7 of
-     * <cite>The Java&trade; Virtual Machine Specification</cite>
+     * <cite>The Java Virtual Machine Specification</cite>
      */
 
     /**
@@ -389,7 +382,7 @@ public @UsesObjectEquals class Modifier {
 
     /**
      * The Java source modifiers that can be applied to a method.
-     * @jls8.4.3  Method Modifiers
+     * @jls 8.4.3  Method Modifiers
      */
     private static final int METHOD_MODIFIERS =
         Modifier.PUBLIC         | Modifier.PROTECTED    | Modifier.PRIVATE |
@@ -398,7 +391,7 @@ public @UsesObjectEquals class Modifier {
 
     /**
      * The Java source modifiers that can be applied to a field.
-     * @jls 8.3.1  Field Modifiers
+     * @jls 8.3.1 Field Modifiers
      */
     private static final int FIELD_MODIFIERS =
         Modifier.PUBLIC         | Modifier.PROTECTED    | Modifier.PRIVATE |
@@ -412,9 +405,6 @@ public @UsesObjectEquals class Modifier {
     private static final int PARAMETER_MODIFIERS =
         Modifier.FINAL;
 
-    /**
-     *
-     */
     static final int ACCESS_MODIFIERS =
         Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE;
 

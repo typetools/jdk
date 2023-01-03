@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,10 @@
 #include "precompiled.hpp"
 #include "classfile/javaClasses.hpp"
 #include "classfile/systemDictionary.hpp"
-#include "gc/shared/vmGCOperations.hpp"
+#include "classfile/vmClasses.hpp"
+#include "gc/shared/gcVMOperations.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/typeArrayOop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
@@ -37,6 +39,7 @@
 #include "runtime/java.hpp"
 #include "runtime/javaCalls.hpp"
 #include "runtime/os.hpp"
+#include "runtime/vmOperations.hpp"
 #include "services/attachListener.hpp"
 #include "services/diagnosticCommand.hpp"
 #include "services/heapDumper.hpp"
@@ -44,7 +47,7 @@
 #include "utilities/debug.hpp"
 #include "utilities/formatBuffer.hpp"
 
-volatile bool AttachListener::_initialized;
+volatile AttachListenerState AttachListener::_state = AL_NOT_INITIALIZED;
 
 // Implementation of "properties" command.
 //
@@ -61,8 +64,8 @@ static InstanceKlass* load_and_initialize_klass(Symbol* sh, TRAPS) {
 }
 
 static jint get_properties(AttachOperation* op, outputStream* out, Symbol* serializePropertiesMethod) {
-  Thread* THREAD = Thread::current();
-  HandleMark hm;
+  JavaThread* THREAD = JavaThread::current(); // For exception macros.
+  HandleMark hm(THREAD);
 
   // load VMSupport
   Symbol* klass = vmSymbols::jdk_internal_vm_VMSupport();
@@ -92,7 +95,7 @@ static jint get_properties(AttachOperation* op, outputStream* out, Symbol* seria
   }
 
   // The result should be a [B
-  oop res = (oop)result.get_jobject();
+  oop res = result.get_oop();
   assert(res->is_typeArray(), "just checking");
   assert(TypeArrayKlass::cast(res->klass())->element_type() == T_BYTE, "just checking");
 
@@ -113,13 +116,13 @@ static jint load_agent(AttachOperation* op, outputStream* out) {
 
   // If loading a java agent then need to ensure that the java.instrument module is loaded
   if (strcmp(agent, "instrument") == 0) {
-    Thread* THREAD = Thread::current();
+    JavaThread* THREAD = JavaThread::current(); // For exception macros.
     ResourceMark rm(THREAD);
     HandleMark hm(THREAD);
     JavaValue result(T_OBJECT);
     Handle h_module_name = java_lang_String::create_from_str("java.instrument", THREAD);
     JavaCalls::call_static(&result,
-                           SystemDictionary::module_Modules_klass(),
+                           vmClasses::module_Modules_klass(),
                            vmSymbols::loadModule_name(),
                            vmSymbols::loadModule_signature(),
                            h_module_name,
@@ -198,7 +201,7 @@ static jint thread_dump(AttachOperation* op, outputStream* out) {
 // A jcmd attach operation request was received, which will now
 // dispatch to the diagnostic commands used for serviceability functions.
 static jint jcmd(AttachOperation* op, outputStream* out) {
-  Thread* THREAD = Thread::current();
+  JavaThread* THREAD = JavaThread::current(); // For exception macros.
   // All the supplied jcmd arguments are stored as a single
   // string (op->arg(0)). This is parsed by the Dcmd framework.
   DCmd::parse_and_execute(DCmd_Source_AttachAPI, out, op->arg(0), ' ', THREAD);
@@ -217,6 +220,7 @@ static jint jcmd(AttachOperation* op, outputStream* out) {
 // Input arguments :-
 //   arg0: Name of the dump file
 //   arg1: "-live" or "-all"
+//   arg2: Compress level
 jint dump_heap(AttachOperation* op, outputStream* out) {
   const char* path = op->arg(0);
   if (path == NULL || path[0] == '\0') {
@@ -232,23 +236,22 @@ jint dump_heap(AttachOperation* op, outputStream* out) {
       live_objects_only = strcmp(arg1, "-live") == 0;
     }
 
+    const char* num_str = op->arg(2);
+    uintx level = 0;
+    if (num_str != NULL && num_str[0] != '\0') {
+      if (!Arguments::parse_uintx(num_str, &level, 0)) {
+        out->print_cr("Invalid compress level: [%s]", num_str);
+        return JNI_ERR;
+      } else if (level < 1 || level > 9) {
+        out->print_cr("Compression level out of range (1-9): " UINTX_FORMAT, level);
+        return JNI_ERR;
+      }
+    }
     // Request a full GC before heap dump if live_objects_only = true
     // This helps reduces the amount of unreachable objects in the dump
     // and makes it easier to browse.
     HeapDumper dumper(live_objects_only /* request GC */);
-    int res = dumper.dump(op->arg(0));
-    if (res == 0) {
-      out->print_cr("Heap dump file created");
-    } else {
-      // heap dump failed
-      ResourceMark rm;
-      char* error = dumper.error_as_C_string();
-      if (error == NULL) {
-        out->print_cr("Dump failed - reason unknown");
-      } else {
-        out->print_cr("%s", error);
-      }
-    }
+    dumper.dump(op->arg(0), out, (int)level);
   }
   return JNI_OK;
 }
@@ -258,9 +261,14 @@ jint dump_heap(AttachOperation* op, outputStream* out) {
 //
 // Input arguments :-
 //   arg0: "-live" or "-all"
+//   arg1: Name of the dump file or NULL
+//   arg2: parallel thread number
 static jint heap_inspection(AttachOperation* op, outputStream* out) {
   bool live_objects_only = true;   // default is true to retain the behavior before this change is made
+  outputStream* os = out;   // if path not specified or path is NULL, use out
+  fileStream* fs = NULL;
   const char* arg0 = op->arg(0);
+  uint parallel_thread_num = MAX2<uint>(1, (uint)os::initial_active_processor_count() * 3 / 8);
   if (arg0 != NULL && (strlen(arg0) > 0)) {
     if (strcmp(arg0, "-all") != 0 && strcmp(arg0, "-live") != 0) {
       out->print_cr("Invalid argument to inspectheap operation: %s", arg0);
@@ -268,8 +276,33 @@ static jint heap_inspection(AttachOperation* op, outputStream* out) {
     }
     live_objects_only = strcmp(arg0, "-live") == 0;
   }
-  VM_GC_HeapInspection heapop(out, live_objects_only /* request full gc */);
+
+  const char* path = op->arg(1);
+  if (path != NULL && path[0] != '\0') {
+    // create file
+    fs = new (ResourceObj::C_HEAP, mtInternal) fileStream(path);
+    if (fs == NULL) {
+      out->print_cr("Failed to allocate space for file: %s", path);
+    }
+    os = fs;
+  }
+
+  const char* num_str = op->arg(2);
+  if (num_str != NULL && num_str[0] != '\0') {
+    uintx num;
+    if (!Arguments::parse_uintx(num_str, &num, 0)) {
+      out->print_cr("Invalid parallel thread number: [%s]", num_str);
+      return JNI_ERR;
+    }
+    parallel_thread_num = num == 0 ? parallel_thread_num : (uint)num;
+  }
+
+  VM_GC_HeapInspection heapop(os, live_objects_only /* request full gc */, parallel_thread_num);
   VMThread::execute(&heapop);
+  if (os != NULL && os != out) {
+    out->print_cr("Heap inspection file created: %s", path);
+    delete fs;
+  }
   return JNI_OK;
 }
 
@@ -284,7 +317,7 @@ static jint set_flag(AttachOperation* op, outputStream* out) {
 
   FormatBuffer<80> err_msg("%s", "");
 
-  int ret = WriteableFlags::set_flag(op->arg(0), op->arg(1), JVMFlag::ATTACH_ON_DEMAND, err_msg);
+  int ret = WriteableFlags::set_flag(op->arg(0), op->arg(1), JVMFlagOrigin::ATTACH_ON_DEMAND, err_msg);
   if (ret != JVMFlag::SUCCESS) {
     if (ret == JVMFlag::NON_WRITABLE) {
       // if the flag is not manageable try to change it through
@@ -307,7 +340,7 @@ static jint print_flag(AttachOperation* op, outputStream* out) {
     out->print_cr("flag name is missing");
     return JNI_ERR;
   }
-  JVMFlag* f = JVMFlag::find_flag((char*)name, strlen(name));
+  JVMFlag* f = JVMFlag::find_flag(name);
   if (f) {
     f->print_as_flag(out);
     out->cr();
@@ -348,6 +381,7 @@ static void attach_listener_thread_entry(JavaThread* thread, TRAPS) {
          "Should already be setup");
 
   if (AttachListener::pd_init() != 0) {
+    AttachListener::set_state(AL_NOT_INITIALIZED);
     return;
   }
   AttachListener::set_initialized();
@@ -355,6 +389,7 @@ static void attach_listener_thread_entry(JavaThread* thread, TRAPS) {
   for (;;) {
     AttachOperation* op = AttachListener::dequeue();
     if (op == NULL) {
+      AttachListener::set_state(AL_NOT_INITIALIZED);
       return;   // dequeue failed or shutdown
     }
 
@@ -398,6 +433,8 @@ static void attach_listener_thread_entry(JavaThread* thread, TRAPS) {
     // operation complete - send result and output to client
     op->complete(res, &st);
   }
+
+  ShouldNotReachHere();
 }
 
 bool AttachListener::has_init_error(TRAPS) {
@@ -421,21 +458,23 @@ void AttachListener::init() {
   const char thread_name[] = "Attach Listener";
   Handle string = java_lang_String::create_from_str(thread_name, THREAD);
   if (has_init_error(THREAD)) {
+    set_state(AL_NOT_INITIALIZED);
     return;
   }
 
   // Initialize thread_oop to put it into the system threadGroup
   Handle thread_group (THREAD, Universe::system_thread_group());
-  Handle thread_oop = JavaCalls::construct_new_instance(SystemDictionary::Thread_klass(),
+  Handle thread_oop = JavaCalls::construct_new_instance(vmClasses::Thread_klass(),
                        vmSymbols::threadgroup_string_void_signature(),
                        thread_group,
                        string,
                        THREAD);
   if (has_init_error(THREAD)) {
+    set_state(AL_NOT_INITIALIZED);
     return;
   }
 
-  Klass* group = SystemDictionary::ThreadGroup_klass();
+  Klass* group = vmClasses::ThreadGroup_klass();
   JavaValue result(T_VOID);
   JavaCalls::call_special(&result,
                         thread_group,
@@ -445,10 +484,11 @@ void AttachListener::init() {
                         thread_oop,
                         THREAD);
   if (has_init_error(THREAD)) {
+    set_state(AL_NOT_INITIALIZED);
     return;
   }
 
-  { MutexLocker mu(Threads_lock);
+  { MutexLocker mu(THREAD, Threads_lock);
     JavaThread* listener_thread = new JavaThread(&attach_listener_thread_entry);
 
     // Check that thread and osthread were created

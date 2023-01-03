@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,8 +60,11 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
         int pid;
         try {
             pid = Integer.parseInt(vmid);
+            if (pid < 1) {
+                throw new NumberFormatException();
+            }
         } catch (NumberFormatException x) {
-            throw new AttachNotSupportedException("Invalid process identifier");
+            throw new AttachNotSupportedException("Invalid process identifier: " + vmid);
         }
 
         // Try to resolve to the "inner most" pid namespace
@@ -73,7 +76,8 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
         File socket_file = findSocketFile(pid, ns_pid);
         socket_path = socket_file.getPath();
         if (!socket_file.exists()) {
-            File f = createAttachFile(pid, ns_pid);
+            // Keep canonical version of File, to delete, in case target process ends and /proc link has gone:
+            File f = createAttachFile(pid, ns_pid).getCanonicalFile();
             try {
                 sendQuitTo(pid);
 
@@ -171,7 +175,7 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
             writeString(s, PROTOCOL_VERSION);
             writeString(s, cmd);
 
-            for (int i=0; i<3; i++) {
+            for (int i = 0; i < 3; i++) {
                 if (i < args.length && args[i] != null) {
                     writeString(s, (String)args[i]);
                 } else {
@@ -233,7 +237,7 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
      * InputStream for the socket connection to get target VM
      */
     private class SocketInputStream extends InputStream {
-        int s;
+        int s = -1;
 
         public SocketInputStream(int s) {
             this.s = s;
@@ -260,8 +264,12 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
             return VirtualMachineImpl.read(s, bs, off, len);
         }
 
-        public void close() throws IOException {
-            VirtualMachineImpl.close(s);
+        public synchronized void close() throws IOException {
+            if (s != -1) {
+                int toClose = s;
+                s = -1;
+                VirtualMachineImpl.close(toClose);
+            }
         }
     }
 
@@ -283,6 +291,7 @@ public class VirtualMachineImpl extends HotSpotVirtualMachine {
         String path = "/proc/" + pid + "/cwd/" + fn;
         File f = new File(path);
         try {
+            // Do not canonicalize the file path, or we will fail to attach to a VM in a container.
             f.createNewFile();
         } catch (IOException x) {
             String root;

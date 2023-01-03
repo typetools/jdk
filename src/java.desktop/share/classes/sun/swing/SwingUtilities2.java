@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,7 +58,6 @@ import java.awt.geom.Rectangle2D;
 import java.awt.print.PrinterGraphics;
 import java.beans.PropertyChangeEvent;
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -382,7 +381,7 @@ public class SwingUtilities2 {
      */
     public static float stringWidth(JComponent c, FontMetrics fm, String string,
             boolean useFPAPI){
-        if (string == null || string.equals("")) {
+        if (string == null || string.isEmpty()) {
             return 0;
         }
         boolean needsTextLayout = ((c != null) &&
@@ -415,7 +414,7 @@ public class SwingUtilities2 {
     public static String clipStringIfNecessary(JComponent c, FontMetrics fm,
                                                String string,
                                                int availTextWidth) {
-        if ((string == null) || (string.equals("")))  {
+        if (string == null || string.isEmpty())  {
             return "";
         }
         int textWidth = SwingUtilities2.stringWidth(c, fm, string);
@@ -524,11 +523,15 @@ public class SwingUtilities2 {
                 String trimmedText = trimTrailingSpaces(text);
                 if (!trimmedText.isEmpty()) {
                     float screenWidth = (float) g2d.getFont().getStringBounds
-                            (trimmedText, DEFAULT_FRC).getWidth();
+                            (trimmedText, getFontRenderContext(c)).getWidth();
                     TextLayout layout = createTextLayout(c, text, g2d.getFont(),
                                                        g2d.getFontRenderContext());
 
-                    layout = layout.getJustifiedLayout(screenWidth);
+                    // If text fits the screenWidth, then do not need to justify
+                    if (SwingUtilities2.stringWidth(c, g2d.getFontMetrics(),
+                                            trimmedText) > screenWidth) {
+                        layout = layout.getJustifiedLayout(screenWidth);
+                    }
                     /* Use alternate print color if specified */
                     Color col = g2d.getColor();
                     if (col instanceof PrintColorUIResource) {
@@ -677,8 +680,12 @@ public class SwingUtilities2 {
                                        g2d.getFontRenderContext());
                     if (isPrinting) {
                         float screenWidth = (float)g2d.getFont().
-                            getStringBounds(text, DEFAULT_FRC).getWidth();
-                        layout = layout.getJustifiedLayout(screenWidth);
+                            getStringBounds(text, getFontRenderContext(c)).getWidth();
+                        // If text fits the screenWidth, then do not need to justify
+                        if (SwingUtilities2.stringWidth(c, g2d.getFontMetrics(),
+                                                        text) > screenWidth) {
+                            layout = layout.getJustifiedLayout(screenWidth);
+                        }
                     }
                     TextHitInfo leading =
                         TextHitInfo.leading(underlinedIndex);
@@ -863,7 +870,11 @@ public class SwingUtilities2 {
                     if (!trimmedText.isEmpty()) {
                         float screenWidth = (float)g2d.getFont().
                             getStringBounds(trimmedText, frc).getWidth();
-                        layout = layout.getJustifiedLayout(screenWidth);
+                        // If text fits the screenWidth, then do not need to justify
+                        if (SwingUtilities2.stringWidth(c, g2d.getFontMetrics(),
+                                                trimmedText) > screenWidth) {
+                            layout = layout.getJustifiedLayout(screenWidth);
+                        }
 
                         /* Use alternate print color if specified */
                         Color col = g2d.getColor();
@@ -1475,6 +1486,7 @@ public class SwingUtilities2 {
    public static boolean canAccessSystemClipboard() {
        boolean canAccess = false;
        if (!GraphicsEnvironment.isHeadless()) {
+           @SuppressWarnings("removal")
            SecurityManager sm = System.getSecurityManager();
            if (sm == null) {
                canAccess = true;
@@ -1580,6 +1592,7 @@ public class SwingUtilities2 {
      *
      * @param modifiers a set of modifiers
      */
+    @SuppressWarnings("removal")
     public static void checkAccess(int modifiers) {
         if (System.getSecurityManager() != null
                 && !Modifier.isPublic(modifiers)) {
@@ -1605,6 +1618,7 @@ public class SwingUtilities2 {
      * details
      *
      */
+    @SuppressWarnings("removal")
     private static boolean isTrustedContext() {
         return (System.getSecurityManager() == null)
             || (AppContext.getAppContext().
@@ -1700,6 +1714,7 @@ public class SwingUtilities2 {
                                   final String imageFile,
                                   final boolean enablePrivileges) {
         return (UIDefaults.LazyValue) (table) -> {
+            @SuppressWarnings("removal")
             byte[] buffer = enablePrivileges ? AccessController.doPrivileged(
                     (PrivilegedAction<byte[]>) ()
                     -> getIconBytes(baseClass, rootClass, imageFile))
@@ -1742,18 +1757,9 @@ public class SwingUtilities2 {
                     continue;
                             }
 
-                try (BufferedInputStream in
-                        = new BufferedInputStream(resource);
-                        ByteArrayOutputStream out
-                        = new ByteArrayOutputStream(1024)) {
-                            byte[] buffer = new byte[1024];
-                            int n;
-                            while ((n = in.read(buffer)) > 0) {
-                                out.write(buffer, 0, n);
+                            try (BufferedInputStream in = new BufferedInputStream(resource)) {
+                                return in.readAllBytes();
                             }
-                            out.flush();
-                            return out.toByteArray();
-                }
                         } catch (IOException ioe) {
                             System.err.println(ioe.toString());
                         }

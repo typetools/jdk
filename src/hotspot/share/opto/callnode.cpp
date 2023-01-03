@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,8 @@
 #include "compiler/compileLog.hpp"
 #include "ci/bcEscapeAnalyzer.hpp"
 #include "compiler/oopMap.hpp"
+#include "gc/shared/barrierSet.hpp"
+#include "gc/shared/c2/barrierSetC2.hpp"
 #include "interpreter/interpreter.hpp"
 #include "opto/callGenerator.hpp"
 #include "opto/callnode.hpp"
@@ -40,6 +42,9 @@
 #include "opto/regmask.hpp"
 #include "opto/rootnode.hpp"
 #include "opto/runtime.hpp"
+#include "runtime/sharedRuntime.hpp"
+#include "utilities/powerOfTwo.hpp"
+#include "code/vmreg.hpp"
 
 // Portions of code courtesy of Clifford Click
 
@@ -47,7 +52,7 @@
 
 //=============================================================================
 uint StartNode::size_of() const { return sizeof(*this); }
-uint StartNode::cmp( const Node &n ) const
+bool StartNode::cmp( const Node &n ) const
 { return _domain == ((StartNode&)n)._domain; }
 const Type *StartNode::bottom_type() const { return _domain; }
 const Type* StartNode::Value(PhaseGVN* phase) const { return _domain; }
@@ -62,8 +67,8 @@ Node *StartNode::Ideal(PhaseGVN *phase, bool can_reshape){
 }
 
 //------------------------------calling_convention-----------------------------
-void StartNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
-  Matcher::calling_convention( sig_bt, parm_regs, argcnt, false );
+void StartNode::calling_convention(BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt) const {
+  SharedRuntime::java_calling_convention(sig_bt, parm_regs, argcnt);
 }
 
 //------------------------------Registers--------------------------------------
@@ -402,12 +407,23 @@ static void format_helper( PhaseRegAlloc *regalloc, outputStream* st, Node *n, c
   }
 }
 
+//---------------------print_method_with_lineno--------------------------------
+void JVMState::print_method_with_lineno(outputStream* st, bool show_name) const {
+  if (show_name) _method->print_short_name(st);
+
+  int lineno = _method->line_number_from_bci(_bci);
+  if (lineno != -1) {
+    st->print(" @ bci:%d (line %d)", _bci, lineno);
+  } else {
+    st->print(" @ bci:%d", _bci);
+  }
+}
+
 //------------------------------format-----------------------------------------
 void JVMState::format(PhaseRegAlloc *regalloc, const Node *n, outputStream* st) const {
   st->print("        #");
   if (_method) {
-    _method->print_short_name(st);
-    st->print(" @ bci:%d ",_bci);
+    print_method_with_lineno(st, true);
   } else {
     st->print_cr(" runtime stub ");
     return;
@@ -533,9 +549,7 @@ void JVMState::dump_spec(outputStream *st) const {
         printed = true;
       }
     }
-    if (!printed)
-      _method->print_short_name(st);
-    st->print(" @ bci:%d",_bci);
+    print_method_with_lineno(st, !printed);
     if(_reexecute == Reexecute_True)
       st->print(" reexecute");
   } else {
@@ -613,9 +627,15 @@ JVMState* JVMState::clone_deep(Compile* C) const {
  * Reset map for all callers
  */
 void JVMState::set_map_deep(SafePointNode* map) {
-  for (JVMState* p = this; p->_caller != NULL; p = p->_caller) {
+  for (JVMState* p = this; p != NULL; p = p->_caller) {
     p->set_map(map);
   }
+}
+
+// unlike set_map(), this is two-way setting.
+void JVMState::bind_map(SafePointNode* map) {
+  set_map(map);
+  _map->set_jvms(this);
 }
 
 // Adapt offsets in in-array after adding or removing an edge.
@@ -664,7 +684,7 @@ int JVMState::interpreter_frame_size() const {
 }
 
 //=============================================================================
-uint CallNode::cmp( const Node &n ) const
+bool CallNode::cmp( const Node &n ) const
 { return _tf == ((CallNode&)n)._tf && _jvms == ((CallNode&)n)._jvms; }
 #ifndef PRODUCT
 void CallNode::dump_req(outputStream *st) const {
@@ -693,9 +713,9 @@ const Type* CallNode::Value(PhaseGVN* phase) const {
 }
 
 //------------------------------calling_convention-----------------------------
-void CallNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
+void CallNode::calling_convention(BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt) const {
   // Use the standard compiler calling convention
-  Matcher::calling_convention( sig_bt, parm_regs, argcnt, true );
+  SharedRuntime::java_calling_convention(sig_bt, parm_regs, argcnt);
 }
 
 
@@ -716,10 +736,24 @@ Node *CallNode::match( const ProjNode *proj, const Matcher *match ) {
 
   case TypeFunc::Parms: {       // Normal returns
     uint ideal_reg = tf()->range()->field_at(TypeFunc::Parms)->ideal_reg();
-    OptoRegPair regs = is_CallRuntime()
-      ? match->c_return_value(ideal_reg,true)  // Calls into C runtime
-      : match->  return_value(ideal_reg,true); // Calls into compiled Java code
+    OptoRegPair regs = Opcode() == Op_CallLeafVector
+      ? match->vector_return_value(ideal_reg)      // Calls into assembly vector routine
+      : is_CallRuntime()
+        ? match->c_return_value(ideal_reg)  // Calls into C runtime
+        : match->  return_value(ideal_reg); // Calls into compiled Java code
     RegMask rm = RegMask(regs.first());
+
+    if (Opcode() == Op_CallLeafVector) {
+      // If the return is in vector, compute appropriate regmask taking into account the whole range
+      if(ideal_reg >= Op_VecS && ideal_reg <= Op_VecZ) {
+        if(OptoReg::is_valid(regs.second())) {
+          for (OptoReg::Name r = regs.first(); r <= regs.second(); r = OptoReg::add(r, 1)) {
+            rm.Insert(r);
+          }
+        }
+      }
+    }
+
     if( OptoReg::is_valid(regs.second()) )
       rm.Insert( regs.second() );
     return new MachProjNode(this,proj->_con,rm,ideal_reg);
@@ -870,9 +904,8 @@ void CallNode::extract_projections(CallProjections* projs, bool separate_io_proj
       {
         // For Control (fallthrough) and I_O (catch_all_index) we have CatchProj -> Catch -> Proj
         projs->fallthrough_proj = pn;
-        DUIterator_Fast jmax, j = pn->fast_outs(jmax);
-        const Node *cn = pn->fast_out(j);
-        if (cn->is_Catch()) {
+        const Node *cn = pn->unique_ctrl_out();
+        if (cn != NULL && cn->is_Catch()) {
           ProjNode *cpn = NULL;
           for (DUIterator_Fast kmax, k = cn->fast_outs(kmax); k < kmax; k++) {
             cpn = cn->fast_out(k)->as_Proj();
@@ -929,25 +962,15 @@ void CallNode::extract_projections(CallProjections* projs, bool separate_io_proj
   }
 }
 
-Node *CallNode::Ideal(PhaseGVN *phase, bool can_reshape) {
+Node* CallNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+#ifdef ASSERT
+  // Validate attached generator
   CallGenerator* cg = generator();
-  if (can_reshape && cg != NULL && cg->is_mh_late_inline() && !cg->already_attempted()) {
-    // Check whether this MH handle call becomes a candidate for inlining
-    ciMethod* callee = cg->method();
-    vmIntrinsics::ID iid = callee->intrinsic_id();
-    if (iid == vmIntrinsics::_invokeBasic) {
-      if (in(TypeFunc::Parms)->Opcode() == Op_ConP) {
-        phase->C->prepend_late_inline(cg);
-        set_generator(NULL);
-      }
-    } else {
-      assert(callee->has_member_arg(), "wrong type of call?");
-      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP) {
-        phase->C->prepend_late_inline(cg);
-        set_generator(NULL);
-      }
-    }
+  if (cg != NULL) {
+    assert(is_CallStaticJava()  && cg->is_mh_late_inline() ||
+           is_CallDynamicJava() && cg->is_virtual_late_inline(), "mismatch");
   }
+#endif // ASSERT
   return SafePointNode::Ideal(phase, can_reshape);
 }
 
@@ -960,13 +983,68 @@ bool CallNode::is_call_to_arraycopystub() const {
 
 //=============================================================================
 uint CallJavaNode::size_of() const { return sizeof(*this); }
-uint CallJavaNode::cmp( const Node &n ) const {
+bool CallJavaNode::cmp( const Node &n ) const {
   CallJavaNode &call = (CallJavaNode&)n;
   return CallNode::cmp(call) && _method == call._method &&
          _override_symbolic_info == call._override_symbolic_info;
 }
+
+void CallJavaNode::copy_call_debug_info(PhaseIterGVN* phase, SafePointNode* sfpt) {
+  // Copy debug information and adjust JVMState information
+  uint old_dbg_start = sfpt->is_Call() ? sfpt->as_Call()->tf()->domain()->cnt() : (uint)TypeFunc::Parms+1;
+  uint new_dbg_start = tf()->domain()->cnt();
+  int jvms_adj  = new_dbg_start - old_dbg_start;
+  assert (new_dbg_start == req(), "argument count mismatch");
+  Compile* C = phase->C;
+
+  // SafePointScalarObject node could be referenced several times in debug info.
+  // Use Dict to record cloned nodes.
+  Dict* sosn_map = new Dict(cmpkey,hashkey);
+  for (uint i = old_dbg_start; i < sfpt->req(); i++) {
+    Node* old_in = sfpt->in(i);
+    // Clone old SafePointScalarObjectNodes, adjusting their field contents.
+    if (old_in != NULL && old_in->is_SafePointScalarObject()) {
+      SafePointScalarObjectNode* old_sosn = old_in->as_SafePointScalarObject();
+      bool new_node;
+      Node* new_in = old_sosn->clone(sosn_map, new_node);
+      if (new_node) { // New node?
+        new_in->set_req(0, C->root()); // reset control edge
+        new_in = phase->transform(new_in); // Register new node.
+      }
+      old_in = new_in;
+    }
+    add_req(old_in);
+  }
+
+  // JVMS may be shared so clone it before we modify it
+  set_jvms(sfpt->jvms() != NULL ? sfpt->jvms()->clone_deep(C) : NULL);
+  for (JVMState *jvms = this->jvms(); jvms != NULL; jvms = jvms->caller()) {
+    jvms->set_map(this);
+    jvms->set_locoff(jvms->locoff()+jvms_adj);
+    jvms->set_stkoff(jvms->stkoff()+jvms_adj);
+    jvms->set_monoff(jvms->monoff()+jvms_adj);
+    jvms->set_scloff(jvms->scloff()+jvms_adj);
+    jvms->set_endoff(jvms->endoff()+jvms_adj);
+  }
+}
+
+#ifdef ASSERT
+bool CallJavaNode::validate_symbolic_info() const {
+  if (method() == NULL) {
+    return true; // call into runtime or uncommon trap
+  }
+  ciMethod* symbolic_info = jvms()->method()->get_method_at_bci(jvms()->bci());
+  ciMethod* callee = method();
+  if (symbolic_info->is_method_handle_intrinsic() && !callee->is_method_handle_intrinsic()) {
+    assert(override_symbolic_info(), "should be set");
+  }
+  assert(ciMethod::is_consistent_info(symbolic_info, callee), "inconsistent info");
+  return true;
+}
+#endif
+
 #ifndef PRODUCT
-void CallJavaNode::dump_spec(outputStream *st) const {
+void CallJavaNode::dump_spec(outputStream* st) const {
   if( _method ) _method->print_short_name(st);
   CallNode::dump_spec(st);
 }
@@ -982,9 +1060,41 @@ void CallJavaNode::dump_compact_spec(outputStream* st) const {
 
 //=============================================================================
 uint CallStaticJavaNode::size_of() const { return sizeof(*this); }
-uint CallStaticJavaNode::cmp( const Node &n ) const {
+bool CallStaticJavaNode::cmp( const Node &n ) const {
   CallStaticJavaNode &call = (CallStaticJavaNode&)n;
   return CallJavaNode::cmp(call);
+}
+
+Node* CallStaticJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  CallGenerator* cg = generator();
+  if (can_reshape && cg != NULL) {
+    assert(IncrementalInlineMH, "required");
+    assert(cg->call_node() == this, "mismatch");
+    assert(cg->is_mh_late_inline(), "not virtual");
+
+    // Check whether this MH handle call becomes a candidate for inlining.
+    ciMethod* callee = cg->method();
+    vmIntrinsics::ID iid = callee->intrinsic_id();
+    if (iid == vmIntrinsics::_invokeBasic) {
+      if (in(TypeFunc::Parms)->Opcode() == Op_ConP) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
+    } else if (iid == vmIntrinsics::_linkToNative) {
+      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP /* NEP */
+          && in(TypeFunc::Parms + 1)->Opcode() == Op_ConL /* address */) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
+    } else {
+      assert(callee->has_member_arg(), "wrong type of call?");
+      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
+    }
+  }
+  return CallNode::Ideal(phase, can_reshape);
 }
 
 //----------------------------uncommon_trap_request----------------------------
@@ -1039,10 +1149,52 @@ void CallStaticJavaNode::dump_compact_spec(outputStream* st) const {
 
 //=============================================================================
 uint CallDynamicJavaNode::size_of() const { return sizeof(*this); }
-uint CallDynamicJavaNode::cmp( const Node &n ) const {
+bool CallDynamicJavaNode::cmp( const Node &n ) const {
   CallDynamicJavaNode &call = (CallDynamicJavaNode&)n;
   return CallJavaNode::cmp(call);
 }
+
+Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  CallGenerator* cg = generator();
+  if (can_reshape && cg != NULL) {
+    assert(IncrementalInlineVirtual, "required");
+    assert(cg->call_node() == this, "mismatch");
+    assert(cg->is_virtual_late_inline(), "not virtual");
+
+    // Recover symbolic info for method resolution.
+    ciMethod* caller = jvms()->method();
+    ciBytecodeStream iter(caller);
+    iter.force_bci(jvms()->bci());
+
+    bool             not_used1;
+    ciSignature*     not_used2;
+    ciMethod*        orig_callee  = iter.get_method(not_used1, &not_used2);  // callee in the bytecode
+    ciKlass*         holder       = iter.get_declared_method_holder();
+    if (orig_callee->is_method_handle_intrinsic()) {
+      assert(_override_symbolic_info, "required");
+      orig_callee = method();
+      holder = method()->holder();
+    }
+
+    ciInstanceKlass* klass = ciEnv::get_instance_klass_for_declared_method_holder(holder);
+
+    Node* receiver_node = in(TypeFunc::Parms);
+    const TypeOopPtr* receiver_type = phase->type(receiver_node)->isa_oopptr();
+
+    int  not_used3;
+    bool call_does_dispatch;
+    ciMethod* callee = phase->C->optimize_virtual_call(caller, klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
+                                                       call_does_dispatch, not_used3);  // out-parameters
+    if (!call_does_dispatch) {
+      // Register for late inlining.
+      cg->set_callee_method(callee);
+      phase->C->prepend_late_inline(cg); // MH late inlining prepends to the list, so do the same
+      set_generator(NULL);
+    }
+  }
+  return CallNode::Ideal(phase, can_reshape);
+}
+
 #ifndef PRODUCT
 void CallDynamicJavaNode::dump_spec(outputStream *st) const {
   st->print("# Dynamic ");
@@ -1052,7 +1204,7 @@ void CallDynamicJavaNode::dump_spec(outputStream *st) const {
 
 //=============================================================================
 uint CallRuntimeNode::size_of() const { return sizeof(*this); }
-uint CallRuntimeNode::cmp( const Node &n ) const {
+bool CallRuntimeNode::cmp( const Node &n ) const {
   CallRuntimeNode &call = (CallRuntimeNode&)n;
   return CallNode::cmp(call) && !strcmp(_name,call._name);
 }
@@ -1063,10 +1215,129 @@ void CallRuntimeNode::dump_spec(outputStream *st) const {
   CallNode::dump_spec(st);
 }
 #endif
+uint CallLeafVectorNode::size_of() const { return sizeof(*this); }
+bool CallLeafVectorNode::cmp( const Node &n ) const {
+  CallLeafVectorNode &call = (CallLeafVectorNode&)n;
+  return CallLeafNode::cmp(call) && _num_bits == call._num_bits;
+}
+
+//=============================================================================
+uint CallNativeNode::size_of() const { return sizeof(*this); }
+bool CallNativeNode::cmp( const Node &n ) const {
+  CallNativeNode &call = (CallNativeNode&)n;
+  return CallNode::cmp(call) && !strcmp(_name,call._name)
+    && _arg_regs == call._arg_regs && _ret_regs == call._ret_regs;
+}
+Node* CallNativeNode::match(const ProjNode *proj, const Matcher *matcher) {
+  switch (proj->_con) {
+    case TypeFunc::Control:
+    case TypeFunc::I_O:
+    case TypeFunc::Memory:
+      return new MachProjNode(this,proj->_con,RegMask::Empty,MachProjNode::unmatched_proj);
+    case TypeFunc::ReturnAdr:
+    case TypeFunc::FramePtr:
+      ShouldNotReachHere();
+    case TypeFunc::Parms: {
+      const Type* field_at_con = tf()->range()->field_at(proj->_con);
+      const BasicType bt = field_at_con->basic_type();
+      OptoReg::Name optoreg = OptoReg::as_OptoReg(_ret_regs.at(proj->_con - TypeFunc::Parms));
+      OptoRegPair regs;
+      if (bt == T_DOUBLE || bt == T_LONG) {
+        regs.set2(optoreg);
+      } else {
+        regs.set1(optoreg);
+      }
+      RegMask rm = RegMask(regs.first());
+      if(OptoReg::is_valid(regs.second()))
+        rm.Insert(regs.second());
+      return new MachProjNode(this, proj->_con, rm, field_at_con->ideal_reg());
+    }
+    case TypeFunc::Parms + 1: {
+      assert(tf()->range()->field_at(proj->_con) == Type::HALF, "Expected HALF");
+      assert(_ret_regs.at(proj->_con - TypeFunc::Parms) == VMRegImpl::Bad(), "Unexpected register for Type::HALF");
+      // 2nd half of doubles and longs
+      return new MachProjNode(this, proj->_con, RegMask::Empty, (uint) OptoReg::Bad);
+    }
+    default:
+      ShouldNotReachHere();
+  }
+  return NULL;
+}
+#ifndef PRODUCT
+void CallNativeNode::print_regs(const GrowableArray<VMReg>& regs, outputStream* st) {
+  st->print("{ ");
+  for (int i = 0; i < regs.length(); i++) {
+    regs.at(i)->print_on(st);
+    if (i < regs.length() - 1) {
+      st->print(", ");
+    }
+  }
+  st->print(" } ");
+}
+
+void CallNativeNode::dump_spec(outputStream *st) const {
+  st->print("# ");
+  st->print("%s ", _name);
+  st->print("_arg_regs: ");
+  print_regs(_arg_regs, st);
+  st->print("_ret_regs: ");
+  print_regs(_ret_regs, st);
+  CallNode::dump_spec(st);
+}
+#endif
 
 //------------------------------calling_convention-----------------------------
-void CallRuntimeNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
-  Matcher::c_calling_convention( sig_bt, parm_regs, argcnt );
+void CallRuntimeNode::calling_convention(BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt) const {
+  SharedRuntime::c_calling_convention(sig_bt, parm_regs, /*regs2=*/nullptr, argcnt);
+}
+
+void CallLeafVectorNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
+#ifdef ASSERT
+  assert(tf()->range()->field_at(TypeFunc::Parms)->is_vect()->length_in_bytes() * BitsPerByte == _num_bits,
+         "return vector size must match");
+  const TypeTuple* d = tf()->domain();
+  for (uint i = TypeFunc::Parms; i < d->cnt(); i++) {
+    Node* arg = in(i);
+    assert(arg->bottom_type()->is_vect()->length_in_bytes() * BitsPerByte == _num_bits,
+           "vector argument size must match");
+  }
+#endif
+
+  SharedRuntime::vector_calling_convention(parm_regs, _num_bits, argcnt);
+}
+
+void CallNativeNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
+  assert((tf()->domain()->cnt() - TypeFunc::Parms) == argcnt, "arg counts must match!");
+#ifdef ASSERT
+  for (uint i = 0; i < argcnt; i++) {
+    assert(tf()->domain()->field_at(TypeFunc::Parms + i)->basic_type() == sig_bt[i], "types must match!");
+  }
+#endif
+  for (uint i = 0; i < argcnt; i++) {
+    switch (sig_bt[i]) {
+      case T_BOOLEAN:
+      case T_CHAR:
+      case T_BYTE:
+      case T_SHORT:
+      case T_INT:
+      case T_FLOAT:
+        parm_regs[i].set1(_arg_regs.at(i));
+        break;
+      case T_LONG:
+      case T_DOUBLE:
+        assert((i + 1) < argcnt && sig_bt[i + 1] == T_VOID, "expecting half");
+        parm_regs[i].set2(_arg_regs.at(i));
+        break;
+      case T_VOID: // Halves of longs and doubles
+        assert(i != 0 && (sig_bt[i - 1] == T_LONG || sig_bt[i - 1] == T_DOUBLE), "expecting half");
+        assert(_arg_regs.at(i) == VMRegImpl::Bad(), "expecting bad reg");
+        parm_regs[i].set_bad();
+        break;
+      default:
+        ShouldNotReachHere();
+        break;
+    }
+  }
 }
 
 //=============================================================================
@@ -1101,7 +1372,7 @@ void SafePointNode::set_local(JVMState* jvms, uint idx, Node *c) {
 }
 
 uint SafePointNode::size_of() const { return sizeof(*this); }
-uint SafePointNode::cmp( const Node &n ) const {
+bool SafePointNode::cmp( const Node &n ) const {
   return (&n == this);          // Always fail except on self
 }
 
@@ -1131,6 +1402,7 @@ SafePointNode* SafePointNode::next_exception() const {
 //------------------------------Ideal------------------------------------------
 // Skip over any collapsed Regions
 Node *SafePointNode::Ideal(PhaseGVN *phase, bool can_reshape) {
+  assert(_jvms == NULL || ((uintptr_t)_jvms->map() & 1) || _jvms->map() == this, "inconsistent JVMState");
   return remove_dead_region(phase, can_reshape) ? this : NULL;
 }
 
@@ -1142,7 +1414,9 @@ Node* SafePointNode::Identity(PhaseGVN* phase) {
   if( in(TypeFunc::Control)->is_SafePoint() )
     return in(TypeFunc::Control);
 
-  if( in(0)->is_Proj() ) {
+  // Transforming long counted loops requires a safepoint node. Do not
+  // eliminate a safepoint until loop opts are over.
+  if (in(0)->is_Proj() && !phase->C->major_progress()) {
     Node *n0 = in(0)->in(0);
     // Check if he is a call projection (except Leaf Call)
     if( n0->is_Catch() ) {
@@ -1165,8 +1439,12 @@ Node* SafePointNode::Identity(PhaseGVN* phase) {
 
 //------------------------------Value------------------------------------------
 const Type* SafePointNode::Value(PhaseGVN* phase) const {
-  if( phase->type(in(0)) == Type::TOP ) return Type::TOP;
-  if( phase->eqv( in(0), this ) ) return Type::TOP; // Dead infinite loop
+  if (phase->type(in(0)) == Type::TOP) {
+    return Type::TOP;
+  }
+  if (in(0) == this) {
+    return Type::TOP; // Dead infinite loop
+  }
   return Type::CONTROL;
 }
 
@@ -1263,33 +1541,48 @@ Node *SafePointNode::peek_monitor_obj() const {
 
 // Do we Match on this edge index or not?  Match no edges
 uint SafePointNode::match_edge(uint idx) const {
-  if( !needs_polling_address_input() )
-    return 0;
-
   return (TypeFunc::Parms == idx);
+}
+
+void SafePointNode::disconnect_from_root(PhaseIterGVN *igvn) {
+  assert(Opcode() == Op_SafePoint, "only value for safepoint in loops");
+  int nb = igvn->C->root()->find_prec_edge(this);
+  if (nb != -1) {
+    igvn->C->root()->rm_prec(nb);
+  }
 }
 
 //==============  SafePointScalarObjectNode  ==============
 
 SafePointScalarObjectNode::SafePointScalarObjectNode(const TypeOopPtr* tp,
 #ifdef ASSERT
-                                                     AllocateNode* alloc,
+                                                     Node* alloc,
 #endif
                                                      uint first_index,
-                                                     uint n_fields) :
+                                                     uint n_fields,
+                                                     bool is_auto_box) :
   TypeNode(tp, 1), // 1 control input -- seems required.  Get from root.
-#ifdef ASSERT
-  _alloc(alloc),
-#endif
   _first_index(first_index),
-  _n_fields(n_fields)
+  _n_fields(n_fields),
+  _is_auto_box(is_auto_box)
+#ifdef ASSERT
+  , _alloc(alloc)
+#endif
 {
+#ifdef ASSERT
+  if (!alloc->is_Allocate()
+      && !(alloc->Opcode() == Op_VectorBox)
+      && (!alloc->is_CallStaticJava() || !alloc->as_CallStaticJava()->is_boxing_method())) {
+    alloc->dump();
+    assert(false, "unexpected call node");
+  }
+#endif
   init_class_id(Class_SafePointScalarObject);
 }
 
 // Do not allow value-numbering for SafePointScalarObject node.
 uint SafePointScalarObjectNode::hash() const { return NO_HASH; }
-uint SafePointScalarObjectNode::cmp( const Node &n ) const {
+bool SafePointScalarObjectNode::cmp( const Node &n ) const {
   return (&n == this); // Always fail except on self
 }
 
@@ -1310,11 +1603,13 @@ uint SafePointScalarObjectNode::match_edge(uint idx) const {
 }
 
 SafePointScalarObjectNode*
-SafePointScalarObjectNode::clone(Dict* sosn_map) const {
+SafePointScalarObjectNode::clone(Dict* sosn_map, bool& new_node) const {
   void* cached = (*sosn_map)[(void*)this];
   if (cached != NULL) {
+    new_node = false;
     return (SafePointScalarObjectNode*)cached;
   }
+  new_node = true;
   SafePointScalarObjectNode* res = (SafePointScalarObjectNode*)Node::clone();
   sosn_map->Insert((void*)this, (void*)res);
   return res;
@@ -1372,6 +1667,18 @@ void AllocateNode::compute_MemBar_redundancy(ciMethod* initializer)
     _is_allocation_MemBar_redundant = true;
   }
 }
+Node *AllocateNode::make_ideal_mark(PhaseGVN *phase, Node* obj, Node* control, Node* mem) {
+  Node* mark_node = NULL;
+  // For now only enable fast locking for non-array types
+  if (UseBiasedLocking && Opcode() == Op_Allocate) {
+    Node* klass_node = in(AllocateNode::KlassNode);
+    Node* proto_adr = phase->transform(new AddPNode(klass_node, klass_node, phase->MakeConX(in_bytes(Klass::prototype_header_offset()))));
+    mark_node = LoadNode::make(*phase, control, mem, proto_adr, TypeRawPtr::BOTTOM, TypeX_X, TypeX_X->basic_type(), MemNode::unordered);
+  } else {
+    mark_node = phase->MakeConX(markWord::prototype().value());
+  }
+  return mark_node;
+}
 
 //=============================================================================
 Node* AllocateArrayNode::Ideal(PhaseGVN *phase, bool can_reshape) {
@@ -1406,7 +1713,7 @@ Node* AllocateArrayNode::Ideal(PhaseGVN *phase, bool can_reshape) {
         Node *frame = new ParmNode( phase->C->start(), TypeFunc::FramePtr );
         frame = phase->transform(frame);
         // Halt & Catch Fire
-        Node *halt = new HaltNode( nproj, frame );
+        Node* halt = new HaltNode(nproj, frame, "unexpected negative array length");
         phase->C->root()->add_req(halt);
         phase->transform(halt);
 
@@ -1623,7 +1930,10 @@ bool AbstractLockNode::find_matching_unlock(const Node* ctrl, LockNode* lock,
     Node *n = ctrl_proj->in(0);
     if (n != NULL && n->is_Unlock()) {
       UnlockNode *unlock = n->as_Unlock();
-      if (lock->obj_node()->eqv_uncast(unlock->obj_node()) &&
+      BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+      Node* lock_obj = bs->step_over_gc_barrier(lock->obj_node());
+      Node* unlock_obj = bs->step_over_gc_barrier(unlock->obj_node());
+      if (lock_obj->eqv_uncast(unlock_obj) &&
           BoxLockNode::same_slot(lock->box_node(), unlock->box_node()) &&
           !unlock->is_eliminated()) {
         lock_ops.append(unlock);
@@ -1668,7 +1978,10 @@ LockNode *AbstractLockNode::find_matching_lock(UnlockNode* unlock) {
   }
   if (ctrl->is_Lock()) {
     LockNode *lock = ctrl->as_Lock();
-    if (lock->obj_node()->eqv_uncast(unlock->obj_node()) &&
+    BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+    Node* lock_obj = bs->step_over_gc_barrier(lock->obj_node());
+    Node* unlock_obj = bs->step_over_gc_barrier(unlock->obj_node());
+    if (lock_obj->eqv_uncast(unlock_obj) &&
         BoxLockNode::same_slot(lock->box_node(), unlock->box_node())) {
       lock_result = lock;
     }
@@ -1699,7 +2012,10 @@ bool AbstractLockNode::find_lock_and_unlock_through_if(Node* node, LockNode* loc
       }
       if (lock1_node != NULL && lock1_node->is_Lock()) {
         LockNode *lock1 = lock1_node->as_Lock();
-        if (lock->obj_node()->eqv_uncast(lock1->obj_node()) &&
+        BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+        Node* lock_obj = bs->step_over_gc_barrier(lock->obj_node());
+        Node* lock1_obj = bs->step_over_gc_barrier(lock1->obj_node());
+        if (lock_obj->eqv_uncast(lock1_obj) &&
             BoxLockNode::same_slot(lock->box_node(), lock1->box_node()) &&
             !lock1->is_eliminated()) {
           lock_ops.append(lock1);
@@ -1793,7 +2109,7 @@ Node *LockNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   // one computed above.
   if (can_reshape && EliminateLocks && !is_non_esc_obj()) {
     //
-    // If we are locking an unescaped object, the lock/unlock is unnecessary
+    // If we are locking an non-escaped object, the lock/unlock is unnecessary
     //
     ConnectionGraph *cgr = phase->C->congraph();
     if (cgr != NULL && cgr->not_global_escape(obj_node())) {
@@ -1916,6 +2232,8 @@ bool LockNode::is_nested_lock_region(Compile * c) {
     return false;
   }
 
+  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+  obj = bs->step_over_gc_barrier(obj);
   // Look for external lock for the same object.
   SafePointNode* sfn = this->as_SafePoint();
   JVMState* youngest_jvms = sfn->jvms();
@@ -1926,6 +2244,7 @@ bool LockNode::is_nested_lock_region(Compile * c) {
     // Loop over monitors
     for (int idx = 0; idx < num_mon; idx++) {
       Node* obj_node = sfn->monitor_obj(jvms, idx);
+      obj_node = bs->step_over_gc_barrier(obj_node);
       BoxLockNode* box_node = sfn->monitor_box(jvms, idx)->as_BoxLock();
       if ((box_node->stack_slot() < stk_slot) && obj_node->eqv_uncast(obj)) {
         return true;
@@ -1958,7 +2277,7 @@ Node *UnlockNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   // Escape state is defined after Parse phase.
   if (can_reshape && EliminateLocks && !is_non_esc_obj()) {
     //
-    // If we are unlocking an unescaped object, the lock/unlock is unnecessary.
+    // If we are unlocking an non-escaped object, the lock/unlock is unnecessary.
     //
     ConnectionGraph *cgr = phase->C->congraph();
     if (cgr != NULL && cgr->not_global_escape(obj_node())) {
@@ -2047,4 +2366,3 @@ bool CallNode::may_modify_arraycopy_helper(const TypeOopPtr* dest_t, const TypeO
 
   return true;
 }
-

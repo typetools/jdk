@@ -25,15 +25,17 @@
  * @test
  * @summary tests on constant folding of unsafe get operations from stable arrays
  * @library /test/lib
- *
+ * @build sun.hotspot.WhiteBox
  * @requires vm.flavor == "server" & !vm.emulatedClient
  *
  * @modules java.base/jdk.internal.vm.annotation
  *          java.base/jdk.internal.misc
-
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller sun.hotspot.WhiteBox
+ *
  * @run main/bootclasspath/othervm -XX:+UnlockDiagnosticVMOptions
  *                   -Xbatch -XX:-TieredCompilation
  *                   -XX:+FoldStableValues
+ *                   -XX:+WhiteBoxAPI
  *                   -XX:CompileCommand=dontinline,*Test::test*
  *                   compiler.unsafe.UnsafeGetStableArrayElement
  */
@@ -49,6 +51,8 @@ import java.util.concurrent.Callable;
 import static jdk.internal.misc.Unsafe.*;
 import static jdk.test.lib.Asserts.assertEQ;
 import static jdk.test.lib.Asserts.assertNE;
+
+import sun.hotspot.code.Compiler;
 
 public class UnsafeGetStableArrayElement {
     @Stable static final boolean[] STABLE_BOOLEAN_ARRAY = new boolean[16];
@@ -173,15 +177,15 @@ public class UnsafeGetStableArrayElement {
         static float   testD_F() { return U.getFloat(  STABLE_DOUBLE_ARRAY, ARRAY_DOUBLE_BASE_OFFSET); }
         static double  testD_D() { return U.getDouble( STABLE_DOUBLE_ARRAY, ARRAY_DOUBLE_BASE_OFFSET); }
 
-        static Object  testL_L() { return U.getObject( STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static boolean testL_Z() { return U.getBoolean(STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static byte    testL_B() { return U.getByte(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static short   testL_S() { return U.getShort(  STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static char    testL_C() { return U.getChar(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static int     testL_I() { return U.getInt(    STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static long    testL_J() { return U.getLong(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static float   testL_F() { return U.getFloat(  STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
-        static double  testL_D() { return U.getDouble( STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
+        static Object  testL_L() { return U.getReference( STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET); }
+        static boolean testL_Z() { return U.getBoolean(STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static byte    testL_B() { return U.getByte(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static short   testL_S() { return U.getShort(  STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static char    testL_C() { return U.getChar(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static int     testL_I() { return U.getInt(    STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static long    testL_J() { return U.getLong(   STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static float   testL_F() { return U.getFloat(  STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
+        static double  testL_D() { return U.getDouble( STABLE_OBJECT_ARRAY, ARRAY_OBJECT_BASE_OFFSET);    }
 
         static short   testS_U() { return U.getShortUnaligned(STABLE_SHORT_ARRAY, ARRAY_SHORT_BASE_OFFSET + 1); }
         static char    testC_U() { return U.getCharUnaligned(  STABLE_CHAR_ARRAY,  ARRAY_CHAR_BASE_OFFSET + 1); }
@@ -220,7 +224,16 @@ public class UnsafeGetStableArrayElement {
     }
 
     static void testMismatched(Callable<?> c, Runnable setDefaultAction) throws Exception {
-        run(c, null, setDefaultAction);
+        testMismatched(c, setDefaultAction, false);
+    }
+
+    static void testMismatched(Callable<?> c, Runnable setDefaultAction, boolean objectArray) throws Exception {
+        if (Compiler.isGraalEnabled() && !objectArray) {
+            // Graal will constant fold mismatched reads from primitive stable arrays
+            run(c, setDefaultAction, null);
+        } else {
+            run(c, null, setDefaultAction);
+        }
         Setter.reset();
     }
 
@@ -306,8 +319,8 @@ public class UnsafeGetStableArrayElement {
         testMatched(   Test::testD_D, Test::changeD);
 
         // Object[], aligned accesses
-        testMismatched(Test::testL_J, Test::changeL); // long & double are always as large as an OOP
-        testMismatched(Test::testL_D, Test::changeL);
+        testMismatched(Test::testL_J, Test::changeL, true); // long & double are always as large as an OOP
+        testMismatched(Test::testL_D, Test::changeL, true);
         testMatched(   Test::testL_L, Test::changeL);
 
         // Unaligned accesses

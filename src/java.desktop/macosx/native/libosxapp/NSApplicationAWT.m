@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,7 +50,7 @@ BOOL postEventDuringEventSynthesis = NO;
  * Subtypes of NSApplicationDefined, which are used for custom events.
  */
 enum {
-    ExecuteBlockEvent, NativeSyncQueueEvent
+    ExecuteBlockEvent = 777, NativeSyncQueueEvent
 };
 
 @implementation NSApplicationAWT
@@ -77,8 +77,6 @@ AWT_ASSERT_APPKIT_THREAD;
 
 - (void)dealloc
 {
-    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:nil];
-
     [fApplicationName release];
     fApplicationName = nil;
 
@@ -90,6 +88,25 @@ AWT_ASSERT_APPKIT_THREAD;
 AWT_ASSERT_APPKIT_THREAD;
 
     JNIEnv *env = [ThreadUtilities getJNIEnv];
+
+    SEL appearanceSel = @selector(setAppearance:); // macOS 10.14+
+    if ([self respondsToSelector:appearanceSel]) {
+        NSString *appearanceProp = [PropertiesUtilities
+                javaSystemPropertyForKey:@"apple.awt.application.appearance"
+                                 withEnv:env];
+        if (![@"system" isEqual:appearanceProp]) {
+            // by default use light mode, because dark mode is not supported yet
+            NSAppearance *appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+            if (appearanceProp != nil) {
+                NSAppearance *requested = [NSAppearance appearanceNamed:appearanceProp];
+                if (requested != nil) {
+                    appearance = requested;
+                }
+            }
+            // [self setAppearance:appearance];
+            [self performSelector:appearanceSel withObject:appearance];
+        }
+    }
 
     // Get default nib file location
     // NOTE: This should learn about the current java.version. Probably best thru
@@ -139,18 +156,8 @@ AWT_ASSERT_APPKIT_THREAD;
     }
 
     [super finishLaunching];
-
-    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
-
-    // inform any interested parties that the AWT has arrived and is pumping
-    [[NSNotificationCenter defaultCenter] postNotificationName:JNFRunLoopDidStartNotification object:self];
 }
 
-- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center
-     shouldPresentNotification:(NSUserNotification *)notification
-{
-    return YES; // We always show notifications to the user
-}
 
 - (void) registerWithProcessManager
 {
@@ -252,7 +259,7 @@ AWT_ASSERT_APPKIT_THREAD;
 // HACK BEGIN
     // The following is necessary to make the java process behave like a
     // proper foreground application...
-    [JNFRunLoop performOnMainThreadWaiting:NO withBlock:^(){
+    [ThreadUtilities performOnMainThreadWaiting:NO block:^(){
         ProcessSerialNumber psn;
         GetCurrentProcess(&psn);
         TransformProcessType(&psn, kProcessTransformToForegroundApplication);
@@ -307,14 +314,15 @@ AWT_ASSERT_APPKIT_THREAD;
 + (void) runAWTLoopWithApp:(NSApplication*)app {
     NSAutoreleasePool *pool = [NSAutoreleasePool new];
 
-    // Make sure that when we run in AWTRunLoopMode we don't exit randomly
-    [[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:[JNFRunLoop javaRunLoopMode]];
+    // Make sure that when we run in javaRunLoopMode we don't exit randomly
+    [[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:[ThreadUtilities javaRunLoopMode]];
 
     do {
         @try {
             [app run];
         } @catch (NSException* e) {
             NSLog(@"Apple AWT Startup Exception: %@", [e description]);
+            NSLog(@"Apple AWT Startup Exception callstack: %@", [e callStackSymbols]);
             NSLog(@"Apple AWT Restarting Native Event Thread");
 
             [app stop:app];
@@ -366,11 +374,14 @@ untilDate:(NSDate *)expiration inMode:(NSString *)mode dequeue:(BOOL)deqFlag {
 {
     if ([event type] == NSApplicationDefined
             && TS_EQUAL([event timestamp], dummyEventTimestamp)
-            && [event subtype] == NativeSyncQueueEvent) {
+            && (short)[event subtype] == NativeSyncQueueEvent
+            && [event data1] == NativeSyncQueueEvent
+            && [event data2] == NativeSyncQueueEvent) {
         [seenDummyEventLock lockWhenCondition:NO];
         [seenDummyEventLock unlockWithCondition:YES];
-
-    } else if ([event type] == NSApplicationDefined && [event subtype] == ExecuteBlockEvent) {
+    } else if ([event type] == NSApplicationDefined
+               && (short)[event subtype] == ExecuteBlockEvent
+               && [event data1] != 0 && [event data2] == ExecuteBlockEvent) {
         void (^block)() = (void (^)()) [event data1];
         block();
         [block release];
@@ -401,7 +412,7 @@ untilDate:(NSDate *)expiration inMode:(NSString *)mode dequeue:(BOOL)deqFlag {
                                          context: nil
                                          subtype: ExecuteBlockEvent
                                            data1: encode
-                                           data2: 0];
+                                           data2: ExecuteBlockEvent];
 
     [NSApp postEvent: event atStart: NO];
     [pool drain];
@@ -419,8 +430,8 @@ untilDate:(NSDate *)expiration inMode:(NSString *)mode dequeue:(BOOL)deqFlag {
                                     windowNumber: 0
                                          context: nil
                                          subtype: NativeSyncQueueEvent
-                                           data1: 0
-                                           data2: 0];
+                                           data1: NativeSyncQueueEvent
+                                           data2: NativeSyncQueueEvent];
     if (useCocoa) {
         [NSApp postEvent:event atStart:NO];
     } else {

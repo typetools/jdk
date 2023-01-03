@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,8 @@ import sun.font.FontManager;
 import sun.font.FontManagerFactory;
 import sun.font.FontUtilities;
 
+import java.awt.AlphaComposite;
+import java.awt.Composite;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -456,7 +458,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * @see         java.awt.Graphics#drawPolygon(int[], int[], int)
      * @since       1.1
      */
-    public void drawPolyline(int xPoints[], int yPoints[],
+    public void drawPolyline(int[] xPoints, int[] yPoints,
                              int nPoints) {
 
         if (nPoints == 2) {
@@ -492,7 +494,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * @see          java.awt.Graphics#fillPolygon
      * @see          java.awt.Graphics#drawPolyline
      */
-    public void drawPolygon(int xPoints[], int yPoints[],
+    public void drawPolygon(int[] xPoints, int[] yPoints,
                                      int nPoints) {
 
         draw(new Polygon(xPoints, yPoints, nPoints));
@@ -529,7 +531,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * @param        nPoints   a the total number of points.
      * @see          java.awt.Graphics#drawPolygon(int[], int[], int)
      */
-    public void fillPolygon(int xPoints[], int yPoints[],
+    public void fillPolygon(int[] xPoints, int[] yPoints,
                             int nPoints) {
 
         fill(new Polygon(xPoints, yPoints, nPoints));
@@ -1890,4 +1892,25 @@ public abstract class PathGraphics extends ProxyGraphics2D {
 
     }
 
+    protected boolean isCompositing(Composite composite) {
+
+        boolean isCompositing = false;
+
+        if (composite instanceof AlphaComposite) {
+            AlphaComposite alphaComposite = (AlphaComposite) composite;
+            float alpha = alphaComposite.getAlpha();
+            int rule = alphaComposite.getRule();
+
+            if (alpha != 1.0
+                    || (rule != AlphaComposite.SRC
+                        && rule != AlphaComposite.SRC_OVER))
+            {
+                isCompositing = true;
+            }
+
+        } else {
+            isCompositing = true;
+        }
+        return isCompositing;
+    }
 }

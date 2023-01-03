@@ -27,7 +27,7 @@
 #include "interpreter/bytecodes.hpp"
 #include "memory/metadataFactory.hpp"
 #include "memory/oopFactory.hpp"
-#include "memory/universe.hpp"
+#include "oops/method.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/relocator.hpp"
@@ -453,7 +453,7 @@ void Relocator::adjust_local_var_table(int bci, int delta) {
 // the specified location
 static Array<u1>* insert_hole_at(ClassLoaderData* loader_data,
     size_t where, int hole_sz, Array<u1>* src) {
-  Thread* THREAD = Thread::current();
+  JavaThread* THREAD = JavaThread::current(); // For exception macros.
   Array<u1>* dst =
       MetadataFactory::new_array<u1>(loader_data, src->length() + hole_sz, 0, CHECK_NULL);
 

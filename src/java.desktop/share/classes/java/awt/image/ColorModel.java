@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -175,7 +175,7 @@ public abstract class ColorModel implements Transparency{
      * The total number of bits in the pixel.
      */
     protected int pixel_bits;
-    int nBits[];
+    int[] nBits;
     int transparency = Transparency.TRANSLUCENT;
     boolean supportsAlpha = true;
     boolean isAlphaPremultiplied = false;
@@ -216,6 +216,7 @@ public abstract class ColorModel implements Transparency{
      * that the name of the library is "awt".  -br.
      */
     private static boolean loaded = false;
+    @SuppressWarnings("removal")
     static void loadLibraries() {
         if (!loaded) {
             java.security.AccessController.doPrivileged(
@@ -660,17 +661,17 @@ public abstract class ColorModel implements Transparency{
         int pixel=0,length=0;
         switch (transferType) {
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                pixel = bdata[0] & 0xff;
                length = bdata.length;
             break;
             case DataBuffer.TYPE_USHORT:
-               short sdata[] = (short[])inData;
+               short[] sdata = (short[])inData;
                pixel = sdata[0] & 0xffff;
                length = sdata.length;
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                pixel = idata[0];
                length = idata.length;
             break;
@@ -727,17 +728,17 @@ public abstract class ColorModel implements Transparency{
         int pixel=0,length=0;
         switch (transferType) {
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                pixel = bdata[0] & 0xff;
                length = bdata.length;
             break;
             case DataBuffer.TYPE_USHORT:
-               short sdata[] = (short[])inData;
+               short[] sdata = (short[])inData;
                pixel = sdata[0] & 0xffff;
                length = sdata.length;
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                pixel = idata[0];
                length = idata.length;
             break;
@@ -794,17 +795,17 @@ public abstract class ColorModel implements Transparency{
         int pixel=0,length=0;
         switch (transferType) {
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                pixel = bdata[0] & 0xff;
                length = bdata.length;
             break;
             case DataBuffer.TYPE_USHORT:
-               short sdata[] = (short[])inData;
+               short[] sdata = (short[])inData;
                pixel = sdata[0] & 0xffff;
                length = sdata.length;
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                pixel = idata[0];
                length = idata.length;
             break;
@@ -857,17 +858,17 @@ public abstract class ColorModel implements Transparency{
         int pixel=0,length=0;
         switch (transferType) {
             case DataBuffer.TYPE_BYTE:
-               byte bdata[] = (byte[])inData;
+               byte[] bdata = (byte[])inData;
                pixel = bdata[0] & 0xff;
                length = bdata.length;
             break;
             case DataBuffer.TYPE_USHORT:
-               short sdata[] = (short[])inData;
+               short[] sdata = (short[])inData;
                pixel = sdata[0] & 0xffff;
                length = sdata.length;
             break;
             case DataBuffer.TYPE_INT:
-               int idata[] = (int[])inData;
+               int[] idata = (int[])inData;
                pixel = idata[0];
                length = idata.length;
             break;
@@ -1348,7 +1349,7 @@ public abstract class ColorModel implements Transparency{
      * @since 1.4
      */
     public int getDataElement(float[] normComponents, @IndexFor({"#1"}) int normOffset) {
-        int components[] = getUnnormalizedComponents(normComponents,
+        int[] components = getUnnormalizedComponents(normComponents,
                                                      normOffset, null, 0);
         return getDataElement(components, 0);
     }
@@ -1396,7 +1397,7 @@ public abstract class ColorModel implements Transparency{
      */
     public Object getDataElements(float[] normComponents, @IndexFor({"#1"}) int normOffset,
                                   Object obj) {
-        int components[] = getUnnormalizedComponents(normComponents,
+        int[] components = getUnnormalizedComponents(normComponents,
                                                      normOffset, null, 0);
         return getDataElements(components, 0, obj);
     }
@@ -1457,7 +1458,7 @@ public abstract class ColorModel implements Transparency{
     public float[] getNormalizedComponents(Object pixel,
                                            float[] normComponents,
                                            @IndexFor({"#2"}) int normOffset) {
-        int components[] = getComponents(pixel, null, 0);
+        int[] components = getComponents(pixel, null, 0);
         return getNormalizedComponents(components, 0,
                                        normComponents, normOffset);
     }
@@ -1647,7 +1648,8 @@ public abstract class ColorModel implements Transparency{
      *     See the specification for {@link Object#finalize()} for further
      *     information about migration options.
      */
-    @Deprecated(since="9")
+    @Deprecated(since = "9", forRemoval = true)
+    @SuppressWarnings("removal")
     public void finalize() {
     }
 
@@ -1721,15 +1723,11 @@ public abstract class ColorModel implements Transparency{
     static Map<ICC_ColorSpace, short[]> lg16Toog16Map = null; // 16-bit linear to 16-bit "other" gray
 
     static boolean isLinearRGBspace(ColorSpace cs) {
-        // Note: CMM.LINEAR_RGBspace will be null if the linear
-        // RGB space has not been created yet.
-        return (cs == CMSManager.LINEAR_RGBspace);
+        return cs == ColorSpace.getInstance(ColorSpace.CS_LINEAR_RGB);
     }
 
     static boolean isLinearGRAYspace(ColorSpace cs) {
-        // Note: CMM.GRAYspace will be null if the linear
-        // gray space has not been created yet.
-        return (cs == CMSManager.GRAYspace);
+        return cs == ColorSpace.getInstance(ColorSpace.CS_GRAY);
     }
 
     static byte[] getLinearRGB8TosRGB8LUT() {

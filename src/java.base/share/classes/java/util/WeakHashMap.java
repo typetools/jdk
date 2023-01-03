@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -38,7 +39,6 @@ import org.checkerframework.framework.qual.CFComment;
 
 import java.lang.ref.WeakReference;
 import java.lang.ref.ReferenceQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -265,7 +265,7 @@ public class WeakHashMap<K,V>
      * @since   1.3
      */
     public WeakHashMap(Map<? extends K, ? extends V> m) {
-        this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
+        this(Math.max((int) ((float)m.size() / DEFAULT_LOAD_FACTOR + 1.0F),
                 DEFAULT_INITIAL_CAPACITY),
              DEFAULT_LOAD_FACTOR);
         putAll(m);
@@ -296,8 +296,14 @@ public class WeakHashMap<K,V>
      * Checks for equality of non-null reference x and possibly-null y.  By
      * default uses Object.equals.
      */
-    private static boolean eq(Object x, Object y) {
-        return x == y || x.equals(y);
+    private boolean matchesKey(Entry<K,V> e, Object key) {
+        // check if the given entry refers to the given key without
+        // keeping a strong reference to the entry's referent
+        if (e.refersTo(key)) return true;
+
+        // then check for equality if the referent is not cleared
+        Object k = e.get();
+        return k != null && key.equals(k);
     }
 
     /**
@@ -408,14 +414,14 @@ public class WeakHashMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
         while (e != null) {
-            if (e.hash == h && eq(k, e.get()))
+            if (e.hash == h && matchesKey(e, k))
                 return e.value;
             e = e.next;
         }
@@ -432,7 +438,7 @@ public class WeakHashMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }
 
@@ -446,7 +452,7 @@ public class WeakHashMap<K,V>
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
-        while (e != null && !(e.hash == h && eq(k, e.get())))
+        while (e != null && !(e.hash == h && matchesKey(e, k)))
             e = e.next;
         return e;
     }
@@ -471,7 +477,7 @@ public class WeakHashMap<K,V>
         int i = indexFor(h, tab.length);
 
         for (Entry<K,V> e = tab[i]; e != null; e = e.next) {
-            if (h == e.hash && eq(k, e.get())) {
+            if (h == e.hash && matchesKey(e, k)) {
                 V oldValue = e.value;
                 if (value != oldValue)
                     e.value = value;
@@ -534,8 +540,7 @@ public class WeakHashMap<K,V>
             src[j] = null;
             while (e != null) {
                 Entry<K,V> next = e.next;
-                Object key = e.get();
-                if (key == null) {
+                if (e.refersTo(null)) {
                     e.next = null;  // Help GC
                     e.value = null; //  "   "
                     size--;
@@ -606,7 +611,7 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
-    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @Nullable Object key) {
+    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -616,7 +621,7 @@ public class WeakHashMap<K,V>
 
         while (e != null) {
             Entry<K,V> next = e.next;
-            if (h == e.hash && eq(k, e.get())) {
+            if (h == e.hash && matchesKey(e, k)) {
                 modCount++;
                 size--;
                 if (prev == e)
@@ -634,10 +639,9 @@ public class WeakHashMap<K,V>
 
     /** Special version of remove needed by Entry set */
     boolean removeMapping(Object o) {
-        if (!(o instanceof Map.Entry))
+        if (!(o instanceof Map.Entry<?, ?> entry))
             return false;
         Entry<K,V>[] tab = getTable();
-        Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
         Object k = maskNull(entry.getKey());
         int h = hash(k);
         int i = indexFor(h, tab.length);
@@ -692,7 +696,7 @@ public class WeakHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         if (value==null)
             return containsNullValue();
 
@@ -753,9 +757,8 @@ public class WeakHashMap<K,V>
         }
 
         public boolean equals(Object o) {
-            if (!(o instanceof Map.Entry))
+            if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
             K k1 = getKey();
             Object k2 = e.getKey();
             if (k1 == k2 || (k1 != null && k1.equals(k2))) {
@@ -905,11 +908,11 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
 
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
                 return true;
@@ -962,7 +965,7 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
 
@@ -1002,15 +1005,13 @@ public class WeakHashMap<K,V>
             return new EntryIterator();
         }
 
-        public boolean contains(@Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-            Entry<K,V> candidate = getEntry(e.getKey());
-            return candidate != null && candidate.equals(e);
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
+            return o instanceof Map.Entry<?, ?> e
+                    && getEntry(e.getKey()) != null
+                    && getEntry(e.getKey()).equals(e);
         }
 
-        public boolean remove(@Nullable Object o) {
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
 

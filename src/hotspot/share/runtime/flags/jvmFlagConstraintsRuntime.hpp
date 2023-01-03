@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_JVMFLAGCONSTRAINTSRUNTIME_HPP
-#define SHARE_VM_RUNTIME_JVMFLAGCONSTRAINTSRUNTIME_HPP
+#ifndef SHARE_RUNTIME_FLAGS_JVMFLAGCONSTRAINTSRUNTIME_HPP
+#define SHARE_RUNTIME_FLAGS_JVMFLAGCONSTRAINTSRUNTIME_HPP
 
 #include "runtime/flags/jvmFlag.hpp"
 
@@ -33,18 +33,17 @@
  * an appropriate error value.
  */
 
-JVMFlag::Error ObjectAlignmentInBytesConstraintFunc(intx value, bool verbose);
+#define RUNTIME_CONSTRAINTS(f)                        \
+  f(intx,   ObjectAlignmentInBytesConstraintFunc)     \
+  f(intx,   ContendedPaddingWidthConstraintFunc)      \
+  f(intx,   BiasedLockingBulkRebiasThresholdFunc)     \
+  f(intx,   BiasedLockingStartupDelayFunc)            \
+  f(intx,   BiasedLockingBulkRevokeThresholdFunc)     \
+  f(intx,   BiasedLockingDecayTimeFunc)               \
+  f(intx,   PerfDataSamplingIntervalFunc)             \
+  f(uintx,  VMPageSizeConstraintFunc)                 \
+  f(size_t, NUMAInterleaveGranularityConstraintFunc)
 
-JVMFlag::Error ContendedPaddingWidthConstraintFunc(intx value, bool verbose);
+RUNTIME_CONSTRAINTS(DECLARE_CONSTRAINT)
 
-JVMFlag::Error BiasedLockingBulkRebiasThresholdFunc(intx value, bool verbose);
-JVMFlag::Error BiasedLockingStartupDelayFunc(intx value, bool verbose);
-JVMFlag::Error BiasedLockingBulkRevokeThresholdFunc(intx value, bool verbose);
-JVMFlag::Error BiasedLockingDecayTimeFunc(intx value, bool verbose);
-
-JVMFlag::Error PerfDataSamplingIntervalFunc(intx value, bool verbose);
-
-JVMFlag::Error ThreadLocalHandshakesConstraintFunc(bool value, bool verbose);
-
-
-#endif /* SHARE_VM_RUNTIME_JVMFLAGCONSTRAINTSRUNTIME_HPP */
+#endif // SHARE_RUNTIME_FLAGS_JVMFLAGCONSTRAINTSRUNTIME_HPP

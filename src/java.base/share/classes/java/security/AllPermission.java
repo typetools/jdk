@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -64,6 +64,7 @@ import sun.security.util.SecurityConstants;
 
 public final class AllPermission extends Permission {
 
+    @java.io.Serial
     private static final long serialVersionUID = -2916474571451318075L;
 
     /**
@@ -165,9 +166,13 @@ final class AllPermissionCollection
 {
 
     // use serialVersionUID from JDK 1.2.2 for interoperability
+    @java.io.Serial
     private static final long serialVersionUID = -4023755556366636806L;
 
-    private boolean all_allowed; // true if any all permissions have been added
+    /**
+     * True if any AllPermissions have been added.
+     */
+    private boolean all_allowed;
 
     /**
      * Create an empty AllPermissions object.
@@ -184,10 +189,10 @@ final class AllPermissionCollection
      *
      * @param permission the Permission object to add.
      *
-     * @exception IllegalArgumentException - if the permission is not a
+     * @throws    IllegalArgumentException   if the permission is not an
      *                                       AllPermission
      *
-     * @exception SecurityException - if this AllPermissionCollection object
+     * @throws    SecurityException   if this AllPermissionCollection object
      *                                has been marked readonly
      */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_PROTECTIONDOMAINCACHE_HPP
-#define SHARE_VM_CLASSFILE_PROTECTIONDOMAINCACHE_HPP
+#ifndef SHARE_CLASSFILE_PROTECTIONDOMAINCACHE_HPP
+#define SHARE_CLASSFILE_PROTECTIONDOMAINCACHE_HPP
 
 #include "oops/oop.hpp"
 #include "oops/weakHandle.hpp"
-#include "memory/iterator.hpp"
+#include "runtime/atomic.hpp"
 #include "utilities/hashtable.hpp"
 
 // This class caches the approved protection domains that can access loaded classes.
@@ -35,18 +35,18 @@
 // to dictionary.hpp pd_set for more information about how protection domain entries
 // are used.
 // This table is walked during GC, rather than the class loader data graph dictionaries.
-class ProtectionDomainCacheEntry : public HashtableEntry<ClassLoaderWeakHandle, mtClass> {
+class ProtectionDomainCacheEntry : public HashtableEntry<WeakHandle, mtClass> {
   friend class VMStructs;
  public:
   oop object();
   oop object_no_keepalive();
 
   ProtectionDomainCacheEntry* next() {
-    return (ProtectionDomainCacheEntry*)HashtableEntry<ClassLoaderWeakHandle, mtClass>::next();
+    return (ProtectionDomainCacheEntry*)HashtableEntry<WeakHandle, mtClass>::next();
   }
 
   ProtectionDomainCacheEntry** next_addr() {
-    return (ProtectionDomainCacheEntry**)HashtableEntry<ClassLoaderWeakHandle, mtClass>::next_addr();
+    return (ProtectionDomainCacheEntry**)HashtableEntry<WeakHandle, mtClass>::next_addr();
   }
 
   void verify();
@@ -61,21 +61,19 @@ class ProtectionDomainCacheEntry : public HashtableEntry<ClassLoaderWeakHandle, 
 // we only need to iterate over this set.
 // The amount of different protection domains used is typically magnitudes smaller
 // than the number of system dictionary entries (loaded classes).
-class ProtectionDomainCacheTable : public Hashtable<ClassLoaderWeakHandle, mtClass> {
-  friend class VMStructs;
-private:
+class ProtectionDomainCacheTable : public Hashtable<WeakHandle, mtClass> {
   ProtectionDomainCacheEntry* bucket(int i) const {
-    return (ProtectionDomainCacheEntry*) Hashtable<ClassLoaderWeakHandle, mtClass>::bucket(i);
+    return (ProtectionDomainCacheEntry*) Hashtable<WeakHandle, mtClass>::bucket(i);
   }
 
   // The following method is not MT-safe and must be done under lock.
   ProtectionDomainCacheEntry** bucket_addr(int i) {
-    return (ProtectionDomainCacheEntry**) Hashtable<ClassLoaderWeakHandle, mtClass>::bucket_addr(i);
+    return (ProtectionDomainCacheEntry**) Hashtable<WeakHandle, mtClass>::bucket_addr(i);
   }
 
-  ProtectionDomainCacheEntry* new_entry(unsigned int hash, ClassLoaderWeakHandle protection_domain) {
+  ProtectionDomainCacheEntry* new_entry(unsigned int hash, WeakHandle protection_domain) {
     ProtectionDomainCacheEntry* entry = (ProtectionDomainCacheEntry*)
-      Hashtable<ClassLoaderWeakHandle, mtClass>::new_entry(hash, protection_domain);
+      Hashtable<WeakHandle, mtClass>::new_entry(hash, protection_domain);
     return entry;
   }
 
@@ -85,6 +83,9 @@ private:
   ProtectionDomainCacheEntry* add_entry(int index, unsigned int hash, Handle protection_domain);
   ProtectionDomainCacheEntry* find_entry(int index, Handle protection_domain);
 
+  bool _dead_entries;
+  int _total_oops_removed;
+
 public:
   ProtectionDomainCacheTable(int table_size);
   ProtectionDomainCacheEntry* get(Handle protection_domain);
@@ -93,23 +94,25 @@ public:
 
   void print_on(outputStream* st) const;
   void verify();
+
+  bool has_work() { return _dead_entries; }
+  void trigger_cleanup();
+
+  int removed_entries_count() { return _total_oops_removed; };
 };
 
 
+// This describes the linked list protection domain for each DictionaryEntry in pd_set.
 class ProtectionDomainEntry :public CHeapObj<mtClass> {
-  friend class VMStructs;
- public:
-  ProtectionDomainEntry* _next;
   ProtectionDomainCacheEntry* _pd_cache;
+  ProtectionDomainEntry* volatile _next;
+ public:
 
-  ProtectionDomainEntry(ProtectionDomainCacheEntry* pd_cache, ProtectionDomainEntry* next) {
-    _pd_cache = pd_cache;
-    _next     = next;
-  }
+  ProtectionDomainEntry(ProtectionDomainCacheEntry* pd_cache,
+                        ProtectionDomainEntry* head) : _pd_cache(pd_cache), _next(head) {}
 
-  ProtectionDomainEntry* next() { return _next; }
-  void set_next(ProtectionDomainEntry* entry) { _next = entry; }
-  oop object();
+  ProtectionDomainEntry* next_acquire() { return Atomic::load_acquire(&_next); }
+  void release_set_next(ProtectionDomainEntry* entry) { Atomic::release_store(&_next, entry); }
   oop object_no_keepalive();
 };
-#endif // SHARE_VM_CLASSFILE_PROTECTIONDOMAINCACHE_HPP
+#endif // SHARE_CLASSFILE_PROTECTIONDOMAINCACHE_HPP

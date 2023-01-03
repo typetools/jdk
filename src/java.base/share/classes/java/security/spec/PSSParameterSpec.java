@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Objects;
-import java.security.spec.MGF1ParameterSpec;
 
 /**
  * This class specifies a parameter spec for RSASSA-PSS signature scheme,
@@ -133,9 +132,9 @@ public @UsesObjectEquals class PSSParameterSpec implements AlgorithmParameterSpe
      *         getMGFParameters().
      * @param saltLen      the length of salt
      * @param trailerField the value of the trailer field
-     * @exception NullPointerException if {@code mdName}, or {@code mgfName}
+     * @throws    NullPointerException if {@code mdName}, or {@code mgfName}
      *         is null
-     * @exception IllegalArgumentException if {@code saltLen} or
+     * @throws    IllegalArgumentException if {@code saltLen} or
      *         {@code trailerField} is less than 0
      * @since 1.5
      */
@@ -166,7 +165,7 @@ public @UsesObjectEquals class PSSParameterSpec implements AlgorithmParameterSpe
      *
      * @param saltLen the length of salt in bytes to be used in PKCS#1
      *         PSS encoding
-     * @exception IllegalArgumentException if {@code saltLen} is
+     * @throws    IllegalArgumentException if {@code saltLen} is
      *         less than 0
      */
     public PSSParameterSpec(int saltLen) {
@@ -221,5 +220,16 @@ public @UsesObjectEquals class PSSParameterSpec implements AlgorithmParameterSpe
      */
     public int getTrailerField() {
         return trailerField;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("PSSParameterSpec[");
+        sb.append("hashAlgorithm=" + mdName + ", ")
+                .append("maskGenAlgorithm=" + mgfSpec + ", ")
+                .append("saltLength=" + saltLen + ", ")
+                .append("trailerField=" + trailerField)
+                .append(']');
+        return sb.toString();
     }
 }

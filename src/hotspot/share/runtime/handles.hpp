@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_HANDLES_HPP
-#define SHARE_VM_RUNTIME_HANDLES_HPP
+#ifndef SHARE_RUNTIME_HANDLES_HPP
+#define SHARE_RUNTIME_HANDLES_HPP
 
 #include "memory/arena.hpp"
 #include "oops/oop.hpp"
@@ -31,6 +31,7 @@
 
 class InstanceKlass;
 class Klass;
+class Thread;
 
 //------------------------------------------------------------------------------------------------------------------------
 // In order to preserve oops during garbage collection, they should be
@@ -78,8 +79,10 @@ class Handle {
   oop     operator () () const                   { return obj(); }
   oop     operator -> () const                   { return non_null_obj(); }
 
-  bool operator == (oop o) const                 { return oopDesc::equals(obj(), o); }
-  bool operator == (const Handle& h) const       { return oopDesc::equals(obj(), h.obj()); }
+  bool operator == (oop o) const                 { return obj() == o; }
+  bool operator != (oop o) const                 { return obj() != o; }
+  bool operator == (const Handle& h) const       { return obj() == h.obj(); }
+  bool operator != (const Handle& h) const       { return obj() != h.obj(); }
 
   // Null checks
   bool    is_null() const                        { return _handle == NULL; }
@@ -95,7 +98,7 @@ class Handle {
 
   // Raw handle access. Allows easy duplication of Handles. This can be very unsafe
   // since duplicates is only valid as long as original handle is alive.
-  oop* raw_value()                               { return _handle; }
+  oop* raw_value() const                         { return _handle; }
   static oop raw_resolve(oop *handle)            { return handle == NULL ? (oop)NULL : *handle; }
 };
 
@@ -142,7 +145,6 @@ DEF_HANDLE(typeArray        , is_typeArray_noinline        )
    public:                                       \
     /* Constructors */                           \
     name##Handle () : _value(NULL), _thread(NULL) {}   \
-    name##Handle (type* obj);                    \
     name##Handle (Thread* thread, type* obj);    \
                                                  \
     name##Handle (const name##Handle &h);        \
@@ -226,7 +228,7 @@ class HandleArea: public Arena {
 //
 //   Handle h;
 //   {
-//     HandleMark hm;
+//     HandleMark hm(THREAD);
 //     h = Handle(THREAD, obj);
 //   }
 //   h()->print();       // WRONG, h destroyed by HandleMark destructor.
@@ -252,8 +254,9 @@ class HandleMark {
   HandleMark* previous_handle_mark() const        { return _previous_handle_mark; }
 
   size_t size_in_bytes() const { return _size_in_bytes; }
+  // remove all chunks beginning with the next
+  void chop_later_chunks();
  public:
-  HandleMark();                            // see handles_inline.hpp
   HandleMark(Thread* thread)                      { initialize(thread); }
   ~HandleMark();
 
@@ -285,6 +288,9 @@ class NoHandleMark: public StackObj {
 };
 
 
+// ResetNoHandleMark is called in a context where there is an enclosing
+// NoHandleMark. A thread in _thread_in_native must not create handles so
+// this is used when transitioning via ThreadInVMfromNative.
 class ResetNoHandleMark: public StackObj {
   int _no_handle_mark_nesting;
  public:
@@ -310,4 +316,4 @@ class HandleMarkCleaner: public StackObj {
   inline ~HandleMarkCleaner();
 };
 
-#endif // SHARE_VM_RUNTIME_HANDLES_HPP
+#endif // SHARE_RUNTIME_HANDLES_HPP

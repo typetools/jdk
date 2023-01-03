@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,6 +38,7 @@ import sun.nio.ch.DirectBuffer;
 import sun.security.jca.JCAUtil;
 import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
+import static sun.security.pkcs11.wrapper.PKCS11Exception.*;
 
 /**
  * Cipher implementation class. This class currently supports
@@ -56,21 +57,21 @@ import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
 final class P11Cipher extends CipherSpi {
 
     // mode constant for ECB mode
-    private final static int MODE_ECB = 3;
+    private static final int MODE_ECB = 3;
     // mode constant for CBC mode
-    private final static int MODE_CBC = 4;
+    private static final int MODE_CBC = 4;
     // mode constant for CTR mode
-    private final static int MODE_CTR = 5;
+    private static final int MODE_CTR = 5;
 
     // padding constant for NoPadding
-    private final static int PAD_NONE = 5;
+    private static final int PAD_NONE = 5;
     // padding constant for PKCS5Padding
-    private final static int PAD_PKCS5 = 6;
+    private static final int PAD_PKCS5 = 6;
 
     private static interface Padding {
         // ENC: format the specified buffer with padding bytes and return the
         // actual padding length
-        int setPaddingBytes(byte[] paddingBuffer, int padLen);
+        int setPaddingBytes(byte[] paddingBuffer, int startOff, int padLen);
 
         // DEC: return the length of trailing padding bytes given the specified
         // padded data
@@ -91,8 +92,8 @@ final class P11Cipher extends CipherSpi {
             this.blockSize = blockSize;
         }
 
-        public int setPaddingBytes(byte[] paddingBuffer, int padLen) {
-            Arrays.fill(paddingBuffer, 0, padLen, (byte) (padLen & 0x007f));
+        public int setPaddingBytes(byte[] paddingBuffer, int startOff, int padLen) {
+            Arrays.fill(paddingBuffer, startOff, startOff + padLen, (byte) (padLen & 0x007f));
             return padLen;
         }
 
@@ -168,6 +169,14 @@ final class P11Cipher extends CipherSpi {
     // length of key size in bytes; currently only used by AES given its oid
     // specification mandates a fixed size of the key
     private int fixedKeySize = -1;
+
+    // Indicates whether the underlying PKCS#11 library requires block-sized
+    // updates during multi-part operations. In such case, we buffer data in
+    // padBuffer up to a block-size. This may be needed only if padding is
+    // applied on the Java side. An example of the previous is when the
+    // CKM_AES_ECB mechanism is used and the PKCS#11 library is NSS. See more
+    // on JDK-8261355.
+    private boolean reqBlockUpdates = false;
 
     P11Cipher(Token token, String algorithm, long mechanism)
             throws PKCS11Exception, NoSuchAlgorithmException {
@@ -252,6 +261,10 @@ final class P11Cipher extends CipherSpi {
                 // no native padding support; use our own padding impl
                 paddingObj = new PKCS5Padding(blockSize);
                 padBuffer = new byte[blockSize];
+                char[] tokenLabel = token.tokenInfo.label;
+                // NSS requires block-sized updates in multi-part operations.
+                reqBlockUpdates = ((tokenLabel[0] == 'N' && tokenLabel[1] == 'S'
+                        && tokenLabel[2] == 'S') ? true : false);
             }
         } else {
             throw new NoSuchPaddingException("Unsupported padding " + padding);
@@ -345,7 +358,9 @@ final class P11Cipher extends CipherSpi {
             SecureRandom random)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
         reset(true);
-        if (fixedKeySize != -1 && key.getEncoded().length != fixedKeySize) {
+        if (fixedKeySize != -1 &&
+                ((key instanceof P11Key) ? ((P11Key) key).length() >> 3 :
+                            key.getEncoded().length) != fixedKeySize) {
             throw new InvalidKeyException("Key size is invalid");
         }
         switch (opmode) {
@@ -400,61 +415,91 @@ final class P11Cipher extends CipherSpi {
         }
     }
 
-    private void cancelOperation() {
-        if (initialized == false) {
+    // reset the states to the pre-initialized values
+    // need to be called after doFinal or prior to re-init
+    private void reset(boolean doCancel) {
+        if (!initialized) {
             return;
         }
+        initialized = false;
 
-        if ((session == null) || (token.explicitCancel == false)) {
-            return;
-        }
         try {
-            if (session.hasObjects() == false) {
-                session = token.killSession(session);
+            if (session == null) {
                 return;
+            }
+
+            if (doCancel && token.explicitCancel) {
+                cancelOperation();
+            }
+        } finally {
+            p11Key.releaseKeyID();
+            session = token.releaseSession(session);
+            bytesBuffered = 0;
+            padBufferLen = 0;
+        }
+    }
+
+    private void cancelOperation() {
+        token.ensureValid();
+        // cancel operation by finishing it; avoid killSession as some
+        // hardware vendors may require re-login
+        try {
+            int bufLen = doFinalLength(0);
+            byte[] buffer = new byte[bufLen];
+            if (encrypt) {
+                token.p11.C_EncryptFinal(session.id(), 0, buffer, 0, bufLen);
             } else {
-                // cancel operation by finishing it
-                int bufLen = doFinalLength(0);
-                byte[] buffer = new byte[bufLen];
-                if (encrypt) {
-                    token.p11.C_EncryptFinal(session.id(), 0, buffer, 0, bufLen);
-                } else {
-                    token.p11.C_DecryptFinal(session.id(), 0, buffer, 0, bufLen);
-                }
+                token.p11.C_DecryptFinal(session.id(), 0, buffer, 0, bufLen);
             }
         } catch (PKCS11Exception e) {
-            throw new ProviderException("Cancel failed", e);
+            if (e.getErrorCode() == CKR_OPERATION_NOT_INITIALIZED) {
+                // Cancel Operation may be invoked after an error on a PKCS#11
+                // call. If the operation inside the token was already cancelled,
+                // do not fail here. This is part of a defensive mechanism for
+                // PKCS#11 libraries that do not strictly follow the standard.
+                return;
+            }
+            if (encrypt) {
+                throw new ProviderException("Cancel failed", e);
+            }
+            // ignore failure for decryption
         }
     }
 
     private void ensureInitialized() throws PKCS11Exception {
-        if (initialized == false) {
+        if (!initialized) {
             initialize();
         }
     }
 
     private void initialize() throws PKCS11Exception {
-        if (session == null) {
-            session = token.getOpSession();
+        if (p11Key == null) {
+            throw new ProviderException(
+                    "Operation cannot be performed without"
+                    + " calling engineInit first");
         }
-        CK_MECHANISM mechParams = (blockMode == MODE_CTR?
-            new CK_MECHANISM(mechanism, new CK_AES_CTR_PARAMS(iv)) :
-            new CK_MECHANISM(mechanism, iv));
-
+        token.ensureValid();
+        long p11KeyID = p11Key.getKeyID();
         try {
-            if (encrypt) {
-                token.p11.C_EncryptInit(session.id(), mechParams, p11Key.keyID);
-            } else {
-                token.p11.C_DecryptInit(session.id(), mechParams, p11Key.keyID);
+            if (session == null) {
+                session = token.getOpSession();
             }
-        } catch (PKCS11Exception ex) {
-            // release session when initialization failed
+            CK_MECHANISM mechParams = (blockMode == MODE_CTR?
+                    new CK_MECHANISM(mechanism, new CK_AES_CTR_PARAMS(iv)) :
+                    new CK_MECHANISM(mechanism, iv));
+            if (encrypt) {
+                token.p11.C_EncryptInit(session.id(), mechParams, p11KeyID);
+            } else {
+                token.p11.C_DecryptInit(session.id(), mechParams, p11KeyID);
+            }
+        } catch (PKCS11Exception e) {
+            p11Key.releaseKeyID();
             session = token.releaseSession(session);
-            throw ex;
+            throw e;
         }
+        initialized = true;
         bytesBuffered = 0;
         padBufferLen = 0;
-        initialized = true;
     }
 
     // if update(inLen) is called, how big does the output buffer have to be?
@@ -483,18 +528,6 @@ final class P11Cipher extends CipherSpi {
             result += (blockSize - (result & (blockSize - 1)));
         }
         return result;
-    }
-
-    // reset the states to the pre-initialized values
-    private void reset(boolean doCancel) {
-        if (doCancel) cancelOperation();
-
-        initialized = false;
-        bytesBuffered = 0;
-        padBufferLen = 0;
-        if (session != null) {
-            session = token.releaseSession(session);
-        }
     }
 
     // see JCE spec
@@ -567,46 +600,54 @@ final class P11Cipher extends CipherSpi {
         try {
             ensureInitialized();
             int k = 0;
-            if (encrypt) {
-                k = token.p11.C_EncryptUpdate(session.id(), 0, in, inOfs, inLen,
-                        0, out, outOfs, outLen);
-            } else {
-                int newPadBufferLen = 0;
-                if (paddingObj != null) {
-                    if (padBufferLen != 0) {
-                        // NSS throws up when called with data not in multiple
-                        // of blocks. Try to work around this by holding the
-                        // extra data in padBuffer.
-                        if (padBufferLen != padBuffer.length) {
-                            int bufCapacity = padBuffer.length - padBufferLen;
-                            if (inLen > bufCapacity) {
-                                bufferInputBytes(in, inOfs, bufCapacity);
-                                inOfs += bufCapacity;
-                                inLen -= bufCapacity;
-                            } else {
-                                bufferInputBytes(in, inOfs, inLen);
-                                return 0;
-                            }
+            int newPadBufferLen = 0;
+            if (paddingObj != null && (!encrypt || reqBlockUpdates)) {
+                if (padBufferLen != 0) {
+                    if (padBufferLen != padBuffer.length) {
+                        int bufCapacity = padBuffer.length - padBufferLen;
+                        if (inLen > bufCapacity) {
+                            bufferInputBytes(in, inOfs, bufCapacity);
+                            inOfs += bufCapacity;
+                            inLen -= bufCapacity;
+                        } else {
+                            bufferInputBytes(in, inOfs, inLen);
+                            return 0;
                         }
+                    }
+                    if (encrypt) {
+                        k = token.p11.C_EncryptUpdate(session.id(),
+                                0, padBuffer, 0, padBufferLen,
+                                0, out, outOfs, outLen);
+                    } else {
                         k = token.p11.C_DecryptUpdate(session.id(),
                                 0, padBuffer, 0, padBufferLen,
                                 0, out, outOfs, outLen);
-                        padBufferLen = 0;
                     }
-                    newPadBufferLen = inLen & (blockSize - 1);
-                    if (newPadBufferLen == 0) {
-                        newPadBufferLen = padBuffer.length;
-                    }
-                    inLen -= newPadBufferLen;
+                    padBufferLen = 0;
                 }
-                if (inLen > 0) {
+                newPadBufferLen = inLen & (blockSize - 1);
+                if (!encrypt && newPadBufferLen == 0) {
+                    // While decrypting with implUpdate, the last encrypted block
+                    // is always held in a buffer. If it's the final one (unknown
+                    // at this point), it may contain padding bytes and need further
+                    // processing. In implDoFinal (where we know it's the final one)
+                    // the buffer is decrypted, unpadded and returned.
+                    newPadBufferLen = padBuffer.length;
+                }
+                inLen -= newPadBufferLen;
+            }
+            if (inLen > 0) {
+                if (encrypt) {
+                    k += token.p11.C_EncryptUpdate(session.id(), 0, in, inOfs,
+                            inLen, 0, out, (outOfs + k), (outLen - k));
+                } else {
                     k += token.p11.C_DecryptUpdate(session.id(), 0, in, inOfs,
                             inLen, 0, out, (outOfs + k), (outLen - k));
                 }
-                // update 'padBuffer' if using our own padding impl.
-                if (paddingObj != null) {
-                    bufferInputBytes(in, inOfs + inLen, newPadBufferLen);
-                }
+            }
+            // update 'padBuffer' if using our own padding impl.
+            if (paddingObj != null && newPadBufferLen > 0) {
+                bufferInputBytes(in, inOfs + inLen, newPadBufferLen);
             }
             bytesBuffered += (inLen - k);
             return k;
@@ -615,7 +656,11 @@ final class P11Cipher extends CipherSpi {
                 throw (ShortBufferException)
                         (new ShortBufferException().initCause(e));
             }
-            reset(false);
+            // Some implementations such as the NSS Software Token do not
+            // cancel the operation upon a C_EncryptUpdate/C_DecryptUpdate
+            // failure (as required by the PKCS#11 standard). See JDK-8258833
+            // for further information.
+            reset(true);
             throw new ProviderException("update() failed", e);
         }
     }
@@ -663,60 +708,62 @@ final class P11Cipher extends CipherSpi {
             }
 
             int k = 0;
-            if (encrypt) {
+            int newPadBufferLen = 0;
+            if (paddingObj != null  && (!encrypt || reqBlockUpdates)) {
+                if (padBufferLen != 0) {
+                    if (padBufferLen != padBuffer.length) {
+                        int bufCapacity = padBuffer.length - padBufferLen;
+                        if (inLen > bufCapacity) {
+                            bufferInputBytes(inBuffer, bufCapacity);
+                            inOfs += bufCapacity;
+                            inLen -= bufCapacity;
+                        } else {
+                            bufferInputBytes(inBuffer, inLen);
+                            return 0;
+                        }
+                    }
+                    if (encrypt) {
+                        k = token.p11.C_EncryptUpdate(session.id(), 0,
+                                padBuffer, 0, padBufferLen, outAddr, outArray,
+                                outOfs, outLen);
+                    } else {
+                        k = token.p11.C_DecryptUpdate(session.id(), 0,
+                                padBuffer, 0, padBufferLen, outAddr, outArray,
+                                outOfs, outLen);
+                    }
+                    padBufferLen = 0;
+                }
+                newPadBufferLen = inLen & (blockSize - 1);
+                if (!encrypt && newPadBufferLen == 0) {
+                    // While decrypting with implUpdate, the last encrypted block
+                    // is always held in a buffer. If it's the final one (unknown
+                    // at this point), it may contain padding bytes and need further
+                    // processing. In implDoFinal (where we know it's the final one)
+                    // the buffer is decrypted, unpadded and returned.
+                    newPadBufferLen = padBuffer.length;
+                }
+                inLen -= newPadBufferLen;
+            }
+            if (inLen > 0) {
                 if (inAddr == 0 && inArray == null) {
                     inArray = new byte[inLen];
                     inBuffer.get(inArray);
                 } else {
-                    inBuffer.position(origPos + inLen);
+                    inBuffer.position(inBuffer.position() + inLen);
                 }
-                k = token.p11.C_EncryptUpdate(session.id(),
-                        inAddr, inArray, inOfs, inLen,
-                        outAddr, outArray, outOfs, outLen);
-            } else {
-                int newPadBufferLen = 0;
-                if (paddingObj != null) {
-                    if (padBufferLen != 0) {
-                        // NSS throws up when called with data not in multiple
-                        // of blocks. Try to work around this by holding the
-                        // extra data in padBuffer.
-                        if (padBufferLen != padBuffer.length) {
-                            int bufCapacity = padBuffer.length - padBufferLen;
-                            if (inLen > bufCapacity) {
-                                bufferInputBytes(inBuffer, bufCapacity);
-                                inOfs += bufCapacity;
-                                inLen -= bufCapacity;
-                            } else {
-                                bufferInputBytes(inBuffer, inLen);
-                                return 0;
-                            }
-                        }
-                        k = token.p11.C_DecryptUpdate(session.id(), 0,
-                                padBuffer, 0, padBufferLen, outAddr, outArray,
-                                outOfs, outLen);
-                        padBufferLen = 0;
-                    }
-                    newPadBufferLen = inLen & (blockSize - 1);
-                    if (newPadBufferLen == 0) {
-                        newPadBufferLen = padBuffer.length;
-                    }
-                    inLen -= newPadBufferLen;
-                }
-                if (inLen > 0) {
-                    if (inAddr == 0 && inArray == null) {
-                        inArray = new byte[inLen];
-                        inBuffer.get(inArray);
-                    } else {
-                        inBuffer.position(inBuffer.position() + inLen);
-                    }
+                if (encrypt) {
+                    k += token.p11.C_EncryptUpdate(session.id(), inAddr,
+                            inArray, inOfs, inLen, outAddr, outArray,
+                            (outOfs + k), (outLen - k));
+                } else {
                     k += token.p11.C_DecryptUpdate(session.id(), inAddr,
                             inArray, inOfs, inLen, outAddr, outArray,
                             (outOfs + k), (outLen - k));
                 }
-                // update 'padBuffer' if using our own padding impl.
-                if (paddingObj != null && newPadBufferLen != 0) {
-                    bufferInputBytes(inBuffer, newPadBufferLen);
-                }
+            }
+            // update 'padBuffer' if using our own padding impl.
+            if (paddingObj != null && newPadBufferLen > 0) {
+                bufferInputBytes(inBuffer, newPadBufferLen);
             }
             bytesBuffered += (inLen - k);
             if (!(outBuffer instanceof DirectBuffer) &&
@@ -733,7 +780,11 @@ final class P11Cipher extends CipherSpi {
                 throw (ShortBufferException)
                         (new ShortBufferException().initCause(e));
             }
-            reset(false);
+            // Some implementations such as the NSS Software Token do not
+            // cancel the operation upon a C_EncryptUpdate/C_DecryptUpdate
+            // failure (as required by the PKCS#11 standard). See JDK-8258833
+            // for further information.
+            reset(true);
             throw new ProviderException("update() failed", e);
         }
     }
@@ -751,15 +802,24 @@ final class P11Cipher extends CipherSpi {
             int k = 0;
             if (encrypt) {
                 if (paddingObj != null) {
+                    int startOff = 0;
+                    if (reqBlockUpdates) {
+                        startOff = padBufferLen;
+                    }
                     int actualPadLen = paddingObj.setPaddingBytes(padBuffer,
-                            requiredOutLen - bytesBuffered);
+                            startOff, requiredOutLen - bytesBuffered);
                     k = token.p11.C_EncryptUpdate(session.id(),
-                            0, padBuffer, 0, actualPadLen,
+                            0, padBuffer, 0, startOff + actualPadLen,
                             0, out, outOfs, outLen);
                 }
+                // Some implementations such as the NSS Software Token do not
+                // cancel the operation upon a C_EncryptUpdate failure (as
+                // required by the PKCS#11 standard). Cancel is not needed
+                // only after this point. See JDK-8258833 for further
+                // information.
+                doCancel = false;
                 k += token.p11.C_EncryptFinal(session.id(),
                         0, out, (outOfs + k), (outLen - k));
-                doCancel = false;
             } else {
                 // Special handling to match SunJCE provider behavior
                 if (bytesBuffered == 0 && padBufferLen == 0) {
@@ -771,22 +831,26 @@ final class P11Cipher extends CipherSpi {
                                 padBuffer, 0, padBufferLen, 0, padBuffer, 0,
                                 padBuffer.length);
                     }
+                    // Some implementations such as the NSS Software Token do not
+                    // cancel the operation upon a C_DecryptUpdate failure (as
+                    // required by the PKCS#11 standard). Cancel is not needed
+                    // only after this point. See JDK-8258833 for further
+                    // information.
+                    doCancel = false;
                     k += token.p11.C_DecryptFinal(session.id(), 0, padBuffer, k,
                             padBuffer.length - k);
-                    doCancel = false;
 
                     int actualPadLen = paddingObj.unpad(padBuffer, k);
                     k -= actualPadLen;
                     System.arraycopy(padBuffer, 0, out, outOfs, k);
                 } else {
+                    doCancel = false;
                     k = token.p11.C_DecryptFinal(session.id(), 0, out, outOfs,
                             outLen);
-                    doCancel = false;
                 }
             }
             return k;
         } catch (PKCS11Exception e) {
-            doCancel = false;
             handleException(e);
             throw new ProviderException("doFinal() failed", e);
         } finally {
@@ -826,15 +890,24 @@ final class P11Cipher extends CipherSpi {
 
             if (encrypt) {
                 if (paddingObj != null) {
+                    int startOff = 0;
+                    if (reqBlockUpdates) {
+                        startOff = padBufferLen;
+                    }
                     int actualPadLen = paddingObj.setPaddingBytes(padBuffer,
-                            requiredOutLen - bytesBuffered);
+                            startOff, requiredOutLen - bytesBuffered);
                     k = token.p11.C_EncryptUpdate(session.id(),
-                            0, padBuffer, 0, actualPadLen,
+                            0, padBuffer, 0, startOff + actualPadLen,
                             outAddr, outArray, outOfs, outLen);
                 }
+                // Some implementations such as the NSS Software Token do not
+                // cancel the operation upon a C_EncryptUpdate failure (as
+                // required by the PKCS#11 standard). Cancel is not needed
+                // only after this point. See JDK-8258833 for further
+                // information.
+                doCancel = false;
                 k += token.p11.C_EncryptFinal(session.id(),
                         outAddr, outArray, (outOfs + k), (outLen - k));
-                doCancel = false;
             } else {
                 // Special handling to match SunJCE provider behavior
                 if (bytesBuffered == 0 && padBufferLen == 0) {
@@ -848,18 +921,23 @@ final class P11Cipher extends CipherSpi {
                                 0, padBuffer, 0, padBuffer.length);
                         padBufferLen = 0;
                     }
+                    // Some implementations such as the NSS Software Token do not
+                    // cancel the operation upon a C_DecryptUpdate failure (as
+                    // required by the PKCS#11 standard). Cancel is not needed
+                    // only after this point. See JDK-8258833 for further
+                    // information.
+                    doCancel = false;
                     k += token.p11.C_DecryptFinal(session.id(),
                             0, padBuffer, k, padBuffer.length - k);
-                    doCancel = false;
 
                     int actualPadLen = paddingObj.unpad(padBuffer, k);
                     k -= actualPadLen;
                     outArray = padBuffer;
                     outOfs = 0;
                 } else {
+                    doCancel = false;
                     k = token.p11.C_DecryptFinal(session.id(),
                             outAddr, outArray, outOfs, outLen);
-                    doCancel = false;
                 }
             }
             if ((!encrypt && paddingObj != null) ||
@@ -871,7 +949,6 @@ final class P11Cipher extends CipherSpi {
             }
             return k;
         } catch (PKCS11Exception e) {
-            doCancel = false;
             handleException(e);
             throw new ProviderException("doFinal() failed", e);
         } finally {

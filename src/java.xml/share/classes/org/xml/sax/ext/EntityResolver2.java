@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,6 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
-// EntityResolver2.java - Extended SAX entity resolver.
-// http://www.saxproject.org
-// No warranty; no copyright -- use this as you will.
-// $Id: EntityResolver2.java,v 1.2 2004/11/03 22:49:08 jsuttor Exp $
 
 package org.xml.sax.ext;
 
@@ -51,11 +46,6 @@ import org.xml.sax.SAXException;
  * {@link EntityResolver2#resolveEntity EntityResolver2.resolveEntity()}
  * method (in this interface) is used <em>instead of</em> the older (SAX 1.0)
  * {@link EntityResolver#resolveEntity EntityResolver.resolveEntity()} method.
- *
- * <blockquote>
- * <em>This module, both source code and documentation, is in the
- * Public Domain, and comes with <strong>NO WARRANTY</strong>.</em>
- * </blockquote>
  *
  * <p>If a SAX application requires the customized handling which this
  * interface defines for external entities, it must ensure that it uses
@@ -152,9 +142,9 @@ public interface EntityResolver2 extends EntityResolver
      *  to be used by the parser, or null to indicate that no external
      *  subset is provided.
      *
-     * @exception SAXException Any SAX exception, possibly wrapping
+     * @throws SAXException Any SAX exception, possibly wrapping
      *  another exception.
-     * @exception IOException Probably indicating a failure to create
+     * @throws IOException Probably indicating a failure to create
      *  a new InputStream or Reader, or an illegal URL.
      */
     @Pure
@@ -210,9 +200,9 @@ public interface EntityResolver2 extends EntityResolver
      *  resolve the system ID against the base URI and open a connection
      *  to resulting URI.
      *
-     * @exception SAXException Any SAX exception, possibly wrapping
+     * @throws SAXException Any SAX exception, possibly wrapping
      *  another exception.
-     * @exception IOException Probably indicating a failure to create
+     * @throws IOException Probably indicating a failure to create
      *  a new InputStream or Reader, or an illegal URL.
      */
     @Pure

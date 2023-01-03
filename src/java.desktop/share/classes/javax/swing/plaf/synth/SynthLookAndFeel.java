@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +22,51 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing.plaf.synth;
 
-import java.awt.*;
-import java.beans.*;
-import java.io.*;
-import java.lang.ref.*;
-import java.net.*;
-import java.security.*;
-import java.text.*;
-import java.util.*;
-import javax.swing.*;
-import javax.swing.plaf.*;
-import javax.swing.plaf.basic.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.NotSerializableException;
+import java.io.Serial;
+import java.io.Serializable;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+import java.net.URL;
+import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
-import sun.awt.*;
-import sun.security.action.*;
-import sun.swing.*;
-import sun.swing.plaf.synth.*;
+import javax.swing.JComponent;
+import javax.swing.JMenu;
+import javax.swing.LookAndFeel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.InsetsUIResource;
+import javax.swing.plaf.basic.BasicLookAndFeel;
+
+import sun.awt.AppContext;
+import sun.awt.SunToolkit;
+import sun.swing.DefaultLookup;
+import sun.swing.SwingAccessor;
+import sun.swing.SwingUtilities2;
+import sun.swing.plaf.synth.SynthFileChooserUI;
 
 /**
  * SynthLookAndFeel provides the basis for creating a customized look and
@@ -803,8 +830,9 @@ public class SynthLookAndFeel extends BasicLookAndFeel {
      */
     private static boolean useLAFConditions() {
         String language = Locale.getDefault().getLanguage();
+        Toolkit tk = Toolkit.getDefaultToolkit();
         String desktop =
-            AccessController.doPrivileged(new GetPropertyAction("sun.desktop"));
+            (tk instanceof SunToolkit) ? ((SunToolkit)tk).getDesktop() : null;
 
         boolean isCjkLocale = (Locale.CHINESE.getLanguage().equals(language) ||
                 Locale.JAPANESE.getLanguage().equals(language) ||
@@ -863,7 +891,7 @@ public class SynthLookAndFeel extends BasicLookAndFeel {
          */
         private static void updateWindowUI(Window window) {
             updateStyles(window);
-            Window ownedWins[] = window.getOwnedWindows();
+            Window[] ownedWins = window.getOwnedWindows();
             for (Window w : ownedWins) {
                 updateWindowUI(w);
             }
@@ -873,7 +901,7 @@ public class SynthLookAndFeel extends BasicLookAndFeel {
          * Updates the UIs of all the known Frames.
          */
         private static void updateAllUIs() {
-            Frame appFrames[] = Frame.getFrames();
+            Frame[] appFrames = Frame.getFrames();
             for (Frame frame : appFrames) {
                 updateWindowUI(frame);
             }
@@ -913,6 +941,7 @@ public class SynthLookAndFeel extends BasicLookAndFeel {
         }
     }
 
+    @Serial
     private void writeObject(java.io.ObjectOutputStream out)
             throws IOException {
         throw new NotSerializableException(this.getClass().getName());

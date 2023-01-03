@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/vmSymbols.hpp"
 #include "c1/c1_InstructionPrinter.hpp"
 #include "c1/c1_ValueStack.hpp"
 #include "ci/ciArray.hpp"
@@ -33,19 +34,11 @@
 #ifndef PRODUCT
 
 const char* InstructionPrinter::basic_type_name(BasicType type) {
-  switch (type) {
-    case T_BOOLEAN: return "boolean";
-    case T_BYTE   : return "byte";
-    case T_CHAR   : return "char";
-    case T_SHORT  : return "short";
-    case T_INT    : return "int";
-    case T_LONG   : return "long";
-    case T_FLOAT  : return "float";
-    case T_DOUBLE : return "double";
-    case T_ARRAY  : return "array";
-    case T_OBJECT : return "object";
-    default       : return "???";
+  const char* n = type2name(type);
+  if (n == NULL || type > T_VOID) {
+    return "???";
   }
+  return n;
 }
 
 
@@ -247,7 +240,7 @@ void InstructionPrinter::print_stack(ValueStack* stack) {
     output()->cr();
     fill_to(start_position, ' ');
     output()->print("locks [");
-    for (int i = i = 0; i < stack->locks_size(); i++) {
+    for (int i = 0; i < stack->locks_size(); i++) {
       Value t = stack->lock_at(i);
       if (i > 0) output()->print(", ");
       output()->print("%d:", i);
@@ -337,7 +330,9 @@ void InstructionPrinter::print_head() {
 void InstructionPrinter::print_line(Instruction* instr) {
   // print instruction data on one line
   if (instr->is_pinned()) output()->put('.');
-  fill_to(bci_pos  ); output()->print("%d", instr->printable_bci());
+  if (instr->has_printable_bci()) {
+    fill_to(bci_pos  ); output()->print("%d", instr->printable_bci());
+  }
   fill_to(use_pos  ); output()->print("%d", instr->use_count());
   fill_to(temp_pos ); print_temp(instr);
   fill_to(instr_pos); print_instr(instr);
@@ -745,11 +740,6 @@ void InstructionPrinter::do_If(If* x) {
 }
 
 
-void InstructionPrinter::do_IfInstanceOf(IfInstanceOf* x) {
-  output()->print("<IfInstanceOf>");
-}
-
-
 void InstructionPrinter::do_TableSwitch(TableSwitch* x) {
   output()->print("tableswitch ");
   if (x->is_safepoint()) output()->print("(safepoint) ");
@@ -918,18 +908,16 @@ void InstructionPrinter::do_RuntimeCall(RuntimeCall* x) {
 }
 
 void InstructionPrinter::do_MemBar(MemBar* x) {
-  if (os::is_MP()) {
-    LIR_Code code = x->code();
-    switch (code) {
-      case lir_membar_acquire   : output()->print("membar_acquire"); break;
-      case lir_membar_release   : output()->print("membar_release"); break;
-      case lir_membar           : output()->print("membar"); break;
-      case lir_membar_loadload  : output()->print("membar_loadload"); break;
-      case lir_membar_storestore: output()->print("membar_storestore"); break;
-      case lir_membar_loadstore : output()->print("membar_loadstore"); break;
-      case lir_membar_storeload : output()->print("membar_storeload"); break;
-      default                   : ShouldNotReachHere(); break;
-    }
+  LIR_Code code = x->code();
+  switch (code) {
+  case lir_membar_acquire   : output()->print("membar_acquire"); break;
+  case lir_membar_release   : output()->print("membar_release"); break;
+  case lir_membar           : output()->print("membar"); break;
+  case lir_membar_loadload  : output()->print("membar_loadload"); break;
+  case lir_membar_storestore: output()->print("membar_storestore"); break;
+  case lir_membar_loadstore : output()->print("membar_loadstore"); break;
+  case lir_membar_storeload : output()->print("membar_storeload"); break;
+  default                   : ShouldNotReachHere(); break;
   }
 }
 

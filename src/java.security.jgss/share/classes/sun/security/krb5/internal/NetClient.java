@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,9 +45,9 @@ public abstract class NetClient implements AutoCloseable {
         }
     }
 
-    abstract public void send(byte[] data) throws IOException;
-    abstract public byte[] receive() throws IOException;
-    abstract public void close() throws IOException;
+    public abstract void send(byte[] data) throws IOException;
+    public abstract byte[] receive() throws IOException;
+    public abstract void close() throws IOException;
 }
 
 class TCPClient extends NetClient {
@@ -102,7 +102,7 @@ class TCPClient extends NetClient {
         }
 
         try {
-            return IOUtils.readFully(in, len, true);
+            return IOUtils.readExactlyNBytes(in, len);
         } catch (IOException ioe) {
             if (Krb5.DEBUG) {
                 System.out.println(

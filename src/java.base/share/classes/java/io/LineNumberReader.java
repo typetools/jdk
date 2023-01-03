@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,15 +42,17 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * respectively.
  *
  * <p> By default, line numbering begins at 0. This number increments at every
- * <a href="#lt">line terminator</a> as the data is read, and can be changed
- * with a call to {@code setLineNumber(int)}.  Note however, that
- * {@code setLineNumber(int)} does not actually change the current position in
- * the stream; it only changes the value that will be returned by
+ * <a href="#lt">line terminator</a> as the data is read, and at the end of the
+ * stream if the last character in the stream is not a line terminator.  This
+ * number can be changed with a call to {@code setLineNumber(int)}.  Note
+ * however, that {@code setLineNumber(int)} does not actually change the current
+ * position in the stream; it only changes the value that will be returned by
  * {@code getLineNumber()}.
  *
  * <p> A line is considered to be <a id="lt">terminated</a> by any one of a
  * line feed ('\n'), a carriage return ('\r'), or a carriage return followed
- * immediately by a linefeed.
+ * immediately by a linefeed, or any of the previous terminators followed by
+ * end of stream, or end of stream not preceded by another terminator.
  *
  * @author      Mark Reinhold
  * @since       1.1
@@ -58,6 +60,15 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 @AnnotatedFor({"index", "lock", "mustcall", "nullness"})
 public class LineNumberReader extends BufferedReader {
+
+    /** Previous character types */
+    private static final int NONE = 0; // no previous character
+    private static final int CHAR = 1; // non-line terminator
+    private static final int EOL = 2; // line terminator
+    private static final int EOF  = 3; // end-of-file
+
+    /** The previous character type */
+    private int prevChar = NONE;
 
     /** The current line number */
     private int lineNumber = 0;
@@ -121,8 +132,10 @@ public class LineNumberReader extends BufferedReader {
 
     /**
      * Read a single character.  <a href="#lt">Line terminators</a> are
-     * compressed into single newline ('\n') characters.  Whenever a line
-     * terminator is read the current line number is incremented.
+     * compressed into single newline ('\n') characters.  The current line
+     * number is incremented whenever a line terminator is read, or when the
+     * end of the stream is reached and the last character in the stream is
+     * not a line terminator.
      *
      * @return  The character read, or -1 if the end of the stream has been
      *          reached
@@ -144,38 +157,57 @@ public class LineNumberReader extends BufferedReader {
                 skipLF = true;
             case '\n':          /* Fall through */
                 lineNumber++;
+                prevChar = EOL;
                 return '\n';
+            case -1:
+                if (prevChar == CHAR)
+                    lineNumber++;
+                prevChar = EOF;
+                break;
+            default:
+                prevChar = CHAR;
+                break;
             }
             return c;
         }
     }
 
     /**
-     * Read characters into a portion of an array.  Whenever a <a
-     * href="#lt">line terminator</a> is read the current line number is
-     * incremented.
+     * Reads characters into a portion of an array.  This method will block
+     * until some input is available, an I/O error occurs, or the end of the
+     * stream is reached.
      *
-     * @param  cbuf
-     *         Destination buffer
+     * <p> If {@code len} is zero, then no characters are read and {@code 0} is
+     * returned; otherwise, there is an attempt to read at least one character.
+     * If no character is available because the stream is at its end, the value
+     * {@code -1} is returned; otherwise, at least one character is read and
+     * stored into {@code cbuf}.
      *
-     * @param  off
-     *         Offset at which to start storing characters
+     * <p><a href="#lt">Line terminators</a> are compressed into single newline
+     * ('\n') characters.  The current line number is incremented whenever a
+     * line terminator is read, or when the end of the stream is reached and
+     * the last character in the stream is not a line terminator.
      *
-     * @param  len
-     *         Maximum number of characters to read
+     * @param  cbuf  {@inheritDoc}
+     * @param  off   {@inheritDoc}
+     * @param  len   {@inheritDoc}
      *
-     * @return  The number of bytes read, or -1 if the end of the stream has
-     *          already been reached
-     *
-     * @throws  IOException
-     *          If an I/O error occurs
+     * @return  {@inheritDoc}
      *
      * @throws  IndexOutOfBoundsException {@inheritDoc}
+     * @throws  IOException {@inheritDoc}
      */
     @SuppressWarnings("fallthrough")
     public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied LineNumberReader this, char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             int n = super.read(cbuf, off, len);
+
+            if (n == -1) {
+                if (prevChar == CHAR)
+                    lineNumber++;
+                prevChar = EOF;
+                return -1;
+            }
 
             for (int i = off; i < off + n; i++) {
                 int c = cbuf[i];
@@ -193,13 +225,28 @@ public class LineNumberReader extends BufferedReader {
                 }
             }
 
+            if (n > 0) {
+                switch ((int)cbuf[off + n - 1]) {
+                case '\r':
+                case '\n':      /* Fall through */
+                    prevChar = EOL;
+                    break;
+                default:
+                    prevChar = CHAR;
+                    break;
+                }
+            }
+
             return n;
         }
     }
 
     /**
-     * Read a line of text.  Whenever a <a href="#lt">line terminator</a> is
-     * read the current line number is incremented.
+     * Read a line of text.  <a href="#lt">Line terminators</a> are compressed
+     * into single newline ('\n') characters. The current line number is
+     * incremented whenever a line terminator is read, or when the end of the
+     * stream is reached and the last character in the stream is not a line
+     * terminator.
      *
      * @return  A String containing the contents of the line, not including
      *          any <a href="#lt">line termination characters</a>, or
@@ -210,10 +257,17 @@ public class LineNumberReader extends BufferedReader {
      */
     public @Nullable String readLine(@GuardSatisfied LineNumberReader this) throws IOException {
         synchronized (lock) {
-            String l = super.readLine(skipLF);
+            boolean[] term = new boolean[1];
+            String l = super.readLine(skipLF, term);
             skipLF = false;
-            if (l != null)
+            if (l != null) {
                 lineNumber++;
+                prevChar = term[0] ? EOL : EOF;
+            } else { // l == null
+                if (prevChar == CHAR)
+                    lineNumber++;
+                prevChar = EOF;
+            }
             return l;
         }
     }
@@ -225,18 +279,7 @@ public class LineNumberReader extends BufferedReader {
     private char skipBuffer[] = null;
 
     /**
-     * Skip characters.
-     *
-     * @param  n
-     *         The number of characters to skip
-     *
-     * @return  The number of characters actually skipped
-     *
-     * @throws  IOException
-     *          If an I/O error occurs
-     *
-     * @throws  IllegalArgumentException
-     *          If {@code n} is negative
+     * {@inheritDoc}
      */
     public @NonNegative long skip(@GuardSatisfied LineNumberReader this, @NonNegative long n) throws IOException {
         if (n < 0)
@@ -251,6 +294,9 @@ public class LineNumberReader extends BufferedReader {
                 if (nc == -1)
                     break;
                 r -= nc;
+            }
+            if (n - r > 0) {
+                prevChar = NONE;
             }
             return n - r;
         }
@@ -271,6 +317,11 @@ public class LineNumberReader extends BufferedReader {
      */
     public void mark(@GuardSatisfied LineNumberReader this, @NonNegative int readAheadLimit) throws IOException {
         synchronized (lock) {
+            // If the most recently read character is '\r', then increment the
+            // read ahead limit as in this case if the next character is '\n',
+            // two characters would actually be read by the next read().
+            if (skipLF)
+                readAheadLimit++;
             super.mark(readAheadLimit);
             markedLineNumber = lineNumber;
             markedSkipLF     = skipLF;

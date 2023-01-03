@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 #include "precompiled.hpp"
 #include "jvm.h"
 #include "logging/log.hpp"
+#include "logging/logAsyncWriter.hpp"
 #include "logging/logConfiguration.hpp"
 #include "logging/logDecorations.hpp"
 #include "logging/logDecorators.hpp"
@@ -35,7 +36,7 @@
 #include "logging/logTagSet.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
-#include "runtime/os.inline.hpp"
+#include "runtime/os.hpp"
 #include "runtime/semaphore.hpp"
 #include "utilities/globalDefinitions.hpp"
 
@@ -102,7 +103,6 @@ void LogConfiguration::post_initialize() {
 
 void LogConfiguration::initialize(jlong vm_start_time) {
   LogFileOutput::set_file_name_parameters(vm_start_time);
-  LogDecorations::initialize(vm_start_time);
   assert(_outputs == NULL, "Should not initialize _outputs before this function, initialize called twice?");
   _outputs = NEW_C_HEAP_ARRAY(LogOutput*, 2, mtLogging);
   _outputs[0] = &StdoutLog;
@@ -111,9 +111,7 @@ void LogConfiguration::initialize(jlong vm_start_time) {
 }
 
 void LogConfiguration::finalize() {
-  for (size_t i = _n_outputs; i > 0; i--) {
-    disable_output(i - 1);
-  }
+  disable_outputs();
   FREE_C_HEAP_ARRAY(LogOutput*, _outputs);
 }
 
@@ -264,6 +262,10 @@ void LogConfiguration::configure_output(size_t idx, const LogSelectionList& sele
   }
 
   if (!enabled && idx > 1) {
+    // User may disable a logOuput like this:
+    // LogConfiguration::parse_log_arguments(filename, "all=off", "", "", &stream);
+    // Just be conservative. Flush them all before deleting idx.
+    AsyncLogWriter::flush();
     // Output is unused and should be removed, unless it is stdout/stderr (idx < 2)
     delete_output(idx);
     return;
@@ -273,28 +275,37 @@ void LogConfiguration::configure_output(size_t idx, const LogSelectionList& sele
   assert(strlen(output->config_string()) > 0, "should always have a config description");
 }
 
-void LogConfiguration::disable_output(size_t idx) {
-  assert(idx < _n_outputs, "invalid index: " SIZE_FORMAT " (_n_outputs: " SIZE_FORMAT ")", idx, _n_outputs);
-  LogOutput* out = _outputs[idx];
+void LogConfiguration::disable_outputs() {
+  size_t idx = _n_outputs;
 
-  // Remove the output from all tagsets.
+  // Remove all outputs from all tagsets.
   for (LogTagSet* ts = LogTagSet::first(); ts != NULL; ts = ts->next()) {
-    ts->set_output_level(out, LogLevel::Off);
-    ts->update_decorators();
+    ts->disable_outputs();
   }
 
-  // Delete the output unless stdout or stderr (idx 0 or 1)
-  if (idx > 1) {
-    delete_output(idx);
-  } else {
-    out->set_config_string("all=off");
+  // Handle jcmd VM.log disable
+  // ts->disable_outputs() above has deleted output_list with RCU synchronization.
+  // Therefore, no new logging entry can enter AsyncLog buffer for the time being.
+  // flush pending entries before LogOutput instances die.
+  AsyncLogWriter::flush();
+
+  while (idx > 0) {
+    LogOutput* out = _outputs[--idx];
+    // Delete the output unless stdout or stderr (idx 0 or 1)
+    if (idx > 1) {
+      delete_output(idx);
+    } else {
+      out->set_config_string("all=off");
+    }
   }
 }
 
 void LogConfiguration::disable_logging() {
   ConfigurationLock cl;
-  for (size_t i = _n_outputs; i > 0; i--) {
-    disable_output(i - 1);
+  disable_outputs();
+  // Update the decorators on all tagsets to get rid of unused decorators
+  for (LogTagSet* ts = LogTagSet::first(); ts != NULL; ts = ts->next()) {
+    ts->update_decorators();
   }
   notify_update_listeners();
 }
@@ -338,6 +349,15 @@ bool LogConfiguration::parse_command_line_arguments(const char* opts) {
 
     // Find the next colon or quote
     char* next = strpbrk(str, ":\"");
+#ifdef _WINDOWS
+    // Skip over Windows paths such as "C:\..."
+    // Handle both C:\... and file=C:\..."
+    if (next != NULL && next[0] == ':' && next[1] == '\\') {
+      if (next == str + 1 || (strncmp(str, "file=", 5) == 0)) {
+        next = strpbrk(next + 1, ":\"");
+      }
+    }
+#endif
     while (next != NULL && *next == '"') {
       char* end_quote = strchr(next + 1, '"');
       if (end_quote == NULL) {
@@ -353,8 +373,13 @@ bool LogConfiguration::parse_command_line_arguments(const char* opts) {
       *next = '\0';
       str = next + 1;
     } else {
+      str = NULL;
       break;
     }
+  }
+
+  if (str != NULL) {
+    log_warning(logging)("Ignoring excess -Xlog options: \"%s\"", str);
   }
 
   // Parse and apply the separated configuration options
@@ -413,6 +438,7 @@ bool LogConfiguration::parse_log_arguments(const char* outputstr,
 
   ConfigurationLock cl;
   size_t idx;
+  bool added = false;
   if (outputstr[0] == '#') { // Output specified using index
     int ret = sscanf(outputstr + 1, SIZE_FORMAT, &idx);
     if (ret != 1 || idx >= _n_outputs) {
@@ -433,15 +459,17 @@ bool LogConfiguration::parse_log_arguments(const char* outputstr,
       LogOutput* output = new_output(normalized, output_options, errstream);
       if (output != NULL) {
         idx = add_output(output);
+        added = true;
       }
-    } else if (output_options != NULL && strlen(output_options) > 0) {
-      errstream->print_cr("Output options for existing outputs are ignored.");
     }
 
     FREE_C_HEAP_ARRAY(char, normalized);
     if (idx == SIZE_MAX) {
       return false;
     }
+  }
+  if (!added && output_options != NULL && strlen(output_options) > 0) {
+    errstream->print_cr("Output options for existing outputs are ignored.");
   }
   configure_output(idx, selections, decorators);
   notify_update_listeners();
@@ -528,6 +556,12 @@ void LogConfiguration::print_command_line_help(outputStream* out) {
                                     " If set to 0, log rotation is disabled."
                                     " This will cause existing log files to be overwritten.");
   out->cr();
+  out->print_cr("\nAsynchronous logging (off by default):");
+  out->print_cr(" -Xlog:async");
+  out->print_cr("  All log messages are written to an intermediate buffer first and will then be flushed"
+                " to the corresponding log outputs by a standalone thread. Write operations at logsites are"
+                " guaranteed non-blocking.");
+  out->cr();
 
   out->print_cr("Some examples:");
   out->print_cr(" -Xlog");
@@ -553,7 +587,7 @@ void LogConfiguration::print_command_line_help(outputStream* out) {
   out->print_cr("\t Log messages tagged with 'gc' tag up to 'debug' level to file 'gc.txt' with no decorations.");
   out->cr();
 
-  out->print_cr(" -Xlog:gc=trace:file=gctrace.txt:uptimemillis,pids:filecount=5,filesize=1m");
+  out->print_cr(" -Xlog:gc=trace:file=gctrace.txt:uptimemillis,pid:filecount=5,filesize=1m");
   out->print_cr("\t Log messages tagged with 'gc' tag up to 'trace' level to a rotating fileset of 5 files of size 1MB,");
   out->print_cr("\t using the base name 'gctrace.txt', with 'uptimemillis' and 'pid' decorations.");
   out->cr();
@@ -570,6 +604,10 @@ void LogConfiguration::print_command_line_help(outputStream* out) {
   out->print_cr(" -Xlog:disable -Xlog:safepoint=trace:safepointtrace.txt");
   out->print_cr("\t Turn off all logging, including warnings and errors,");
   out->print_cr("\t and then enable messages tagged with 'safepoint' up to 'trace' level to file 'safepointtrace.txt'.");
+
+  out->print_cr(" -Xlog:async -Xlog:gc=debug:file=gc.log -Xlog:safepoint=trace");
+  out->print_cr("\t Write logs asynchronously. Enable messages tagged with 'safepoint' up to 'trace' level to stdout ");
+  out->print_cr("\t and messages tagged with 'gc' up to 'debug' level to file 'gc.log'.");
 }
 
 void LogConfiguration::rotate_all_outputs() {
@@ -596,3 +634,5 @@ void LogConfiguration::notify_update_listeners() {
     _listener_callbacks[i]();
   }
 }
+
+bool LogConfiguration::_async_mode = false;

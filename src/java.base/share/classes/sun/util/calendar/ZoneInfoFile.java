@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,6 +57,7 @@ import sun.security.action.GetPropertyAction;
  * <p>
  * @since 1.8
  */
+@SuppressWarnings("removal")
 public final class ZoneInfoFile {
 
     /**
@@ -573,8 +574,12 @@ public final class ZoneInfoFile {
                     // we can then pass in the dom = -1, dow > 0 into ZoneInfo
                     //
                     // hacking, assume the >=24 is the result of ZRB optimization for
-                    // "last", it works for now.
-                    if (dom < 0 || dom >= 24) {
+                    // "last", it works for now. From tzdata2020d this hacking
+                    // will not work for Asia/Gaza and Asia/Hebron which follow
+                    // Palestine DST rules.
+                    if (dom < 0 || dom >= 24 &&
+                                   !(zoneId.equals("Asia/Gaza") ||
+                                     zoneId.equals("Asia/Hebron"))) {
                         params[1] = -1;
                         params[2] = toCalendarDOW[dow];
                     } else {
@@ -596,7 +601,9 @@ public final class ZoneInfoFile {
                     params[7] = 0;
                 } else {
                     // hacking: see comment above
-                    if (dom < 0 || dom >= 24) {
+                    if (dom < 0 || dom >= 24 &&
+                                   !(zoneId.equals("Asia/Gaza") ||
+                                     zoneId.equals("Asia/Hebron"))) {
                         params[6] = -1;
                         params[7] = toCalendarDOW[dow];
                     } else {
@@ -609,8 +616,6 @@ public final class ZoneInfoFile {
                 dstSavings = (startRule.offsetAfter - startRule.offsetBefore) * 1000;
 
                 // Note: known mismatching -> Asia/Amman
-                //                            Asia/Gaza
-                //                            Asia/Hebron
                 // ZoneInfo :      startDayOfWeek=5     <= Thursday
                 //                 startTime=86400000   <= 24 hours
                 // This:           startDayOfWeek=6
@@ -619,18 +624,14 @@ public final class ZoneInfoFile {
                 // its endDayOfWeek and endTime
                 // Below is the workarounds, it probably slows down everyone a little
                 if (params[2] == 6 && params[3] == 0 &&
-                    (zoneId.equals("Asia/Amman") ||
-                     zoneId.equals("Asia/Gaza") ||
-                     zoneId.equals("Asia/Hebron"))) {
+                    (zoneId.equals("Asia/Amman"))) {
                     params[2] = 5;
                     params[3] = 86400000;
                 }
                 // Additional check for startDayOfWeek=6 and starTime=86400000
-                // is needed for Asia/Amman; Asia/Gasa and Asia/Hebron
+                // is needed for Asia/Amman;
                 if (params[2] == 7 && params[3] == 0 &&
-                     (zoneId.equals("Asia/Amman") ||
-                      zoneId.equals("Asia/Gaza") ||
-                      zoneId.equals("Asia/Hebron"))) {
+                     (zoneId.equals("Asia/Amman"))) {
                     params[2] = 6;        // Friday
                     params[3] = 86400000; // 24h
                 }

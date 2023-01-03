@@ -25,6 +25,7 @@
 #define SHARE_GC_Z_ZBITMAP_INLINE_HPP
 
 #include "gc/z/zBitMap.hpp"
+
 #include "runtime/atomic.hpp"
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/debug.hpp"
@@ -55,7 +56,7 @@ inline bool ZBitMap::par_set_bit_pair_strong(idx_t bit, bool& inc_live) {
       inc_live = false;
       return false;
     }
-    const bm_word_t cur_val = Atomic::cmpxchg(new_val, addr, old_val);
+    const bm_word_t cur_val = Atomic::cmpxchg(addr, old_val, new_val);
     if (cur_val == old_val) {
       // Success
       const bm_word_t marked_mask = bit_mask(bit);

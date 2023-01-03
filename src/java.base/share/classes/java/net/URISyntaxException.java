@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,9 +38,18 @@ package java.net;
 public class URISyntaxException
     extends Exception
 {
+    @java.io.Serial
     private static final long serialVersionUID = 2137979680897488891L;
 
+    /**
+     * The input string.
+     */
     private String input;
+
+    /**
+     * The index at which the parse error occurred,
+     * or {@code -1} if the index is not known.
+     */
     private int index;
 
     /**

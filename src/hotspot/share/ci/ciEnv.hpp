@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,20 +22,21 @@
  *
  */
 
-#ifndef SHARE_VM_CI_CIENV_HPP
-#define SHARE_VM_CI_CIENV_HPP
+#ifndef SHARE_CI_CIENV_HPP
+#define SHARE_CI_CIENV_HPP
 
 #include "ci/ciClassList.hpp"
 #include "ci/ciObjectFactory.hpp"
-#include "classfile/systemDictionary.hpp"
+#include "classfile/vmClassMacros.hpp"
 #include "code/debugInfoRec.hpp"
 #include "code/dependencies.hpp"
 #include "code/exceptionHandlerTable.hpp"
-#include "compiler/oopMap.hpp"
+#include "compiler/compilerThread.hpp"
 #include "oops/methodData.hpp"
 #include "runtime/thread.hpp"
 
 class CompileTask;
+class OopMapSet;
 
 // ciEnv
 //
@@ -46,11 +47,11 @@ class ciEnv : StackObj {
 
   friend class CompileBroker;
   friend class Dependencies;  // for get_object, during logging
+  friend class PrepareExtraDataClosure;
 
 private:
   Arena*           _arena;       // Alias for _ciEnv_arena except in init_shared_objects()
   Arena            _ciEnv_arena;
-  int              _system_dictionary_modification_counter;
   ciObjectFactory* _factory;
   OopRecorder*     _oop_recorder;
   DebugInformationRecorder* _debug_info;
@@ -68,23 +69,25 @@ private:
   int   _name_buffer_len;
 
   // Cache Jvmti state
+  uint64_t _jvmti_redefinition_count;
   bool  _jvmti_can_hotswap_or_post_breakpoint;
   bool  _jvmti_can_access_local_variables;
   bool  _jvmti_can_post_on_exceptions;
   bool  _jvmti_can_pop_frame;
+  bool  _jvmti_can_get_owned_monitor_info; // includes can_get_owned_monitor_stack_depth_info
+  bool  _jvmti_can_walk_any_space;
 
   // Cache DTrace flags
   bool  _dtrace_extended_probes;
-  bool  _dtrace_monitor_probes;
   bool  _dtrace_method_probes;
   bool  _dtrace_alloc_probes;
 
   // Distinguished instances of certain ciObjects..
   static ciObject*              _null_object_instance;
 
-#define WK_KLASS_DECL(name, ignore_s, ignore_o) static ciInstanceKlass* _##name;
-  WK_KLASSES_DO(WK_KLASS_DECL)
-#undef WK_KLASS_DECL
+#define VM_CLASS_DECL(name, ignore_s) static ciInstanceKlass* _##name;
+  VM_CLASSES_DO(VM_CLASS_DECL)
+#undef VM_CLASS_DECL
 
   static ciSymbol*        _unloaded_cisymbol;
   static ciInstanceKlass* _unloaded_ciinstance_klass;
@@ -188,6 +191,10 @@ private:
     }
   }
 
+  ciMetadata* cached_metadata(Metadata* o) {
+    return _factory->cached_metadata(o);
+  }
+
   ciInstance* get_instance(oop o) {
     if (o == NULL) return NULL;
     return get_object(o)->as_instance();
@@ -286,7 +293,6 @@ private:
   // Helper routine for determining the validity of a compilation with
   // respect to method dependencies (e.g. concurrent class loading).
   void validate_compile_task_dependencies(ciMethod* target);
-
 public:
   enum {
     MethodCompilable,
@@ -294,7 +300,7 @@ public:
     MethodCompilable_never
   };
 
-  ciEnv(CompileTask* task, int system_dictionary_modification_counter);
+  ciEnv(CompileTask* task);
   // Used only during initialization of the ci
   ciEnv(Arena* arena);
   ~ciEnv();
@@ -336,16 +342,19 @@ public:
   void set_break_at_compile(bool z) { _break_at_compile = z; }
 
   // Cache Jvmti state
-  void  cache_jvmti_state();
+  bool  cache_jvmti_state();
   bool  jvmti_state_changed() const;
-  bool  should_retain_local_variables() const;
+  bool  should_retain_local_variables() const {
+    return _jvmti_can_access_local_variables || _jvmti_can_pop_frame;
+  }
   bool  jvmti_can_hotswap_or_post_breakpoint() const { return _jvmti_can_hotswap_or_post_breakpoint; }
   bool  jvmti_can_post_on_exceptions()         const { return _jvmti_can_post_on_exceptions; }
+  bool  jvmti_can_get_owned_monitor_info()     const { return _jvmti_can_get_owned_monitor_info; }
+  bool  jvmti_can_walk_any_space()             const { return _jvmti_can_walk_any_space; }
 
   // Cache DTrace flags
   void  cache_dtrace_flags();
   bool  dtrace_extended_probes() const { return _dtrace_extended_probes; }
-  bool  dtrace_monitor_probes()  const { return _dtrace_monitor_probes; }
   bool  dtrace_method_probes()   const { return _dtrace_method_probes; }
   bool  dtrace_alloc_probes()    const { return _dtrace_alloc_probes; }
 
@@ -370,16 +379,17 @@ public:
                        AbstractCompiler*         compiler,
                        bool                      has_unsafe_access,
                        bool                      has_wide_vectors,
-                       RTMState                  rtm_state = NoRTM);
+                       RTMState                  rtm_state = NoRTM,
+                       const GrowableArrayView<RuntimeStub*>& native_invokers = GrowableArrayView<RuntimeStub*>::EMPTY);
 
 
   // Access to certain well known ciObjects.
-#define WK_KLASS_FUNC(name, ignore_s, ignore_o) \
+#define VM_CLASS_FUNC(name, ignore_s) \
   ciInstanceKlass* name() { \
     return _##name;\
   }
-  WK_KLASSES_DO(WK_KLASS_FUNC)
-#undef WK_KLASS_FUNC
+  VM_CLASSES_DO(VM_CLASS_FUNC)
+#undef VM_CLASS_FUNC
 
   ciInstance* NullPointerException_instance() {
     assert(_NullPointerException_instance != NULL, "initialization problem");
@@ -409,7 +419,6 @@ public:
   }
   ciInstance* unloaded_ciinstance();
 
-  ciKlass*  find_system_klass(ciSymbol* klass_name);
   // Note:  To find a class from its name string, use ciSymbol::make,
   // but consider adding to vmSymbols.hpp instead.
 
@@ -418,10 +427,6 @@ public:
   // the bytecodes could be an array type.  Basically this converts
   // array types into java/lang/Object and other types stay as they are.
   static ciInstanceKlass* get_instance_klass_for_declared_method_holder(ciKlass* klass);
-
-  // Return the machine-level offset of o, which must be an element of a.
-  // This may be used to form constant-loading expressions in lieu of simpler encodings.
-  int       array_element_offset_in_bytes(ciArray* a, ciObject* o);
 
   // Access to the compile-lifetime allocation arena.
   Arena*    arena() { return _arena; }
@@ -447,16 +452,13 @@ public:
   CompileLog* log() { return _log; }
   void set_log(CompileLog* log) { _log = log; }
 
-  // Check for changes to the system dictionary during compilation
-  bool system_dictionary_modification_counter_changed();
-
   void record_failure(const char* reason);      // Record failure and report later
   void report_failure(const char* reason);      // Report failure immediately
-  void record_method_not_compilable(const char* reason, bool all_tiers = true);
+  void record_method_not_compilable(const char* reason, bool all_tiers = false);
   void record_out_of_memory_failure();
 
   // RedefineClasses support
-  void metadata_do(void f(Metadata*)) { _factory->metadata_do(f); }
+  void metadata_do(MetadataClosure* f) { _factory->metadata_do(f); }
 
   // Dump the compilation replay data for the ciEnv to the stream.
   void dump_replay_data(int compile_id);
@@ -466,4 +468,4 @@ public:
   void dump_compile_data(outputStream* out);
 };
 
-#endif // SHARE_VM_CI_CIENV_HPP
+#endif // SHARE_CI_CIENV_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_LOADERCONSTRAINTS_HPP
-#define SHARE_VM_CLASSFILE_LOADERCONSTRAINTS_HPP
+#ifndef SHARE_CLASSFILE_LOADERCONSTRAINTS_HPP
+#define SHARE_CLASSFILE_LOADERCONSTRAINTS_HPP
 
 #include "classfile/placeholders.hpp"
 #include "utilities/hashtable.hpp"
@@ -61,8 +61,9 @@ public:
 
   // Note:  The main entry point for this module is via SystemDictionary.
   // SystemDictionary::check_signature_loaders(Symbol* signature,
+  //                                           Klass* klass_being_linked,
   //                                           Handle loader1, Handle loader2,
-  //                                           bool is_method, TRAPS)
+  //                                           bool is_method)
 
   InstanceKlass* find_constrained_klass(Symbol* name, Handle loader);
 
@@ -79,6 +80,7 @@ public:
   void purge_loader_constraints();
 
   void verify(PlaceholderTable* placeholders);
+  void print() const;
   void print_on(outputStream* st) const;
 };
 
@@ -130,4 +132,4 @@ public:
   void set_loader(int i, oop p);
 };
 
-#endif // SHARE_VM_CLASSFILE_LOADERCONSTRAINTS_HPP
+#endif // SHARE_CLASSFILE_LOADERCONSTRAINTS_HPP

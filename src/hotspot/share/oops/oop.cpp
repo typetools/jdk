@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,24 +23,22 @@
  */
 
 #include "precompiled.hpp"
+#include "cds/heapShared.inline.hpp"
 #include "classfile/altHashing.hpp"
 #include "classfile/javaClasses.inline.hpp"
 #include "memory/resourceArea.hpp"
+#include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
+#include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/verifyOopClosure.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/thread.inline.hpp"
 #include "utilities/copy.hpp"
-
-bool always_do_update_barrier = false;
+#include "utilities/macros.hpp"
 
 void oopDesc::print_on(outputStream* st) const {
-  if (this == NULL) {
-    st->print_cr("NULL");
-  } else {
-    klass()->oop_print_on(oop(this), st);
-  }
+  klass()->oop_print_on(const_cast<oopDesc*>(this), st);
 }
 
 void oopDesc::print_address_on(outputStream* st) const {
@@ -70,10 +68,8 @@ char* oopDesc::print_value_string() {
 }
 
 void oopDesc::print_value_on(outputStream* st) const {
-  oop obj = oop(this);
-  if (this == NULL) {
-    st->print("NULL");
-  } else if (java_lang_String::is_instance(obj)) {
+  oop obj = const_cast<oopDesc*>(this);
+  if (java_lang_String::is_instance(obj)) {
     java_lang_String::print(obj, st);
     print_address_on(st);
   } else {
@@ -82,39 +78,24 @@ void oopDesc::print_value_on(outputStream* st) const {
 }
 
 
-void oopDesc::verify_on(outputStream* st) {
-  if (this != NULL) {
-    klass()->oop_verify_on(this, st);
+void oopDesc::verify_on(outputStream* st, oopDesc* oop_desc) {
+  if (oop_desc != NULL) {
+    oop_desc->klass()->oop_verify_on(oop_desc, st);
   }
 }
 
 
-void oopDesc::verify() {
-  verify_on(tty);
+void oopDesc::verify(oopDesc* oop_desc) {
+  verify_on(tty, oop_desc);
 }
 
 intptr_t oopDesc::slow_identity_hash() {
   // slow case; we have to acquire the micro lock in order to locate the header
-  Thread* THREAD = Thread::current();
+  Thread* current = Thread::current();
   ResetNoHandleMark rnm; // Might be called from LEAF/QUICK ENTRY
-  HandleMark hm(THREAD);
-  Handle object(THREAD, this);
+  HandleMark hm(current);
+  Handle object(current, this);
   return ObjectSynchronizer::identity_hash_value_for(object);
-}
-
-// When String table needs to rehash
-unsigned int oopDesc::new_hash(juint seed) {
-  EXCEPTION_MARK;
-  ResourceMark rm;
-  int length;
-  jchar* chars = java_lang_String::as_unicode_string(this, length, THREAD);
-  if (chars != NULL) {
-    // Use alternate hashing algorithm on the string
-    return AltHashing::murmur3_32(seed, chars, length);
-  } else {
-    vm_exit_out_of_memory(length, OOM_MALLOC_ERROR, "unable to create Unicode strings for String table rehash");
-    return 0;
-  }
 }
 
 // used only for asserts and guarantees
@@ -123,14 +104,14 @@ bool oopDesc::is_oop(oop obj, bool ignore_mark_word) {
     return false;
   }
 
-  // Header verification: the mark is typically non-NULL. If we're
-  // at a safepoint, it must not be null.
+  // Header verification: the mark is typically non-zero. If we're
+  // at a safepoint, it must not be zero.
   // Outside of a safepoint, the header could be changing (for example,
   // another thread could be inflating a lock on this object).
   if (ignore_mark_word) {
     return true;
   }
-  if (obj->mark_raw() != NULL) {
+  if (obj->mark().value() != 0) {
     return true;
   }
   return !SafepointSynchronize::is_at_safepoint();
@@ -140,14 +121,6 @@ bool oopDesc::is_oop(oop obj, bool ignore_mark_word) {
 bool oopDesc::is_oop_or_null(oop obj, bool ignore_mark_word) {
   return obj == NULL ? true : is_oop(obj, ignore_mark_word);
 }
-
-#ifndef PRODUCT
-// used only for asserts
-bool oopDesc::is_unlocked_oop() const {
-  if (!Universe::heap()->is_in_reserved(this)) return false;
-  return mark()->is_unlocked();
-}
-#endif // PRODUCT
 
 VerifyOopClosure VerifyOopClosure::verify_oop;
 
@@ -170,6 +143,35 @@ bool oopDesc::has_klass_gap() {
   return UseCompressedClassPointers;
 }
 
+#if INCLUDE_CDS_JAVA_HEAP
+void oopDesc::set_narrow_klass(narrowKlass nk) {
+  assert(DumpSharedSpaces, "Used by CDS only. Do not abuse!");
+  assert(UseCompressedClassPointers, "must be");
+  _metadata._compressed_klass = nk;
+}
+#endif
+
+void* oopDesc::load_klass_raw(oop obj) {
+  if (UseCompressedClassPointers) {
+    narrowKlass narrow_klass = obj->_metadata._compressed_klass;
+    if (narrow_klass == 0) return NULL;
+    return (void*)CompressedKlassPointers::decode_raw(narrow_klass);
+  } else {
+    return obj->_metadata._klass;
+  }
+}
+
+void* oopDesc::load_oop_raw(oop obj, int offset) {
+  uintptr_t addr = (uintptr_t)(void*)obj + (uint)offset;
+  if (UseCompressedOops) {
+    narrowOop narrow_oop = *(narrowOop*)addr;
+    if (CompressedOops::is_null(narrow_oop)) return NULL;
+    return (void*)CompressedOops::decode_raw(narrow_oop);
+  } else {
+    return *(void**)addr;
+  }
+}
+
 oop oopDesc::obj_field_acquire(int offset) const                      { return HeapAccess<MO_ACQUIRE>::oop_load_at(as_oop(), offset); }
 
 void oopDesc::obj_field_put_raw(int offset, oop value)                { RawAccess<>::oop_store_at(as_oop(), offset, value); }
@@ -183,6 +185,7 @@ void oopDesc::address_field_put(int offset, address value)            { HeapAcce
 void oopDesc::release_address_field_put(int offset, address value)    { HeapAccess<MO_RELEASE>::store_at(as_oop(), offset, value); }
 
 Metadata* oopDesc::metadata_field(int offset) const                   { return HeapAccess<>::load_at(as_oop(), offset); }
+Metadata* oopDesc::metadata_field_raw(int offset) const               { return RawAccess<>::load_at(as_oop(), offset); }
 void oopDesc::metadata_field_put(int offset, Metadata* value)         { HeapAccess<>::store_at(as_oop(), offset, value); }
 
 Metadata* oopDesc::metadata_field_acquire(int offset) const           { return HeapAccess<MO_ACQUIRE>::load_at(as_oop(), offset); }
@@ -211,3 +214,15 @@ void oopDesc::release_float_field_put(int offset, jfloat value)       { HeapAcce
 
 jdouble oopDesc::double_field_acquire(int offset) const               { return HeapAccess<MO_ACQUIRE>::load_at(as_oop(), offset); }
 void oopDesc::release_double_field_put(int offset, jdouble value)     { HeapAccess<MO_RELEASE>::store_at(as_oop(), offset, value); }
+
+#ifdef ASSERT
+void oopDesc::verify_forwardee(oop forwardee) {
+#if INCLUDE_CDS_JAVA_HEAP
+  assert(!HeapShared::is_archived_object(forwardee) && !HeapShared::is_archived_object(this),
+         "forwarding archive object");
+#endif
+}
+
+bool oopDesc::get_UseParallelGC() { return UseParallelGC; }
+bool oopDesc::get_UseG1GC()       { return UseG1GC;       }
+#endif

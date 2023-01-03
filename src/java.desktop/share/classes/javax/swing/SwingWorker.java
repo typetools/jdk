@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -59,7 +59,7 @@ import sun.swing.AccumulativeRunnable;
  * When writing a multi-threaded application using Swing, there are
  * two constraints to keep in mind:
  * (refer to
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">
  *   Concurrency in Swing
  * </a> for more details):
  * <ul>
@@ -798,6 +798,7 @@ public abstract class SwingWorker<T, V> implements RunnableFuture<T> {
             final ExecutorService es = executorService;
             appContext.addPropertyChangeListener(AppContext.DISPOSED_PROPERTY_NAME,
                 new PropertyChangeListener() {
+                    @SuppressWarnings("removal")
                     @Override
                     public void propertyChange(PropertyChangeEvent pce) {
                         boolean disposed = (Boolean)pce.getNewValue();

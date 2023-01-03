@@ -132,16 +132,11 @@ public final class URICertStoreParameters implements CertStoreParameters {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object p) {
-        if (p == null || (!(p instanceof URICertStoreParameters))) {
-            return false;
-        }
-
         if (p == this) {
             return true;
         }
-
-        URICertStoreParameters other = (URICertStoreParameters)p;
-        return uri.equals(other.getURI());
+        return p instanceof URICertStoreParameters other
+                && uri.equals(other.getURI());
     }
 
     /**

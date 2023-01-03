@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,8 +33,6 @@ package jdk.javadoc.internal.doclets.toolkit.util;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Jamie Ho
  */
 public class DocletConstants {
 
@@ -49,11 +47,6 @@ public class DocletConstants {
     public static final String NL = System.getProperty("line.separator");
 
     /**
-     * The default package name.
-     */
-    public static final String DEFAULT_PACKAGE_NAME = "<Unnamed>";
-
-    /**
      * The default module or a package name.
      */
     public static final String DEFAULT_ELEMENT_NAME = "<Unnamed>";
@@ -63,8 +56,4 @@ public class DocletConstants {
      */
     public static final String MODULE_PREFIX = "module:";
 
-    /**
-     * The default package file name.
-     */
-    public static final String DEFAULT_PACKAGE_FILE_NAME = "default";
 }

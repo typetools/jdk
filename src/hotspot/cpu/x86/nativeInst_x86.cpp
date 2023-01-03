@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,12 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "code/compiledIC.hpp"
 #include "memory/resourceArea.hpp"
 #include "nativeInst_x86.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.hpp"
+#include "runtime/safepoint.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/ostream.hpp"
@@ -39,15 +41,17 @@ void NativeInstruction::wrote(int offset) {
   ICache::invalidate_word(addr_at(offset));
 }
 
+#ifdef ASSERT
 void NativeLoadGot::report_and_fail() const {
-  tty->print_cr("Addr: " INTPTR_FORMAT, p2i(instruction_address()));
+  tty->print_cr("Addr: " INTPTR_FORMAT " Code: %x %x %x", p2i(instruction_address()),
+                  (has_rex ? ubyte_at(0) : 0), ubyte_at(rex_size), ubyte_at(rex_size + 1));
   fatal("not a indirect rip mov to rbx");
 }
 
 void NativeLoadGot::verify() const {
   if (has_rex) {
     int rex = ubyte_at(0);
-    if (rex != rex_prefix) {
+    if (rex != rex_prefix && rex != rex_b_prefix) {
       report_and_fail();
     }
   }
@@ -61,6 +65,7 @@ void NativeLoadGot::verify() const {
     report_and_fail();
   }
 }
+#endif
 
 intptr_t NativeLoadGot::data() const {
   return *(intptr_t *) got_address();
@@ -148,14 +153,30 @@ address NativeGotJump::destination() const {
   return *got_entry;
 }
 
+#ifdef ASSERT
+void NativeGotJump::report_and_fail() const {
+  tty->print_cr("Addr: " INTPTR_FORMAT " Code: %x %x %x", p2i(instruction_address()),
+                 (has_rex() ? ubyte_at(0) : 0), ubyte_at(rex_size()), ubyte_at(rex_size() + 1));
+  fatal("not a indirect rip jump");
+}
+
 void NativeGotJump::verify() const {
-  int inst = ubyte_at(0);
+  if (has_rex()) {
+    int rex = ubyte_at(0);
+    if (rex != rex_prefix) {
+      report_and_fail();
+    }
+  }
+  int inst = ubyte_at(rex_size());
   if (inst != instruction_code) {
-    tty->print_cr("Addr: " INTPTR_FORMAT " Code: 0x%x", p2i(instruction_address()),
-                                                        inst);
-    fatal("not a indirect rip jump");
+    report_and_fail();
+  }
+  int modrm = ubyte_at(rex_size() + 1);
+  if (modrm != modrm_code) {
+    report_and_fail();
   }
 }
+#endif
 
 void NativeCall::verify() {
   // Make sure code pattern is actually a call imm32 instruction.
@@ -202,9 +223,7 @@ void NativeCall::replace_mt_safe(address instr_addr, address code_buffer) {
   assert (instr_addr != NULL, "illegal address for code patching");
 
   NativeCall* n_call =  nativeCall_at (instr_addr); // checking that it is a call
-  if (os::is_MP()) {
-    guarantee((intptr_t)instr_addr % BytesPerWord == 0, "must be aligned");
-  }
+  guarantee((intptr_t)instr_addr % BytesPerWord == 0, "must be aligned");
 
   // First patch dummy jmp in place
   unsigned char patch[4];
@@ -259,70 +278,17 @@ void NativeCall::set_destination_mt_safe(address dest) {
   debug_only(verify());
   // Make sure patching code is locked.  No two threads can patch at the same
   // time but one may be executing this code.
-  assert(Patching_lock->is_locked() ||
-         SafepointSynchronize::is_at_safepoint(), "concurrent code patching");
+  assert(Patching_lock->is_locked() || SafepointSynchronize::is_at_safepoint() ||
+         CompiledICLocker::is_safe(instruction_address()), "concurrent code patching");
   // Both C1 and C2 should now be generating code which aligns the patched address
-  // to be within a single cache line except that C1 does not do the alignment on
-  // uniprocessor systems.
+  // to be within a single cache line.
   bool is_aligned = ((uintptr_t)displacement_address() + 0) / cache_line_size ==
                     ((uintptr_t)displacement_address() + 3) / cache_line_size;
 
-  guarantee(!os::is_MP() || is_aligned, "destination must be aligned");
+  guarantee(is_aligned, "destination must be aligned");
 
-  if (is_aligned) {
-    // Simple case:  The destination lies within a single cache line.
-    set_destination(dest);
-  } else if ((uintptr_t)instruction_address() / cache_line_size ==
-             ((uintptr_t)instruction_address()+1) / cache_line_size) {
-    // Tricky case:  The instruction prefix lies within a single cache line.
-    intptr_t disp = dest - return_address();
-#ifdef AMD64
-    guarantee(disp == (intptr_t)(jint)disp, "must be 32-bit offset");
-#endif // AMD64
-
-    int call_opcode = instruction_address()[0];
-
-    // First patch dummy jump in place:
-    {
-      u_char patch_jump[2];
-      patch_jump[0] = 0xEB;       // jmp rel8
-      patch_jump[1] = 0xFE;       // jmp to self
-
-      assert(sizeof(patch_jump)==sizeof(short), "sanity check");
-      *(short*)instruction_address() = *(short*)patch_jump;
-    }
-    // Invalidate.  Opteron requires a flush after every write.
-    wrote(0);
-
-    // (Note: We assume any reader which has already started to read
-    // the unpatched call will completely read the whole unpatched call
-    // without seeing the next writes we are about to make.)
-
-    // Next, patch the last three bytes:
-    u_char patch_disp[5];
-    patch_disp[0] = call_opcode;
-    *(int32_t*)&patch_disp[1] = (int32_t)disp;
-    assert(sizeof(patch_disp)==instruction_size, "sanity check");
-    for (int i = sizeof(short); i < instruction_size; i++)
-      instruction_address()[i] = patch_disp[i];
-
-    // Invalidate.  Opteron requires a flush after every write.
-    wrote(sizeof(short));
-
-    // (Note: We assume that any reader which reads the opcode we are
-    // about to repatch will also read the writes we just made.)
-
-    // Finally, overwrite the jump:
-    *(short*)instruction_address() = *(short*)patch_disp;
-    // Invalidate.  Opteron requires a flush after every write.
-    wrote(0);
-
-    debug_only(verify());
-    guarantee(destination() == dest, "patch succeeded");
-  } else {
-    // Impossible:  One or the other must be atomically writable.
-    ShouldNotReachHere();
-  }
+  // The destination lies within a single cache line.
+  set_destination(dest);
 }
 
 
@@ -409,60 +375,7 @@ int NativeMovRegMem::instruction_start() const {
   return off;
 }
 
-address NativeMovRegMem::instruction_address() const {
-  return addr_at(instruction_start());
-}
-
-address NativeMovRegMem::next_instruction_address() const {
-  address ret = instruction_address() + instruction_size;
-  u_char instr_0 =  *(u_char*) instruction_address();
-  switch (instr_0) {
-  case instruction_operandsize_prefix:
-
-    fatal("should have skipped instruction_operandsize_prefix");
-    break;
-
-  case instruction_extended_prefix:
-    fatal("should have skipped instruction_extended_prefix");
-    break;
-
-  case instruction_code_mem2reg_movslq: // 0x63
-  case instruction_code_mem2reg_movzxb: // 0xB6
-  case instruction_code_mem2reg_movsxb: // 0xBE
-  case instruction_code_mem2reg_movzxw: // 0xB7
-  case instruction_code_mem2reg_movsxw: // 0xBF
-  case instruction_code_reg2mem:        // 0x89 (q/l)
-  case instruction_code_mem2reg:        // 0x8B (q/l)
-  case instruction_code_reg2memb:       // 0x88
-  case instruction_code_mem2regb:       // 0x8a
-
-  case instruction_code_lea:            // 0x8d
-
-  case instruction_code_float_s:        // 0xd9 fld_s a
-  case instruction_code_float_d:        // 0xdd fld_d a
-
-  case instruction_code_xmm_load:       // 0x10
-  case instruction_code_xmm_store:      // 0x11
-  case instruction_code_xmm_lpd:        // 0x12
-    {
-      // If there is an SIB then instruction is longer than expected
-      u_char mod_rm = *(u_char*)(instruction_address() + 1);
-      if ((mod_rm & 7) == 0x4) {
-        ret++;
-      }
-    }
-  case instruction_code_xor:
-    fatal("should have skipped xor lead in");
-    break;
-
-  default:
-    fatal("not a NativeMovRegMem");
-  }
-  return ret;
-
-}
-
-int NativeMovRegMem::offset() const{
+int NativeMovRegMem::patch_offset() const {
   int off = data_offset + instruction_start();
   u_char mod_rm = *(u_char*)(instruction_address() + 1);
   // nnnn(r12|rsp) isn't coded as simple mod/rm since that is
@@ -471,19 +384,7 @@ int NativeMovRegMem::offset() const{
   if ((mod_rm & 7) == 0x4) {
     off++;
   }
-  return int_at(off);
-}
-
-void NativeMovRegMem::set_offset(int x) {
-  int off = data_offset + instruction_start();
-  u_char mod_rm = *(u_char*)(instruction_address() + 1);
-  // nnnn(r12|rsp) isn't coded as simple mod/rm since that is
-  // the encoding to use an SIB byte. Which will have the nnnn
-  // field off by one byte
-  if ((mod_rm & 7) == 0x4) {
-    off++;
-  }
-  set_int_at(off, x);
+  return off;
 }
 
 void NativeMovRegMem::verify() {

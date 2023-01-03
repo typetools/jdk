@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP
-#define SHARE_VM_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP
+#ifndef SHARE_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP
+#define SHARE_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP
 
 #include "jni.h"
 #include "memory/allocation.hpp"
@@ -49,7 +49,7 @@ class JfrOptionSet : public AllStatic {
   static jboolean _retransform;
   static jboolean _sample_protection;
 
-  static bool initialize(Thread* thread);
+  static bool initialize(JavaThread* thread);
   static bool configure(TRAPS);
   static bool adjust_memory_options();
 
@@ -80,8 +80,8 @@ class JfrOptionSet : public AllStatic {
 
   static bool parse_flight_recorder_option(const JavaVMOption** option, char* delimiter);
   static bool parse_start_flight_recording_option(const JavaVMOption** option, char* delimiter);
-  static const GrowableArray<const char*>* startup_recording_options();
-  static void release_startup_recording_options();
+  static const GrowableArray<const char*>* start_flight_recording_options();
+  static void release_start_flight_recording_options();
 };
 
-#endif // SHARE_VM_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP
+#endif // SHARE_JFR_RECORDER_SERVICE_JFROPTIONSET_HPP

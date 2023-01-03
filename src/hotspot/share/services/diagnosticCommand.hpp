@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_DIAGNOSTICCOMMAND_HPP
-#define SHARE_VM_SERVICES_DIAGNOSTICCOMMAND_HPP
+#ifndef SHARE_SERVICES_DIAGNOSTICCOMMAND_HPP
+#define SHARE_SERVICES_DIAGNOSTICCOMMAND_HPP
 
 #include "classfile/stringTable.hpp"
 #include "classfile/symbolTable.hpp"
@@ -34,7 +34,6 @@
 #include "runtime/vmThread.hpp"
 #include "services/diagnosticArgument.hpp"
 #include "services/diagnosticCommand.hpp"
-#include "services/diagnosticCommand_ext.hpp"
 #include "services/diagnosticFramework.hpp"
 #include "utilities/macros.hpp"
 #include "utilities/ostream.hpp"
@@ -53,7 +52,6 @@ public:
            "'help all' will show help for all commands.";
   }
   static const char* impact() { return "Low"; }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -70,7 +68,6 @@ public:
                         "java.vm.version", "read"};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -87,7 +84,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS) {
     Arguments::print_on(_output);
   }
@@ -109,7 +105,6 @@ public:
                           "*", "read"};
       return p;
     }
-    static int num_arguments() { return 0; }
     virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -131,7 +126,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -154,7 +148,6 @@ public:
                         "control", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -173,7 +166,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -195,7 +187,6 @@ public:
                         "control", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 #endif // INCLUDE_JVMTI
@@ -218,9 +209,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() {
-    return 0;
-  };
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -236,7 +224,6 @@ public:
   static const char* impact() {
     return "Low";
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -253,7 +240,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -267,7 +253,6 @@ public:
     static const char* impact() {
       return "Medium: Depends on Java heap size and content.";
     }
-    static int num_arguments() { return 0; }
     virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -281,7 +266,6 @@ public:
     static const char* impact() {
       return "Medium: Depends on Java content.";
     }
-    static int num_arguments() { return 0; }
     virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -295,7 +279,6 @@ public:
   static const char* impact() {
     return "Medium";
   }
-  static int num_arguments() { return 0; }
   static const JavaPermission permission() {
     JavaPermission p = {"java.lang.management.ManagementPermission",
       "monitor", NULL};
@@ -315,7 +298,6 @@ public:
   static const char* impact() {
     return "Medium";
   }
-  static int num_arguments() { return 0; }
   static const JavaPermission permission() {
     JavaPermission p = {"java.lang.management.ManagementPermission",
       "monitor", NULL};
@@ -331,6 +313,7 @@ class HeapDumpDCmd : public DCmdWithParser {
 protected:
   DCmdArgument<char*> _filename;
   DCmdArgument<bool>  _all;
+  DCmdArgument<jlong> _gzip;
 public:
   HeapDumpDCmd(outputStream* output, bool heap);
   static const char* name() {
@@ -348,7 +331,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 #endif // INCLUDE_SERVICES
@@ -357,6 +339,7 @@ public:
 class ClassHistogramDCmd : public DCmdWithParser {
 protected:
   DCmdArgument<bool> _all;
+  DCmdArgument<jlong> _parallel_thread_num;
 public:
   ClassHistogramDCmd(outputStream* output, bool heap);
   static const char* name() {
@@ -373,31 +356,8 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
-
-class ClassStatsDCmd : public DCmdWithParser {
-protected:
-  DCmdArgument<bool> _all;
-  DCmdArgument<bool> _csv;
-  DCmdArgument<bool> _help;
-  DCmdArgument<char*> _columns;
-public:
-  ClassStatsDCmd(outputStream* output, bool heap);
-  static const char* name() {
-    return "GC.class_stats";
-  }
-  static const char* description() {
-    return "Provide statistics about Java class meta data.";
-  }
-  static const char* impact() {
-    return "High: Depends on Java heap size and content.";
-  }
-  static int num_arguments();
-  virtual void execute(DCmdSource source, TRAPS);
-};
-
 
 class ClassHierarchyDCmd : public DCmdWithParser {
 protected:
@@ -422,13 +382,12 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
-class TouchedMethodsDCmd : public DCmdWithParser {
+class TouchedMethodsDCmd : public DCmd {
 public:
-  TouchedMethodsDCmd(outputStream* output, bool heap);
+  TouchedMethodsDCmd(outputStream* output, bool heap) : DCmd(output, heap) {}
   static const char* name() {
     return "VM.print_touched_methods";
   }
@@ -438,9 +397,34 @@ public:
   static const char* impact() {
     return "Medium: Depends on Java content.";
   }
+  virtual void execute(DCmdSource source, TRAPS);
+};
+
+#if INCLUDE_CDS
+class DumpSharedArchiveDCmd: public DCmdWithParser {
+protected:
+  DCmdArgument<char*> _suboption;   // option of VM.cds
+  DCmdArgument<char*> _filename;    // file name, optional
+public:
+  DumpSharedArchiveDCmd(outputStream* output, bool heap);
+  static const char* name() {
+    return "VM.cds";
+  }
+  static const char* description() {
+    return "Dump a static or dynamic shared archive including all shareable classes";
+  }
+  static const char* impact() {
+    return "Medium: Pause time depends on number of loaded classes";
+  }
+  static const JavaPermission permission() {
+    JavaPermission p = {"java.lang.management.ManagementPermission",
+                        "monitor", NULL};
+    return p;
+  }
   static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
+#endif // INCLUDE_CDS
 
 // See also: thread_dump in attachListener.cpp
 class ThreadDumpDCmd : public DCmdWithParser {
@@ -461,7 +445,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -510,10 +493,7 @@ public:
     return "Start remote management agent.";
   }
 
-  static int num_arguments();
-
   virtual void execute(DCmdSource source, TRAPS);
-
 };
 
 class JMXStartLocalDCmd : public DCmd {
@@ -595,9 +575,30 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
+
+#ifdef LINUX
+class PerfMapDCmd : public DCmd {
+public:
+  PerfMapDCmd(outputStream* output, bool heap) : DCmd(output, heap) {}
+  static const char* name() {
+    return "Compiler.perfmap";
+  }
+  static const char* description() {
+    return "Write map file for Linux perf tool.";
+  }
+  static const char* impact() {
+    return "Low";
+  }
+  static const JavaPermission permission() {
+    JavaPermission p = {"java.lang.management.ManagementPermission",
+                        "monitor", NULL};
+    return p;
+  }
+  virtual void execute(DCmdSource source, TRAPS);
+};
+#endif // LINUX
 
 class CodeListDCmd : public DCmd {
 public:
@@ -616,10 +617,8 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
-
 
 class CodeCacheDCmd : public DCmd {
 public:
@@ -638,7 +637,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -646,7 +644,7 @@ public:
 class CodeHeapAnalyticsDCmd : public DCmdWithParser {
 protected:
   DCmdArgument<char*> _function;
-  DCmdArgument<char*> _granularity;
+  DCmdArgument<jlong> _granularity;
 public:
   CodeHeapAnalyticsDCmd(outputStream* output, bool heap);
   static const char* name() {
@@ -664,7 +662,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 //---<  END  >--- CodeHeap State Analytics.
@@ -686,7 +683,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -707,7 +703,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -730,7 +725,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -751,7 +745,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments() { return 0; }
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -817,7 +810,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -840,7 +832,6 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
@@ -863,8 +854,51 @@ public:
                         "monitor", NULL};
     return p;
   }
-  static int num_arguments();
   virtual void execute(DCmdSource source, TRAPS);
 };
 
-#endif // SHARE_VM_SERVICES_DIAGNOSTICCOMMAND_HPP
+#if INCLUDE_JVMTI
+class DebugOnCmdStartDCmd : public DCmd {
+public:
+  DebugOnCmdStartDCmd(outputStream* output, bool heap) : DCmd(output, heap) {}
+  static const char* name() {
+    return "VM.start_java_debugging";
+  }
+  static const char* description() {
+    return "Starts up the Java debugging if the jdwp agentlib was enabled with the option onjcmd=y.";
+  }
+  static const char* impact() {
+    return "High: Switches the VM into Java debug mode.";
+  }
+  static const JavaPermission permission() {
+    JavaPermission p = { "java.lang.management.ManagementPermission", "control", NULL };
+    return p;
+  }
+  virtual void execute(DCmdSource source, TRAPS);
+};
+#endif // INCLUDE_JVMTI
+
+class EventLogDCmd : public DCmdWithParser {
+protected:
+  DCmdArgument<char*> _log;
+  DCmdArgument<char*> _max;
+public:
+  EventLogDCmd(outputStream* output, bool heap);
+  static const char* name() {
+    return "VM.events";
+  }
+  static const char* description() {
+    return "Print VM event logs";
+  }
+  static const char* impact() {
+    return "Low: Depends on event log size. ";
+  }
+  static const JavaPermission permission() {
+    JavaPermission p = {"java.lang.management.ManagementPermission",
+                        "monitor", NULL};
+    return p;
+  }
+  virtual void execute(DCmdSource source, TRAPS);
+};
+
+#endif // SHARE_SERVICES_DIAGNOSTICCOMMAND_HPP

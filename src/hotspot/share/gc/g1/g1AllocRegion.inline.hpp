@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1ALLOCREGION_INLINE_HPP
-#define SHARE_VM_GC_G1_G1ALLOCREGION_INLINE_HPP
+#ifndef SHARE_GC_G1_G1ALLOCREGION_INLINE_HPP
+#define SHARE_GC_G1_G1ALLOCREGION_INLINE_HPP
 
 #include "gc/g1/g1AllocRegion.hpp"
+
 #include "gc/g1/heapRegion.inline.hpp"
 
 #define assert_alloc_region(p, message)                                  \
@@ -98,16 +99,19 @@ inline HeapWord* G1AllocRegion::attempt_allocation_locked(size_t word_size) {
 inline HeapWord* G1AllocRegion::attempt_allocation_locked(size_t min_word_size,
                                                           size_t desired_word_size,
                                                           size_t* actual_word_size) {
-  // First we have to redo the allocation, assuming we're holding the
-  // appropriate lock, in case another thread changed the region while
-  // we were waiting to get the lock.
   HeapWord* result = attempt_allocation(min_word_size, desired_word_size, actual_word_size);
   if (result != NULL) {
     return result;
   }
 
+  return attempt_allocation_using_new_region(min_word_size, desired_word_size, actual_word_size);
+}
+
+inline HeapWord* G1AllocRegion::attempt_allocation_using_new_region(size_t min_word_size,
+                                                                    size_t desired_word_size,
+                                                                    size_t* actual_word_size) {
   retire(true /* fill_up */);
-  result = new_alloc_region_and_allocate(desired_word_size, false /* force */);
+  HeapWord* result = new_alloc_region_and_allocate(desired_word_size, false /* force */);
   if (result != NULL) {
     *actual_word_size = desired_word_size;
     trace("alloc locked (second attempt)", min_word_size, desired_word_size, *actual_word_size, result);
@@ -143,4 +147,4 @@ inline HeapWord* MutatorAllocRegion::attempt_retained_allocation(size_t min_word
   return NULL;
 }
 
-#endif // SHARE_VM_GC_G1_G1ALLOCREGION_INLINE_HPP
+#endif // SHARE_GC_G1_G1ALLOCREGION_INLINE_HPP

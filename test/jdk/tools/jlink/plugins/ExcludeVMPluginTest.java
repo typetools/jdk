@@ -187,7 +187,7 @@ public class ExcludeVMPluginTest {
         Plugin p = new ExcludeVMPlugin();
         Map<String, String> config = new HashMap<>();
         if (vm != null) {
-            config.put(ExcludeVMPlugin.NAME, vm);
+            config.put(p.getName(), vm);
         }
         p.configure(config);
         ResourcePool out = p.transform(poolMgr.resourcePool(), outMgr.resourcePoolBuilder());
@@ -228,7 +228,7 @@ public class ExcludeVMPluginTest {
 
     // read java.base/module-info.class from jrt-fs
     private static Path getJavaBaseModuleInfo() {
-        return Paths.get(URI.create("jrt:/modules/java.base/module-info.class"));
+        return Paths.get(URI.create("jrt:/java.base/module-info.class"));
     }
 
     private static boolean isWindows() {

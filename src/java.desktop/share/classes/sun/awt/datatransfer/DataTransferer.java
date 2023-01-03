@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -983,6 +983,7 @@ search:
 
     protected abstract ByteArrayOutputStream convertFileListToBytes(ArrayList<String> fileList) throws IOException;
 
+    @SuppressWarnings("removal")
     private String removeSuspectedData(DataFlavor flavor, final Transferable contents, final String str)
             throws IOException
     {
@@ -1043,6 +1044,7 @@ search:
         return true;
     }
 
+    @SuppressWarnings("removal")
     private ArrayList<String> castToFiles(final List<?> files,
                                           final ProtectionDomain userProtectionDomain) throws IOException {
         try {
@@ -1152,7 +1154,7 @@ search:
 
             try (ByteArrayInputStream str = new ByteArrayInputStream(bytes))  {
 
-                URI uris[] = dragQueryURIs(str, format, localeTransferable);
+                URI[] uris = dragQueryURIs(str, format, localeTransferable);
                 if (uris == null) {
                     return null;
                 }
@@ -1295,7 +1297,7 @@ search:
                 && DataFlavor.javaFileListFlavor.equals(flavor))
         {
 
-            URI uris[] = dragQueryURIs(str, format, localeTransferable);
+            URI[] uris = dragQueryURIs(str, format, localeTransferable);
             if (uris == null) {
                 return null;
             }
@@ -1417,6 +1419,7 @@ search:
      * and also arbitrary Objects which have a constructor which takes an
      * instance of the Class as its sole parameter.
      */
+    @SuppressWarnings("removal")
     private Object constructFlavoredObject(Object arg, DataFlavor flavor,
                                            Class<?> clazz)
         throws IOException
@@ -1978,16 +1981,7 @@ search:
     protected static byte[] inputStreamToByteArray(InputStream str)
         throws IOException
     {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            int len = 0;
-            byte[] buf = new byte[8192];
-
-            while ((len = str.read(buf)) != -1) {
-                baos.write(buf, 0, len);
-            }
-
-            return baos.toByteArray();
-        }
+        return str.readAllBytes();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import jdk.test.lib.cli.*;
  * @summary Test that various options are deprecated. See deprecated_jvm_flags in arguments.cpp.
  * @modules java.base/jdk.internal.misc
  * @library /test/lib
+ * @run driver VMDeprecatedOptions
  */
 public class VMDeprecatedOptions {
 
@@ -44,15 +45,8 @@ public class VMDeprecatedOptions {
         {"MaxRAMFraction",            "8"},
         {"MinRAMFraction",            "2"},
         {"InitialRAMFraction",        "64"},
-        {"AssumeMP",                  "false"},
-        {"UseMembar",                 "true"},
-        {"CompilerThreadHintNoPreempt", "true"},
-        {"VMThreadHintNoPreempt",       "false"},
-        {"PrintSafepointStatistics",    "false"},
-        {"PrintSafepointStatisticsCount", "3"},
-        {"PrintSafepointStatisticsTimeout", "3"},
-        {"AggressiveOpts", "true"},
-        {"AllowNonVirtualCalls", "true"},
+        {"TLABStats",                 "false"},
+        {"AllowRedefinitionToAddDeleteMethods", "true"},
 
         // deprecated alias flags (see also aliased_jvm_flags):
         {"DefaultMaxRAMFraction", "4"},
@@ -110,6 +104,5 @@ public class VMDeprecatedOptions {
 
     public static void main(String[] args) throws Throwable {
         testDeprecated(DEPRECATED_OPTIONS);  // Make sure that each deprecated option is mentioned in the output.
-        testDeprecatedDiagnostic("IgnoreUnverifiableClassesDuringDump", "false");
     }
 }

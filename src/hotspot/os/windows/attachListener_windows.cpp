@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -184,9 +184,14 @@ int Win32AttachListener::init() {
 // Also we need to be careful not to execute anything that results in more than a 4k stack.
 //
 int Win32AttachListener::enqueue(char* cmd, char* arg0, char* arg1, char* arg2, char* pipename) {
-  // listener not running
-  if (!AttachListener::is_initialized()) {
-    return ATTACH_ERROR_DISABLED;
+  // wait up to 10 seconds for listener to be up and running
+  int sleep_count = 0;
+  while (!AttachListener::is_initialized()) {
+    Sleep(1000); // 1 second
+    sleep_count++;
+    if (sleep_count > 10) { // try for 10 seconds
+      return ATTACH_ERROR_DISABLED;
+    }
   }
 
   // check that all paramteres to the operation
@@ -267,23 +272,13 @@ Win32AttachOperation* Win32AttachListener::dequeue() {
 
 // open the pipe to the client
 HANDLE Win32AttachOperation::open_pipe() {
-  HANDLE hPipe;
-
-  hPipe = ::CreateFile( pipe(),  // pipe name
+  HANDLE hPipe = ::CreateFile( pipe(),  // pipe name
                         GENERIC_WRITE,   // write only
                         0,              // no sharing
                         NULL,           // default security attributes
                         OPEN_EXISTING,  // opens existing pipe
                         0,              // default attributes
                         NULL);          // no template file
-
-  if (hPipe != INVALID_HANDLE_VALUE) {
-    // shouldn't happen as there is a pipe created per operation
-    if (::GetLastError() == ERROR_PIPE_BUSY) {
-      ::CloseHandle(hPipe);
-      return INVALID_HANDLE_VALUE;
-    }
-  }
   return hPipe;
 }
 
@@ -302,8 +297,7 @@ BOOL Win32AttachOperation::write_pipe(HANDLE hPipe, char* buf, int len) {
     }
     buf += nwrote;
     len -= nwrote;
-  }
-  while (len > 0);
+  } while (len > 0);
   return TRUE;
 }
 
@@ -316,11 +310,8 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   HANDLE hPipe = open_pipe();
+  int lastError = (int)::GetLastError();
   if (hPipe != INVALID_HANDLE_VALUE) {
     BOOL fSuccess;
 
@@ -332,6 +323,7 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
     if (fSuccess) {
       fSuccess = write_pipe(hPipe, (char*)result_stream->base(), (int)(result_stream->size()));
     }
+    lastError = (int)::GetLastError();
 
     // Need to flush buffers
     FlushFileBuffers(hPipe);
@@ -340,10 +332,10 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
     if (fSuccess) {
       log_debug(attach)("wrote result of attach operation %s to pipe %s", name(), pipe());
     } else {
-      log_error(attach)("failure writing result of operation %s to pipe %s", name(), pipe());
+      log_error(attach)("failure (%d) writing result of operation %s to pipe %s", lastError, name(), pipe());
     }
   } else {
-    log_error(attach)("could not open pipe %s to send result of operation %s", pipe(), name());
+    log_error(attach)("could not open (%d) pipe %s to send result of operation %s", lastError, pipe(), name());
   }
 
   DWORD res = ::WaitForSingleObject(Win32AttachListener::mutex(), INFINITE);
@@ -355,9 +347,6 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
 
     ::ReleaseMutex(Win32AttachListener::mutex());
   }
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 }
 
 
@@ -367,14 +356,7 @@ AttachOperation* AttachListener::dequeue() {
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   AttachOperation* op = Win32AttachListener::dequeue();
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 
   return op;
 }
@@ -385,6 +367,12 @@ void AttachListener::vm_start() {
 
 int AttachListener::pd_init() {
   return Win32AttachListener::init();
+}
+
+// This function is used for Un*x OSes only.
+// We need not to implement it for Windows.
+bool AttachListener::check_socket_file() {
+  return false;
 }
 
 bool AttachListener::init_at_startup() {

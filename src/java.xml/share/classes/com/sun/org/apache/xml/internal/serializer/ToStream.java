@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2021, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xml.internal.serializer;
 
+import com.sun.org.apache.xml.internal.serializer.dom3.DOMConstants;
 import com.sun.org.apache.xml.internal.serializer.utils.MsgKey;
 import com.sun.org.apache.xml.internal.serializer.utils.Utils;
 import com.sun.org.apache.xml.internal.serializer.utils.WrappedRuntimeException;
@@ -41,6 +42,7 @@ import javax.xml.transform.ErrorListener;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
+import jdk.xml.internal.JdkConstants;
 import org.w3c.dom.Node;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -51,7 +53,7 @@ import org.xml.sax.SAXException;
  * serializers (xml, html, text ...) that write output to a stream.
  *
  * @xsl.usage internal
- * @LastModified: Feb 2018
+ * @LastModified: May 2021
  */
 abstract public class ToStream extends SerializerBase {
 
@@ -193,10 +195,18 @@ abstract public class ToStream extends SerializerBase {
      */
     private boolean m_expandDTDEntities = true;
 
+    private char m_highSurrogate = 0;
+
     /**
      * Default constructor
      */
-    public ToStream() { }
+    public ToStream() {
+        this(null);
+    }
+
+    public ToStream(ErrorListener l) {
+        m_errListener = l;
+    }
 
     /**
      * This helper method to writes out "]]>" when closing a CDATA section.
@@ -420,45 +430,30 @@ abstract public class ToStream extends SerializerBase {
                        // from what it was
 
                        EncodingInfo encodingInfo = Encodings.getEncodingInfo(newEncoding);
-                       if (newEncoding != null && encodingInfo.name == null) {
-                        // We tried to get an EncodingInfo for Object for the given
-                        // encoding, but it came back with an internall null name
-                        // so the encoding is not supported by the JDK, issue a message.
-                        final String msg = Utils.messages.createMessage(
-                                MsgKey.ER_ENCODING_NOT_SUPPORTED,new Object[]{ newEncoding });
+                       if (encodingInfo.name == null) {
+                            // We tried to get an EncodingInfo for Object for the given
+                            // encoding, but it came back with an internall null name
+                            // so the encoding is not supported by the JDK, issue a message.
+                            final String msg = Utils.messages.createMessage(
+                                    MsgKey.ER_ENCODING_NOT_SUPPORTED,new Object[]{ newEncoding });
 
-                        final String msg2 =
-                            "Warning: encoding \"" + newEncoding + "\" not supported, using "
-                                   + Encodings.DEFAULT_MIME_ENCODING;
-                        try {
-                                // Prepare to issue the warning message
-                                final Transformer tran = super.getTransformer();
-                                if (tran != null) {
-                                    final ErrorListener errHandler = tran
-                                            .getErrorListener();
-                                    // Issue the warning message
-                                    if (null != errHandler
-                                            && m_sourceLocator != null) {
-                                        errHandler
-                                                .warning(new TransformerException(
-                                                        msg, m_sourceLocator));
-                                        errHandler
-                                                .warning(new TransformerException(
-                                                        msg2, m_sourceLocator));
-                                    } else {
-                                        System.out.println(msg);
-                                        System.out.println(msg2);
-                                    }
-                                } else {
-                                    System.out.println(msg);
-                                    System.out.println(msg2);
+                            final String msg2 =
+                                "Warning: encoding \"" + newEncoding + "\" not supported, using "
+                                       + Encodings.DEFAULT_MIME_ENCODING;
+                            try {
+                                // refer to JDK-8229005, should throw Exception instead of warning and
+                                // then falling back to the default encoding. Keep it for now.
+                                if (m_errListener != null) {
+                                    m_errListener.warning(new TransformerException(msg, m_sourceLocator));
+                                    m_errListener.warning(new TransformerException(msg2, m_sourceLocator));
                                 }
                             } catch (Exception e) {
                             }
 
                             // We said we are using UTF-8, so use it
                             newEncoding = Encodings.DEFAULT_MIME_ENCODING;
-                            val = Encodings.DEFAULT_MIME_ENCODING; // to store the modified value into the properties a little later
+                            // to store the modified value into the properties a little later
+                            val = Encodings.DEFAULT_MIME_ENCODING;
                             encodingInfo = Encodings.getEncodingInfo(newEncoding);
                         }
                        // The encoding was good, or was forced to UTF-8 above
@@ -499,10 +494,11 @@ abstract public class ToStream extends SerializerBase {
                 if (OutputPropertiesFactory.S_KEY_INDENT_AMOUNT.equals(name)) {
                     setIndentAmount(Integer.parseInt(val));
                 } else if (OutputKeys.INDENT.equals(name)) {
-                    boolean b = val.endsWith("yes") ? true : false;
-                    m_doIndent = b;
+                    m_doIndent = val.endsWith("yes");
+                } else if ((DOMConstants.S_JDK_PROPERTIES_NS + JdkConstants.S_IS_STANDALONE)
+                        .equals(name)) {
+                    m_isStandalone = val.endsWith("yes");
                 }
-
                 break;
             case 'l':
                 if (OutputPropertiesFactory.S_KEY_LINE_SEPARATOR.equals(name)) {
@@ -953,45 +949,46 @@ abstract public class ToStream extends SerializerBase {
      * @param ch Character array.
      * @param i position Where the surrogate was detected.
      * @param end The end index of the significant characters.
-     * @return 0 if the pair of characters was written out as-is,
-     * the unicode code point of the character represented by
-     * the surrogate pair if an entity reference with that value
-     * was written out.
+     * @return the status of writing a surrogate pair.
+     *        -1 -- nothing is written
+     *         0 -- the pair is written as-is
+     *         code point -- the pair is written as an entity reference
      *
      * @throws IOException
      * @throws org.xml.sax.SAXException if invalid UTF-16 surrogate detected.
      */
     protected int writeUTF16Surrogate(char c, char ch[], int i, int end)
-        throws IOException
+        throws IOException, SAXException
     {
-        int codePoint = 0;
+        int status = -1;
         if (i + 1 >= end)
         {
-            throw new IOException(
-                Utils.messages.createMessage(
-                    MsgKey.ER_INVALID_UTF16_SURROGATE,
-                    new Object[] { Integer.toHexString((int) c)}));
+            m_highSurrogate = c;
+            return status;
         }
 
-        final char high = c;
-        final char low = ch[i+1];
+        char high, low;
+        if (m_highSurrogate == 0) {
+            high = c;
+            low = ch[i+1];
+            status = 0;
+        } else {
+            high = m_highSurrogate;
+            low = c;
+            m_highSurrogate = 0;
+        }
+
         if (!Encodings.isLowUTF16Surrogate(low)) {
-            throw new IOException(
-                Utils.messages.createMessage(
-                    MsgKey.ER_INVALID_UTF16_SURROGATE,
-                    new Object[] {
-                        Integer.toHexString((int) c)
-                            + " "
-                            + Integer.toHexString(low)}));
+            throwIOE(high, low);
         }
 
         final Writer writer = m_writer;
 
         // If we make it to here we have a valid high, low surrogate pair
-        if (m_encodingInfo.isInEncoding(c,low)) {
+        if (m_encodingInfo.isInEncoding(high,low)) {
             // If the character formed by the surrogate pair
             // is in the encoding, so just write it out
-            writer.write(ch,i,2);
+            writer.write(new char[]{high, low}, 0, 2);
         }
         else {
             // Don't know what to do with this char, it is
@@ -999,24 +996,16 @@ abstract public class ToStream extends SerializerBase {
             // a surrogate pair, so write out as an entity ref
             final String encoding = getEncoding();
             if (encoding != null) {
-                /* The output encoding is known,
-                 * so somthing is wrong.
-                  */
-                codePoint = Encodings.toCodePoint(high, low);
-                // not in the encoding, so write out a character reference
-                writer.write('&');
-                writer.write('#');
-                writer.write(Integer.toString(codePoint));
-                writer.write(';');
+                status = writeCharRef(writer, high, low);
             } else {
                 /* The output encoding is not known,
                  * so just write it out as-is.
                  */
-                writer.write(ch, i, 2);
+                writer.write(new char[]{high, low}, 0, 2);
             }
         }
         // non-zero only if character reference was written out.
-        return codePoint;
+        return status;
     }
 
     /**
@@ -1106,32 +1095,7 @@ abstract public class ToStream extends SerializerBase {
             }
             else if (isCData && (!escapingNotNeeded(c)))
             {
-                //                if (i != 0)
-                if (m_cdataTagOpen)
-                    closeCDATA();
-
-                // This needs to go into a function...
-                if (Encodings.isHighUTF16Surrogate(c))
-                {
-                    writeUTF16Surrogate(c, ch, i, end);
-                    i++ ; // process two input characters
-                }
-                else
-                {
-                    writer.write("&#");
-
-                    String intStr = Integer.toString((int) c);
-
-                    writer.write(intStr);
-                    writer.write(';');
-                }
-
-                //                if ((i != 0) && (i < (end - 1)))
-                //                if (!m_cdataTagOpen && (i < (end - 1)))
-                //                {
-                //                    writer.write(CDATA_DELIMITER_OPEN);
-                //                    m_cdataTagOpen = true;
-                //                }
+                i = handleEscaping(writer, c, ch, i, end);
             }
             else if (
                 isCData
@@ -1155,29 +1119,44 @@ abstract public class ToStream extends SerializerBase {
                     }
                     writer.write(c);
                 }
-
-                // This needs to go into a function...
-                else if (Encodings.isHighUTF16Surrogate(c))
-                {
-                    if (m_cdataTagOpen)
-                        closeCDATA();
-                    writeUTF16Surrogate(c, ch, i, end);
-                    i++; // process two input characters
-                }
-                else
-                {
-                    if (m_cdataTagOpen)
-                        closeCDATA();
-                    writer.write("&#");
-
-                    String intStr = Integer.toString((int) c);
-
-                    writer.write(intStr);
-                    writer.write(';');
+                else {
+                    i = handleEscaping(writer, c, ch, i, end);
                 }
             }
         }
 
+    }
+
+    /**
+     * Handles escaping, writes either with a surrogate pair or a character
+     * reference.
+     *
+     * @param c the current char
+     * @param ch the character array
+     * @param i the current position
+     * @param end the end index of the array
+     * @return the next index
+     *
+     * @throws IOException
+     * @throws org.xml.sax.SAXException if invalid UTF-16 surrogate detected.
+     */
+    private int handleEscaping(Writer writer, char c, char ch[], int i, int end)
+            throws IOException, SAXException {
+        if (Encodings.isHighUTF16Surrogate(c) || Encodings.isLowUTF16Surrogate(c))
+        {
+            if (writeUTF16Surrogate(c, ch, i, end) >= 0) {
+                // move the index if the low surrogate is consumed
+                // as writeUTF16Surrogate has written the pair
+                if (Encodings.isHighUTF16Surrogate(c)) {
+                    i++ ;
+                }
+            }
+        }
+        else
+        {
+            writeCharRef(writer, c);
+        }
+        return i;
     }
 
     /**
@@ -1246,7 +1225,7 @@ abstract public class ToStream extends SerializerBase {
                 m_elemContext.m_startTagOpen = false;
             }
 
-            if (shouldIndent())
+            if (!m_cdataTagOpen && shouldIndentForText())
                 indent();
 
             boolean writeCDataBrackets =
@@ -1285,6 +1264,7 @@ abstract public class ToStream extends SerializerBase {
                     closeCDATA();
             }
 
+            m_isprevtext = true;
             // time to fire off CDATA event
             if (m_tracer != null)
                 super.fireCDATAEvent(ch, old_start, length);
@@ -1377,7 +1357,7 @@ abstract public class ToStream extends SerializerBase {
         // characters to read from array is 0.
         // Section 7.6.1 of XSLT 1.0 (http://www.w3.org/TR/xslt#value-of) suggest no text node
         // is created if string is empty.
-        if (length == 0 || (isInEntityRef()))
+        if (length == 0 || (isInEntityRef() && !m_expandDTDEntities))
             return;
 
         final boolean shouldNotFormat = !shouldFormatOutput();
@@ -1551,11 +1531,13 @@ abstract public class ToStream extends SerializerBase {
     }
 
     /**
-     * Used to flush the buffered characters when indentation is on, this method
-     * will be called when the next node is traversed.
+     * Flushes the buffered characters when indentation is on. This method
+     * is called before the next node is traversed.
      *
+     * @param isText indicates whether the node to be traversed is text
+     * @throws org.xml.sax.SAXException
      */
-    final protected void flushCharactersBuffer() throws SAXException {
+    final protected void flushCharactersBuffer(boolean isText) throws SAXException {
         try {
             if (shouldFormatOutput() && m_charactersBuffer.isAnyCharactersBuffered()) {
                 if (m_elemContext.m_isCdataSection) {
@@ -1568,7 +1550,9 @@ abstract public class ToStream extends SerializerBase {
                     return;
                 }
 
-                m_childNodeNum++;
+                if (!isText) {
+                    m_childNodeNum++;
+                }
                 boolean skipBeginningNewlines = false;
                 if (shouldIndentForText()) {
                     indent();
@@ -1644,7 +1628,7 @@ abstract public class ToStream extends SerializerBase {
         int i,
         char ch,
         int lastDirty,
-        boolean fromTextNode) throws IOException
+        boolean fromTextNode) throws IOException, SAXException
     {
         int startClean = lastDirty + 1;
         // if we have some clean characters accumulated
@@ -1687,7 +1671,7 @@ abstract public class ToStream extends SerializerBase {
      */
     public void characters(String s) throws org.xml.sax.SAXException
     {
-        if (isInEntityRef())
+        if (isInEntityRef() && !m_expandDTDEntities)
             return;
         final int length = s.length();
         if (length > m_charsBuff.length)
@@ -1723,54 +1707,40 @@ abstract public class ToStream extends SerializerBase {
         int len,
         boolean fromTextNode,
         boolean escLF)
-        throws IOException
+        throws IOException, SAXException
     {
 
         int pos = accumDefaultEntity(writer, ch, i, chars, len, fromTextNode, escLF);
 
         if (i == pos)
         {
+            if (m_highSurrogate != 0) {
+                if (!(Encodings.isLowUTF16Surrogate(ch))) {
+                    throwIOE(m_highSurrogate, ch);
+                }
+                writeCharRef(writer, m_highSurrogate, ch);
+                m_highSurrogate = 0;
+                return ++pos;
+            }
+
             if (Encodings.isHighUTF16Surrogate(ch))
             {
-
-                // Should be the UTF-16 low surrogate of the hig/low pair.
-                char next;
-                // Unicode code point formed from the high/low pair.
-                int codePoint = 0;
-
                 if (i + 1 >= len)
                 {
-                    throw new IOException(
-                        Utils.messages.createMessage(
-                            MsgKey.ER_INVALID_UTF16_SURROGATE,
-                            new Object[] { Integer.toHexString(ch)}));
-                    //"Invalid UTF-16 surrogate detected: "
-
-                    //+Integer.toHexString(ch)+ " ?");
+                    // save for the next read
+                    m_highSurrogate = ch;
+                    pos++;
                 }
                 else
                 {
-                    next = chars[++i];
-
+                    // the next should be the UTF-16 low surrogate of the hig/low pair.
+                    char next = chars[++i];
                     if (!(Encodings.isLowUTF16Surrogate(next)))
-                        throw new IOException(
-                            Utils.messages.createMessage(
-                                MsgKey
-                                    .ER_INVALID_UTF16_SURROGATE,
-                                new Object[] {
-                                    Integer.toHexString(ch)
-                                        + " "
-                                        + Integer.toHexString(next)}));
-                    //"Invalid UTF-16 surrogate detected: "
+                        throwIOE(ch, next);
 
-                    //+Integer.toHexString(ch)+" "+Integer.toHexString(next));
-                    codePoint = Encodings.toCodePoint(ch,next);
+                    writeCharRef(writer, ch, next);
+                    pos += 2; // count the two characters that went into writing out this entity
                 }
-
-                writer.write("&#");
-                writer.write(Integer.toString(codePoint));
-                writer.write(';');
-                pos += 2; // count the two characters that went into writing out this entity
             }
             else
             {
@@ -1782,18 +1752,14 @@ abstract public class ToStream extends SerializerBase {
                 if (isCharacterInC0orC1Range(ch) ||
                         (XMLVERSION11.equals(getVersion()) && isNELorLSEPCharacter(ch)))
                 {
-                    writer.write("&#");
-                    writer.write(Integer.toString(ch));
-                    writer.write(';');
+                    writeCharRef(writer, ch);
                 }
                 else if ((!escapingNotNeeded(ch) ||
                     (  (fromTextNode && m_charInfo.isSpecialTextChar(ch))
                      || (!fromTextNode && m_charInfo.isSpecialAttrChar(ch))))
-                && m_elemContext.m_currentElemDepth > 0)
+                     && m_elemContext.m_currentElemDepth > 0)
                 {
-                    writer.write("&#");
-                    writer.write(Integer.toString(ch));
-                    writer.write(';');
+                    writeCharRef(writer, ch);
                 }
                 else
                 {
@@ -1804,6 +1770,45 @@ abstract public class ToStream extends SerializerBase {
 
         }
         return pos;
+    }
+
+    /**
+     * Writes out a character reference.
+     * @param writer the writer
+     * @param c the character
+     * @throws IOException
+     */
+    private void writeCharRef(Writer writer, char c) throws IOException, SAXException {
+        if (m_cdataTagOpen)
+            closeCDATA();
+        writer.write("&#");
+        writer.write(Integer.toString(c));
+        writer.write(';');
+    }
+
+    /**
+     * Writes out a pair of surrogates as a character reference
+     * @param writer the writer
+     * @param high the high surrogate
+     * @param low the low surrogate
+     * @throws IOException
+     */
+    private int writeCharRef(Writer writer, char high, char low) throws IOException, SAXException {
+        if (m_cdataTagOpen)
+            closeCDATA();
+        // Unicode code point formed from the high/low pair.
+        int codePoint = Encodings.toCodePoint(high, low);
+        writer.write("&#");
+        writer.write(Integer.toString(codePoint));
+        writer.write(';');
+        return codePoint;
+    }
+
+    private void throwIOE(char ch, char next) throws IOException {
+        throw new IOException(Utils.messages.createMessage(
+                MsgKey.ER_INVALID_UTF16_SURROGATE,
+                new Object[] {Integer.toHexString(ch) + " "
+                        + Integer.toHexString(next)}));
     }
 
     /**
@@ -1840,7 +1845,7 @@ abstract public class ToStream extends SerializerBase {
 
         if (m_doIndent) {
             m_childNodeNum++;
-            flushCharactersBuffer();
+            flushCharactersBuffer(false);
         }
 
         if (m_needToCallStartDocument)
@@ -2053,7 +2058,7 @@ abstract public class ToStream extends SerializerBase {
         Writer writer,
         String string,
         String encoding)
-        throws IOException
+        throws IOException, SAXException
     {
         final int len = string.length();
         if (len > m_attrBuff.length)
@@ -2111,7 +2116,7 @@ abstract public class ToStream extends SerializerBase {
             return;
 
         if (m_doIndent) {
-            flushCharactersBuffer();
+            flushCharactersBuffer(false);
         }
         // namespaces declared at the current depth are no longer valid
         // so get rid of them
@@ -2303,7 +2308,7 @@ abstract public class ToStream extends SerializerBase {
             return;
         if (m_doIndent) {
             m_childNodeNum++;
-            flushCharactersBuffer();
+            flushCharactersBuffer(false);
         }
         if (m_elemContext.m_startTagOpen)
         {
@@ -2485,8 +2490,7 @@ abstract public class ToStream extends SerializerBase {
     public void startCDATA() throws org.xml.sax.SAXException
     {
         if (m_doIndent) {
-            m_childNodeNum++;
-            flushCharactersBuffer();
+            flushCharactersBuffer(true);
         }
 
         m_cdataStartCalled = true;
@@ -2513,7 +2517,7 @@ abstract public class ToStream extends SerializerBase {
             m_inExternalDTD = true;
 
         // if this is not the magic [dtd] name
-        if (!m_inExternalDTD) {
+        if (!m_expandDTDEntities && !m_inExternalDTD) {
             // if it's not in nested entity reference
             if (!isInEntityRef()) {
                 if (shouldFormatOutput()) {

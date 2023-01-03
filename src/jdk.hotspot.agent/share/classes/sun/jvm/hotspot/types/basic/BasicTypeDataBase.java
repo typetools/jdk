@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,11 +50,11 @@ public class BasicTypeDataBase implements TypeDataBase {
   private MachineDescription machDesc;
   private VtblAccess vtblAccess;
   /** Maps strings to Type objects. This does not contain the primitive types. */
-  private Map nameToTypeMap = new HashMap();
+  private Map<String, Type> nameToTypeMap = new HashMap<>();
   /** Maps strings to Integers, used for enums, etc. */
-  private Map nameToIntConstantMap = new HashMap();
+  private Map<String, Integer> nameToIntConstantMap = new HashMap<>();
   /** Maps strings to Longs, used for 32/64-bit constants, etc. */
-  private Map nameToLongConstantMap = new HashMap();
+  private Map<String, Long> nameToLongConstantMap = new HashMap<>();
   /** Primitive types. */
   private Type jbooleanType;
   private Type jbyteType;
@@ -156,10 +156,10 @@ public class BasicTypeDataBase implements TypeDataBase {
     return VM.getVM().getOopSize();
   }
 
-  HashMap typeToVtbl = new HashMap();
+  Map<Type, Address> typeToVtbl = new HashMap<>();
 
   private Address vtblForType(Type type) {
-    Address vtblAddr = (Address)typeToVtbl.get(type);
+    Address vtblAddr = typeToVtbl.get(type);
     if (vtblAddr == null) {
       vtblAddr = vtblAccess.getVtblForType(type);
       if (vtblAddr != null) {
@@ -197,11 +197,11 @@ public class BasicTypeDataBase implements TypeDataBase {
     // pattern of, for example, a double and the vtbl is vanishingly
     // small.)
     //    1. The first word of the object (should handle MSVC++ as
-    //    well as the SparcWorks compilers with compatibility set to
+    //    well as the solstudio compilers with compatibility set to
     //    v5.0 or greater)
     //    2. and 3. The last two Address-aligned words of the part of
     //    the object defined by its topmost polymorphic superclass.
-    //    This should handle the SparcWorks compilers, v4.2 or
+    //    This should handle the solstudio compilers, v4.2 or
     //    earlier, as well as any other compilers which place the vptr
     //    at the end of the user-defined fields of the first base
     //    class with virtual functions.
@@ -468,7 +468,7 @@ public class BasicTypeDataBase implements TypeDataBase {
       throw new RuntimeException("int constant of name \"" + name + "\" already present");
     }
 
-    nameToIntConstantMap.put(name, new Integer(value));
+    nameToIntConstantMap.put(name, value);
   }
 
   /** This method should only be used by the builder of the
@@ -491,7 +491,7 @@ public class BasicTypeDataBase implements TypeDataBase {
       throw new RuntimeException("long constant of name \"" + name + "\" already present");
     }
 
-    nameToLongConstantMap.put(name, new Long(value));
+    nameToLongConstantMap.put(name, value);
   }
 
   /** This method should only be used by the builder of the

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@
 #include "runtime/perfMemory.hpp"
 #include "services/memTracker.hpp"
 #include "utilities/exceptions.hpp"
+#include "utilities/formatBuffer.hpp"
 
 #include <windows.h>
 #include <sys/types.h>
@@ -318,9 +319,8 @@ static char* get_user_name_slow(int vmid) {
   // to determine the user name for the process id.
   //
   struct dirent* dentry;
-  char* tdbuf = NEW_C_HEAP_ARRAY(char, os::readdir_buf_size(tmpdirname), mtInternal);
   errno = 0;
-  while ((dentry = os::readdir(tmpdirp, (struct dirent *)tdbuf)) != NULL) {
+  while ((dentry = os::readdir(tmpdirp)) != NULL) {
 
     // check if the directory entry is a hsperfdata file
     if (strncmp(dentry->d_name, PERFDATA_NAME, strlen(PERFDATA_NAME)) != 0) {
@@ -353,9 +353,8 @@ static char* get_user_name_slow(int vmid) {
     }
 
     struct dirent* udentry;
-    char* udbuf = NEW_C_HEAP_ARRAY(char, os::readdir_buf_size(usrdir_name), mtInternal);
     errno = 0;
-    while ((udentry = os::readdir(subdirp, (struct dirent *)udbuf)) != NULL) {
+    while ((udentry = os::readdir(subdirp)) != NULL) {
 
       if (filename_to_pid(udentry->d_name) == vmid) {
         struct stat statbuf;
@@ -396,7 +395,7 @@ static char* get_user_name_slow(int vmid) {
         if (statbuf.st_ctime > latest_ctime) {
           char* user = strchr(dentry->d_name, '_') + 1;
 
-          if (latest_user != NULL) FREE_C_HEAP_ARRAY(char, latest_user);
+          FREE_C_HEAP_ARRAY(char, latest_user);
           latest_user = NEW_C_HEAP_ARRAY(char, strlen(user)+1, mtInternal);
 
           strcpy(latest_user, user);
@@ -407,11 +406,9 @@ static char* get_user_name_slow(int vmid) {
       }
     }
     os::closedir(subdirp);
-    FREE_C_HEAP_ARRAY(char, udbuf);
     FREE_C_HEAP_ARRAY(char, usrdir_name);
   }
   os::closedir(tmpdirp);
-  FREE_C_HEAP_ARRAY(char, tdbuf);
 
   return(latest_user);
 }
@@ -642,9 +639,8 @@ static void cleanup_sharedmem_resources(const char* dirname) {
   // opendir/readdir.
   //
   struct dirent* entry;
-  char* dbuf = NEW_C_HEAP_ARRAY(char, os::readdir_buf_size(dirname), mtInternal);
   errno = 0;
-  while ((entry = os::readdir(dirp, (struct dirent *)dbuf)) != NULL) {
+  while ((entry = os::readdir(dirp)) != NULL) {
 
     int pid = filename_to_pid(entry->d_name);
 
@@ -685,7 +681,6 @@ static void cleanup_sharedmem_resources(const char* dirname) {
     errno = 0;
   }
   os::closedir(dirp);
-  FREE_C_HEAP_ARRAY(char, dbuf);
 }
 
 // create a file mapping object with the requested name, and size
@@ -770,7 +765,7 @@ static void free_security_attr(LPSECURITY_ATTRIBUTES lpSA) {
     lpSA->lpSecurityDescriptor = NULL;
 
     // free the security attributes structure
-    FREE_C_HEAP_ARRAY(char, lpSA);
+    FREE_C_HEAP_OBJ(lpSA);
   }
 }
 
@@ -1079,8 +1074,8 @@ static LPSECURITY_ATTRIBUTES make_security_attr(ace_data_t aces[], int count) {
   // allocate and initialize the security attributes structure and
   // return it to the caller.
   //
-  LPSECURITY_ATTRIBUTES lpSA = (LPSECURITY_ATTRIBUTES)
-    NEW_C_HEAP_ARRAY(char, sizeof(SECURITY_ATTRIBUTES), mtInternal);
+  LPSECURITY_ATTRIBUTES lpSA =
+      NEW_C_HEAP_OBJ(SECURITY_ATTRIBUTES, mtInternal);
   lpSA->nLength = sizeof(SECURITY_ATTRIBUTES);
   lpSA->lpSecurityDescriptor = pSD;
   lpSA->bInheritHandle = FALSE;
@@ -1567,7 +1562,7 @@ static size_t sharedmem_filesize(const char* filename, TRAPS) {
       warning("unexpected file size: size = " SIZE_FORMAT "\n",
               statbuf.st_size);
     }
-    THROW_MSG_0(vmSymbols::java_lang_Exception(),
+    THROW_MSG_0(vmSymbols::java_io_IOException(),
                 "Invalid PerfMemory size");
   }
 
@@ -1828,7 +1823,7 @@ void PerfMemory::attach(const char* user, int vmid, PerfMemoryMode mode,
 // the indicated process's PerfData memory region from this
 // process's address space.
 //
-void PerfMemory::detach(char* addr, size_t bytes, TRAPS) {
+void PerfMemory::detach(char* addr, size_t bytes) {
 
   assert(addr != 0, "address sanity check");
   assert(bytes > 0, "capacity sanity check");

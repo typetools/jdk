@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_CODE_RELOCINFO_HPP
-#define SHARE_VM_CODE_RELOCINFO_HPP
+#ifndef SHARE_CODE_RELOCINFO_HPP
+#define SHARE_CODE_RELOCINFO_HPP
 
 #include "runtime/os.hpp"
 #include "utilities/macros.hpp"
 
 class nmethod;
+class CodeBlob;
 class CompiledMethod;
 class Metadata;
 class NativeMovConstReg;
@@ -52,10 +53,6 @@ class NativeMovConstReg;
 //    RelocIterator
 //      A StackObj which iterates over the relocations associated with
 //      a range of code addresses.  Can be used to operate a copy of code.
-//    BoundRelocation
-//      An _internal_ type shared by packers and unpackers of relocations.
-//      It pastes together a RelocationHolder with some pointers into
-//      code and relocInfo streams.
 
 
 // Notes on relocType:
@@ -274,27 +271,26 @@ class relocInfo {
     type_mask               = 15  // A mask which selects only the above values
   };
 
- protected:
+ private:
   unsigned short _value;
 
-  enum RawBitsToken { RAW_BITS };
-  relocInfo(relocType type, RawBitsToken ignore, int bits)
+  static const enum class RawBitsToken {} RAW_BITS{};
+
+  relocInfo(relocType type, RawBitsToken, int bits)
     : _value((type << nontype_width) + bits) { }
 
-  relocInfo(relocType type, RawBitsToken ignore, int off, int f)
-    : _value((type << nontype_width) + (off / (unsigned)offset_unit) + (f << offset_width)) { }
+  static relocType check_relocType(relocType type) NOT_DEBUG({ return type; });
+
+  static void check_offset_and_format(int offset, int format) NOT_DEBUG_RETURN;
+
+  static int compute_bits(int offset, int format) {
+    check_offset_and_format(offset, format);
+    return (offset / offset_unit) + (format << offset_width);
+  }
 
  public:
-  // constructor
   relocInfo(relocType type, int offset, int format = 0)
-#ifndef ASSERT
-  {
-    (*this) = relocInfo(type, RAW_BITS, offset, format);
-  }
-#else
-  // Put a bunch of assertions out-of-line.
-  ;
-#endif
+    : relocInfo(check_relocType(type), RAW_BITS, compute_bits(offset, format)) {}
 
   #define APPLY_TO_RELOCATIONS(visitor) \
     visitor(oop) \
@@ -344,7 +340,6 @@ class relocInfo {
   static int offset_limit()     { return (1 << offset_width) * offset_unit; }
 
   void set_type(relocType type);
-  void set_format(int format);
 
   void remove() { set_type(none); }
 
@@ -376,7 +371,7 @@ class relocInfo {
 
   inline friend relocInfo prefix_relocInfo(int datalen);
 
- protected:
+ private:
   // an immediate relocInfo optimizes a prefix with one 10-bit unsigned value
   static relocInfo immediate_relocInfo(int data0) {
     assert(fits_into_immediate(data0), "data0 in limits");
@@ -421,7 +416,6 @@ class relocInfo {
   // (since code is dynamically patched, we also need to dynamically update the relocation info)
   // Both methods takes old_type, so it is able to performe sanity checks on the information removed.
   static void change_reloc_info_for_address(RelocIterator *itr, address pc, relocType old_type, relocType new_type);
-  static void remove_reloc_info_for_address(RelocIterator *itr, address pc, relocType old_type);
 
   // Machine dependent stuff
 #include CPU_HEADER(relocInfo)
@@ -493,8 +487,8 @@ class RelocationHolder {
 };
 
 // A RelocIterator iterates through the relocation information of a CodeBlob.
-// It is a variable BoundRelocation which is able to take on successive
-// values as it is advanced through a code stream.
+// It provides access to successive relocations as it is advanced through a
+// code stream.
 // Usage:
 //   RelocIterator iter(nm);
 //   while (iter.next()) {
@@ -516,9 +510,10 @@ class RelocationHolder {
 //   }
 
 class RelocIterator : public StackObj {
+  friend class section_word_Relocation; // for section verification
   enum { SECT_LIMIT = 3 };  // must be equal to CodeBuffer::SECT_LIMIT, checked in ctor
   friend class Relocation;
-  friend class relocInfo;       // for change_reloc_info_for_address only
+  friend class relocInfo;   // for change_reloc_info_for_address only
   typedef relocInfo::relocType relocType;
 
  private:
@@ -530,7 +525,6 @@ class RelocIterator : public StackObj {
   short           _databuf; // spare buffer for compressed data
   short*          _data;    // pointer to the relocation's data
   short           _datalen; // number of halfwords in _data
-  char            _format;  // position within the instruction
 
   // Base addresses needed to compute targets of section_word_type relocs.
   address _section_start[SECT_LIMIT];
@@ -587,23 +581,18 @@ class RelocIterator : public StackObj {
       return false;
     }
 
-    if (relocInfo::have_format)  _format = current()->format();
     return true;
   }
 
   // accessors
   address      limit()        const { return _limit; }
-  void     set_limit(address x);
   relocType    type()         const { return current()->type(); }
   int          format()       const { return (relocInfo::have_format) ? current()->format() : 0; }
   address      addr()         const { return _addr; }
   CompiledMethod*     code()  const { return _code; }
-  nmethod*     code_as_nmethod() const;
   short*       data()         const { return _data; }
   int          datalen()      const { return _datalen; }
   bool     has_current()      const { return _datalen >= 0; }
-
-  void       set_addr(address addr) { _addr = addr; }
   bool   addr_in_const()      const;
 
   address section_start(int n) const {
@@ -644,12 +633,12 @@ class Relocation {
   friend class RelocIterator;
 
  private:
-  static void guarantee_size();
-
   // When a relocation has been created by a RelocIterator,
   // this field is non-null.  It allows the relocation to know
   // its context, such as the address to which it applies.
   RelocIterator* _binding;
+
+  relocInfo::relocType _rtype;
 
  protected:
   RelocIterator* binding() const {
@@ -662,9 +651,7 @@ class Relocation {
     assert(_binding != NULL, "must now be bound");
   }
 
-  Relocation() {
-    _binding = NULL;
-  }
+  Relocation(relocInfo::relocType rtype) : _binding(NULL), _rtype(rtype) { }
 
   static RelocationHolder newHolder() {
     return RelocationHolder();
@@ -672,7 +659,7 @@ class Relocation {
 
  public:
   void* operator new(size_t size, const RelocationHolder& holder) throw() {
-    if (size > sizeof(holder._relocbuf)) guarantee_size();
+    assert(size <= sizeof(holder._relocbuf), "Make _relocbuf bigger!");
     assert((void* const *)holder.reloc() == &holder._relocbuf[0], "ptrs must agree");
     return holder.reloc();
   }
@@ -792,7 +779,6 @@ class Relocation {
   // accessors which only make sense for a bound Relocation
   address         addr()            const { return binding()->addr(); }
   CompiledMethod* code()            const { return binding()->code(); }
-  nmethod*        code_as_nmethod() const { return binding()->code_as_nmethod(); }
   bool            addr_in_const()   const { return binding()->addr_in_const(); }
  protected:
   short*   data()         const { return binding()->data(); }
@@ -800,7 +786,7 @@ class Relocation {
   int      format()       const { return binding()->format(); }
 
  public:
-  virtual relocInfo::relocType type()            { return relocInfo::none; }
+  relocInfo::relocType type()              const { return _rtype; }
 
   // is it a call instruction?
   virtual bool is_call()                         { return false; }
@@ -814,7 +800,7 @@ class Relocation {
   // all relocations are able to reassert their values
   virtual void set_value(address x);
 
-  virtual void clear_inline_cache()              { }
+  virtual bool clear_inline_cache()              { return true; }
 
   // This method assumes that all virtual/static (inline) caches are cleared (since for static_call_type and
   // ic_call_type is not always posisition dependent (depending on the state of the cache)). However, this is
@@ -827,7 +813,7 @@ class Relocation {
 
 inline RelocationHolder::RelocationHolder() {
   // initialize the vtbl, just to keep things type-safe
-  new(*this) Relocation();
+  new(*this) Relocation(relocInfo::none);
 }
 
 
@@ -837,7 +823,6 @@ inline RelocationHolder::RelocationHolder(Relocation* r) {
     _relocbuf[i] = ((void**)r)[i];
   }
 }
-
 
 relocInfo::relocType RelocationHolder::type() const {
   return reloc()->type();
@@ -849,6 +834,8 @@ relocInfo::relocType RelocationHolder::type() const {
 // By convention, the "value" does not include a separately reckoned "offset".
 class DataRelocation : public Relocation {
  public:
+  DataRelocation(relocInfo::relocType type) : Relocation(type) {}
+
   bool          is_data()                      { return true; }
 
   // both target and offset must be computed somehow from relocation data
@@ -885,6 +872,8 @@ class DataRelocation : public Relocation {
 // It is PC-relative on most machines.
 class CallRelocation : public Relocation {
  public:
+  CallRelocation(relocInfo::relocType type) : Relocation(type) { }
+
   bool is_call() { return true; }
 
   address  destination()                    { return pd_call_destination(); }
@@ -896,8 +885,6 @@ class CallRelocation : public Relocation {
 };
 
 class oop_Relocation : public DataRelocation {
-  relocInfo::relocType type() { return relocInfo::oop_type; }
-
  public:
   // encode in one of these formats:  [] [n] [n l] [Nn l] [Nn Ll]
   // an oop in the CodeBlob's oop pool
@@ -924,12 +911,11 @@ class oop_Relocation : public DataRelocation {
   jint _oop_index;                  // if > 0, index into CodeBlob::oop_at
   jint _offset;                     // byte offset to apply to the oop itself
 
-  oop_Relocation(int oop_index, int offset) {
-    _oop_index = oop_index; _offset = offset;
-  }
+  oop_Relocation(int oop_index, int offset)
+    : DataRelocation(relocInfo::oop_type), _oop_index(oop_index), _offset(offset) { }
 
   friend class RelocIterator;
-  oop_Relocation() { }
+  oop_Relocation() : DataRelocation(relocInfo::oop_type) {}
 
  public:
   int oop_index() { return _oop_index; }
@@ -943,7 +929,7 @@ class oop_Relocation : public DataRelocation {
 
   void verify_oop_relocation();
 
-  address value()  { return (address) *oop_addr(); }
+  address value()  { return cast_from_oop<address>(*oop_addr()); }
 
   bool oop_is_immediate()  { return oop_index() == 0; }
 
@@ -955,7 +941,6 @@ class oop_Relocation : public DataRelocation {
 
 // copy of oop_Relocation for now but may delete stuff in both/either
 class metadata_Relocation : public DataRelocation {
-  relocInfo::relocType type() { return relocInfo::metadata_type; }
 
  public:
   // encode in one of these formats:  [] [n] [n l] [Nn l] [Nn Ll]
@@ -979,12 +964,11 @@ class metadata_Relocation : public DataRelocation {
   jint _metadata_index;            // if > 0, index into nmethod::metadata_at
   jint _offset;                     // byte offset to apply to the metadata itself
 
-  metadata_Relocation(int metadata_index, int offset) {
-    _metadata_index = metadata_index; _offset = offset;
-  }
+  metadata_Relocation(int metadata_index, int offset)
+    : DataRelocation(relocInfo::metadata_type), _metadata_index(metadata_index), _offset(offset) { }
 
   friend class RelocIterator;
-  metadata_Relocation() { }
+  metadata_Relocation() : DataRelocation(relocInfo::metadata_type) { }
 
   // Fixes a Metadata pointer in the code. Most platforms embeds the
   // Metadata pointer in the code at compile time so this is empty
@@ -1001,8 +985,6 @@ class metadata_Relocation : public DataRelocation {
 
   void fix_metadata_relocation();        // reasserts metadata value
 
-  void verify_metadata_relocation();
-
   address value()  { return (address) *metadata_addr(); }
 
   bool metadata_is_immediate()  { return metadata_index() == 0; }
@@ -1014,7 +996,6 @@ class metadata_Relocation : public DataRelocation {
 
 
 class virtual_call_Relocation : public CallRelocation {
-  relocInfo::relocType type() { return relocInfo::virtual_call_type; }
 
  public:
   // "cached_value" points to the first associated set-oop.
@@ -1030,14 +1011,15 @@ class virtual_call_Relocation : public CallRelocation {
   address _cached_value; // location of set-value instruction
   jint    _method_index; // resolved method for a Java call
 
-  virtual_call_Relocation(address cached_value, int method_index) {
-    _cached_value = cached_value;
-    _method_index = method_index;
+  virtual_call_Relocation(address cached_value, int method_index)
+    : CallRelocation(relocInfo::virtual_call_type),
+      _cached_value(cached_value),
+      _method_index(method_index) {
     assert(cached_value != NULL, "first oop address must be specified");
   }
 
   friend class RelocIterator;
-  virtual_call_Relocation() { }
+  virtual_call_Relocation() : CallRelocation(relocInfo::virtual_call_type) { }
 
  public:
   address cached_value();
@@ -1052,13 +1034,11 @@ class virtual_call_Relocation : public CallRelocation {
   void pack_data_to(CodeSection* dest);
   void unpack_data();
 
-  void clear_inline_cache();
+  bool clear_inline_cache();
 };
 
 
 class opt_virtual_call_Relocation : public CallRelocation {
-  relocInfo::relocType type() { return relocInfo::opt_virtual_call_type; }
-
  public:
   static RelocationHolder spec(int method_index = 0) {
     RelocationHolder rh = newHolder();
@@ -1069,12 +1049,12 @@ class opt_virtual_call_Relocation : public CallRelocation {
  private:
   jint _method_index; // resolved method for a Java call
 
-  opt_virtual_call_Relocation(int method_index) {
-    _method_index = method_index;
-  }
+  opt_virtual_call_Relocation(int method_index)
+    : CallRelocation(relocInfo::opt_virtual_call_type),
+      _method_index(method_index) { }
 
   friend class RelocIterator;
-  opt_virtual_call_Relocation() {}
+  opt_virtual_call_Relocation() : CallRelocation(relocInfo::opt_virtual_call_type) {}
 
  public:
   int     method_index() { return _method_index; }
@@ -1083,16 +1063,14 @@ class opt_virtual_call_Relocation : public CallRelocation {
   void pack_data_to(CodeSection* dest);
   void unpack_data();
 
-  void clear_inline_cache();
+  bool clear_inline_cache();
 
   // find the matching static_stub
-  address static_stub(bool is_aot);
+  address static_stub();
 };
 
 
 class static_call_Relocation : public CallRelocation {
-  relocInfo::relocType type() { return relocInfo::static_call_type; }
-
  public:
   static RelocationHolder spec(int method_index = 0) {
     RelocationHolder rh = newHolder();
@@ -1103,12 +1081,12 @@ class static_call_Relocation : public CallRelocation {
  private:
   jint _method_index; // resolved method for a Java call
 
-  static_call_Relocation(int method_index) {
-    _method_index = method_index;
-  }
+  static_call_Relocation(int method_index)
+    : CallRelocation(relocInfo::static_call_type),
+    _method_index(method_index) { }
 
   friend class RelocIterator;
-  static_call_Relocation() {}
+  static_call_Relocation() : CallRelocation(relocInfo::static_call_type) {}
 
  public:
   int     method_index() { return _method_index; }
@@ -1117,39 +1095,34 @@ class static_call_Relocation : public CallRelocation {
   void pack_data_to(CodeSection* dest);
   void unpack_data();
 
-  void clear_inline_cache();
+  bool clear_inline_cache();
 
   // find the matching static_stub
-  address static_stub(bool is_aot);
+  address static_stub();
 };
 
 class static_stub_Relocation : public Relocation {
-  relocInfo::relocType type() { return relocInfo::static_stub_type; }
-
  public:
-  static RelocationHolder spec(address static_call, bool is_aot = false) {
+  static RelocationHolder spec(address static_call) {
     RelocationHolder rh = newHolder();
-    new(rh) static_stub_Relocation(static_call, is_aot);
+    new(rh) static_stub_Relocation(static_call);
     return rh;
   }
 
  private:
   address _static_call;  // location of corresponding static_call
-  bool _is_aot;          // trampoline to aot code
 
-  static_stub_Relocation(address static_call, bool is_aot) {
-    _static_call = static_call;
-    _is_aot = is_aot;
-  }
+  static_stub_Relocation(address static_call)
+    : Relocation(relocInfo::static_stub_type),
+      _static_call(static_call) { }
 
   friend class RelocIterator;
-  static_stub_Relocation() { }
+  static_stub_Relocation() : Relocation(relocInfo::static_stub_type) { }
 
  public:
-  void clear_inline_cache();
+  bool clear_inline_cache();
 
   address static_call() { return _static_call; }
-  bool is_aot() { return _is_aot; }
 
   // data is packed as a scaled offset in "1_int" format:  [c] or [Cc]
   void pack_data_to(CodeSection* dest);
@@ -1157,7 +1130,6 @@ class static_stub_Relocation : public Relocation {
 };
 
 class runtime_call_Relocation : public CallRelocation {
-  relocInfo::relocType type() { return relocInfo::runtime_call_type; }
 
  public:
   static RelocationHolder spec() {
@@ -1168,15 +1140,13 @@ class runtime_call_Relocation : public CallRelocation {
 
  private:
   friend class RelocIterator;
-  runtime_call_Relocation() { }
+  runtime_call_Relocation() : CallRelocation(relocInfo::runtime_call_type) { }
 
  public:
 };
 
 
 class runtime_call_w_cp_Relocation : public CallRelocation {
-  relocInfo::relocType type() { return relocInfo::runtime_call_w_cp_type; }
-
  public:
   static RelocationHolder spec() {
     RelocationHolder rh = newHolder();
@@ -1186,7 +1156,10 @@ class runtime_call_w_cp_Relocation : public CallRelocation {
 
  private:
   friend class RelocIterator;
-  runtime_call_w_cp_Relocation() { _offset = -4; /* <0 = invalid */ }
+  runtime_call_w_cp_Relocation()
+    : CallRelocation(relocInfo::runtime_call_w_cp_type),
+      _offset(-4) /* <0 = invalid */ { }
+
   // On z/Architecture, runtime calls are either a sequence
   // of two instructions (load destination of call from constant pool + do call)
   // or a pc-relative call. The pc-relative call is faster, but it can only
@@ -1210,8 +1183,6 @@ class runtime_call_w_cp_Relocation : public CallRelocation {
 // in the code, it can patch it to jump to the trampoline where is
 // sufficient space for a far branch. Needed on PPC.
 class trampoline_stub_Relocation : public Relocation {
-  relocInfo::relocType type() { return relocInfo::trampoline_stub_type; }
-
  public:
   static RelocationHolder spec(address static_call) {
     RelocationHolder rh = newHolder();
@@ -1221,12 +1192,12 @@ class trampoline_stub_Relocation : public Relocation {
  private:
   address _owner;    // Address of the NativeCall that owns the trampoline.
 
-  trampoline_stub_Relocation(address owner) {
-    _owner = owner;
-  }
+  trampoline_stub_Relocation(address owner)
+    : Relocation(relocInfo::trampoline_stub_type),
+      _owner(owner) { }
 
   friend class RelocIterator;
-  trampoline_stub_Relocation() { }
+  trampoline_stub_Relocation() : Relocation(relocInfo::trampoline_stub_type) { }
 
  public:
 
@@ -1241,8 +1212,6 @@ class trampoline_stub_Relocation : public Relocation {
 };
 
 class external_word_Relocation : public DataRelocation {
-  relocInfo::relocType type() { return relocInfo::external_word_type; }
-
  public:
   static RelocationHolder spec(address target) {
     assert(target != NULL, "must not be null");
@@ -1269,12 +1238,11 @@ class external_word_Relocation : public DataRelocation {
  private:
   address _target;                  // address in runtime
 
-  external_word_Relocation(address target) {
-    _target = target;
-  }
+  external_word_Relocation(address target)
+    : DataRelocation(relocInfo::external_word_type), _target(target) { }
 
   friend class RelocIterator;
-  external_word_Relocation() { }
+  external_word_Relocation() : DataRelocation(relocInfo::external_word_type) { }
 
  public:
   // data is packed as a well-known address in "1_int" format:  [a] or [Aa]
@@ -1291,7 +1259,6 @@ class external_word_Relocation : public DataRelocation {
 };
 
 class internal_word_Relocation : public DataRelocation {
-  relocInfo::relocType type() { return relocInfo::internal_word_type; }
 
  public:
   static RelocationHolder spec(address target) {
@@ -1308,17 +1275,18 @@ class internal_word_Relocation : public DataRelocation {
     return rh;
   }
 
-  internal_word_Relocation(address target) {
-    _target  = target;
-    _section = -1;  // self-relative
-  }
+  // default section -1 means self-relative
+  internal_word_Relocation(address target, int section = -1,
+    relocInfo::relocType type = relocInfo::internal_word_type)
+    : DataRelocation(type), _target(target), _section(section) { }
 
  protected:
   address _target;                  // address in CodeBlob
   int     _section;                 // section providing base address, if any
 
   friend class RelocIterator;
-  internal_word_Relocation() { }
+  internal_word_Relocation(relocInfo::relocType type = relocInfo::internal_word_type)
+    : DataRelocation(type) { }
 
   // bit-width of LSB field in packed offset, if section >= 0
   enum { section_width = 2 }; // must equal CodeBuffer::sect_bits
@@ -1338,8 +1306,6 @@ class internal_word_Relocation : public DataRelocation {
 };
 
 class section_word_Relocation : public internal_word_Relocation {
-  relocInfo::relocType type() { return relocInfo::section_word_type; }
-
  public:
   static RelocationHolder spec(address target, int section) {
     RelocationHolder rh = newHolder();
@@ -1347,11 +1313,10 @@ class section_word_Relocation : public internal_word_Relocation {
     return rh;
   }
 
-  section_word_Relocation(address target, int section) {
+  section_word_Relocation(address target, int section)
+    : internal_word_Relocation(target, section, relocInfo::section_word_type) {
     assert(target != NULL, "must not be null");
-    assert(section >= 0, "must be a valid section");
-    _target  = target;
-    _section = section;
+    assert(section >= 0 && section < RelocIterator::SECT_LIMIT, "must be a valid section");
   }
 
   //void pack_data_to -- inherited
@@ -1359,18 +1324,20 @@ class section_word_Relocation : public internal_word_Relocation {
 
  private:
   friend class RelocIterator;
-  section_word_Relocation() { }
+  section_word_Relocation() : internal_word_Relocation(relocInfo::section_word_type) { }
 };
 
 
 class poll_Relocation : public Relocation {
   bool          is_data()                      { return true; }
-  relocInfo::relocType type() { return relocInfo::poll_type; }
   void     fix_relocation_after_move(const CodeBuffer* src, CodeBuffer* dest);
+ public:
+  poll_Relocation(relocInfo::relocType type = relocInfo::poll_type) : Relocation(type) { }
 };
 
 class poll_return_Relocation : public poll_Relocation {
-  relocInfo::relocType type() { return relocInfo::poll_return_type; }
+ public:
+  poll_return_Relocation() : poll_Relocation(relocInfo::relocInfo::poll_return_type) { }
 };
 
 // We know all the xxx_Relocation classes, so now we can define these:
@@ -1391,4 +1358,4 @@ inline RelocIterator::RelocIterator(CompiledMethod* nm, address begin, address l
   initialize(nm, begin, limit);
 }
 
-#endif // SHARE_VM_CODE_RELOCINFO_HPP
+#endif // SHARE_CODE_RELOCINFO_HPP

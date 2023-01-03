@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,44 @@
 
 package sun.lwawt.macosx;
 
-import com.apple.laf.AquaMenuBarUI;
-import java.awt.peer.TaskbarPeer;
-import java.awt.*;
+import java.awt.AWTError;
+import java.awt.AWTException;
+import java.awt.CheckboxMenuItem;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Event;
+import java.awt.EventQueue;
+import java.awt.FileDialog;
+import java.awt.Frame;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.PopupMenu;
+import java.awt.RenderingHints;
+import java.awt.SystemTray;
+import java.awt.Taskbar;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
-import java.awt.dnd.*;
+import java.awt.dnd.DragGestureEvent;
+import java.awt.dnd.DragGestureListener;
+import java.awt.dnd.DragGestureRecognizer;
+import java.awt.dnd.DragSource;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.InvalidDnDOperationException;
+import java.awt.dnd.MouseDragGestureRecognizer;
 import java.awt.dnd.peer.DragSourceContextPeer;
 import java.awt.event.InputEvent;
 import java.awt.event.InvocationEvent;
@@ -37,22 +70,56 @@ import java.awt.event.KeyEvent;
 import java.awt.font.TextAttribute;
 import java.awt.im.InputMethodHighlight;
 import java.awt.im.spi.InputMethodDescriptor;
-import java.awt.peer.*;
-import java.lang.reflect.*;
-import java.net.URL;
-import java.security.*;
-import java.util.*;
-import java.util.concurrent.Callable;
+import java.awt.peer.CheckboxMenuItemPeer;
+import java.awt.peer.DesktopPeer;
+import java.awt.peer.DialogPeer;
+import java.awt.peer.FileDialogPeer;
+import java.awt.peer.FontPeer;
+import java.awt.peer.MenuBarPeer;
+import java.awt.peer.MenuItemPeer;
+import java.awt.peer.MenuPeer;
+import java.awt.peer.PopupMenuPeer;
+import java.awt.peer.RobotPeer;
+import java.awt.peer.SystemTrayPeer;
+import java.awt.peer.TaskbarPeer;
+import java.awt.peer.TrayIconPeer;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.concurrent.Callable;
+
 import javax.swing.UIManager;
 
-import sun.awt.*;
+import com.apple.laf.AquaMenuBarUI;
+import sun.awt.AWTAccessor;
+import sun.awt.AppContext;
+import sun.awt.CGraphicsDevice;
+import sun.awt.LightweightFrame;
+import sun.awt.PlatformGraphicsInfo;
+import sun.awt.SunToolkit;
 import sun.awt.datatransfer.DataTransferer;
+import sun.awt.dnd.SunDragSourceContextPeer;
 import sun.awt.util.ThreadGroupUtils;
+import sun.java2d.metal.MTLRenderQueue;
 import sun.java2d.opengl.OGLRenderQueue;
-import sun.lwawt.*;
+import sun.lwawt.LWComponentPeer;
+import sun.lwawt.LWCursorManager;
+import sun.lwawt.LWToolkit;
+import sun.lwawt.LWWindowPeer;
 import sun.lwawt.LWWindowPeer.PeerType;
-import sun.security.action.GetBooleanAction;
+import sun.lwawt.PlatformComponent;
+import sun.lwawt.PlatformDropTarget;
+import sun.lwawt.PlatformWindow;
+import sun.lwawt.SecurityWarningWindow;
 
 @SuppressWarnings("serial") // JDK implementation class
 final class NamedCursor extends Cursor {
@@ -64,6 +131,7 @@ final class NamedCursor extends Cursor {
 /**
  * Mac OS X Cocoa-based AWT Toolkit.
  */
+@SuppressWarnings("removal")
 public final class LWCToolkit extends LWToolkit {
     // While it is possible to enumerate all mouse devices
     // and query them for the number of buttons, the code
@@ -97,6 +165,12 @@ public final class LWCToolkit extends LWToolkit {
             }
         });
 
+        if (!GraphicsEnvironment.isHeadless() &&
+            !PlatformGraphicsInfo.isInAquaSession())
+        {
+            throw new AWTError("WindowServer is not available");
+        }
+
         AWTAccessor.getToolkitAccessor().setPlatformResources(platformResources);
 
         if (!GraphicsEnvironment.isHeadless()) {
@@ -117,23 +191,31 @@ public final class LWCToolkit extends LWToolkit {
     private static final boolean inAWT;
 
     public LWCToolkit() {
-        areExtraMouseButtonsEnabled = Boolean.parseBoolean(System.getProperty("sun.awt.enableExtraMouseButtons", "true"));
-        //set system property if not yet assigned
-        System.setProperty("sun.awt.enableExtraMouseButtons", ""+areExtraMouseButtonsEnabled);
-        initAppkit(ThreadGroupUtils.getRootThreadGroup(), GraphicsEnvironment.isHeadless());
+        final String extraButtons = "sun.awt.enableExtraMouseButtons";
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+            areExtraMouseButtonsEnabled =
+                 Boolean.parseBoolean(System.getProperty(extraButtons, "true"));
+            //set system property if not yet assigned
+            System.setProperty(extraButtons, ""+areExtraMouseButtonsEnabled);
+            initAppkit(ThreadGroupUtils.getRootThreadGroup(),
+                       GraphicsEnvironment.isHeadless());
+            return null;
+        });
     }
 
     /*
      * System colors with default initial values, overwritten by toolkit if system values differ and are available.
      */
-    private static final int NUM_APPLE_COLORS = 3;
+    private static final int NUM_APPLE_COLORS = 4;
     public static final int KEYBOARD_FOCUS_COLOR = 0;
     public static final int INACTIVE_SELECTION_BACKGROUND_COLOR = 1;
     public static final int INACTIVE_SELECTION_FOREGROUND_COLOR = 2;
+    public static final int SELECTED_CONTROL_TEXT_COLOR = 3;
     private static int[] appleColors = {
         0xFF808080, // keyboardFocusColor = Color.gray;
         0xFFC0C0C0, // secondarySelectedControlColor
         0xFF303030, // controlDarkShadowColor
+        0xFFFFFFFF, // controlTextColor
     };
 
     private native void loadNativeColors(final int[] systemColors, final int[] appleColors);
@@ -365,6 +447,7 @@ public final class LWCToolkit extends LWToolkit {
         fontHints.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
         desktopProperties.put(SunToolkit.DESKTOPFONTHINTS, fontHints);
         desktopProperties.put("awt.mouse.numButtons", BUTTONS);
+        desktopProperties.put("awt.multiClickInterval", getMultiClickTime());
 
         // These DnD properties must be set, otherwise Swing ends up spewing NPEs
         // all over the place. The values came straight off of MToolkit.
@@ -385,6 +468,16 @@ public final class LWCToolkit extends LWToolkit {
 
     @Override
     protected boolean syncNativeQueue(long timeout) {
+        if (timeout <= 0) {
+            return false;
+        }
+        if (SunDragSourceContextPeer.isDragDropInProgress()
+                || EventQueue.isDispatchThread()) {
+            // The java code started the DnD, but the native drag may still not
+            // start, the last attempt to flush the native events,
+            // also do not block EDT for a long time
+            timeout = 50;
+        }
         return nativeSyncQueue(timeout);
     }
 
@@ -400,21 +493,32 @@ public final class LWCToolkit extends LWToolkit {
 
     @Override
     public Insets getScreenInsets(final GraphicsConfiguration gc) {
-        return ((CGraphicsConfig) gc).getDevice().getScreenInsets();
+        GraphicsDevice gd = gc.getDevice();
+        if (!(gd instanceof CGraphicsDevice)) {
+            return super.getScreenInsets(gc);
+        }
+        return ((CGraphicsDevice)gd).getScreenInsets();
     }
 
     @Override
     public void sync() {
-        // flush the OGL pipeline (this is a no-op if OGL is not enabled)
-        OGLRenderQueue.sync();
+        // flush the rendering pipeline
+        if (CGraphicsDevice.usingMetalPipeline()) {
+            MTLRenderQueue.sync();
+        } else {
+            OGLRenderQueue.sync();
+        }
         // setNeedsDisplay() selector was sent to the appropriate CALayer so now
         // we have to flush the native selectors queue.
         flushNativeSelectors();
     }
 
     @Override
-    public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
-        return new CRobot(target, (CGraphicsDevice)screen);
+    public RobotPeer createRobot(GraphicsDevice screen) throws AWTException {
+        if (screen instanceof CGraphicsDevice) {
+            return new CRobot((CGraphicsDevice) screen);
+        }
+        return super.createRobot(screen);
     }
 
     private native boolean isCapsLockOn();
@@ -458,6 +562,11 @@ public final class LWCToolkit extends LWToolkit {
     public int getNumberOfButtons(){
         return BUTTONS;
     }
+
+    /**
+     * Returns the double-click time interval in ms.
+     */
+    private static native int getMultiClickTime();
 
     @Override
     public boolean isTraySupported() {
@@ -718,6 +827,23 @@ public final class LWCToolkit extends LWToolkit {
         return locale;
     }
 
+    public static boolean isLocaleUSInternationalPC(Locale locale) {
+        return (locale != null ?
+            locale.toString().equals("_US_UserDefined_15000") : false);
+    }
+
+    public static boolean isCharModifierKeyInUSInternationalPC(char ch) {
+        // 5 characters: APOSTROPHE, QUOTATION MARK, ACCENT GRAVE, SMALL TILDE,
+        // CIRCUMFLEX ACCENT
+        final char[] modifierKeys = {'\'', '"', '`', '\u02DC', '\u02C6'};
+        for (char modKey : modifierKeys) {
+            if (modKey == ch) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public InputMethodDescriptor getInputMethodAdapterDescriptor() {
         if (sInputMethodDescriptor == null)
@@ -766,20 +892,6 @@ public final class LWCToolkit extends LWToolkit {
     @Override
     public boolean canPopupOverlapTaskBar() {
         return false;
-    }
-
-    private static Boolean sunAwtDisableCALayers = null;
-
-    /**
-     * Returns the value of "sun.awt.disableCALayers" property. Default
-     * value is {@code false}.
-     */
-    public static synchronized boolean getSunAwtDisableCALayers() {
-        if (sunAwtDisableCALayers == null) {
-            sunAwtDisableCALayers = AccessController.doPrivileged(
-                new GetBooleanAction("sun.awt.disableCALayers"));
-        }
-        return sunAwtDisableCALayers;
     }
 
     /*

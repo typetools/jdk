@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -55,12 +56,12 @@ import java.io.IOException;
  * without incurring the increased cost associated with {@link TreeMap}.  It
  * can be used to produce a copy of a map that has the same order as the
  * original, regardless of the original map's implementation:
- * <pre>
- *     void foo(Map m) {
- *         Map copy = new LinkedHashMap(m);
+ * <pre>{@code
+ *     void foo(Map<String, Integer> m) {
+ *         Map<String, Integer> copy = new LinkedHashMap<>(m);
  *         ...
  *     }
- * </pre>
+ * }</pre>
  * This technique is particularly useful if a module takes a map on input,
  * copies it, and later returns results whose order is determined by that of
  * the copy.  (Clients generally appreciate having things returned in the same
@@ -205,6 +206,7 @@ public class LinkedHashMap<K,V>
         }
     }
 
+    @java.io.Serial
     private static final long serialVersionUID = 3801124242820219131L;
 
     /**
@@ -421,7 +423,7 @@ public class LinkedHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
             V v = e.value;
             if (v == value || (value != null && value.equals(v)))
@@ -446,9 +448,9 @@ public class LinkedHashMap<K,V>
      * distinguish these two cases.
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Node<K,V> e;
-        if ((e = getNode(hash(key), key)) == null)
+        if ((e = getNode(key)) == null)
             return null;
         if (accessOrder)
             afterNodeAccess(e);
@@ -461,7 +463,7 @@ public class LinkedHashMap<K,V>
     @Pure
     public V getOrDefault(@Nullable Object key, V defaultValue) {
        Node<K,V> e;
-       if ((e = getNode(hash(key), key)) == null)
+       if ((e = getNode(key)) == null)
            return defaultValue;
        if (accessOrder)
            afterNodeAccess(e);
@@ -549,6 +551,26 @@ public class LinkedHashMap<K,V>
         return ks;
     }
 
+    @Override
+    final <T> T[] keysToArray(T[] a) {
+        Object[] r = a;
+        int idx = 0;
+        for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
+            r[idx++] = e.key;
+        }
+        return a;
+    }
+
+    @Override
+    final <T> T[] valuesToArray(T[] a) {
+        Object[] r = a;
+        int idx = 0;
+        for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
+            r[idx++] = e.value;
+        }
+        return a;
+    }
+
     final class LinkedKeySet extends AbstractSet<K> {
         @Pure
         public final int size()                 { return size; }
@@ -557,8 +579,8 @@ public class LinkedHashMap<K,V>
         public final Iterator<K> iterator() {
             return new LinkedKeyIterator();
         }
-        public final boolean contains(@Nullable Object o) { return containsKey(o); }
-        public final boolean remove(@Nullable Object key) {
+        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
+        public final boolean remove(@Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
         @SideEffectFree
@@ -567,6 +589,15 @@ public class LinkedHashMap<K,V>
                                             Spliterator.ORDERED |
                                             Spliterator.DISTINCT);
         }
+
+        public Object[] toArray() {
+            return keysToArray(new Object[size]);
+        }
+
+        public <T> T[] toArray(T[] a) {
+            return keysToArray(prepareArray(a));
+        }
+
         public final void forEach(Consumer<? super K> action) {
             if (action == null)
                 throw new NullPointerException();
@@ -613,12 +644,21 @@ public class LinkedHashMap<K,V>
         public final Iterator<V> iterator() {
             return new LinkedValueIterator();
         }
-        public final boolean contains(@Nullable Object o) { return containsValue(o); }
+        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsValue(o); }
         @SideEffectFree
         public final Spliterator<V> spliterator() {
             return Spliterators.spliterator(this, Spliterator.SIZED |
                                             Spliterator.ORDERED);
         }
+
+        public Object[] toArray() {
+            return valuesToArray(new Object[size]);
+        }
+
+        public <T> T[] toArray(T[] a) {
+            return valuesToArray(prepareArray(a));
+        }
+
         public final void forEach(Consumer<? super V> action) {
             if (action == null)
                 throw new NullPointerException();
@@ -663,17 +703,15 @@ public class LinkedHashMap<K,V>
         public final Iterator<Map.Entry<K,V>> iterator() {
             return new LinkedEntryIterator();
         }
-        public final boolean contains(@Nullable Object o) {
-            if (!(o instanceof Map.Entry))
+        public final boolean contains(@Nullable @UnknownSignedness Object o) {
+            if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
             Object key = e.getKey();
-            Node<K,V> candidate = getNode(hash(key), key);
+            Node<K,V> candidate = getNode(key);
             return candidate != null && candidate.equals(e);
         }
-        public final boolean remove(@Nullable Object o) {
-            if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+        public final boolean remove(@Nullable @UnknownSignedness Object o) {
+            if (o instanceof Map.Entry<?, ?> e) {
                 Object key = e.getKey();
                 Object value = e.getValue();
                 return removeNode(hash(key), key, value, true, true) != null;

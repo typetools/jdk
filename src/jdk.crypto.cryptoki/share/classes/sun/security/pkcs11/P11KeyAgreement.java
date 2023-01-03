@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,6 +73,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
 
         private static final boolean VALUE = getValue();
 
+        @SuppressWarnings("removal")
         private static boolean getValue() {
             return AccessController.doPrivileged(
                 (PrivilegedAction<Boolean>)
@@ -201,6 +202,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
             throw new IllegalStateException("Not initialized correctly");
         }
         Session session = null;
+        long privKeyID = privateKey.getKeyID();
         try {
             session = token.getOpSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
@@ -210,8 +212,9 @@ final class P11KeyAgreement extends KeyAgreementSpi {
             attributes = token.getAttributes
                 (O_GENERATE, CKO_SECRET_KEY, CKK_GENERIC_SECRET, attributes);
             long keyID = token.p11.C_DeriveKey(session.id(),
-                new CK_MECHANISM(mechanism, publicValue), privateKey.keyID,
-                attributes);
+                    new CK_MECHANISM(mechanism, publicValue), privKeyID,
+                    attributes);
+
             attributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_VALUE)
             };
@@ -237,6 +240,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
         } catch (PKCS11Exception e) {
             throw new ProviderException("Could not derive key", e);
         } finally {
+            privateKey.releaseKeyID();
             publicValue = null;
             token.releaseSession(session);
         }
@@ -325,6 +329,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
         }
         long keyType = CKK_GENERIC_SECRET;
         Session session = null;
+        long privKeyID = privateKey.getKeyID();
         try {
             session = token.getObjSession();
             CK_ATTRIBUTE[] attributes = new CK_ATTRIBUTE[] {
@@ -334,8 +339,8 @@ final class P11KeyAgreement extends KeyAgreementSpi {
             attributes = token.getAttributes
                 (O_GENERATE, CKO_SECRET_KEY, keyType, attributes);
             long keyID = token.p11.C_DeriveKey(session.id(),
-                new CK_MECHANISM(mechanism, publicValue), privateKey.keyID,
-                attributes);
+                    new CK_MECHANISM(mechanism, publicValue), privKeyID,
+                    attributes);
             CK_ATTRIBUTE[] lenAttributes = new CK_ATTRIBUTE[] {
                 new CK_ATTRIBUTE(CKA_VALUE_LEN),
             };
@@ -359,6 +364,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
         } catch (PKCS11Exception e) {
             throw new InvalidKeyException("Could not derive key", e);
         } finally {
+            privateKey.releaseKeyID();
             publicValue = null;
             token.releaseSession(session);
         }

@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import jdk.javadoc.internal.doclets.toolkit.DocletException;
 
 /**
@@ -45,7 +47,7 @@ public class UncheckedDocletException extends Error {
     }
 
     @Override
-    public synchronized Throwable getCause() {
+    public synchronized @Nullable Throwable getCause() {
         return super.getCause();
     }
 

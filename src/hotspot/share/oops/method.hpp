@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_METHODOOP_HPP
-#define SHARE_VM_OOPS_METHODOOP_HPP
+#ifndef SHARE_OOPS_METHOD_HPP
+#define SHARE_OOPS_METHOD_HPP
 
-#include "classfile/vmSymbols.hpp"
 #include "code/compressedStream.hpp"
 #include "compiler/compilerDefinitions.hpp"
-#include "compiler/oopMap.hpp"
 #include "interpreter/invocationCounter.hpp"
 #include "oops/annotations.hpp"
 #include "oops/constantPool.hpp"
@@ -40,6 +38,7 @@
 #include "utilities/align.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/vmEnums.hpp"
 #if INCLUDE_JFR
 #include "jfr/support/jfrTraceIdExtension.hpp"
 #endif
@@ -64,8 +63,8 @@ class MethodData;
 class MethodCounters;
 class ConstMethod;
 class InlineTableSizes;
-class KlassSizeStats;
 class CompiledMethod;
+class InterpreterOopMap;
 
 class Method : public Metadata {
  friend class VMStructs;
@@ -76,6 +75,7 @@ class Method : public Metadata {
   ConstMethod*      _constMethod;                // Method read-only data.
   MethodData*       _method_data;
   MethodCounters*   _method_counters;
+  AdapterHandlerEntry* _adapter;
   AccessFlags       _access_flags;               // Access flags
   int               _vtable_index;               // vtable index of this method (see VtableIndexFlag)
                                                  // note: can have vtables with >2**16 elements (because of inheritance)
@@ -88,16 +88,16 @@ class Method : public Metadata {
     _dont_inline           = 1 << 2,
     _hidden                = 1 << 3,
     _has_injected_profile  = 1 << 4,
-    _running_emcp          = 1 << 5,
-    _intrinsic_candidate   = 1 << 6,
-    _reserved_stack_access = 1 << 7
+    _intrinsic_candidate   = 1 << 5,
+    _reserved_stack_access = 1 << 6,
+    _scoped                = 1 << 7
   };
   mutable u2 _flags;
 
   JFR_ONLY(DEFINE_TRACE_FLAG;)
 
 #ifndef PRODUCT
-  int               _compiled_invocation_count;  // Number of nmethod invocations so far (for perf. debugging)
+  int64_t _compiled_invocation_count;
 #endif
   // Entry point for calling both from and to the interpreter.
   address _i2i_entry;           // All-args-on-stack calling convention
@@ -111,10 +111,6 @@ class Method : public Metadata {
   // NULL only at safepoints (because of a de-opt).
   CompiledMethod* volatile _code;                       // Points to the corresponding piece of native code
   volatile address           _from_interpreted_entry; // Cache of _code ? _adapter->i2c_entry() : _i2i_entry
-
-#if INCLUDE_AOT && defined(TIERED)
-  CompiledMethod* _aot_code;
-#endif
 
   // Constructor
   Method(ConstMethod* xconst, AccessFlags access_flags);
@@ -130,7 +126,7 @@ class Method : public Metadata {
   // CDS and vtbl checking can create an empty Method to get vtbl pointer.
   Method(){}
 
-  bool is_method() const volatile { return true; }
+  virtual bool is_method() const { return true; }
 
   void restore_unshareable_info(TRAPS);
 
@@ -179,8 +175,8 @@ class Method : public Metadata {
   }
 
   // Helper routine: get klass name + "." + method name + signature as
-  // C string, for the purpose of providing more useful NoSuchMethodErrors
-  // and fatal error handling. The string is allocated in resource
+  // C string, for the purpose of providing more useful
+  // fatal error handling. The string is allocated in resource
   // area if a buffer is not provided by the caller.
   char* name_and_sig_as_C_string() const;
   char* name_and_sig_as_C_string(char* buf, int size) const;
@@ -188,6 +184,18 @@ class Method : public Metadata {
   // Static routine in the situations we don't have a Method*
   static char* name_and_sig_as_C_string(Klass* klass, Symbol* method_name, Symbol* signature);
   static char* name_and_sig_as_C_string(Klass* klass, Symbol* method_name, Symbol* signature, char* buf, int size);
+
+  // Get return type + klass name + "." + method name + ( parameters types )
+  // as a C string or print it to an outputStream.
+  // This is to be used to assemble strings passed to Java, so that
+  // the text more resembles Java code. Used in exception messages.
+  // Memory is allocated in the resource area; the caller needs
+  // a ResourceMark.
+  const char* external_name() const;
+  void  print_external_name(outputStream *os) const;
+
+  static const char* external_name(                  Klass* klass, Symbol* method_name, Symbol* signature);
+  static void  print_external_name(outputStream *os, Klass* klass, Symbol* method_name, Symbol* signature);
 
   Bytecodes::Code java_code_at(int bci) const {
     return Bytecodes::java_code_at(this, bcp_from(bci));
@@ -214,7 +222,7 @@ class Method : public Metadata {
   void clear_all_breakpoints();
   // Tracking number of breakpoints, for fullspeed debugging.
   // Only mutated by VM thread.
-  u2   number_of_breakpoints()             const {
+  u2   number_of_breakpoints() const {
     MethodCounters* mcs = method_counters();
     if (mcs == NULL) {
       return 0;
@@ -222,20 +230,20 @@ class Method : public Metadata {
       return mcs->number_of_breakpoints();
     }
   }
-  void incr_number_of_breakpoints(TRAPS)         {
-    MethodCounters* mcs = get_method_counters(CHECK);
+  void incr_number_of_breakpoints(Thread* current) {
+    MethodCounters* mcs = get_method_counters(current);
     if (mcs != NULL) {
       mcs->incr_number_of_breakpoints();
     }
   }
-  void decr_number_of_breakpoints(TRAPS)         {
-    MethodCounters* mcs = get_method_counters(CHECK);
+  void decr_number_of_breakpoints(Thread* current) {
+    MethodCounters* mcs = get_method_counters(current);
     if (mcs != NULL) {
       mcs->decr_number_of_breakpoints();
     }
   }
   // Initialization only
-  void clear_number_of_breakpoints()             {
+  void clear_number_of_breakpoints() {
     MethodCounters* mcs = method_counters();
     if (mcs != NULL) {
       mcs->clear_number_of_breakpoints();
@@ -278,8 +286,8 @@ class Method : public Metadata {
 
 #if COMPILER2_OR_JVMCI
   // Count of times method was exited via exception while interpreting
-  void interpreter_throwout_increment(TRAPS) {
-    MethodCounters* mcs = get_method_counters(CHECK);
+  void interpreter_throwout_increment(Thread* current) {
+    MethodCounters* mcs = get_method_counters(current);
     if (mcs != NULL) {
       mcs->interpreter_throwout_increment();
     }
@@ -295,7 +303,10 @@ class Method : public Metadata {
     }
   }
 
-  // size of parameters
+  // Derive stuff from the signature at load time.
+  void compute_from_signature(Symbol* sig);
+
+  // size of parameters (receiver if any + arguments)
   int  size_of_parameters() const                { return constMethod()->size_of_parameters(); }
   void set_size_of_parameters(int size)          { constMethod()->set_size_of_parameters(size); }
 
@@ -333,6 +344,12 @@ class Method : public Metadata {
   // InterpreterRuntime::exception_handler_for_exception.
   static int fast_exception_handler_bci_for(const methodHandle& mh, Klass* ex_klass, int throw_bci, TRAPS);
 
+  static bool register_native(Klass* k,
+                              Symbol* name,
+                              Symbol* signature,
+                              address entry,
+                              TRAPS);
+
   // method data access
   MethodData* method_data() const              {
     return _method_data;
@@ -350,23 +367,17 @@ class Method : public Metadata {
 
   bool init_method_counters(MethodCounters* counters);
 
-#ifdef TIERED
-  // We are reusing interpreter_invocation_count as a holder for the previous event count!
-  // We can do that since interpreter_invocation_count is not used in tiered.
-  int prev_event_count() const                   {
-    if (method_counters() == NULL) {
-      return 0;
-    } else {
-      return method_counters()->interpreter_invocation_count();
-    }
+  int prev_event_count() const {
+    MethodCounters* mcs = method_counters();
+    return mcs == NULL ? 0 : mcs->prev_event_count();
   }
   void set_prev_event_count(int count) {
     MethodCounters* mcs = method_counters();
     if (mcs != NULL) {
-      mcs->set_interpreter_invocation_count(count);
+      mcs->set_prev_event_count(count);
     }
   }
-  jlong prev_time() const                        {
+  jlong prev_time() const {
     MethodCounters* mcs = method_counters();
     return mcs == NULL ? 0 : mcs->prev_time();
   }
@@ -376,7 +387,7 @@ class Method : public Metadata {
       mcs->set_prev_time(time);
     }
   }
-  float rate() const                             {
+  float rate() const {
     MethodCounters* mcs = method_counters();
     return mcs == NULL ? 0 : mcs->rate();
   }
@@ -387,19 +398,6 @@ class Method : public Metadata {
     }
   }
 
-#if INCLUDE_AOT
-  void set_aot_code(CompiledMethod* aot_code) {
-    _aot_code = aot_code;
-  }
-
-  CompiledMethod* aot_code() const {
-    return _aot_code;
-  }
-#else
-  CompiledMethod* aot_code() const { return NULL; }
-#endif // INCLUDE_AOT
-#endif // TIERED
-
   int nmethod_age() const {
     if (method_counters() == NULL) {
       return INT_MAX;
@@ -408,38 +406,24 @@ class Method : public Metadata {
     }
   }
 
-  int invocation_count();
-  int backedge_count();
+  int invocation_count() const;
+  int backedge_count() const;
 
   bool was_executed_more_than(int n);
-  bool was_never_executed()                      { return !was_executed_more_than(0); }
+  bool was_never_executed()                     { return !was_executed_more_than(0);  }
 
   static void build_interpreter_method_data(const methodHandle& method, TRAPS);
 
-  static MethodCounters* build_method_counters(Method* m, TRAPS);
+  static MethodCounters* build_method_counters(Thread* current, Method* m);
 
-  int interpreter_invocation_count() {
-    if (TieredCompilation) {
-      return invocation_count();
-    } else {
-      MethodCounters* mcs = method_counters();
-      return (mcs == NULL) ? 0 : mcs->interpreter_invocation_count();
-    }
-  }
-#if COMPILER2_OR_JVMCI
-  int increment_interpreter_invocation_count(TRAPS) {
-    if (TieredCompilation) ShouldNotReachHere();
-    MethodCounters* mcs = get_method_counters(CHECK_0);
-    return (mcs == NULL) ? 0 : mcs->increment_interpreter_invocation_count();
-  }
-#endif
+  int interpreter_invocation_count()            { return invocation_count();          }
 
 #ifndef PRODUCT
-  int  compiled_invocation_count() const         { return _compiled_invocation_count;  }
-  void set_compiled_invocation_count(int count)  { _compiled_invocation_count = count; }
+  int64_t  compiled_invocation_count() const    { return _compiled_invocation_count;}
+  void set_compiled_invocation_count(int count) { _compiled_invocation_count = (int64_t)count; }
 #else
   // for PrintMethodData in a product build
-  int  compiled_invocation_count() const         { return 0;  }
+  int64_t  compiled_invocation_count() const    { return 0; }
 #endif // not PRODUCT
 
   // Clear (non-shared space) pointers which could not be relevant
@@ -450,20 +434,31 @@ class Method : public Metadata {
   address verified_code_entry();
   bool check_code() const;      // Not inline to avoid circular ref
   CompiledMethod* volatile code() const;
-  void clear_code(bool acquire_lock = true);    // Clear out any compiled code
+
+  // Locks CompiledMethod_lock if not held.
+  void unlink_code(CompiledMethod *compare);
+  // Locks CompiledMethod_lock if not held.
+  void unlink_code();
+
+private:
+  // Either called with CompiledMethod_lock held or from constructor.
+  void clear_code();
+
+public:
   static void set_code(const methodHandle& mh, CompiledMethod* code);
   void set_adapter_entry(AdapterHandlerEntry* adapter) {
-    constMethod()->set_adapter_entry(adapter);
+    _adapter = adapter;
   }
-  void update_adapter_trampoline(AdapterHandlerEntry* adapter) {
-    constMethod()->update_adapter_trampoline(adapter);
+  void set_from_compiled_entry(address entry) {
+    _from_compiled_entry =  entry;
   }
 
   address get_i2c_entry();
   address get_c2i_entry();
   address get_c2i_unverified_entry();
+  address get_c2i_no_clinit_check_entry();
   AdapterHandlerEntry* adapter() const {
-    return constMethod()->adapter();
+    return _adapter;
   }
   // setup entry points
   void link_method(const methodHandle& method, TRAPS);
@@ -498,7 +493,6 @@ class Method : public Metadata {
   address interpreter_entry() const              { return _i2i_entry; }
   // Only used when first initialize so we can set _i2i_entry and _from_interpreted_entry
   void set_interpreter_entry(address entry) {
-    assert(!is_shared(), "shared method's interpreter entry should not be changed at run time");
     if (_i2i_entry != entry) {
       _i2i_entry = entry;
     }
@@ -512,7 +506,6 @@ class Method : public Metadata {
     native_bind_event_is_interesting = true
   };
   address native_function() const                { return *(native_function_addr()); }
-  address critical_native_function();
 
   // Must specify a real function (not NULL).
   // Use clear_native_function() to unregister.
@@ -570,10 +563,9 @@ class Method : public Metadata {
   // method holder (the Klass* holding this method)
   InstanceKlass* method_holder() const         { return constants()->pool_holder(); }
 
-  void compute_size_of_parameters(Thread *thread); // word size of parameters (receiver if any + arguments)
   Symbol* klass_name() const;                    // returns the name of the method holder
-  BasicType result_type() const;                 // type of the method result
-  bool is_returning_oop() const                  { BasicType r = result_type(); return (r == T_OBJECT || r == T_ARRAY); }
+  BasicType result_type() const                  { return constMethod()->result_type(); }
+  bool is_returning_oop() const                  { BasicType r = result_type(); return is_reference_type(r); }
   bool is_returning_fp() const                   { BasicType r = result_type(); return (r == T_FLOAT || r == T_DOUBLE); }
 
   // Checked exceptions thrown by this method (resolved to mirrors)
@@ -589,7 +581,6 @@ class Method : public Metadata {
   bool is_synchronized() const                   { return access_flags().is_synchronized();}
   bool is_native() const                         { return access_flags().is_native();      }
   bool is_abstract() const                       { return access_flags().is_abstract();    }
-  bool is_strict() const                         { return access_flags().is_strict();      }
   bool is_synthetic() const                      { return access_flags().is_synthetic();   }
 
   // returns true if contains only return operation
@@ -606,6 +597,7 @@ class Method : public Metadata {
 
   // true if method needs no dynamic dispatch (final and/or no vtable entry)
   bool can_be_statically_bound() const;
+  bool can_be_statically_bound(InstanceKlass* context) const;
   bool can_be_statically_bound(AccessFlags class_access_flags) const;
 
   // returns true if the method has any backward branches.
@@ -664,9 +656,7 @@ class Method : public Metadata {
   // simultaneously. Use with caution.
   bool has_compiled_code() const;
 
-#ifdef TIERED
-  bool has_aot_code() const                      { return aot_code() != NULL; }
-#endif
+  bool needs_clinit_barrier() const;
 
   // sizing
   static int header_size()                       {
@@ -674,10 +664,7 @@ class Method : public Metadata {
   }
   static int size(bool is_native);
   int size() const                               { return method_size(); }
-#if INCLUDE_SERVICES
-  void collect_statistics(KlassSizeStats *sz) const;
-#endif
-  void log_touched(TRAPS);
+  void log_touched(Thread* current);
   static void print_touched_methods(outputStream* out);
 
   // interpreter support
@@ -730,7 +717,7 @@ class Method : public Metadata {
   bool is_method_handle_intrinsic() const;          // MethodHandles::is_signature_polymorphic_intrinsic(intrinsic_id)
   bool is_compiled_lambda_form() const;             // intrinsic_id() == vmIntrinsics::_compiledLambdaForm
   bool has_member_arg() const;                      // intrinsic_id() == vmIntrinsics::_linkToSpecial, etc.
-  static methodHandle make_method_handle_intrinsic(vmIntrinsics::ID iid, // _invokeBasic, _linkToVirtual
+  static methodHandle make_method_handle_intrinsic(vmIntrinsicID iid, // _invokeBasic, _linkToVirtual
                                                    Symbol* signature, //anything at all
                                                    TRAPS);
   static Klass* check_non_bcp_klass(Klass* klass);
@@ -753,20 +740,6 @@ class Method : public Metadata {
   void set_is_obsolete()                            { _access_flags.set_is_obsolete(); }
   bool is_deleted() const                           { return access_flags().is_deleted(); }
   void set_is_deleted()                             { _access_flags.set_is_deleted(); }
-
-  bool is_running_emcp() const {
-    // EMCP methods are old but not obsolete or deleted. Equivalent
-    // Modulo Constant Pool means the method is equivalent except
-    // the constant pool and instructions that access the constant
-    // pool might be different.
-    // If a breakpoint is set in a redefined method, its EMCP methods that are
-    // still running must have a breakpoint also.
-    return (_flags & _running_emcp) != 0;
-  }
-
-  void set_running_emcp(bool x) {
-    _flags = x ? (_flags | _running_emcp) : (_flags & ~_running_emcp);
-  }
 
   bool on_stack() const                             { return access_flags().on_stack(); }
   void set_on_stack(const bool value);
@@ -814,10 +787,10 @@ class Method : public Metadata {
 
   // Clear methods
   static void clear_jmethod_ids(ClassLoaderData* loader_data);
-  static void print_jmethod_ids(const ClassLoaderData* loader_data, outputStream* out) PRODUCT_RETURN;
+  static void print_jmethod_ids_count(const ClassLoaderData* loader_data, outputStream* out) PRODUCT_RETURN;
 
   // Get this method's jmethodID -- allocate if it doesn't exist
-  jmethodID jmethod_id()                            { return method_holder()->get_jmethod_id(this); }
+  jmethodID jmethod_id();
 
   // Lookup the jmethodID for this method.  Return NULL if not found.
   // NOTE that this function can be called from a signal handler
@@ -827,12 +800,12 @@ class Method : public Metadata {
   jmethodID find_jmethod_id_or_null()               { return method_holder()->jmethod_id_or_null(this); }
 
   // Support for inlining of intrinsic methods
-  vmIntrinsics::ID intrinsic_id() const          { return (vmIntrinsics::ID) _intrinsic_id;           }
-  void     set_intrinsic_id(vmIntrinsics::ID id) {                           _intrinsic_id = (u2) id; }
+  vmIntrinsicID intrinsic_id() const          { return (vmIntrinsicID) _intrinsic_id;           }
+  void     set_intrinsic_id(vmIntrinsicID id) {                           _intrinsic_id = (u2) id; }
 
   // Helper routines for intrinsic_id() and vmIntrinsics::method().
-  void init_intrinsic_id();     // updates from _none if a match
-  static vmSymbols::SID klass_id_for_intrinsics(const Klass* holder);
+  void init_intrinsic_id(vmSymbolID klass_id);     // updates from _none if a match
+  static vmSymbolID klass_id_for_intrinsics(const Klass* holder);
 
   bool caller_sensitive() {
     return (_flags & _caller_sensitive) != 0;
@@ -855,11 +828,20 @@ class Method : public Metadata {
     _flags = x ? (_flags | _dont_inline) : (_flags & ~_dont_inline);
   }
 
-  bool is_hidden() {
+  bool is_hidden() const {
     return (_flags & _hidden) != 0;
   }
+
   void set_hidden(bool x) {
     _flags = x ? (_flags | _hidden) : (_flags & ~_hidden);
+  }
+
+  bool is_scoped() const {
+    return (_flags & _scoped) != 0;
+  }
+
+  void set_scoped(bool x) {
+    _flags = x ? (_flags | _scoped) : (_flags & ~_scoped);
   }
 
   bool intrinsic_candidate() {
@@ -912,14 +894,14 @@ class Method : public Metadata {
   // whether it is not compilable for another reason like having a
   // breakpoint set in it.
   bool  is_not_compilable(int comp_level = CompLevel_any) const;
-  void set_not_compilable(int comp_level = CompLevel_all, bool report = true, const char* reason = NULL);
-  void set_not_compilable_quietly(int comp_level = CompLevel_all) {
-    set_not_compilable(comp_level, false);
+  void set_not_compilable(const char* reason, int comp_level = CompLevel_all, bool report = true);
+  void set_not_compilable_quietly(const char* reason, int comp_level = CompLevel_all) {
+    set_not_compilable(reason, comp_level, false);
   }
   bool  is_not_osr_compilable(int comp_level = CompLevel_any) const;
-  void set_not_osr_compilable(int comp_level = CompLevel_all, bool report = true, const char* reason = NULL);
-  void set_not_osr_compilable_quietly(int comp_level = CompLevel_all) {
-    set_not_osr_compilable(comp_level, false);
+  void set_not_osr_compilable(const char* reason, int comp_level = CompLevel_all, bool report = true);
+  void set_not_osr_compilable_quietly(const char* reason, int comp_level = CompLevel_all) {
+    set_not_osr_compilable(reason, comp_level, false);
   }
   bool is_always_compilable() const;
 
@@ -927,9 +909,9 @@ class Method : public Metadata {
   void print_made_not_compilable(int comp_level, bool is_osr, bool report, const char* reason);
 
  public:
-  MethodCounters* get_method_counters(TRAPS) {
+  MethodCounters* get_method_counters(Thread* current) {
     if (_method_counters == NULL) {
-      build_method_counters(this, CHECK_AND_CLEAR_NULL);
+      build_method_counters(current, this);
     }
     return _method_counters;
   }
@@ -962,16 +944,29 @@ class Method : public Metadata {
   // Printing
   void print_short_name(outputStream* st = tty); // prints as klassname::methodname; Exposed so field engineers can debug VM
 #if INCLUDE_JVMTI
-  void print_name(outputStream* st = tty); // prints as "virtual void foo(int)"; exposed for TraceRedefineClasses
+  void print_name(outputStream* st = tty); // prints as "virtual void foo(int)"; exposed for -Xlog:redefine+class
 #else
   void print_name(outputStream* st = tty)        PRODUCT_RETURN; // prints as "virtual void foo(int)"
 #endif
 
+  typedef int (*method_comparator_func)(Method* a, Method* b);
+
   // Helper routine used for method sorting
-  static void sort_methods(Array<Method*>* methods, bool idempotent = false, bool set_idnums = true);
+  static void sort_methods(Array<Method*>* methods, bool set_idnums = true, method_comparator_func func = NULL);
 
   // Deallocation function for redefine classes or if an error occurs
   void deallocate_contents(ClassLoaderData* loader_data);
+
+  void release_C_heap_structures();
+
+  Method* get_new_method() const {
+    InstanceKlass* holder = method_holder();
+    Method* new_method = holder->method_with_idnum(orig_method_idnum());
+
+    assert(new_method != NULL, "method_with_idnum() should not be NULL");
+    assert(this != new_method, "sanity check");
+    return new_method;
+  }
 
   // Printing
 #ifndef PRODUCT
@@ -984,7 +979,7 @@ class Method : public Metadata {
 
   // Check for valid method pointer
   static bool has_method_vptr(const void* ptr);
-  bool is_valid_method() const;
+  static bool is_valid_method(const Method* m);
 
   // Verify
   void verify() { verify_on(tty); }
@@ -1012,36 +1007,12 @@ class CompressedLineNumberWriteStream: public CompressedWriteStream {
   // Write (bci, line number) pair to stream
   void write_pair_regular(int bci_delta, int line_delta);
 
-  inline void write_pair_inline(int bci, int line) {
-    int bci_delta = bci - _bci;
-    int line_delta = line - _line;
-    _bci = bci;
-    _line = line;
-    // Skip (0,0) deltas - they do not add information and conflict with terminator.
-    if (bci_delta == 0 && line_delta == 0) return;
-    // Check if bci is 5-bit and line number 3-bit unsigned.
-    if (((bci_delta & ~0x1F) == 0) && ((line_delta & ~0x7) == 0)) {
-      // Compress into single byte.
-      jubyte value = ((jubyte) bci_delta << 3) | (jubyte) line_delta;
-      // Check that value doesn't match escape character.
-      if (value != 0xFF) {
-        write_byte(value);
-        return;
-      }
-    }
-    write_pair_regular(bci_delta, line_delta);
-  }
+  // If (bci delta, line delta) fits in (5-bit unsigned, 3-bit unsigned)
+  // we save it as one byte, otherwise we write a 0xFF escape character
+  // and use regular compression. 0x0 is used as end-of-stream terminator.
+  void write_pair_inline(int bci, int line);
 
-// Windows AMD64 + Apr 2005 PSDK with /O2 generates bad code for write_pair.
-// Disabling optimization doesn't work for methods in header files
-// so we force it to call through the non-optimized version in the .cpp.
-// It's gross, but it's the only way we can ensure that all callers are
-// fixed.  _MSC_VER is defined by the windows compiler
-#if defined(_M_AMD64) && _MSC_VER >= 1400
   void write_pair(int bci, int line);
-#else
-  void write_pair(int bci, int line) { write_pair_inline(bci, line); }
-#endif
 
   // Write end-of-stream marker
   void write_terminator()                        { write_byte(0); }
@@ -1175,4 +1146,4 @@ class ExceptionTable : public StackObj {
   }
 };
 
-#endif // SHARE_VM_OOPS_METHODOOP_HPP
+#endif // SHARE_OOPS_METHOD_HPP

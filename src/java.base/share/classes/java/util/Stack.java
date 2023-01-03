@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,8 +51,7 @@ import org.checkerframework.framework.qual.CFComment;
  */
 @CFComment({"lock/nullness: permit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public
-class Stack<E> extends Vector<E> {
+public class Stack<E> extends Vector<E> {
     /**
      * Creates an empty Stack.
      */
@@ -143,5 +142,6 @@ class Stack<E> extends Vector<E> {
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = 1224463164541339165L;
 }

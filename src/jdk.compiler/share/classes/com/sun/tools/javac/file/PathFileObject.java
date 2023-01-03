@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -294,6 +294,11 @@ public abstract class PathFileObject implements JavaFileObject {
             return userPath.toString();
         }
 
+        @Override @DefinedBy(Api.COMPILER)
+        public String getShortName() {
+            return userPath.getFileName().toString();
+        }
+
         @Override
         public String inferBinaryName(Iterable<? extends Path> paths) {
             Path absPath = path.toAbsolutePath();
@@ -535,7 +540,7 @@ public abstract class PathFileObject implements JavaFileObject {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object other) {
-        return (other instanceof PathFileObject && path.equals(((PathFileObject) other).path));
+        return (other instanceof PathFileObject pathFileObject && path.equals(pathFileObject.path));
     }
 
     @Override

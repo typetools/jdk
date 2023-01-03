@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_FRAMEMAP_HPP
-#define SHARE_VM_C1_C1_FRAMEMAP_HPP
+#ifndef SHARE_C1_C1_FRAMEMAP_HPP
+#define SHARE_C1_C1_FRAMEMAP_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "c1/c1_Defs.hpp"
@@ -151,8 +151,8 @@ class FrameMap : public CompilationResourceObj {
   VMReg sp_offset2vmreg(ByteSize offset) const;
 
   // platform dependent hook used to check that frame is properly
-  // addressable on the platform.  Used by sparc to verify that all
-  // stack addresses are expressable in a simm13.
+  // addressable on the platform.  Used by arm, ppc to verify that all
+  // stack addresses are valid.
   bool validate_frame();
 
   static LIR_Opr map_to_opr(BasicType type, VMRegPair* reg, bool incoming);
@@ -183,6 +183,10 @@ class FrameMap : public CompilationResourceObj {
 
   static LIR_Opr as_metadata_opr(Register r) {
     return LIR_OprFact::single_cpu_metadata(cpu_reg2rnr(r));
+  }
+
+  static LIR_Opr as_address_opr(Register r) {
+    return LIR_OprFact::single_cpu_address(cpu_reg2rnr(r));
   }
 
   FrameMap(ciMethod* method, int monitors, int reserved_argument_area_size);
@@ -280,4 +284,4 @@ class CallingConvention: public ResourceObj {
 #endif // PRODUCT
 };
 
-#endif // SHARE_VM_C1_C1_FRAMEMAP_HPP
+#endif // SHARE_C1_C1_FRAMEMAP_HPP

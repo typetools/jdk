@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,7 +52,7 @@ import java.security.PrivilegedAction;
     private final int[] hsIndices;   // chain heads, hash indices into "cps"
 
     private CharacterName()  {
-        try (DataInputStream dis = new DataInputStream(new InflaterInputStream(
+        try (@SuppressWarnings("removal") DataInputStream dis = new DataInputStream(new InflaterInputStream(
             AccessController.doPrivileged(new PrivilegedAction<>() {
                 public InputStream run() {
                     return getClass().getResourceAsStream("uniName.dat");
@@ -155,7 +155,7 @@ import java.security.PrivilegedAction;
     }
 
     public int getCodePoint(String name) {
-        byte[] bname = name.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        byte[] bname = name.getBytes(sun.nio.cs.ISO_8859_1.INSTANCE);
         int hsh = hashN(bname, 0, bname.length);
         int idx = hsIndices[(hsh & 0x7fffffff) % hsIndices.length];
         while (idx != -1) {
