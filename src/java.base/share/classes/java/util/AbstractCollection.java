@@ -154,7 +154,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * }</pre>
      */
     @SideEffectFree
-    public @PolyNull @PolySigned Object[] toArray(AbstractCollection<@PolyNull @PolySigned E> this) {
+    public @PolyNull Object[] toArray(AbstractCollection<@PolyNull E> this) {
         // Estimate size of array; be prepared to see more or fewer elements
         Object[] r = new Object[size()];
         Iterator<E> it = iterator();
@@ -196,7 +196,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable @PolySigned T @PolyNull [] toArray(@Nullable @PolySigned T @PolyNull [] a) {
+    public <T> @Nullable T @PolyNull [] toArray(@Nullable T @PolyNull [] a) {
         // Estimate size of array; be prepared to see more or fewer elements
         int size = size();
         T[] r = a.length >= size ? a :
