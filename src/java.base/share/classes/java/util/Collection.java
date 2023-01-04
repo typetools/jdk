@@ -299,7 +299,9 @@ public interface Collection<E> extends Iterable<E> {
      *         collection does not permit null elements
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @CFComment({"lock: not true, because map could contain nulls:  AssertParametersNonNull(\"get(#1)\")"})
+    @CFComment({"lock: not true, because map could contain nulls:  AssertParametersNonNull(\"get(#1)\")",
+                "Nullness: `o` is not @Nullable because this collection might forbid null",
+                "(though I think a nicer specification would be to return false in that case)"})
     @Pure
     boolean contains(@GuardSatisfied Collection<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
