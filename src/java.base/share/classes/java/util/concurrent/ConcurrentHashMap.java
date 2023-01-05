@@ -43,6 +43,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -4488,7 +4489,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         private static final String OOME_MSG = "Required array size too large";
 
         @SideEffectFree
-        public final @PolyNull Object[] toArray(CollectionView<K,V,@PolyNull E> this) {
+        public final @PolyNull @PolySigned Object[] toArray(CollectionView<K,V,@PolyNull @PolySigned E> this) {
             long sz = map.mappingCount();
             if (sz > MAX_ARRAY_SIZE)
                 throw new OutOfMemoryError(OOME_MSG);
@@ -4512,7 +4513,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
 
         @SideEffectFree
         @SuppressWarnings("unchecked")
-        public final <T> T[] toArray(T[] a) {
+        public final <T> @Nullable T[] toArray(@PolyNull T[] a) {
             long sz = map.mappingCount();
             if (sz > MAX_ARRAY_SIZE)
                 throw new OutOfMemoryError(OOME_MSG);

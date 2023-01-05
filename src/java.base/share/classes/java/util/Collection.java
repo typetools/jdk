@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -343,7 +344,7 @@ public interface Collection<E> extends Iterable<E> {
     "methods, because the most useful type for toArray is not expressible",
     "in the surface syntax that the nullness annotations support."})
     @SideEffectFree
-    @PolyNull Object[] toArray(Collection<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(Collection<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this collection;
@@ -397,7 +398,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    <T> @Nullable T [] toArray(@PolyNull T[] a);
+    <T extends @UnknownSignedness Object> @Nullable T [] toArray(@PolyNull T[] a);
 
     /**
      * Returns an array containing all of the elements in this collection,

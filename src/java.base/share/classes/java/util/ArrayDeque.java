@@ -40,6 +40,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -1086,7 +1087,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return an array containing all of the elements in this deque
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(ArrayDeque<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(ArrayDeque<@PolyNull @PolySigned E> this) {
         return toArray(Object[].class);
     }
 
@@ -1145,7 +1146,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final int size;
         if ((size = size()) > a.length)
             return toArray((Class<T[]>) a.getClass());

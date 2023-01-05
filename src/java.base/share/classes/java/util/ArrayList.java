@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -390,7 +391,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         proper sequence
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(ArrayList<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(ArrayList<@PolyNull @PolySigned E> this) {
         return Arrays.copyOf(elementData, size);
     }
 
@@ -420,7 +421,7 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length < size)
             // Make a new array of a's runtime type, but my contents:
             return (T[]) Arrays.copyOf(elementData, size, a.getClass());
@@ -1255,7 +1256,7 @@ public class ArrayList<E> extends AbstractList<E>
             return modified;
         }
 
-        public @PolyNull Object[] toArray(SubList<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(SubList<@PolyNull @PolySigned E> this) {
             checkForComodification();
             return Arrays.copyOfRange(root.elementData, offset, offset + size);
         }

@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.MinLen;
@@ -1063,9 +1064,9 @@ public class Collections {
         public boolean isEmpty()                   {return c.isEmpty();}
         public boolean contains(@UnknownSignedness Object o)          {return c.contains(o);}
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.UnmodifiableCollection<@PolyNull E> this)                  {return c.toArray();}
+        public @PolyNull @PolySigned Object[] toArray(Collections.UnmodifiableCollection<@PolyNull @PolySigned E> this)                  {return c.toArray();}
         @SideEffectFree
-        public <T> T[] toArray(T[] a)              {return c.toArray(a);}
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)              {return c.toArray(a);}
         public <T> T[] toArray(IntFunction<T[]> f) {return c.toArray(f);}
         public String toString()                   {return c.toString();}
 
@@ -1763,7 +1764,7 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
-            public <T> T[] toArray(T[] a) {
+            public <T> @Nullable T[] toArray(@PolyNull T[] a) {
                 // We don't pass a to c.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
                 // could get his hands on raw (unwrapped) Entries from c.
@@ -2134,11 +2135,11 @@ public class Collections {
             synchronized (mutex) {return c.contains(o);}
         }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.SynchronizedCollection<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(Collections.SynchronizedCollection<@PolyNull @PolySigned E> this) {
             synchronized (mutex) {return c.toArray();}
         }
         @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             synchronized (mutex) {return c.toArray(a);}
         }
         public <T> T[] toArray(IntFunction<T[]> f) {
@@ -3224,9 +3225,9 @@ public class Collections {
         public boolean isEmpty()                   { return c.isEmpty(); }
         public boolean contains(@UnknownSignedness Object o)          { return c.contains(o); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.CheckedCollection<@PolyNull E> this)                  { return c.toArray(); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.CheckedCollection<@PolyNull @PolySigned E> this)                  { return c.toArray(); }
         @SideEffectFree
-        public <T> T[] toArray(T[] a)              { return c.toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)              { return c.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f) { return c.toArray(f); }
         public String toString()                   { return c.toString(); }
         public boolean remove(@UnknownSignedness Object o)            { return c.remove(o); }
@@ -3991,7 +3992,7 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
-            public <T> T[] toArray(T[] a) {
+            public <T> @Nullable T[] toArray(@PolyNull T[] a) {
                 // We don't pass a to s.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
                 // could get his hands on raw (unwrapped) Entries from s.
@@ -4551,10 +4552,10 @@ public class Collections {
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
 
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.EmptySet<@PolyNull E> this) { return new Object[0]; }
+        public @PolyNull @PolySigned Object[] toArray(Collections.EmptySet<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
         @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
             return a;
@@ -4691,10 +4692,10 @@ public class Collections {
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
 
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.EmptyList<@PolyNull E> this) { return new Object[0]; }
+        public @PolyNull @PolySigned Object[] toArray(Collections.EmptyList<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
         @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
             return a;
@@ -5332,7 +5333,7 @@ public class Collections {
         }
 
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.CopiesList<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(Collections.CopiesList<@PolyNull @PolySigned E> this) {
             final Object[] a = new Object[n];
             if (element != null)
                 Arrays.fill(a, 0, n, element);
@@ -5341,7 +5342,7 @@ public class Collections {
 
         @SideEffectFree
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             final int n = this.n;
             if (a.length < n) {
                 a = (T[])java.lang.reflect.Array
@@ -5838,9 +5839,9 @@ public class Collections {
         @SideEffectFree
         public Iterator<E> iterator()     { return s.iterator(); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.SetFromMap<@PolyNull E> this)         { return s.toArray(); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.SetFromMap<@PolyNull @PolySigned E> this)         { return s.toArray(); }
         @SideEffectFree
-        public <T> T[] toArray(T[] a)     { return s.toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)     { return s.toArray(a); }
         public String toString()          { return s.toString(); }
         public int hashCode()             { return s.hashCode(); }
         public boolean equals(Object o)   { return o == this || s.equals(o); }
@@ -5927,9 +5928,9 @@ public class Collections {
         @SideEffectFree
         public Iterator<E> iterator()               { return q.iterator(); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.AsLIFOQueue<@PolyNull E> this)                   { return q.toArray(); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.AsLIFOQueue<@PolyNull @PolySigned E> this)                   { return q.toArray(); }
         @SideEffectFree
-        public <T> T[] toArray(T[] a)               { return q.toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)               { return q.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f)  { return q.toArray(f); }
         public String toString()                    { return q.toString(); }
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return q.containsAll(c); }

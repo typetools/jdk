@@ -39,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -333,7 +334,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return an array containing all the elements in this list
      */
-    public @PolyNull Object[] toArray(CopyOnWriteArrayList<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(CopyOnWriteArrayList<@PolyNull @PolySigned E> this) {
         return getArray().clone();
     }
 
@@ -376,7 +377,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified array is null
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         Object[] es = getArray();
         int len = es.length;
         if (a.length < len)
@@ -1246,7 +1247,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             final Object[] es;
             final int offset;
             final int size;

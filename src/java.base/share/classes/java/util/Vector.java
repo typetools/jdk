@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -703,7 +704,7 @@ public class Vector<E>
      * @since 1.2
      */
     @SideEffectFree
-    public synchronized @PolyNull Object[] toArray(Vector<@PolyNull E> this) {
+    public synchronized @PolyNull @PolySigned Object[] toArray(Vector<@PolyNull @PolySigned E> this) {
         return Arrays.copyOf(elementData, elementCount);
     }
 
@@ -735,7 +736,7 @@ public class Vector<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public synchronized <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a) {
+    public synchronized <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length < elementCount)
             return (T[]) Arrays.copyOf(elementData, elementCount, a.getClass());
 

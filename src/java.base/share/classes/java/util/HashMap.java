@@ -1019,7 +1019,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return keysToArray(new Object[size]);
         }
 
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             return keysToArray(prepareArray(a));
         }
 
@@ -1080,7 +1080,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return valuesToArray(new Object[size]);
         }
 
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             return valuesToArray(prepareArray(a));
         }
 

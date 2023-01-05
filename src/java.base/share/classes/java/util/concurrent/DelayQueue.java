@@ -35,10 +35,11 @@
 
 package java.util.concurrent;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -411,7 +412,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return an array containing all of the elements in this queue
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(DelayQueue<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(DelayQueue<@PolyNull @PolySigned E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -457,7 +458,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {

@@ -40,6 +40,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -184,7 +185,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *
      * @return an array containing all the elements in this set
      */
-    public @PolyNull Object[] toArray(CopyOnWriteArraySet<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(CopyOnWriteArraySet<@PolyNull @PolySigned E> this) {
         return al.toArray();
     }
 
@@ -229,7 +230,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *         set
      * @throws NullPointerException if the specified array is null
      */
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         return al.toArray(a);
     }
 

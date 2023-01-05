@@ -31,6 +31,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -1073,7 +1074,7 @@ public class LinkedList<E>
      *         in proper sequence
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(LinkedList<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(LinkedList<@PolyNull @PolySigned E> this) {
         Object[] result = new Object[size];
         int i = 0;
         for (Node<E> x = first; x != null; x = x.next)
@@ -1121,7 +1122,7 @@ public class LinkedList<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length < size)
             a = (T[])java.lang.reflect.Array.newInstance(
                                 a.getClass().getComponentType(), size);

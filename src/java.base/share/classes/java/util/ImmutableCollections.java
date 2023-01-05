@@ -25,10 +25,10 @@
 
 package java.util;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -536,7 +536,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             T[] array = a.length >= size ? a :
                     (T[])java.lang.reflect.Array
                             .newInstance(a.getClass().getComponentType(), size);
@@ -643,7 +643,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = size();
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
@@ -708,7 +708,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = elements.length;
             if (a.length < size) {
                 // Make a new array of a's runtime type, but my contents:
@@ -880,7 +880,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = size();
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
@@ -1059,7 +1059,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
             Iterator<E> it = iterator();

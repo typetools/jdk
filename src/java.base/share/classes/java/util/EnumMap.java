@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
@@ -532,7 +533,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             "nullness:argument",
             "nullness:override.param"
         })
-        public <T> @Nullable T[] toArray(@Nullable T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = size();
             if (a.length < size)
                 a = (T[])java.lang.reflect.Array

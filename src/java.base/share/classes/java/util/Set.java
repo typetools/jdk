@@ -25,11 +25,12 @@
 
 package java.util;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -190,7 +191,7 @@ public interface Set<E> extends Collection<E> {
      * @return an array containing all the elements in this set
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(Set<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(Set<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this set; the

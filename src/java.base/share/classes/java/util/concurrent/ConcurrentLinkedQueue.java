@@ -39,6 +39,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -685,7 +686,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      * @return an array containing all of the elements in this queue
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(ConcurrentLinkedQueue<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(ConcurrentLinkedQueue<@PolyNull @PolySigned E> this) {
         return toArrayInternal(null);
     }
 
@@ -726,7 +727,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         Objects.requireNonNull(a);
         return (T[]) toArrayInternal(a);
     }

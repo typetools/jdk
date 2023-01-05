@@ -1370,7 +1370,7 @@ public class Properties extends Hashtable<Object,Object> {
         @Override public boolean isEmpty() { return entrySet.isEmpty(); }
         @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
-        @Override public <T> T[] toArray(T[] a) { return entrySet.toArray(a); }
+        @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }
         @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 

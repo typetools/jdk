@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -154,7 +155,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * }</pre>
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(AbstractCollection<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(AbstractCollection<@PolyNull @PolySigned E> this) {
         // Estimate size of array; be prepared to see more or fewer elements
         Object[] r = new Object[size()];
         Iterator<E> it = iterator();
@@ -196,7 +197,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull [] toArray(@Nullable T @PolyNull [] a) {
+    public <T> @Nullable T [] toArray(@PolyNull T [] a) {
         // Estimate size of array; be prepared to see more or fewer elements
         int size = size();
         T[] r = a.length >= size ? a :
