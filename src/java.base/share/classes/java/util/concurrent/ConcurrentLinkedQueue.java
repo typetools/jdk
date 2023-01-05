@@ -727,7 +727,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         Objects.requireNonNull(a);
         return (T[]) toArrayInternal(a);
     }

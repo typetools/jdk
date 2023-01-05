@@ -1076,7 +1076,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length > 0)
             a[0] = null;
         return a;

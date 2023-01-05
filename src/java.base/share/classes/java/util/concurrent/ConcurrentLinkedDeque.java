@@ -1342,7 +1342,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a == null) throw new NullPointerException();
         return (T[]) toArrayInternal(a);
     }

@@ -2237,7 +2237,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             }
         }
         public @PolyNull @PolySigned Object[] toArray(KeySet<@PolyNull @PolySigned K,V> this)     { return toList(this).toArray();  }
-        public <T> T[] toArray(T[] a) { return toList(this).toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
         public Iterator<K> descendingIterator() {
             return descendingSet().iterator();
         }
@@ -2291,7 +2291,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public boolean contains(@UnknownSignedness Object o) { return m.containsValue(o); }
         public void clear() { m.clear(); }
         public Object[] toArray()     { return toList(this).toArray();  }
-        public <T> T[] toArray(T[] a) { return toList(this).toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
 
         public Spliterator<V> spliterator() {
             return (m instanceof ConcurrentSkipListMap)
@@ -2366,7 +2366,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             }
         }
         public Object[] toArray()     { return toList(this).toArray();  }
-        public <T> T[] toArray(T[] a) { return toList(this).toArray(a); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
 
         public Spliterator<Map.Entry<K,V>> spliterator() {
             return (m instanceof ConcurrentSkipListMap)

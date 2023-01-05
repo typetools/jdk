@@ -4513,7 +4513,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
 
         @SideEffectFree
         @SuppressWarnings("unchecked")
-        public final <T> T[] toArray(T[] a) {
+        public final <T> @Nullable T[] toArray(@PolyNull T[] a) {
             long sz = map.mappingCount();
             if (sz > MAX_ARRAY_SIZE)
                 throw new OutOfMemoryError(OOME_MSG);
