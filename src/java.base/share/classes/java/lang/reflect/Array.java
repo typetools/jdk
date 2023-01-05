@@ -31,6 +31,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.vm.annotation.IntrinsicCandidate;
@@ -82,6 +83,7 @@ public final
      * @throws NegativeArraySizeException if the specified {@code length}
      *         is negative
      */
+    @SideEffectFree
     public static Object newInstance(Class<?> componentType, @NonNegative int length)
         throws NegativeArraySizeException {
         return newArray(componentType, length);
@@ -118,6 +120,7 @@ public final
      * @throws    NegativeArraySizeException if any of the components in
      * the specified {@code dimensions} argument is negative.
      */
+    @SideEffectFree
     public static Object newInstance(Class<?> componentType, @NonNegative int... dimensions)
         throws IllegalArgumentException, NegativeArraySizeException {
         return multiNewArray(componentType, dimensions);
