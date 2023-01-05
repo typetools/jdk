@@ -421,7 +421,7 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull @PolySigned [] toArray(T @PolyNull @PolySigned [] a) {
+    public <T> @Nullable T[] toArray(T[] a) {
         if (a.length < size)
             // Make a new array of a's runtime type, but my contents:
             return (T[]) Arrays.copyOf(elementData, size, a.getClass());

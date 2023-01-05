@@ -736,7 +736,7 @@ public class Vector<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public synchronized <T> @Nullable T @PolyNull @PolySigned [] toArray(T @PolyNull @PolySigned [] a) {
+    public synchronized <T> @Nullable T[] toArray(T[] a) {
         if (a.length < elementCount)
             return (T[]) Arrays.copyOf(elementData, elementCount, a.getClass());
 

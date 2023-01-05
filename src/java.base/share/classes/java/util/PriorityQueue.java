@@ -465,7 +465,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    public <T> @Nullable T @PolyNull @PolySigned [] toArray(T @PolyNull @PolySigned [] a) {
+    public <T> @Nullable T[] toArray(T[] a) {
         final int size = this.size;
         if (a.length < size)
             // Make a new array of a's runtime type, but my contents:

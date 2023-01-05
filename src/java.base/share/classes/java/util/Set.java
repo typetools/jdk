@@ -236,7 +236,7 @@ public interface Set<E> extends Collection<E> {
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    <T> @Nullable @PolySigned T [] toArray(@PolyNull @PolySigned T[] a);
+    <T> @Nullable T [] toArray(@PolyNull T[] a);
 
 
     // Modification Operations

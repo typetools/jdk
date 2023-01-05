@@ -197,7 +197,7 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull @PolySigned [] toArray(@Nullable T @PolyNull @PolySigned [] a) {
+    public <T> @Nullable T [] toArray(@PolyNull T [] a) {
         // Estimate size of array; be prepared to see more or fewer elements
         int size = size();
         T[] r = a.length >= size ? a :
