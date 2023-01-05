@@ -99,6 +99,7 @@ public final class OptionalLong {
      *
      * @return an empty {@code OptionalLong}.
      */
+    @SideEffectFree
     public static OptionalLong empty() {
         return EMPTY;
     }

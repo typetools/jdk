@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -114,6 +115,7 @@ public class Stack<E> extends Vector<E> {
      * @return  {@code true} if and only if this stack contains
      *          no items; {@code false} otherwise.
      */
+    @SideEffectFree
     public boolean empty() {
         return size() == 0;
     }

@@ -99,6 +99,7 @@ public final class OptionalInt {
      *
      * @return an empty {@code OptionalInt}
      */
+    @SideEffectFree
     public static OptionalInt empty() {
         return EMPTY;
     }

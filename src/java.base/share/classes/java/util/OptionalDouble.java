@@ -99,6 +99,7 @@ public final class OptionalDouble {
      *
      *  @return an empty {@code OptionalDouble}.
      */
+    @SideEffectFree
     public static OptionalDouble empty() {
         return EMPTY;
     }
