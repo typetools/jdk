@@ -1035,6 +1035,7 @@ public class Collections {
      * @return an unmodifiable view of the specified collection.
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> Collection<T> unmodifiableCollection(Collection<? extends T> c) {
         if (c.getClass() == UnmodifiableCollection.class) {
             return (Collection<T>) c;
@@ -1153,6 +1154,7 @@ public class Collections {
      * @return an unmodifiable view of the specified set.
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> Set<T> unmodifiableSet(Set<? extends T> s) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (s.getClass() == UnmodifiableSet.class) {
