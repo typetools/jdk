@@ -269,7 +269,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      */
     @SuppressWarnings("unchecked")
     @Pure
-    static final <E> E elementAt(Object[] es, int i) {
+    static final <E> E elementAt(@PolyNull @PolySigned Object[] es, int i) {
         return (E) es[i];
     }
 
@@ -278,7 +278,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * This check doesn't catch all possible comodifications,
      * but does catch ones that corrupt traversal.
      */
-    static final <E> E nonNullElementAt(Object[] es, int i) {
+    static final <E> E nonNullElementAt(@PolyNull @PolySigned Object[] es, int i) {
         @SuppressWarnings("unchecked") E e = (E) es[i];
         if (e == null)
             throw new ConcurrentModificationException();
@@ -1063,7 +1063,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * Nulls out slots starting at array index i, upto index end.
      * Condition i == end means "empty" - nothing to do.
      */
-    private static void circularClear(Object[] es, int i, int end) {
+    private static void circularClear(@PolyNull @PolySigned Object[] es, int i, int end) {
         // assert 0 <= i && i < es.length;
         // assert 0 <= end && end < es.length;
         for (int to = (i <= end) ? end : es.length;

@@ -1262,7 +1262,7 @@ public class ArrayList<E> extends AbstractList<E>
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(T[] a) {
             checkForComodification();
             if (a.length < size)
                 return (T[]) Arrays.copyOfRange(
