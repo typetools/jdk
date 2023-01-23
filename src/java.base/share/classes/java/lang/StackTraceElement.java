@@ -533,6 +533,7 @@ public final class StackTraceElement implements java.io.Serializable {
             return Set.of();
         }
 
+        @Pure
         static boolean contains(Module m) {
             return HASHED_MODULES.contains(m.getName());
         }

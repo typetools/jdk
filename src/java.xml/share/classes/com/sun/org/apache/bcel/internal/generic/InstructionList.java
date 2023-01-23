@@ -19,6 +19,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.bcel.internal.Const;
 import com.sun.org.apache.bcel.internal.classfile.Constant;
 import com.sun.org.apache.bcel.internal.util.ByteSequence;
@@ -849,6 +850,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
         return null;
     }
 
+    @Pure
     public boolean contains(final InstructionHandle i) {
         if (i == null) {
             return false;
@@ -861,6 +863,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
         return false;
     }
 
+    @Pure
     public boolean contains(final Instruction i) {
         return findInstruction1(i) != null;
     }

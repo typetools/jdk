@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.model;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -106,6 +107,7 @@ public class JavacTypes implements javax.lang.model.util.Types {
     }
 
     @DefinedBy(Api.LANGUAGE_MODEL)
+    @Pure
     public boolean contains(TypeMirror t1, TypeMirror t2) {
         validateTypeNotIn(t1, EXEC_OR_PKG_OR_MOD);
         validateTypeNotIn(t2, EXEC_OR_PKG_OR_MOD);

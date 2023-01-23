@@ -25,6 +25,7 @@
 
 package jdk.jfr.internal.consumer;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.File;
@@ -41,6 +42,7 @@ public final class RecordingInput implements DataInput, AutoCloseable {
         private long blockPosition;
         private long blockPositionEnd;
 
+        @Pure
         boolean contains(long position) {
             return position >= blockPosition && position < blockPositionEnd;
         }

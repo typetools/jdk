@@ -19,6 +19,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -190,6 +191,7 @@ public abstract class Select extends BranchInstruction implements VariableLength
      * @return true, if ih is target of this instruction
      */
     @Override
+    @Pure
     public boolean containsTarget( final InstructionHandle ih ) {
         if (super.getTarget() == ih) {
             return true;

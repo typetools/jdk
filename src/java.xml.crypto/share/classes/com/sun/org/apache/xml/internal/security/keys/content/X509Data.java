@@ -22,6 +22,7 @@
  */
 package com.sun.org.apache.xml.internal.security.keys.content;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.math.BigInteger;
 import java.security.cert.X509Certificate;
 
@@ -469,6 +470,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains a IssuerSerial
      */
+    @Pure
     public boolean containsIssuerSerial() {
         return this.lengthIssuerSerial() > 0;
     }
@@ -478,6 +480,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains a SKI
      */
+    @Pure
     public boolean containsSKI() {
         return this.lengthSKI() > 0;
     }
@@ -487,6 +490,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains a SubjectName
      */
+    @Pure
     public boolean containsSubjectName() {
         return this.lengthSubjectName() > 0;
     }
@@ -496,6 +500,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains a Certificate
      */
+    @Pure
     public boolean containsCertificate() {
         return this.lengthCertificate() > 0;
     }
@@ -505,6 +510,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains an X509Digest
      */
+    @Pure
     public boolean containsDigest() {
         return this.lengthDigest() > 0;
     }
@@ -514,6 +520,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains a CRL
      */
+    @Pure
     public boolean containsCRL() {
         return this.lengthCRL() > 0;
     }
@@ -523,6 +530,7 @@ public class X509Data extends SignatureElementProxy implements KeyInfoContent {
      *
      * @return true if this X509Data contains an UnknownElement
      */
+    @Pure
     public boolean containsUnknownElement() {
         return this.lengthUnknownElement() > 0;
     }

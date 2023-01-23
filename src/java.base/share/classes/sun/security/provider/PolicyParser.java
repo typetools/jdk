@@ -25,6 +25,7 @@
 
 package sun.security.provider;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
@@ -900,11 +901,13 @@ public class PolicyParser {
             return permissionEntries.removeElement(pe);
         }
 
+        @Pure
         public boolean contains(PrincipalEntry pe)
         {
             return principals.contains(pe);
         }
 
+        @Pure
         public boolean contains(PermissionEntry pe)
         {
             return permissionEntries.contains(pe);

@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.memory;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.code.*;
 import sun.jvm.hotspot.debugger.*;
@@ -79,6 +80,7 @@ public class CodeHeap extends VMObject {
     return getMemory().high();
   }
 
+  @Pure
   public boolean contains(Address p) {
     return (begin().lessThanOrEqual(p) && end().greaterThan(p));
   }

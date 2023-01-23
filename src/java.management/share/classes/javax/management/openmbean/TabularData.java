@@ -115,6 +115,7 @@ public interface TabularData /*extends Map*/ {
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object[] key) ;
 
     /**
@@ -126,6 +127,7 @@ public interface TabularData /*extends Map*/ {
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(CompositeData value) ;
 
     /**

@@ -28,6 +28,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -48,6 +49,7 @@ implements HistoricallyNamedCharset
         super("ISO-2022-KR", ExtendedCharsets.aliasesFor("ISO-2022-KR"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         // overlapping repertoire of EUC_KR, aka KSC5601
         return ((cs instanceof EUC_KR) ||

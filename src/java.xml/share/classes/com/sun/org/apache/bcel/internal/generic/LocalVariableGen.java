@@ -20,6 +20,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.bcel.internal.Const;
 import com.sun.org.apache.bcel.internal.classfile.LocalVariable;
 
@@ -221,6 +222,7 @@ public class LocalVariableGen implements InstructionTargeter, NamedAndTyped, Clo
      * @return true, if ih is target of this variable
      */
     @Override
+    @Pure
     public boolean containsTarget( final InstructionHandle ih ) {
         return (start == ih) || (end == ih);
     }

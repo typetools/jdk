@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.xpath.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xalan.internal.res.XSLMessages;
 import com.sun.org.apache.xml.internal.dtm.DTM;
 import com.sun.org.apache.xml.internal.dtm.DTMFilter;
@@ -1054,6 +1055,7 @@ public class NodeSetDTM extends NodeVector
    *
    * @return True if the given node was found.
    */
+  @Pure
   public boolean contains(int s)
   {
 

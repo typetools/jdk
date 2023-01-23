@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.interpreter;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.code.*;
 import sun.jvm.hotspot.debugger.*;
@@ -58,6 +59,7 @@ public class Interpreter {
     return new StubQueue(code, InterpreterCodelet.class);
   }
 
+  @Pure
   public boolean contains(Address pc) {
     return getCode().contains(pc);
   }

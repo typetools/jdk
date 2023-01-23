@@ -569,6 +569,7 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
      * @param o object to be checked for containment in this queue
      * @return {@code true} if this queue contains the specified element
      */
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         fullyLock();

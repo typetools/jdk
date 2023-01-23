@@ -25,6 +25,7 @@
 
 package com.sun.org.apache.xerces.internal.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.utils.XMLSecurityManager;
 import com.sun.org.apache.xerces.internal.utils.XMLSecurityPropertyManager;
 import com.sun.xml.internal.stream.StaxEntityResolverWrapper;
@@ -161,6 +162,7 @@ public class PropertyManager {
      * supportedProps.clear() ;
      * }
      */
+    @Pure
     public boolean containsProperty(String property){
         return supportedProps.containsKey(property) ||
                 (fSecurityManager != null && fSecurityManager.getIndex(property) > -1) ||

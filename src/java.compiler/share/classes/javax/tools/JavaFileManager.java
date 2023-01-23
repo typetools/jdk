@@ -25,6 +25,7 @@
 
 package javax.tools;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
@@ -590,6 +591,7 @@ public interface JavaFileManager extends Closeable, Flushable, OptionChecker {
      * @since 9
      */
 
+    @Pure
     default boolean contains(Location location, FileObject fo) throws IOException {
         throw new UnsupportedOperationException();
     }

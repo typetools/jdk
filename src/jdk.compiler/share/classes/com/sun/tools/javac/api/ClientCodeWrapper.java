@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.api;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -317,6 +318,7 @@ public class ClientCodeWrapper {
         }
 
         @Override @DefinedBy(Api.COMPILER)
+        @Pure
         public boolean contains(Location location, FileObject file) throws IOException {
             try {
                 return clientJavaFileManager.contains(location, unwrap(file));

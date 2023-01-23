@@ -25,6 +25,7 @@
 
 package javax.script;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Collection;
@@ -117,12 +118,14 @@ public class SimpleBindings implements Bindings {
      * @throws ClassCastException if key is not String
      * @throws IllegalArgumentException if key is empty String
      */
+    @Pure
     public boolean containsKey(Object key) {
         checkKey(key);
         return map.containsKey(key);
     }
 
     /** {@inheritDoc} */
+    @Pure
     public boolean containsValue(Object value) {
         return map.containsValue(value);
     }

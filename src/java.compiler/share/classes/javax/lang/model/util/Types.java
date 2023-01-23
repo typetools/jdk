@@ -25,6 +25,7 @@
 
 package javax.lang.model.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationTypeMismatchException;
 import java.lang.annotation.IncompleteAnnotationException;
@@ -117,6 +118,7 @@ public interface Types {
      * @throws IllegalArgumentException if given a type for an executable, package, or module
      * @jls 4.5.1 Type Arguments of Parameterized Types
      */
+    @Pure
     boolean contains(TypeMirror t1, TypeMirror t2);
 
     /**

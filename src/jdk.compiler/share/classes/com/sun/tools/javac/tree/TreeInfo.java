@@ -27,6 +27,7 @@ package com.sun.tools.javac.tree;
 
 
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.*;
@@ -1316,6 +1317,7 @@ public class TreeInfo {
         }
     }
 
+    @Pure
     public static boolean containsTypeAnnotation(JCTree e) {
         TypeAnnotationFinder finder = new TypeAnnotationFinder();
         finder.scan(e);

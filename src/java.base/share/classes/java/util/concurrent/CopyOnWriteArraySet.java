@@ -165,6 +165,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @param o element whose presence in this set is to be tested
      * @return {@code true} if this set contains the specified element
      */
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return al.contains(o);
     }
@@ -284,6 +285,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @throws NullPointerException if the specified collection is null
      * @see #contains(Object)
      */
+    @Pure
     public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         return (c instanceof Set)
             ? compareSets(al.getArray(), (Set<?>) c) >= 0

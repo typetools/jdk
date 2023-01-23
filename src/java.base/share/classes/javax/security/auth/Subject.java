@@ -25,10 +25,10 @@
 
 package javax.security.auth;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -1247,6 +1247,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
@@ -1329,6 +1330,7 @@ public final class Subject implements java.io.Serializable {
             return modified;
         }
 
+        @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 

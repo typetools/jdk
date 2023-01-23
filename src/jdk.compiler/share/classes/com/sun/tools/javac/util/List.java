@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -392,6 +393,7 @@ public class List<A> extends AbstractCollection<A> implements java.util.List<A> 
     /** Does the list contain the specified element?
      */
     @Override
+    @Pure
     public boolean contains(Object x) {
         List<A> l = this;
         while (l.tail != null) {

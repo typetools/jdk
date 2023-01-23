@@ -22,6 +22,7 @@
  */
 package sun.jvm.hotspot.code;
 
+import org.checkerframework.dataflow.qual.Pure;
 import sun.jvm.hotspot.compiler.ImmutableOopMap;
 import sun.jvm.hotspot.compiler.ImmutableOopMapSet;
 import sun.jvm.hotspot.debugger.Address;
@@ -179,6 +180,7 @@ public class CodeBlob extends VMObject {
 
   public boolean dataContains(Address addr)    { return dataBegin()   .lessThanOrEqual(addr) && dataEnd()   .greaterThan(addr); }
 
+  @Pure
   public boolean contains(Address addr)        { return contentContains(addr);                                                  }
 
   public boolean isFrameCompleteAt(Address a)  { return codeContains(a) && a.minus(codeBegin()) >= getFrameCompleteOffset(); }

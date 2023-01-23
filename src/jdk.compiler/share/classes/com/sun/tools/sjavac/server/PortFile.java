@@ -25,6 +25,7 @@
 
 package com.sun.tools.sjavac.server;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -143,6 +144,7 @@ public class PortFile {
     /**
      * Did the locking and getValues succeed?
      */
+    @Pure
     public boolean containsPortInfo() {
         return containsPortInfo;
     }

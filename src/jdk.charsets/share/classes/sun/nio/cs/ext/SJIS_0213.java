@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -62,6 +63,7 @@ public class SJIS_0213 extends Charset {
         super("x-SJIS_0213", ExtendedCharsets.aliasesFor("x-SJIS_0213"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof SJIS)

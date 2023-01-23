@@ -1081,6 +1081,7 @@ class LambdaForm {
         return LambdaFormEditor.lambdaFormEditor(this);
     }
 
+    @Pure
     boolean contains(Name name) {
         int pos = name.index();
         if (pos >= 0) {

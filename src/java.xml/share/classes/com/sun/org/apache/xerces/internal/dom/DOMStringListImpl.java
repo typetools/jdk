@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.dom;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 import java.util.List;
 import org.w3c.dom.DOMStringList;
@@ -74,6 +75,7 @@ public class DOMStringListImpl implements DOMStringList {
     /**
      * @see org.w3c.dom.DOMStringList#contains(String)
      */
+    @Pure
     public boolean contains(String param) {
         return fStrings.contains(param);
     }

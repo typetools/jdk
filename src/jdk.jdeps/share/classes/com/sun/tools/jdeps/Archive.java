@@ -97,6 +97,7 @@ public class Archive implements Closeable {
         return Module.UNNAMED_MODULE;
     }
 
+    @Pure
     public boolean contains(String entry) {
         return reader.entries().contains(entry);
     }

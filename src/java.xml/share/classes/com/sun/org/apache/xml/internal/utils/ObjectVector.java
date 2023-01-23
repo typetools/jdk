@@ -21,6 +21,8 @@
 
 package com.sun.org.apache.xml.internal.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A very simple table that stores a list of objects.
  *
@@ -324,6 +326,7 @@ public class ObjectVector implements Cloneable
    *
    * @return true if the object is in the list
    */
+  @Pure
   public final boolean contains(Object s)
   {
 

@@ -78,6 +78,7 @@ public final class ShortListImpl extends AbstractList<Short> implements ShortLis
      * @return  True if this list contains the <code>unsigned short</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(short item) {
         for (int i = 0; i < fLength; i++) {
             if (fArray[i] == item) {

@@ -306,6 +306,7 @@ public class CompositeDataSupport
      * an item whose name is {@code key}.
      * If {@code key} is a null or empty String, this method simply returns false.
      */
+    @Pure
     public boolean containsKey(String key) {
 
         if ( (key == null) || (key.trim().equals("")) ) {
@@ -319,6 +320,7 @@ public class CompositeDataSupport
      * contains an item
      * whose value is {@code value}.
      */
+    @Pure
     public boolean containsValue(Object value) {
 
         return contents.containsValue(value);

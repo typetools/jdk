@@ -24,6 +24,8 @@
  */
 
 package javax.script;
+
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Map;
 
 /**
@@ -74,6 +76,7 @@ public interface Bindings extends Map<String, Object> {
      * @throws ClassCastException if key is not String
      * @throws IllegalArgumentException if key is empty String
      */
+    @Pure
     public boolean containsKey(Object key);
 
     /**

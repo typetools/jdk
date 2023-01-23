@@ -26,6 +26,7 @@
 
 package javax.management.openmbean;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 
@@ -195,6 +196,7 @@ public class CompositeType extends OpenType<CompositeData> {
      * @return true if an item of this name is present.
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
+    @Pure
     public boolean containsKey(@Nullable String itemName) {
 
         if (itemName == null) {

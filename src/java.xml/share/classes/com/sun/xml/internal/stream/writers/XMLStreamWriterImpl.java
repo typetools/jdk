@@ -2202,6 +2202,7 @@ public final class XMLStreamWriterImpl extends AbstractMap<Object, Object>
     }
 
     @Override
+    @Pure
     public boolean containsKey(Object key) {
         return key.equals(OUTPUTSTREAM_PROPERTY);
     }

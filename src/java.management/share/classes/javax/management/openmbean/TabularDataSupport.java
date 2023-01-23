@@ -232,6 +232,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object key) {
 
         // if key is not an array of Object instances, return false
@@ -255,6 +256,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object[] key) {
 
         return  ( key == null ? false : dataMap.containsKey(Arrays.asList(key)));
@@ -269,6 +271,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(CompositeData value) {
 
         return dataMap.containsValue(value);
@@ -282,6 +285,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(Object value) {
 
         return dataMap.containsValue(value);

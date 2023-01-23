@@ -25,6 +25,7 @@
 
 package jdk.jshell;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -560,6 +561,7 @@ class MemoryFileManager implements JavaFileManager {
     }
 
     @Override
+    @Pure
     public boolean contains(Location location, FileObject file) throws IOException {
         return stdFileManager.contains(location, file);
     }

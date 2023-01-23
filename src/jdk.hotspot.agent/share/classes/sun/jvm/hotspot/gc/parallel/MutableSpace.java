@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.gc.parallel;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 
@@ -93,6 +94,7 @@ public class MutableSpace extends VMObject {
    }
 
    /** Testers */
+   @Pure
    public boolean contains(Address p) {
       return (bottom().lessThanOrEqual(p) && end().greaterThan(p));
    }

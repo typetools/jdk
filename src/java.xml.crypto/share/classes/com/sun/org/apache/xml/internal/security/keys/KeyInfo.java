@@ -22,6 +22,7 @@
  */
 package com.sun.org.apache.xml.internal.security.keys;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -687,6 +688,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a KeyName node
      */
+    @Pure
     public boolean containsKeyName() {
         return this.lengthKeyName() > 0;
     }
@@ -696,6 +698,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a KeyValue node
      */
+    @Pure
     public boolean containsKeyValue() {
         return this.lengthKeyValue() > 0;
     }
@@ -705,6 +708,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a MgmtData node
      */
+    @Pure
     public boolean containsMgmtData() {
         return this.lengthMgmtData() > 0;
     }
@@ -714,6 +718,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a PGPData node
      */
+    @Pure
     public boolean containsPGPData() {
         return this.lengthPGPData() > 0;
     }
@@ -723,6 +728,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a RetrievalMethod node
      */
+    @Pure
     public boolean containsRetrievalMethod() {
         return this.lengthRetrievalMethod() > 0;
     }
@@ -732,6 +738,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a SPKIData node
      */
+    @Pure
     public boolean containsSPKIData() {
         return this.lengthSPKIData() > 0;
     }
@@ -741,6 +748,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a UnknownElement node
      */
+    @Pure
     public boolean containsUnknownElement() {
         return this.lengthUnknownElement() > 0;
     }
@@ -750,6 +758,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a X509Data node
      */
+    @Pure
     public boolean containsX509Data() {
         return this.lengthX509Data() > 0;
     }
@@ -759,6 +768,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a DEREncodedKeyValue node
      */
+    @Pure
     public boolean containsDEREncodedKeyValue() {
         return this.lengthDEREncodedKeyValue() > 0;
     }
@@ -768,6 +778,7 @@ public class KeyInfo extends SignatureElementProxy {
      *
      * @return If the KeyInfo contains a KeyInfoReference node
      */
+    @Pure
     public boolean containsKeyInfoReference() {
         return this.lengthKeyInfoReference() > 0;
     }

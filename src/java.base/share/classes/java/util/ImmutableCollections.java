@@ -332,6 +332,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -818,6 +819,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             return o.equals(e0) || e1.equals(o); // implicit nullcheck of o
         }
@@ -946,6 +948,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;

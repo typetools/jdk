@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -56,6 +57,7 @@ public class JISAutoDetect
         super("x-JISAutoDetect", ExtendedCharsets.aliasesFor("x-JISAutoDetect"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof SJIS)

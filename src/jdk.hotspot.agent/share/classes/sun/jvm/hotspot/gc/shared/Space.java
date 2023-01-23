@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.gc.shared;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
@@ -99,6 +100,7 @@ public abstract class Space extends VMObject {
   public abstract long free();
 
   /** Testers */
+  @Pure
   public boolean contains(Address p) {
     return (bottom().lessThanOrEqual(p) && end().greaterThan(p));
   }

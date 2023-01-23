@@ -25,6 +25,7 @@
 
 package java.util.regex;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 
 /**
@@ -43,6 +44,7 @@ class IntHashSet {
         Arrays.fill(this.hashes, -1);
     }
 
+    @Pure
     public boolean contains(int i) {
         int h = hashes[i % hashes.length];
         while (h != -1) {

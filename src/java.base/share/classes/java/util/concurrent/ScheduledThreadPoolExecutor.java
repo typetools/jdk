@@ -1036,6 +1036,7 @@ public class ScheduledThreadPoolExecutor
             return -1;
         }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();

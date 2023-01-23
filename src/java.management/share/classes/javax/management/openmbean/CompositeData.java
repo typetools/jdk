@@ -97,6 +97,7 @@ public interface CompositeData {
      *
      * @return true if this {@code CompositeData} contains the key.
      */
+    @Pure
     public boolean containsKey(String key) ;
 
     /**
@@ -107,6 +108,7 @@ public interface CompositeData {
      *
      * @return true if this {@code CompositeData} contains the value.
      */
+    @Pure
     public boolean containsValue(Object value) ;
 
     /**

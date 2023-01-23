@@ -20,6 +20,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.bcel.internal.classfile.CodeException;
 
 /**
@@ -134,6 +135,7 @@ public final class CodeExceptionGen implements InstructionTargeter, Cloneable {
      * @return true, if ih is target of this handler
      */
     @Override
+    @Pure
     public boolean containsTarget( final InstructionHandle ih ) {
         return (startPc == ih) || (endPc == ih) || (handlerPc == ih);
     }

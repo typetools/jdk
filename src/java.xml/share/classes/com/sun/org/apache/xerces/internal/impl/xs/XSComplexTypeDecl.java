@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.impl.dv.XSSimpleType;
 import com.sun.org.apache.xerces.internal.xs.*;
 import com.sun.org.apache.xerces.internal.impl.xs.models.XSCMValidator;
@@ -145,6 +146,7 @@ public class XSComplexTypeDecl implements XSComplexTypeDefinition, TypeInfo {
 
     // methods to get/set misc flag
 
+    @Pure
     public boolean containsTypeID () {
         return((fMiscFlags & CT_HAS_TYPE_ID) != 0);
     }

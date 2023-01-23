@@ -242,10 +242,12 @@ public class GcInfo implements CompositeData, CompositeDataView {
     }
 
     // Implementation of the CompositeData interface
+    @Pure
     public boolean containsKey(String key) {
         return cdata.containsKey(key);
     }
 
+    @Pure
     public boolean containsValue(Object value) {
         return cdata.containsValue(value);
     }

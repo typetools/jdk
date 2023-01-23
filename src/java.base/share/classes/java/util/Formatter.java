@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.BufferedWriter;
@@ -4601,6 +4602,7 @@ public final class Formatter implements Closeable, Flushable {
             return flags;
         }
 
+        @Pure
         public boolean contains(Flags f) {
             return (flags & f.valueOf()) == f.valueOf();
         }

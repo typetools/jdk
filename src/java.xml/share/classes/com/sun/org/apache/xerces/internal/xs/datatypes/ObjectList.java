@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.xs.datatypes;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.List;
 
 /**
@@ -46,6 +47,7 @@ public interface ObjectList extends List<Object> {
      * @return  True if this list contains the <code>Object</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(Object item);
 
     /**

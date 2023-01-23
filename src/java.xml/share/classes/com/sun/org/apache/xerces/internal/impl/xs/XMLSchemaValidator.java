@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.RevalidationHandler;
 import com.sun.org.apache.xerces.internal.impl.XMLEntityManager;
@@ -3906,6 +3907,7 @@ public class XMLSchemaValidator
         /**
          * Returns true if this value store contains the locally scoped value stores
          */
+        @Pure
         public boolean contains() {
             // REVISIT: we can improve performance by using hash codes, instead of
             // traversing global vector that could be quite large.
@@ -4592,6 +4594,7 @@ public class XMLSchemaValidator
         }
 
         /** Returns whether the short is contained in the vector. */
+        @Pure
         public boolean contains(short value) {
             for (int i = 0; i < fLength; ++i) {
                 if (fData[i] == value) {

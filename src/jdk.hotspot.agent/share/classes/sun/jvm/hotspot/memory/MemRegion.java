@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.memory;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 
 import sun.jvm.hotspot.debugger.*;
@@ -156,10 +157,12 @@ public class MemRegion implements Cloneable {
     byteSize = VM.getVM().getAddressSize() * wordSize;
   }
 
+  @Pure
   public boolean contains(MemRegion mr2) {
     return AddressOps.lte(start, mr2.start) && AddressOps.gte(end(), mr2.end());
   }
 
+  @Pure
   public boolean contains(Address addr) {
     return AddressOps.gte(addr, start()) && AddressOps.lt(addr, end());
   }

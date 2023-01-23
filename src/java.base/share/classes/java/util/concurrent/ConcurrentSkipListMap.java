@@ -2201,6 +2201,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public int size() { return m.size(); }
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
+        @Pure
         public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
         public boolean remove(@UnknownSignedness Object o) { return m.remove(o) != null; }
         public void clear() { m.clear(); }
@@ -2288,6 +2289,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public int size() { return m.size(); }
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
+        @Pure
         public boolean contains(@UnknownSignedness Object o) { return m.containsValue(o); }
         public void clear() { m.clear(); }
         public Object[] toArray()     { return toList(this).toArray();  }
@@ -2328,6 +2330,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
                 : ((SubMap<K,V>)m).new SubMapEntryIterator();
         }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry))
                 return false;

@@ -63,6 +63,7 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 
@@ -101,10 +102,12 @@ final class ProcessEnvironment extends HashMap<String,String>
         return super.get(nonNullString(key));
     }
 
+    @Pure
     public boolean containsKey(Object key) {
         return super.containsKey(nonNullString(key));
     }
 
+    @Pure
     public boolean containsValue(Object value) {
         return super.containsValue(nonNullString(value));
     }
@@ -153,6 +156,7 @@ final class ProcessEnvironment extends HashMap<String,String>
             nonNullString(e.getValue());
             return e;
         }
+        @Pure
         public boolean contains(Object o) {return s.contains(checkedEntry(o));}
         public boolean remove(Object o)   {return s.remove(checkedEntry(o));}
     }
@@ -164,6 +168,7 @@ final class ProcessEnvironment extends HashMap<String,String>
         public boolean isEmpty()           {return c.isEmpty();}
         public void clear()                {       c.clear();}
         public Iterator<String> iterator() {return c.iterator();}
+        @Pure
         public boolean contains(Object o)  {return c.contains(nonNullString(o));}
         public boolean remove(Object o)    {return c.remove(nonNullString(o));}
     }
@@ -175,6 +180,7 @@ final class ProcessEnvironment extends HashMap<String,String>
         public boolean isEmpty()           {return s.isEmpty();}
         public void clear()                {       s.clear();}
         public Iterator<String> iterator() {return s.iterator();}
+        @Pure
         public boolean contains(Object o)  {return s.contains(nonNullString(o));}
         public boolean remove(Object o)    {return s.remove(nonNullString(o));}
     }

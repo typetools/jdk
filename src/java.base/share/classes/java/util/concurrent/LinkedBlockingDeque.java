@@ -821,6 +821,7 @@ public class LinkedBlockingDeque<E>
      * @param o object to be checked for containment in this deque
      * @return {@code true} if this deque contains the specified element
      */
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;

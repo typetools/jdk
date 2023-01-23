@@ -25,6 +25,7 @@
 
 package com.sun.net.httpserver;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -114,6 +115,7 @@ public class Headers implements Map<String,List<String>> {
 
         public boolean isEmpty() {return map.isEmpty();}
 
+        @Pure
         public boolean containsKey(Object key) {
             if (key == null) {
                 return false;
@@ -124,6 +126,7 @@ public class Headers implements Map<String,List<String>> {
             return map.containsKey (normalize((String)key));
         }
 
+        @Pure
         public boolean containsValue(Object value) {
             return map.containsValue(value);
         }

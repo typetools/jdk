@@ -8,6 +8,7 @@
  */
 package jdk.internal.org.jline.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -264,6 +265,7 @@ public abstract class AttributedCharSequence implements CharSequence {
         return Character.codePointAt(buffer(), index + offset());
     }
 
+    @Pure
     public boolean contains(char c) {
         for (int i = 0; i < length(); i++) {
             if (charAt(i) == c) {

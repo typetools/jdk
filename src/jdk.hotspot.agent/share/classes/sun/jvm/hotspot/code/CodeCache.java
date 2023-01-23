@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.code;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.memory.*;
@@ -73,6 +74,7 @@ public class CodeCache {
     }
   }
 
+  @Pure
   public boolean contains(Address p) {
     for (int i = 0; i < heapArray.length(); ++i) {
       if (heapArray.at(i).contains(p)) {

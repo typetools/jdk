@@ -238,6 +238,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element whose presence in this list is to be tested
      * @return {@code true} if this list contains the specified element
      */
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
@@ -636,6 +637,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #contains(Object)
      */
+    @Pure
     public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         Object[] es = getArray();
         int len = es.length;
@@ -1293,10 +1295,12 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
+        @Pure
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
+        @Pure
         public boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             final Object[] es;
             final int offset;

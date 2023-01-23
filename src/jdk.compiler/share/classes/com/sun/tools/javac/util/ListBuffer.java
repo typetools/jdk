@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Iterator;
@@ -171,6 +172,7 @@ public class ListBuffer<A> extends AbstractQueue<A> {
 
     /** Does the list contain the specified element?
      */
+    @Pure
     public boolean contains(Object x) {
         return elems.contains(x);
     }
@@ -232,6 +234,7 @@ public class ListBuffer<A> extends AbstractQueue<A> {
         throw new UnsupportedOperationException();
     }
 
+    @Pure
     public boolean containsAll(Collection<?> c) {
         for (Object x: c) {
             if (!contains(x))

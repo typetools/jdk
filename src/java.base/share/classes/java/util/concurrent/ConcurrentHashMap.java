@@ -4483,6 +4483,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          */
         @SideEffectFree
         public abstract Iterator<E> iterator();
+        @Pure
         public abstract boolean contains(@UnknownSignedness Object o);
         public abstract boolean remove(@UnknownSignedness Object o);
 
@@ -4569,6 +4570,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return sb.append(']').toString();
         }
 
+        @Pure
         public final boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c != this) {
                 for (Object e : c) {
@@ -4649,6 +4651,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * {@inheritDoc}
          * @throws NullPointerException if the specified key is null
          */
+        @Pure
         public boolean contains(@UnknownSignedness Object o) { return map.containsKey(o); }
 
         /**
@@ -4756,6 +4759,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         implements Collection<V>, java.io.Serializable {
         private static final long serialVersionUID = 2249069246763182397L;
         ValuesView(ConcurrentHashMap<K,V> map) { super(map); }
+        @Pure
         public final boolean contains(@UnknownSignedness Object o) {
             return map.containsValue(o);
         }
@@ -4833,6 +4837,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         private static final long serialVersionUID = 2249069246763182397L;
         EntrySetView(ConcurrentHashMap<K,V> map) { super(map); }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             Object k, v, r; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&

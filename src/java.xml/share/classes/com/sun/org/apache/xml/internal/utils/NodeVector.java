@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.xml.internal.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.Serializable;
 
 import com.sun.org.apache.xml.internal.dtm.DTM;
@@ -557,6 +558,7 @@ public class NodeVector implements Serializable, Cloneable
    *
    * @return True if the given node was found.
    */
+  @Pure
   public boolean contains(int s)
   {
 

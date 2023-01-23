@@ -54,6 +54,7 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 
@@ -226,12 +227,16 @@ final class ProcessEnvironment
             return v == null ? null : v.toString();
         }
         public StringEnvironment(Map<Variable,Value> m) {this.m = m;}
+        @Pure
         public int size()        {return m.size();}
+        @Pure
         public boolean isEmpty() {return m.isEmpty();}
         public void clear()      {       m.clear();}
+        @Pure
         public boolean containsKey(Object key) {
             return m.containsKey(Variable.valueOfQueryOnly(key));
         }
+        @Pure
         public boolean containsValue(Object value) {
             return m.containsValue(Value.valueOfQueryOnly(value));
         }
@@ -350,12 +355,15 @@ final class ProcessEnvironment
                 }
             };
         }
+        @Pure
         public boolean contains(Object o) { return s.contains(vvEntry(o)); }
         public boolean remove(Object o)   { return s.remove(vvEntry(o)); }
+        @Pure
         public boolean equals(Object o) {
             return o instanceof StringEntrySet
                 && s.equals(((StringEntrySet) o).s);
         }
+        @Pure
         public int hashCode() {return s.hashCode();}
     }
 
@@ -375,6 +383,7 @@ final class ProcessEnvironment
                 public void remove()     {i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return c.contains(Value.valueOfQueryOnly(o));
         }
@@ -385,6 +394,7 @@ final class ProcessEnvironment
             return o instanceof StringValues
                 && c.equals(((StringValues)o).c);
         }
+        @Pure
         public int hashCode() {return c.hashCode();}
     }
 
@@ -402,6 +412,7 @@ final class ProcessEnvironment
                 public void remove()     {       i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return s.contains(Variable.valueOfQueryOnly(o));
         }

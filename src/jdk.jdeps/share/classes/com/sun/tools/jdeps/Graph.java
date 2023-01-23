@@ -24,6 +24,7 @@
  */
 package com.sun.tools.jdeps;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -57,6 +58,7 @@ public final class Graph<T> {
         return edges.get(u);
     }
 
+    @Pure
     public boolean contains(T u) {
         return nodes.contains(u);
     }

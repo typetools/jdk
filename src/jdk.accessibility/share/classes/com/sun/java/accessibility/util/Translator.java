@@ -606,6 +606,7 @@ public class Translator extends AccessibleContext
      * @param p the {@code Point} relative to the coordinate system of the object
      * @return true if object contains {@code Point}; otherwise false
      */
+    @Pure
     public boolean contains(Point p) {
         if (source instanceof Component) {
             return ((Component) source).contains(p);

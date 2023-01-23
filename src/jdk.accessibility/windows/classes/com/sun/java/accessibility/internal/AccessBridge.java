@@ -25,6 +25,7 @@
 
 package com.sun.java.accessibility.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -6781,6 +6782,7 @@ final public class AccessBridge {
             return (tree.isShowing() && isVisible());
         }
 
+        @Pure
         public boolean contains(Point p) {
             AccessibleContext ac = getCurrentAccessibleContext();
             if (ac instanceof AccessibleComponent) {

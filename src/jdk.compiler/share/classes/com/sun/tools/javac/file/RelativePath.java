@@ -148,6 +148,7 @@ public abstract class RelativePath implements Comparable<RelativePath> {
          * Return true if this subdirectory "contains" the other path.
          * A subdirectory path does not contain itself.
          **/
+        @Pure
         boolean contains(RelativePath other) {
             return other.path.length() > path.length() && other.path.startsWith(path);
         }

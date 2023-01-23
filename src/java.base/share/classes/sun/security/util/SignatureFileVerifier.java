@@ -25,6 +25,7 @@
 
 package sun.security.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.CodeSigner;
@@ -747,6 +748,7 @@ public class SignatureFileVerifier {
     }
 
     // returns true if set contains signer
+    @Pure
     static boolean contains(CodeSigner[] set, CodeSigner signer)
     {
         for (int i = 0; i < set.length; i++) {

@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -572,6 +573,7 @@ final class CryptoPolicyParser {
             return permissionEntries.removeElement(pe);
         }
 
+        @Pure
         boolean contains(CryptoPermissionEntry pe)
         {
             return permissionEntries.contains(pe);

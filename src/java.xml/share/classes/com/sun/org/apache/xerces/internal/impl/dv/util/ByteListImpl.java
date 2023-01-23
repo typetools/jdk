@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.dv.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xs.XSException;
 import com.sun.org.apache.xerces.internal.xs.datatypes.ByteList;
 import java.util.AbstractList;
@@ -61,6 +62,7 @@ public class ByteListImpl extends AbstractList<Byte> implements ByteList {
      * @return  True if this list contains the <code>byte</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(byte item) {
         for (int i = 0; i < data.length; ++i) {
             if (data[i] == item) {

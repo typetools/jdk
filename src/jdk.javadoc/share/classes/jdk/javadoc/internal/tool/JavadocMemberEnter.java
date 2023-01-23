@@ -128,6 +128,7 @@ public class JavadocMemberEnter extends MemberEnter {
     private static class MaybeConstantExpressionScanner extends JCTree.Visitor {
         boolean maybeConstantExpr = true;
 
+        @Pure
         public boolean containsNonConstantExpression(JCExpression tree) {
             scan(tree);
             return !maybeConstantExpr;

@@ -26,6 +26,7 @@
 package sun.nio.ch;
 
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -345,18 +346,24 @@ public class Util {
     static <E> Set<E> ungrowableSet(final Set<E> s) {
         return new Set<E>() {
 
+                @Pure
                 public int size()                 { return s.size(); }
+                @Pure
                 public boolean isEmpty()          { return s.isEmpty(); }
+                @Pure
                 public boolean contains(@UnknownSignedness Object o) { return s.contains(o); }
                 public Object[] toArray()         { return s.toArray(); }
                 public <T> T[] toArray(T[] a)     { return s.toArray(a); }
                 public String toString()          { return s.toString(); }
                 public Iterator<E> iterator()     { return s.iterator(); }
+                @Pure
                 public boolean equals(Object o)   { return s.equals(o); }
+                @Pure
                 public int hashCode()             { return s.hashCode(); }
                 public void clear()               { s.clear(); }
                 public boolean remove(@UnknownSignedness Object o)   { return s.remove(o); }
 
+                @Pure
                 public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
                     return s.containsAll(coll);
                 }

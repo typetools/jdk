@@ -699,6 +699,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         public @NonNegative int size() {
             return count;
         }
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             return containsKey(o);
         }
@@ -743,6 +744,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return super.add(o);
         }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
@@ -825,6 +827,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         public @NonNegative int size() {
             return count;
         }
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             return containsValue(o);
         }

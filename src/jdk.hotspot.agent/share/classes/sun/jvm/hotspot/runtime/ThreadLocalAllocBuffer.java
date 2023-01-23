@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.runtime;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
@@ -102,6 +103,7 @@ public class ThreadLocalAllocBuffer extends VMObject {
     printOn(System.out);
   }
 
+  @Pure
   public boolean contains(Address p) {
     if (top() == null) {
       return false;

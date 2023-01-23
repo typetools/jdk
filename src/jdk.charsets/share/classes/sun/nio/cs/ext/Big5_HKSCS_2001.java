@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -38,6 +39,7 @@ public class Big5_HKSCS_2001 extends Charset
         super("x-Big5-HKSCS-2001", ExtendedCharsets.aliasesFor("x-Big5-HKSCS-2001"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof Big5)

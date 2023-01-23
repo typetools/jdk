@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xs.XSObject;
 import com.sun.org.apache.xerces.internal.xs.XSObjectList;
 import java.lang.reflect.Array;
@@ -147,6 +148,7 @@ public class XSObjectListImpl extends AbstractList<XSObject> implements XSObject
      * List methods
      */
 
+    @Pure
     public boolean contains(Object value) {
         return (value == null) ? containsNull() : containsObject(value);
     }

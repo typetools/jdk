@@ -151,6 +151,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be checked for containment in this collection
      * @return {@code true} if this set contains the specified element
      */
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
@@ -208,6 +209,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *        in the specified collection
      * @throws NullPointerException if the specified collection is null
      */
+    @Pure
     public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof RegularEnumSet<?> es))
             return super.containsAll(c);

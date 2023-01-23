@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 import sun.nio.cs.*;
 
@@ -39,6 +40,7 @@ public class MS50221 extends MS50220
         return "MS50221";
     }
 
+    @Pure
     public boolean contains(Charset cs) {
       return super.contains(cs) ||
              (cs instanceof JIS_X_0212) ||

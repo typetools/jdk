@@ -41,6 +41,8 @@
 
 package org.w3c.dom;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  *  The <code>NameList</code> interface provides the abstraction of an ordered
  * collection of parallel pairs of name and namespace values (which could be
@@ -81,6 +83,7 @@ public interface NameList {
      * @return  <code>true</code> if the name has been found,
      *   <code>false</code> otherwise.
      */
+    @Pure
     public boolean contains(String str);
 
     /**
@@ -91,6 +94,7 @@ public interface NameList {
      * @return  <code>true</code> if the pair namespaceURI/name has been
      *   found, <code>false</code> otherwise.
      */
+    @Pure
     public boolean containsNS(String namespaceURI,
                               String name);
 

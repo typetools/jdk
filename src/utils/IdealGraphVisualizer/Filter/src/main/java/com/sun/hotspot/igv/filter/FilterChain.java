@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.filter;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.hotspot.igv.data.ChangedEvent;
 import com.sun.hotspot.igv.data.ChangedEventProvider;
 import com.sun.hotspot.igv.data.ChangedListener;
@@ -98,6 +99,7 @@ public class FilterChain implements ChangedEventProvider<FilterChain> {
         changedEvent.fire();
     }
 
+    @Pure
     public boolean containsFilter(Filter filter) {
         return filters.contains(filter);
     }

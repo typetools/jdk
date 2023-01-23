@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CharsetDecoder;
@@ -37,6 +38,7 @@ public class MS932_0213 extends Charset {
         super("x-MS932_0213", ExtendedCharsets.aliasesFor("x-MS932_0213"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof MS932)

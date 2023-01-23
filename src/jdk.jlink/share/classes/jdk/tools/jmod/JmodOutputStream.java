@@ -25,6 +25,7 @@
 
 package jdk.tools.jmod;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -127,6 +128,7 @@ class JmodOutputStream extends OutputStream implements AutoCloseable {
         return new ZipEntry(name);
     }
 
+    @Pure
     public boolean contains(Section section, String path) {
         Set<String> set = entries.computeIfAbsent(section, k -> new HashSet<>());
         return set.contains(path);

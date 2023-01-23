@@ -58,6 +58,7 @@
  */
 package jdk.internal.org.objectweb.asm.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
@@ -138,6 +139,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       * @param insnNode an instruction.
       * @return {@literal true} if the given instruction belongs to this list.
       */
+    @Pure
     public boolean contains(final AbstractInsnNode insnNode) {
         AbstractInsnNode currentInsn = firstInsn;
         while (currentInsn != null && currentInsn != insnNode) {

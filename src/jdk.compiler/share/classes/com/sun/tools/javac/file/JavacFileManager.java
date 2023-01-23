@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.file;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -1112,6 +1113,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
     }
 
     @Override @DefinedBy(Api.COMPILER)
+    @Pure
     public boolean contains(Location location, FileObject fo) throws IOException {
         nullCheck(location);
         nullCheck(fo);

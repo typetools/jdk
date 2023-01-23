@@ -1292,6 +1292,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @Pure
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.contains(value);
     }
@@ -1366,9 +1367,9 @@ public class Properties extends Hashtable<Object,Object> {
             this.entrySet = entrySet;
         }
 
-        @Override public int size() { return entrySet.size(); }
-        @Override public boolean isEmpty() { return entrySet.isEmpty(); }
-        @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
+        @Pure @Override public int size() { return entrySet.size(); }
+        @Pure @Override public boolean isEmpty() { return entrySet.isEmpty(); }
+        @Pure @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }
@@ -1385,6 +1386,7 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.containsAll(c);
         }

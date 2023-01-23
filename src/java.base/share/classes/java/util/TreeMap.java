@@ -1344,6 +1344,7 @@ public class TreeMap<K,V>
             return TreeMap.this.size();
         }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             return TreeMap.this.containsValue(o);
         }
@@ -1374,6 +1375,7 @@ public class TreeMap<K,V>
             return new EntryIterator(getFirstEntry());
         }
 
+        @Pure
         public boolean contains(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
@@ -1448,6 +1450,7 @@ public class TreeMap<K,V>
         public @NonNegative int size() { return m.size(); }
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
+        @Pure
         public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
         public void clear() { m.clear(); }
         public E lower(E e) { return m.lowerKey(e); }
@@ -2012,6 +2015,7 @@ public class TreeMap<K,V>
                 return n == null || tooHigh(n.key);
             }
 
+            @Pure
             public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;

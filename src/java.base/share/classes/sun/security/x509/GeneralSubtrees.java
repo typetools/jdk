@@ -103,6 +103,7 @@ public class GeneralSubtrees implements Cloneable {
         trees.add(tree);
     }
 
+    @Pure
     public boolean contains(GeneralSubtree tree) {
         if (tree == null) {
             throw new NullPointerException();

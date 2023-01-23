@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.dataflow.qual.Pure;
 import jdk.internal.misc.VM;
 import sun.nio.cs.ThreadLocalCoders;
 import sun.security.action.GetPropertyAction;
@@ -745,6 +746,7 @@ public abstract class Charset
      *
      * @return  {@code true} if the given charset is contained in this charset
      */
+    @Pure
     public abstract boolean contains(Charset cs);
 
     /**

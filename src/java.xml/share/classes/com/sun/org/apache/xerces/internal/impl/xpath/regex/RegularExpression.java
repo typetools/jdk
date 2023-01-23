@@ -1985,6 +1985,7 @@ public class RegularExpression implements java.io.Serializable {
         int[] offsets = new int[4];
         int currentIndex = 0;
 
+        @Pure
         boolean contains(int offset) {
             for (int i=0; i<currentIndex;++i) {
                 if (offsets[i] == offset) {

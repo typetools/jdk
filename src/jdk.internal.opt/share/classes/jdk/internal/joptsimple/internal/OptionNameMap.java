@@ -55,6 +55,7 @@
 
 package jdk.internal.joptsimple.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Map;
 
 /**
@@ -63,6 +64,7 @@ import java.util.Map;
  * @param <V> type of values stored in the map
  */
 public interface OptionNameMap<V> {
+    @Pure
     boolean contains( String key );
 
     V get( String key );

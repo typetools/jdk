@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.impl.xs.util.XSGrammarPool;
 import com.sun.org.apache.xerces.internal.xni.grammars.Grammar;
 import com.sun.org.apache.xerces.internal.xni.grammars.XMLGrammarDescription;
@@ -303,6 +304,7 @@ public final class XSLoaderImpl implements XSLoader, DOMConfiguration {
 
         }
 
+        @Pure
         public boolean containsGrammar(XMLGrammarDescription desc) {
             return false;
         }

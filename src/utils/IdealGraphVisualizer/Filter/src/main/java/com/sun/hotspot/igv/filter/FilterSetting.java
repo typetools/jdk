@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.filter;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,6 +60,7 @@ public class FilterSetting {
         filters.remove(f);
     }
 
+    @Pure
     public boolean containsFilter(Filter f) {
         return filters.contains(f);
     }

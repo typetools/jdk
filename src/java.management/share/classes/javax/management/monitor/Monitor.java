@@ -25,6 +25,7 @@
 
 package javax.management.monitor;
 
+import org.checkerframework.dataflow.qual.Pure;
 import static com.sun.jmx.defaults.JmxProperties.MONITOR_LOGGER;
 import com.sun.jmx.mbeanserver.GetPropertyAction;
 import com.sun.jmx.mbeanserver.Introspector;
@@ -559,6 +560,7 @@ public abstract class Monitor
      * <CODE>false</CODE> otherwise.
      *
      */
+    @Pure
     public synchronized boolean containsObservedObject(ObjectName object) {
         return getObservedObject(object) != null;
     }

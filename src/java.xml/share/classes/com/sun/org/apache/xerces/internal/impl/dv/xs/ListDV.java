@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.dv.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.impl.dv.InvalidDatatypeValueException;
 import com.sun.org.apache.xerces.internal.impl.dv.ValidationContext;
 import com.sun.org.apache.xerces.internal.xs.datatypes.ObjectList;
@@ -105,6 +106,7 @@ public class ListDV extends TypeValidator{
             return hash;
         }
 
+        @Pure
         public boolean contains(Object item) {
             for (int i = 0;i < data.length; i++) {
                 if (item == data[i]) {

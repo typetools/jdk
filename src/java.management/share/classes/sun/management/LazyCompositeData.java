@@ -57,11 +57,13 @@ public abstract class LazyCompositeData
 
     // Implementation of the CompositeData interface
     @Override
+    @Pure
     public boolean containsKey(String key) {
         return compositeData().containsKey(key);
     }
 
     @Override
+    @Pure
     public boolean containsValue(Object value) {
         return compositeData().containsValue(value);
     }

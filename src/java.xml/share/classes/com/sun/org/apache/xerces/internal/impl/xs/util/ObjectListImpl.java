@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xs.datatypes.ObjectList;
 import java.lang.reflect.Array;
 import java.util.AbstractList;
@@ -54,6 +55,7 @@ public final class ObjectListImpl extends AbstractList<Object> implements Object
         return fLength;
     }
 
+    @Pure
     public boolean contains(Object item) {
         if (item == null) {
             for (int i = 0; i < fLength; i++) {

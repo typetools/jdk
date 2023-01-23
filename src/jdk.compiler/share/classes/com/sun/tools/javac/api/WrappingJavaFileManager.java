@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.api;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -216,6 +217,7 @@ public class WrappingJavaFileManager<M extends JavaFileManager> extends Forwardi
     }
 
     @Override @DefinedBy(Api.COMPILER)
+    @Pure
     public boolean contains(Location location, FileObject file) throws IOException {
         return super.contains(location, unwrap(file));
     }

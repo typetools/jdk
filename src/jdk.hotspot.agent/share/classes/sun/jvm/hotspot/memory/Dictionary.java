@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.memory;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.classfile.*;
@@ -87,6 +88,7 @@ public class Dictionary extends sun.jvm.hotspot.utilities.Hashtable {
     return null;
   }
 
+  @Pure
   public boolean contains(Klass c) {
     long hash = computeHash(c.getName());
     int index = hashToIndex(hash);

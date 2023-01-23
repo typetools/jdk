@@ -25,6 +25,7 @@
 
 package com.sun.jmx.mbeanserver;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.jmx.defaults.ServiceName;
 import static com.sun.jmx.defaults.JmxProperties.MBEANSERVER_LOGGER;
 
@@ -454,6 +455,7 @@ public class Repository {
      * @return  true if the MBean is stored in the repository,
      *          false otherwise.
      */
+    @Pure
     public boolean contains(ObjectName name) {
         if (MBEANSERVER_LOGGER.isLoggable(Level.TRACE)) {
             MBEANSERVER_LOGGER.log(Level.TRACE, "name = " + name);

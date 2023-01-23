@@ -25,6 +25,7 @@
 
 package sun.security.jgss;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.ietf.jgss.MessageProp;
 import java.util.LinkedList;
 
@@ -380,6 +381,7 @@ public class TokenTracker {
                 return 0;
         }
 
+        @Pure
         final boolean contains(int number) {
             return (number >= start &&
                     number <= end);

@@ -1006,6 +1006,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<K> iterator()     { return new KeyIterator(); }
+        @Pure
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
         public final boolean remove(@Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
@@ -1070,6 +1071,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<V> iterator()     { return new ValueIterator(); }
+        @Pure
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsValue(o); }
         @SideEffectFree
         public final Spliterator<V> spliterator() {
@@ -1130,6 +1132,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final Iterator<Map.Entry<K,V>> iterator() {
             return new EntryIterator();
         }
+        @Pure
         public final boolean contains(@Nullable @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;

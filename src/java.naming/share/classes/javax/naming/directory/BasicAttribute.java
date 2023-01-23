@@ -329,6 +329,7 @@ public class BasicAttribute implements Attribute {
       * {@code Object.equals()}.
       * A subclass may use schema information to determine equality.
       */
+    @Pure
     public boolean contains(Object attrVal) {
         return (find(attrVal) >= 0);
     }

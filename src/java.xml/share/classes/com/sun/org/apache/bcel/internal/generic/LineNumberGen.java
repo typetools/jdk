@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Objects;
 
 import com.sun.org.apache.bcel.internal.classfile.LineNumber;
@@ -52,6 +53,7 @@ public class LineNumberGen implements InstructionTargeter, Cloneable {
      * @return true, if ih is target of this line number
      */
     @Override
+    @Pure
     public boolean containsTarget( final InstructionHandle ih ) {
         return this.ih == ih;
     }

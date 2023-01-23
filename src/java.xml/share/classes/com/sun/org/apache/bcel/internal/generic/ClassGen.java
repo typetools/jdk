@@ -19,6 +19,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -319,6 +320,7 @@ public class ClassGen extends AccessFlags implements Cloneable {
     }
 
 
+    @Pure
     public boolean containsField( final Field f ) {
         return fieldList.contains(f);
     }

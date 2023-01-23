@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.dv.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.dv.DatatypeException;
 import com.sun.org.apache.xerces.internal.impl.dv.InvalidDatatypeFacetException;
@@ -2260,6 +2261,7 @@ public class XSSimpleTypeDecl implements XSSimpleType, TypeInfo {
                 public int getLength() {
                     return (fEnumeration != null) ? fEnumerationSize : 0;
                 }
+                @Pure
                 public boolean contains(Object item) {
                     if (fEnumeration == null) {
                         return false;
@@ -2295,6 +2297,7 @@ public class XSSimpleTypeDecl implements XSSimpleType, TypeInfo {
                 public int getLength() {
                     return (fEnumeration != null) ? fEnumerationSize : 0;
                 }
+                @Pure
                 public boolean contains(Object item) {
                     if (fEnumeration == null || !(item instanceof ShortList))
                         return false;
