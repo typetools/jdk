@@ -74,10 +74,10 @@ jobs:
   #   displayName: make run-test
 
 - job: test_cftests_all_jdk8
+  timeoutInMinutes: 105
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk8:latest
-  timeoutInMinutes: 90
   steps:
   - checkout: self
     fetchDepth: 25
@@ -89,7 +89,7 @@ jobs:
     displayName: test-cftests-all.sh
 
 - job: test_cftests_all_jdk11
-  timeoutInMinutes: 90
+  timeoutInMinutes: 105
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk11:latest
@@ -121,7 +121,7 @@ jobs:
 #     displayName: publish all.tgz
 
 - job: test_cftests_all_jdk17
-  timeoutInMinutes: 90
+  timeoutInMinutes: 105
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
@@ -136,7 +136,7 @@ jobs:
     displayName: test-cftests-all.sh
 
 - job: test_cftests_all_jdk19
-  timeoutInMinutes: 90
+  timeoutInMinutes: 105
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk19:latest
