@@ -197,6 +197,7 @@ public class File
      *
      * @return true if the file path is invalid.
      */
+    @Pure
     final boolean isInvalid() {
         PathStatus s = status;
         if (s == null) {
@@ -217,6 +218,7 @@ public class File
      * Returns the length of this abstract pathname's prefix.
      * For use by FileSystem classes.
      */
+    @Pure
     int getPrefixLength() {
         return prefixLength;
     }
@@ -585,6 +587,7 @@ public class File
      *
      * @see     java.io.File#isAbsolute()
      */
+    @SideEffectFree
     public String getAbsolutePath() {
         return fs.resolve(this);
     }
@@ -804,6 +807,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file
      */
+    @SideEffectFree
     public boolean canRead() {
         @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
@@ -833,6 +837,7 @@ public class File
      *          java.lang.SecurityManager#checkWrite(java.lang.String)}
      *          method denies write access to the file
      */
+    @SideEffectFree
     public boolean canWrite() {
         @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
@@ -857,6 +862,7 @@ public class File
      *          java.lang.SecurityManager#checkRead(java.lang.String)}
      *          method denies read access to the file or directory
      */
+    @SideEffectFree
     public boolean exists() {
         @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
