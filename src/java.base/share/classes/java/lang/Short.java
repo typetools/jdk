@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.checker.signedness.qual.Unsigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
@@ -648,7 +649,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
      */
     @Pure
     @StaticallyExecutable
-    public static @NonNegative @SignedPositive int toUnsignedInt(short x) {
+    public static @NonNegative @SignedPositive int toUnsignedInt(@UnknownSignedness short x) {
         return ((int) x) & 0xffff;
     }
 
@@ -670,7 +671,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
      */
     @Pure
     @StaticallyExecutable
-    public static @NonNegative @SignedPositive long toUnsignedLong(short x) {
+    public static @NonNegative @SignedPositive long toUnsignedLong(@UnknownSignedness short x) {
         return ((long) x) & 0xffffL;
     }
 
