@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.checker.signedness.qual.Unsigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
@@ -609,7 +610,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @Pure
     @StaticallyExecutable
-    public static @SignedPositive @NonNegative int toUnsignedInt(byte x) {
+    public static @SignedPositive @NonNegative int toUnsignedInt(@UnknownSignedness byte x) {
         return ((int) x) & 0xff;
     }
 
@@ -631,7 +632,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @Pure
     @StaticallyExecutable
-    public static @SignedPositive @NonNegative long toUnsignedLong(byte x) {
+    public static @SignedPositive @NonNegative long toUnsignedLong(@UnknownSignedness byte x) {
         return ((long) x) & 0xffL;
     }
 
