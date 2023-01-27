@@ -1627,7 +1627,7 @@ public final class Integer extends Number
      */
     @Pure
     @StaticallyExecutable
-    public static @SignedPositive long toUnsignedLong(int x) {
+    public static @SignedPositive long toUnsignedLong(@UnknownSignedness int x) {
         return ((long) x) & 0xffffffffL;
     }
 
