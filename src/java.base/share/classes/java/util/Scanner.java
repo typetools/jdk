@@ -320,7 +320,7 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  *
  * @since   1.5
  */
-@AnnotatedFor({"index", "interning", "lock", "mustcall", "signedness"})
+@AnnotatedFor({"index", "interning", "lock", "mustcall", "nullness", "signedness"})
 public final @UsesObjectEquals class Scanner implements Iterator<String>, Closeable {
 
     // Internal buffer used to hold input
@@ -1688,7 +1688,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return the text that matched the specified pattern
      * @throws IllegalStateException if this scanner is closed
      */
-    public String findInLine(String pattern) {
+    public @Nullable String findInLine(String pattern) {
         return findInLine(patternCache.forName(pattern));
     }
 
@@ -1710,7 +1710,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @return the text that matched the specified pattern
      * @throws IllegalStateException if this scanner is closed
      */
-    public String findInLine(Pattern pattern) {
+    public @Nullable String findInLine(Pattern pattern) {
         ensureOpen();
         if (pattern == null)
             throw new NullPointerException();
@@ -1757,7 +1757,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if horizon is negative
      */
-    public String findWithinHorizon(String pattern, @NonNegative int horizon) {
+    public @Nullable String findWithinHorizon(String pattern, @NonNegative int horizon) {
         return findWithinHorizon(patternCache.forName(pattern), horizon);
     }
 
@@ -1792,7 +1792,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if horizon is negative
      */
-    public String findWithinHorizon(Pattern pattern, @NonNegative int horizon) {
+    public @Nullable String findWithinHorizon(Pattern pattern, @NonNegative int horizon) {
         ensureOpen();
         if (pattern == null)
             throw new NullPointerException();

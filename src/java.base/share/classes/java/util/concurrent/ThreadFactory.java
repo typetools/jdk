@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * An object that creates new threads on demand.  Using thread factories
  * removes hardwiring of calls to {@link Thread#Thread(Runnable) new Thread},
@@ -55,6 +58,7 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor("nullness")
 public interface ThreadFactory {
 
     /**
@@ -65,5 +69,5 @@ public interface ThreadFactory {
      * @return constructed thread, or {@code null} if the request to
      *         create a thread is rejected
      */
-    Thread newThread(Runnable r);
+    @Nullable Thread newThread(Runnable r);
 }

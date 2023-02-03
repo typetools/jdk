@@ -42,6 +42,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -83,7 +84,8 @@ import java.util.function.Predicate;
  * @author  Doug Lea
  * @param <E> the type of elements held in this deque
  */
-public class LinkedBlockingDeque<E>
+@AnnotatedFor({"nullness"})
+public class LinkedBlockingDeque<E extends Object>
     extends AbstractQueue<E>
     implements BlockingDeque<E>, java.io.Serializable {
 
@@ -464,7 +466,7 @@ public class LinkedBlockingDeque<E>
         return x;
     }
 
-    public E pollFirst() {
+    public @Nullable E pollFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -474,7 +476,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollLast() {
+    public @Nullable E pollLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -510,7 +512,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollFirst(long timeout, TimeUnit unit)
+    public @Nullable E pollFirst(long timeout, TimeUnit unit)
         throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -528,7 +530,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E pollLast(long timeout, TimeUnit unit)
+    public @Nullable E pollLast(long timeout, TimeUnit unit)
         throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -564,7 +566,7 @@ public class LinkedBlockingDeque<E>
         return x;
     }
 
-    public E peekFirst() {
+    public @Nullable E peekFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -574,7 +576,7 @@ public class LinkedBlockingDeque<E>
         }
     }
 
-    public E peekLast() {
+    public @Nullable E peekLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -673,7 +675,7 @@ public class LinkedBlockingDeque<E>
         return removeFirst();
     }
 
-    public E poll() {
+    public @Nullable E poll() {
         return pollFirst();
     }
 
@@ -681,7 +683,7 @@ public class LinkedBlockingDeque<E>
         return takeFirst();
     }
 
-    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(long timeout, TimeUnit unit) throws InterruptedException {
         return pollFirst(timeout, unit);
     }
 
@@ -699,7 +701,7 @@ public class LinkedBlockingDeque<E>
         return getFirst();
     }
 
-    public E peek() {
+    public @Nullable E peek() {
         return peekFirst();
     }
 

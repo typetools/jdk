@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.math.BigInteger.LONG_MASK;
 import java.io.IOException;
@@ -305,6 +306,7 @@ import java.util.Objects;
  * @author  Sergey V. Kuksenko
  * @since 1.1
  */
+@AnnotatedFor("nullness")
 public class BigDecimal extends Number implements Comparable<BigDecimal> {
     /**
      * The unscaled value of this BigDecimal, as returned by {@link

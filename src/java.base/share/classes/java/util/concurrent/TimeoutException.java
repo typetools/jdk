@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception thrown when a blocking operation times out.  Blocking
  * operations for which a timeout is specified need a means to
@@ -46,6 +49,7 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor({"nullness"})
 public class TimeoutException extends Exception {
     private static final long serialVersionUID = 1900926677490660714L;
 
@@ -61,7 +65,7 @@ public class TimeoutException extends Exception {
      *
      * @param message the detail message
      */
-    public TimeoutException(String message) {
+    public TimeoutException(@Nullable String message) {
         super(message);
     }
 }
