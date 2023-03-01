@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -166,7 +167,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return al.contains(o);
     }
 
@@ -254,7 +255,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @param o object to be removed from this set, if present
      * @return {@code true} if this set contained the specified element
      */
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return al.remove(o);
     }
 
@@ -286,7 +287,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @see #contains(Object)
      */
     @Pure
-    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return (c instanceof Set)
             ? compareSets(al.getArray(), (Set<?>) c) >= 0
             : al.containsAll(c);
@@ -361,7 +362,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         return al.removeAll(c);
     }
 
@@ -384,7 +385,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         return al.retainAll(c);
     }
 

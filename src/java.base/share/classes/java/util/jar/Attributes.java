@@ -26,6 +26,7 @@
 package java.util.jar;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -202,7 +203,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
-    public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
+    public Object remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
 
@@ -215,7 +216,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         the specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
@@ -226,7 +227,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return true if this Map contains the specified attribute name
      */
     @Pure
-    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object name) {
         return map.containsKey(name);
     }
 

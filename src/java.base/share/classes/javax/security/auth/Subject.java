@@ -25,6 +25,7 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1219,7 +1220,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1248,7 +1249,7 @@ public final class Subject implements java.io.Serializable {
 
         @SuppressWarnings("removal")
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1300,7 +1301,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;
@@ -1331,7 +1332,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             for (Object item : c) {
@@ -1344,7 +1345,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @SuppressWarnings("removal")
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;

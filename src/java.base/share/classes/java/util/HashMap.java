@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -568,7 +569,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied HashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         Node<K,V> e;
         return (e = getNode(key)) == null ? null : e.value;
     }
@@ -609,7 +610,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         return getNode(key) != null;
     }
 
@@ -813,7 +814,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
-    public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         Node<K,V> e;
         return (e = removeNode(hash(key), key, null, false, true)) == null ?
             null : e.value;
@@ -893,7 +894,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         Node<K,V>[] tab; V v;
         if ((tab = table) != null && size > 0) {
             for (Node<K,V> e : tab) {
@@ -1007,8 +1008,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SideEffectFree
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
-        public final boolean remove(@Nullable @UnknownSignedness Object key) {
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) { return containsKey(o); }
+        public final boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
         @SideEffectFree
@@ -1072,7 +1073,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SideEffectFree
         public final Iterator<V> iterator()     { return new ValueIterator(); }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsValue(o); }
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) { return containsValue(o); }
         @SideEffectFree
         public final Spliterator<V> spliterator() {
             return new ValueSpliterator<>(HashMap.this, 0, -1, 0, 0);
@@ -1133,14 +1134,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new EntryIterator();
         }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) {
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
             Object key = e.getKey();
             Node<K,V> candidate = getNode(key);
             return candidate != null && candidate.equals(e);
         }
-        public final boolean remove(@Nullable @UnknownSignedness Object o) {
+        public final boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             if (o instanceof Map.Entry<?, ?> e) {
                 Object key = e.getKey();
                 Object value = e.getValue();
@@ -1172,7 +1173,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     @Override
     @Pure
-    public V getOrDefault(@GuardSatisfied @Nullable @UnknownSignedness Object key, V defaultValue) {
+    public V getOrDefault(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key, V defaultValue) {
         Node<K,V> e;
         return (e = getNode(key)) == null ? defaultValue : e.value;
     }
@@ -1184,7 +1185,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     @Override
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return removeNode(hash(key), key, value, true, true) != null;
     }
 

@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1087,7 +1088,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} if this deque contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object o) {
         if (o != null) {
             for (Node<E> p = first(); p != null; p = succ(p)) {
                 final E item;
@@ -1154,7 +1155,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} if the deque contained the specified element
      * @throws NullPointerException if the specified element is null
      */
-    public boolean remove(@GuardSatisfied @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object o) {
         return removeFirstOccurrence(o);
     }
 
@@ -1630,7 +1631,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1638,7 +1639,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

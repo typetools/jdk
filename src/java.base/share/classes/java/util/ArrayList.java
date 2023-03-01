@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -293,7 +294,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -305,11 +306,11 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return indexOfRange(o, 0, size);
     }
 
-    int indexOfRange(@GuardSatisfied @Nullable @UnknownSignedness Object o, int start, int end) {
+    int indexOfRange(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o, int start, int end) {
         Object[] es = elementData;
         if (o == null) {
             for (int i = start; i < end; i++) {
@@ -335,11 +336,11 @@ public class ArrayList<E> extends AbstractList<E>
      * or -1 if there is no such index.
      */
     @Pure
-    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return lastIndexOfRange(o, 0, size);
     }
 
-    int lastIndexOfRange(@GuardSatisfied @Nullable @UnknownSignedness Object o, int start, int end) {
+    int lastIndexOfRange(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o, int start, int end) {
         Object[] es = elementData;
         if (o == null) {
             for (int i = end - 1; i >= start; i--) {
@@ -640,7 +641,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;
@@ -817,7 +818,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return batchRemove(c, false, 0, size);
     }
 
@@ -837,7 +838,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return batchRemove(c, true, 0, size);
     }
 
@@ -1229,11 +1230,11 @@ public class ArrayList<E> extends AbstractList<E>
             root.replaceAllRange(operator, offset, offset + size);
         }
 
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             return batchRemove(c, false);
         }
 
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             return batchRemove(c, true);
         }
 
@@ -1293,19 +1294,19 @@ public class ArrayList<E> extends AbstractList<E>
             return hash;
         }
 
-        public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public int indexOf(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public int lastIndexOf(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 

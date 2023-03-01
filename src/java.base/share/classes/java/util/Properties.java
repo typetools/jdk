@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -1293,19 +1294,19 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return map.contains(value);
     }
 
     @Override
     @Pure
-    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
     @Override
     @Pure
-    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         return map.containsKey(key);
     }
 
@@ -1320,7 +1321,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public synchronized Object remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
@@ -1369,11 +1370,11 @@ public class Properties extends Hashtable<Object,Object> {
 
         @Pure @Override public int size() { return entrySet.size(); }
         @Pure @Override public boolean isEmpty() { return entrySet.isEmpty(); }
-        @Pure @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
+        @Pure @Override public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }
-        @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
+        @Override public boolean remove(@MustCallUnknown @UnknownSignedness Object o) { return entrySet.remove(o); }
 
         @Override
         public boolean add(Map.Entry<Object, Object> e) {
@@ -1387,7 +1388,7 @@ public class Properties extends Hashtable<Object,Object> {
 
         @Override
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             return entrySet.containsAll(c);
         }
 
@@ -1407,12 +1408,12 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
         }
 
@@ -1434,7 +1435,7 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
-    public Object getOrDefault(@GuardSatisfied @Nullable @UnknownSignedness Object key, Object defaultValue) {
+    public Object getOrDefault(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key, Object defaultValue) {
         return map.getOrDefault(key, defaultValue);
     }
 
@@ -1454,7 +1455,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public synchronized boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 

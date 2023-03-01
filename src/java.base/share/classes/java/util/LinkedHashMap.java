@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -424,7 +425,7 @@ public class LinkedHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         for (LinkedHashMap.Entry<K,V> e = head; e != null; e = e.after) {
             V v = e.value;
             if (v == value || (value != null && value.equals(v)))
@@ -449,7 +450,7 @@ public class LinkedHashMap<K,V>
      * distinguish these two cases.
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         Node<K,V> e;
         if ((e = getNode(key)) == null)
             return null;
@@ -581,8 +582,8 @@ public class LinkedHashMap<K,V>
             return new LinkedKeyIterator();
         }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
-        public final boolean remove(@Nullable @UnknownSignedness Object key) {
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) { return containsKey(o); }
+        public final boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
         @SideEffectFree
@@ -647,7 +648,7 @@ public class LinkedHashMap<K,V>
             return new LinkedValueIterator();
         }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsValue(o); }
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) { return containsValue(o); }
         @SideEffectFree
         public final Spliterator<V> spliterator() {
             return Spliterators.spliterator(this, Spliterator.SIZED |
@@ -707,14 +708,14 @@ public class LinkedHashMap<K,V>
             return new LinkedEntryIterator();
         }
         @Pure
-        public final boolean contains(@Nullable @UnknownSignedness Object o) {
+        public final boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
             Object key = e.getKey();
             Node<K,V> candidate = getNode(key);
             return candidate != null && candidate.equals(e);
         }
-        public final boolean remove(@Nullable @UnknownSignedness Object o) {
+        public final boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             if (o instanceof Map.Entry<?, ?> e) {
                 Object key = e.getKey();
                 Object value = e.getValue();

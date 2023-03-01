@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -949,7 +950,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified key is null
      */
     @Pure
-    public @Nullable V get(@UnknownSignedness @GuardSatisfied Object key) {
+    public @Nullable V get(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         Node<K,V>[] tab; Node<K,V> e, p; int n, eh; K ek;
         int h = spread(key.hashCode());
         if ((tab = table) != null && (n = tab.length) > 0 &&
@@ -980,7 +981,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return get(key) != null;
     }
 
@@ -995,7 +996,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified value is null
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         if (value == null)
             throw new NullPointerException();
         Node<K,V>[] t;
@@ -1120,7 +1121,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *         {@code null} if there was no mapping for {@code key}
      * @throws NullPointerException if the specified key is null
      */
-    public @Nullable V remove(@GuardSatisfied @UnknownSignedness Object key) {
+    public @Nullable V remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return replaceNode(key, null, null);
     }
 
@@ -1574,7 +1575,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @throws NullPointerException if the specified key is null
      */
-    public boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         if (key == null)
             throw new NullPointerException();
         return value != null && replaceNode(key, null, value) != null;
@@ -1618,7 +1619,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified key is null
      */
     @Pure
-    public V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
+    public V getOrDefault(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, V defaultValue) {
         V v;
         return (v = get(key)) == null ? defaultValue : v;
     }
@@ -2161,7 +2162,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified value is null
      */
     @Pure
-    public boolean contains(@GuardSatisfied @UnknownSignedness Object value) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         return containsValue(value);
     }
 
@@ -4484,8 +4485,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         @SideEffectFree
         public abstract Iterator<E> iterator();
         @Pure
-        public abstract boolean contains(@UnknownSignedness Object o);
-        public abstract boolean remove(@UnknownSignedness Object o);
+        public abstract boolean contains(@MustCallUnknown @UnknownSignedness Object o);
+        public abstract boolean remove(@MustCallUnknown @UnknownSignedness Object o);
 
         private static final String OOME_MSG = "Required array size too large";
 
@@ -4571,7 +4572,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         }
 
         @Pure
-        public final boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public final boolean containsAll(Collection<? extends @NonNull @MustCallUnknown @UnknownSignedness Object> c) {
             if (c != this) {
                 for (Object e : c) {
                     if (e == null || !contains(e))
@@ -4581,7 +4582,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return true;
         }
 
-        public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             // Use (c instanceof Set) as a hint that lookup in c is as
@@ -4603,7 +4604,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return modified;
         }
 
-        public final boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public final boolean retainAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<E> it = iterator(); it.hasNext();) {
@@ -4652,7 +4653,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @throws NullPointerException if the specified key is null
          */
         @Pure
-        public boolean contains(@UnknownSignedness Object o) { return map.containsKey(o); }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return map.containsKey(o); }
 
         /**
          * Removes the key from this map view, by removing the key (and its
@@ -4663,7 +4664,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @return {@code true} if the backing map contained the specified key
          * @throws NullPointerException if the specified key is null
          */
-        public boolean remove(@UnknownSignedness Object o) { return map.remove(o) != null; }
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) { return map.remove(o) != null; }
 
         /**
          * @return an iterator over the keys of the backing map
@@ -4760,11 +4761,11 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         private static final long serialVersionUID = 2249069246763182397L;
         ValuesView(ConcurrentHashMap<K,V> map) { super(map); }
         @Pure
-        public final boolean contains(@UnknownSignedness Object o) {
+        public final boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             return map.containsValue(o);
         }
 
-        public final boolean remove(@UnknownSignedness Object o) {
+        public final boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             if (o != null) {
                 for (Iterator<V> it = iterator(); it.hasNext();) {
                     if (o.equals(it.next())) {
@@ -4791,7 +4792,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             throw new UnsupportedOperationException();
         }
 
-        @Override public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        @Override public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<V> it = iterator(); it.hasNext();) {
@@ -4838,7 +4839,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         EntrySetView(ConcurrentHashMap<K,V> map) { super(map); }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             Object k, v, r; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
@@ -4847,7 +4848,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
                     (v == r || v.equals(r)));
         }
 
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             Object k, v; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&

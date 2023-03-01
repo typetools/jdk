@@ -26,6 +26,7 @@
 package sun.util.resources;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 
@@ -130,7 +131,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
 
     @Override
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness String key) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @UnknownSignedness String key) {
         return keySet().contains(key);
     }
 
@@ -207,7 +208,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
 
         @Override
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             if (set.contains(o)) {
                 return true;
             }

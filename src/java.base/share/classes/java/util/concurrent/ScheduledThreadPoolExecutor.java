@@ -35,6 +35,7 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
@@ -1037,7 +1038,7 @@ public class ScheduledThreadPoolExecutor
         }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object x) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1047,7 +1048,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
-        public boolean remove(@UnknownSignedness Object x) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {

@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -217,7 +218,7 @@ public interface Map<K, V> {
     @CFComment("nullness: key is not @Nullable because this map might not permit null values")
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
+    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key);
 
     /**
      * Returns {@code true} if this map maps one or more keys to the
@@ -238,7 +239,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
+    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -267,7 +268,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    @Nullable V get(@GuardSatisfied Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
+    @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key);
 
     // Modification Operations
 
@@ -330,7 +331,7 @@ public interface Map<K, V> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @CFComment("nullness: key is not @Nullable because this map might not permit null values")
-    @Nullable V remove(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
+    @Nullable V remove(@GuardSatisfied Map<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key);
 
 
     // Bulk Operations
@@ -707,7 +708,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @Pure
-    default V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
+    default V getOrDefault(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, V defaultValue) {
         V v;
         return (((v = get(key)) != null) || containsKey(key))
             ? v
@@ -906,7 +907,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
-    default boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+    default boolean remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         Object curValue = (key);
         if (!Objects.equals(curValue, value) ||
             (curValue == null && !containsKey(key))) {

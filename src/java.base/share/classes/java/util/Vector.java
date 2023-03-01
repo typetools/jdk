@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -372,7 +373,7 @@ public class Vector<E>
      * @return {@code true} if this vector contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return indexOf(o, 0) >= 0;
     }
 
@@ -388,7 +389,7 @@ public class Vector<E>
      *         this vector, or -1 if this vector does not contain the element
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return indexOf(o, 0);
     }
 
@@ -409,7 +410,7 @@ public class Vector<E>
      * @see     Object#equals(Object)
      */
     @Pure
-    public synchronized @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o, @NonNegative int index) {
+    public synchronized @GTENegativeOne int indexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o, @NonNegative int index) {
         if (o == null) {
             for (int i = index ; i < elementCount ; i++)
                 if (elementData[i]==null)
@@ -434,7 +435,7 @@ public class Vector<E>
      *         this vector, or -1 if this vector does not contain the element
      */
     @Pure
-    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return lastIndexOf(o, elementCount-1);
     }
 
@@ -455,7 +456,7 @@ public class Vector<E>
      *         than or equal to the current size of this vector
      */
     @Pure
-    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o, @NonNegative int index) {
+    public synchronized @GTENegativeOne int lastIndexOf(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o, @NonNegative int index) {
         if (index >= elementCount)
             throw new IndexOutOfBoundsException(index + " >= "+ elementCount);
 
@@ -833,7 +834,7 @@ public class Vector<E>
      * @return true if the Vector contained the specified element
      * @since 1.2
      */
-    public boolean remove(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied Vector<E> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return removeElement(o);
     }
 
@@ -901,7 +902,7 @@ public class Vector<E>
      * @throws NullPointerException if the specified collection is null
      */
     @Pure
-    public synchronized boolean containsAll(@GuardSatisfied Vector<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c) {
+    public synchronized boolean containsAll(@GuardSatisfied Vector<E> this, @GuardSatisfied Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return super.containsAll(c);
     }
 
@@ -952,7 +953,7 @@ public class Vector<E>
      *         or if the specified collection is null
      * @since 1.2
      */
-    public boolean removeAll(@GuardSatisfied Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(@GuardSatisfied Vector<E> this, Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -976,7 +977,7 @@ public class Vector<E>
      *         or if the specified collection is null
      * @since 1.2
      */
-    public boolean retainAll(@GuardSatisfied Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied Vector<E> this, Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

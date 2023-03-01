@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -154,10 +155,10 @@ class ImmutableCollections {
         @Override public boolean add(E e) { throw uoe(); }
         @Override public boolean addAll(Collection<? extends E> c) { throw uoe(); }
         @Override public void    clear() { throw uoe(); }
-        @Override public boolean remove(@UnknownSignedness Object o) { throw uoe(); }
-        @Override public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) { throw uoe(); }
+        @Override public boolean remove(@MustCallUnknown @UnknownSignedness Object o) { throw uoe(); }
+        @Override public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) { throw uoe(); }
         @Override public boolean removeIf(Predicate<? super E> filter) { throw uoe(); }
-        @Override public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) { throw uoe(); }
+        @Override public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) { throw uoe(); }
     }
 
     // ---------- List Static Factory Methods ----------
@@ -333,7 +334,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
@@ -820,7 +821,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             return o.equals(e0) || e1.equals(o); // implicit nullcheck of o
         }
 
@@ -949,7 +950,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;
         }
@@ -1089,7 +1090,7 @@ class ImmutableCollections {
         @Override public void putAll(Map<? extends K,? extends V> m) { throw uoe(); }
         @Override public V putIfAbsent(K key, V value) { throw uoe(); }
         @Override public V remove(Object key) { throw uoe(); }
-        @Override public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) { throw uoe(); }
+        @Override public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) { throw uoe(); }
         @Override public V replace(K key, V value) { throw uoe(); }
         @Override public boolean replace(K key, V oldValue, V newValue) { throw uoe(); }
         @Override public void replaceAll(BiFunction<? super K,? super V,? extends V> f) { throw uoe(); }
@@ -1134,13 +1135,13 @@ class ImmutableCollections {
 
         @Pure
         @Override
-        public boolean containsKey(@UnknownSignedness Object o) {
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object o) {
             return o.equals(k0); // implicit nullcheck of o
         }
 
         @Override
         @Pure
-        public boolean containsValue(@UnknownSignedness Object o) {
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object o) {
             return o.equals(v0); // implicit nullcheck of o
         }
 
@@ -1216,14 +1217,14 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean containsKey(@UnknownSignedness Object o) {
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;
         }
 
         @Override
         @Pure
-        public boolean containsValue(@UnknownSignedness Object o) {
+        public boolean containsValue@MustCallUnknown (@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             for (int i = 1; i < table.length; i += 2) {
                 Object v = table[i];

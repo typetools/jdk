@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -194,7 +195,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -235,7 +236,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -264,7 +265,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if the specified collection is null
      */
     @Pure
-    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.containsAll(c);
 
@@ -310,7 +311,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.removeAll(c);
 
@@ -330,7 +331,7 @@ class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.retainAll(c);
 

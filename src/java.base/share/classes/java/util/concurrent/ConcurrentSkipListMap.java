@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1301,7 +1302,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified key is null
      */
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return doGet(key) != null;
     }
 
@@ -1335,7 +1336,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @Pure
-    public V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
+    public V getOrDefault(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, V defaultValue) {
         V v;
         return (v = doGet(key)) == null ? defaultValue : v;
     }
@@ -1369,7 +1370,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *         with the keys currently in the map
      * @throws NullPointerException if the specified key is null
      */
-    public V remove(@GuardSatisfied @UnknownSignedness Object key) {
+    public V remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return doRemove(key, null);
     }
 
@@ -1386,7 +1387,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified value is null
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         if (value == null)
             throw new NullPointerException();
         Node<K,V> b, n; V v;
@@ -1815,7 +1816,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *         with the keys currently in the map
      * @throws NullPointerException if the specified key is null
      */
-    public boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         if (key == null)
             throw new NullPointerException();
         return value != null && doRemove(key, value) != null;
@@ -2202,8 +2203,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
-        public boolean remove(@UnknownSignedness Object o) { return m.remove(o) != null; }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return m.containsKey(o); }
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) { return m.remove(o) != null; }
         public void clear() { m.clear(); }
         public K lower(K e) { return m.lowerKey(e); }
         public K floor(K e) { return m.floorKey(e); }
@@ -2290,7 +2291,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o) { return m.containsValue(o); }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return m.containsValue(o); }
         public void clear() { m.clear(); }
         public Object[] toArray()     { return toList(this).toArray();  }
         public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
@@ -2331,14 +2332,14 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
             Map.Entry<?,?> e = (Map.Entry<?,?>)o;
             V v = m.get(e.getKey());
             return v != null && v.equals(e.getValue());
         }
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
             Map.Entry<?,?> e = (Map.Entry<?,?>)o;
@@ -2652,7 +2653,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         /* ----------------  Map API methods -------------- */
 
         @Pure
-        public boolean containsKey(@UnknownSignedness Object key) {
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key) {
             if (key == null) throw new NullPointerException();
             return inBounds(key, m.comparator) && m.containsKey(key);
         }
@@ -2691,7 +2692,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         @Pure
-        public boolean containsValue(@UnknownSignedness Object value) {
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object value) {
             if (value == null)
                 throw new NullPointerException();
             Comparator<? super K> cmp = m.comparator;
@@ -2722,7 +2723,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return m.putIfAbsent(key, value);
         }
 
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             return inBounds(key, m.comparator) && m.remove(key, value);
         }
 

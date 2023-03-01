@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -1064,7 +1065,7 @@ public class Collections {
         @Pure
         public boolean isEmpty()                   {return c.isEmpty();}
         @Pure
-        public boolean contains(@UnknownSignedness Object o)          {return c.contains(o);}
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o)          {return c.contains(o);}
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.UnmodifiableCollection<@PolyNull @PolySigned E> this)                  {return c.toArray();}
         @SideEffectFree
@@ -1093,21 +1094,21 @@ public class Collections {
         public boolean add(E e) {
             throw new UnsupportedOperationException();
         }
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             throw new UnsupportedOperationException();
         }
 
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
         public boolean addAll(Collection<? extends E> coll) {
             throw new UnsupportedOperationException();
         }
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
         public void clear() {
@@ -1532,9 +1533,9 @@ public class Collections {
         public boolean isEmpty()                 {return m.isEmpty();}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(@UnknownSignedness Object key)   {return m.containsKey(key);}
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key)   {return m.containsKey(key);}
         @Pure
-        public boolean containsValue(@UnknownSignedness Object val) {return m.containsValue(val);}
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object val) {return m.containsValue(val);}
         public V get(Object key)                 {return m.get(key);}
 
         @EnsuresKeyFor(value={"#1"}, map={"this"})
@@ -1604,7 +1605,7 @@ public class Collections {
         }
 
         @Override
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
@@ -1792,7 +1793,7 @@ public class Collections {
              * that the equality-candidate is Map.Entry and calls its
              * setValue method.
              */
-            public boolean contains(@UnknownSignedness Object o) {
+            public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
                 return c.contains(
@@ -1805,7 +1806,7 @@ public class Collections {
              * when o is a Map.Entry, and calls o.setValue.
              */
             @Pure
-            public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
+            public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
                 for (Object e : coll) {
                     if (!contains(e)) // Invokes safe contains() above
                         return false;
@@ -2137,7 +2138,7 @@ public class Collections {
             synchronized (mutex) {return c.isEmpty();}
         }
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             synchronized (mutex) {return c.contains(o);}
         }
         @SideEffectFree
@@ -2160,21 +2161,21 @@ public class Collections {
         public boolean add(E e) {
             synchronized (mutex) {return c.add(e);}
         }
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             synchronized (mutex) {return c.remove(o);}
         }
 
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.containsAll(coll);}
         }
         public boolean addAll(Collection<? extends E> coll) {
             synchronized (mutex) {return c.addAll(coll);}
         }
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.removeAll(coll);}
         }
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.retainAll(coll);}
         }
         public void clear() {
@@ -2725,11 +2726,11 @@ public class Collections {
         }
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(@UnknownSignedness Object key) {
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key) {
             synchronized (mutex) {return m.containsKey(key);}
         }
         @Pure
-        public boolean containsValue(@UnknownSignedness Object value) {
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object value) {
             synchronized (mutex) {return m.containsValue(value);}
         }
         public V get(Object key) {
@@ -2811,7 +2812,7 @@ public class Collections {
             synchronized (mutex) {return m.putIfAbsent(key, value);}
         }
         @Override
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             synchronized (mutex) {return m.remove(key, value);}
         }
         @Override
@@ -3231,24 +3232,24 @@ public class Collections {
         @Pure
         public boolean isEmpty()                   { return c.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o)          { return c.contains(o); }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o)          { return c.contains(o); }
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.CheckedCollection<@PolyNull @PolySigned E> this)                  { return c.toArray(); }
         @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)              { return c.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f) { return c.toArray(f); }
         public String toString()                   { return c.toString(); }
-        public boolean remove(@UnknownSignedness Object o)            { return c.remove(o); }
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o)            { return c.remove(o); }
         public void clear()                        {        c.clear(); }
 
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             return c.removeAll(coll);
         }
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
             return c.retainAll(coll);
         }
 
@@ -3815,9 +3816,9 @@ public class Collections {
         public boolean isEmpty()               { return m.isEmpty(); }
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(@UnknownSignedness Object key) { return m.containsKey(key); }
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key) { return m.containsKey(key); }
         @Pure
-        public boolean containsValue(@UnknownSignedness Object v) { return m.containsValue(v); }
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object v) { return m.containsValue(v); }
         public V get(Object key)               { return m.get(key); }
         public V remove(Object key)            { return m.remove(key); }
         public void clear()                    { m.clear(); }
@@ -3882,7 +3883,7 @@ public class Collections {
         }
 
         @Override
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             return m.remove(key, value);
         }
 
@@ -4026,7 +4027,7 @@ public class Collections {
              * setValue method.
              */
             @Pure
-            public boolean contains(@UnknownSignedness Object o) {
+            public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
                 return o instanceof Map.Entry<?, ?> e
                         && s.contains((e instanceof CheckedEntry) ? e : checkedEntry(e, valueType));
             }
@@ -4037,24 +4038,24 @@ public class Collections {
              * method senses when o is a Map.Entry, and calls o.setValue.
              */
             @Pure
-            public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+            public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
                 for (Object o : c)
                     if (!contains(o)) // Invokes safe contains() above
                         return false;
                 return true;
             }
 
-            public boolean remove(@UnknownSignedness Object o) {
+            public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
                 return s.remove(new AbstractMap.SimpleImmutableEntry
                                 <>((Map.Entry<?,?>)o));
             }
 
-            public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+            public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
                 return batchRemove(c, false);
             }
-            public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+            public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
                 return batchRemove(c, true);
             }
             private boolean batchRemove(Collection<?> c, boolean complement) {
@@ -4560,9 +4561,9 @@ public class Collections {
         public void clear() {}
 
         @Pure
-        public boolean contains(@UnknownSignedness Object obj) {return false;}
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object obj) {return false;}
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) { return c.isEmpty(); }
 
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.EmptySet<@PolyNull @PolySigned E> this) { return new Object[0]; }
@@ -4702,9 +4703,9 @@ public class Collections {
         public void clear() {}
 
         @Pure
-        public boolean contains(@UnknownSignedness Object obj) {return false;}
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object obj) {return false;}
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) { return c.isEmpty(); }
 
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.EmptyList<@PolyNull @PolySigned E> this) { return new Object[0]; }
@@ -4850,9 +4851,9 @@ public class Collections {
         public void clear()                        {}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(@UnknownSignedness Object key)     {return false;}
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key)     {return false;}
         @Pure
-        public boolean containsValue(@UnknownSignedness Object value) {return false;}
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object value) {return false;}
         public V get(Object key)                   {return null;}
         public Set<K> keySet()                     {return emptySet();}
         public Collection<V> values()              {return emptySet();}
@@ -4890,7 +4891,7 @@ public class Collections {
         }
 
         @Override
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5046,7 +5047,7 @@ public class Collections {
         public @NonNegative int size() {return 1;}
 
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {return eq(o, element);}
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {return eq(o, element);}
 
         // Override default methods for Collection
         @Override
@@ -5107,7 +5108,7 @@ public class Collections {
         public @NonNegative int size()                   {return 1;}
 
         @Pure
-        public boolean contains(@UnknownSignedness Object obj) {return eq(obj, element);}
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object obj) {return eq(obj, element);}
 
         public E get(int index) {
             if (index != 0)
@@ -5183,9 +5184,9 @@ public class Collections {
         public boolean isEmpty()                                {return false;}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(@UnknownSignedness Object key)             {return eq(key, k);}
+        public boolean containsKey(@MustCallUnknown @UnknownSignedness Object key)             {return eq(key, k);}
         @Pure
-        public boolean containsValue(@UnknownSignedness Object value)       {return eq(value, v);}
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object value)       {return eq(value, v);}
         public V get(Object key)              {return (eq(key, k) ? v : null);}
 
         private transient Set<K> keySet;
@@ -5236,7 +5237,7 @@ public class Collections {
         }
 
         @Override
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5331,7 +5332,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object obj) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object obj) {
             return n != 0 && eq(obj, element);
         }
 
@@ -5852,8 +5853,8 @@ public class Collections {
         @Pure
         public boolean isEmpty()          { return m.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
-        public boolean remove(@UnknownSignedness Object o)   { return m.remove(o) != null; }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return m.containsKey(o); }
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o)   { return m.remove(o) != null; }
         public boolean add(E e) { return m.put(e, Boolean.TRUE) == null; }
         @SideEffectFree
         public Iterator<E> iterator()     { return s.iterator(); }
@@ -5865,9 +5866,9 @@ public class Collections {
         public int hashCode()             { return s.hashCode(); }
         public boolean equals(Object o)   { return o == this || s.equals(o); }
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {return s.containsAll(c);}
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   {return s.removeAll(c);}
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   {return s.retainAll(c);}
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {return s.containsAll(c);}
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c)   {return s.removeAll(c);}
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c)   {return s.retainAll(c);}
         // addAll is the only inherited implementation
 
         // Override default methods in Collection
@@ -5944,8 +5945,8 @@ public class Collections {
         @Pure
         public boolean isEmpty()                    { return q.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o)           { return q.contains(o); }
-        public boolean remove(@UnknownSignedness Object o)             { return q.remove(o); }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o)           { return q.contains(o); }
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o)             { return q.remove(o); }
         @SideEffectFree
         public Iterator<E> iterator()               { return q.iterator(); }
         @SideEffectFree
@@ -5955,9 +5956,9 @@ public class Collections {
         public <T> T[] toArray(IntFunction<T[]> f)  { return q.toArray(f); }
         public String toString()                    { return q.toString(); }
         @Pure
-        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return q.containsAll(c); }
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   { return q.removeAll(c); }
-        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   { return q.retainAll(c); }
+        public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) { return q.containsAll(c); }
+        public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c)   { return q.removeAll(c); }
+        public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c)   { return q.retainAll(c); }
         // We use inherited addAll; forwarding addAll would be wrong
 
         // Override default methods in Collection

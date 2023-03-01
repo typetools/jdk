@@ -35,10 +35,11 @@
 
 package java.util;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -581,7 +582,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@GuardSatisfied Deque<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied Deque<E> this, @MustCallUnknown @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this deque contains the specified element.
@@ -598,7 +599,7 @@ public interface Deque<E> extends Queue<E> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(@GuardSatisfied Deque<E> this, @UnknownSignedness Object o);
+    boolean contains(@GuardSatisfied Deque<E> this, @MustCallUnknown @UnknownSignedness Object o);
 
     /**
      * Returns the number of elements in this deque.

@@ -1194,7 +1194,7 @@ public class Arrays {
     /**
      * Swaps x[a] with x[b].
      */
-    private static void swap(@UnknownSignedness Object[] x, int a, int b) {
+    private static void swap(@MustCallUnknown @UnknownSignedness Object[] x, int a, int b) {
         Object t = x[a];
         x[a] = x[b];
         x[b] = t;
@@ -1243,7 +1243,7 @@ public class Arrays {
      * @throws IllegalArgumentException (optional) if the comparator is
      *         found to violate the {@link Comparator} contract
      */
-    public static <T> void sort(@PolyNull @UnknownSignedness T[] a, @Nullable Comparator<? super T> c) {
+    public static <T> void sort(@MustCallUnknown @PolyNull @UnknownSignedness T[] a, @Nullable Comparator<? super T> c) {
         if (c == null) {
             sort(a);
         } else {
@@ -4241,7 +4241,7 @@ public class Arrays {
         }
 
         @Override
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 

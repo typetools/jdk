@@ -35,6 +35,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -239,14 +240,14 @@ public class CopyOnWriteArrayList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public int indexOf(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
     }
@@ -274,7 +275,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public int lastIndexOf(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
     }
@@ -516,7 +517,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         Object[] snapshot = getArray();
         int index = indexOfRange(o, snapshot, 0, snapshot.length);
         return index >= 0 && remove(o, snapshot, index);
@@ -526,7 +527,7 @@ public class CopyOnWriteArrayList<E>
      * A version of remove(Object) using the strong hint that given
      * recent snapshot contains o at the given index.
      */
-    private boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o, Object[] snapshot, int index) {
+    private boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o, Object[] snapshot, int index) {
         synchronized (lock) {
             Object[] current = getArray();
             int len = current.length;
@@ -638,7 +639,7 @@ public class CopyOnWriteArrayList<E>
      * @see #contains(Object)
      */
     @Pure
-    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         Object[] es = getArray();
         int len = es.length;
         for (Object e : c) {
@@ -664,7 +665,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -685,7 +686,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
@@ -1296,12 +1297,12 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
         @Pure
-        public boolean containsAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public boolean containsAll(Collection<? extends @NonNull @MustCallUnknown @UnknownSignedness Object> c) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1446,7 +1447,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             synchronized (lock) {
                 checkForComodification();
                 int index = indexOf(o);
@@ -1511,12 +1512,12 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public boolean removeAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> c.contains(e));
         }
 
-        public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+        public boolean retainAll(Collection<? extends @MustCallUnknown @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> !c.contains(e));
         }

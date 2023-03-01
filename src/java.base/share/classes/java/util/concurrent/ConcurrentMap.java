@@ -35,11 +35,12 @@
 
 package java.util.concurrent;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -196,7 +197,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      *         and this map does not permit null keys or values
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value);
+    boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value);
 
     /**
      * Replaces the entry for a key only if currently mapped to a given value.

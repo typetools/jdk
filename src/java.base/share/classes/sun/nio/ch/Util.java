@@ -25,8 +25,10 @@
 
 package sun.nio.ch;
 
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -351,7 +353,7 @@ public class Util {
                 @Pure
                 public boolean isEmpty()          { return s.isEmpty(); }
                 @Pure
-                public boolean contains(@UnknownSignedness Object o) { return s.contains(o); }
+                public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return s.contains(o); }
                 public Object[] toArray()         { return s.toArray(); }
                 public <T> T[] toArray(T[] a)     { return s.toArray(a); }
                 public String toString()          { return s.toString(); }
@@ -361,16 +363,16 @@ public class Util {
                 @Pure
                 public int hashCode()             { return s.hashCode(); }
                 public void clear()               { s.clear(); }
-                public boolean remove(@UnknownSignedness Object o)   { return s.remove(o); }
+                public boolean remove(@MustCallUnknown @UnknownSignedness Object o)   { return s.remove(o); }
 
                 @Pure
-                public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
+                public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
                     return s.containsAll(coll);
                 }
-                public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
+                public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
                     return s.removeAll(coll);
                 }
-                public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
+                public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> coll) {
                     return s.retainAll(coll);
                 }
 

@@ -25,9 +25,10 @@
 
 package java.security;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 
 import java.io.*;
 import java.util.*;
@@ -548,7 +549,7 @@ public abstract class Provider extends Properties {
      * @since 1.8
      */
     @Override
-    public synchronized boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+    public synchronized boolean remove(@MustCallUnknown @UnknownSignedness Object key, @MustCallUnknown @UnknownSignedness Object value) {
         check("removeProviderProperty."+name);
         if (debug != null) {
             debug.println("Remove " + name + " provider property " + key);

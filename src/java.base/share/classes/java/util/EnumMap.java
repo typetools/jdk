@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -215,7 +216,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @return {@code true} if this map maps one or more keys to this value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         value = maskNull(value);
 
         for (Object val : vals)
@@ -235,11 +236,11 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return isValidKey(key) && vals[((Enum<?>)key).ordinal()] != null;
     }
 
-    private boolean containsMapping(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    private boolean containsMapping(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         return isValidKey(key) &&
             maskNull(value).equals(vals[((Enum<?>)key).ordinal()]);
     }
@@ -259,7 +260,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * The {@link #containsKey containsKey} operation may be used to
      * distinguish these two cases.
      */
-    public @Nullable V get(@UnknownSignedness @Nullable Object key) {
+    public @Nullable V get(@MustCallUnknown @Nullable @UnknownSignedness Object key) {
         return (isValidKey(key) ?
                 unmaskNull(vals[((Enum<?>)key).ordinal()]) : null);
     }
@@ -301,7 +302,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      *     return can also indicate that the map previously associated
      *     {@code null} with the specified key.)
      */
-    public @Nullable V remove(@GuardSatisfied @UnknownSignedness Object key) {
+    public @Nullable V remove(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         if (!isValidKey(key))
             return null;
         int index = ((Enum<?>)key).ordinal();
@@ -312,7 +313,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         return unmaskNull(oldValue);
     }
 
-    private boolean removeMapping(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    private boolean removeMapping(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         if (!isValidKey(key))
             return false;
         int index = ((Enum<?>)key).ordinal();
@@ -329,7 +330,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * enum map.
      */
     @EnsuresNonNullIf(expression={"#1"}, result=true)
-    private boolean isValidKey(@GuardSatisfied @UnknownSignedness Object key) {
+    private boolean isValidKey(@GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         if (key == null)
             return false;
 
@@ -419,10 +420,10 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             int oldSize = size;
             EnumMap.this.remove(o);
             return size != oldSize;
@@ -461,10 +462,10 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             o = maskNull(o);
 
             for (int i = 0; i < vals.length; i++) {
@@ -506,11 +507,11 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
 
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> entry
                     && containsMapping(entry.getKey(), entry.getValue());
         }
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> entry
                     && removeMapping(entry.getKey(), entry.getValue());
         }

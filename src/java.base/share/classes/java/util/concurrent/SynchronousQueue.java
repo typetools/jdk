@@ -37,6 +37,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -975,7 +976,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code false}
      */
     @Pure
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -986,7 +987,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param o the element to remove
      * @return {@code false}
      */
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -998,7 +999,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code false} unless given collection is empty
      */
     @Pure
-    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean containsAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return c.isEmpty();
     }
 
@@ -1009,7 +1010,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -1020,7 +1021,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(Collection<? extends @MustCallUnknown @UnknownSignedness Object> c) {
         return false;
     }
 

@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -415,7 +416,7 @@ public class WeakHashMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -439,7 +440,7 @@ public class WeakHashMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }
 
@@ -612,7 +613,7 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
-    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
+    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -697,7 +698,7 @@ public class WeakHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @MustCallUnknown @Nullable @UnknownSignedness Object value) {
         if (value==null)
             return containsNullValue();
 
@@ -910,11 +911,11 @@ public class WeakHashMap<K,V>
         }
 
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
 
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
                 return true;
@@ -968,7 +969,7 @@ public class WeakHashMap<K,V>
         }
 
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
 
@@ -1009,13 +1010,13 @@ public class WeakHashMap<K,V>
         }
 
         @Pure
-        public boolean contains(@Nullable @UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> e
                     && getEntry(e.getKey()) != null
                     && getEntry(e.getKey()).equals(e);
         }
 
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
 

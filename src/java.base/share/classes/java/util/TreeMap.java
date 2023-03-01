@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -246,7 +247,7 @@ public class TreeMap<K,V>
      */
     @Pure
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-    public boolean containsKey(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
+    public boolean containsKey(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }
 
@@ -264,7 +265,7 @@ public class TreeMap<K,V>
      * @since 1.2
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
+    public boolean containsValue(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object value) {
         for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e))
             if (valEquals(value, e.value))
                 return true;
@@ -293,7 +294,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      */
-    public @Nullable V get(@GuardSatisfied TreeMap<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
+    public @Nullable V get(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         Entry<K,V> p = getEntry(key);
         return (p==null ? null : p.value);
     }
@@ -897,7 +898,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      */
-    public @Nullable V remove(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
+    public @Nullable V remove(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @MustCallUnknown @UnknownSignedness Object key) {
         Entry<K,V> p = getEntry(key);
         if (p == null)
             return null;
@@ -1345,11 +1346,11 @@ public class TreeMap<K,V>
         }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             return TreeMap.this.containsValue(o);
         }
 
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e)) {
                 if (valEquals(e.getValue(), o)) {
                     deleteEntry(e);
@@ -1376,7 +1377,7 @@ public class TreeMap<K,V>
         }
 
         @Pure
-        public boolean contains(@UnknownSignedness Object o) {
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
             Object value = entry.getValue();
@@ -1384,7 +1385,7 @@ public class TreeMap<K,V>
             return p != null && valEquals(p.getValue(), value);
         }
 
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
             Object value = entry.getValue();
@@ -1451,7 +1452,7 @@ public class TreeMap<K,V>
         @Pure
         public boolean isEmpty() { return m.isEmpty(); }
         @Pure
-        public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
+        public boolean contains(@MustCallUnknown @UnknownSignedness Object o) { return m.containsKey(o); }
         public void clear() { m.clear(); }
         public E lower(E e) { return m.lowerKey(e); }
         public E floor(E e) { return m.floorKey(e); }
@@ -1468,7 +1469,7 @@ public class TreeMap<K,V>
             Map.Entry<E,?> e = m.pollLastEntry();
             return (e == null) ? null : e.getKey();
         }
-        public boolean remove(@UnknownSignedness Object o) {
+        public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
             int oldSize = size();
             m.remove(o);
             return size() != oldSize;
@@ -1833,7 +1834,7 @@ public class TreeMap<K,V>
 
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public final boolean containsKey(@UnknownSignedness Object key) {
+        public final boolean containsKey(@MustCallUnknown @UnknownSignedness Object key) {
             return inRange(key) && m.containsKey(key);
         }
 
@@ -2016,7 +2017,7 @@ public class TreeMap<K,V>
             }
 
             @Pure
-            public boolean contains(@UnknownSignedness Object o) {
+            public boolean contains(@MustCallUnknown @UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;
                 Object key = entry.getKey();
@@ -2027,7 +2028,7 @@ public class TreeMap<K,V>
                     valEquals(node.getValue(), entry.getValue());
             }
 
-            public boolean remove(@UnknownSignedness Object o) {
+            public boolean remove(@MustCallUnknown @UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;
                 Object key = entry.getKey();
