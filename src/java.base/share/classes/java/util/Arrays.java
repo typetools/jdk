@@ -1054,7 +1054,7 @@ public class Arrays {
      *         ordering of the array elements is found to violate the
      *         {@link Comparable} contract
      */
-    public static void sort(@PolyInterned @PolyNull Object[] a) {
+    public static void sort(@PolyInterned @PolyMustCall @PolyNull Object @MustCall [] a) {
         if (LegacyMergeSort.userRequested)
             legacyMergeSort(a);
         else
@@ -1119,7 +1119,7 @@ public class Arrays {
      *         not <i>mutually comparable</i> (for example, strings and
      *         integers).
      */
-    public static void sort(@PolyInterned @PolyNull Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+    public static void sort(@PolyInterned @PolyMustCall @PolyNull Object @MustCall [] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
         rangeCheck(a.length, fromIndex, toIndex);
         if (LegacyMergeSort.userRequested)
             legacyMergeSort(a, fromIndex, toIndex);
@@ -1243,7 +1243,7 @@ public class Arrays {
      * @throws IllegalArgumentException (optional) if the comparator is
      *         found to violate the {@link Comparator} contract
      */
-    public static <T> void sort(@MustCallUnknown @PolyNull @UnknownSignedness T[] a, @Nullable Comparator<? super T> c) {
+    public static <T> void sort(@PolyMustCall @PolyNull @PolySigned T @MustCall [] a, @Nullable Comparator<? super T> c) {
         if (c == null) {
             sort(a);
         } else {
@@ -1315,7 +1315,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
-    public static <T> void sort(T[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
+    public static <T> void sort(@PolyMustCall @PolyNull @PolySigned T @MustCall [] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                 Comparator<? super T> c) {
         if (c == null) {
             sort(a, fromIndex, toIndex);
