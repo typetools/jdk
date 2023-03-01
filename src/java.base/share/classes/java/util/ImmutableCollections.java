@@ -1224,7 +1224,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean containsValue@MustCallUnknown (@UnknownSignedness Object o) {
+        public boolean containsValue(@MustCallUnknown @UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             for (int i = 1; i < table.length; i += 2) {
                 Object v = table[i];
