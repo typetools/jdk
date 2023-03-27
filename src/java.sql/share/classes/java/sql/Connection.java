@@ -25,6 +25,9 @@
 
 package java.sql;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
@@ -82,6 +85,8 @@ import java.util.concurrent.Executor;
  * @see DatabaseMetaData
  * @since 1.1
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface Connection  extends Wrapper, AutoCloseable {
 
     /**
