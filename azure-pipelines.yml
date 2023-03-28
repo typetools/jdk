@@ -54,8 +54,9 @@ jobs:
       set -ex
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
+      git config pull.rebase false
       eval `/tmp/$USER/plume-scripts/ci-info typetools`
-      cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README" && false)
+      cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git show && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README" && false)
     displayName: git merge
   - bash: cd ../jdk17u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
     displayName: configure
