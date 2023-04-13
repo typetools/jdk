@@ -52,5 +52,5 @@ public final class StandardConstants {
      * @see SNIServerName
      * @see SNIHostName
      */
-    public static final int SNI_HOST_NAME = 0x00;
+    public static final @SignedPositive int SNI_HOST_NAME = 0x00;
 }

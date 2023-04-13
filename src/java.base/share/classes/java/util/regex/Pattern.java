@@ -806,7 +806,7 @@ public final @UsesObjectEquals class Pattern
      * <p> Unix lines mode can also be enabled via the embedded flag
      * expression&nbsp;{@code (?d)}.
      */
-    public static final int UNIX_LINES = 0x01;
+    public static final @SignedPositive int UNIX_LINES = 0x01;
 
     /**
      * Enables case-insensitive matching.
@@ -821,7 +821,7 @@ public final @UsesObjectEquals class Pattern
      *
      * <p> Specifying this flag may impose a slight performance penalty.  </p>
      */
-    public static final int CASE_INSENSITIVE = 0x02;
+    public static final @SignedPositive int CASE_INSENSITIVE = 0x02;
 
     /**
      * Permits whitespace and comments in pattern.
@@ -832,7 +832,7 @@ public final @UsesObjectEquals class Pattern
      * <p> Comments mode can also be enabled via the embedded flag
      * expression&nbsp;{@code (?x)}.
      */
-    public static final int COMMENTS = 0x04;
+    public static final @SignedPositive int COMMENTS = 0x04;
 
     /**
      * Enables multiline mode.
@@ -845,7 +845,7 @@ public final @UsesObjectEquals class Pattern
      * <p> Multiline mode can also be enabled via the embedded flag
      * expression&nbsp;{@code (?m)}.  </p>
      */
-    public static final int MULTILINE = 0x08;
+    public static final @SignedPositive int MULTILINE = 0x08;
 
     /**
      * Enables literal parsing of the pattern.
@@ -862,7 +862,7 @@ public final @UsesObjectEquals class Pattern
      * <p> There is no embedded flag character for enabling literal parsing.
      * @since 1.5
      */
-    public static final int LITERAL = 0x10;
+    public static final @SignedPositive int LITERAL = 0x10;
 
     /**
      * Enables dotall mode.
@@ -875,7 +875,7 @@ public final @UsesObjectEquals class Pattern
      * expression&nbsp;{@code (?s)}.  (The {@code s} is a mnemonic for
      * "single-line" mode, which is what this is called in Perl.)  </p>
      */
-    public static final int DOTALL = 0x20;
+    public static final @SignedPositive int DOTALL = 0x20;
 
     /**
      * Enables Unicode-aware case folding.
@@ -891,7 +891,7 @@ public final @UsesObjectEquals class Pattern
      *
      * <p> Specifying this flag may impose a performance penalty.  </p>
      */
-    public static final int UNICODE_CASE = 0x40;
+    public static final @SignedPositive int UNICODE_CASE = 0x40;
 
     /**
      * Enables canonical equivalence.
@@ -907,7 +907,7 @@ public final @UsesObjectEquals class Pattern
      *
      * <p> Specifying this flag may impose a performance penalty.  </p>
      */
-    public static final int CANON_EQ = 0x80;
+    public static final @SignedPositive int CANON_EQ = 0x80;
 
     /**
      * Enables the Unicode version of <i>Predefined character classes</i> and
@@ -929,7 +929,7 @@ public final @UsesObjectEquals class Pattern
      * Specifying this flag may impose a performance penalty.  </p>
      * @since 1.7
      */
-    public static final int UNICODE_CHARACTER_CLASS = 0x100;
+    public static final @SignedPositive int UNICODE_CHARACTER_CLASS = 0x100;
 
     /**
      * Contains all possible flags for compile(regex, flags).

@@ -122,7 +122,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
     /**
      * Mode flag to open a zip file for reading.
      */
-    public static final int OPEN_READ = 0x1;
+    public static final @SignedPositive int OPEN_READ = 0x1;
 
     /**
      * Mode flag to open a zip file and mark it for deletion.  The file will be
@@ -131,7 +131,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
      * {@code ZipFile} object until either the close method is invoked or the
      * virtual machine exits.
      */
-    public static final int OPEN_DELETE = 0x4;
+    public static final @SignedPositive int OPEN_DELETE = 0x4;
 
     /**
      * Opens a zip file for reading.

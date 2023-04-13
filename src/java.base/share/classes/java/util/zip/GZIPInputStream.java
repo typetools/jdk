@@ -150,7 +150,7 @@ public class GZIPInputStream extends InflaterInputStream {
     /**
      * GZIP header magic number.
      */
-    public static final int GZIP_MAGIC = 0x8b1f;
+    public static final @SignedPositive int GZIP_MAGIC = 0x8b1f;
 
     /*
      * File header flags.

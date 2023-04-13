@@ -116,7 +116,7 @@ public final @UsesObjectEquals class CollationElementIterator
      * Null order which indicates the end of string is reached by the
      * cursor.
      */
-    public static final int NULLORDER = 0xffffffff;
+    public static final @SignednessGlb int NULLORDER = 0xffffffff;
 
     /**
      * CollationElementIterator constructor.  This takes the source string and

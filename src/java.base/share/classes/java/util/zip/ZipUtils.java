@@ -70,7 +70,7 @@ class ZipUtils {
     /**
      * The upper bound of the 32-bit unix time, the "year 2038 problem".
      */
-    public static final long UPPER_UNIXTIME_BOUND = 0x7fffffff;
+    public static final @SignedPositive long UPPER_UNIXTIME_BOUND = 0x7fffffff;
 
     /**
      * Converts "standard Unix time"(in seconds, UTC/GMT) to FileTime

@@ -97,7 +97,7 @@ public final class Long extends Number
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.
      */
-    @Native public static final @IntVal(0x8000000000000000L) long MIN_VALUE = 0x8000000000000000L;
+    @Native public static final @SignednessGlb @IntVal(0x8000000000000000L) long MIN_VALUE = 0x8000000000000000L;
 
     /**
      * A constant holding the maximum value a {@code long} can

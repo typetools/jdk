@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import java.lang.annotation.Native;
 
 /**
@@ -140,7 +141,7 @@ public interface SocketOptions {
      * @see Socket#getTcpNoDelay
      */
 
-    @Native public static final int TCP_NODELAY = 0x0001;
+    @Native public static final @SignedPositive int TCP_NODELAY = 0x0001;
 
     /**
      * Fetch the local address binding of a socket (this option cannot
@@ -161,7 +162,7 @@ public interface SocketOptions {
      * @see DatagramSocket#getLocalAddress
      */
 
-    @Native public static final int SO_BINDADDR = 0x000F;
+    @Native public static final @SignedPositive int SO_BINDADDR = 0x000F;
 
     /** Sets SO_REUSEADDR for a socket.  This is used only for MulticastSockets
      * in java, and it is set by default for MulticastSockets.
@@ -169,7 +170,7 @@ public interface SocketOptions {
      * Valid for: DatagramSocketImpl
      */
 
-    @Native public static final int SO_REUSEADDR = 0x04;
+    @Native public static final @SignedPositive int SO_REUSEADDR = 0x04;
 
     /** Sets SO_REUSEPORT for a socket. This option enables and disables
      *  the ability to have multiple sockets listen to the same address
@@ -180,7 +181,7 @@ public interface SocketOptions {
      * @since 9
      * @see StandardSocketOptions#SO_REUSEPORT
      */
-    @Native public static final int SO_REUSEPORT = 0x0E;
+    @Native public static final @SignedPositive int SO_REUSEPORT = 0x0E;
 
     /**
      * Sets SO_BROADCAST for a socket. This option enables and disables
@@ -191,7 +192,7 @@ public interface SocketOptions {
      * @since 1.4
      */
 
-    @Native public static final int SO_BROADCAST = 0x0020;
+    @Native public static final @SignedPositive int SO_BROADCAST = 0x0020;
 
     /** Set which outgoing interface on which to send multicast packets.
      * Useful on hosts with multiple network interfaces, where applications
@@ -203,7 +204,7 @@ public interface SocketOptions {
      * @see MulticastSocket#getInterface()
      */
 
-    @Native public static final int IP_MULTICAST_IF = 0x10;
+    @Native public static final @SignedPositive int IP_MULTICAST_IF = 0x10;
 
     /** Same as above. This option is introduced so that the behaviour
      *  with IP_MULTICAST_IF will be kept the same as before, while
@@ -215,7 +216,7 @@ public interface SocketOptions {
      * @see MulticastSocket#getNetworkInterface()
      * @since 1.4
      */
-    @Native public static final int IP_MULTICAST_IF2 = 0x1f;
+    @Native public static final @SignedPositive int IP_MULTICAST_IF2 = 0x1f;
 
     /**
      * This option enables or disables local loopback of multicast datagrams.
@@ -223,7 +224,7 @@ public interface SocketOptions {
      * @since 1.4
      */
 
-    @Native public static final int IP_MULTICAST_LOOP = 0x12;
+    @Native public static final @SignedPositive int IP_MULTICAST_LOOP = 0x12;
 
     /**
      * This option sets the type-of-service or traffic class field
@@ -231,7 +232,7 @@ public interface SocketOptions {
      * @since 1.4
      */
 
-    @Native public static final int IP_TOS = 0x3;
+    @Native public static final @SignedPositive int IP_TOS = 0x3;
 
     /**
      * Specify a linger-on-close timeout.  This option disables/enables
@@ -249,7 +250,7 @@ public interface SocketOptions {
      * @see Socket#setSoLinger
      * @see Socket#getSoLinger
      */
-    @Native public static final int SO_LINGER = 0x0080;
+    @Native public static final @SignedPositive int SO_LINGER = 0x0080;
 
     /** Set a timeout on blocking Socket operations:
      * <PRE>
@@ -270,7 +271,7 @@ public interface SocketOptions {
      * @see ServerSocket#setSoTimeout
      * @see DatagramSocket#setSoTimeout
      */
-    @Native public static final int SO_TIMEOUT = 0x1006;
+    @Native public static final @SignedPositive int SO_TIMEOUT = 0x1006;
 
     /**
      * Set a hint the size of the underlying buffers used by the
@@ -287,7 +288,7 @@ public interface SocketOptions {
      * @see DatagramSocket#setSendBufferSize
      * @see DatagramSocket#getSendBufferSize
      */
-    @Native public static final int SO_SNDBUF = 0x1001;
+    @Native public static final @SignedPositive int SO_SNDBUF = 0x1001;
 
     /**
      * Set a hint the size of the underlying buffers used by the
@@ -305,7 +306,7 @@ public interface SocketOptions {
      * @see DatagramSocket#setReceiveBufferSize
      * @see DatagramSocket#getReceiveBufferSize
      */
-    @Native public static final int SO_RCVBUF = 0x1002;
+    @Native public static final @SignedPositive int SO_RCVBUF = 0x1002;
 
     /**
      * When the keepalive option is set for a TCP socket and no data
@@ -328,7 +329,7 @@ public interface SocketOptions {
      * @see Socket#setKeepAlive
      * @see Socket#getKeepAlive
      */
-    @Native public static final int SO_KEEPALIVE = 0x0008;
+    @Native public static final @SignedPositive int SO_KEEPALIVE = 0x0008;
 
     /**
      * When the OOBINLINE option is set, any TCP urgent data received on
@@ -339,5 +340,5 @@ public interface SocketOptions {
      * @see Socket#setOOBInline
      * @see Socket#getOOBInline
      */
-    @Native public static final int SO_OOBINLINE = 0x1003;
+    @Native public static final @SignedPositive int SO_OOBINLINE = 0x1003;
 }
