@@ -25,6 +25,8 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+
 /**
  * Standard constants definitions
  *

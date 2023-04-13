@@ -25,6 +25,7 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.ByteBuffer;
