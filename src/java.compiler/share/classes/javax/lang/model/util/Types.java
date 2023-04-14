@@ -25,7 +25,9 @@
 
 package javax.lang.model.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationTypeMismatchException;
 import java.lang.annotation.IncompleteAnnotationException;
@@ -45,6 +47,7 @@ import javax.lang.model.type.*;
  * @see javax.annotation.processing.ProcessingEnvironment#getTypeUtils
  * @since 1.6
  */
+@AnnotatedFor("nullness")
 public interface Types {
 
     /**
@@ -56,7 +59,7 @@ public interface Types {
      * @param t the type to map to an element
      * @return the element corresponding to the given type
      */
-    Element asElement(TypeMirror t);
+    @Nullable Element asElement(TypeMirror t);
 
     /**
      * Tests whether two {@code TypeMirror} objects represent the same type.
@@ -235,8 +238,8 @@ public interface Types {
      * @param superBound    the super (lower) bound, or {@code null} if none
      * @throws IllegalArgumentException if bounds are not valid
      */
-    WildcardType getWildcardType(TypeMirror extendsBound,
-                                 TypeMirror superBound);
+    WildcardType getWildcardType(@Nullable TypeMirror extendsBound,
+                                 @Nullable TypeMirror superBound);
 
     /**
      * {@return the type corresponding to a type element and
@@ -292,7 +295,7 @@ public interface Types {
      *          type arguments are given, or if an inappropriate type
      *          argument, type element, or containing type is provided
      */
-    DeclaredType getDeclaredType(DeclaredType containing,
+    DeclaredType getDeclaredType(@Nullable DeclaredType containing,
                                  TypeElement typeElem, TypeMirror... typeArgs);
 
     /**
