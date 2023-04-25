@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.SequenceInputStream;
@@ -150,7 +151,7 @@ public class GZIPInputStream extends InflaterInputStream {
     /**
      * GZIP header magic number.
      */
-    public static final int GZIP_MAGIC = 0x8b1f;
+    public static final @SignedPositive int GZIP_MAGIC = 0x8b1f;
 
     /*
      * File header flags.

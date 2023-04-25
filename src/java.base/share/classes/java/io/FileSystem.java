@@ -27,6 +27,7 @@ package java.io;
 
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.annotation.Native;
@@ -104,10 +105,10 @@ abstract @UsesObjectEquals class FileSystem {
     /* -- Attribute accessors -- */
 
     /* Constants for simple boolean attributes */
-    @Native public static final int BA_EXISTS    = 0x01;
-    @Native public static final int BA_REGULAR   = 0x02;
-    @Native public static final int BA_DIRECTORY = 0x04;
-    @Native public static final int BA_HIDDEN    = 0x08;
+    @Native public static final @SignedPositive int BA_EXISTS    = 0x01;
+    @Native public static final @SignedPositive int BA_REGULAR   = 0x02;
+    @Native public static final @SignedPositive int BA_DIRECTORY = 0x04;
+    @Native public static final @SignedPositive int BA_HIDDEN    = 0x08;
 
     /**
      * Return the simple boolean attributes for the file or directory denoted
@@ -125,9 +126,9 @@ abstract @UsesObjectEquals class FileSystem {
         return (getBooleanAttributes(f) & attributes) == attributes;
     }
 
-    @Native public static final int ACCESS_READ    = 0x04;
-    @Native public static final int ACCESS_WRITE   = 0x02;
-    @Native public static final int ACCESS_EXECUTE = 0x01;
+    @Native public static final @SignedPositive int ACCESS_READ    = 0x04;
+    @Native public static final @SignedPositive int ACCESS_WRITE   = 0x02;
+    @Native public static final @SignedPositive int ACCESS_EXECUTE = 0x01;
 
     /**
      * Check whether the file or directory denoted by the given abstract

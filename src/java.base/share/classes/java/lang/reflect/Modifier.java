@@ -26,6 +26,7 @@
 package java.lang.reflect;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.StringJoiner;
@@ -259,73 +260,73 @@ public @UsesObjectEquals class Modifier {
      * The {@code int} value representing the {@code public}
      * modifier.
      */
-    public static final int PUBLIC           = 0x00000001;
+    public static final @SignedPositive int PUBLIC           = 0x00000001;
 
     /**
      * The {@code int} value representing the {@code private}
      * modifier.
      */
-    public static final int PRIVATE          = 0x00000002;
+    public static final @SignedPositive int PRIVATE          = 0x00000002;
 
     /**
      * The {@code int} value representing the {@code protected}
      * modifier.
      */
-    public static final int PROTECTED        = 0x00000004;
+    public static final @SignedPositive int PROTECTED        = 0x00000004;
 
     /**
      * The {@code int} value representing the {@code static}
      * modifier.
      */
-    public static final int STATIC           = 0x00000008;
+    public static final @SignedPositive int STATIC           = 0x00000008;
 
     /**
      * The {@code int} value representing the {@code final}
      * modifier.
      */
-    public static final int FINAL            = 0x00000010;
+    public static final @SignedPositive int FINAL            = 0x00000010;
 
     /**
      * The {@code int} value representing the {@code synchronized}
      * modifier.
      */
-    public static final int SYNCHRONIZED     = 0x00000020;
+    public static final @SignedPositive int SYNCHRONIZED     = 0x00000020;
 
     /**
      * The {@code int} value representing the {@code volatile}
      * modifier.
      */
-    public static final int VOLATILE         = 0x00000040;
+    public static final @SignedPositive int VOLATILE         = 0x00000040;
 
     /**
      * The {@code int} value representing the {@code transient}
      * modifier.
      */
-    public static final int TRANSIENT        = 0x00000080;
+    public static final @SignedPositive int TRANSIENT        = 0x00000080;
 
     /**
      * The {@code int} value representing the {@code native}
      * modifier.
      */
-    public static final int NATIVE           = 0x00000100;
+    public static final @SignedPositive int NATIVE           = 0x00000100;
 
     /**
      * The {@code int} value representing the {@code interface}
      * modifier.
      */
-    public static final int INTERFACE        = 0x00000200;
+    public static final @SignedPositive int INTERFACE        = 0x00000200;
 
     /**
      * The {@code int} value representing the {@code abstract}
      * modifier.
      */
-    public static final int ABSTRACT         = 0x00000400;
+    public static final @SignedPositive int ABSTRACT         = 0x00000400;
 
     /**
      * The {@code int} value representing the {@code strictfp}
      * modifier.
      */
-    public static final int STRICT           = 0x00000800;
+    public static final @SignedPositive int STRICT           = 0x00000800;
 
     // Bits not (yet) exposed in the public API either because they
     // have different meanings for fields and methods and there is no

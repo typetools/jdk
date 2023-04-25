@@ -25,6 +25,7 @@
 package java.net;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
@@ -81,12 +82,12 @@ public final @UsesObjectEquals class IDN {
     /**
      * Flag to allow processing of unassigned code points
      */
-    public static final int ALLOW_UNASSIGNED = 0x01;
+    public static final @SignedPositive int ALLOW_UNASSIGNED = 0x01;
 
     /**
      * Flag to turn on the check against STD-3 ASCII rules
      */
-    public static final int USE_STD3_ASCII_RULES = 0x02;
+    public static final @SignedPositive int USE_STD3_ASCII_RULES = 0x02;
 
 
     /**

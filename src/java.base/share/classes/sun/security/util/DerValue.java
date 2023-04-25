@@ -28,6 +28,7 @@ package sun.security.util;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -68,10 +69,10 @@ import static java.nio.charset.StandardCharsets.*;
 public class DerValue {
 
     /** The tag class types */
-    public static final byte TAG_UNIVERSAL = (byte)0x000;
-    public static final byte TAG_APPLICATION = (byte)0x040;
-    public static final byte TAG_CONTEXT = (byte)0x080;
-    public static final byte TAG_PRIVATE = (byte)0x0c0;
+    public static final @SignedPositive byte TAG_UNIVERSAL = (byte)0x000;
+    public static final @SignedPositive byte TAG_APPLICATION = (byte)0x040;
+    public static final @SignedPositive byte TAG_CONTEXT = (byte)0x080;
+    public static final @SignedPositive byte TAG_PRIVATE = (byte)0x0c0;
 
     /*
      * The type starts at the first byte of the encoding, and
@@ -85,52 +86,52 @@ public class DerValue {
      */
 
     /** Tag value indicating an ASN.1 "BOOLEAN" value. */
-    public static final byte    tag_Boolean = 0x01;
+    public static final @SignedPositive byte    tag_Boolean = 0x01;
 
     /** Tag value indicating an ASN.1 "INTEGER" value. */
-    public static final byte    tag_Integer = 0x02;
+    public static final @SignedPositive byte    tag_Integer = 0x02;
 
     /** Tag value indicating an ASN.1 "BIT STRING" value. */
-    public static final byte    tag_BitString = 0x03;
+    public static final @SignedPositive byte    tag_BitString = 0x03;
 
     /** Tag value indicating an ASN.1 "OCTET STRING" value. */
-    public static final byte    tag_OctetString = 0x04;
+    public static final @SignedPositive byte    tag_OctetString = 0x04;
 
     /** Tag value indicating an ASN.1 "NULL" value. */
-    public static final byte    tag_Null = 0x05;
+    public static final @SignedPositive byte    tag_Null = 0x05;
 
     /** Tag value indicating an ASN.1 "OBJECT IDENTIFIER" value. */
-    public static final byte    tag_ObjectId = 0x06;
+    public static final @SignedPositive byte    tag_ObjectId = 0x06;
 
     /** Tag value including an ASN.1 "ENUMERATED" value */
-    public static final byte    tag_Enumerated = 0x0A;
+    public static final @SignedPositive byte    tag_Enumerated = 0x0A;
 
     /** Tag value indicating an ASN.1 "UTF8String" value. */
-    public static final byte    tag_UTF8String = 0x0C;
+    public static final @SignedPositive byte    tag_UTF8String = 0x0C;
 
     /** Tag value including a "printable" string */
-    public static final byte    tag_PrintableString = 0x13;
+    public static final @SignedPositive byte    tag_PrintableString = 0x13;
 
     /** Tag value including a "teletype" string */
-    public static final byte    tag_T61String = 0x14;
+    public static final @SignedPositive byte    tag_T61String = 0x14;
 
     /** Tag value including an ASCII string */
-    public static final byte    tag_IA5String = 0x16;
+    public static final @SignedPositive byte    tag_IA5String = 0x16;
 
     /** Tag value indicating an ASN.1 "UTCTime" value. */
-    public static final byte    tag_UtcTime = 0x17;
+    public static final @SignedPositive byte    tag_UtcTime = 0x17;
 
     /** Tag value indicating an ASN.1 "GeneralizedTime" value. */
-    public static final byte    tag_GeneralizedTime = 0x18;
+    public static final @SignedPositive byte    tag_GeneralizedTime = 0x18;
 
     /** Tag value indicating an ASN.1 "GenerallString" value. */
-    public static final byte    tag_GeneralString = 0x1B;
+    public static final @SignedPositive byte    tag_GeneralString = 0x1B;
 
     /** Tag value indicating an ASN.1 "UniversalString" value. */
-    public static final byte    tag_UniversalString = 0x1C;
+    public static final @SignedPositive byte    tag_UniversalString = 0x1C;
 
     /** Tag value indicating an ASN.1 "BMPString" value. */
-    public static final byte    tag_BMPString = 0x1E;
+    public static final @SignedPositive byte    tag_BMPString = 0x1E;
 
     // CONSTRUCTED seq/set
 
@@ -138,25 +139,25 @@ public class DerValue {
      * Tag value indicating an ASN.1
      * "SEQUENCE" (zero to N elements, order is significant).
      */
-    public static final byte    tag_Sequence = 0x30;
+    public static final @SignedPositive byte    tag_Sequence = 0x30;
 
     /**
      * Tag value indicating an ASN.1
      * "SEQUENCE OF" (one to N elements, order is significant).
      */
-    public static final byte    tag_SequenceOf = 0x30;
+    public static final @SignedPositive byte    tag_SequenceOf = 0x30;
 
     /**
      * Tag value indicating an ASN.1
      * "SET" (zero to N members, order does not matter).
      */
-    public static final byte    tag_Set = 0x31;
+    public static final @SignedPositive byte    tag_Set = 0x31;
 
     /**
      * Tag value indicating an ASN.1
      * "SET OF" (one to N members, order does not matter).
      */
-    public static final byte    tag_SetOf = 0x31;
+    public static final @SignedPositive byte    tag_SetOf = 0x31;
 
     // This class is mostly immutable except that:
     //
