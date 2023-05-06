@@ -98,7 +98,7 @@ public final class Integer extends Number
      * A constant holding the minimum value an {@code int} can
      * have, -2<sup>31</sup>.
      */
-    @Native public static final @IntVal(0x80000000) int   MIN_VALUE = 0x80000000;
+    @Native public static final @SignednessGlb @IntVal(0x80000000) int   MIN_VALUE = 0x80000000;
 
     /**
      * A constant holding the maximum value an {@code int} can

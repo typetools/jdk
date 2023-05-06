@@ -9,10 +9,9 @@ them cause build failures, especially in the interim builds):
  * src/java.base/share/classes/java/time/*
  * src/jdk.compiler/share/classes/com/sun/tools/javac/*
 
-Annotations for classes that exist in JDK 11 but were removed in JDK 17 appear
-in jdk11.astub files in repository https://github.com/typetools/checker-framework/ .
-Annotations for classes that exist in JDK 8 but were removed in JDK 11 appear
-in jdk8.astub files in repository https://github.com/typetools/checker-framework/ .
+Annotations for classes that exist in JDK version X but were removed later
+appear in jdkX.astub files, such as jdk11.astub, in repository
+https://github.com/typetools/checker-framework/ .
 
 
 ## Building
@@ -43,23 +42,21 @@ at https://checkerframework.org/manual/#library-tips-fully-annotate .
 
 ## Relationship to other repositories
 
-This fork is not up to date with respect to `openjdk/jdk` (the current OpenJDK
-version).  This fork contains all commits through the release of JDK 17 (that
-is, the last commit that is in both openjdk/jdk and in openjdk/jdk17u; a way to
-determine that is to run `git log --graph | tac` on both and find the common
-prefix):
-https://github.com/typetools/jdk/commit/74007890bb9a3fa3a65683a3f480e399f2b1a0b6
+The typetools:jdk fork is not up to date with respect to `openjdk:jdk` (the
+current OpenJDK version).  The typetools:jdk fork contains all commits through
+the release of JDK 20 (that is, the last commit that is in both openjdk:jdk and
+in openjdk:jdk20u):
+https://github.com/typetools/jdk/commit/d562d3fcbe22a0443037c5b447e1a41401275814
 
-This fork is an ancestor of JDK release forks such as jdk17u.  This fork
-does not compile, because the commit of `openjdk/jdk` on which it is based
-no longer compiles, due to changes to tools such as compilers.
-Repositories such as jdk11u and jdk17u have been updated and do compile.
+The typetools:jdk fork is an ancestor of JDK release forks such as
+typetools:jdk17u.  The typetools:jdk fork may not compile, because the commit of
+openjdk:jdk on which it is based may not compile, due to changes to tools such
+as compilers.  Repositories such as jdk11u, jdk17u, and jdk20u have been updated
+and do compile.
 
-This fork's annotations are pulled into those repositories, in order to
-build an annotated JDK.  We do not write annotations in (say) jdk17u,
-because it has diverged far from other repositories.  It would be even more
-painful to write annotations on jdk17u and then try to merge it into a
-subsequent version like jdk12u.
+This fork's annotations are pulled into those repositories, in order to build an
+annotated JDK.  We do not write annotations in (say) typetools:jdk20u, because
+it would be painful to get them into typetools:jdk21u due to subsequent commits.
 
 
 ## Pull request merge conflicts
@@ -140,6 +137,28 @@ git pull
 git pull https://github.com/openjdk/jdk17u.git
 git pull https://github.com/typetools/jdk.git
 ```
+
+
+## Updating
+
+Whenever a new Java release is made, this repository should be updated to pull in more commits from upstream.  Here are some commands to run when updating to JDK ${VER}.
+
+Fork into typetools:  https://github.com/openjdk/jdk${VER}u
+
+Clone jdk${VER}u repositories into, say, $t/libraries/ .
+
+Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:
+run `git log --graph | tac` on both and find the common prefix.
+
+last_common_commit=d562d3fcbe22a0443037c5b447e1a41401275814
+cd $t/libraries
+git clone -- git@github.com:openjdk/jdk.git jdk-fork-openjdk-commit-${last_common_commit}
+cd jdk-fork-openjdk-commit-${last_common_commit}
+git reset --hard ${last_common_commit}
+
+cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
+git pull ../jdk-fork-openjdk-commit-${last_common_commit}
+
 
 
 ## Design

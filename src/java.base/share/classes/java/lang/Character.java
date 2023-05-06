@@ -34,6 +34,8 @@ import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.lock.qual.NewObject;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.checker.signedness.qual.SignednessGlb;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
@@ -652,7 +654,7 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      *
      * @since 1.5
      */
-    public static final @IntVal(0x010000) int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000;
+    public static final @SignedPositive @IntVal(0x010000) int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000;
 
     /**
      * The minimum value of a
@@ -661,7 +663,7 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      *
      * @since 1.5
      */
-    public static final @IntVal(0x000000) int MIN_CODE_POINT = 0x000000;
+    public static final @SignedPositive @IntVal(0x000000) int MIN_CODE_POINT = 0x000000;
 
     /**
      * The maximum value of a
@@ -670,7 +672,7 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      *
      * @since 1.5
      */
-    public static final @IntVal(0x000000) int MAX_CODE_POINT = 0X10FFFF;
+    public static final @SignednessGlb @IntVal(0x000000) int MAX_CODE_POINT = 0X10FFFF;
 
     /**
      * Returns an {@link Optional} containing the nominal descriptor for this
