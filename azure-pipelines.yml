@@ -122,11 +122,11 @@ jobs:
   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
     displayName: test-cftests-all.sh
 
-- job: test_cftests_all_jdk19
+- job: test_cftests_all_jdk20
   timeoutInMinutes: 105
   pool:
     vmImage: 'ubuntu-latest'
-  container: mdernst/cf-ubuntu-jdk19:latest
+  container: mdernst/cf-ubuntu-jdk20:latest
   steps:
   - checkout: self
     fetchDepth: 25
