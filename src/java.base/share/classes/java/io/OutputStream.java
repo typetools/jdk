@@ -25,11 +25,11 @@
 
 package java.io;
 
-import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -88,12 +88,12 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
             }
 
             @Override
-            public void write(int b) throws IOException {
+            public void write(@PolySigned int b) throws IOException {
                 ensureOpen();
             }
 
             @Override
-            public void write(byte b[], int off, int len) throws IOException {
+            public void write(@PolySigned byte b[], int off, int len) throws IOException {
                 Objects.checkFromIndexSize(off, len, b.length);
                 ensureOpen();
             }

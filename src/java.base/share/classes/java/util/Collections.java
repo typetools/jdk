@@ -5825,6 +5825,7 @@ public class Collections {
      * @throws IllegalArgumentException if {@code map} is not empty
      * @since 1.6
      */
+    @SideEffectFree
     public static <E> Set<E> newSetFromMap(Map<E, Boolean> map) {
         return new SetFromMap<>(map);
     }
