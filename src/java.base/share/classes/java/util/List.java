@@ -33,6 +33,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -219,7 +220,7 @@ public interface List<E> extends Collection<E> {
      * @see Arrays#asList(Object[])
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(List<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(List<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this list in
@@ -261,7 +262,7 @@ public interface List<E> extends Collection<E> {
      * @throws NullPointerException if the specified array is null
      */
     @SideEffectFree
-    <T> @Nullable T[] toArray(@PolyNull T[] a);
+    <T extends @UnknownSignedness Object> @Nullable T[] toArray(@PolyNull T[] a);
 
 
     // Modification Operations

@@ -2994,7 +2994,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    public static boolean equals(@PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a, @PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean equals(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a, @PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a2) {
         if (a==a2)
             return true;
         if (a==null || a2==null)
@@ -3454,7 +3454,7 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolySigned @PolyInterned Object[] a, @PolyNull @PolySigned @PolyInterned Object val) {
+    public static void fill(@PolyInterned @PolyNull @PolySigned Object[] a, @PolyInterned @PolyNull @PolySigned Object val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
     }
@@ -3478,7 +3478,7 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolySigned @PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyNull @PolySigned @PolyInterned Object val) {
+    public static void fill(@PolyInterned @PolyNull @PolySigned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyInterned @PolyNull @PolySigned Object val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
             a[i] = val;
@@ -4552,7 +4552,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolyNull @PolySigned @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int hashCode(@PolyInterned @PolyNull @PolySigned Object a @GuardSatisfied  @Nullable []) {
         if (a == null)
             return 0;
 
@@ -4594,7 +4594,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int deepHashCode(@PolyNull @PolySigned @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int deepHashCode(@PolyInterned @PolyNull @PolySigned Object a @GuardSatisfied  @Nullable []) {
         if (a == null)
             return 0;
 
@@ -4668,7 +4668,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static boolean deepEquals(@PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a1, @PolyNull @PolySigned @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean deepEquals(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a1, @PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a2) {
         if (a1 == a2)
             return true;
         if (a1 == null || a2==null)
@@ -4990,7 +4990,7 @@ public class Arrays {
     @CFComment({"The @PolyMustCall annotations don't make sense, because toString",
       "shouldn't care about MustCall types, especially of the array.  However,",
       "without these annotations, calls to Arrays.toString yield a MustCall error."})
-    public static @MinLen(2) String toString(@PolyMustCall @PolyNull @PolySigned @PolyInterned Object @PolyMustCall @Nullable [] a) {
+    public static @MinLen(2) String toString(@PolyInterned @PolyMustCall @PolyNull @PolySigned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
@@ -5042,7 +5042,7 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String deepToString(@PolyMustCall @PolyNull @PolySigned @PolyInterned Object @PolyMustCall @Nullable [] a) {
+    public static @MinLen(2) String deepToString(@PolyInterned @PolyMustCall @PolyNull @PolySigned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 

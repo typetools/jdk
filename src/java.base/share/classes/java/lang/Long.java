@@ -1258,7 +1258,7 @@ public final class Long extends Number
     @SideEffectFree
     @StaticallyExecutable
     @IntrinsicCandidate
-    public static @NewObject @PolyValue @PolySigned Long valueOf(@PolyValue @PolySigned long l) {
+    public static @NewObject @PolySigned @PolyValue Long valueOf(@PolySigned @PolyValue long l) {
         final int offset = 128;
         if (l >= -128 && l <= 127) { // will cache
             return LongCache.cache[(int)l + offset];
@@ -1380,7 +1380,7 @@ public final class Long extends Number
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="9", forRemoval = true)
-    public @PolyIndex @PolyValue @PolySigned Long(@PolyIndex @PolyValue @PolySigned long value) {
+    public @PolyIndex @PolySigned @PolyValue Long(@PolyIndex @PolySigned @PolyValue long value) {
         this.value = value;
     }
 
@@ -1449,7 +1449,7 @@ public final class Long extends Number
     @Pure
     @StaticallyExecutable
     @IntrinsicCandidate
-    public @PolyIndex @PolyValue @PolySigned long longValue(@PolyIndex @PolyValue @PolySigned Long this) {
+    public @PolyIndex @PolySigned @PolyValue long longValue(@PolyIndex @PolySigned @PolyValue Long this) {
         return value;
     }
 

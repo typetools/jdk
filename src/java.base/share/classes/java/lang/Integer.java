@@ -1134,7 +1134,7 @@ public final class Integer extends Number
     @SideEffectFree
     @StaticallyExecutable
     @IntrinsicCandidate
-    public static @NewObject @PolyIndex @PolyValue @PolySigned Integer valueOf(@PolyIndex @PolyValue @PolySigned int i) {
+    public static @NewObject @PolyIndex @PolySigned @PolyValue Integer valueOf(@PolyIndex @PolySigned @PolyValue int i) {
         if (i >= IntegerCache.low && i <= IntegerCache.high)
             return IntegerCache.cache[i + (-IntegerCache.low)];
         return new Integer(i);
@@ -1162,7 +1162,7 @@ public final class Integer extends Number
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="9", forRemoval = true)
-    public @PolyIndex @PolyValue @PolySigned Integer(@PolyIndex @PolyValue @PolySigned int value) {
+    public @PolyIndex @PolySigned @PolyValue Integer(@PolyIndex @PolySigned @PolyValue int value) {
         this.value = value;
     }
 
@@ -1219,7 +1219,7 @@ public final class Integer extends Number
     @Pure
     @StaticallyExecutable
     @IntrinsicCandidate
-    public @PolyIndex @PolyValue @PolySigned int intValue(@PolyIndex @PolyValue @PolySigned Integer this) {
+    public @PolyIndex @PolySigned @PolyValue int intValue(@PolyIndex @PolySigned @PolyValue Integer this) {
         return value;
     }
 
@@ -1231,7 +1231,7 @@ public final class Integer extends Number
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned long longValue(@PolyIndex @PolyValue @PolySigned Integer this) {
+    public @PolyIndex @PolySigned @PolyValue long longValue(@PolyIndex @PolySigned @PolyValue Integer this) {
         return (long)value;
     }
 

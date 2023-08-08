@@ -166,7 +166,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
     @Pure
     @StaticallyExecutable
     @IntrinsicCandidate
-    public static @Interned @NewObject @PolyIndex @PolyValue @PolySigned Byte valueOf(@PolyIndex @PolyValue @PolySigned byte b) {
+    public static @Interned @NewObject @PolyIndex @PolySigned @PolyValue Byte valueOf(@PolyIndex @PolySigned @PolyValue byte b) {
         final int offset = 128;
         return ByteCache.cache[(int)b + offset];
     }
@@ -380,7 +380,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @StaticallyExecutable
     @Deprecated(since="9", forRemoval = true)
-    public @PolyIndex @PolyValue @PolySigned Byte(@PolyIndex @PolyValue @PolySigned byte value) {
+    public @PolyIndex @PolySigned @PolyValue Byte(@PolyIndex @PolySigned @PolyValue byte value) {
         this.value = value;
     }
 
@@ -415,7 +415,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
     @Pure
     @StaticallyExecutable
     @IntrinsicCandidate
-    public @PolyIndex @PolyValue @PolySigned byte byteValue(@PolyIndex @PolyValue @PolySigned Byte this) {
+    public @PolyIndex @PolySigned @PolyValue byte byteValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return value;
     }
 
@@ -426,7 +426,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned short shortValue(@PolyIndex @PolyValue @PolySigned Byte this) {
+    public @PolyIndex @PolySigned @PolyValue short shortValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (short)value;
     }
 
@@ -437,7 +437,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned int intValue(@PolyIndex @PolyValue @PolySigned Byte this) {
+    public @PolyIndex @PolySigned @PolyValue int intValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (int)value;
     }
 
@@ -448,7 +448,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned long longValue(@PolyIndex @PolyValue @PolySigned Byte this) {
+    public @PolyIndex @PolySigned @PolyValue long longValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (long)value;
     }
 

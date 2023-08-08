@@ -302,7 +302,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
     @SideEffectFree
     @StaticallyExecutable
     @IntrinsicCandidate
-    public static @NewObject @PolyIndex @PolyValue @PolySigned Short valueOf(@PolyIndex @PolyValue @PolySigned short s) {
+    public static @NewObject @PolyIndex @PolySigned @PolyValue Short valueOf(@PolyIndex @PolySigned @PolyValue short s) {
         final int offset = 128;
         int sAsInt = s;
         if (sAsInt >= -128 && sAsInt <= 127) { // must cache
@@ -385,7 +385,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
     @SideEffectFree
     @StaticallyExecutable
     @Deprecated(since="9", forRemoval = true)
-    public @PolyIndex @PolyValue @PolySigned Short(@PolyIndex @PolyValue @PolySigned short value) {
+    public @PolyIndex @PolySigned @PolyValue Short(@PolyIndex @PolySigned @PolyValue short value) {
         this.value = value;
     }
 
@@ -432,7 +432,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
     @Pure
     @StaticallyExecutable
     @IntrinsicCandidate
-    public @PolyIndex @PolyValue @PolySigned short shortValue(@PolyIndex @PolyValue @PolySigned Short this) {
+    public @PolyIndex @PolySigned @PolyValue short shortValue(@PolyIndex @PolySigned @PolyValue Short this) {
         return value;
     }
 
@@ -443,7 +443,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned int intValue(@PolyIndex @PolyValue @PolySigned Short this) {
+    public @PolyIndex @PolySigned @PolyValue int intValue(@PolyIndex @PolySigned @PolyValue Short this) {
         return (int)value;
     }
 
@@ -454,7 +454,7 @@ public final class Short extends Number implements Comparable<Short>, Constable 
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue @PolySigned long longValue(@PolyIndex @PolyValue @PolySigned Short this) {
+    public @PolyIndex @PolySigned @PolyValue long longValue(@PolyIndex @PolySigned @PolyValue Short this) {
         return (long)value;
     }
 
