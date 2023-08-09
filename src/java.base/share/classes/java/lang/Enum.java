@@ -27,6 +27,7 @@ package java.lang;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.GuardedByUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -211,7 +212,7 @@ public abstract class Enum<E extends Enum<E>>
      * method is the order in which the constants are declared.
      */
     @SuppressWarnings({"rawtypes"})
-    public final int compareTo(@Tainted E o) {
+    public final int compareTo(@UnknownKeyFor @Tainted E o) {
         Enum<?> other = (Enum<?>)o;
         Enum<E> self = this;
         if (self.getClass() != other.getClass() && // optimization
