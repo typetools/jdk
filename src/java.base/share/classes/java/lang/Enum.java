@@ -80,7 +80,7 @@ import static java.util.Objects.requireNonNull;
  * @jls 8.9.3 Enum Members
  * @since   1.5
  */
-@AnnotatedFor({"lock", "nullness", "index", "value"})
+@AnnotatedFor({"lock", "nullness", "index", "value", "tainting"})
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum classes.
 public abstract class Enum<E extends Enum<E>>
@@ -208,7 +208,7 @@ public abstract class Enum<E extends Enum<E>>
      * method is the order in which the constants are declared.
      */
     @SuppressWarnings({"rawtypes"})
-    public final int compareTo(E o) {
+    public final int compareTo(@Taintined E o) {
         Enum<?> other = (Enum<?>)o;
         Enum<E> self = this;
         if (self.getClass() != other.getClass() && // optimization
@@ -230,7 +230,7 @@ public abstract class Enum<E extends Enum<E>>
      *     enum type
      */
     @SuppressWarnings("unchecked")
-    public final Class<E> getDeclaringClass() {
+    public final Class<@Taintined E> getDeclaringClass() {
         Class<?> clazz = getClass();
         Class<?> zuper = clazz.getSuperclass();
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
