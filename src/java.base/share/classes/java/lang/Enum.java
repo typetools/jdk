@@ -234,7 +234,7 @@ public abstract class Enum<E extends Enum<E>>
      *     enum type
      */
     @SuppressWarnings("unchecked")
-    public final Class<@Taintined E> getDeclaringClass() {
+    public final Class<@Tainted E> getDeclaringClass() {
         Class<?> clazz = getClass();
         Class<?> zuper = clazz.getSuperclass();
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
