@@ -288,7 +288,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #mapMulti
      */
-    <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper);
+    <R> Stream<R> flatMap(Function<? super T, ? extends @Nullable Stream<? extends R>> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of replacing each
@@ -308,7 +308,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper);
+    IntStream flatMapToInt(Function<? super T, ? extends @Nullable IntStream> mapper);
 
     /**
      * Returns an {@code LongStream} consisting of the results of replacing each
@@ -328,7 +328,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper);
+    LongStream flatMapToLong(Function<? super T, ? extends @Nullable LongStream> mapper);
 
     /**
      * Returns an {@code DoubleStream} consisting of the results of replacing
@@ -348,7 +348,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper);
+    DoubleStream flatMapToDouble(Function<? super T, ? extends @Nullable DoubleStream> mapper);
 
     // THE EXAMPLES USED IN THE JAVADOC MUST BE IN SYNC WITH THEIR CORRESPONDING
     // TEST IN test/jdk/java/util/stream/examples/JavadocExamples.java.
