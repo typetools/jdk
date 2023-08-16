@@ -25,6 +25,7 @@
 package java.util.stream;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -1419,7 +1420,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         is non-null, otherwise an empty stream
      * @since 9
      */
-    public static<T> Stream<T> ofNullable(T t) {
+    public static<T> Stream<T> ofNullable(@Nullable T t) {
         return t == null ? Stream.empty()
                          : StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
