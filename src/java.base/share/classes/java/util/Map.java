@@ -1751,7 +1751,7 @@ public interface Map<K, V> {
      * @see Map#ofEntries Map.ofEntries()
      * @since 9
      */
-    static <K, V> Entry<K, V> entry(K k, V v) {
+    static <K, V> Entry<K, V> entry(@NonNull K k, @NonNull V v) {
         // KeyValueHolder checks for nulls
         return new KeyValueHolder<>(k, v);
     }
