@@ -27,13 +27,16 @@ package java.lang;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.GuardedByUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.Covariant;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -80,7 +83,8 @@ import static java.util.Objects.requireNonNull;
  * @jls 8.9.3 Enum Members
  * @since   1.5
  */
-@AnnotatedFor({"lock", "nullness", "index", "value"})
+@AnnotatedFor({"lock", "nullness", "index", "value", "tainting"})
+@Covariant(0)
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum classes.
 public abstract class Enum<E extends Enum<E>>
@@ -208,7 +212,7 @@ public abstract class Enum<E extends Enum<E>>
      * method is the order in which the constants are declared.
      */
     @SuppressWarnings({"rawtypes"})
-    public final int compareTo(E o) {
+    public final int compareTo(@UnknownKeyFor @Tainted E o) {
         Enum<?> other = (Enum<?>)o;
         Enum<E> self = this;
         if (self.getClass() != other.getClass() && // optimization
@@ -230,7 +234,7 @@ public abstract class Enum<E extends Enum<E>>
      *     enum type
      */
     @SuppressWarnings("unchecked")
-    public final Class<E> getDeclaringClass() {
+    public final Class<@Tainted E> getDeclaringClass() {
         Class<?> clazz = getClass();
         Class<?> zuper = clazz.getSuperclass();
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
