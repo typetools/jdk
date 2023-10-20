@@ -27,9 +27,12 @@ package java.util;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.EnsuresQualifier;
+import org.checkerframework.framework.qual.EnsuresQualifierIf;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
@@ -62,9 +65,9 @@ import java.util.stream.IntStream;
  *
  * @since 1.8
  */
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "optional"})
 @jdk.internal.ValueBased
-public final class OptionalInt {
+public final @NonNull class OptionalInt {
     /**
      * Common instance for {@code empty()}.
      */
@@ -120,7 +123,8 @@ public final class OptionalInt {
      * @param value the value to describe
      * @return an {@code OptionalInt} with the value present
      */
-    public static OptionalInt of(int value) {
+    @SideEffectFree
+    public static @Present OptionalInt of(int value) {
         return new OptionalInt(value);
     }
 
@@ -134,7 +138,8 @@ public final class OptionalInt {
      * @return the value described by this {@code OptionalInt}
      * @throws NoSuchElementException if no value is present
      */
-    public int getAsInt() {
+    @Pure
+    public int getAsInt(@Present OptionalInt this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
         }
@@ -146,6 +151,8 @@ public final class OptionalInt {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @Pure
+    @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
     public boolean isPresent() {
         return isPresent;
     }
@@ -158,6 +165,7 @@ public final class OptionalInt {
      * @since   11
      */
     @Pure
+    @EnsuresQualifierIf(result = false, expression = "this", qualifier = Present.class)
     public boolean isEmpty() {
         return !isPresent;
     }
@@ -211,6 +219,7 @@ public final class OptionalInt {
      * @return the optional value as an {@code IntStream}
      * @since 9
      */
+    @SideEffectFree
     public IntStream stream() {
         if (isPresent) {
             return IntStream.of(value);
@@ -252,7 +261,9 @@ public final class OptionalInt {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
-    public int orElseThrow() {
+    @Pure
+    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    public int orElseThrow(@Present OptionalInt this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
         }
@@ -276,6 +287,7 @@ public final class OptionalInt {
      * @throws NullPointerException if no value is present and the exception
      *         supplying function is {@code null}
      */
+    @EnsuresQualifier(expression = "this", qualifier = Present.class)
     public<X extends Throwable> int orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (isPresent) {
             return value;
@@ -318,6 +330,7 @@ public final class OptionalInt {
      * @return hash code value of the present value or {@code 0} if no value is
      *         present
      */
+    @Pure
     @Override
     public int hashCode() {
         return isPresent ? Integer.hashCode(value) : 0;
