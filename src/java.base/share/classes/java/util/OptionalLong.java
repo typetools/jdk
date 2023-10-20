@@ -67,7 +67,7 @@ import java.util.stream.LongStream;
  */
 @AnnotatedFor({"lock", "nullness", "optional"})
 @jdk.internal.ValueBased
-public final class @NonNull OptionalLong {
+public final @NonNull class OptionalLong {
     /**
      * Common instance for {@code empty()}.
      */
