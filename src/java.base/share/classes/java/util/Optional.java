@@ -109,7 +109,7 @@ public final @NonNull class Optional<T> {
      * @param <T> The type of the non-existent value
      * @return an empty {@code Optional}
      */
-    @SideEffectFree
+    @Pure
     public static<T> Optional<T> empty() {
         @SuppressWarnings("unchecked")
         Optional<T> t = (Optional<T>) EMPTY;
