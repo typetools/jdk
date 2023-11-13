@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.FilterOutputStream;
@@ -91,6 +92,7 @@ public class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getEncoder() {
          return Encoder.RFC4648;
     }
@@ -102,6 +104,7 @@ public class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getUrlEncoder() {
          return Encoder.RFC4648_URLSAFE;
     }
@@ -112,6 +115,7 @@ public class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getMimeEncoder() {
         return Encoder.RFC2045;
     }
@@ -156,6 +160,7 @@ public class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getDecoder() {
          return Decoder.RFC4648;
     }
@@ -167,6 +172,7 @@ public class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getUrlDecoder() {
          return Decoder.RFC4648_URLSAFE;
     }
@@ -177,6 +183,7 @@ public class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getMimeDecoder() {
          return Decoder.RFC2045;
     }
