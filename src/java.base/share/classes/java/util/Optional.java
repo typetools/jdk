@@ -285,7 +285,7 @@ public final @NonNull class Optional<T> {
      *         present, otherwise an empty {@code Optional}
      * @throws NullPointerException if the mapping function is {@code null}
      */
-    public <U> @PolyPresent Optional<U> map(Function<? super T, ? extends @Nullable U> mapper) {
+    public <U> Optional<U> map(Function<? super T, ? extends @Nullable U> mapper) {
         Objects.requireNonNull(mapper);
         if (!isPresent()) {
             return empty();
@@ -313,7 +313,7 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if the mapping function is {@code null} or
      *         returns a {@code null} result
      */
-    public <U> @PolyPresent Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper) {
+    public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper) {
         Objects.requireNonNull(mapper);
         if (!isPresent()) {
             return empty();
