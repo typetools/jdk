@@ -25,6 +25,13 @@ import org.checkerframework.framework.qual.InheritedAnnotation;
 @Repeatable(EnsuresLockHeldIf.List.class)
 public @interface EnsuresLockHeldIf {
   /**
+   * Returns the return value of the method under which the postconditions hold.
+   *
+   * @return the return value of the method under which the postconditions hold
+   */
+  boolean result();
+
+  /**
    * Returns Java expressions whose values are locks that are held after the method returns the
    * given result.
    *
@@ -39,13 +46,6 @@ public @interface EnsuresLockHeldIf {
   String[] expression();
 
   /**
-   * Returns the return value of the method under which the postconditions hold.
-   *
-   * @return the return value of the method under which the postconditions hold
-   */
-  boolean result();
-
-  /**
    * A wrapper annotation that makes the {@link EnsuresLockHeldIf} annotation repeatable.
    *
    * <p>Programmers generally do not need to write this. It is created by Java when a programmer
@@ -56,7 +56,7 @@ public @interface EnsuresLockHeldIf {
   @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
   @ConditionalPostconditionAnnotation(qualifier = LockHeld.class)
   @InheritedAnnotation
-  @interface List {
+  public static @interface List {
     /**
      * Return the repeatable annotations.
      *
