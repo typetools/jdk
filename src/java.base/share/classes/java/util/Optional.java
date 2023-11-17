@@ -152,7 +152,7 @@ public final @NonNull class Optional<T> {
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public static <T> Optional<T> ofNullable(@Nullable T value) {
+    public static <T> Optional<@NonNull T> ofNullable(@Nullable T value) {
         return value == null ? (Optional<T>) EMPTY
                              : new Optional<>(value);
     }
