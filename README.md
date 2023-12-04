@@ -105,8 +105,9 @@ resolve conflicts.  Then, discard the branch in the fork of jdk17u.
 ## Qualifier definitions
 
 The java.base module contains a copy of the Checker Framework qualifiers (type annotations).
-To update that copy, run from this directory:
+To update that copy, run the command below from this directory:
 
+```
 (cd $CHECKERFRAMEWORK && rm -rf checker-qual/build/libs && ./gradlew :checker-qual:sourcesJar) && \
 rm -f checker-qual.jar && \
 cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual.jar && \
@@ -115,9 +116,13 @@ cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar check
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
 jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort | uniq
+```
+The result of the command will be a list of export lines.
+Replace the existing export lines present in
+`src/java.base/share/classes/module-info.java` with the newly-generated list of
+exports. If no new packages were added, then there are likely going to be no
+changes to the `module-info.java` file.
 
-Copy the exports lines that were printed by the last command to
-src/java.base/share/classes/module-info.java .
 Commit the changes, including the changed top-level `checker-qual.jar` file.
 
 
