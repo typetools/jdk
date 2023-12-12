@@ -27,6 +27,8 @@ package java.util;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.optional.qual.OptionalCreator;
+import org.checkerframework.checker.optional.qual.OptionalEliminator;
 import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -102,6 +104,7 @@ public final @NonNull class OptionalInt {
      *
      * @return an empty {@code OptionalInt}
      */
+    @OptionalCreator
     @SideEffectFree
     public static OptionalInt empty() {
         return EMPTY;
@@ -123,6 +126,7 @@ public final @NonNull class OptionalInt {
      * @param value the value to describe
      * @return an {@code OptionalInt} with the value present
      */
+    @OptionalCreator
     @SideEffectFree
     public static @Present OptionalInt of(int value) {
         return new OptionalInt(value);
@@ -138,6 +142,7 @@ public final @NonNull class OptionalInt {
      * @return the value described by this {@code OptionalInt}
      * @throws NoSuchElementException if no value is present
      */
+    @OptionalEliminator
     @Pure
     public int getAsInt(@Present OptionalInt this) {
         if (!isPresent) {
@@ -178,6 +183,7 @@ public final @NonNull class OptionalInt {
      * @throws NullPointerException if value is present and the given action is
      *         {@code null}
      */
+    @OptionalEliminator
     public void ifPresent(IntConsumer action) {
         if (isPresent) {
             action.accept(value);
@@ -196,6 +202,7 @@ public final @NonNull class OptionalInt {
      *         action is {@code null}.
      * @since 9
      */
+    @OptionalEliminator
     public void ifPresentOrElse(IntConsumer action, Runnable emptyAction) {
         if (isPresent) {
             action.accept(value);
@@ -235,6 +242,7 @@ public final @NonNull class OptionalInt {
      * @param other the value to be returned, if no value is present
      * @return the value, if present, otherwise {@code other}
      */
+    @OptionalEliminator
     public int orElse(int other) {
         return isPresent ? value : other;
     }
@@ -249,6 +257,7 @@ public final @NonNull class OptionalInt {
      * @throws NullPointerException if no value is present and the supplying
      *         function is {@code null}
      */
+    @OptionalEliminator
     public int orElseGet(IntSupplier supplier) {
         return isPresent ? value : supplier.getAsInt();
     }
@@ -261,6 +270,7 @@ public final @NonNull class OptionalInt {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
+    @OptionalEliminator
     @Pure
     @EnsuresQualifier(expression = "this", qualifier = Present.class)
     public int orElseThrow(@Present OptionalInt this) {
@@ -288,6 +298,7 @@ public final @NonNull class OptionalInt {
      *         supplying function is {@code null}
      */
     @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @OptionalEliminator
     public<X extends Throwable> int orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (isPresent) {
             return value;
@@ -330,6 +341,7 @@ public final @NonNull class OptionalInt {
      * @return hash code value of the present value or {@code 0} if no value is
      *         present
      */
+    @OptionalEliminator
     @Pure
     @Override
     public int hashCode() {
