@@ -102,7 +102,7 @@ module java.base {
     exports org.checkerframework.common.reflection.qual;
     exports org.checkerframework.common.returnsreceiver.qual;
     exports org.checkerframework.common.subtyping.qual;
-    exports org.checkerframework.common.util.report.qual;
+    exports org.checkerframework.common.util.count.report.qual;
     exports org.checkerframework.common.value.qual;
     exports org.checkerframework.dataflow.qual;
     exports org.checkerframework.framework.qual;
