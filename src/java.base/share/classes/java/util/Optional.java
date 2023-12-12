@@ -187,6 +187,7 @@ public final @NonNull class Optional<T> {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @OptionalEliminator
     @Pure
     @EnsuresPresentIf(result = true, expression = "this")
     public boolean isPresent() {

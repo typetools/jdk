@@ -157,6 +157,7 @@ public final @NonNull class OptionalDouble {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @OptionalEliminator
     @Pure
     @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
     public boolean isPresent() {
