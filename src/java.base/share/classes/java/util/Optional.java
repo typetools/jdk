@@ -287,7 +287,7 @@ public final @NonNull class Optional<T> {
      *         present, otherwise an empty {@code Optional}
      * @throws NullPointerException if the mapping function is {@code null}
      */
-    @CFComment({"This @PolyPresent annotation is unsound.  The rule should be:"
+    @CFComment({"Optional: This @PolyPresent annotation is unsound.  The rule should be:"
                     "the result is present if the receiver is present",
                     "AND the function returns either @NonNull or @PolyNull.",
                     "In all case studies to date, the function is OK."})
