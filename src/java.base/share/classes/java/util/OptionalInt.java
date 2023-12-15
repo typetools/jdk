@@ -27,14 +27,14 @@ package java.util;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.optional.qual.EnsuresPresent;
+import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
 import org.checkerframework.checker.optional.qual.OptionalCreator;
 import org.checkerframework.checker.optional.qual.OptionalEliminator;
 import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.framework.qual.EnsuresQualifier;
-import org.checkerframework.framework.qual.EnsuresQualifierIf;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
@@ -158,7 +158,7 @@ public final @NonNull class OptionalInt {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = true, expression = "this")
     public boolean isPresent() {
         return isPresent;
     }
@@ -171,7 +171,7 @@ public final @NonNull class OptionalInt {
      * @since   11
      */
     @Pure
-    @EnsuresQualifierIf(result = false, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = false, expression = "this")
     public boolean isEmpty() {
         return !isPresent;
     }
@@ -297,7 +297,7 @@ public final @NonNull class OptionalInt {
      * @throws NullPointerException if no value is present and the exception
      *         supplying function is {@code null}
      */
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @EnsuresPresent("this")
     @OptionalEliminator
     public<X extends Throwable> int orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (isPresent) {

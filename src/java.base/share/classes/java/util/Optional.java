@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.optional.qual.EnsuresPresent;
 import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
 import org.checkerframework.checker.optional.qual.OptionalCreator;
 import org.checkerframework.checker.optional.qual.OptionalEliminator;
@@ -38,7 +39,6 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
-import org.checkerframework.framework.qual.EnsuresQualifier;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -452,7 +452,7 @@ public final @NonNull class Optional<T> {
      */
     @CFComment({"optional: orElseThrow(Supplier) does not throw NoSuchElementException, so its receiver is @MaybePresent.",
                 "Contrast with orElseThrow(), defined just above, whose receiver is @Present."})
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @EnsuresPresent("this")
     @OptionalEliminator
     public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (value != null) {
