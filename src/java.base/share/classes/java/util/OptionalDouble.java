@@ -27,15 +27,14 @@ package java.util;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.optional.qual.EnsuresPresent;
+import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
 import org.checkerframework.checker.optional.qual.OptionalCreator;
 import org.checkerframework.checker.optional.qual.OptionalEliminator;
 import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.framework.qual.EnsuresQualifier;
-import org.checkerframework.framework.qual.EnsuresQualifierIf;
-
 
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
@@ -159,7 +158,7 @@ public final @NonNull class OptionalDouble {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = true, expression = "this")
     public boolean isPresent() {
         return isPresent;
     }
@@ -172,7 +171,7 @@ public final @NonNull class OptionalDouble {
      * @since   11
      */
     @Pure
-    @EnsuresQualifierIf(result = false, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = false, expression = "this")
     public boolean isEmpty() {
         return !isPresent;
     }
@@ -275,7 +274,7 @@ public final @NonNull class OptionalDouble {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @EnsuresPresent("this")
     public double orElseThrow(@Present OptionalDouble this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
@@ -301,7 +300,7 @@ public final @NonNull class OptionalDouble {
      *         supplying function is {@code null}
      */
     @OptionalEliminator
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @EnsuresPresent("this")
     public<X extends Throwable> double orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (isPresent) {
             return value;
