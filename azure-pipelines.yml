@@ -52,10 +52,11 @@ jobs:
       fi
     displayName: plume-scripts
   # This creates ../jdk17u .
-  # If the depth is too small, the merge will fail.
+  # If the depth is too small, the merge will fail.  However, we cannot use "--filter=blob:none"
+  # because that leads to "fatal: remote error: filter 'combine' not supported".
   - bash: |
       set -ex
-      /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u -q --filter=blob:none
+      /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u -q --depth 999
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
