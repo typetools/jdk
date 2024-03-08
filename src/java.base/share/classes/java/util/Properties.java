@@ -1310,7 +1310,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public Object get(Object key) {
+    public @Nullable Object get(Object key) {
         return map.get(key);
     }
 
