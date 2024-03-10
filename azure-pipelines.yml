@@ -84,7 +84,7 @@ jobs:
   #   displayName: make run-test
 
 - job: test_cftests_all_jdk11
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk11:latest
@@ -116,7 +116,7 @@ jobs:
 #     displayName: publish all.tgz
 
 - job: test_cftests_all_jdk17
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
@@ -131,7 +131,7 @@ jobs:
     displayName: test-cftests-all.sh
 
 - job: test_cftests_all_jdk20
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk20:latest
