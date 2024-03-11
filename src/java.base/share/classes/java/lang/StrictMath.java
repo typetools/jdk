@@ -27,6 +27,7 @@ package java.lang;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.StaticallyExecutable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Random;
@@ -1298,6 +1299,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the larger of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int max(int a, int b) {
         return Math.max(a, b);
@@ -1313,6 +1316,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the larger of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     public static long max(long a, long b) {
         return Math.max(a, b);
     }
@@ -1331,6 +1336,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the larger of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float max(float a, float b) {
         return Math.max(a, b);
@@ -1350,6 +1357,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the larger of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double max(double a, double b) {
         return Math.max(a, b);
@@ -1365,6 +1374,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the smaller of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int min(int a, int b) {
         return Math.min(a, b);
@@ -1380,6 +1391,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the smaller of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     public static long min(long a, long b) {
         return Math.min(a, b);
     }
@@ -1398,6 +1411,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the smaller of {@code a} and {@code b.}
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float min(float a, float b) {
         return Math.min(a, b);
@@ -1417,6 +1432,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   another argument.
      * @return  the smaller of {@code a} and {@code b}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double min(double a, double b) {
         return Math.min(a, b);

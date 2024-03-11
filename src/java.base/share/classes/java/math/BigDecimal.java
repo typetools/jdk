@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.PolyValue;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.StaticallyExecutable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.math.BigInteger.LONG_MASK;
@@ -3241,6 +3242,8 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *         method, {@code this} is returned.
      * @see    #compareTo(java.math.BigDecimal)
      */
+    @Pure
+    @StaticallyExecutable
     public BigDecimal min(BigDecimal val) {
         return (compareTo(val) <= 0 ? this : val);
     }
@@ -3255,6 +3258,8 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *         method, {@code this} is returned.
      * @see    #compareTo(java.math.BigDecimal)
      */
+    @Pure
+    @StaticallyExecutable
     public BigDecimal max(BigDecimal val) {
         return (compareTo(val) >= 0 ? this : val);
     }
