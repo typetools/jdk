@@ -166,6 +166,7 @@ cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
 git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 ```
 
+
 ## Design
 
 The goal of this repository is to write Checker Framework annotations in
