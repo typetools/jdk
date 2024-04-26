@@ -155,6 +155,7 @@ Clone jdk${VER}u repositories into, say, $t/libraries/ .
 Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:
 run `git log --graph | tac` on both and find the common prefix.
 
+```
 last_common_commit=d562d3fcbe22a0443037c5b447e1a41401275814
 cd $t/libraries
 git clone -- git@github.com:openjdk/jdk.git jdk-fork-openjdk-commit-${last_common_commit}
@@ -163,8 +164,7 @@ git reset --hard ${last_common_commit}
 
 cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
 git pull ../jdk-fork-openjdk-commit-${last_common_commit}
-
-
+```
 
 ## Design
 
