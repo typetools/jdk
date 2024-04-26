@@ -37,6 +37,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -290,6 +291,7 @@ public interface List<E> extends Collection<E> {
      *         prevents it from being added to this list
      */
     @ReleasesNoLocks
+    @SideEffectsOnly("this")
     boolean add(@GuardSatisfied List<E> this, E e);
 
     /**
@@ -313,6 +315,7 @@ public interface List<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this list
      */
+    @SideEffectsOnly("this")
     boolean remove(@GuardSatisfied List<E> this, @UnknownSignedness Object o);
 
 
@@ -360,6 +363,7 @@ public interface List<E> extends Collection<E> {
      *         specified collection prevents it from being added to this list
      * @see #add(Object)
      */
+    @SideEffectsOnly("this")
     boolean addAll(@GuardSatisfied List<E> this, Collection<? extends E> c);
 
     /**
@@ -389,6 +393,7 @@ public interface List<E> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index > size()})
      */
+    @SideEffectsOnly("this")
     boolean addAll(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c);
 
     /**
@@ -643,6 +648,7 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index > size()})
      */
     @ReleasesNoLocks
+    @SideEffectsOnly("this")
     void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
 
     /**

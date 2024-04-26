@@ -1118,6 +1118,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                    first result container.
      * @return the result of the reduction
      */
+    @SideEffectFree
     <R> R collect(Supplier<R> supplier,
                   BiConsumer<R, ? super T> accumulator,
                   BiConsumer<R, R> combiner);
@@ -1174,6 +1175,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @see #collect(Supplier, BiConsumer, BiConsumer)
      * @see Collectors
      */
+    @SideEffectFree
     <R, A> R collect(Collector<? super T, A, R> collector);
 
     /**
