@@ -26,7 +26,6 @@ package java.lang;
 
 import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.util.Iterator;
 import java.util.Objects;
