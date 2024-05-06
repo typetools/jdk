@@ -168,7 +168,7 @@ public abstract class Record {
      * @return  a hash code value for this record.
      */
     @Override
-    public abstract int hashCode(@GuardSatisfied @UnknownSignedness Object this);
+    public abstract int hashCode(@GuardSatisfied @UnknownSignedness Record this);
 
     /**
      * Returns a string representation of the record.
