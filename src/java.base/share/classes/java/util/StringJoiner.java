@@ -25,6 +25,7 @@
 package java.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.access.JavaLangAccess;
@@ -105,6 +106,7 @@ public final class StringJoiner {
      *         element added to the {@code StringJoiner} value
      * @throws NullPointerException if {@code delimiter} is {@code null}
      */
+    @SideEffectFree
     public StringJoiner(CharSequence delimiter) {
         this(delimiter, "", "");
     }
@@ -124,6 +126,7 @@ public final class StringJoiner {
      * @throws NullPointerException if {@code prefix}, {@code delimiter}, or
      *         {@code suffix} is {@code null}
      */
+    @SideEffectFree
     public StringJoiner(CharSequence delimiter,
                         CharSequence prefix,
                         CharSequence suffix) {
@@ -165,6 +168,7 @@ public final class StringJoiner {
      *
      * @return the string representation of this {@code StringJoiner}
      */
+    @SideEffectFree
     @Override
     public String toString() {
         final int size = this.size;
