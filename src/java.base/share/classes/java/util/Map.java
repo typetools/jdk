@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -175,7 +176,7 @@ import java.io.Serializable;
  * @since 1.2
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "aliasing"})
 public interface Map<K, V> {
     // Query Operations
 
@@ -739,7 +740,7 @@ public interface Map<K, V> {
      * removed during iteration
      * @since 1.8
      */
-    default void forEach(BiConsumer<? super K, ? super V> action) {
+    default void forEach(@NonLeaked BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K, V> entry : entrySet()) {
             K k;
