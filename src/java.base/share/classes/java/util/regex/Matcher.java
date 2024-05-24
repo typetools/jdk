@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -267,6 +268,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *
      * @return  The pattern for which this matcher was created
      */
+    @Pure
     public Pattern pattern() {
         return parentPattern;
     }
@@ -279,10 +281,12 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      * @return  a {@code MatchResult} with the state of this matcher
      * @since 1.5
      */
+    @SideEffectFree
     public MatchResult toMatchResult() {
         return toMatchResult(text.toString());
     }
 
+    @SideEffectFree
     private MatchResult toMatchResult(String text) {
         return new ImmutableMatchResult(this.first,
                                         this.last,
@@ -309,12 +313,14 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
         }
 
         @Override
+        @Pure
         public int start() {
             checkMatch();
             return first;
         }
 
         @Override
+        @Pure
         public int start(int group) {
             checkMatch();
             if (group < 0 || group > groupCount)
@@ -323,12 +329,14 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
         }
 
         @Override
+        @Pure
         public int end() {
             checkMatch();
             return last;
         }
 
         @Override
+        @Pure
         public int end(int group) {
             checkMatch();
             if (group < 0 || group > groupCount)
@@ -337,17 +345,20 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
         }
 
         @Override
+        @Pure
         public int groupCount() {
             return groupCount;
         }
 
         @Override
+        @SideEffectFree
         public String group() {
             checkMatch();
             return group(0);
         }
 
         @Override
+        @SideEffectFree
         public String group(int group) {
             checkMatch();
             if (group < 0 || group > groupCount)
@@ -516,6 +527,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *          with the given name
      * @since 1.8
      */
+    @Pure
     public int start(String name) {
         return groups[getMatchedGroupIndex(name) * 2];
     }
@@ -590,6 +602,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *          with the given name
      * @since 1.8
      */
+    @Pure
     public int end(String name) {
         return groups[getMatchedGroupIndex(name) * 2 + 1];
     }
@@ -726,6 +739,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      * @return  {@code true} if, and only if, the entire region sequence
      *          matches this matcher's pattern
      */
+    @Pure
     public boolean matches() {
         return match(from, ENDANCHOR);
     }
@@ -804,6 +818,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      * @return  {@code true} if, and only if, a prefix of the input
      *          sequence matches this matcher's pattern
      */
+    @Pure
     public boolean lookingAt() {
         return match(from, NOANCHOR);
     }
@@ -823,6 +838,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      * @return  A literal string replacement
      * @since 1.5
      */
+    @SideEffectFree
     public static String quoteReplacement(String s) {
         if ((s.indexOf('\\') == -1) && (s.indexOf('$') == -1))
             return s;
@@ -1190,6 +1206,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *          by the replacement string, substituting captured subsequences
      *          as needed
      */
+    @SideEffectFree
     public String replaceAll(String replacement) {
         reset();
         boolean result = find();
@@ -1263,6 +1280,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *         matcher's state
      * @since 9
      */
+    @SideEffectFree
     public String replaceAll(Function<MatchResult, String> replacer) {
         Objects.requireNonNull(replacer);
         reset();
