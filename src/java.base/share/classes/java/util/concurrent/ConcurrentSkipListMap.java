@@ -3069,7 +3069,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         final class SubMapEntryIterator extends SubMapIter<Map.Entry<K,V>> {
-            public Map.Entry<K,V> next(@NonEmpty SubMapEntryIterator) {
+            public Map.Entry<K,V> next(@NonEmpty SubMapEntryIterator this) {
                 Node<K,V> n = next;
                 V v = nextValue;
                 advance();
