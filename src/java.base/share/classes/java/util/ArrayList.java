@@ -28,7 +28,6 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
-import org.checkerframework.checker.nonempty.qual.DelegatorMustOverride;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -285,7 +284,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @Pure
     @EnsuresNonEmptyIf(result = false, expression = "this")
-    @DelegatorMustOverride
     public boolean isEmpty(@GuardSatisfied ArrayList<E> this) {
         return size == 0;
     }
@@ -301,7 +299,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @Pure
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    @DelegatorMustOverride
     public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
@@ -500,7 +497,6 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} (as specified by {@link Collection#add})
      */
     @EnsuresNonEmpty("this")
-    @DelegatorMustOverride
     public boolean add(@GuardSatisfied ArrayList<E> this, E e) {
         modCount++;
         add(e, elementData, size);
@@ -1001,7 +997,6 @@ public class ArrayList<E> extends AbstractList<E>
         Itr() {}
 
         @EnsuresNonEmptyIf(result = true, expression = "this")
-        @DelegatorMustOverride
         public boolean hasNext() {
             return cursor != size;
         }
@@ -1319,7 +1314,6 @@ public class ArrayList<E> extends AbstractList<E>
         }
 
         @EnsuresNonEmptyIf(result = true, expression = "this")
-        @DelegatorMustOverride
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -1339,7 +1333,6 @@ public class ArrayList<E> extends AbstractList<E>
                 int expectedModCount = SubList.this.modCount;
 
                 @EnsuresNonEmptyIf(result = true, expression = "this")
-                @DelegatorMustOverride
                 public boolean hasNext() {
                     return cursor != SubList.this.size;
                 }

@@ -28,7 +28,6 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
-import org.checkerframework.checker.nonempty.qual.DelegatorMustOverride;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
@@ -307,7 +306,6 @@ public class IdentityHashMap<K,V>
      */
     @Pure
     @EnsuresNonEmptyIf(result = false, expression = "this")
-    @DelegatorMustOverride
     public boolean isEmpty(@GuardSatisfied IdentityHashMap<K, V> this) {
         return size == 0;
     }
@@ -347,7 +345,6 @@ public class IdentityHashMap<K,V>
      */
     @Pure
     @SuppressWarnings("unchecked")
-    @DelegatorMustOverride
     public @Nullable V get(@GuardSatisfied IdentityHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -374,7 +371,6 @@ public class IdentityHashMap<K,V>
      */
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    @DelegatorMustOverride
     public boolean containsKey(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -400,7 +396,6 @@ public class IdentityHashMap<K,V>
      * @see     #containsKey(Object)
      */
     @Pure
-    @DelegatorMustOverride
     public boolean containsValue(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         Object[] tab = table;
         for (int i = 1; i < tab.length; i += 2)
