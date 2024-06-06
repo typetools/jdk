@@ -587,7 +587,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    @PolyNonEmpty Stream<T> distinct(@PolyNonEmpty Stream<E> this);
+    @PolyNonEmpty Stream<T> distinct(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -620,7 +620,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                   {@code Comparator} to be used to compare stream elements
      * @return the new stream
      */
-    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<E> this, Comparator<? super T> comparator);
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this, Comparator<? super T> comparator);
 
     /**
      * Returns a stream consisting of the elements of this stream, additionally
