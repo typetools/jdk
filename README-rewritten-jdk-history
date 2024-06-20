@@ -62,4 +62,3 @@ At each URL:
  * Queue the project in hopes that will start automatic building for each commit.
  * If the above doesn't work, change the instructions to the below:
  * Delete and re-create the pipeline, because of apparent caching problems when checking out the projects.
-
