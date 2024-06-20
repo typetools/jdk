@@ -25,6 +25,7 @@
 
 package java.util.regex;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 

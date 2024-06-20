@@ -1088,7 +1088,7 @@ public class Collections {
         public String toString()                   {return c.toString();}
 
         @SideEffectFree
-        public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty Collection<? extends E> this) {
+        public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty UnmodifiableCollection<E> this) {
             return new Iterator<E>() {
                 private final Iterator<? extends E> i = c.iterator();
 
