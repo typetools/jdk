@@ -484,7 +484,7 @@ public final class StackWalker {
      *         {@linkplain StackFrame stack frame}.
      */
     @CallerSensitive
-    public <T> T walk(Function<? super Stream<StackFrame>, ? extends T> function) {
+    public <T extends @Nullable Object> T walk(Function<? super Stream<StackFrame>, ? extends T> function) {
         // Returning a Stream<StackFrame> would be unsafe, as the stream could
         // be used to access the stack frames in an uncontrolled manner.  For
         // example, a caller might pass a Spliterator of stack frames after one
