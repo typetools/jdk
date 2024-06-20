@@ -273,7 +273,6 @@ public final @NonNull class OptionalInt {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresPresent("this")
     public int orElseThrow(@Present OptionalInt this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");

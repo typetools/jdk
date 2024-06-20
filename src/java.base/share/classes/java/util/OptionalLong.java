@@ -273,7 +273,6 @@ public final @NonNull class OptionalLong {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresPresent("this")
     public long orElseThrow(@Present OptionalLong this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");

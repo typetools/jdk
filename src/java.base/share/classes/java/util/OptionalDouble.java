@@ -274,7 +274,6 @@ public final @NonNull class OptionalDouble {
      */
     @OptionalEliminator
     @Pure
-    @EnsuresPresent("this")
     public double orElseThrow(@Present OptionalDouble this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
