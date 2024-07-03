@@ -25,6 +25,9 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+
 import java.util.*;
 import jdk.internal.vm.annotation.Stable;
 
@@ -91,12 +94,13 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return index < end;
         }
 
         @Override
-        public Object next() {
+        public Object next(@NonEmpty AsIterator this) {
             int i = bumpIndex();
             if (resolving)
                 return self.get(i);
@@ -104,7 +108,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
                 return self.get(i, ifNotPresent);
         }
 
-        private int bumpIndex() {
+        private int bumpIndex(@NonEmpty AsIterator this) {
             int i = index;
             if (i >= end)  throw new NoSuchElementException();
             index = i+1;

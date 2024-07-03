@@ -31,6 +31,8 @@ import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
@@ -498,23 +500,25 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() {
             return hasNext();
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return i < entryCount;
         }
 
         @Override
-        public T nextElement() {
+        public T nextElement(@NonEmpty ZipEntryIterator<T> this) {
             return next();
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public T next() {
+        public T next(@NonEmpty ZipEntryIterator<T> this) {
             synchronized (ZipFile.this) {
                 ensureOpen();
                 if (!hasNext()) {

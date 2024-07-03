@@ -27,6 +27,8 @@ package java.util.regex;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
@@ -5868,7 +5870,7 @@ NEXT:       while (i <= last) {
             // > 0 if there are N next empty elements
             private int emptyElementCount;
 
-            public String next() {
+            public String next(@NonEmpty MatcherIterator this) {
                 if (!hasNext())
                     throw new NoSuchElementException();
 
@@ -5882,6 +5884,7 @@ NEXT:       while (i <= last) {
                 }
             }
 
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (matcher == null) {
                     matcher = matcher(input);

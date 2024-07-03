@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -224,7 +225,7 @@ public interface SortedSet<E> extends Set<E> {
      * @throws NoSuchElementException if this set is empty
      */
     @SideEffectFree
-    E first(@GuardSatisfied SortedSet<E> this);
+    E first(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
      * Returns the last (highest) element currently in this set.
@@ -233,7 +234,7 @@ public interface SortedSet<E> extends Set<E> {
      * @throws NoSuchElementException if this set is empty
      */
     @SideEffectFree
-    E last(@GuardSatisfied SortedSet<E> this);
+    E last(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
      * Creates a {@code Spliterator} over the elements in this sorted set.

@@ -24,6 +24,7 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.ConstructorAccessor;
 import java.lang.StackWalker.Option;
@@ -377,7 +378,7 @@ final class StackStreamFactory {
          * Fetches stack frames.
          *
          * @params batchSize number of elements of the frame  buffers for this batch
-         * @returns number of frames fetched in this batch
+         * @return number of frames fetched in this batch
          */
         private int fetchStackFrames(int batchSize) {
             int startIndex = frameBuffer.startIndex();
@@ -864,6 +865,7 @@ final class StackStreamFactory {
         /*
          * Tests if this frame buffer is empty.  All frames are fetched.
          */
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         final boolean isEmpty() {
             return origin >= fence || (origin == START_POS && fence == 0);
         }

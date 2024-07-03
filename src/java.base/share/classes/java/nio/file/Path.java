@@ -25,6 +25,8 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -950,12 +952,13 @@ public interface Path
             private int i = 0;
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return (i < getNameCount());
             }
 
             @Override
-            public Path next() {
+            public Path next(/*@NonEmpty Iterator<Path> this*/) {
                 if (i < getNameCount()) {
                     Path result = getName(i);
                     i++;

@@ -108,6 +108,7 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return the name of this enum constant
      */
+    @Pure
     public final @PolyValue String name(@GuardedByUnknown @UnknownInitialization(java.lang.Enum.class) @PolyValue Enum<E> this) {
         return name;
     }

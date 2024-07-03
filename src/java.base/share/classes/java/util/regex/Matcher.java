@@ -30,6 +30,8 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -1337,7 +1339,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
             String textAsString;
 
             @Override
-            public MatchResult next() {
+            public MatchResult next(@NonEmpty MatchResultIterator this) {
                 if (expectedCount >= 0 && expectedCount != modCount)
                     throw new ConcurrentModificationException();
 
@@ -1349,6 +1351,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
             }
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (state >= 0)
                     return state == 1;

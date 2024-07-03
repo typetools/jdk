@@ -36,6 +36,8 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -572,6 +574,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         fullyLock();
@@ -794,11 +797,12 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
             }
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return next != null;
         }
 
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             Node<E> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();

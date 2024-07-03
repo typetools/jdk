@@ -33,6 +33,9 @@ import org.checkerframework.checker.interning.qual.PolyInterned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -4168,7 +4171,7 @@ public class Arrays {
     @SafeVarargs
     @SideEffectFree
     @SuppressWarnings("varargs")
-    public static <T> List<T> asList(T... a) {
+    public static <T> @PolyNonEmpty List<T> asList(T @PolyNonEmpty... a) {
         return new ArrayList<>(a);
     }
 
@@ -4241,6 +4244,7 @@ public class Arrays {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -4288,12 +4292,13 @@ public class Arrays {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < a.length;
         }
 
         @Override
-        public E next() {
+        public E next(@NonEmpty ArrayItr<E> this) {
             int i = cursor;
             if (i >= a.length) {
                 throw new NoSuchElementException();

@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -455,6 +458,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      *         priority queue's ordering
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return offer(e);
     }
@@ -697,6 +701,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -865,11 +870,12 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
             this.array = array;
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < array.length;
         }
 
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             if (cursor >= array.length)
                 throw new NoSuchElementException();
             return (E)array[lastRet = cursor++];

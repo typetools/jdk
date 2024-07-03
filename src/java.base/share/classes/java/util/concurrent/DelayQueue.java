@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -138,6 +141,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return offer(e);
     }
@@ -528,12 +532,13 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
             this.array = array;
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < array.length;
         }
 
         @SuppressWarnings("unchecked")
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             if (cursor >= array.length)
                 throw new NoSuchElementException();
             return (E)array[lastRet = cursor++];

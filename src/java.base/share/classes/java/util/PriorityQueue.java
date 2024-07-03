@@ -28,6 +28,10 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -207,7 +211,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public PriorityQueue(Collection<? extends E> c) {
+    public @PolyNonEmpty PriorityQueue(@PolyNonEmpty Collection<? extends E> c) {
         if (c instanceof SortedSet<?>) {
             SortedSet<? extends E> ss = (SortedSet<? extends E>) c;
             this.comparator = (Comparator<? super E>) ss.comparator();
@@ -322,6 +326,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      *         according to the priority queue's ordering
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied PriorityQueue<E> this, E e) {
         return offer(e);
     }
@@ -406,6 +411,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
@@ -529,12 +535,13 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
 
         Itr() {}                        // prevent access constructor creation
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < size ||
                 (forgetMeNot != null && !forgetMeNot.isEmpty());
         }
 
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             if (expectedModCount != modCount)
                 throw new ConcurrentModificationException();
             if (cursor < size)

@@ -25,6 +25,8 @@
 
 package java.net;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -412,11 +414,11 @@ public final class NetworkInterface {
     }
 
     private static <T> Enumeration<T> enumerationFromArray(T[] a) {
-        return new Enumeration<>() {
+        return new Enumeration<T>() {
             int i = 0;
 
             @Override
-            public T nextElement() {
+            public T nextElement(/*@NonEmpty Enumeration<T> this*/) {
                 if (i < a.length) {
                     return a[i++];
                 } else {
@@ -425,6 +427,7 @@ public final class NetworkInterface {
             }
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return i < a.length;
             }

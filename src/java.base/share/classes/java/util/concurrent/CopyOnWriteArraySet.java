@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -153,6 +156,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return al.isEmpty();
     }
@@ -166,6 +170,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return al.contains(o);
     }
@@ -270,6 +275,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return {@code true} if this set did not already contain the specified
      *         element
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return al.addIfAbsent(e);
     }

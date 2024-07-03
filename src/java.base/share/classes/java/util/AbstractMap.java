@@ -28,6 +28,8 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -110,6 +112,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * This implementation returns {@code size() == 0}.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied AbstractMap<K, V> this) {
         return size() == 0;
     }
@@ -377,11 +380,12 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return new Iterator<K>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
 
+                        @EnsuresNonEmptyIf(result = true, expression = "this")
                         public boolean hasNext() {
                             return i.hasNext();
                         }
 
-                        public K next() {
+                        public K next(/*@NonEmpty Iterator<K> this*/) {
                             return i.next().getKey();
                         }
 
@@ -397,6 +401,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                 }
 
                 @Pure
+                @EnsuresNonEmptyIf(result = false, expression = "this")
                 public boolean isEmpty() {
                     return AbstractMap.this.isEmpty();
                 }
@@ -405,6 +410,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
                 }
@@ -439,11 +445,12 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return new Iterator<V>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
 
+                        @EnsuresNonEmptyIf(result = true, expression = "this")
                         public boolean hasNext() {
                             return i.hasNext();
                         }
 
-                        public V next() {
+                        public V next(/*@NonEmpty Iterator<V> this*/) {
                             return i.next().getValue();
                         }
 
@@ -459,6 +466,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                 }
 
                 @Pure
+                @EnsuresNonEmptyIf(result = false, expression = "this")
                 public boolean isEmpty() {
                     return AbstractMap.this.isEmpty();
                 }
@@ -467,6 +475,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
                 }

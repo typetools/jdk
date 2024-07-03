@@ -28,6 +28,8 @@ package java.nio.file;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -3872,6 +3874,7 @@ public final @UsesObjectEquals class Files {
             // Re-wrap DirectoryIteratorException to UncheckedIOException
             Iterator<Path> iterator = new Iterator<>() {
                 @Override
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     try {
                         return delegate.hasNext();
@@ -3880,7 +3883,7 @@ public final @UsesObjectEquals class Files {
                     }
                 }
                 @Override
-                public Path next() {
+                public Path next(/*@NonEmpty Iterator<Path> this*/) {
                     try {
                         return delegate.next();
                     } catch (DirectoryIteratorException e) {

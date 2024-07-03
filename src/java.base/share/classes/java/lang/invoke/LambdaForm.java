@@ -25,6 +25,7 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1030,6 +1031,7 @@ class LambdaForm {
         return true;
     }
 
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     private boolean isEmpty() {
         if (result < 0)
             return (names.length == arity);
