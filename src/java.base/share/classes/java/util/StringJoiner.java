@@ -24,7 +24,10 @@
  */
 package java.util;
 
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.access.JavaLangAccess;
@@ -105,6 +108,7 @@ public final class StringJoiner {
      *         element added to the {@code StringJoiner} value
      * @throws NullPointerException if {@code delimiter} is {@code null}
      */
+    @SideEffectFree
     public StringJoiner(CharSequence delimiter) {
         this(delimiter, "", "");
     }
@@ -124,6 +128,7 @@ public final class StringJoiner {
      * @throws NullPointerException if {@code prefix}, {@code delimiter}, or
      *         {@code suffix} is {@code null}
      */
+    @SideEffectFree
     public StringJoiner(CharSequence delimiter,
                         CharSequence prefix,
                         CharSequence suffix) {
@@ -165,6 +170,7 @@ public final class StringJoiner {
      *
      * @return the string representation of this {@code StringJoiner}
      */
+    @SideEffectFree
     @Override
     public String toString() {
         final int size = this.size;
@@ -186,6 +192,7 @@ public final class StringJoiner {
      * @param  newElement The element to add
      * @return a reference to this {@code StringJoiner}
      */
+    @ReleasesNoLocks
     public StringJoiner add(@Nullable CharSequence newElement) {
         final String elt = String.valueOf(newElement);
         if (elts == null) {
@@ -228,6 +235,7 @@ public final class StringJoiner {
      * @throws NullPointerException if the other {@code StringJoiner} is null
      * @return This {@code StringJoiner}
      */
+    @ReleasesNoLocks
     public StringJoiner merge(StringJoiner other) {
         Objects.requireNonNull(other);
         if (other.size == 0) {
@@ -256,6 +264,7 @@ public final class StringJoiner {
      *
      * @return the length of the current value of {@code StringJoiner}
      */
+    @Pure
     public int length() {
         return (size == 0 && emptyValue != null) ? emptyValue.length() :
             len + prefix.length() + suffix.length();

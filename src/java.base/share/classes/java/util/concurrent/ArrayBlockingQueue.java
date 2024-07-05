@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -335,6 +338,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws IllegalStateException if this queue is full
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return super.add(e);
     }
@@ -551,6 +555,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness  Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
@@ -1192,6 +1197,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
          * fields (i.e. nextItem) that are not modified by update operations
          * triggered by queue modifications.
          */
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             if (nextItem != null)
                 return true;
@@ -1221,7 +1227,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
             }
         }
 
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             final E e = nextItem;
             if (e == null)
                 throw new NoSuchElementException();

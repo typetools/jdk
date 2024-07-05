@@ -39,6 +39,7 @@ import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.NewObject;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.PolyRegex;
@@ -1556,6 +1557,7 @@ public final class String
     @StaticallyExecutable
     @EnsuresMinLenIf(expression="this", result=false, targetValue=1)
     @Override
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return value.length == 0;
     }
@@ -2990,6 +2992,7 @@ public final class String
      */
     @Pure
     @StaticallyExecutable
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(CharSequence s) {
         return indexOf(s.toString()) >= 0;
     }

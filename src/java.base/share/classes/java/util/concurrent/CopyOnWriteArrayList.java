@@ -35,6 +35,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -183,6 +186,7 @@ public class CopyOnWriteArrayList<E>
      * @return {@code true} if this list contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return size() == 0;
     }
@@ -239,6 +243,7 @@ public class CopyOnWriteArrayList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
@@ -438,6 +443,7 @@ public class CopyOnWriteArrayList<E>
      * @param e element to be appended to this list
      * @return {@code true} (as specified by {@link Collection#add})
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         synchronized (lock) {
             Object[] es = getArray();
@@ -1101,6 +1107,7 @@ public class CopyOnWriteArrayList<E>
             snapshot = es;
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < snapshot.length;
         }
@@ -1110,7 +1117,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @SuppressWarnings("unchecked")
-        public E next() {
+        public E next(@NonEmpty COWIterator<E> this) {
             if (! hasNext())
                 throw new NoSuchElementException();
             return (E) snapshot[cursor++];
@@ -1296,6 +1303,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -1317,6 +1325,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size() == 0;
         }
@@ -1385,6 +1394,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(E element) {
             synchronized (lock) {
                 checkForComodification();
@@ -1557,11 +1567,12 @@ public class CopyOnWriteArrayList<E>
             it = l.listIterator(index + offset);
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return nextIndex() < size;
         }
 
-        public E next() {
+        public E next(@NonEmpty COWSubListIterator<E> this) {
             if (hasNext())
                 return it.next();
             else

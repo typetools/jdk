@@ -31,6 +31,10 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -175,6 +179,7 @@ public interface List<E> extends Collection<E> {
      * @return {@code true} if this list contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     boolean isEmpty(@GuardSatisfied List<E> this);
 
     /**
@@ -193,6 +198,7 @@ public interface List<E> extends Collection<E> {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean contains(@GuardSatisfied List<E> this, @UnknownSignedness Object o);
 
     /**
@@ -201,7 +207,7 @@ public interface List<E> extends Collection<E> {
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty List<E> this);
 
     /**
      * Returns an array containing all of the elements in this list in proper
@@ -290,6 +296,7 @@ public interface List<E> extends Collection<E> {
      *         prevents it from being added to this list
      */
     @ReleasesNoLocks
+    @EnsuresNonEmpty("this")
     boolean add(@GuardSatisfied List<E> this, E e);
 
     /**
@@ -360,6 +367,7 @@ public interface List<E> extends Collection<E> {
      *         specified collection prevents it from being added to this list
      * @see #add(Object)
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean addAll(@GuardSatisfied List<E> this, Collection<? extends E> c);
 
     /**
@@ -389,6 +397,7 @@ public interface List<E> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index > size()})
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean addAll(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c);
 
     /**
@@ -842,7 +851,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1) {
+    static <E extends Object> @NonEmpty List<E> of(E e1) {
         return new ImmutableCollections.List12<>(e1);
     }
 
@@ -859,7 +868,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2) {
         return new ImmutableCollections.List12<>(e1, e2);
     }
 
@@ -877,7 +886,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3);
     }
 
@@ -896,7 +905,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4);
     }
 
@@ -916,7 +925,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5);
     }
 
@@ -937,7 +946,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
                                                          e6);
     }
@@ -960,7 +969,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
                                                          e6, e7);
     }
@@ -984,7 +993,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
                                                          e6, e7, e8);
     }
@@ -1009,7 +1018,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
                                                          e6, e7, e8, e9);
     }
@@ -1035,7 +1044,7 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
+    static <E extends Object> @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
         return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
                                                          e6, e7, e8, e9, e10);
     }
@@ -1067,7 +1076,7 @@ public interface List<E> extends Collection<E> {
      */
     @SafeVarargs
     @SuppressWarnings("varargs")
-    static <E extends Object> List<E> of(E... elements) {
+    static <E extends Object> @PolyNonEmpty List<E> of(E @PolyNonEmpty... elements) {
         switch (elements.length) { // implicit null check of elements
             case 0:
                 @SuppressWarnings("unchecked")
@@ -1098,7 +1107,7 @@ public interface List<E> extends Collection<E> {
      * @throws NullPointerException if coll is null, or if it contains any nulls
      * @since 10
      */
-    static <E extends Object> List<E> copyOf(Collection<? extends E> coll) {
+    static <E extends Object> @PolyNonEmpty List<E> copyOf(@PolyNonEmpty Collection<? extends E> coll) {
         return ImmutableCollections.listCopy(coll);
     }
 }

@@ -27,6 +27,8 @@
 package java.lang;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -2754,11 +2756,12 @@ final class CompoundEnumeration<E> implements Enumeration<E> {
         return false;
     }
 
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreElements() {
         return next();
     }
 
-    public E nextElement() {
+    public E nextElement(@NonEmpty CompoundEnumeration<E> this) {
         if (!next()) {
             throw new NoSuchElementException();
         }

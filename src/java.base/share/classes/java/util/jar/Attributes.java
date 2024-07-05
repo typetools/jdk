@@ -26,6 +26,7 @@
 package java.util.jar;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -264,6 +265,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * Returns true if this Map contains no attributes.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return map.isEmpty();
     }

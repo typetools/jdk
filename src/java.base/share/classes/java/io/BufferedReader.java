@@ -33,6 +33,8 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -578,6 +580,7 @@ public class BufferedReader extends Reader {
             String nextLine = null;
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (nextLine != null) {
                     return true;
@@ -592,7 +595,7 @@ public class BufferedReader extends Reader {
             }
 
             @Override
-            public String next() {
+            public String next(/*@NonEmpty Iterator<String> this*/) {
                 if (nextLine != null || hasNext()) {
                     String line = nextLine;
                     nextLine = null;

@@ -82,13 +82,14 @@ module java.base {
     exports org.checkerframework.checker.fenum.qual;
     exports org.checkerframework.checker.formatter.qual;
     exports org.checkerframework.checker.guieffect.qual;
-    exports org.checkerframework.checker.i18nformatter.qual;
     exports org.checkerframework.checker.i18n.qual;
+    exports org.checkerframework.checker.i18nformatter.qual;
     exports org.checkerframework.checker.index.qual;
     exports org.checkerframework.checker.initialization.qual;
     exports org.checkerframework.checker.interning.qual;
     exports org.checkerframework.checker.lock.qual;
     exports org.checkerframework.checker.mustcall.qual;
+    exports org.checkerframework.checker.nonempty.qual;
     exports org.checkerframework.checker.nullness.qual;
     exports org.checkerframework.checker.optional.qual;
     exports org.checkerframework.checker.propkey.qual;

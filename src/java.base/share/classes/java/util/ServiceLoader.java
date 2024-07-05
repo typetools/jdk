@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -939,6 +941,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (nextProvider == null && nextError == null) {
                 // get next provider to load
@@ -972,7 +975,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        public Provider<T> next() {
+        public Provider<T> next(@NonEmpty LayerLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -1072,6 +1075,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (nextProvider == null && nextError == null) {
                 // get next provider to load
@@ -1098,7 +1102,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        public Provider<T> next() {
+        public Provider<T> next(@NonEmpty ModuleServicesLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -1275,6 +1279,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @SuppressWarnings("removal")
         @Override
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             if (acc == null) {
                 return hasNextService();
@@ -1288,7 +1293,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @SuppressWarnings("removal")
         @Override
-        public Provider<T> next() {
+        public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
             if (acc == null) {
                 return nextService();
             } else {
@@ -1312,11 +1317,12 @@ public final @UsesObjectEquals class ServiceLoader<S>
             Iterator<Provider<S>> second = new LazyClassPathLookupIterator<>();
             return new Iterator<Provider<S>>() {
                 @Override
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return (first.hasNext() || second.hasNext());
                 }
                 @Override
-                public Provider<S> next() {
+                public Provider<S> next(/*@NonEmpty Iterator<Provider<S>> this*/) {
                     if (first.hasNext()) {
                         return first.next();
                     } else if (second.hasNext()) {
@@ -1394,6 +1400,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 checkReloadCount();
                 if (index < instantiatedProviders.size())
@@ -1402,7 +1409,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
 
             @Override
-            public S next() {
+            public S next(/*@NonEmpty Iterator<S> this*/) {
                 checkReloadCount();
                 S next;
                 if (index < instantiatedProviders.size()) {
