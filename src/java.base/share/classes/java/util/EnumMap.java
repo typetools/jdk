@@ -28,6 +28,8 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -419,6 +421,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
@@ -461,6 +464,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return size;
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
@@ -506,6 +510,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> entry
                     && containsMapping(entry.getKey(), entry.getValue());
@@ -562,6 +567,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         // Index of last returned element, or -1 if none
         int lastReturnedIndex = -1;
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (index < vals.length && vals[index] == null)
                 index++;
@@ -585,7 +591,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     }
 
     private class KeyIterator extends EnumMapIterator<K> {
-        public K next() {
+        public K next(@NonEmpty KeyIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
             lastReturnedIndex = index++;
@@ -597,7 +603,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         @CFComment({"nullness: Value returned by unmaskNull",
                     "will be of type V (not @Nullable V) for mapped value"})
         @SuppressWarnings({"nullness:return"})
-        public V next() {
+        public V next(@NonEmpty ValueIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
             lastReturnedIndex = index++;
@@ -608,7 +614,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     private class EntryIterator extends EnumMapIterator<Map.Entry<K,V>> {
         private Entry lastReturnedEntry;
 
-        public Map.Entry<K,V> next() {
+        public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
             lastReturnedEntry = new Entry(index++);

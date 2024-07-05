@@ -29,6 +29,9 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
@@ -121,6 +124,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this list
      */
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied AbstractList<E> this, E e) {
         add(size(), e);
         return true;
@@ -378,11 +382,12 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
          */
         int expectedModCount = modCount;
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor != size();
         }
 
-        public E next() {
+        public E next(@NonEmpty Itr this) {
             checkForComodification();
             try {
                 int i = cursor;
@@ -861,11 +866,12 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                 private final ListIterator<E> i =
                         root.listIterator(offset + index);
 
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return nextIndex() < size;
                 }
 
-                public E next() {
+                public E next(/*@NonEmpty ListIterator<E> this*/) {
                     if (hasNext())
                         return i.next();
                     else

@@ -36,6 +36,8 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -95,6 +97,7 @@ public abstract class AbstractQueue<E>
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied AbstractQueue<E> this, E e) {
         if (offer(e))
             return true;
@@ -113,7 +116,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E remove(@GuardSatisfied AbstractQueue<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
             return x;
@@ -132,7 +135,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E element() {
+    public E element(@GuardSatisfied @NonEmpty AbstractQueue<E> this) {
         E x = peek();
         if (x != null)
             return x;

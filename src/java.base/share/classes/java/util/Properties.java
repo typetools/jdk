@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -1275,6 +1276,7 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -1293,6 +1295,7 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.contains(value);
     }
@@ -1368,8 +1371,12 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Pure @Override public int size() { return entrySet.size(); }
-        @Pure @Override public boolean isEmpty() { return entrySet.isEmpty(); }
-        @Pure @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
+        @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
+        @Override public boolean isEmpty() { return entrySet.isEmpty(); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }

@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -4603,6 +4604,7 @@ public final class Formatter implements Closeable, Flushable {
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(Flags f) {
             return (flags & f.valueOf()) == f.valueOf();
         }

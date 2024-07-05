@@ -25,7 +25,9 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -574,6 +576,7 @@ final class CryptoPolicyParser {
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         boolean contains(CryptoPermissionEntry pe)
         {
             return permissionEntries.contains(pe);

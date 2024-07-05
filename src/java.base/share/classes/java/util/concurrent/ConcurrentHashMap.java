@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -933,6 +936,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * {@inheritDoc}
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return sumCount() <= 0L; // ignore transient negative values
     }
@@ -2161,6 +2165,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified value is null
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @UnknownSignedness Object value) {
         return containsValue(value);
     }
@@ -3486,7 +3491,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        public final K next() {
+        public final K next(@NonEmpty KeyIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -3496,7 +3501,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return k;
         }
 
-        public final K nextElement() { return next(); }
+        public final K nextElement(@NonEmpty KeyIterator<K,V> this) { return next(); }
     }
 
     static final class ValueIterator<K,V> extends BaseIterator<K,V>
@@ -3506,7 +3511,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        public final V next() {
+        public final V next(@NonEmpty ValueIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -3516,7 +3521,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return v;
         }
 
-        public final V nextElement() { return next(); }
+        public final V nextElement(@NonEmpty ValueIterator<K,V> this) { return next(); }
     }
 
     static final class EntryIterator<K,V> extends BaseIterator<K,V>
@@ -3526,7 +3531,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        public final Map.Entry<K,V> next() {
+        public final Map.Entry<K,V> next(@NonEmpty EntryIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -4469,6 +4474,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         @Pure
         public final int size()        { return map.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public final boolean isEmpty() { return map.isEmpty(); }
 
         // implementations below rely on concrete classes supplying these
@@ -4484,6 +4490,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         @SideEffectFree
         public abstract Iterator<E> iterator();
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public abstract boolean contains(@UnknownSignedness Object o);
         public abstract boolean remove(@UnknownSignedness Object o);
 
@@ -4652,6 +4659,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @throws NullPointerException if the specified key is null
          */
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) { return map.containsKey(o); }
 
         /**
@@ -4686,6 +4694,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @throws UnsupportedOperationException if no default mapped value
          * for additions was provided
          */
+        @EnsuresNonEmpty("this")
         public boolean add(K e) {
             V v;
             if ((v = value) == null)
@@ -4760,6 +4769,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         private static final long serialVersionUID = 2249069246763182397L;
         ValuesView(ConcurrentHashMap<K,V> map) { super(map); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@UnknownSignedness Object o) {
             return map.containsValue(o);
         }
@@ -4784,6 +4794,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return new ValueIterator<K,V>(t, f, 0, f, m);
         }
 
+        @EnsuresNonEmpty("this")
         public final boolean add(V e) {
             throw new UnsupportedOperationException();
         }
@@ -4838,6 +4849,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         EntrySetView(ConcurrentHashMap<K,V> map) { super(map); }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             Object k, v, r; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
@@ -4866,6 +4878,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return new EntryIterator<K,V>(t, f, 0, f, m);
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(Entry<K,V> e) {
             return map.putVal(e.getKey(), e.getValue(), false) == null;
         }

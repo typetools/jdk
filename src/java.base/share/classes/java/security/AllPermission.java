@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -229,11 +231,12 @@ final class AllPermissionCollection
         return new Enumeration<>() {
             private boolean hasMore = all_allowed;
 
-            public boolean hasMoreElements() {
+            @EnsuresNonEmptyIf(result = true, expression = "this")
+            public boolean hasMoreElements(/**/) {
                 return hasMore;
             }
 
-            public Permission nextElement() {
+            public Permission nextElement(/*@NonEmpty Enumeration<Permission> this*/) {
                 hasMore = false;
                 return SecurityConstants.ALL_PERMISSION;
             }

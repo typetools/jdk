@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.*;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -672,6 +673,7 @@ class TaskQueue {
      * Returns true if the priority queue contains no elements.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     boolean isEmpty() {
         return size==0;
     }

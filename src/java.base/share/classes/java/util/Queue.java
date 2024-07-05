@@ -36,6 +36,9 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -161,6 +164,7 @@ public interface Queue<E> extends Collection<E> {
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
+    @EnsuresNonEmpty("this")
     boolean add(@GuardSatisfied Queue<E> this, E e);
 
     /**
@@ -190,7 +194,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    E remove(@GuardSatisfied Queue<E> this);
+    E remove(@GuardSatisfied @NonEmpty Queue<E> this);
 
     /**
      * Retrieves and removes the head of this queue,
@@ -208,7 +212,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    E element();
+    E element(@GuardSatisfied @NonEmpty Queue<E> this);
 
     /**
      * Retrieves, but does not remove, the head of this queue,
@@ -221,5 +225,6 @@ public interface Queue<E> extends Collection<E> {
     @CFComment("Copied from Collection to make it annotatable")
     @Pure
     // @EnsuresNonNullIf(expression={"poll()", "peek()"}, result=true)
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     boolean isEmpty(@GuardSatisfied Queue<E> this);
 }

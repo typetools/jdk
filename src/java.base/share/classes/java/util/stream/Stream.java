@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
+* Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 package java.util.stream;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -201,7 +205,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *               function to apply to each element
      * @return the new stream
      */
-    <R> Stream<R> map(Function<? super T, ? extends R> mapper);
+    <R> @PolyNonEmpty Stream<R> map(@PolyNonEmpty Stream<T> this, Function<? super T, ? extends R> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of applying the
@@ -583,7 +587,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> distinct();
+    @PolyNonEmpty Stream<T> distinct(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -599,7 +603,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> sorted();
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -616,7 +620,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                   {@code Comparator} to be used to compare stream elements
      * @return the new stream
      */
-    Stream<T> sorted(Comparator<? super T> comparator);
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this, Comparator<? super T> comparator);
 
     /**
      * Returns a stream consisting of the elements of this stream, additionally
@@ -889,7 +893,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * type} is {@code Object}, containing the elements of this stream
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(Stream<@PolyNull T> this);
+    @PolyNull Object @PolyNonEmpty[] toArray(@PolyNonEmpty Stream<@PolyNull T> this);
 
     /**
      * Returns an array containing the elements of this stream, using the
@@ -1295,7 +1299,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if any elements of the stream match the provided
      * predicate, otherwise {@code false}
      */
-    boolean anyMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean anyMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether all elements of this stream match the provided predicate.
@@ -1318,7 +1323,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either all elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean allMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean allMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether no elements of this stream match the provided predicate.
@@ -1341,7 +1347,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either no elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean noneMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean noneMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns an {@link Optional} describing the first element of this stream,
@@ -1406,7 +1413,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @param <T> the type of stream elements
      * @return a singleton sequential stream
      */
-    public static<T> Stream<T> of(T t) {
+    public static<T> @NonEmpty Stream<T> of(T t) {
         return StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
 
@@ -1434,7 +1441,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @SafeVarargs
     @SuppressWarnings("varargs") // Creating a stream from an array is safe
-    public static<T> Stream<T> of(T... values) {
+    public static<T> @PolyNonEmpty Stream<T> of(T @PolyNonEmpty... values) {
         return Arrays.stream(values);
     }
 
@@ -1658,7 +1665,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * the built state
          */
         @Override
-        void accept(T t);
+        @EnsuresNonEmpty("this")
+        void accept(Stream.Builder<T> this, T t);
 
         /**
          * Adds an element to the stream being built.
@@ -1675,7 +1683,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        default Builder<T> add(Stream.@GuardSatisfied Builder<T> this, T t) {
+        default @NonEmpty Builder<T> add(Stream.@GuardSatisfied Builder<T> this, T t) {
             accept(t);
             return this;
         }
@@ -1689,7 +1697,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        Stream<T> build();
+        @PolyNonEmpty Stream<T> build(Stream.@PolyNonEmpty Builder<T> this);
 
     }
 }

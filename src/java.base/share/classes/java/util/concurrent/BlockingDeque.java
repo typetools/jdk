@@ -35,9 +35,12 @@
 
 package java.util.concurrent;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -452,6 +455,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this deque
      */
+    @EnsuresNonEmpty("this")
     boolean add(E e);
 
     /**
@@ -523,7 +527,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E remove();
+    E remove(@NonEmpty BlockingDeque<E> this);
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -574,7 +578,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the head of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E element();
+    E element(@NonEmpty BlockingDeque<E> this);
 
     /**
      * Retrieves, but does not remove, the head of the queue represented by
@@ -622,6 +626,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean contains(@UnknownSignedness Object o);
 
     /**

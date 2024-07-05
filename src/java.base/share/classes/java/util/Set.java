@@ -27,6 +27,10 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -144,6 +148,7 @@ public interface Set<E> extends Collection<E> {
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     boolean isEmpty(@GuardSatisfied Set<E> this);
 
     /**
@@ -162,6 +167,7 @@ public interface Set<E> extends Collection<E> {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean contains(@GuardSatisfied Set<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
@@ -172,7 +178,7 @@ public interface Set<E> extends Collection<E> {
      * @return an iterator over the elements in this set
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty Set<E> this);
 
     /**
      * Returns an array containing all of the elements in this set.
@@ -271,6 +277,7 @@ public interface Set<E> extends Collection<E> {
      * @throws IllegalArgumentException if some property of the specified element
      *         prevents it from being added to this set
      */
+    @EnsuresNonEmpty("this")
     boolean add(@GuardSatisfied Set<E> this, E e);
 
 
@@ -344,6 +351,7 @@ public interface Set<E> extends Collection<E> {
      *         specified collection prevents it from being added to this set
      * @see #add(Object)
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean addAll(@GuardSatisfied Set<E> this, Collection<? extends E> c);
 
     /**
@@ -488,7 +496,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1) {
         return new ImmutableCollections.Set12<>(e1);
     }
 
@@ -505,7 +513,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2) {
         return new ImmutableCollections.Set12<>(e1, e2);
     }
 
@@ -523,7 +531,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3) {
         return new ImmutableCollections.SetN<>(e1, e2, e3);
     }
 
@@ -542,7 +550,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4);
     }
 
@@ -562,7 +570,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5);
     }
 
@@ -583,7 +591,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5,
                                                e6);
     }
@@ -606,7 +614,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5,
                                                e6, e7);
     }
@@ -630,7 +638,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5,
                                                e6, e7, e8);
     }
@@ -655,7 +663,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5,
                                                e6, e7, e8, e9);
     }
@@ -681,7 +689,7 @@ public interface Set<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E extends Object> Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
+    static <E extends Object> @NonEmpty Set<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
         return new ImmutableCollections.SetN<>(e1, e2, e3, e4, e5,
                                                e6, e7, e8, e9, e10);
     }
@@ -747,7 +755,7 @@ public interface Set<E> extends Collection<E> {
      * @since 10
      */
     @SuppressWarnings("unchecked")
-    static <E extends Object> Set<E> copyOf(Collection<? extends E> coll) {
+    static <E extends Object> @PolyNonEmpty Set<E> copyOf(@PolyNonEmpty Collection<? extends E> coll) {
         if (coll instanceof ImmutableCollections.AbstractImmutableSet) {
             return (Set<E>)coll;
         } else {

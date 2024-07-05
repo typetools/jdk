@@ -35,9 +35,12 @@
 
 package java.util.concurrent;
 
-import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -202,6 +205,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
+    @EnsuresNonEmpty("this")
     boolean add(E e);
 
     /**
@@ -329,6 +333,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean contains(@UnknownSignedness Object o);
 
     /**
