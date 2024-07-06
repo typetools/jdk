@@ -65,6 +65,7 @@ jobs:
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       cd ../jdk17u && git status
+      git diff --exit-code
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
