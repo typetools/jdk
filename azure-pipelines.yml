@@ -60,7 +60,9 @@ jobs:
   - bash: |
       set -ex
       pwd
+      ls -al .. || true
       ls -al ../jdk17u || true
+      df .
       /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u --depth 999
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
@@ -68,6 +70,7 @@ jobs:
       git config --global core.protectNTFS false
       cd ../jdk17u && git status
       git diff --exit-code
+      echo $?
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
