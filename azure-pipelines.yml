@@ -59,7 +59,12 @@ jobs:
   # because that leads to "fatal: remote error: filter 'combine' not supported".
   - bash: |
       set -ex
+      pwd
+      ls -al ../jdk17u || true
       /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u --depth 999
+      git config --global user.email "you@example.com"
+      git config --global user.name "Your Name"
+      cd ../jdk17u && git status
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
@@ -68,8 +73,8 @@ jobs:
       git config --global pull.ff true
       git config --global pull.rebase false
       eval `/tmp/$USER/plume-scripts/ci-info typetools`
-      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
       cd ../jdk17u && git status
+      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
       cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
     displayName: git merge
   - bash: cd ../jdk17u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
