@@ -60,12 +60,17 @@ jobs:
   - bash: |
       set -ex
       pwd
+      ls -al .. || true
       ls -al ../jdk17u || true
+      df .
       /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u --depth 999
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
       cd ../jdk17u && git status
       git diff --exit-code
+      echo $?
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
@@ -73,6 +78,8 @@ jobs:
       git config --global user.name "Your Name"
       git config --global pull.ff true
       git config --global pull.rebase false
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
       eval `/tmp/$USER/plume-scripts/ci-info typetools`
       cd ../jdk17u && git status
       echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
