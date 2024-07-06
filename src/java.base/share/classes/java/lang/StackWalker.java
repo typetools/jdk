@@ -24,6 +24,8 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import jdk.internal.reflect.CallerSensitive;
 
 import java.lang.invoke.MethodType;
