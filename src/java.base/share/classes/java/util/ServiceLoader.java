@@ -1238,7 +1238,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @SuppressWarnings("unchecked")
-        @SideEffectsOnly("this")
         private boolean hasNextService() {
             while (nextProvider == null && nextError == null) {
                 try {
