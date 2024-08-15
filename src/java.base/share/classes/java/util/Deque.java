@@ -493,6 +493,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
+    @SideEffectFree
     E element(@GuardSatisfied @NonEmpty Deque<E> this);
 
     /**
@@ -505,6 +506,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of the queue represented by this deque, or
      *         {@code null} if this deque is empty
      */
+    @SideEffectFree
     @Nullable E peek();
 
     /**
