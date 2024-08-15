@@ -103,6 +103,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
+    @Pure
     public synchronized E peek() {
         int     len = size();
 

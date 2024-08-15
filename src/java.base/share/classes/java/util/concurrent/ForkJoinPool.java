@@ -1167,6 +1167,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         /**
          * Returns next task, if one exists, in order specified by mode.
          */
+        @Pure
         final ForkJoinTask<?> peek() {
             VarHandle.acquireFence();
             int cap; ForkJoinTask<?>[] a;

@@ -570,6 +570,7 @@ public class LinkedBlockingDeque<E extends Object>
         return x;
     }
 
+    @Pure
     public @Nullable E peekFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -580,6 +581,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
     }
 
+    @Pure
     public @Nullable E peekLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -706,6 +708,7 @@ public class LinkedBlockingDeque<E extends Object>
         return getFirst();
     }
 
+    @Pure
     public @Nullable E peek() {
         return peekFirst();
     }

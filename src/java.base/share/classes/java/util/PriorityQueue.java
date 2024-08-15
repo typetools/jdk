@@ -353,6 +353,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
         return true;
     }
 
+    @Pure
     public @Nullable E peek(@GuardSatisfied PriorityQueue<E> this) {
         return (E) queue[0];
     }

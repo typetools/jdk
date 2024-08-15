@@ -438,6 +438,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
         return elementAt(elements, head);
     }
 
+    @Pure
     public @Nullable E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
@@ -581,6 +582,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque, or
      *         {@code null} if this deque is empty
      */
+    @Pure
     public @Nullable E peek() {
         return peekFirst();
     }

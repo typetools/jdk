@@ -508,6 +508,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
         return x;
     }
 
+    @Pure
     public @Nullable E peek() {
         final AtomicInteger count = this.count;
         if (count.get() == 0)

@@ -568,6 +568,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
         return result;
     }
 
+    @Pure
     public @Nullable E peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();

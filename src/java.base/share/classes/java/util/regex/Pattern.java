@@ -1917,6 +1917,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
     /**
      * Peek the next character, and do not advance the cursor.
      */
+    @Pure
     private int peek() {
         int ch = temp[cursor];
         if (has(COMMENTS))
@@ -1965,6 +1966,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
     /**
      * If in xmode peek past whitespace and comments.
      */
+    @Pure
     private int peekPastWhitespace(int ch) {
         while (ASCII.isSpace(ch) || ch == '#') {
             while (ASCII.isSpace(ch))
@@ -2006,6 +2008,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
     /**
      * xmode peek past comment to end of line.
      */
+    @Pure
     private int peekPastLine() {
         int ch = temp[++cursor];
         while (ch != 0 && !isLineSeparator(ch))

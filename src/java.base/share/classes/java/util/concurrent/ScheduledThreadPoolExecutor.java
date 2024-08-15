@@ -1096,6 +1096,7 @@ public class ScheduledThreadPoolExecutor
             return Integer.MAX_VALUE;
         }
 
+        @Pure
         public RunnableScheduledFuture<?> peek() {
             final ReentrantLock lock = this.lock;
             lock.lock();

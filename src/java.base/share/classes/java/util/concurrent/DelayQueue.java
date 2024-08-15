@@ -316,6 +316,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return the head of this queue, or {@code null} if this
      *         queue is empty
      */
+    @Pure
     public @Nullable E peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
