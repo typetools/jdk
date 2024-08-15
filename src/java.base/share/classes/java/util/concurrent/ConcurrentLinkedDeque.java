@@ -882,6 +882,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         return true;
     }
 
+    @Pure
     public @Nullable E peekFirst() {
         restart: for (;;) {
             E item;
@@ -897,6 +898,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         }
     }
 
+    @Pure
     public @Nullable E peekLast() {
         restart: for (;;) {
             E item;
@@ -1009,6 +1011,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     }
 
     public @Nullable E poll()           { return pollFirst(); }
+    @Pure
     public @Nullable E peek()           { return peekFirst(); }
 
     /**

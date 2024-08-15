@@ -3413,8 +3413,11 @@ public class Collections {
         }
 
         public E element()              {return queue.element();}
+        @Pure
         public boolean equals(Object o) {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()           {return c.hashCode();}
+        @Pure
         public E peek()                 {return queue.peek();}
         public E poll()                 {return queue.poll();}
         public E remove()               {return queue.remove();}
@@ -6008,6 +6011,7 @@ public class Collections {
         public boolean offer(E e)                   { return q.offerFirst(e); }
         public E poll()                             { return q.pollFirst(); }
         public E remove()                           { return q.removeFirst(); }
+        @Pure
         public E peek()                             { return q.peekFirst(); }
         public E element()                          { return q.getFirst(); }
         public void clear()                         {        q.clear(); }

@@ -417,6 +417,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
         }
     }
 
+    @Pure
     public @Nullable E peek() {
         restartFromHead: for (;;) {
             for (Node<E> h = head, p = h, q;; p = q) {

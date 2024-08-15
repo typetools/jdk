@@ -680,6 +680,7 @@ public class LinkedList<E>
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
      */
+    @Pure
     public @Nullable E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
@@ -762,6 +763,7 @@ public class LinkedList<E>
      *         if this list is empty
      * @since 1.6
      */
+    @Pure
     public @Nullable E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
@@ -775,6 +777,7 @@ public class LinkedList<E>
      *         if this list is empty
      * @since 1.6
      */
+    @Pure
     public @Nullable E peekLast() {
         final Node<E> l = last;
         return (l == null) ? null : l.item;

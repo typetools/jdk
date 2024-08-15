@@ -1358,6 +1358,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         return new Itr();
     }
 
+    @Pure
     public E peek() {
         restartFromHead: for (;;) {
             for (Node p = head; p != null;) {

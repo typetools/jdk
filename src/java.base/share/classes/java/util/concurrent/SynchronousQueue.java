@@ -1034,6 +1034,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      *
      * @return {@code null}
      */
+    @Pure
     public E peek() {
         return null;
     }

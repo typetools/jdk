@@ -317,6 +317,7 @@ final class CryptoPolicyParser {
         return false;
     }
 
+    @Pure
     private boolean peek(String expect) {
         boolean found = false;
 

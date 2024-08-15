@@ -26,6 +26,7 @@
 package java.net;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.FileDescriptor;
@@ -145,6 +146,7 @@ public abstract @UsesObjectEquals class DatagramSocketImpl implements SocketOpti
      *            to a currently unreachable destination. Note, there is no guarantee that the
      *            exception will be thrown.
      */
+    @Pure
     protected abstract int peek(InetAddress i) throws IOException;
 
     /**
