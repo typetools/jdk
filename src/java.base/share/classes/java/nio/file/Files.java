@@ -26,8 +26,14 @@
 package java.nio.file;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.BufferedReader;
@@ -160,6 +166,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the file.
      */
+    @ReleasesNoLocks
     public static InputStream newInputStream(Path path, OpenOption... options)
         throws IOException
     {
@@ -228,6 +235,7 @@ public final @UsesObjectEquals class Files {
      *          invoked to check delete access if the file is opened with the
      *          {@code DELETE_ON_CLOSE} option.
      */
+    @ReleasesNoLocks
     public static OutputStream newOutputStream(Path path, OpenOption... options)
         throws IOException
     {
@@ -378,6 +386,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see java.nio.channels.FileChannel#open(Path,Set,FileAttribute[])
      */
+    @ReleasesNoLocks
     public static SeekableByteChannel newByteChannel(Path path,
                                                      Set<? extends OpenOption> options,
                                                      FileAttribute<?>... attrs)
@@ -425,6 +434,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see java.nio.channels.FileChannel#open(Path,OpenOption[])
      */
+    @ReleasesNoLocks
     public static SeekableByteChannel newByteChannel(Path path, OpenOption... options)
         throws IOException
     {
@@ -446,6 +456,7 @@ public final @UsesObjectEquals class Files {
         private AcceptAllFilter() { }
 
         @Override
+        @ReleasesNoLocks
         public boolean accept(Path entry) { return true; }
 
         static final AcceptAllFilter FILTER = new AcceptAllFilter();
@@ -482,6 +493,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the directory.
      */
+    @ReleasesNoLocks
     public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir)
         throws IOException
     {
@@ -537,6 +549,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the directory.
      */
+    @ReleasesNoLocks
     public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
         throws IOException
     {
@@ -549,6 +562,7 @@ public final @UsesObjectEquals class Files {
         final PathMatcher matcher = fs.getPathMatcher("glob:" + glob);
         DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<>() {
             @Override
+            @ReleasesNoLocks
             public boolean accept(Path entry)  {
                 return matcher.matches(entry.getFileName());
             }
@@ -613,6 +627,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the directory.
      */
+    @ReleasesNoLocks
     public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir,
                                                            DirectoryStream.Filter<? super Path> filter)
         throws IOException
@@ -658,6 +673,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
      *          method is invoked to check write access to the new file.
      */
+    @ReleasesNoLocks
     public static Path createFile(Path path, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -700,6 +716,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
      *          method is invoked to check write access to the new directory.
      */
+    @ReleasesNoLocks
     public static Path createDirectory(Path dir, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -751,6 +768,7 @@ public final @UsesObjectEquals class Files {
      *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
      *          method to check access to the system property {@code user.dir}
      */
+    @ReleasesNoLocks
     public static Path createDirectories(Path dir, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -875,6 +893,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
      *          method is invoked to check write access to the file.
      */
+    @ReleasesNoLocks
     public static Path createTempFile(Path dir,
                                       String prefix,
                                       String suffix,
@@ -921,6 +940,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
      *          method is invoked to check write access to the file.
      */
+    @ReleasesNoLocks
     public static Path createTempFile(String prefix,
                                       String suffix,
                                       FileAttribute<?>... attrs)
@@ -974,6 +994,7 @@ public final @UsesObjectEquals class Files {
      *          method is invoked to check write access when creating the
      *          directory.
      */
+    @ReleasesNoLocks
     public static Path createTempDirectory(Path dir,
                                            String prefix,
                                            FileAttribute<?>... attrs)
@@ -1016,6 +1037,7 @@ public final @UsesObjectEquals class Files {
      *          method is invoked to check write access when creating the
      *          directory.
      */
+    @ReleasesNoLocks
     public static Path createTempDirectory(String prefix,
                                            FileAttribute<?>... attrs)
         throws IOException
@@ -1068,6 +1090,7 @@ public final @UsesObjectEquals class Files {
      *          or its {@link SecurityManager#checkWrite(String) checkWrite}
      *          method denies write access to the path of the symbolic link.
      */
+    @ReleasesNoLocks
     public static Path createSymbolicLink(Path link, Path target,
                                           FileAttribute<?>... attrs)
         throws IOException
@@ -1114,6 +1137,7 @@ public final @UsesObjectEquals class Files {
      *          method denies write access to either the link or the
      *          existing file.
      */
+    @ReleasesNoLocks
     public static Path createLink(Path link, Path existing) throws IOException {
         provider(link).createLink(link, existing);
         return link;
@@ -1154,6 +1178,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkDelete(String)} method
      *          is invoked to check delete access to the file
      */
+    @ReleasesNoLocks
     public static void delete(Path path) throws IOException {
         provider(path).delete(path);
     }
@@ -1193,6 +1218,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkDelete(String)} method
      *          is invoked to check delete access to the file.
      */
+    @ReleasesNoLocks
     public static boolean deleteIfExists(Path path) throws IOException {
         return provider(path).deleteIfExists(path);
     }
@@ -1302,6 +1328,7 @@ public final @UsesObjectEquals class Files {
      *          copied the security manager is invoked to check {@link
      *          LinkPermission}{@code ("symbolic")}.
      */
+    @ReleasesNoLocks
     public static Path copy(Path source, Path target, CopyOption... options)
         throws IOException
     {
@@ -1429,6 +1456,7 @@ public final @UsesObjectEquals class Files {
      *          method is invoked to check write access to both the source and
      *          target file.
      */
+    @ReleasesNoLocks
     public static Path move(Path source, Path target, CopyOption... options)
         throws IOException
     {
@@ -1471,6 +1499,7 @@ public final @UsesObjectEquals class Files {
      *          is installed, it checks that {@code FilePermission} has been
      *          granted with the "{@code readlink}" action to read the link.
      */
+    @ReleasesNoLocks
     public static Path readSymbolicLink(Path link) throws IOException {
         return provider(link).readSymbolicLink(link);
     }
@@ -1500,6 +1529,7 @@ public final @UsesObjectEquals class Files {
      *          addition it checks
      *          {@link RuntimePermission}{@code ("getFileStoreAttributes")}
      */
+    @ReleasesNoLocks
     public static FileStore getFileStore(Path path) throws IOException {
         return provider(path).getFileStore(path);
     }
@@ -1543,6 +1573,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see java.nio.file.attribute.BasicFileAttributes#fileKey
      */
+    @SideEffectFree
     public static boolean isSameFile(Path path, Path path2) throws IOException {
         return provider(path).isSameFile(path, path2);
     }
@@ -1595,6 +1626,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 12
      */
+    @ReleasesNoLocks
     public static long mismatch(Path path, Path path2) throws IOException {
         if (isSameFile(path, path2)) {
             return -1;
@@ -1645,6 +1677,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the file.
      */
+    @SideEffectFree
     public static boolean isHidden(Path path) throws IOException {
         return provider(path).isHidden(path);
     }
@@ -1729,6 +1762,7 @@ public final @UsesObjectEquals class Files {
      *          If a security manager is installed and it denies an unspecified
      *          permission required by a file type detector implementation.
      */
+    @ReleasesNoLocks
     public static String probeContentType(Path path)
         throws IOException
     {
@@ -1787,6 +1821,7 @@ public final @UsesObjectEquals class Files {
      * @return  a file attribute view of the specified type, or {@code null} if
      *          the attribute view type is not available
      */
+    @ReleasesNoLocks
     public static <V extends FileAttributeView> V getFileAttributeView(Path path,
                                                                        Class<V> type,
                                                                        LinkOption... options)
@@ -1849,6 +1884,7 @@ public final @UsesObjectEquals class Files {
      *          method is invoked to read security sensitive attributes then the
      *          security manager may be invoke to check for additional permissions.
      */
+    @ReleasesNoLocks
     public static <A extends BasicFileAttributes> A readAttributes(Path path,
                                                                    Class<A> type,
                                                                    LinkOption... options)
@@ -1918,6 +1954,7 @@ public final @UsesObjectEquals class Files {
      *          to set security sensitive attributes then the security manager
      *          may be invoked to check for additional permissions.
      */
+    @ReleasesNoLocks
     public static Path setAttribute(Path path, String attribute, Object value,
                                     LinkOption... options)
         throws IOException
@@ -1979,6 +2016,7 @@ public final @UsesObjectEquals class Files {
      *          to read security sensitive attributes then the security manager
      *          may be invoked to check for additional permissions.
      */
+    @ReleasesNoLocks
     public static Object getAttribute(Path path, String attribute,
                                       LinkOption... options)
         throws IOException
@@ -2083,6 +2121,7 @@ public final @UsesObjectEquals class Files {
      *          to read security sensitive attributes then the security manager
      *          may be invoke to check for additional permissions.
      */
+    @ReleasesNoLocks
     public static Map<String,Object> readAttributes(Path path, String attributes,
                                                     LinkOption... options)
         throws IOException
@@ -2124,6 +2163,7 @@ public final @UsesObjectEquals class Files {
      *          or its {@link SecurityManager#checkRead(String) checkRead} method
      *          denies read access to the file.
      */
+    @ReleasesNoLocks
     public static Set<PosixFilePermission> getPosixFilePermissions(Path path,
                                                                    LinkOption... options)
         throws IOException
@@ -2162,6 +2202,7 @@ public final @UsesObjectEquals class Files {
      *          or its {@link SecurityManager#checkWrite(String) checkWrite}
      *          method denies write access to the file.
      */
+    @ReleasesNoLocks
     public static Path setPosixFilePermissions(Path path,
                                                Set<PosixFilePermission> perms)
         throws IOException
@@ -2200,6 +2241,7 @@ public final @UsesObjectEquals class Files {
      *          or its {@link SecurityManager#checkRead(String) checkRead} method
      *          denies read access to the file.
      */
+    @ReleasesNoLocks
     public static UserPrincipal getOwner(Path path, LinkOption... options) throws IOException {
         FileOwnerAttributeView view =
             getFileAttributeView(path, FileOwnerAttributeView.class, options);
@@ -2247,6 +2289,7 @@ public final @UsesObjectEquals class Files {
      * @see FileSystem#getUserPrincipalLookupService
      * @see java.nio.file.attribute.UserPrincipalLookupService
      */
+    @ReleasesNoLocks
     public static Path setOwner(Path path, UserPrincipal owner)
         throws IOException
     {
@@ -2278,6 +2321,7 @@ public final @UsesObjectEquals class Files {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method denies read access to the file.
      */
+    @SideEffectFree
     public static boolean isSymbolicLink(Path path) {
         try {
             return readAttributes(path,
@@ -2317,6 +2361,7 @@ public final @UsesObjectEquals class Files {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method denies read access to the file.
      */
+    @SideEffectFree
     public static boolean isDirectory(Path path, LinkOption... options) {
         if (options.length == 0) {
             FileSystemProvider provider = provider(path);
@@ -2360,6 +2405,7 @@ public final @UsesObjectEquals class Files {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method denies read access to the file.
      */
+    @SideEffectFree
     public static boolean isRegularFile(Path path, LinkOption... options) {
         if (options.length == 0) {
             FileSystemProvider provider = provider(path);
@@ -2402,6 +2448,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see BasicFileAttributes#lastModifiedTime
      */
+    @ReleasesNoLocks
     public static FileTime getLastModifiedTime(Path path, LinkOption... options)
         throws IOException
     {
@@ -2441,6 +2488,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see BasicFileAttributeView#setTimes
      */
+    @ReleasesNoLocks
     public static Path setLastModifiedTime(Path path, FileTime time)
         throws IOException
     {
@@ -2470,6 +2518,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see BasicFileAttributes#size
      */
+    @ReleasesNoLocks
     public static long size(Path path) throws IOException {
         return readAttributes(path, BasicFileAttributes.class).size();
     }
@@ -2521,6 +2570,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see #notExists
      */
+    @SideEffectFree
     public static boolean exists(Path path, LinkOption... options) {
         if (options.length == 0) {
             FileSystemProvider provider = provider(path);
@@ -2576,6 +2626,7 @@ public final @UsesObjectEquals class Files {
      *          SecurityManager#checkRead(String)} is invoked to check
      *          read access to the file.
      */
+    @SideEffectFree
     public static boolean notExists(Path path, LinkOption... options) {
         try {
             if (followLinks(options)) {
@@ -2634,6 +2685,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          is invoked to check read access to the file.
      */
+    @SideEffectFree
     public static boolean isReadable(Path path) {
         return isAccessible(path, AccessMode.READ);
     }
@@ -2665,6 +2717,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
      *          is invoked to check write access to the file.
      */
+    @SideEffectFree
     public static boolean isWritable(Path path) {
         return isAccessible(path, AccessMode.WRITE);
     }
@@ -2700,6 +2753,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkExec(String)
      *          checkExec} is invoked to check execute access to the file.
      */
+    @SideEffectFree
     public static boolean isExecutable(Path path) {
         return isAccessible(path, AccessMode.EXECUTE);
     }
@@ -2796,6 +2850,7 @@ public final @UsesObjectEquals class Files {
      * @throws  IOException
      *          if an I/O error is thrown by a visitor method
      */
+    @ReleasesNoLocks
     public static Path walkFileTree(Path start,
                                     Set<FileVisitOption> options,
                                     int maxDepth,
@@ -2882,6 +2937,7 @@ public final @UsesObjectEquals class Files {
      * @throws  IOException
      *          if an I/O error is thrown by a visitor method
      */
+    @ReleasesNoLocks
     public static Path walkFileTree(Path start, FileVisitor<? super Path> visitor)
         throws IOException
     {
@@ -2921,6 +2977,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see #readAllLines
      */
+    @ReleasesNoLocks
     public static BufferedReader newBufferedReader(Path path, Charset cs)
         throws IOException
     {
@@ -2957,6 +3014,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static BufferedReader newBufferedReader(Path path) throws IOException {
         return newBufferedReader(path, UTF_8.INSTANCE);
     }
@@ -3006,6 +3064,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see #write(Path,Iterable,Charset,OpenOption[])
      */
+    @ReleasesNoLocks
     public static BufferedWriter newBufferedWriter(Path path, Charset cs,
                                                    OpenOption... options)
         throws IOException
@@ -3056,6 +3115,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static BufferedWriter newBufferedWriter(Path path, OpenOption... options)
         throws IOException
     {
@@ -3127,6 +3187,7 @@ public final @UsesObjectEquals class Files {
      *          manager's {@link SecurityManager#checkDelete(String) checkDelete}
      *          method is invoked to check that an existing file can be deleted.
      */
+    @ReleasesNoLocks
     public static long copy(InputStream in, Path target, CopyOption... options)
         throws IOException
     {
@@ -3211,6 +3272,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the file.
      */
+    @ReleasesNoLocks
     public static long copy(Path source, OutputStream out) throws IOException {
         // ensure not null before opening file
         Objects.requireNonNull(out);
@@ -3290,6 +3352,7 @@ public final @UsesObjectEquals class Files {
      *          installed, the {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the file.
      */
+    @SideEffectFree
     public static byte[] readAllBytes(Path path) throws IOException {
         try (SeekableByteChannel sbc = Files.newByteChannel(path);
              InputStream in = Channels.newInputStream(sbc)) {
@@ -3327,6 +3390,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 11
      */
+    @SideEffectFree
     public static String readString(Path path) throws IOException {
         return readString(path, UTF_8.INSTANCE);
     }
@@ -3365,6 +3429,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 11
      */
+    @SideEffectFree
     public static String readString(Path path, Charset cs) throws IOException {
         Objects.requireNonNull(path);
         Objects.requireNonNull(cs);
@@ -3414,6 +3479,7 @@ public final @UsesObjectEquals class Files {
      *
      * @see #newBufferedReader
      */
+    @SideEffectFree
     public static List<String> readAllLines(Path path, Charset cs) throws IOException {
         try (BufferedReader reader = newBufferedReader(path, cs)) {
             List<String> result = new ArrayList<>();
@@ -3455,6 +3521,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
+    @SideEffectFree
     public static List<String> readAllLines(Path path) throws IOException {
         return readAllLines(path, UTF_8.INSTANCE);
     }
@@ -3509,6 +3576,7 @@ public final @UsesObjectEquals class Files {
      *          invoked to check delete access if the file is opened with the
      *          {@code DELETE_ON_CLOSE} option.
      */
+    @ReleasesNoLocks
     public static Path write(Path path, @PolySigned byte[] bytes, OpenOption... options)
         throws IOException
     {
@@ -3577,6 +3645,7 @@ public final @UsesObjectEquals class Files {
      *          invoked to check delete access if the file is opened with the
      *          {@code DELETE_ON_CLOSE} option.
      */
+    @ReleasesNoLocks
     public static Path write(Path path, Iterable<? extends CharSequence> lines,
                              Charset cs, OpenOption... options)
         throws IOException
@@ -3631,6 +3700,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static Path write(Path path,
                              Iterable<? extends CharSequence> lines,
                              OpenOption... options)
@@ -3674,6 +3744,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 11
      */
+    @ReleasesNoLocks
     public static Path writeString(Path path, CharSequence csq, OpenOption... options)
             throws IOException
     {
@@ -3726,6 +3797,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 11
      */
+    @ReleasesNoLocks
     public static Path writeString(Path path, CharSequence csq, Charset cs, OpenOption... options)
             throws IOException
     {
@@ -3794,6 +3866,7 @@ public final @UsesObjectEquals class Files {
      * @see     #newDirectoryStream(Path)
      * @since   1.8
      */
+    @ReleasesNoLocks
     public static @MustCall("close") Stream<Path> list(Path dir) throws IOException {
         DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
         try {
@@ -3802,6 +3875,8 @@ public final @UsesObjectEquals class Files {
             // Re-wrap DirectoryIteratorException to UncheckedIOException
             Iterator<Path> iterator = new Iterator<>() {
                 @Override
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     try {
                         return delegate.hasNext();
@@ -3809,8 +3884,9 @@ public final @UsesObjectEquals class Files {
                         throw new UncheckedIOException(e.getCause());
                     }
                 }
+                @SideEffectsOnly("this")
                 @Override
-                public Path next() {
+                public Path next(/*@NonEmpty Iterator<Path> this*/) {
                     try {
                         return delegate.next();
                     } catch (DirectoryIteratorException e) {
@@ -3916,6 +3992,7 @@ public final @UsesObjectEquals class Files {
      *          if an I/O error is thrown when accessing the starting file.
      * @since   1.8
      */
+    @ReleasesNoLocks
     public static @MustCall("close") Stream<Path> walk(Path start,
                                     int maxDepth,
                                     FileVisitOption... options)
@@ -3975,6 +4052,7 @@ public final @UsesObjectEquals class Files {
      * @see     #walk(Path, int, FileVisitOption...)
      * @since   1.8
      */
+    @ReleasesNoLocks
     public static @MustCall("close") Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
         return walk(start, Integer.MAX_VALUE, options);
     }
@@ -4033,6 +4111,7 @@ public final @UsesObjectEquals class Files {
      * @see     #walk(Path, int, FileVisitOption...)
      * @since   1.8
      */
+    @ReleasesNoLocks
     public static @MustCall("close") Stream<Path> find(Path start,
                                     int maxDepth,
                                     BiPredicate<Path, BasicFileAttributes> matcher,
@@ -4127,6 +4206,7 @@ public final @UsesObjectEquals class Files {
      * @see     java.io.BufferedReader#lines()
      * @since   1.8
      */
+    @SideEffectFree
     public static @MustCall("close") Stream<String> lines(Path path, Charset cs) throws IOException {
         // Use the good splitting spliterator if:
         // 1) the path is associated with the default file system;
@@ -4229,6 +4309,7 @@ public final @UsesObjectEquals class Files {
      *
      * @since 1.8
      */
+    @SideEffectFree
     public static @MustCall("close") Stream<String> lines(Path path) throws IOException {
         return lines(path, UTF_8.INSTANCE);
     }

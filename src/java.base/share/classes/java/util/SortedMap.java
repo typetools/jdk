@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -228,7 +229,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      * @throws NoSuchElementException if this map is empty
      */
     @SideEffectFree
-    @KeyFor("this") K firstKey(@GuardSatisfied SortedMap<K, V> this);
+    @KeyFor("this") K firstKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
      * Returns the last (highest) key currently in this map.
@@ -237,7 +238,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      * @throws NoSuchElementException if this map is empty
      */
     @SideEffectFree
-    @KeyFor("this") K lastKey(@GuardSatisfied SortedMap<K, V> this);
+    @KeyFor("this") K lastKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
      * Returns a {@link Set} view of the keys contained in this map.

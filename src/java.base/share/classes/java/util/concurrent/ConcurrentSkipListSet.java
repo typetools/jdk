@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -219,6 +222,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return m.isEmpty();
     }
@@ -235,6 +239,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         return m.containsKey(o);
     }
@@ -253,6 +258,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return m.putIfAbsent(e, Boolean.TRUE) == null;
     }
@@ -410,14 +416,14 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
     /**
      * @throws java.util.NoSuchElementException {@inheritDoc}
      */
-    public E first() {
+    public E first(@NonEmpty ConcurrentSkipListSet<E> this) {
         return m.firstKey();
     }
 
     /**
      * @throws java.util.NoSuchElementException {@inheritDoc}
      */
-    public E last() {
+    public E last(@NonEmpty ConcurrentSkipListSet<E> this) {
         return m.lastKey();
     }
 

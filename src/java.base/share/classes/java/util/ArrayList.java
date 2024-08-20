@@ -28,6 +28,10 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -36,6 +40,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -196,7 +201,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NullPointerException if the specified collection is null
      */
     @SideEffectFree
-    public ArrayList(Collection<? extends E> c) {
+    public @PolyNonEmpty ArrayList(@PolyNonEmpty Collection<? extends E> c) {
         Object[] a = c.toArray();
         if ((size = a.length) != 0) {
             if (c.getClass() == ArrayList.class) {
@@ -279,6 +284,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied ArrayList<E> this) {
         return size == 0;
     }
@@ -293,6 +299,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
@@ -465,6 +472,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @SideEffectsOnly("this")
     public E set(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
         Objects.checkIndex(index, size);
         E oldValue = elementData(index);
@@ -477,6 +485,7 @@ public class ArrayList<E> extends AbstractList<E>
      * bytecode size under 35 (the -XX:MaxInlineSize default value),
      * which helps when add(E) is called in a C1-compiled loop.
      */
+    @SideEffectsOnly("this")
     private void add(E e, Object[] elementData, int s) {
         if (s == elementData.length)
             elementData = grow();
@@ -490,6 +499,8 @@ public class ArrayList<E> extends AbstractList<E>
      * @param e element to be appended to this list
      * @return {@code true} (as specified by {@link Collection#add})
      */
+    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied ArrayList<E> this, E e) {
         modCount++;
         add(e, elementData, size);
@@ -505,6 +516,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @SideEffectsOnly("this")
     public void add(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
         rangeCheckForAdd(index);
         modCount++;
@@ -696,6 +708,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return {@code true} if this list changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @SideEffectsOnly("this")
     public boolean addAll(@GuardSatisfied ArrayList<E> this, Collection<? extends E> c) {
         Object[] a = c.toArray();
         modCount++;
@@ -726,6 +739,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws NullPointerException if the specified collection is null
      */
+    @SideEffectsOnly("this")
     public boolean addAll(@GuardSatisfied ArrayList<E> this, @NonNegative int index, Collection<? extends E> c) {
         rangeCheckForAdd(index);
 
@@ -989,12 +1003,15 @@ public class ArrayList<E> extends AbstractList<E>
         // prevent creating a synthetic constructor
         Itr() {}
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor != size;
         }
 
         @SuppressWarnings("unchecked")
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty Itr this) {
             checkForComodification();
             int i = cursor;
             if (i >= size)
@@ -1305,6 +1322,7 @@ public class ArrayList<E> extends AbstractList<E>
             return index >= 0 ? index - offset : -1;
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -1323,12 +1341,15 @@ public class ArrayList<E> extends AbstractList<E>
                 int lastRet = -1;
                 int expectedModCount = SubList.this.modCount;
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return cursor != SubList.this.size;
                 }
 
                 @SuppressWarnings("unchecked")
-                public E next() {
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty ListIterator<E> this*/) {
                     checkForComodification();
                     int i = cursor;
                     if (i >= SubList.this.size)

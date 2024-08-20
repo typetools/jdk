@@ -34,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.PolyValue;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -3919,6 +3920,8 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @return the BigInteger whose value is the lesser of this BigInteger and
      *         {@code val}.  If they are equal, either may be returned.
      */
+    @Pure
+    @StaticallyExecutable
     public BigInteger min(BigInteger val) {
         return (compareTo(val) < 0 ? this : val);
     }
@@ -3930,6 +3933,8 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @return the BigInteger whose value is the greater of this and
      *         {@code val}.  If they are equal, either may be returned.
      */
+    @Pure
+    @StaticallyExecutable
     public BigInteger max(BigInteger val) {
         return (compareTo(val) > 0 ? this : val);
     }

@@ -27,12 +27,16 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -104,12 +108,15 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
             unseen = elements;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return unseen != 0;
         }
 
+        @SideEffectsOnly("this")
         @SuppressWarnings("unchecked")
-        public E next() {
+        public E next(@NonEmpty EnumSetIterator<E> this) {
             if (unseen == 0)
                 throw new NoSuchElementException();
             lastReturned = unseen & -unseen;
@@ -141,6 +148,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return elements == 0;
     }
@@ -152,6 +160,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
@@ -172,6 +181,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @throws NullPointerException if {@code e} is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         typeCheck(e);
 

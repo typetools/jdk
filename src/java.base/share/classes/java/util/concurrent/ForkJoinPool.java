@@ -35,6 +35,7 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -960,6 +961,7 @@ public class ForkJoinPool extends AbstractExecutorService {
          * has any tasks than does queueSize.
          */
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         final boolean isEmpty() {
             return !((source != 0 && owner == null) || top - base > 0);
         }
@@ -1165,6 +1167,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         /**
          * Returns next task, if one exists, in order specified by mode.
          */
+        @Pure
         final ForkJoinTask<?> peek() {
             VarHandle.acquireFence();
             int cap; ForkJoinTask<?>[] a;

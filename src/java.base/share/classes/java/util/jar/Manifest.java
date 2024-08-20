@@ -518,6 +518,7 @@ public class Manifest implements Cloneable {
             return total;
         }
 
+        @Pure
         public byte peek() throws IOException {
             if (pos == count)
                 fill();

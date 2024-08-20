@@ -28,12 +28,17 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -192,7 +197,7 @@ public class Vector<E>
      * @throws NullPointerException if the specified collection is null
      * @since   1.2
      */
-    public Vector(Collection<? extends E> c) {
+    public @PolyNonEmpty Vector(@PolyNonEmpty Collection<? extends E> c) {
         Object[] a = c.toArray();
         elementCount = a.length;
         if (c.getClass() == ArrayList.class) {
@@ -328,6 +333,7 @@ public class Vector<E>
      *          {@code false} otherwise.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public synchronized boolean isEmpty(@GuardSatisfied Vector<E> this) {
         return elementCount == 0;
     }
@@ -347,11 +353,12 @@ public class Vector<E>
         return new Enumeration<E>() {
             int count = 0;
 
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return count < elementCount;
             }
 
-            public E nextElement() {
+            public E nextElement(/*@NonEmpty Enumeration<E> this*/) {
                 synchronized (Vector.this) {
                     if (count < elementCount) {
                         return elementData(count++);
@@ -372,6 +379,7 @@ public class Vector<E>
      * @return {@code true} if this vector contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied Vector<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o, 0) >= 0;
     }
@@ -497,7 +505,7 @@ public class Vector<E>
      * @return     the first component of this vector
      * @throws NoSuchElementException if this vector has no components
      */
-    public synchronized E firstElement() {
+    public synchronized E firstElement(@NonEmpty Vector<E> this) {
         if (elementCount == 0) {
             throw new NoSuchElementException();
         }
@@ -511,7 +519,7 @@ public class Vector<E>
      *          {@code size() - 1}
      * @throws NoSuchElementException if this vector is empty
      */
-    public synchronized E lastElement() {
+    public synchronized E lastElement(@NonEmpty Vector<E> this) {
         if (elementCount == 0) {
             throw new NoSuchElementException();
         }
@@ -816,6 +824,8 @@ public class Vector<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @since 1.2
      */
+    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
     public synchronized boolean add(@GuardSatisfied Vector<E> this, E e) {
         modCount++;
         add(e, elementData, elementCount);
@@ -1269,13 +1279,16 @@ public class Vector<E>
         int lastRet = -1; // index of last element returned; -1 if no such
         int expectedModCount = modCount;
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             // Racy but within spec, since modifications are checked
             // within or after synchronization in next/previous
             return cursor != elementCount;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty Itr this) {
             synchronized (Vector.this) {
                 checkForComodification();
                 int i = cursor;

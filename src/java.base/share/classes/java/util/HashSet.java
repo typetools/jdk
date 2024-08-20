@@ -27,11 +27,16 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InvalidObjectException;
@@ -126,7 +131,7 @@ public class HashSet<E>
      * @param c the collection whose elements are to be placed into this set
      * @throws NullPointerException if the specified collection is null
      */
-    public HashSet(Collection<? extends E> c) {
+    public @PolyNonEmpty HashSet(@PolyNonEmpty Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
     }
@@ -181,7 +186,7 @@ public class HashSet<E>
      * @see ConcurrentModificationException
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty HashSet<E> this) {
         return map.keySet().iterator();
     }
 
@@ -201,6 +206,7 @@ public class HashSet<E>
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied HashSet<E> this) {
         return map.isEmpty();
     }
@@ -215,6 +221,7 @@ public class HashSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.containsKey(o);
     }
@@ -231,6 +238,8 @@ public class HashSet<E>
      * @return {@code true} if this set did not already contain the specified
      * element
      */
+    @SideEffectsOnly("this")
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied HashSet<E> this, E e) {
         return map.put(e, PRESENT)==null;
     }
@@ -247,6 +256,7 @@ public class HashSet<E>
      * @param o object to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
+    @SideEffectsOnly("this")
     public boolean remove(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.remove(o)==PRESENT;
     }
@@ -255,6 +265,7 @@ public class HashSet<E>
      * Removes all of the elements from this set.
      * The set will be empty after this call returns.
      */
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied HashSet<E> this) {
         map.clear();
     }

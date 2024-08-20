@@ -25,6 +25,9 @@
 
 package sun.nio.fs;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Iterator;
@@ -204,6 +207,7 @@ class WindowsDirectoryStream
         }
 
         @Override
+        @Pure
         public synchronized boolean hasNext() {
             if (nextEntry == null && !atEof)
                 nextEntry = readNextEntry();
@@ -211,6 +215,7 @@ class WindowsDirectoryStream
         }
 
         @Override
+        @SideEffectsOnly("this")
         public synchronized Path next() {
             Path result = null;
             if (nextEntry == null && !atEof) {

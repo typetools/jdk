@@ -48,6 +48,8 @@ import sun.security.util.ResourcesMgr;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * This class represents a default implementation for
  * {@code javax.security.auth.login.Configuration}.
@@ -586,6 +588,7 @@ public final class ConfigFile extends Configuration {
             return value;
         }
 
+        @Pure
         private boolean peek(String expect) {
             switch (lookahead) {
                 case ',':

@@ -25,6 +25,9 @@
 
 package sun.net.www;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.Iterator;
 
 /* This is useful for the nightmare of parsing multi-part HTTP/RFC822 headers
@@ -199,9 +202,11 @@ public class HeaderParser {
         ParserIterator (boolean returnValue) {
             returnsValue = returnValue;
         }
+        @Pure
         public boolean hasNext () {
             return index<nkeys;
         }
+        @SideEffectsOnly("this")
         public String next () {
             return tab[index++][returnsValue?1:0];
         }

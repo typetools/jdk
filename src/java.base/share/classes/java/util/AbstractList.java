@@ -29,10 +29,14 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -121,6 +125,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this list
      */
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied AbstractList<E> this, E e) {
         add(size(), e);
         return true;
@@ -378,11 +383,14 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
          */
         int expectedModCount = modCount;
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor != size();
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty Itr this) {
             checkForComodification();
             try {
                 int i = cursor;
@@ -861,21 +869,26 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                 private final ListIterator<E> i =
                         root.listIterator(offset + index);
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return nextIndex() < size;
                 }
 
-                public E next() {
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty ListIterator<E> this*/) {
                     if (hasNext())
                         return i.next();
                     else
                         throw new NoSuchElementException();
                 }
 
+                @Pure
                 public boolean hasPrevious() {
                     return previousIndex() >= 0;
                 }
 
+                @SideEffectsOnly("this")
                 public E previous() {
                     if (hasPrevious())
                         return i.previous();
@@ -883,10 +896,12 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                         throw new NoSuchElementException();
                 }
 
+                @Pure
                 public int nextIndex() {
                     return i.nextIndex() - offset;
                 }
 
+                @Pure
                 public int previousIndex() {
                     return i.previousIndex() - offset;
                 }

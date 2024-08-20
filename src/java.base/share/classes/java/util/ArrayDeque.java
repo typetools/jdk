@@ -36,6 +36,10 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -44,6 +48,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.Serializable;
@@ -218,7 +223,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param c the collection whose elements are to be placed into the deque
      * @throws NullPointerException if the specified collection is null
      */
-    public ArrayDeque(Collection<? extends E> c) {
+    public @PolyNonEmpty ArrayDeque(@PolyNonEmpty Collection<? extends E> c) {
         this(c.size());
         copyElements(c);
     }
@@ -370,7 +375,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst(@GuardSatisfied ArrayDeque<E> this) {
+    public E removeFirst(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         E e = pollFirst();
         if (e == null)
             throw new NoSuchElementException();
@@ -380,7 +385,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied ArrayDeque<E> this) {
+    public E removeLast(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         E e = pollLast();
         if (e == null)
             throw new NoSuchElementException();
@@ -410,7 +415,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getFirst(@GuardSatisfied ArrayDeque<E> this) {
+    public E getFirst(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         E e = elementAt(elements, head);
         if (e == null)
             throw new NoSuchElementException();
@@ -420,7 +425,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getLast(@GuardSatisfied ArrayDeque<E> this) {
+    public E getLast(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         final Object[] es = elements;
         E e = elementAt(es, dec(tail, es.length));
         if (e == null)
@@ -433,6 +438,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
         return elementAt(elements, head);
     }
 
+    @Pure
     public @Nullable E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
@@ -505,6 +511,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(@GuardSatisfied ArrayDeque<E> this, E e) {
         addLast(e);
         return true;
@@ -534,7 +541,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied ArrayDeque<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         return removeFirst();
     }
 
@@ -562,7 +569,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E element() {
+    public E element(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         return getFirst();
     }
 
@@ -575,6 +582,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque, or
      *         {@code null} if this deque is empty
      */
+    @Pure
     public @Nullable E peek() {
         return peekFirst();
     }
@@ -604,7 +612,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      *         of the stack represented by this deque)
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E pop(@GuardSatisfied ArrayDeque<E> this) {
+    public E pop(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         return removeFirst();
     }
 
@@ -672,6 +680,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      */
     @EnsuresNonNullIf(expression={"peek()", "peekFirst()", "peekLast()", "poll()", "pollFirst()", "pollLast()"}, result=false)
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied ArrayDeque<E> this) {
         return head == tail;
     }
@@ -685,11 +694,11 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return an iterator over the elements in this deque
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty ArrayDeque<E> this) {
         return new DeqIterator();
     }
 
-    public Iterator<E> descendingIterator() {
+    public @PolyNonEmpty Iterator<E> descendingIterator(@PolyNonEmpty ArrayDeque<E> this) {
         return new DescendingIterator();
     }
 
@@ -708,11 +717,14 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
 
         DeqIterator() { cursor = head; }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean hasNext() {
             return remaining > 0;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty DeqIterator this) {
             if (remaining <= 0)
                 throw new NoSuchElementException();
             final Object[] es = elements;
@@ -760,7 +772,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     private class DescendingIterator extends DeqIterator {
         DescendingIterator() { cursor = dec(tail, elements.length); }
 
-        public final E next() {
+        public final E next(@NonEmpty DescendingIterator this) {
             if (remaining <= 0)
                 throw new NoSuchElementException();
             final Object[] es = elements;
@@ -1019,6 +1031,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return {@code true} if this deque contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied ArrayDeque<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o != null) {
             final Object[] es = elements;

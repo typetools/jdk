@@ -36,6 +36,9 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -44,6 +47,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.invoke.MethodHandles;
@@ -771,7 +775,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @param v the element
      * @return the element
      */
-    private E screenNullResult(E v) {
+    private E screenNullResult(@NonNull E v) {
         if (v == null)
             throw new NoSuchElementException();
         return v;
@@ -878,6 +882,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         return true;
     }
 
+    @Pure
     public @Nullable E peekFirst() {
         restart: for (;;) {
             E item;
@@ -893,6 +898,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         }
     }
 
+    @Pure
     public @Nullable E peekLast() {
         restart: for (;;) {
             E item;
@@ -911,14 +917,14 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getFirst() {
+    public E getFirst(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(peekFirst());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getLast() {
+    public E getLast(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(peekLast());
     }
 
@@ -967,14 +973,14 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst() {
+    public E removeFirst(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(pollFirst());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast() {
+    public E removeLast(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(pollLast());
     }
 
@@ -999,27 +1005,29 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         return offerLast(e);
     }
 
     public @Nullable E poll()           { return pollFirst(); }
+    @Pure
     public @Nullable E peek()           { return peekFirst(); }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E remove()         { return removeFirst(); }
+    public E remove(@NonEmpty ConcurrentLinkedDeque<E> this)         { return removeFirst(); }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E pop()            { return removeFirst(); }
+    public E pop(@NonEmpty ConcurrentLinkedDeque<E> this)            { return removeFirst(); }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E element()        { return getFirst(); }
+    public E element(@NonEmpty ConcurrentLinkedDeque<E> this)        { return getFirst(); }
 
     /**
      * @throws NullPointerException {@inheritDoc}
@@ -1087,6 +1095,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @return {@code true} if this deque contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         if (o != null) {
             for (Node<E> p = first(); p != null; p = succ(p)) {
@@ -1105,6 +1114,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      */
     @EnsuresNonNullIf(expression={"peek()", "peekFirst()", "peekLast()", "poll()", "pollFirst()", "pollLast()"}, result=false)
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return peekFirst() == null;
     }
@@ -1426,11 +1436,14 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
             }
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return nextItem != null;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty AbstractItr this) {
             E item = nextItem;
             if (item == null) throw new NoSuchElementException();
             advance();

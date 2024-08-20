@@ -30,8 +30,11 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LengthOf;
 import org.checkerframework.checker.index.qual.SameLen;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.NoSuchElementException;
@@ -110,6 +113,7 @@ public interface CharSequence {
      * @since 15
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     default boolean isEmpty() {
         return this.length() == 0;
     }
@@ -164,11 +168,14 @@ public interface CharSequence {
         class CharIterator implements PrimitiveIterator.OfInt {
             int cur = 0;
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cur < length();
             }
 
-            public int nextInt() {
+            @SideEffectsOnly("this")
+            public int nextInt(@NonEmpty CharIterator this) {
                 if (hasNext()) {
                     return charAt(cur++);
                 } else {
@@ -238,11 +245,14 @@ public interface CharSequence {
                 }
             }
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cur < length();
             }
 
-            public int nextInt() {
+            @SideEffectsOnly("this")
+            public int nextInt(@NonEmpty CodePointIterator this) {
                 final int length = length();
 
                 if (cur >= length) {

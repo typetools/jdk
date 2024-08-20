@@ -36,12 +36,16 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -910,11 +914,14 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             advance(null);
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean hasNext() {
             return nextNode != null;
         }
 
-        public final E next() {
+        @SideEffectsOnly("this")
+        public final E next(@NonEmpty Itr this) {
             final Node p;
             if ((p = nextNode) == null) throw new NoSuchElementException();
             E e = nextItem;
@@ -1230,6 +1237,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         xfer(e, true, ASYNC, 0L);
         return true;
@@ -1350,6 +1358,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         return new Itr();
     }
 
+    @Pure
     public E peek() {
         restartFromHead: for (;;) {
             for (Node p = head; p != null;) {
@@ -1375,6 +1384,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} if this queue contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return firstDataNode() == null;
     }
@@ -1465,6 +1475,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         restartFromHead: for (;;) {

@@ -25,12 +25,16 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -151,7 +155,9 @@ class ImmutableCollections {
     @jdk.internal.ValueBased
     static abstract class AbstractImmutableCollection<E> extends AbstractCollection<E> {
         // all mutating methods throw UnsupportedOperationException
-        @Override public boolean add(E e) { throw uoe(); }
+        @Override
+        @EnsuresNonEmpty("this")
+        public boolean add(E e) { throw uoe(); }
         @Override public boolean addAll(Collection<? extends E> c) { throw uoe(); }
         @Override public void    clear() { throw uoe(); }
         @Override public boolean remove(@UnknownSignedness Object o) { throw uoe(); }
@@ -333,6 +339,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -369,11 +376,14 @@ class ImmutableCollections {
             isListIterator = true;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor != size;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty ListItr<E> this) {
             try {
                 int i = cursor;
                 E next = list.get(i);
@@ -580,6 +590,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -677,6 +688,7 @@ class ImmutableCollections {
 
         @Pure
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return elements.length == 0;
         }
@@ -814,12 +826,14 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
 
         @Override
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return o.equals(e0) || e1.equals(o); // implicit nullcheck of o
         }
@@ -831,17 +845,20 @@ class ImmutableCollections {
 
         @Override
         public Iterator<E> iterator() {
-            return new Iterator<>() {
+            return new Iterator<E>() {
                 private int idx = (e1 == EMPTY) ? 1 : 2;
 
                 @Override
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return idx > 0;
                 }
 
                 @Override
+                @SideEffectsOnly("this")
                 @SuppressWarnings("unchecked")
-                public E next() {
+                public E next(/*@NonEmpty Iterator<E> this*/) {
                     if (idx == 1) {
                         idx = 0;
                         return (REVERSE || e1 == EMPTY) ? e0 : (E)e1;
@@ -943,12 +960,14 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }
 
         @Override
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;
@@ -968,12 +987,15 @@ class ImmutableCollections {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return remaining > 0;
             }
 
             @Override
-            public E next() {
+            @SideEffectsOnly("this")
+            public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
                     E element;
                     int idx = this.idx;
@@ -1150,6 +1172,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -1268,6 +1291,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }
@@ -1286,10 +1310,13 @@ class ImmutableCollections {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return remaining > 0;
             }
 
+            @SideEffectsOnly("this")
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {
@@ -1305,7 +1332,7 @@ class ImmutableCollections {
             }
 
             @Override
-            public Map.Entry<K,V> next() {
+            public Map.Entry<K,V> next(@NonEmpty MapNIterator this) {
                 if (remaining > 0) {
                     int idx;
                     while (table[idx = nextIndex()] == null) {}

@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -101,6 +103,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
+    @Pure
     public synchronized E peek() {
         int     len = size();
 
@@ -115,7 +118,8 @@ public class Stack<E> extends Vector<E> {
      * @return  {@code true} if and only if this stack contains
      *          no items; {@code false} otherwise.
      */
-    @SideEffectFree
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean empty() {
         return size() == 0;
     }

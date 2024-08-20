@@ -25,6 +25,10 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
+
 import java.lang.ref.SoftReference;
 import java.nio.charset.Charset;
 import java.nio.charset.spi.CharsetProvider;
@@ -179,10 +183,12 @@ public class AbstractCharsetProvider
         return new Iterator<Charset>() {
                 Iterator<String> i = ks.iterator();
 
+                @Pure
                 public boolean hasNext() {
                     return i.hasNext();
                 }
 
+                @SideEffectsOnly("this")
                 public Charset next() {
                     String csn = i.next();
                     synchronized (AbstractCharsetProvider.this) {

@@ -25,6 +25,9 @@
 
 package sun.nio.fs;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.nio.file.spi.*;
@@ -214,6 +217,7 @@ abstract class UnixFileSystem
         }
 
         @Override
+        @Pure
         public synchronized boolean hasNext() {
             if (next != null)
                 return true;
@@ -222,6 +226,7 @@ abstract class UnixFileSystem
         }
 
         @Override
+        @SideEffectsOnly("this")
         public synchronized FileStore next() {
             if (next == null)
                 next = readNext();

@@ -27,6 +27,9 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -36,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -272,6 +276,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *          {@code false} otherwise.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public synchronized boolean isEmpty(@GuardSatisfied Hashtable<K, V> this) {
         return count == 0;
     }
@@ -325,6 +330,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws     NullPointerException  if the value is {@code null}
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public synchronized boolean contains(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object value) {
         if (value == null) {
             throw new NullPointerException();
@@ -700,6 +706,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return count;
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return containsKey(o);
         }
@@ -740,11 +747,13 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return getIterator(ENTRIES);
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(Map.Entry<K,V> o) {
             return super.add(o);
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
@@ -828,6 +837,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return count;
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             return containsValue(o);
         }
@@ -1485,6 +1495,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             this.iterator = iterator;
         }
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() {
             Entry<?,?> e = entry;
             int i = index;
@@ -1499,7 +1510,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         @SuppressWarnings("unchecked")
-        public T nextElement() {
+        public T nextElement(@NonEmpty Enumerator<T> this) {
             Entry<?,?> et = entry;
             int i = index;
             Entry<?,?>[] t = table;
@@ -1518,11 +1529,14 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         // Iterator methods
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return hasMoreElements();
         }
 
-        public T next() {
+        @SideEffectsOnly("this")
+        public T next(@NonEmpty Enumerator<T> this) {
             if (Hashtable.this.modCount != expectedModCount)
                 throw new ConcurrentModificationException();
             return nextElement();

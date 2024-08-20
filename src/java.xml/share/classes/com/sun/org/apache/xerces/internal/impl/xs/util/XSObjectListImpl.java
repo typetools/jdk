@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.impl.xs.util;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import com.sun.org.apache.xerces.internal.xs.XSObject;
 import com.sun.org.apache.xerces.internal.xs.XSObjectList;
 import java.lang.reflect.Array;
@@ -47,9 +48,11 @@ public class XSObjectListImpl extends AbstractList<XSObject> implements XSObject
     public static final XSObjectListImpl EMPTY_LIST = new XSObjectListImpl(new XSObject[0], 0);
     private static final ListIterator<XSObject> EMPTY_ITERATOR = new EmptyIterator();
     static class EmptyIterator implements ListIterator<XSObject> {
+        @Pure
         public boolean hasNext() {
             return false;
         }
+        @SideEffectsOnly("this")
         public XSObject next() {
             throw new NoSuchElementException();
         }
@@ -231,9 +234,11 @@ public class XSObjectListImpl extends AbstractList<XSObject> implements XSObject
         public XSObjectListIterator(int index) {
             this.index = index;
         }
+        @Pure
         public boolean hasNext() {
             return (index < fLength);
         }
+        @SideEffectsOnly("this")
         public XSObject next() {
             if (index < fLength) {
                 return fArray[index++];

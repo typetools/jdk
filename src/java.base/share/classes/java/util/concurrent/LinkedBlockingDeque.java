@@ -36,12 +36,16 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.AbstractQueue;
@@ -451,7 +455,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst() {
+    public E removeFirst(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = pollFirst();
         if (x == null) throw new NoSuchElementException();
         return x;
@@ -460,7 +464,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast() {
+    public E removeLast(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = pollLast();
         if (x == null) throw new NoSuchElementException();
         return x;
@@ -551,7 +555,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getFirst() {
+    public E getFirst(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekFirst();
         if (x == null) throw new NoSuchElementException();
         return x;
@@ -560,12 +564,13 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E getLast() {
+    public E getLast(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekLast();
         if (x == null) throw new NoSuchElementException();
         return x;
     }
 
+    @Pure
     public @Nullable E peekFirst() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -576,6 +581,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
     }
 
+    @Pure
     public @Nullable E peekLast() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -632,6 +638,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @throws IllegalStateException if this deque is full
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         addLast(e);
         return true;
@@ -671,7 +678,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    public E remove() {
+    public E remove(@NonEmpty LinkedBlockingDeque<E> this) {
         return removeFirst();
     }
 
@@ -697,10 +704,11 @@ public class LinkedBlockingDeque<E extends Object>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    public E element() {
+    public E element(@NonEmpty LinkedBlockingDeque<E> this) {
         return getFirst();
     }
 
+    @Pure
     public @Nullable E peek() {
         return peekFirst();
     }
@@ -775,7 +783,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E pop() {
+    public E pop(@NonEmpty LinkedBlockingDeque<E> this) {
         return removeFirst();
     }
 
@@ -824,6 +832,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return {@code true} if this deque contains the specified element
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
@@ -1091,11 +1100,14 @@ public class LinkedBlockingDeque<E extends Object>
             }
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return next != null;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty AbstractItr this) {
             Node<E> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();

@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyLowerBound;
 import org.checkerframework.checker.index.qual.PolyUpperBound;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -1594,6 +1595,7 @@ public final @UsesObjectEquals class Math {
      * @return  the larger of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static @PolyUpperBound int max(@PolyUpperBound int a, @PolyUpperBound int b) {
         return (a >= b) ? a : b;
@@ -1610,6 +1612,7 @@ public final @UsesObjectEquals class Math {
      * @return  the larger of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     public static @PolyUpperBound long max(@PolyUpperBound long a, @PolyUpperBound long b) {
         return (a >= b) ? a : b;
     }
@@ -1633,6 +1636,7 @@ public final @UsesObjectEquals class Math {
      * @return  the larger of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float max(float a, float b) {
         if (a != a)
@@ -1661,6 +1665,7 @@ public final @UsesObjectEquals class Math {
      * @return  the larger of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double max(double a, double b) {
         if (a != a)
@@ -1701,6 +1706,7 @@ public final @UsesObjectEquals class Math {
      * @return  the smaller of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     public static @PolyLowerBound long min(@PolyLowerBound long a, @PolyLowerBound long b) {
         return (a <= b) ? a : b;
     }
@@ -1720,6 +1726,7 @@ public final @UsesObjectEquals class Math {
      * @return  the smaller of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float min(float a, float b) {
         if (a != a)
@@ -1748,6 +1755,7 @@ public final @UsesObjectEquals class Math {
      * @return  the smaller of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double min(double a, double b) {
         if (a != a)

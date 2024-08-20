@@ -28,6 +28,7 @@ package sun.util.resources;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.AbstractSet;
 import java.util.Collections;
@@ -224,6 +225,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
                 private boolean usingParent;
 
                 @Override
+                @Pure
                 public boolean hasNext() {
                     if (itr.hasNext()) {
                         return true;
@@ -238,6 +240,7 @@ public abstract class ParallelListResourceBundle extends ResourceBundle {
                 }
 
                 @Override
+                @SideEffectsOnly("this")
                 public String next() {
                     if (hasNext()) {
                         return itr.next();

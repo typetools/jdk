@@ -24,6 +24,8 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Iterator;
@@ -41,14 +43,14 @@ import java.util.function.Consumer;
  * @since 1.5
  * @jls 14.14.2 The enhanced {@code for} statement
  */
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"aliasing", "lock", "nullness"})
 public interface Iterable<T> {
     /**
      * Returns an iterator over elements of type {@code T}.
      *
      * @return an Iterator.
      */
-    Iterator<T> iterator();
+    @PolyNonEmpty Iterator<T> iterator(@PolyNonEmpty Iterable<T> this);
 
     /**
      * Performs the given action for each element of the {@code Iterable}
@@ -72,7 +74,7 @@ public interface Iterable<T> {
      * @throws NullPointerException if the specified action is null
      * @since 1.8
      */
-    default void forEach(Consumer<? super T> action) {
+    default void forEach(@NonLeaked Consumer<? super T> action) {
         Objects.requireNonNull(action);
         for (T t : this) {
             action.accept(t);

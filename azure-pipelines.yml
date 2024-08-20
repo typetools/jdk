@@ -1,3 +1,6 @@
+variables:
+  system.debug: true
+
 jobs:
 
 - job: build_jdk
@@ -39,16 +42,35 @@ jobs:
     displayName: show environment
   - bash: |
       set -ex
+      if [ -d /tmp/$USER/git-scripts ]; \
+        then git -C /tmp/$USER/git-scripts pull -q > /dev/null 2>&1 ; \
+        else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git ; \
+      fi
+    displayName: git-scripts
+  - bash: |
+      set -ex
       if [ -d /tmp/$USER/plume-scripts ]; \
         then git -C /tmp/$USER/plume-scripts pull -q > /dev/null 2>&1 ; \
-        else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git ; \
+        else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/plume-scripts.git ; \
       fi
     displayName: plume-scripts
   # This creates ../jdk17u .
-  # If the depth is too small, the merge will fail.
+  # If the depth is too small, the merge will fail.  However, we cannot use "--filter=blob:none"
+  # because that leads to "fatal: remote error: filter 'combine' not supported".
   - bash: |
       set -ex
-      /tmp/$USER/plume-scripts/git-clone-related typetools jdk17u ../jdk17u -q --filter=blob:none
+      pwd
+      ls -al .. || true
+      ls -al ../jdk17u || true
+      df .
+      /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u --depth 999
+      git config --global user.email "you@example.com"
+      git config --global user.name "Your Name"
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
+      cd ../jdk17u && git status
+      git diff --exit-code
+      echo $?
     displayName: clone-related-jdk17u
   - bash: |
       set -ex
@@ -56,8 +78,12 @@ jobs:
       git config --global user.name "Your Name"
       git config --global pull.ff true
       git config --global pull.rebase false
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
       eval `/tmp/$USER/plume-scripts/ci-info typetools`
-      cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README" && false)
+      cd ../jdk17u && git status
+      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+      cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
     displayName: git merge
   - bash: cd ../jdk17u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
     displayName: configure
@@ -76,18 +102,18 @@ jobs:
   #   displayName: make run-test
 
 - job: test_cftests_all_jdk11
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk11:latest
   steps:
   - checkout: self
     fetchDepth: 25
-  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git
-    displayName: clone plume-scripts
-  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
+    displayName: clone git-scripts
+  - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
-# test-cftests-all.sh sometimes runs out of memory, but running its component parts in sequence does not.
+# test-cftests-all.sh sometimes runs out of memory (under JDK 11 and 17), but running its component parts in sequence does not.
 #   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
 #     displayName: test-cftests-all.sh
   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-junit.sh)
@@ -108,31 +134,40 @@ jobs:
 #     displayName: publish all.tgz
 
 - job: test_cftests_all_jdk17
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
   steps:
   - checkout: self
     fetchDepth: 25
-  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git
-    displayName: clone plume-scripts
-  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
+    displayName: clone git-scripts
+  - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
-  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
-    displayName: test-cftests-all.sh
+# test-cftests-all.sh sometimes runs out of memory (under JDK 11 and 17), but running its component parts in sequence does not.
+#   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
+#     displayName: test-cftests-all.sh
+  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-junit.sh)
+    displayName: test-cftests-junit.sh
+  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-nonjunit.sh)
+    displayName: test-cftests-nonjunit.sh
+  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-inference.sh)
+    displayName: test-cftests-inference.sh
+  - bash: (cd ../checker-framework && checker/bin-devel/test-typecheck.sh)
+    displayName: test-typecheck.sh
 
 - job: test_cftests_all_jdk20
-  timeoutInMinutes: 105
+  timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk20:latest
   steps:
   - checkout: self
     fetchDepth: 25
-  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git
-    displayName: clone plume-scripts
-  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
+    displayName: clone git-scripts
+  - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
     displayName: test-cftests-all.sh
@@ -145,9 +180,9 @@ jobs:
   steps:
   - checkout: self
     fetchDepth: 25
-  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git
-    displayName: clone plume-scripts
-  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
+    displayName: clone git-scripts
+  - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
   - bash: (cd ../checker-framework && checker/bin-devel/test-daikon.sh)
     displayName: test-daikon.sh
@@ -159,9 +194,9 @@ jobs:
   steps:
   - checkout: self
     fetchDepth: 25
-  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --filter=blob:none -q https://github.com/plume-lib/plume-scripts.git
-    displayName: clone plume-scripts
-  - bash: /tmp/$USER/plume-scripts/git-clone-related typetools checker-framework
+  - bash: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
+    displayName: clone git-scripts
+  - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
   - bash: (cd ../checker-framework && checker/bin-devel/test-plume-lib.sh)
     displayName: test-plume-lib.sh

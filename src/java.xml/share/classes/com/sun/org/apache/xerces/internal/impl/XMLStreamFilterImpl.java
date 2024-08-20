@@ -25,6 +25,9 @@
 
 package com.sun.org.apache.xerces.internal.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.StreamFilter;
 import javax.xml.stream.XMLStreamException;
@@ -94,6 +97,7 @@ public class XMLStreamFilterImpl implements javax.xml.stream.XMLStreamReader {
      * @return
      * @throws XMLStreamException
      */
+    @SideEffectsOnly("this")
     public int next() throws XMLStreamException {
         if (fStreamAdvancedByHasNext && fEventAccepted) {
             fStreamAdvancedByHasNext = false;
@@ -132,6 +136,7 @@ public class XMLStreamFilterImpl implements javax.xml.stream.XMLStreamReader {
      * @throws XMLStreamException
      * @return
      */
+    @Pure
     public boolean hasNext() throws XMLStreamException {
         if (fStreamReader.hasNext()) {
             if (!fEventAccepted) {

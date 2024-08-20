@@ -28,6 +28,10 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -37,8 +41,10 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -98,7 +104,7 @@ import jdk.internal.access.SharedSecrets;
  * @since   1.2
  */
 
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "index", "nonempty", "nullness"})
 public class Collections {
     // Suppresses default constructor, ensuring non-instantiability.
     private Collections() {
@@ -614,6 +620,8 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
+    @Pure
+    @StaticallyExecutable
     public static <T extends Object & Comparable<? super T>> T min(Collection<? extends T> coll) {
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -650,6 +658,8 @@ public class Collections {
      * @see Comparable
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
+    @Pure
+    @StaticallyExecutable
     public static <T> T min(Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
         if (comp==null)
             return (T)min((Collection) coll);
@@ -687,6 +697,8 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
+    @Pure
+    @StaticallyExecutable
     public static <T extends Object & Comparable<? super T>> T max(Collection<? extends T> coll) {
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -723,6 +735,8 @@ public class Collections {
      * @see Comparable
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
+    @Pure
+    @StaticallyExecutable
     public static <T> T max(Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
         if (comp==null)
             return (T)max((Collection) coll);
@@ -1036,7 +1050,7 @@ public class Collections {
      */
     @SuppressWarnings("unchecked")
     @SideEffectFree
-    public static <T> Collection<T> unmodifiableCollection(Collection<? extends T> c) {
+    public static <T> @PolyNonEmpty Collection<T> unmodifiableCollection(@PolyNonEmpty Collection<? extends T> c) {
         if (c.getClass() == UnmodifiableCollection.class) {
             return (Collection<T>) c;
         }
@@ -1053,7 +1067,7 @@ public class Collections {
         @SuppressWarnings("serial") // Conditionally serializable
         final Collection<? extends E> c;
 
-        UnmodifiableCollection(Collection<? extends E> c) {
+        @PolyNonEmpty UnmodifiableCollection(@PolyNonEmpty Collection<? extends E> c) {
             if (c==null)
                 throw new NullPointerException();
             this.c = c;
@@ -1062,8 +1076,10 @@ public class Collections {
         @Pure
         public @NonNegative int size()                          {return c.size();}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   {return c.isEmpty();}
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o)          {return c.contains(o);}
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.UnmodifiableCollection<@PolyNull @PolySigned E> this)                  {return c.toArray();}
@@ -1073,12 +1089,15 @@ public class Collections {
         public String toString()                   {return c.toString();}
 
         @SideEffectFree
-        public Iterator<E> iterator() {
+        public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty UnmodifiableCollection<E> this) {
             return new Iterator<E>() {
                 private final Iterator<? extends E> i = c.iterator();
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {return i.hasNext();}
-                public E next()          {return i.next();}
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty Iterator<E> this*/)          {return i.next();}
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
@@ -1090,6 +1109,7 @@ public class Collections {
             };
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(E e) {
             throw new UnsupportedOperationException();
         }
@@ -1157,7 +1177,7 @@ public class Collections {
      */
     @SuppressWarnings("unchecked")
     @SideEffectFree
-    public static <T> Set<T> unmodifiableSet(Set<? extends T> s) {
+    public static <T> @PolyNonEmpty Set<T> unmodifiableSet(@PolyNonEmpty Set<? extends T> s) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (s.getClass() == UnmodifiableSet.class) {
             return (Set<T>) s;
@@ -1195,7 +1215,7 @@ public class Collections {
      *        returned.
      * @return an unmodifiable view of the specified sorted set.
      */
-    public static <T> SortedSet<T> unmodifiableSortedSet(SortedSet<T> s) {
+    public static <T> @PolyNonEmpty SortedSet<T> unmodifiableSortedSet(@PolyNonEmpty SortedSet<T> s) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (s.getClass() == UnmodifiableSortedSet.class) {
             return s;
@@ -1250,7 +1270,7 @@ public class Collections {
      * @return an unmodifiable view of the specified navigable set
      * @since 1.8
      */
-    public static <T> NavigableSet<T> unmodifiableNavigableSet(NavigableSet<T> s) {
+    public static <T> @PolyNonEmpty NavigableSet<T> unmodifiableNavigableSet(@PolyNonEmpty NavigableSet<T> s) {
         if (s.getClass() == UnmodifiableNavigableSet.class) {
             return s;
         }
@@ -1346,7 +1366,7 @@ public class Collections {
      * @return an unmodifiable view of the specified list.
      */
     @SuppressWarnings("unchecked")
-    public static <T> List<T> unmodifiableList(List<? extends T> list) {
+    public static <T> @PolyNonEmpty List<T> unmodifiableList(@PolyNonEmpty List<? extends T> list) {
         if (list.getClass() == UnmodifiableList.class || list.getClass() == UnmodifiableRandomAccessList.class) {
            return (List<T>) list;
         }
@@ -1400,16 +1420,21 @@ public class Collections {
             throw new UnsupportedOperationException();
         }
 
-        public ListIterator<E> listIterator()   {return listIterator(0);}
+        public @PolyNonEmpty ListIterator<E> listIterator(@PolyNonEmpty UnmodifiableList<E> this)   {return listIterator(0);}
 
         public ListIterator<E> listIterator(final int index) {
             return new ListIterator<E>() {
                 private final ListIterator<? extends E> i
                     = list.listIterator(index);
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     {return i.hasNext();}
-                public E next()              {return i.next();}
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty ListIterator<E> this*/)              {return i.next();}
+                @Pure
                 public boolean hasPrevious() {return i.hasPrevious();}
+                @SideEffectsOnly("this")
                 public E previous()          {return i.previous();}
                 public int nextIndex()       {return i.nextIndex();}
                 public int previousIndex()   {return i.previousIndex();}
@@ -1502,7 +1527,7 @@ public class Collections {
      * @return an unmodifiable view of the specified map.
      */
     @SuppressWarnings("unchecked")
-    public static <K,V> Map<K,V> unmodifiableMap(Map<? extends K, ? extends V> m) {
+    public static <K,V> @PolyNonEmpty Map<K,V> unmodifiableMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (m.getClass() == UnmodifiableMap.class) {
             return (Map<K,V>) m;
@@ -1529,6 +1554,7 @@ public class Collections {
         @Pure
         public @NonNegative int size()                        {return m.size();}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                 {return m.isEmpty();}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
@@ -1744,10 +1770,13 @@ public class Collections {
                 return new Iterator<Map.Entry<K,V>>() {
                     private final Iterator<? extends Map.Entry<? extends K, ? extends V>> i = c.iterator();
 
+                    @Pure
+                    @EnsuresNonEmptyIf(result = true, expression = "this")
                     public boolean hasNext() {
                         return i.hasNext();
                     }
-                    public Map.Entry<K,V> next() {
+                    @SideEffectsOnly("this")
+                    public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return new UnmodifiableEntry<>(i.next());
                     }
                     public void remove() {
@@ -1792,6 +1821,7 @@ public class Collections {
              * that the equality-candidate is Map.Entry and calls its
              * setValue method.
              */
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
@@ -1871,7 +1901,7 @@ public class Collections {
      * @return an unmodifiable view of the specified sorted map.
      */
     @SuppressWarnings("unchecked")
-    public static <K,V> SortedMap<K,V> unmodifiableSortedMap(SortedMap<K, ? extends V> m) {
+    public static <K,V> @PolyNonEmpty SortedMap<K,V> unmodifiableSortedMap(@PolyNonEmpty SortedMap<K, ? extends V> m) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (m.getClass() == UnmodifiableSortedMap.class) {
             return (SortedMap<K,V>) m;
@@ -1926,7 +1956,7 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static <K,V> NavigableMap<K,V> unmodifiableNavigableMap(NavigableMap<K, ? extends V> m) {
+    public static <K,V> @PolyNonEmpty NavigableMap<K,V> unmodifiableNavigableMap(@PolyNonEmpty NavigableMap<K, ? extends V> m) {
         if (m.getClass() == UnmodifiableNavigableMap.class) {
             return (NavigableMap<K,V>) m;
         }
@@ -2133,10 +2163,12 @@ public class Collections {
             synchronized (mutex) {return c.size();}
         }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             synchronized (mutex) {return c.isEmpty();}
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {
             synchronized (mutex) {return c.contains(o);}
         }
@@ -2157,6 +2189,7 @@ public class Collections {
             return c.iterator(); // Must be manually synched by user!
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(E e) {
             synchronized (mutex) {return c.add(e);}
         }
@@ -2720,6 +2753,7 @@ public class Collections {
             synchronized (mutex) {return m.size();}
         }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             synchronized (mutex) {return m.isEmpty();}
         }
@@ -3229,8 +3263,10 @@ public class Collections {
         @Pure
         public @NonNegative int size()                          { return c.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   { return c.isEmpty(); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o)          { return c.contains(o); }
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.CheckedCollection<@PolyNull @PolySigned E> this)                  { return c.toArray(); }
@@ -3258,8 +3294,11 @@ public class Collections {
             // ListIterator with unsafe set()
             final Iterator<E> it = c.iterator();
             return new Iterator<E>() {
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() { return it.hasNext(); }
-                public E next()          { return it.next(); }
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty Iterator<E> this*/)          { return it.next(); }
                 public void remove()     {        it.remove(); }
                 public void forEachRemaining(Consumer<? super E> action) {
                     it.forEachRemaining(action);
@@ -3267,6 +3306,7 @@ public class Collections {
             };
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(E e)          { return c.add(typeCheck(e)); }
 
         @SuppressWarnings("serial") // Conditionally serializable
@@ -3373,8 +3413,11 @@ public class Collections {
         }
 
         public E element()              {return queue.element();}
+        @Pure
         public boolean equals(Object o) {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()           {return c.hashCode();}
+        @Pure
         public E peek()                 {return queue.peek();}
         public E poll()                 {return queue.poll();}
         public E remove()               {return queue.remove();}
@@ -3650,8 +3693,11 @@ public class Collections {
             final ListIterator<E> i = list.listIterator(index);
 
             return new ListIterator<E>() {
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     { return i.hasNext(); }
-                public E next()              { return i.next(); }
+                @SideEffectsOnly("this")
+                public E next(/*@NonEmpty ListIterator<E> this*/)              { return i.next(); }
                 public boolean hasPrevious() { return i.hasPrevious(); }
                 public E previous()          { return i.previous(); }
                 public int nextIndex()       { return i.nextIndex(); }
@@ -3812,6 +3858,7 @@ public class Collections {
         @Pure
         public @NonNegative int size()                      { return m.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()               { return m.isEmpty(); }
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
@@ -3952,11 +3999,13 @@ public class Collections {
             @Pure
             public int size()        { return s.size(); }
             @Pure
+            @EnsuresNonEmptyIf(result = false, expression = "this")
             public boolean isEmpty() { return s.isEmpty(); }
             public String toString() { return s.toString(); }
             public int hashCode()    { return s.hashCode(); }
             public void clear()      {        s.clear(); }
 
+            @EnsuresNonEmpty("this")
             public boolean add(Map.Entry<K, V> e) {
                 throw new UnsupportedOperationException();
             }
@@ -3968,10 +4017,13 @@ public class Collections {
                 final Iterator<Map.Entry<K, V>> i = s.iterator();
 
                 return new Iterator<Map.Entry<K,V>>() {
+                    @Pure
+                    @EnsuresNonEmptyIf(result = true, expression = "this")
                     public boolean hasNext() { return i.hasNext(); }
+                    @SideEffectsOnly("this")
                     public void remove()     { i.remove(); }
 
-                    public Map.Entry<K,V> next() {
+                    public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return checkedEntry(i.next(), valueType);
                     }
 
@@ -4026,6 +4078,7 @@ public class Collections {
              * setValue method.
              */
             @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean contains(@UnknownSignedness Object o) {
                 return o instanceof Map.Entry<?, ?> e
                         && s.contains((e instanceof CheckedEntry) ? e : checkedEntry(e, valueType));
@@ -4419,9 +4472,12 @@ public class Collections {
         static final EmptyIterator<Object> EMPTY_ITERATOR
             = new EmptyIterator<>();
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() { return false; }
-        public E next() { throw new NoSuchElementException(); }
-        public void remove() { throw new IllegalStateException(); }
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty EmptyIterator<E> this) { throw new NoSuchElementException(); }
+        public void remove(@NonEmpty EmptyIterator<E> this) { throw new IllegalStateException(); }
         @Override
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
@@ -4502,8 +4558,9 @@ public class Collections {
         static final EmptyEnumeration<Object> EMPTY_ENUMERATION
             = new EmptyEnumeration<>();
 
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() { return false; }
-        public E nextElement() { throw new NoSuchElementException(); }
+        public E nextElement(@NonEmpty EmptyEnumeration<E> this) { throw new NoSuchElementException(); }
         public Iterator<E> asIterator() { return emptyIterator(); }
     }
 
@@ -4556,10 +4613,12 @@ public class Collections {
         @Pure
         public @NonNegative int size() {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {return true;}
         public void clear() {}
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object obj) {return false;}
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
@@ -4698,10 +4757,12 @@ public class Collections {
         @Pure
         public @NonNegative int size() {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {return true;}
         public void clear() {}
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object obj) {return false;}
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
@@ -4846,6 +4907,7 @@ public class Collections {
         @Pure
         public @NonNegative int size()                          {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   {return true;}
         public void clear()                        {}
         @Pure
@@ -4952,10 +5014,13 @@ public class Collections {
     static <E> Iterator<E> singletonIterator(final E e) {
         return new Iterator<E>() {
             private boolean hasNext = true;
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return hasNext;
             }
-            public E next() {
+            @SideEffectsOnly("this")
+            public E next(/*@NonEmpty Iterator<E> this*/) {
                 if (hasNext) {
                     hasNext = false;
                     return e;
@@ -5046,6 +5111,7 @@ public class Collections {
         public @NonNegative int size() {return 1;}
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) {return eq(o, element);}
 
         // Override default methods for Collection
@@ -5107,6 +5173,7 @@ public class Collections {
         public @NonNegative int size()                   {return 1;}
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object obj) {return eq(obj, element);}
 
         public E get(int index) {
@@ -5180,6 +5247,7 @@ public class Collections {
         @Pure
         public @NonNegative int size()                                           {return 1;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                                {return false;}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
@@ -5331,6 +5399,7 @@ public class Collections {
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object obj) {
             return n != 0 && eq(obj, element);
         }
@@ -5601,11 +5670,12 @@ public class Collections {
         return new Enumeration<T>() {
             private final Iterator<T> i = c.iterator();
 
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return i.hasNext();
             }
 
-            public T nextElement() {
+            public T nextElement(/*@NonEmpty Enumeration<T> this*/) {
                 return i.next();
             }
         };
@@ -5851,10 +5921,13 @@ public class Collections {
         @Pure
         public @NonNegative int size()                 { return m.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()          { return m.isEmpty(); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
         public boolean remove(@UnknownSignedness Object o)   { return m.remove(o) != null; }
+        @EnsuresNonEmpty("this")
         public boolean add(E e) { return m.put(e, Boolean.TRUE) == null; }
         @SideEffectFree
         public Iterator<E> iterator()     { return s.iterator(); }
@@ -5933,18 +6006,22 @@ public class Collections {
         @SuppressWarnings("serial") // Conditionally serializable
         private final Deque<E> q;
         AsLIFOQueue(Deque<E> q)                     { this.q = q; }
+        @EnsuresNonEmpty("this")
         public boolean add(E e)                     { q.addFirst(e); return true; }
         public boolean offer(E e)                   { return q.offerFirst(e); }
         public E poll()                             { return q.pollFirst(); }
         public E remove()                           { return q.removeFirst(); }
+        @Pure
         public E peek()                             { return q.peekFirst(); }
         public E element()                          { return q.getFirst(); }
         public void clear()                         {        q.clear(); }
         @Pure
         public @NonNegative int size()                           { return q.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                    { return q.isEmpty(); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o)           { return q.contains(o); }
         public boolean remove(@UnknownSignedness Object o)             { return q.remove(o); }
         @SideEffectFree

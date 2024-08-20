@@ -25,6 +25,10 @@
 
 package sun.management.counter.perf;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
+
 import sun.management.counter.*;
 import java.nio.*;
 import java.util.*;
@@ -76,10 +80,12 @@ public class PerfInstrumentation {
         map = new TreeMap<>();
     }
 
+    @Pure
     boolean hasNext() {
         return (nextEntry < prologue.getUsed());
     }
 
+    @SideEffectsOnly("this")
     Counter getNextCounter() {
         if (! hasNext()) {
             return null;

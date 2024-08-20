@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -319,6 +321,7 @@ public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
      *          in the string after the current position; {@code false}
      *          otherwise.
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreTokens() {
         /*
          * Temporarily store this position and use it in the following
@@ -336,7 +339,7 @@ public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
      * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
      */
-    public @MinLen(1) String nextToken() {
+    public @MinLen(1) String nextToken(@NonEmpty StringTokenizer this) {
         /*
          * If next position already computed in hasMoreElements() and
          * delimiters have changed between the computation and this invocation,
@@ -372,7 +375,7 @@ public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
      *               tokenizer's string.
      * @throws    NullPointerException if delim is {@code null}
      */
-    public @MinLen(1) String nextToken(String delim) {
+    public @MinLen(1) String nextToken(@NonEmpty StringTokenizer this, String delim) {
         delimiters = delim;
 
         /* delimiter string specified, so set the appropriate flag. */
@@ -392,6 +395,7 @@ public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
      * @see     java.util.Enumeration
      * @see     java.util.StringTokenizer#hasMoreTokens()
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreElements() {
         return hasMoreTokens();
     }
@@ -408,7 +412,7 @@ public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
      * @see        java.util.Enumeration
      * @see        java.util.StringTokenizer#nextToken()
      */
-    public Object nextElement() {
+    public Object nextElement(@NonEmpty StringTokenizer this) {
         return nextToken();
     }
 

@@ -25,6 +25,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.function.Consumer;
@@ -103,7 +104,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code int} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        int nextInt();
+        int nextInt(@NonEmpty OfInt this);
 
         /**
          * {@inheritDoc}
@@ -170,7 +171,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code long} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        long nextLong();
+        long nextLong(@NonEmpty OfLong this);
 
         /**
          * {@inheritDoc}
@@ -236,7 +237,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code double} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        double nextDouble();
+        double nextDouble(@NonEmpty OfDouble this);
 
         /**
          * {@inheritDoc}

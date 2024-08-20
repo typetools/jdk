@@ -22,6 +22,9 @@
  */
 package com.sun.org.apache.xml.internal.security.keys.storage.implementations;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Iterator;
@@ -71,11 +74,14 @@ public class SingleCertificateResolver extends StorageResolverSpi {
         }
 
         /** {@inheritDoc} */
+        @Pure
         public boolean hasNext() {
+
             return !this.alreadyReturned;
         }
 
         /** {@inheritDoc} */
+        @SideEffectsOnly("this")
         public Certificate next() {
             if (this.alreadyReturned) {
                 throw new NoSuchElementException();

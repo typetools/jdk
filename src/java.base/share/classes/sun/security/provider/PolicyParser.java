@@ -687,6 +687,7 @@ public class PolicyParser {
         }
     }
 
+    @Pure
     private boolean peek(String expect) {
         boolean found = false;
 

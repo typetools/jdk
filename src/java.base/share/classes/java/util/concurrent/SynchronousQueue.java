@@ -37,6 +37,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -935,6 +936,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code true}
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return true;
     }
@@ -975,6 +977,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code false}
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
@@ -1031,6 +1034,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      *
      * @return {@code null}
      */
+    @Pure
     public E peek() {
         return null;
     }

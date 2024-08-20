@@ -25,6 +25,9 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+
 import java.io.*;
 import java.net.URL;
 import java.util.*;
@@ -698,6 +701,7 @@ class JarVerifier {
 
             String name;
 
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 if (name != null) {
                     return true;
@@ -717,7 +721,7 @@ class JarVerifier {
                 return false;
             }
 
-            public String nextElement() {
+            public String nextElement(/*@NonEmpty Enumeration<String> this*/) {
                 if (hasMoreElements()) {
                     String value = name;
                     name = null;
@@ -741,6 +745,7 @@ class JarVerifier {
             Enumeration<String> signers = null;
             JarEntry entry;
 
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 if (entry != null) {
                     return true;
@@ -766,7 +771,7 @@ class JarVerifier {
                 return false;
             }
 
-            public JarEntry nextElement() {
+            public JarEntry nextElement(/*@NonEmpty Enumeration<JarEntry> this*/) {
                 if (hasMoreElements()) {
                     JarEntry je = entry;
                     map.remove(je.getName());
@@ -794,6 +799,7 @@ class JarVerifier {
              * Grab entries from ZIP directory but screen out
              * metadata.
              */
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 if (name != null) {
                     return true;
@@ -813,7 +819,7 @@ class JarVerifier {
                 return false;
             }
 
-            public String nextElement() {
+            public String nextElement(/*@NonEmpty Enumeration<String> this*/) {
                 if (hasMoreElements()) {
                     String value = name;
                     name = null;

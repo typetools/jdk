@@ -33,6 +33,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.ObjectInputFilter.Config;
@@ -2857,6 +2858,7 @@ public class ObjectInputStream
          * Peeks at next byte value in stream.  Similar to read(), except
          * that it does not consume the read value.
          */
+        @Pure
         int peek() throws IOException {
             if (peekb >= 0) {
                 return peekb;
@@ -3181,6 +3183,7 @@ public class ObjectInputStream
          * the stream, or -1 if the end of the stream/block data (if in block
          * data mode) has been reached.
          */
+        @Pure
         int peek() throws IOException {
             if (blkmode) {
                 if (pos == end) {
@@ -3197,6 +3200,7 @@ public class ObjectInputStream
          * the stream, or throws EOFException if end of stream/block data has
          * been reached.
          */
+        @Pure
         byte peekByte() throws IOException {
             int val = peek();
             if (val < 0) {

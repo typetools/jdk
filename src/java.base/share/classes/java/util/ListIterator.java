@@ -28,7 +28,10 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -77,6 +80,7 @@ public interface ListIterator<E> extends Iterator<E> {
      *         traversing the list in the forward direction
      */
     @Pure // @Pure is not necessary here: it's inherited from Iterator
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasNext();
 
     /**
@@ -89,7 +93,8 @@ public interface ListIterator<E> extends Iterator<E> {
      * @return the next element in the list
      * @throws NoSuchElementException if the iteration has no next element
      */
-    E next(@GuardSatisfied ListIterator<E> this);
+    @SideEffectsOnly("this")
+    E next(@GuardSatisfied @NonEmpty ListIterator<E> this);
 
     /**
      * Returns {@code true} if this list iterator has more elements when

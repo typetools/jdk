@@ -281,6 +281,7 @@ public final class Collectors {
      * @return a {@code Collector} which collects all the input elements into a
      * {@code List}, in encounter order
      */
+    @SideEffectFree
     public static <T>
     Collector<T, ?, List<T>> toList() {
         return new CollectorImpl<>(ArrayList::new, List::add,

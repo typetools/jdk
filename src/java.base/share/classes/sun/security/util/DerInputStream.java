@@ -25,6 +25,8 @@
 
 package sun.security.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -215,6 +217,7 @@ public class DerInputStream {
         }
     }
 
+    @Pure
     public int peekByte() throws IOException {
         if (pos == end) {
             throw new IOException("At end");

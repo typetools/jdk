@@ -27,6 +27,9 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
@@ -36,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -493,7 +497,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param   m the map whose mappings are to be placed in this map
      * @throws  NullPointerException if the specified map is null
      */
-    public HashMap(Map<? extends K, ? extends V> m) {
+    public @PolyNonEmpty HashMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
         putMapEntries(m, false);
     }
@@ -546,6 +550,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @return {@code true} if this map contains no key-value mappings
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied HashMap<K, V> this) {
         return size == 0;
     }
@@ -1007,6 +1012,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SideEffectFree
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
         public final boolean remove(@Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
@@ -1072,6 +1078,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SideEffectFree
         public final Iterator<V> iterator()     { return new ValueIterator(); }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsValue(o); }
         @SideEffectFree
         public final Spliterator<V> spliterator() {
@@ -1133,6 +1140,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new EntryIterator();
         }
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@Nullable @UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
@@ -1609,11 +1617,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             }
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean hasNext() {
             return next != null;
         }
 
-        final Node<K,V> nextNode() {
+        @SideEffectsOnly("this")
+        final Node<K,V> nextNode(@NonEmpty HashIterator this) {
             Node<K,V>[] t;
             Node<K,V> e = next;
             if (modCount != expectedModCount)
@@ -1640,17 +1651,17 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     final class KeyIterator extends HashIterator
         implements Iterator<K> {
-        public final K next() { return nextNode().key; }
+        public final K next(@NonEmpty KeyIterator this) { return nextNode().key; }
     }
 
     final class ValueIterator extends HashIterator
         implements Iterator<V> {
-        public final V next() { return nextNode().value; }
+        public final V next(@NonEmpty ValueIterator this) { return nextNode().value; }
     }
 
     final class EntryIterator extends HashIterator
         implements Iterator<Map.Entry<K,V>> {
-        public final Map.Entry<K,V> next() { return nextNode(); }
+        public final Map.Entry<K,V> next(@NonEmpty EntryIterator this) { return nextNode(); }
     }
 
     /* ------------------------------------------------------------ */

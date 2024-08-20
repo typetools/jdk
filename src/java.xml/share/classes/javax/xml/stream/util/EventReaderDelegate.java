@@ -25,6 +25,9 @@
 
 package javax.xml.stream.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.stream.XMLStreamException;
@@ -83,10 +86,12 @@ public class EventReaderDelegate implements XMLEventReader {
     return reader.nextEvent();
   }
 
+  @SideEffectsOnly("this")
   public Object next() {
     return reader.next();
   }
 
+  @Pure
   public boolean hasNext()
   {
     return reader.hasNext();

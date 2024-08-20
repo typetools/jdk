@@ -55,6 +55,7 @@
 package java.lang;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import java.io.*;
 import java.util.*;
 
@@ -333,7 +334,9 @@ final class ProcessEnvironment
         public Iterator<Map.Entry<String,String>> iterator() {
             return new Iterator<Map.Entry<String,String>>() {
                 Iterator<Map.Entry<Variable,Value>> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new StringEntry(i.next());
                 }
@@ -378,7 +381,9 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Value> i = c.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {i.remove();}
             };
@@ -407,7 +412,9 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Variable> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {       i.remove();}
             };
