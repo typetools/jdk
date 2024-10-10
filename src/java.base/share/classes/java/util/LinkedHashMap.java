@@ -27,9 +27,9 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
-import org.checkerframework.checker.nonempty.qual.NonEmpty;
-import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.optional.qual.NonEmpty;
+import org.checkerframework.checker.optional.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;

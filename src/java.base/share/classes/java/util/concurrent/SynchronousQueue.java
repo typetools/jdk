@@ -37,7 +37,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;

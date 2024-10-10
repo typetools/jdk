@@ -5,16 +5,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.checkerframework.framework.qual.SubtypeOf;
+import org.checkerframework.framework.qual.PolymorphicQualifier;
 
 /**
- * The bottom type qualifier for the Optional Checker. The only value of this type is {@code null}.
- * Programmers rarely write this annotation.
+ * A polymorphic qualifier for the Non-Empty type system.
  *
- * @checker_framework.manual #optional-checker Optional Checker
+ * @checker_framework.manual #non-empty-checker Non-Empty Checker
+ * @checker_framework.manual #qualifier-polymorphism Qualifier polymorphism
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({Present.class})
-public @interface OptionalBottom {}
+@PolymorphicQualifier(UnknownNonEmpty.class)
+public @interface PolyNonEmpty {}

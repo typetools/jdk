@@ -27,7 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
