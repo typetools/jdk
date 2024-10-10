@@ -89,13 +89,13 @@ module java.base {
     exports org.checkerframework.checker.interning.qual;
     exports org.checkerframework.checker.lock.qual;
     exports org.checkerframework.checker.mustcall.qual;
-    exports org.checkerframework.checker.nonempty.qual;
     exports org.checkerframework.checker.nullness.qual;
     exports org.checkerframework.checker.optional.qual;
     exports org.checkerframework.checker.propkey.qual;
     exports org.checkerframework.checker.regex.qual;
     exports org.checkerframework.checker.signature.qual;
     exports org.checkerframework.checker.signedness.qual;
+    exports org.checkerframework.checker.sqlquotes.qual;
     exports org.checkerframework.checker.tainting.qual;
     exports org.checkerframework.checker.units.qual;
     exports org.checkerframework.common.aliasing.qual;
