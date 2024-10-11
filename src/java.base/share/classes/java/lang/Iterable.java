@@ -24,7 +24,7 @@
  */
 package java.lang;
 
-import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.optional.qual.PolyNonEmpty;
 import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
