@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * Denotes a String that contains an odd number of unescaped single quotes &mdash; i.e., there must be an
+ * Denotes a String that contains an odd number of unescaped single quotes -- i.e., there must be an
  * odd number of ' characters in a SqlOddQuotes String that are not preceded immediately by another
  * ' character. (Thus, all SqlOddQuotes Strings ultimately contain an odd number of single quotes,
  * escaped or otherwise.) SqlOddQuotes Strings are not syntactical to be passed to query execution
