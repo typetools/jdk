@@ -25,9 +25,9 @@
 
 package javax.security.auth;
 
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
-import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.optional.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;

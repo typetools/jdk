@@ -25,8 +25,8 @@
 
 package javax.crypto;
 
-import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
-import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.optional.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.optional.qual.NonEmpty;
 
 import java.security.*;
 import java.util.Enumeration;
