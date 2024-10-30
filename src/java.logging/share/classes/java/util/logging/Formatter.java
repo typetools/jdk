@@ -27,6 +27,7 @@
 package java.util.logging;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -43,7 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since 1.4
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "confidential"})
 public abstract @UsesObjectEquals class Formatter {
 
     /**
@@ -63,7 +64,7 @@ public abstract @UsesObjectEquals class Formatter {
      * @param record the log record to be formatted.
      * @return the formatted log record
      */
-    public abstract String format(LogRecord record);
+    public abstract String format(@NonConfidential LogRecord record);
 
 
     /**

@@ -35,6 +35,7 @@ import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -74,7 +75,7 @@ import java.nio.charset.UnsupportedCharsetException;
  */
 
 @CFComment({"lock: TODO: Should parameters be @GuardSatisfied, or is the default of @GuardedBy({}) appropriate? (@GuardedBy({}) is more conservative.)"})
-@AnnotatedFor({"formatter", "i18n", "index", "lock", "mustcall", "nullness", "signedness"})
+@AnnotatedFor({"formatter", "i18n", "index", "lock", "mustcall", "nullness", "signedness", "confidential"})
 public class PrintStream extends FilterOutputStream
     implements Appendable, Closeable
 {
@@ -790,7 +791,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param      c   The {@code char} to be printed
      */
-    public void print(@GuardSatisfied PrintStream this, char c) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential char c) {
         write(String.valueOf(c));
     }
 
@@ -804,7 +805,7 @@ public class PrintStream extends FilterOutputStream
      * @param      i   The {@code int} to be printed
      * @see        java.lang.Integer#toString(int)
      */
-    public void print(@GuardSatisfied PrintStream this, int i) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential int i) {
         write(String.valueOf(i));
     }
 
@@ -818,7 +819,7 @@ public class PrintStream extends FilterOutputStream
      * @param      l   The {@code long} to be printed
      * @see        java.lang.Long#toString(long)
      */
-    public void print(@GuardSatisfied PrintStream this, long l) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential long l) {
         write(String.valueOf(l));
     }
 
@@ -832,7 +833,7 @@ public class PrintStream extends FilterOutputStream
      * @param      f   The {@code float} to be printed
      * @see        java.lang.Float#toString(float)
      */
-    public void print(@GuardSatisfied PrintStream this, float f) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential float f) {
         write(String.valueOf(f));
     }
 
@@ -846,7 +847,7 @@ public class PrintStream extends FilterOutputStream
      * @param      d   The {@code double} to be printed
      * @see        java.lang.Double#toString(double)
      */
-    public void print(@GuardSatisfied PrintStream this, double d) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential double d) {
         write(String.valueOf(d));
     }
 
@@ -860,7 +861,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @throws  NullPointerException  If {@code s} is {@code null}
      */
-    public void print(@GuardSatisfied PrintStream this, @PolySigned char s[]) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential @PolySigned char s[]) {
         write(s);
     }
 
@@ -874,7 +875,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param      s   The {@code String} to be printed
      */
-    public void print(@GuardSatisfied PrintStream this, @Nullable String s) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential @Nullable String s) {
         write(String.valueOf(s));
     }
 
@@ -888,7 +889,7 @@ public class PrintStream extends FilterOutputStream
      * @param      obj   The {@code Object} to be printed
      * @see        java.lang.Object#toString()
      */
-    public void print(@GuardSatisfied PrintStream this, @Nullable Object obj) {
+    public void print(@GuardSatisfied PrintStream this, @NonConfidential @Nullable Object obj) {
         write(String.valueOf(obj));
     }
 
@@ -930,7 +931,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code char} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, char x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential char x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -948,7 +949,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code int} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, int x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential int x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -966,7 +967,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  a The {@code long} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, long x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential long x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -984,7 +985,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code float} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, float x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential float x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -1002,7 +1003,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code double} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, double x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential double x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -1020,7 +1021,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  an array of chars to print.
      */
-    public void println(@GuardSatisfied PrintStream this, char[] x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential char[] x) {
         if (getClass() == PrintStream.class) {
             writeln(x);
         } else {
@@ -1038,7 +1039,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code String} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, @Nullable @Localized String x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential @Nullable @Localized String x) {
         if (getClass() == PrintStream.class) {
             writeln(String.valueOf(x));
         } else {
@@ -1058,7 +1059,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @param x  The {@code Object} to be printed.
      */
-    public void println(@GuardSatisfied PrintStream this, @Nullable Object x) {
+    public void println(@GuardSatisfied PrintStream this, @NonConfidential @Nullable Object x) {
         String s = String.valueOf(x);
         if (getClass() == PrintStream.class) {
             // need to apply String.valueOf again since first invocation
@@ -1118,7 +1119,7 @@ public class PrintStream extends FilterOutputStream
      */
     @CFComment({"lock/nullness: The vararg arrays can actually be null, but let's not annotate them because passing null is bad style; see whether this annotation is useful."})
     @FormatMethod
-    public @NotOwning PrintStream printf(@GuardSatisfied PrintStream this, String format, @Nullable Object ... args) {
+    public @NotOwning @NonConfidential PrintStream printf(@GuardSatisfied PrintStream this, @NonConfidential String format, @NonConfidential @Nullable Object ... args) {
         return format(format, args);
     }
 
@@ -1171,7 +1172,7 @@ public class PrintStream extends FilterOutputStream
      * @since  1.5
      */
     @FormatMethod
-    public @NotOwning PrintStream printf(@GuardSatisfied PrintStream this, @Nullable Locale l, String format, @Nullable Object ... args) {
+    public @NotOwning @NonConfidential PrintStream printf(@GuardSatisfied PrintStream this, @Nullable Locale l, @NonConfidential String format, @NonConfidential @Nullable Object ... args) {
         return format(l, format, args);
     }
 

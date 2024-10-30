@@ -27,6 +27,7 @@
 package java.util.logging;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Objects;
@@ -52,7 +53,7 @@ import java.security.PrivilegedAction;
  * @since 1.4
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "confidential"})
 public abstract @UsesObjectEquals class Handler {
     private static final int offValue = Level.OFF.intValue();
     private final LogManager manager = LogManager.getLogManager();
@@ -138,7 +139,7 @@ public abstract @UsesObjectEquals class Handler {
      * @param  record  description of the log event. A null record is
      *                 silently ignored and is not published
      */
-    public abstract void publish(LogRecord record);
+    public abstract void publish(@NonConfidential LogRecord record);
 
     /**
      * Flush any buffered output.
