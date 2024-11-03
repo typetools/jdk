@@ -34,7 +34,7 @@ import org.checkerframework.framework.qual.PostconditionAnnotation;
  * </code></pre>
  *
  * @see NonEmpty
- * @see org.checkerframework.checker.nonempty.NonEmptyChecker
+ * @see org.checkerframework.checker.optional.OptionalChecker
  * @checker_framework.manual #non-empty-checker Non-Empty Checker
  */
 @Retention(RetentionPolicy.RUNTIME)
