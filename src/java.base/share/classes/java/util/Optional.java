@@ -415,7 +415,7 @@ public final @NonNull class Optional<T> {
      *         function is {@code null}
      */
     @OptionalEliminator
-    public @PolyNull T orElseGet(Supplier<? extends @PolyNull T> supplier) {
+    public @PolyNull @PolyNonEmpty T orElseGet(Optional<@PolyNonEmpty T> this, Supplier<? extends @PolyNull @PolyNonEmpty T> supplier) {
         return value != null ? value : supplier.get();
     }
 
