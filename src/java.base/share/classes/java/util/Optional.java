@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -399,7 +400,7 @@ public final @NonNull class Optional<T> {
      */
     @OptionalEliminator
     @Pure
-    public @PolyNull T orElse(@PolyNull T other) {
+    public @PolyNonEmpty @PolyNull T orElse(Optional<@PolyNonEmpty T> this, @PolyNonEmpty @PolyNull T other) {
         return value != null ? value : other;
     }
 
@@ -414,7 +415,7 @@ public final @NonNull class Optional<T> {
      *         function is {@code null}
      */
     @OptionalEliminator
-    public @PolyNull T orElseGet(Supplier<? extends @PolyNull T> supplier) {
+    public @PolyNonEmpty @PolyNull T orElseGet(Optional<@PolyNonEmpty T> this, Supplier<? extends @PolyNonEmpty @PolyNull T> supplier) {
         return value != null ? value : supplier.get();
     }
 
