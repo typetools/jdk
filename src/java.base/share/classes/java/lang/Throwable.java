@@ -120,7 +120,7 @@ import java.util.*;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since 1.0
  */
-@AnnotatedFor({"interning", "lock", "nullness", "confidential"})
+@AnnotatedFor({"interning", "lock", "nullness"})
 public @UsesObjectEquals class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
@@ -138,7 +138,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *
      * @serial
      */
-    private @PolyConfidential String detailMessage;
+    private String detailMessage;
 
 
     /**
@@ -395,7 +395,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *          (which may be {@code null}).
      */
     @Pure
-    public @Nullable @UnknownConfidential String getMessage(@UnknownConfidential @GuardSatisfied Throwable this) {
+    public @Nullable String getMessage(@GuardSatisfied Throwable this) {
         return detailMessage;
     }
 
