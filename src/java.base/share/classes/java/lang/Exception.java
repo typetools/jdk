@@ -47,7 +47,7 @@ import org.checkerframework.common.aliasing.qual.Unique;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since   1.0
  */
-@AnnotatedFor({"aliasing", "nullness"})
+@AnnotatedFor({"aliasing", "nullness", "confidential"})
 public class Exception extends Throwable {
     @java.io.Serial
     static final long serialVersionUID = -3387516993124229948L;
