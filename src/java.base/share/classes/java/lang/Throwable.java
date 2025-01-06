@@ -121,7 +121,7 @@ import java.util.*;
  * @since 1.0
  */
 @AnnotatedFor({"interning", "lock", "nullness", "confidential"})
-public @UsesObjectEquals class Throwable implements Serializable {
+public @UsesObjectEquals @PolyConfidential class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
     private static final long serialVersionUID = -3042686055658047285L;
