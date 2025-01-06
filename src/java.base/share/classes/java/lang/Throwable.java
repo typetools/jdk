@@ -395,7 +395,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *          (which may be {@code null}).
      */
     @Pure
-    public @Nullable String getMessage(@GuardSatisfied Throwable this) {
+    public @Nullable @UnknownConfidential String getMessage(@UnknownConfidential @GuardSatisfied Throwable this) {
         return detailMessage;
     }
 
