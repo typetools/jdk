@@ -121,7 +121,7 @@ import java.util.*;
  * @since 1.0
  */
 @AnnotatedFor({"interning", "lock", "nullness", "confidential"})
-public @UsesObjectEquals @Confidential class Throwable implements Serializable {
+public @UsesObjectEquals class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
     private static final long serialVersionUID = -3042686055658047285L;
@@ -395,7 +395,7 @@ public @UsesObjectEquals @Confidential class Throwable implements Serializable {
      *          (which may be {@code null}).
      */
     @Pure
-    public @Nullable @PolyConfidential String getMessage(@PolyConfidential @GuardSatisfied Throwable this) {
+    public @Nullable String getMessage(@GuardSatisfied Throwable this) {
         return detailMessage;
     }
 
