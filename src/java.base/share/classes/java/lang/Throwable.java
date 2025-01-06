@@ -32,7 +32,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.checker.confidential.qual.PolyConfidential;
+import org.checkerframework.checker.confidential.qual.*;
 
 import java.io.*;
 import java.util.*;
@@ -121,7 +121,7 @@ import java.util.*;
  * @since 1.0
  */
 @AnnotatedFor({"interning", "lock", "nullness", "confidential"})
-public @UsesObjectEquals @PolyConfidential class Throwable implements Serializable {
+public @UsesObjectEquals @Confidential class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
     private static final long serialVersionUID = -3042686055658047285L;
