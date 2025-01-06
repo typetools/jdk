@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 
 import java.io.*;
 import java.util.*;
@@ -119,7 +120,7 @@ import java.util.*;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since 1.0
  */
-@AnnotatedFor({"interning", "lock", "nullness"})
+@AnnotatedFor({"interning", "lock", "nullness", "confidential"})
 public @UsesObjectEquals class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
@@ -137,7 +138,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *
      * @serial
      */
-    private String detailMessage;
+    private @PolyConfidential String detailMessage;
 
 
     /**
@@ -394,7 +395,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *          (which may be {@code null}).
      */
     @Pure
-    public @Nullable String getMessage(@GuardSatisfied Throwable this) {
+    public @Nullable @PolyConfidential String getMessage(@PolyConfidential @GuardSatisfied Throwable this) {
         return detailMessage;
     }
 
