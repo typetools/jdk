@@ -58,7 +58,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-import org.checkerframework.checker.confidential.qual.UnknownConfidential;
+import org.checkerframework.checker.confidential.qual.*;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
@@ -4328,7 +4328,7 @@ public final class String
     @SideEffectFree
     @StaticallyExecutable
     @FormatMethod
-    public static String format(String format, @GuardSatisfied @Nullable Object @GuardSatisfied ... args) {
+    public static @PolyConfidential String format(String format, @PolyConfidential @GuardSatisfied @Nullable Object @GuardSatisfied ... args) {
         return new Formatter().format(format, args).toString();
     }
 
