@@ -58,6 +58,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.confidential.qual.UnknownConfidential;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
@@ -171,7 +172,7 @@ import sun.nio.cs.UTF_8;
  * @jls     15.18.1 String Concatenation Operator +
  */
 
-@AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness"})
+@AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness", "confidential"})
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence,
                Constable, ConstantDesc {
@@ -1910,7 +1911,7 @@ public final class String
     @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
     @StaticallyExecutable
-    public boolean equals(@GuardSatisfied @Nullable Object anObject) {
+    public boolean equals(@GuardSatisfied @Nullable @UnknownConfidential Object anObject) {
         if (this == anObject) {
             return true;
         }
