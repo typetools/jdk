@@ -1911,7 +1911,7 @@ public final class String
     @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
     @StaticallyExecutable
-    public boolean equals(@GuardSatisfied @Nullable @UnknownConfidential Object anObject) {
+    public boolean equals(@UnknownConfidential String this, @GuardSatisfied @Nullable @UnknownConfidential Object anObject) {
         if (this == anObject) {
             return true;
         }
