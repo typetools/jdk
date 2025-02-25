@@ -32,7 +32,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.checker.confidential.qual.UnknownConfidential;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.confidential.qual.NonConfidential;
 
 import java.io.*;
@@ -397,7 +397,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      */
     @Pure
     // TODO: The type should be @Poly.  Change it later.
-    public @Nullable @NonConfidential String getMessage(@UnknownConfidential @GuardSatisfied Throwable this) {
+    public @Nullable @NonConfidential String getMessage(@PolyConfidential @GuardSatisfied Throwable this) {
         return detailMessage;
     }
 
