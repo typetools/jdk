@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-import org.checkerframework.checker.confidential.qual.UnknownConfidential;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1183,7 +1183,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @CFComment("@SideEffectFree: the collector should not have side effects")
     @SideEffectFree
-    <R, A> R collect(@UnknownConfidential Collector<? super T, A, R> collector);
+    <R, A> R collect(@PolyConfidential Collector<? super T, A, R> collector);
 
     /**
      * Accumulates the elements of this stream into a {@code List}. The elements in
