@@ -91,7 +91,7 @@ public class Exception extends Throwable {
      * @since  1.4
      */
     @SideEffectFree
-    public @Unique Exception(@Nullable @PolyConfidential String message, @Nullable Throwable cause) {
+    public @Unique Exception(@Nullable @PolyConfidential String message, @Nullable @PolyConfidential Throwable cause) {
         super(message, cause);
     }
 

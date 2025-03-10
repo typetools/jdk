@@ -28,6 +28,7 @@ package java.lang;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 
 /**
  * {@code RuntimeException} is the superclass of those
@@ -44,7 +45,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since   1.0
  */
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullness", "confidential"})
 public class RuntimeException extends Exception {
     @java.io.Serial
     static final long serialVersionUID = -7034897190745766939L;
@@ -66,7 +67,7 @@ public class RuntimeException extends Exception {
      *          later retrieval by the {@link #getMessage()} method.
      */
     @SideEffectFree
-    public RuntimeException(@Nullable String message) {
+    public RuntimeException(@Nullable @PolyConfidential String message) {
         super(message);
     }
 
@@ -85,7 +86,7 @@ public class RuntimeException extends Exception {
      * @since  1.4
      */
     @SideEffectFree
-    public RuntimeException(@Nullable String message, @Nullable Throwable cause) {
+    public RuntimeException(@Nullable @PolyConfidential String message, @Nullable @PolyConfidential Throwable cause) {
         super(message, cause);
     }
 
@@ -102,7 +103,7 @@ public class RuntimeException extends Exception {
      * @since  1.4
      */
     @SideEffectFree
-    public RuntimeException(@Nullable Throwable cause) {
+    public RuntimeException(@Nullable @PolyConfidential Throwable cause) {
         super(cause);
     }
 
@@ -121,7 +122,7 @@ public class RuntimeException extends Exception {
      *
      * @since 1.7
      */
-    protected RuntimeException(@Nullable String message, @Nullable Throwable cause,
+    protected RuntimeException(@Nullable @PolyConfidential String message, @Nullable @PolyConfidential Throwable cause,
                                boolean enableSuppression,
                                boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
