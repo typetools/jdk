@@ -26,8 +26,8 @@
 
 package java.util.logging;
 
-import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.confidential.qual.NonConfidential;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**

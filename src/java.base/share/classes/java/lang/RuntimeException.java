@@ -25,10 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.checker.confidential.qual.PolyConfidential;
 
 /**
  * {@code RuntimeException} is the superclass of those

@@ -25,6 +25,7 @@
 
 package java.io;
 
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.i18n.qual.Localized;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -35,7 +36,6 @@ import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
-import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 

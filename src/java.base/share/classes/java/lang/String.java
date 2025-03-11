@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.*;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -58,7 +59,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-import org.checkerframework.checker.confidential.qual.*;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
