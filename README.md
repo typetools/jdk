@@ -1,6 +1,7 @@
 # Typetools fork of the JDK
 
 This fork of the JDK contains type annotations for pluggable type-checking.
+It is called "the annotated JDK".
 
 It does *not* contain annotations for certain files (because annotations in
 them cause build failures, especially in the interim builds):
@@ -16,7 +17,19 @@ https://github.com/typetools/checker-framework/ .
 
 ## Building
 
-See file `azure-pipelines.yml`.  Briefly:
+You **do not need to build** the annotated JDK in order to use it in the Checker
+Framework.
+
+Put the annotated JDK is in a directory named `jdk/` that is a sibling of your
+`checker-framework/` directory.  Now, when you build the Checker Framework
+(e.g., `cd checker-framework && ./gradlew assemble`), it will automatically
+incorporate the annotated JDK into the resulting Checker Framework binaries.
+The `jdk/` and `checker-framework/` directories can be clones of the relevant
+repositories, or they can be (hard or soft) symbolic links to the clones.
+
+However, if for some reason you want to build the JDK on its own rather than
+just use it from the Checker Framework, see file `azure-pipelines.yml`.
+Briefly:
 
 ```
 bash configure --disable-warnings-as-errors --with-jtreg
