@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.Confidential;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.checker.guieffect.qual.PolyUI;
 import org.checkerframework.checker.guieffect.qual.PolyUIType;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
@@ -40,8 +42,6 @@ import org.checkerframework.common.aliasing.qual.Unique;
 import org.checkerframework.common.reflection.qual.GetClass;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.checker.confidential.qual.NonConfidential;
-import org.checkerframework.checker.confidential.qual.Confidential;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
