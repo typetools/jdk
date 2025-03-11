@@ -25,7 +25,7 @@
 
 package java.lang;
 
-import org.checkerframework.checker.confidential.qual.*;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
