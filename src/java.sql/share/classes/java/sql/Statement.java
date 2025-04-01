@@ -69,7 +69,7 @@ public interface Statement extends Wrapper, AutoCloseable {
      * method has been exceeded and has at least attempted to cancel
      * the currently running {@code Statement}
      */
-    ResultSet executeQuery(@Untainted @SqlEvenQuotes @SqlEvenQuotes String sql) throws SQLException;
+    ResultSet executeQuery(@Untainted @SqlEvenQuotes String sql) throws SQLException;
 
     /**
      * Executes the given SQL statement, which may be an {@code INSERT},
