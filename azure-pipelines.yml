@@ -157,11 +157,11 @@ jobs:
   - bash: (cd ../checker-framework && checker/bin-devel/test-typecheck.sh)
     displayName: test-typecheck.sh
 
-- job: test_cftests_all_jdk20
+- job: test_cftests_all_jdk21
   timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
-  container: mdernst/cf-ubuntu-jdk20:latest
+  container: mdernst/cf-ubuntu-jdk21:latest
   steps:
   - checkout: self
     fetchDepth: 25
