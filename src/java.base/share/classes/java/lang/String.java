@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -171,7 +172,7 @@ import sun.nio.cs.UTF_8;
  * @jls     15.18.1 String Concatenation Operator +
  */
 
-@AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness"})
+@AnnotatedFor({"aliasing", "formatter", "index", "interning", "lock", "nullness", "regex", "signature", "signedness", "confidential"})
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence,
                Constable, ConstantDesc {
@@ -1910,7 +1911,7 @@ public final class String
     @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
     @StaticallyExecutable
-    public boolean equals(@GuardSatisfied @Nullable Object anObject) {
+    public boolean equals(@PolyConfidential String this, @GuardSatisfied @Nullable @PolyConfidential Object anObject) {
         if (this == anObject) {
             return true;
         }
@@ -4327,7 +4328,7 @@ public final class String
     @SideEffectFree
     @StaticallyExecutable
     @FormatMethod
-    public static String format(String format, @GuardSatisfied @Nullable Object @GuardSatisfied ... args) {
+    public static @PolyConfidential String format(String format, @PolyConfidential @GuardSatisfied @Nullable Object @GuardSatisfied ... args) {
         return new Formatter().format(format, args).toString();
     }
 

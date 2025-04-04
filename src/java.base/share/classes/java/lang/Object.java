@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.Confidential;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.guieffect.qual.PolyUI;
 import org.checkerframework.checker.guieffect.qual.PolyUIType;
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
@@ -53,7 +56,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * @see     java.lang.Class
  * @since   1.0
  */
-@AnnotatedFor({"aliasing", "guieffect", "index", "lock", "nullness"})
+@AnnotatedFor({"aliasing", "guieffect", "index", "lock", "nullness", "confidential"})
 @PolyUIType
 public class Object {
 
@@ -186,7 +189,7 @@ public class Object {
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@GuardSatisfied Object this, @GuardSatisfied @Nullable Object obj) {
+    public boolean equals(@GuardSatisfied @PolyConfidential Object this, @GuardSatisfied @Nullable @PolyConfidential Object obj) {
         return (this == obj);
     }
 
@@ -285,6 +288,28 @@ public class Object {
     "two calls of the method are ==."})
     @SideEffectFree
     public String toString(@GuardSatisfied Object this) {
+        return getClass().getName() + "@" + Integer.toHexString(hashCode());
+    }
+
+    /**
+     * Returns a string representation of the object.
+     * An overload of toString() with different Confidential annotations
+     * to permit secure overrides within subclasses.
+     * @return  a string representation of the object.
+     */
+    @SideEffectFree
+    public @Confidential String toString(@GuardSatisfied Object this) {
+        return getClass().getName() + "@" + Integer.toHexString(hashCode());
+    }
+
+    /**
+     * Returns a string representation of the object.
+     * An overload of toString() with different Confidential annotations
+     * to permit secure overrides within subclasses.
+     * @return  a string representation of the object.
+     */
+    @SideEffectFree
+    public @Confidential String toString(@Confidential @GuardSatisfied Object this) {
         return getClass().getName() + "@" + Integer.toHexString(hashCode());
     }
 
