@@ -25,8 +25,6 @@
 
 package java.lang;
 
-import org.checkerframework.checker.confidential.qual.Confidential;
-import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.guieffect.qual.PolyUI;
 import org.checkerframework.checker.guieffect.qual.PolyUIType;
@@ -287,31 +285,8 @@ public class Object {
     "that differs according to ==, and @Deterministic requires that the results of",
     "two calls of the method are ==."})
     @SideEffectFree
-    public String toString(@GuardSatisfied Object this) {
+    public @PolyConfidential String toString(@PolyConfidential @GuardSatisfied Object this) {
         return getClass().getName() + "@" + Integer.toHexString(hashCode());
-    }
-
-    /**
-     * Returns a string representation of the object.
-     * An overload of toString() with different Confidential annotations
-     * to permit secure overrides within subclasses.
-     * @return  a string representation of the object.
-     */
-    @SideEffectFree
-    public @Confidential String toString(@GuardSatisfied Object this) {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
-    }
-
-    /**
-     * Returns a string representation of the object.
-     * An overload of toString() with different Confidential annotations
-     * to permit secure overrides within subclasses.
-     * @return  a string representation of the object.
-     */
-    @SideEffectFree
-    public @Confidential String toString(@Confidential @GuardSatisfied Object this) {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
-    }
 
     /**
      * Wakes up a single thread that is waiting on this object's
