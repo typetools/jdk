@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.checker.confidential.qual.NonConfidential;
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
@@ -119,7 +121,7 @@ import java.util.*;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since 1.0
  */
-@AnnotatedFor({"interning", "lock", "nullness"})
+@AnnotatedFor({"interning", "lock", "nullness", "confidential"})
 public @UsesObjectEquals class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
@@ -394,7 +396,8 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *          (which may be {@code null}).
      */
     @Pure
-    public @Nullable String getMessage(@GuardSatisfied Throwable this) {
+    // TODO: The type should be @Poly.  Change it later.
+    public @Nullable @NonConfidential String getMessage(@PolyConfidential @GuardSatisfied Throwable this) {
         return detailMessage;
     }
 

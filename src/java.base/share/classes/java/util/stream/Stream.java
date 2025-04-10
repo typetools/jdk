@@ -24,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.confidential.qual.PolyConfidential;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -172,7 +173,7 @@ import java.util.function.UnaryOperator;
  * @see DoubleStream
  * @see <a href="package-summary.html">java.util.stream</a>
  */
-@AnnotatedFor({"lock", "mustcall", "nullness"})
+@AnnotatedFor({"lock", "mustcall", "nullness", "confidential"})
 @CFComment({"MustCall: most Streams do not need to be closed.  There is no need for",
    "`@InheritableMustCall({})` because `AutoCloseable` already has that class annotation."})
 public interface Stream<T> extends BaseStream<T, Stream<T>> {
@@ -1182,7 +1183,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @CFComment("@SideEffectFree: the collector should not have side effects")
     @SideEffectFree
-    <R, A> R collect(Collector<? super T, A, R> collector);
+    <R, A> R collect(@PolyConfidential Collector<? super T, A, R> collector);
 
     /**
      * Accumulates the elements of this stream into a {@code List}. The elements in
