@@ -287,6 +287,7 @@ public class Object {
     @SideEffectFree
     public @Confidential String toString(@PolyConfidential @GuardSatisfied Object this) {
         return getClass().getName() + "@" + Integer.toHexString(hashCode());
+    }
 
     /**
      * Wakes up a single thread that is waiting on this object's
