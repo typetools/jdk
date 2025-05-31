@@ -1174,8 +1174,8 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default @PolyNull V computeIfPresent(K key,
-            BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    default @Nullable V computeIfPresent(K key,
+            BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue;
         if ((oldValue = get(key)) != null) {
@@ -1260,8 +1260,8 @@ public interface Map<K, V> {
      *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default @PolyNull V compute(K key,
-            BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
+    default @Nullable V compute(K key,
+            BiFunction<? super K, ? super @Nullable V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue = get(key);
 
@@ -1358,12 +1358,8 @@ public interface Map<K, V> {
      *         null
      * @since 1.8
      */
-    @CFComment({
-        "It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A",
-        "remappingFunction that returns null is is probably rare, and these annotations accommodate",
-        "the majority of uses that don't return null."})
-    default @PolyNull V merge(K key, @NonNull V value,
-            BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
+    default @Nullable V merge(K key, @NonNull V value,
+            BiFunction<? super V, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
         V oldValue = get(key);
