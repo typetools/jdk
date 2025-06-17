@@ -33,7 +33,7 @@ import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
 import org.checkerframework.checker.optional.qual.OptionalCreator;
 import org.checkerframework.checker.optional.qual.OptionalEliminator;
 import org.checkerframework.checker.optional.qual.OptionalPropagator;
-import org.checkerframework.checker.confidential.qual.PolyConfidential;
+import org.checkerframework.checker.confidential.qual.UnknownConfidential;
 import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -89,7 +89,7 @@ import java.util.stream.Stream;
 @AnnotatedFor({"lock", "nullness", "optional", "confidential"})
 @Covariant(0)
 @jdk.internal.ValueBased
-public final @NonNull class Optional<@PolyConfidential T> {
+public final @NonNull class Optional<@UnknownConfidential T> {
     /**
      * Common instance for {@code empty()}.
      */
