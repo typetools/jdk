@@ -122,13 +122,15 @@ To update that copy, run the command below from this directory:
 
 ```
 (cd $CHECKERFRAMEWORK && rm -rf checker-qual/build/libs && ./gradlew :checker-qual:sourcesJar) && \
-rm -f checker-qual.jar && \
-cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual.jar && \
+rm -f checker-qual-src.jar && \
+cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual-src.jar && \
 (cd src/java.base/share/classes && rm -rf org/checkerframework && \
-  unzip ../../../../checker-qual.jar -x 'META-INF*' && \
+  unzip ../../../../checker-qual-src.jar -x 'META-INF*' && \
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
-jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort | uniq
+echo "" && \
+jar tf checker-qual-src.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sort -u | sed 's/^/    exports /' && \
+rm -f checker-qual-src.jar
 ```
 The result of the command will be a list of export lines.
 Replace the existing export lines present in
