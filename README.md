@@ -121,8 +121,9 @@ The java.base module contains a copy of the Checker Framework qualifiers (type a
 To update that copy, run the command below from this directory:
 
 ```
-(cd $CHECKERFRAMEWORK && rm -rf checker-qual/build/libs && ./gradlew :checker-qual:sourcesJar) && \
+(cd $CHECKERFRAMEWORK && rm -rf checker-qual/build/libs && ./gradlew assembleForJavac :checker-qual:sourcesJar) && \
 rm -f checker-qual-src.jar && \
+cp -p $CHECKERFRAMEWORK/checker/dist/checker-qual.jar checker-qual.jar && \
 cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual-src.jar && \
 (cd src/java.base/share/classes && rm -rf org/checkerframework && \
   unzip ../../../../checker-qual-src.jar -x 'META-INF*' && \
