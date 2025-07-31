@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -779,7 +781,7 @@ public class Vector<E>
      * @since 1.2
      */
     @Pure
-    public synchronized E get(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) @NonNegative int index) {
+    public synchronized E get(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) int index) {
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
 
@@ -797,7 +799,7 @@ public class Vector<E>
      *         ({@code index < 0 || index >= size()})
      * @since 1.2
      */
-    public synchronized E set(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) @NonNegative int index, E element) {
+    public synchronized E set(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) int index, E element) {
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
 
@@ -859,7 +861,7 @@ public class Vector<E>
      *         ({@code index < 0 || index > size()})
      * @since 1.2
      */
-    public void add(@GuardSatisfied Vector<E> this, @IndexOrHigh({"this"}) @NonNegative int index, E element) {
+    public void add(@GuardSatisfied Vector<E> this, @IndexOrHigh({"this"}) int index, E element) {
         insertElementAt(element, index);
     }
 
@@ -874,7 +876,7 @@ public class Vector<E>
      *         ({@code index < 0 || index >= size()})
      * @since 1.2
      */
-    public synchronized E remove(@GuardSatisfied @Shrinkable Vector<E> this, @IndexFor({"this"}) @NonNegative int index) {
+    public synchronized E remove(@GuardSatisfied @Shrinkable Vector<E> this, @IndexFor({"this"}) int index) {
         modCount++;
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
@@ -1242,7 +1244,7 @@ public class Vector<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public synchronized ListIterator<E> listIterator(@IndexOrHigh({"this"}) @NonNegative int index) {
+    public synchronized ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
         if (index < 0 || index > elementCount)
             throw new IndexOutOfBoundsException("Index: "+index);
         return new ListItr(index);
