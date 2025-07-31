@@ -1407,8 +1407,8 @@ public class Collections {
         public E remove(@IndexFor({"this"}) int index) {
             throw new UnsupportedOperationException();
         }
-        public int indexOf(Object o)            {return list.indexOf(o);}
-        public int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
+        public @GTENegativeOne int indexOf(Object o)            {return list.indexOf(o);}
+        public @GTENegativeOne int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
         public boolean addAll(int index, Collection<? extends E> c) {
             throw new UnsupportedOperationException();
         }
@@ -2601,10 +2601,10 @@ public class Collections {
             synchronized (mutex) {return list.remove(index);}
         }
 
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             synchronized (mutex) {return list.indexOf(o);}
         }
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
 
@@ -3675,8 +3675,8 @@ public class Collections {
         public int hashCode()            { return list.hashCode(); }
         public E get(@IndexFor({"this"}) int index)          { return list.get(index); }
         public E remove(@IndexFor({"this"}) int index)       { return list.remove(index); }
-        public int indexOf(Object o)     { return list.indexOf(o); }
-        public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
+        public @GTENegativeOne int indexOf(Object o)     { return list.indexOf(o); }
+        public @GTENegativeOne int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
         public E set(@IndexFor({"this"}) int index, E element) {
             return list.set(index, typeCheck(element));
@@ -3999,7 +3999,7 @@ public class Collections {
             }
 
             @Pure
-            public int size()        { return s.size(); }
+            public @NonNegative int size()        { return s.size(); }
             @Pure
             @EnsuresNonEmptyIf(result = false, expression = "this")
             public boolean isEmpty() { return s.isEmpty(); }
@@ -5406,11 +5406,11 @@ public class Collections {
             return n != 0 && eq(obj, element);
         }
 
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             return contains(o) ? 0 : -1;
         }
 
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             return contains(o) ? n - 1 : -1;
         }
 

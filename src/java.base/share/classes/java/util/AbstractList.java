@@ -817,7 +817,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             checkForComodification();
             return size;
         }

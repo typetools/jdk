@@ -484,7 +484,7 @@ class ImmutableCollections {
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -513,7 +513,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
             }
@@ -526,7 +526,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
             }
@@ -587,7 +587,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return e1 != EMPTY ? 2 : 1;
         }
 
@@ -609,7 +609,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             Objects.requireNonNull(o);
             if (o.equals(e0)) {
                 return 0;
@@ -621,7 +621,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             Objects.requireNonNull(o);
             if (e1 != EMPTY && o.equals(e1)) {
                 return 1;
@@ -697,7 +697,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return elements.length;
         }
 
@@ -737,7 +737,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
             }
@@ -751,7 +751,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
             }
@@ -823,7 +823,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return (e1 == EMPTY) ? 1 : 2;
         }
 
@@ -957,7 +957,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -1169,7 +1169,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int size() {
+        public @NonNegative int size() {
             return 1;
         }
 
@@ -1288,7 +1288,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -1355,7 +1355,7 @@ class ImmutableCollections {
             return new AbstractSet<>() {
                 @Override
                 @Pure
-                public int size() {
+                public @NonNegative int size() {
                     return MapN.this.size;
                 }
 

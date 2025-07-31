@@ -1311,13 +1311,13 @@ public class ArrayList<E> extends AbstractList<E>
             return hash;
         }
 
-        public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public @GTENegativeOne int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public @GTENegativeOne int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;

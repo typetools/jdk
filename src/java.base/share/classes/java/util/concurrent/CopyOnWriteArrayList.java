@@ -179,7 +179,7 @@ public class CopyOnWriteArrayList<E>
      * @return the number of elements in this list
      */
     @Pure
-    public int size() {
+    public @NonNegative int size() {
         return getArray().length;
     }
 
@@ -254,7 +254,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
     }
@@ -274,7 +274,7 @@ public class CopyOnWriteArrayList<E>
      *         {@code -1} if the element is not found.
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
-    public int indexOf(E e, int index) {
+    public @GTENegativeOne int indexOf(E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
     }
@@ -282,7 +282,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
     }
@@ -303,7 +303,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is greater
      *         than or equal to the current size of this list
      */
-    public int lastIndexOf(E e, int index) {
+    public @GTENegativeOne int lastIndexOf(E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
     }
@@ -1285,7 +1285,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1298,7 +1298,7 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1396,7 +1396,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             synchronized (lock) {
                 checkForComodification();
                 return size;

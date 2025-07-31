@@ -4230,7 +4230,7 @@ public class Arrays {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             E[] a = this.a;
             if (o == null) {
                 for (int i = 0; i < a.length; i++)
