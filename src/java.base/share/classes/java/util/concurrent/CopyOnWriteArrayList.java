@@ -34,6 +34,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -413,7 +415,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E get(int index) {
+    public E get(@IndexFor({"this"}) int index) {
         return elementAt(getArray(), index);
     }
 
@@ -423,7 +425,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(int index, E element) {
+    public E set(@IndexFor({"this"}) int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             E oldValue = elementAt(es, index);
@@ -463,7 +465,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(int index, E element) {
+    public void add(@IndexOrHigh({"this"}) int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -491,7 +493,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(int index) {
+    public E remove(@IndexFor({"this"}) int index) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -1069,7 +1071,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public ListIterator<E> listIterator(int index) {
+    public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
         Object[] es = getArray();
         int len = es.length;
         if (index < 0 || index > len)
@@ -1375,7 +1377,7 @@ public class CopyOnWriteArrayList<E>
             return !it.hasNext();
         }
 
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1385,7 +1387,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1412,7 +1414,7 @@ public class CopyOnWriteArrayList<E>
             return true;
         }
 
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             synchronized (lock) {
                 checkForComodification();
                 rangeCheckForAdd(index);
@@ -1452,7 +1454,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public E remove(int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1482,7 +1484,7 @@ public class CopyOnWriteArrayList<E>
             return listIterator(0);
         }
 
-        public ListIterator<E> listIterator(int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
             synchronized (lock) {
                 checkForComodification();
                 rangeCheckForAdd(index);

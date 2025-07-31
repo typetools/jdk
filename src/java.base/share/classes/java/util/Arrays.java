@@ -4218,12 +4218,12 @@ public class Arrays {
         }
 
         @Override
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             return a[index];
         }
 
         @Override
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             E oldValue = a[index];
             a[index] = element;
             return oldValue;

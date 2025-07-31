@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -1395,14 +1397,14 @@ public class Collections {
         public boolean equals(Object o) {return o == this || list.equals(o);}
         public int hashCode()           {return list.hashCode();}
 
-        public E get(int index) {return list.get(index);}
-        public E set(int index, E element) {
+        public E get(@IndexFor({"this"}) int index) {return list.get(index);}
+        public E set(@IndexFor({"this"}) int index, E element) {
             throw new UnsupportedOperationException();
         }
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             throw new UnsupportedOperationException();
         }
-        public E remove(int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             throw new UnsupportedOperationException();
         }
         public int indexOf(Object o)            {return list.indexOf(o);}
@@ -2586,16 +2588,16 @@ public class Collections {
             synchronized (mutex) {return list.hashCode();}
         }
 
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             synchronized (mutex) {return list.get(index);}
         }
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             synchronized (mutex) {return list.set(index, element);}
         }
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             synchronized (mutex) {list.add(index, element);}
         }
-        public E remove(int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             synchronized (mutex) {return list.remove(index);}
         }
 
@@ -3671,16 +3673,16 @@ public class Collections {
 
         public boolean equals(Object o)  { return o == this || list.equals(o); }
         public int hashCode()            { return list.hashCode(); }
-        public E get(int index)          { return list.get(index); }
-        public E remove(int index)       { return list.remove(index); }
+        public E get(@IndexFor({"this"}) int index)          { return list.get(index); }
+        public E remove(@IndexFor({"this"}) int index)       { return list.remove(index); }
         public int indexOf(Object o)     { return list.indexOf(o); }
         public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             return list.set(index, typeCheck(element));
         }
 
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             list.add(index, typeCheck(element));
         }
 

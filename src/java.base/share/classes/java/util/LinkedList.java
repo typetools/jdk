@@ -504,7 +504,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied LinkedList<E> this, @NonNegative int index) {
+    public E get(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) @NonNegative int index) {
         checkElementIndex(index);
         return node(index).item;
     }
@@ -518,7 +518,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public E set(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) @NonNegative int index, E element) {
         checkElementIndex(index);
         Node<E> x = node(index);
         E oldVal = x.item;
@@ -535,7 +535,7 @@ public class LinkedList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied LinkedList<E> this, @IndexOrHigh({"this"}) @NonNegative int index, E element) {
         checkPositionIndex(index);
 
         if (index == size)
@@ -553,7 +553,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @IndexFor({"this"}) @NonNegative int index) {
         checkElementIndex(index);
         return unlink(node(index));
     }
@@ -900,7 +900,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see List#listIterator(int)
      */
-    public ListIterator<E> listIterator(@NonNegative int index) {
+    public ListIterator<E> listIterator(@IndexOrHigh({"this"}) @NonNegative int index) {
         checkPositionIndex(index);
         return new ListItr(index);
     }
