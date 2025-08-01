@@ -50,6 +50,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.index.qual.Shrinkable;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
@@ -375,7 +376,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
+    public E removeFirst(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
         E e = pollFirst();
         if (e == null)
             throw new NoSuchElementException();
@@ -385,14 +386,14 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
+    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
         E e = pollLast();
         if (e == null)
             throw new NoSuchElementException();
         return e;
     }
 
-    public @Nullable E pollFirst(@GuardSatisfied ArrayDeque<E> this) {
+    public @Nullable E pollFirst(@GuardSatisfied @Shrinkable ArrayDeque<E> this) {
         final Object[] es;
         final int h;
         E e = elementAt(es = elements, h = head);
@@ -403,7 +404,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
         return e;
     }
 
-    public @Nullable E pollLast(@GuardSatisfied ArrayDeque<E> this) {
+    public @Nullable E pollLast(@GuardSatisfied @Shrinkable ArrayDeque<E> this) {
         final Object[] es;
         final int t;
         E e = elementAt(es = elements, t = dec(tail, es.length));
@@ -456,7 +457,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if the deque contained the specified element
      */
-    public boolean removeFirstOccurrence(@GuardSatisfied ArrayDeque<E> this, @Nullable Object o) {
+    public boolean removeFirstOccurrence(@GuardSatisfied @Shrinkable ArrayDeque<E> this, @Nullable Object o) {
         if (o != null) {
             final Object[] es = elements;
             for (int i = head, end = tail, to = (i <= end) ? end : es.length;
@@ -484,7 +485,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if the deque contained the specified element
      */
-    public boolean removeLastOccurrence(@GuardSatisfied ArrayDeque<E> this, @Nullable Object o) {
+    public boolean removeLastOccurrence(@GuardSatisfied @Shrinkable ArrayDeque<E> this, @Nullable Object o) {
         if (o != null) {
             final Object[] es = elements;
             for (int i = tail, end = head, to = (i >= end) ? end : 0;
@@ -541,7 +542,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
+    public E remove(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
         return removeFirst();
     }
 
@@ -555,7 +556,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque, or
      *         {@code null} if this deque is empty
      */
-    public @Nullable E poll(@GuardSatisfied ArrayDeque<E> this) {
+    public @Nullable E poll(@GuardSatisfied @Shrinkable ArrayDeque<E> this) {
         return pollFirst();
     }
 
@@ -612,7 +613,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      *         of the stack represented by this deque)
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E pop(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
+    public E pop(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
         return removeFirst();
     }
 
@@ -1059,7 +1060,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param o element to be removed from this deque, if present
      * @return {@code true} if this deque contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayDeque<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @Shrinkable ArrayDeque<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return removeFirstOccurrence(o);
     }
 
@@ -1067,7 +1068,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * Removes all of the elements from this deque.
      * The deque will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied ArrayDeque<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable ArrayDeque<E> this) {
         circularClear(elements, head, tail);
         head = tail = 0;
     }

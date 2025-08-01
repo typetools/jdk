@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
@@ -42,6 +44,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.index.qual.Shrinkable; 
 
 import java.util.function.Consumer;
 
@@ -288,7 +291,7 @@ public class LinkedList<E>
      * @return the first element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeFirst(@GuardSatisfied @NonEmpty LinkedList<E> this) {
+    public E removeFirst(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
         final Node<E> f = first;
         if (f == null)
             throw new NoSuchElementException();
@@ -301,7 +304,7 @@ public class LinkedList<E>
      * @return the last element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeLast(@GuardSatisfied @NonEmpty LinkedList<E> this) {
+    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
         final Node<E> l = last;
         if (l == null)
             throw new NoSuchElementException();
@@ -382,7 +385,7 @@ public class LinkedList<E>
      * @return {@code true} if this list contained the specified element
      */
     @ReleasesNoLocks
-    public boolean remove(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) {
             for (Node<E> x = first; x != null; x = x.next) {
                 if (x.item == null) {
@@ -475,7 +478,7 @@ public class LinkedList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied LinkedList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable LinkedList<E> this) {
         // Clearing all of the links between nodes is "unnecessary", but:
         // - helps a generational GC if the discarded nodes inhabit
         //   more than one generation
@@ -503,7 +506,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied LinkedList<E> this, @NonNegative int index) {
+    public E get(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) int index) {
         checkElementIndex(index);
         return node(index).item;
     }
@@ -517,7 +520,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public E set(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) int index, E element) {
         checkElementIndex(index);
         Node<E> x = node(index);
         E oldVal = x.item;
@@ -534,7 +537,7 @@ public class LinkedList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied LinkedList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         checkPositionIndex(index);
 
         if (index == size)
@@ -552,7 +555,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied LinkedList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @IndexFor({"this"}) int index) {
         checkElementIndex(index);
         return unlink(node(index));
     }
@@ -703,7 +706,7 @@ public class LinkedList<E>
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
      */
-    public @Nullable E poll(@GuardSatisfied LinkedList<E> this) {
+    public @Nullable E poll(@GuardSatisfied @Shrinkable LinkedList<E> this) {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
     }
@@ -715,7 +718,7 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
      */
-    public E remove(@GuardSatisfied @NonEmpty LinkedList<E> this) {
+    public E remove(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
         return removeFirst();
     }
 
@@ -791,7 +794,7 @@ public class LinkedList<E>
      *     this list is empty
      * @since 1.6
      */
-    public @Nullable E pollFirst(@GuardSatisfied LinkedList<E> this) {
+    public @Nullable E pollFirst(@GuardSatisfied @Shrinkable LinkedList<E> this) {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
     }
@@ -804,7 +807,7 @@ public class LinkedList<E>
      *     this list is empty
      * @since 1.6
      */
-    public @Nullable E pollLast(@GuardSatisfied LinkedList<E> this) {
+    public @Nullable E pollLast(@GuardSatisfied @Shrinkable LinkedList<E> this) {
         final Node<E> l = last;
         return (l == null) ? null : unlinkLast(l);
     }
@@ -833,7 +836,7 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.6
      */
-    public E pop(@GuardSatisfied @NonEmpty LinkedList<E> this) {
+    public E pop(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
         return removeFirst();
     }
 
@@ -846,7 +849,7 @@ public class LinkedList<E>
      * @return {@code true} if the list contained the specified element
      * @since 1.6
      */
-    public boolean removeFirstOccurrence(@GuardSatisfied LinkedList<E> this, @Nullable Object o) {
+    public boolean removeFirstOccurrence(@GuardSatisfied @Shrinkable LinkedList<E> this, @Nullable Object o) {
         return remove(o);
     }
 
@@ -859,7 +862,7 @@ public class LinkedList<E>
      * @return {@code true} if the list contained the specified element
      * @since 1.6
      */
-    public boolean removeLastOccurrence(@GuardSatisfied LinkedList<E> this, @Nullable Object o) {
+    public boolean removeLastOccurrence(@GuardSatisfied @Shrinkable LinkedList<E> this, @Nullable Object o) {
         if (o == null) {
             for (Node<E> x = last; x != null; x = x.prev) {
                 if (x.item == null) {
@@ -899,7 +902,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see List#listIterator(int)
      */
-    public ListIterator<E> listIterator(@NonNegative int index) {
+    public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
         checkPositionIndex(index);
         return new ListItr(index);
     }

@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -43,6 +45,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.index.qual.Shrinkable;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -458,7 +461,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied ArrayList<E> this, @NonNegative int index) {
+    public E get(@GuardSatisfied ArrayList<E> this, @IndexFor({"this"}) int index) {
         Objects.checkIndex(index, size);
         return elementData(index);
     }
@@ -473,7 +476,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @SideEffectsOnly("this")
-    public E set(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
+    public E set(@GuardSatisfied ArrayList<E> this, @IndexFor({"this"}) int index, E element) {
         Objects.checkIndex(index, size);
         E oldValue = elementData(index);
         elementData[index] = element;
@@ -517,7 +520,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @SideEffectsOnly("this")
-    public void add(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied ArrayList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         rangeCheckForAdd(index);
         modCount++;
         final int s;
@@ -540,7 +543,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return the element that was removed from the list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied ArrayList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @IndexFor({"this"}) int index) {
         Objects.checkIndex(index, size);
         final Object[] es = elementData;
 
@@ -652,7 +655,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;
@@ -688,7 +691,7 @@ public class ArrayList<E> extends AbstractList<E>
      * Removes all of the elements from this list.  The list will
      * be empty after this call returns.
      */
-    public void clear(@GuardSatisfied ArrayList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable ArrayList<E> this) {
         modCount++;
         final Object[] es = elementData;
         for (int to = size, i = size = 0; i < to; i++)
@@ -963,7 +966,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public ListIterator<E> listIterator(@NonNegative int index) {
+    public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
         rangeCheckForAdd(index);
         return new ListItr(index);
     }
@@ -1310,13 +1313,13 @@ public class ArrayList<E> extends AbstractList<E>
             return hash;
         }
 
-        public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public @GTENegativeOne int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
-        public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+        public @GTENegativeOne int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;

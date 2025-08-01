@@ -31,6 +31,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.index.qual.Shrinkable;
 
 /**
  * The {@code Stack} class represents a last-in-first-out
@@ -85,7 +86,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
-    public synchronized E pop(@GuardSatisfied Stack<E> this) {
+    public synchronized E pop(@GuardSatisfied @Shrinkable Stack<E> this) {
         E       obj;
         int     len = size();
 

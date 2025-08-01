@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -39,6 +40,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.index.qual.Shrinkable;
 
 import java.util.function.Consumer;
 
@@ -183,7 +185,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws UnsupportedOperationException {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    public E remove(@GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index) {
+    public E remove(@GuardSatisfied @Shrinkable AbstractList<E> this, @IndexFor({"this"}) int index) {
         throw new UnsupportedOperationException();
     }
 
@@ -261,7 +263,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    public void clear(@GuardSatisfied AbstractList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable AbstractList<E> this) {
         removeRange(0, size());
     }
 
@@ -816,7 +818,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             checkForComodification();
             return size;
         }
