@@ -27,7 +27,6 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
-import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -238,7 +237,7 @@ public class Collections {
      *         with the elements of the list.
      */
     public static <T>
-    int binarySearch(List<? extends Comparable<? super T>> list, T key) {
+    @GTENegativeOne int binarySearch(List<? extends Comparable<? super T>> list, T key) {
         if (list instanceof RandomAccess || list.size()<BINARYSEARCH_THRESHOLD)
             return Collections.indexedBinarySearch(list, key);
         else
@@ -342,7 +341,7 @@ public class Collections {
      *         elements of the list using this comparator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> int binarySearch(List<? extends T> list, T key, @Nullable Comparator<? super T> c) {
+    public static <T> @GTENegativeOne int binarySearch(List<? extends T> list, T key, @Nullable Comparator<? super T> c) {
         if (c==null)
             return binarySearch((List<? extends Comparable<? super T>>) list, key);
 
@@ -519,7 +518,7 @@ public class Collections {
      * @since 1.4
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void swap(@GuardSatisfied List<?> list, int i, int j) {
+    public static void swap(@GuardSatisfied List<?> list, @IndexFor({"list"}) int i, @IndexFor({"list"}) int j) {
         // instead of using a raw type here, it's possible to capture
         // the wildcard but it will require a call to a supplementary
         // private method
@@ -1397,18 +1396,18 @@ public class Collections {
         public boolean equals(Object o) {return o == this || list.equals(o);}
         public int hashCode()           {return list.hashCode();}
 
-        public E get(@IndexFor({"this"}) int index) {return list.get(index);}
-        public E set(@IndexFor({"this"}) int index, E element) {
+        public E get(int index) {return list.get(index);}
+        public E set(int index, E element) {
             throw new UnsupportedOperationException();
         }
-        public void add(@IndexOrHigh({"this"}) int index, E element) {
+        public void add(int index, E element) {
             throw new UnsupportedOperationException();
         }
-        public E remove(@IndexFor({"this"}) int index) {
+        public E remove(int index) {
             throw new UnsupportedOperationException();
         }
-        public @GTENegativeOne int indexOf(Object o)            {return list.indexOf(o);}
-        public @GTENegativeOne int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
+        public int indexOf(Object o)            {return list.indexOf(o);}
+        public int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
         public boolean addAll(int index, Collection<? extends E> c) {
             throw new UnsupportedOperationException();
         }
@@ -2588,23 +2587,23 @@ public class Collections {
             synchronized (mutex) {return list.hashCode();}
         }
 
-        public E get(@IndexFor({"this"}) int index) {
+        public E get(int index) {
             synchronized (mutex) {return list.get(index);}
         }
-        public E set(@IndexFor({"this"}) int index, E element) {
+        public E set(int index, E element) {
             synchronized (mutex) {return list.set(index, element);}
         }
-        public void add(@IndexOrHigh({"this"}) int index, E element) {
+        public void add(int index, E element) {
             synchronized (mutex) {list.add(index, element);}
         }
-        public E remove(@IndexFor({"this"}) int index) {
+        public E remove(int index) {
             synchronized (mutex) {return list.remove(index);}
         }
 
-        public @GTENegativeOne int indexOf(Object o) {
+        public int indexOf(Object o) {
             synchronized (mutex) {return list.indexOf(o);}
         }
-        public @GTENegativeOne int lastIndexOf(Object o) {
+        public int lastIndexOf(Object o) {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
 
@@ -3673,16 +3672,16 @@ public class Collections {
 
         public boolean equals(Object o)  { return o == this || list.equals(o); }
         public int hashCode()            { return list.hashCode(); }
-        public E get(@IndexFor({"this"}) int index)          { return list.get(index); }
-        public E remove(@IndexFor({"this"}) int index)       { return list.remove(index); }
-        public @GTENegativeOne int indexOf(Object o)     { return list.indexOf(o); }
-        public @GTENegativeOne int lastIndexOf(Object o) { return list.lastIndexOf(o); }
+        public E get(int index)          { return list.get(index); }
+        public E remove(int index)       { return list.remove(index); }
+        public int indexOf(Object o)     { return list.indexOf(o); }
+        public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
-        public E set(@IndexFor({"this"}) int index, E element) {
+        public E set(int index, E element) {
             return list.set(index, typeCheck(element));
         }
 
-        public void add(@IndexOrHigh({"this"}) int index, E element) {
+        public void add(int index, E element) {
             list.add(index, typeCheck(element));
         }
 
@@ -3999,7 +3998,7 @@ public class Collections {
             }
 
             @Pure
-            public @NonNegative int size()        { return s.size(); }
+            public int size()        { return s.size(); }
             @Pure
             @EnsuresNonEmptyIf(result = false, expression = "this")
             public boolean isEmpty() { return s.isEmpty(); }
@@ -5406,11 +5405,11 @@ public class Collections {
             return n != 0 && eq(obj, element);
         }
 
-        public @GTENegativeOne int indexOf(Object o) {
+        public int indexOf(Object o) {
             return contains(o) ? 0 : -1;
         }
 
-        public @GTENegativeOne int lastIndexOf(Object o) {
+        public int lastIndexOf(Object o) {
             return contains(o) ? n - 1 : -1;
         }
 
