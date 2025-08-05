@@ -399,7 +399,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      *         waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    @Nullable E pollLast(@Shrinkable BlockingDeque<E> thislong timeout, TimeUnit unit)
+    @Nullable E pollLast(@Shrinkable BlockingDeque<E> this, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
