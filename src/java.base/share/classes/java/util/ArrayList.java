@@ -68,6 +68,8 @@ import jdk.internal.util.ArraysSupport;
  * run in linear time (roughly speaking).  The constant factor is low compared
  * to that for the {@code LinkedList} implementation.
  *
+ * <p>Index parameters in this class are annotated with {@code @IndexFor} 
+ * and {@code @IndexOrHigh} to provide precise bounds checking.
  * <p>Each {@code ArrayList} instance has a <i>capacity</i>.  The capacity is
  * the size of the array used to store the elements in the list.  It is always
  * at least as large as the list size.  As elements are added to an ArrayList,
