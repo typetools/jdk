@@ -54,6 +54,9 @@ import java.util.function.Consumer;
  * this class and provide implementations for the {@link #get(int)} and
  * {@link List#size() size()} methods.
  *
+ * <p>Note: Methods that can reduce the list size are annotated with
+ * {@code @Shrinkable} to support grow-only list checking.
+ *
  * <p>To implement a modifiable list, the programmer must additionally
  * override the {@link #set(int, Object) set(int, E)} method (which otherwise
  * throws an {@code UnsupportedOperationException}).  If the list is
