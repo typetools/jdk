@@ -36,6 +36,7 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -386,7 +387,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeFirstOccurrence(@GuardSatisfied Deque<E> this, Object o);
+    boolean removeFirstOccurrence(@GuardSatisfied @Shrinkable Deque<E> this, Object o);
 
     /**
      * Removes the last occurrence of the specified element from this deque.
@@ -405,7 +406,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeLastOccurrence(@GuardSatisfied Deque<E> this, Object o);
+    boolean removeLastOccurrence(@GuardSatisfied @Shrinkable Deque<E> this, Object o);
 
     // *** Queue methods ***
 
@@ -589,7 +590,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@GuardSatisfied Deque<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied @Shrinkable Deque<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this deque contains the specified element.

@@ -324,7 +324,7 @@ public interface List<E> extends Collection<E> {
      *         is not supported by this list
      */
     @SideEffectsOnly("this")
-    boolean remove(@GuardSatisfied List<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied @Shrinkable List<E> this, @UnknownSignedness Object o);
 
 
     // Bulk Modification Operations
@@ -424,7 +424,7 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied List<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean removeAll(@GuardSatisfied @Shrinkable List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Retains only the elements in this list that are contained in the
