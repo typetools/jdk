@@ -194,7 +194,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    E remove(@GuardSatisfied @NonEmpty Queue<E> this);
+    E remove(@GuardSatisfied @NonEmpty @Shrinkable Queue<E> this);
 
     /**
      * Retrieves and removes the head of this queue,

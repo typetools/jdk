@@ -117,7 +117,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E remove(@GuardSatisfied @Shrinkable @NonEmpty AbstractQueue<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty @Shrinkable AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
             return x;

@@ -303,7 +303,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E removeFirst(@GuardSatisfied @NonEmpty Deque<E> this);
+    E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the last element of this deque.  This method
@@ -313,7 +313,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the tail of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E removeLast(@GuardSatisfied @NonEmpty Deque<E> this);
+    E removeLast(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the first element of this deque,
@@ -321,7 +321,7 @@ public interface Deque<E> extends Queue<E> {
      *
      * @return the head of this deque, or {@code null} if this deque is empty
      */
-    @Nullable E pollFirst(@GuardSatisfied Deque<E> this);
+    @Nullable E pollFirst(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the last element of this deque,
@@ -329,7 +329,7 @@ public interface Deque<E> extends Queue<E> {
      *
      * @return the tail of this deque, or {@code null} if this deque is empty
      */
-    @Nullable E pollLast(@GuardSatisfied Deque<E> this);
+    @Nullable E pollLast(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the first element of this deque.
@@ -341,7 +341,7 @@ public interface Deque<E> extends Queue<E> {
      * @throws NoSuchElementException if this deque is empty
      */
     @EnsuresNonEmpty("this")
-    E getFirst(@GuardSatisfied @NonEmpty Deque<E> this);
+    E getFirst(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the last element of this deque.
@@ -352,7 +352,7 @@ public interface Deque<E> extends Queue<E> {
      * @throws NoSuchElementException if this deque is empty
      */
     @EnsuresNonEmpty("this")
-    E getLast(@GuardSatisfied @NonEmpty Deque<E> this);
+    E getLast(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the first element of this deque,
@@ -469,7 +469,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E remove(@GuardSatisfied @NonEmpty Deque<E> this);
+    E remove(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -481,7 +481,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the first element of this deque, or {@code null} if
      *         this deque is empty
      */
-    @Nullable E poll(@GuardSatisfied Deque<E> this);
+    @Nullable E poll(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the head of the queue represented by
@@ -566,7 +566,7 @@ public interface Deque<E> extends Queue<E> {
      *         of the stack represented by this deque)
      * @throws NoSuchElementException if this deque is empty
      */
-    E pop(@GuardSatisfied @NonEmpty Deque<E> this);
+    E pop(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
 
     // *** Collection methods ***

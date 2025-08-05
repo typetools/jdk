@@ -259,7 +259,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * Removes and returns first element, or null if empty.
      */
-    private E unlinkFirst() {
+    private E unlinkFirst(@Shrinkable LinkedBlockingDeque<E> this) {
         // assert lock.isHeldByCurrentThread();
         Node<E> f = first;
         if (f == null)
@@ -281,7 +281,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * Removes and returns last element, or null if empty.
      */
-    private E unlinkLast() {
+    private E unlinkLast(@Shrinkable LinkedBlockingDeque<E> this) {
         // assert lock.isHeldByCurrentThread();
         Node<E> l = last;
         if (l == null)
@@ -303,7 +303,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * Unlinks x.
      */
-    void unlink(Node<E> x) {
+    void unlink(@Shrinkable LinkedBlockingDeque<E> this, Node<E> x) {
         // assert lock.isHeldByCurrentThread();
         // assert x.item != null;
         Node<E> p = x.prev;
@@ -679,7 +679,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    public E remove(@GuardSatisfied @Shrinkable @NonEmpty LinkedBlockingDeque<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty @Shrinkable LinkedBlockingDeque<E> this) {
         return removeFirst();
     }
 

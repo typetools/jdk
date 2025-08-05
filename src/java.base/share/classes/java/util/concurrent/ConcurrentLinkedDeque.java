@@ -981,7 +981,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty ConcurrentLinkedDeque<E> this) {
+    public E removeLast(@GuardSatisfied @NonEmpty @Shrinkable ConcurrentLinkedDeque<E> this) {
         return screenNullResult(pollLast());
     }
 
@@ -1011,14 +1011,14 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         return offerLast(e);
     }
 
-    public @Nullable E poll()           { return pollFirst(); }
+    public @Nullable E poll(@Shrinkable ConcurrentLinkedDeque<E> this)           { return pollFirst(); }
     @Pure
     public @Nullable E peek()           { return peekFirst(); }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E remove(@NonEmpty ConcurrentLinkedDeque<E> this)         { return removeFirst(); }
+    public E remove(@NonEmpty @Shrinkable ConcurrentLinkedDeque<E> this)         { return removeFirst(); }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
