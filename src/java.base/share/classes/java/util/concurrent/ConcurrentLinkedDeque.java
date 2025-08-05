@@ -974,14 +974,14 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst(@GuardSatisfied @Shrinkable ConcurrentLinkedDeque<E> this, @NonEmpty ConcurrentLinkedDeque<E> this) {
+    public E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable ConcurrentLinkedDeque<E> this) {
         return screenNullResult(pollFirst());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied @Shrinkable ConcurrentLinkedDeque<E> this, @NonEmpty ConcurrentLinkedDeque<E> this) {
+    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(pollLast());
     }
 

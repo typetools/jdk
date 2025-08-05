@@ -456,7 +456,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst(@GuardSatisfied @Shrinkable LinkedBlockingDeque<E> this, @NonEmpty LinkedBlockingDeque<E> this) {
+    public E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable LinkedBlockingDeque<E> this) {
         E x = pollFirst();
         if (x == null) throw new NoSuchElementException();
         return x;
@@ -465,7 +465,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied @Shrinkable LinkedBlockingDeque<E> this, @NonEmpty LinkedBlockingDeque<E> this) {
+    public E removeLast(@GuardSatisfied @NonEmpty @Shrinkable LinkedBlockingDeque<E> this) {
         E x = pollLast();
         if (x == null) throw new NoSuchElementException();
         return x;
@@ -679,7 +679,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    public E remove(@GuardSatisfied @Shrinkable LinkedBlockingDeque<E> this, @NonEmpty LinkedBlockingDeque<E> this) {
+    public E remove(@GuardSatisfied @Shrinkable @NonEmpty LinkedBlockingDeque<E> this) {
         return removeFirst();
     }
 

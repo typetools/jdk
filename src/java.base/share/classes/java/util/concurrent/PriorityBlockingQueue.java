@@ -857,7 +857,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue
      */
-    public @PolyGrowShrink @PolyNonEmpty PriorityBlockingQueue<E> this Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty PriorityBlockingQueue<E> this) {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty PriorityBlockingQueue<E> this) {
         return new Itr(toArray());
     }
 
