@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.Shrinkable;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -414,7 +416,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeFirstOccurrence(Object o);
+    boolean removeFirstOccurrence(@Shrinkable BlockingDeque<E> this, Object o);
 
     /**
      * Removes the last occurrence of the specified element from this deque.
@@ -432,7 +434,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeLastOccurrence(Object o);
+    boolean removeLastOccurrence(@Shrinkable BlockingDeque<E> this, Object o);
 
     // *** BlockingQueue methods ***
 
@@ -610,7 +612,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@UnknownSignedness Object o);
+    boolean remove(@Shrinkable BlockingDeque<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this deque contains the specified element.
@@ -644,7 +646,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return an iterator over the elements in this deque in proper sequence
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty BlockingDeque<E> this);
 
     // *** Stack methods ***
 

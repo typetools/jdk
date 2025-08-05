@@ -405,7 +405,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *
      * @return an iterator over the elements in this set
      */
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArraySet<E> this) {
         return al.iterator();
     }
 
@@ -462,7 +462,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
-    public Spliterator<E> spliterator() {
+    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArraySet<E> this) {
         return Spliterators.spliterator
             (al.getArray(), Spliterator.IMMUTABLE | Spliterator.DISTINCT);
     }

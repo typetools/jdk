@@ -1089,7 +1089,7 @@ public class Collections {
         public String toString()                   {return c.toString();}
 
         @SideEffectFree
-        public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty UnmodifiableCollection<E> this) {
+        public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty UnmodifiableCollection<E> this) {
             return new Iterator<E>() {
                 private final Iterator<? extends E> i = c.iterator();
 
@@ -1420,7 +1420,7 @@ public class Collections {
             throw new UnsupportedOperationException();
         }
 
-        public @PolyNonEmpty ListIterator<E> listIterator(@PolyNonEmpty UnmodifiableList<E> this)   {return listIterator(0);}
+        public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty UnmodifiableList<E> this)   {return listIterator(0);}
 
         public ListIterator<E> listIterator(final int index) {
             return new ListIterator<E>() {

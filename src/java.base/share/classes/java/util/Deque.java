@@ -624,7 +624,7 @@ public interface Deque<E> extends Queue<E> {
      * @return an iterator over the elements in this deque in proper sequence
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty Deque<E> this);
 
     /**
      * Returns an iterator over the elements in this deque in reverse

@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -379,7 +380,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @Shrinkable PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         int i = indexOf(o);
         if (i == -1)
             return false;
@@ -491,7 +492,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return an iterator over the elements in this queue
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty PriorityQueue<E> this) {
         return new Itr();
     }
 
@@ -591,7 +592,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * Removes all of the elements from this priority queue.
      * The queue will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied PriorityQueue<E> this) {
+    public void clear(@Shrinkable @GuardSatisfied PriorityQueue<E> this) {
         modCount++;
         final Object[] es = queue;
         for (int i = 0, n = size; i < n; i++)
@@ -599,7 +600,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
         size = 0;
     }
 
-    public @Nullable E poll(@GuardSatisfied PriorityQueue<E> this) {
+    public @Nullable E poll(@GuardSatisfied @Shrinkable PriorityQueue<E> this) {
         final Object[] es;
         final E result;
 
@@ -847,7 +848,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
-    public final Spliterator<E> spliterator() {
+    public final @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty PriorityQueue<E> this) {
         return new PriorityQueueSpliterator(0, -1, 0);
     }
 
@@ -922,7 +923,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable PriorityQueue<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -930,7 +931,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable PriorityQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -938,7 +939,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied @Shrinkable PriorityQueue this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

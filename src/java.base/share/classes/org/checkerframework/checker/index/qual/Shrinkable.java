@@ -1,4 +1,4 @@
-package org.checkerframework.checker.signature.qual;
+package org.checkerframework.checker.index.qual;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,12 +8,13 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * An identifier.
+ * An expression of type {@code @Shrinkable} may be used to remove elements, e.g., by calling {@code
+ * remove()} or {@code clear()} on it.
  *
- * @checker_framework.manual #signature-checker Signature Checker
+ * @checker_framework.manual #growonly-checker Grow-only Checker
  */
-@SubtypeOf({DotSeparatedIdentifiers.class, IdentifierOrPrimitiveType.class, InternalForm.class})
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-public @interface Identifier {}
+@SubtypeOf({UnshrinkableRef.class})
+public @interface Shrinkable {}

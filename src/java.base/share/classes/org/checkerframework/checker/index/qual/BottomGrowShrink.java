@@ -1,4 +1,4 @@
-package org.checkerframework.checker.optional.qual;
+package org.checkerframework.checker.index.qual;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,13 +8,13 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The bottom type qualifier for the Optional Checker. The only value of this type is {@code null}.
- * Programmers rarely write this annotation.
+ * The bottom qualifier in the GrowShrink hierarchy. Programmers should rarely write this type.
  *
- * @checker_framework.manual #optional-checker Optional Checker
+ * @checker_framework.manual #growonly-checker Grow-only Checker
+ * @checker_framework.manual #bottom-type the bottom type
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({Present.class})
-public @interface OptionalBottom {}
+@SubtypeOf({GrowOnly.class, UncheckedShrinkable.class})
+public @interface BottomGrowShrink {}

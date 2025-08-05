@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -540,7 +541,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return the element that was removed from the list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied ArrayList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @NonNegative int index) {
         Objects.checkIndex(index, size);
         final Object[] es = elementData;
 
@@ -652,7 +653,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         final Object[] es = elementData;
         final int size = this.size;
         int i = 0;
@@ -688,7 +689,7 @@ public class ArrayList<E> extends AbstractList<E>
      * Removes all of the elements from this list.  The list will
      * be empty after this call returns.
      */
-    public void clear(@GuardSatisfied ArrayList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable ArrayList<E> this) {
         modCount++;
         final Object[] es = elementData;
         for (int to = size, i = size = 0; i < to; i++)
@@ -831,7 +832,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return batchRemove(c, false, 0, size);
     }
 
@@ -851,7 +852,7 @@ public class ArrayList<E> extends AbstractList<E>
      *         or if the specified collection is null
      * @see Collection#contains(Object)
      */
-    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied @Shrinkable ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return batchRemove(c, true, 0, size);
     }
 
@@ -963,7 +964,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public ListIterator<E> listIterator(@NonNegative int index) {
+    public @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink ArrayList<E> this, @NonNegative int index) {
         rangeCheckForAdd(index);
         return new ListItr(index);
     }
@@ -976,7 +977,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @see #listIterator(int)
      */
-    public ListIterator<E> listIterator() {
+    public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty ArrayList<E> this) {
         return new ListItr(0);
     }
 
@@ -988,7 +989,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty ArrayList<E> this) {
         return new Itr();
     }
 
@@ -1246,7 +1247,7 @@ public class ArrayList<E> extends AbstractList<E>
             root.replaceAllRange(operator, offset, offset + size);
         }
 
-        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
+        public boolean removeAll(ArrayList<E> this, Collection<? extends @UnknownSignedness Object> c) {
             return batchRemove(c, false);
         }
 
@@ -1264,7 +1265,7 @@ public class ArrayList<E> extends AbstractList<E>
             return modified;
         }
 
-        public boolean removeIf(Predicate<? super E> filter) {
+        public boolean removeIf(ArrayList<E> this, Predicate<? super E> filter) {
             checkForComodification();
             int oldSize = root.size;
             boolean modified = root.removeIf(filter, offset, offset + size);
@@ -1584,7 +1585,7 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @SideEffectFree
     @Override
-    public Spliterator<E> spliterator() {
+    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty ArrayList<E> this) {
         return new ArrayListSpliterator(0, -1, 0);
     }
 
@@ -1713,7 +1714,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable ArrayList<E> this, Predicate<? super E> filter) {
         return removeIf(filter, 0, size);
     }
 
@@ -1721,7 +1722,7 @@ public class ArrayList<E> extends AbstractList<E>
      * Removes all elements satisfying the given predicate, from index
      * i (inclusive) to index end (exclusive).
      */
-    boolean removeIf(Predicate<? super E> filter, int i, final int end) {
+    boolean removeIf(@Shrinkable ArrayList<E> this, Predicate<? super E> filter, int i, final int end) {
         Objects.requireNonNull(filter);
         int expectedModCount = modCount;
         final Object[] es = elementData;

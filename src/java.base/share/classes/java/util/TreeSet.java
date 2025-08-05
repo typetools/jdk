@@ -183,7 +183,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @param s sorted set whose elements will comprise the new set
      * @throws NullPointerException if the specified sorted set is null
      */
-    public @PolyNonEmpty TreeSet(@PolyNonEmpty SortedSet<E> s) {
+    public @PolyNonEmpty TreeSet(@PolyNonEmpty TreeSet<E> this, SortedSet<E> s) {
         this(s.comparator());
         addAll(s);
     }
@@ -194,7 +194,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set in ascending order
      */
     @SideEffectFree
-    public @PolyNonEmpty Iterator<E> iterator(@PolyNonEmpty TreeSet<E> this) {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty TreeSet<E> this) {
         return m.navigableKeySet().iterator();
     }
 
@@ -204,7 +204,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set in descending order
      * @since 1.6
      */
-    public @PolyNonEmpty Iterator<E> descendingIterator(@PolyNonEmpty TreeSet<E> this) {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> descendingIterator(@PolyGrowShrink @PolyNonEmpty TreeSet<E> this) {
         return m.descendingKeySet().iterator();
     }
 
@@ -342,7 +342,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> subSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
+    public @PolyGrowShrink NavigableSet<E> subSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
                                   @GuardSatisfied E toElement,   boolean toInclusive) {
         return new TreeSet<>(m.subMap(fromElement, fromInclusive,
                                        toElement,   toInclusive));
@@ -357,7 +357,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> headSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E toElement, boolean inclusive) {
+    public @PolyGrowShrink NavigableSet<E> headSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E toElement, boolean inclusive) {
         return new TreeSet<>(m.headMap(toElement, inclusive));
     }
 
@@ -370,7 +370,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> tailSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, boolean inclusive) {
+    public @PolyGrowShrink NavigableSet<E> tailSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, boolean inclusive) {
         return new TreeSet<>(m.tailMap(fromElement, inclusive));
     }
 
@@ -382,7 +382,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> subSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement) {
+    public @PolyGrowShrink SortedSet<E> subSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement) {
         return subSet(fromElement, true, toElement, false);
     }
 
@@ -394,7 +394,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> headSet(@GuardSatisfied TreeSet<E> this, E toElement) {
+    public @PolyGrowShrink SortedSet<E> headSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, E toElement) {
         return headSet(toElement, false);
     }
 
@@ -406,7 +406,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> tailSet(@GuardSatisfied TreeSet<E> this, E fromElement) {
+    public @PolyGrowShrink SortedSet<E> tailSet(@GuardSatisfied @PolyGrowShrink TreeSet<E> this, E fromElement) {
         return tailSet(fromElement, true);
     }
 
@@ -585,7 +585,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
-    public Spliterator<E> spliterator() {
+    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty TreeSet<E> this) {
         return TreeMap.keySpliteratorFor(m);
     }
 

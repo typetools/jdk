@@ -174,7 +174,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @return an iterator over the elements in this set, in ascending order
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty NavigableSet<E> this);
 
     /**
      * Returns a reverse order view of the elements contained in this set.

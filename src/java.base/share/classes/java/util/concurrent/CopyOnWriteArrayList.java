@@ -34,6 +34,7 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -491,7 +492,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(int index) {
+    public E remove(@GuardSatisfied @Shrinkable CopyOnWriteArrayList<E> this, int index) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -523,7 +524,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@Shrinkable CopyOnWriteArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] snapshot = getArray();
         int index = indexOfRange(o, snapshot, 0, snapshot.length);
         return index >= 0 && remove(o, snapshot, index);
@@ -533,7 +534,7 @@ public class CopyOnWriteArrayList<E>
      * A version of remove(Object) using the strong hint that given
      * recent snapshot contains o at the given index.
      */
-    private boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o, Object[] snapshot, int index) {
+    private boolean remove(@Shrinkable CopyOnWriteArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o, Object[] snapshot, int index) {
         synchronized (lock) {
             Object[] current = getArray();
             int len = current.length;
@@ -671,7 +672,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -692,7 +693,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied @Shrinkable CopyOnWriteArrayList this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
@@ -739,7 +740,7 @@ public class CopyOnWriteArrayList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
-    public void clear() {
+    public void clear(@GuardSatisfied @Shrinkable CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
             setArray(new Object[0]);
         }
@@ -832,7 +833,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable CopyOnWriteArrayList<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -1043,7 +1044,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return an iterator over the elements in this list in proper sequence
      */
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return new COWIterator<E>(getArray(), 0);
     }
 
@@ -1055,7 +1056,7 @@ public class CopyOnWriteArrayList<E>
      * traversing the iterator. The iterator does <em>NOT</em> support the
      * {@code remove}, {@code set} or {@code add} methods.
      */
-    public ListIterator<E> listIterator() {
+    public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return new COWIterator<E>(getArray(), 0);
     }
 
@@ -1069,7 +1070,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public ListIterator<E> listIterator(int index) {
+    public @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink CopyOnWriteArrayList<E> this, int index) {
         Object[] es = getArray();
         int len = es.length;
         if (index < 0 || index > len)
@@ -1092,7 +1093,7 @@ public class CopyOnWriteArrayList<E>
      * @return a {@code Spliterator} over the elements in this list
      * @since 1.8
      */
-    public Spliterator<E> spliterator() {
+    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return Spliterators.spliterator
             (getArray(), Spliterator.IMMUTABLE | Spliterator.ORDERED);
     }
@@ -1198,7 +1199,7 @@ public class CopyOnWriteArrayList<E>
      * @return a view of the specified range within this list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public List<E> subList(int fromIndex, int toIndex) {
+    public @PolyGrowShrink List<E> subList(@PolyGrowShrink CopyOnWriteArrayList<E> this, int fromIndex, int toIndex) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;

@@ -87,7 +87,7 @@ class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return an iterator over the elements contained in this set
      */
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty RegularEnumSet<E> this) {
         return new EnumSetIterator<>();
     }
 
