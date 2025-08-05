@@ -519,7 +519,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return an iterator over the elements in this queue
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty iterator(@PolyGrowShrink @PolyNonEmpty DelayQueue<E> this) {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty DelayQueue<E> this) {
         return new Itr(toArray());
     }
 
