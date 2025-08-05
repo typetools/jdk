@@ -151,7 +151,7 @@ public abstract class AbstractQueue<E>
      * <p>This implementation repeatedly invokes {@link #poll poll} until it
      * returns {@code null}.
      */
-    public void clear(@Shrinkable @GuardSatisfied AbstractQueue<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable AbstractQueue<E> this) {
         while (poll() != null)
             ;
     }

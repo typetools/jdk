@@ -1068,7 +1068,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * Removes all of the elements from this deque.
      * The deque will be empty after this call returns.
      */
-    public void clear(@Shrinkable @GuardSatisfied ArrayDeque<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable ArrayDeque<E> this) {
         circularClear(elements, head, tail);
         head = tail = 0;
     }

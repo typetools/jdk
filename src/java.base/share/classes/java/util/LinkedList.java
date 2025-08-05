@@ -476,7 +476,7 @@ public class LinkedList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
-    public void clear(@Shrinkable @GuardSatisfied LinkedList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable LinkedList<E> this) {
         // Clearing all of the links between nodes is "unnecessary", but:
         // - helps a generational GC if the discarded nodes inhabit
         //   more than one generation

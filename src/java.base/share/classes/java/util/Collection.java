@@ -638,7 +638,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@Shrinkable @GuardSatisfied Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean retainAll(@GuardSatisfied @Shrinkable Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Removes all of the elements from this collection (optional operation).
@@ -647,7 +647,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
-    void clear(@Shrinkable @GuardSatisfied Collection<E> this);
+    void clear(@GuardSatisfied @Shrinkable Collection<E> this);
 
 
     // Comparison and hashing

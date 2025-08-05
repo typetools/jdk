@@ -262,7 +262,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    public void clear(@Shrinkable @GuardSatisfied AbstractList<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable AbstractList<E> this) {
         removeRange(0, size());
     }
 

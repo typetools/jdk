@@ -895,7 +895,7 @@ public class Vector<E>
      *
      * @since 1.2
      */
-    public void clear(@Shrinkable @GuardSatisfied Vector<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable Vector<E> this) {
         removeAllElements();
     }
 
@@ -987,7 +987,7 @@ public class Vector<E>
      *         or if the specified collection is null
      * @since 1.2
      */
-    public boolean retainAll(@GuardSatisfied @Shrinkable @GuardSatisfied Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied @Shrinkable Vector<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

@@ -592,7 +592,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * Removes all of the elements from this priority queue.
      * The queue will be empty after this call returns.
      */
-    public void clear(@Shrinkable @GuardSatisfied PriorityQueue<E> this) {
+    public void clear(@GuardSatisfied @Shrinkable PriorityQueue<E> this) {
         modCount++;
         final Object[] es = queue;
         for (int i = 0, n = size; i < n; i++)

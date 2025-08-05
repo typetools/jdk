@@ -446,7 +446,7 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@Shrinkable @GuardSatisfied List<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean retainAll(@GuardSatisfied @Shrinkable List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Replaces each element of this list with the result of applying the
@@ -562,7 +562,7 @@ public interface List<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    void clear(@Shrinkable @GuardSatisfied List<E> this);
+    void clear(@GuardSatisfied @Shrinkable List<E> this);
 
 
     // Comparison and hashing
