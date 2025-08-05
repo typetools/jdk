@@ -289,7 +289,7 @@ public class LinkedList<E>
      * @return the first element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeFirst(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
+    public E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable LinkedList<E> this) {
         final Node<E> f = first;
         if (f == null)
             throw new NoSuchElementException();
@@ -302,7 +302,7 @@ public class LinkedList<E>
      * @return the last element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
+    public E removeLast(@GuardSatisfied @NonEmpty @Shrinkable LinkedList<E> this) {
         final Node<E> l = last;
         if (l == null)
             throw new NoSuchElementException();
@@ -716,7 +716,7 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
      */
-    public E remove(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty @Shrinkable LinkedList<E> this) {
         return removeFirst();
     }
 
@@ -834,7 +834,7 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.6
      */
-    public E pop(@GuardSatisfied @Shrinkable @NonEmpty LinkedList<E> this) {
+    public E pop(@GuardSatisfied @NonEmpty @Shrinkable LinkedList<E> this) {
         return removeFirst();
     }
 
