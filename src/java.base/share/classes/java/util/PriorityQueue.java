@@ -849,7 +849,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
-    public final @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty PriorityQueue<E> this) {
+    public final Spliterator<E> spliterator() {
         return new PriorityQueueSpliterator(0, -1, 0);
     }
 

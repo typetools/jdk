@@ -526,7 +526,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      */
     @SuppressWarnings({"unchecked"})
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty ConcurrentSkipListSet<E> this) {
+    public Spliterator<E> spliterator() {
         return (m instanceof ConcurrentSkipListMap)
             ? ((ConcurrentSkipListMap<E,?>)m).keySpliterator()
             : ((ConcurrentSkipListMap.SubMap<E,?>)m).new SubMapKeyIterator();

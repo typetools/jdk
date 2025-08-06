@@ -1061,7 +1061,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @since 1.8
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty SynchronousQueue<E> this) {
+    public Spliterator<E> spliterator() {
         return Spliterators.emptySpliterator();
     }
 

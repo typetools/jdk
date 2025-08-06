@@ -984,7 +984,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      */
     @SideEffectFree
     @Override
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty ConcurrentLinkedQueue<E> this) {
+    public Spliterator<E> spliterator() {
         return new CLQSpliterator();
     }
 

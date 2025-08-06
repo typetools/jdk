@@ -1217,7 +1217,7 @@ public class LinkedList<E>
      */
     @SideEffectFree
     @Override
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty LinkedList<E> this) {
+    public Spliterator<E> spliterator() {
         return new LLSpliterator<>(this, -1, 0);
     }
 

@@ -1586,7 +1586,7 @@ public class ArrayList<E> extends AbstractList<E>
      */
     @SideEffectFree
     @Override
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty ArrayList<E> this) {
+    public Spliterator<E> spliterator() {
         return new ArrayListSpliterator(0, -1, 0);
     }
 

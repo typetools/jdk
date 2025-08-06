@@ -824,7 +824,7 @@ public interface List<E> extends Collection<E> {
      */
     @SideEffectFree
     @Override
-    default @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty List<E> this) {
+    default Spliterator<E> spliterator() {
         if (this instanceof RandomAccess) {
             return new AbstractList.RandomAccessSpliterator<>(this);
         } else {

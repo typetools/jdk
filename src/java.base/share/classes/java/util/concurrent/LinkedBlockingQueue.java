@@ -992,7 +992,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty LinkedBlockingQueue<E> this) {
+    public Spliterator<E> spliterator() {
         return new LBQSpliterator();
     }
 

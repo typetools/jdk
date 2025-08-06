@@ -1308,7 +1308,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return a {@code Spliterator} over the elements in this deque
      * @since 1.8
      */
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty LinkedBlockingDeque<E> this) {
+    public Spliterator<E> spliterator() {
         return new LBDSpliterator();
     }
 

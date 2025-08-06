@@ -1096,7 +1096,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty LinkedTransferQueue<E> this) {
+    public Spliterator<E> spliterator() {
         return new LTQSpliterator();
     }
 

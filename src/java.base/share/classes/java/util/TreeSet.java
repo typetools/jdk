@@ -586,7 +586,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty TreeSet<E> this) {
+    public Spliterator<E> spliterator() {
         return TreeMap.keySpliteratorFor(m);
     }
 

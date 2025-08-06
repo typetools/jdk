@@ -1579,7 +1579,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      * @since 1.8
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Spliterator<E> spliterator(@PolyGrowShrink @PolyNonEmpty ConcurrentLinkedDeque<E> this) {
+    public Spliterator<E> spliterator() {
         return new CLDSpliterator();
     }
 
