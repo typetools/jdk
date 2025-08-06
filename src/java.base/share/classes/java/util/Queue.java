@@ -203,7 +203,7 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
-    @Nullable E poll(@GuardSatisfied Queue<E> this);
+    @Nullable E poll(@GuardSatisfied @Shrinkable Queue<E> this);
 
     /**
      * Retrieves, but does not remove, the head of this queue.  This method
