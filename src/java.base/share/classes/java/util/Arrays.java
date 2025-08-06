@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.SearchIndexFor;
 import org.checkerframework.checker.interning.qual.PolyInterned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
@@ -4218,19 +4219,19 @@ public class Arrays {
         }
 
         @Override
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             return a[index];
         }
 
         @Override
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             E oldValue = a[index];
             a[index] = element;
             return oldValue;
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             E[] a = this.a;
             if (o == null) {
                 for (int i = 0; i < a.length; i++)

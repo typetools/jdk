@@ -25,6 +25,10 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -266,11 +270,11 @@ class ImmutableCollections {
             implements List<E>, RandomAccess {
 
         // all mutating methods throw UnsupportedOperationException
-        @Override public void    add(int index, E element) { throw uoe(); }
+        @Override public void    add(@IndexOrHigh({"this"}) int index, E element) { throw uoe(); }
         @Override public boolean addAll(int index, Collection<? extends E> c) { throw uoe(); }
-        @Override public E       remove(int index) { throw uoe(); }
+        @Override public E       remove(@IndexFor({"this"}) int index) { throw uoe(); }
         @Override public void    replaceAll(UnaryOperator<E> operator) { throw uoe(); }
-        @Override public E       set(int index, E element) { throw uoe(); }
+        @Override public E       set(@IndexFor({"this"}) int index, E element) { throw uoe(); }
         @Override public void    sort(Comparator<? super E> c) { throw uoe(); }
 
         @Override
@@ -301,7 +305,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public ListIterator<E> listIterator(final int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) final int index) {
             int size = size();
             if (index < 0 || index > size) {
                 throw outOfBounds(index);
@@ -476,13 +480,13 @@ class ImmutableCollections {
             return new SubList<>(list, fromIndex, toIndex - fromIndex);
         }
 
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             Objects.checkIndex(index, size);
             return root.get(offset + index);
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -490,7 +494,7 @@ class ImmutableCollections {
             return new ListItr<>(this, size());
         }
 
-        public ListIterator<E> listIterator(int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
             rangeCheck(index);
             return new ListItr<>(this, size(), index);
         }
@@ -511,7 +515,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
             }
@@ -524,7 +528,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
             }
@@ -585,7 +589,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return e1 != EMPTY ? 2 : 1;
         }
 
@@ -597,7 +601,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             if (index == 0) {
                 return e0;
             } else if (index == 1 && e1 != EMPTY) {
@@ -607,7 +611,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             Objects.requireNonNull(o);
             if (o.equals(e0)) {
                 return 0;
@@ -619,7 +623,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             Objects.requireNonNull(o);
             if (e1 != EMPTY && o.equals(e1)) {
                 return 1;
@@ -695,12 +699,12 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return elements.length;
         }
 
         @Override
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             return elements[index];
         }
 
@@ -735,7 +739,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
             }
@@ -749,7 +753,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
             }
@@ -821,7 +825,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return (e1 == EMPTY) ? 1 : 2;
         }
 
@@ -955,7 +959,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -1167,7 +1171,7 @@ class ImmutableCollections {
         }
 
         @Override
-        public int size() {
+        public @NonNegative int size() {
             return 1;
         }
 
@@ -1286,7 +1290,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             return size;
         }
 
@@ -1353,7 +1357,7 @@ class ImmutableCollections {
             return new AbstractSet<>() {
                 @Override
                 @Pure
-                public int size() {
+                public @NonNegative int size() {
                     return MapN.this.size;
                 }
 

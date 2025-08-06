@@ -34,6 +34,10 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -177,7 +181,7 @@ public class CopyOnWriteArrayList<E>
      * @return the number of elements in this list
      */
     @Pure
-    public int size() {
+    public @NonNegative int size() {
         return getArray().length;
     }
 
@@ -252,7 +256,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
     }
@@ -272,7 +276,7 @@ public class CopyOnWriteArrayList<E>
      *         {@code -1} if the element is not found.
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
-    public int indexOf(E e, int index) {
+    public @GTENegativeOne int indexOf(E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
     }
@@ -280,7 +284,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
-    public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
     }
@@ -301,7 +305,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is greater
      *         than or equal to the current size of this list
      */
-    public int lastIndexOf(E e, int index) {
+    public @GTENegativeOne int lastIndexOf(E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
     }
@@ -413,7 +417,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E get(int index) {
+    public E get(@IndexFor({"this"}) int index) {
         return elementAt(getArray(), index);
     }
 
@@ -423,7 +427,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(int index, E element) {
+    public E set(@IndexFor({"this"}) int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             E oldValue = elementAt(es, index);
@@ -463,7 +467,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(int index, E element) {
+    public void add(@IndexOrHigh({"this"}) int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -491,7 +495,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(int index) {
+    public E remove(@IndexFor({"this"}) int index) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -1069,7 +1073,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public ListIterator<E> listIterator(int index) {
+    public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
         Object[] es = getArray();
         int len = es.length;
         if (index < 0 || index > len)
@@ -1283,7 +1287,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public int indexOf(Object o) {
+        public @GTENegativeOne int indexOf(Object o) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1296,7 +1300,7 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
-        public int lastIndexOf(Object o) {
+        public @GTENegativeOne int lastIndexOf(Object o) {
             final Object[] es;
             final int offset;
             final int size;
@@ -1375,7 +1379,7 @@ public class CopyOnWriteArrayList<E>
             return !it.hasNext();
         }
 
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1385,7 +1389,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1394,7 +1398,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
-        public int size() {
+        public @NonNegative int size() {
             synchronized (lock) {
                 checkForComodification();
                 return size;
@@ -1412,7 +1416,7 @@ public class CopyOnWriteArrayList<E>
             return true;
         }
 
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             synchronized (lock) {
                 checkForComodification();
                 rangeCheckForAdd(index);
@@ -1452,7 +1456,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        public E remove(int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             synchronized (lock) {
                 rangeCheck(index);
                 checkForComodification();
@@ -1482,7 +1486,7 @@ public class CopyOnWriteArrayList<E>
             return listIterator(0);
         }
 
-        public ListIterator<E> listIterator(int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
             synchronized (lock) {
                 checkForComodification();
                 rangeCheckForAdd(index);
