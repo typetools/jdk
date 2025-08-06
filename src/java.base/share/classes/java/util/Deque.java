@@ -36,10 +36,13 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
@@ -302,7 +305,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E removeFirst(@GuardSatisfied @NonEmpty Deque<E> this);
+    E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the last element of this deque.  This method
@@ -312,7 +315,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the tail of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E removeLast(@GuardSatisfied @NonEmpty Deque<E> this);
+    E removeLast(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the first element of this deque,
@@ -320,7 +323,7 @@ public interface Deque<E> extends Queue<E> {
      *
      * @return the head of this deque, or {@code null} if this deque is empty
      */
-    @Nullable E pollFirst(@GuardSatisfied Deque<E> this);
+    @Nullable E pollFirst(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the last element of this deque,
@@ -328,7 +331,7 @@ public interface Deque<E> extends Queue<E> {
      *
      * @return the tail of this deque, or {@code null} if this deque is empty
      */
-    @Nullable E pollLast(@GuardSatisfied Deque<E> this);
+    @Nullable E pollLast(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the first element of this deque.
@@ -340,7 +343,7 @@ public interface Deque<E> extends Queue<E> {
      * @throws NoSuchElementException if this deque is empty
      */
     @EnsuresNonEmpty("this")
-    E getFirst(@GuardSatisfied @NonEmpty Deque<E> this);
+    E getFirst(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the last element of this deque.
@@ -351,7 +354,7 @@ public interface Deque<E> extends Queue<E> {
      * @throws NoSuchElementException if this deque is empty
      */
     @EnsuresNonEmpty("this")
-    E getLast(@GuardSatisfied @NonEmpty Deque<E> this);
+    E getLast(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the first element of this deque,
@@ -386,7 +389,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeFirstOccurrence(@GuardSatisfied Deque<E> this, Object o);
+    boolean removeFirstOccurrence(@GuardSatisfied @Shrinkable Deque<E> this, Object o);
 
     /**
      * Removes the last occurrence of the specified element from this deque.
@@ -405,7 +408,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeLastOccurrence(@GuardSatisfied Deque<E> this, Object o);
+    boolean removeLastOccurrence(@GuardSatisfied @Shrinkable Deque<E> this, Object o);
 
     // *** Queue methods ***
 
@@ -468,7 +471,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E remove(@GuardSatisfied @NonEmpty Deque<E> this);
+    E remove(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -480,7 +483,7 @@ public interface Deque<E> extends Queue<E> {
      * @return the first element of this deque, or {@code null} if
      *         this deque is empty
      */
-    @Nullable E poll(@GuardSatisfied Deque<E> this);
+    @Nullable E poll(@GuardSatisfied @Shrinkable Deque<E> this);
 
     /**
      * Retrieves, but does not remove, the head of the queue represented by
@@ -565,7 +568,7 @@ public interface Deque<E> extends Queue<E> {
      *         of the stack represented by this deque)
      * @throws NoSuchElementException if this deque is empty
      */
-    E pop(@GuardSatisfied @NonEmpty Deque<E> this);
+    E pop(@GuardSatisfied @NonEmpty @Shrinkable Deque<E> this);
 
 
     // *** Collection methods ***
@@ -589,7 +592,7 @@ public interface Deque<E> extends Queue<E> {
      *         deque does not permit null elements
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@GuardSatisfied Deque<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied @Shrinkable Deque<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this deque contains the specified element.
@@ -624,7 +627,7 @@ public interface Deque<E> extends Queue<E> {
      * @return an iterator over the elements in this deque in proper sequence
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty Deque<E> this);
 
     /**
      * Returns an iterator over the elements in this deque in reverse

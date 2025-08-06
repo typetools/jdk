@@ -35,6 +35,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -194,7 +195,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    E remove(@GuardSatisfied @NonEmpty Queue<E> this);
+    E remove(@GuardSatisfied @NonEmpty @Shrinkable Queue<E> this);
 
     /**
      * Retrieves and removes the head of this queue,
@@ -202,7 +203,7 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
-    @Nullable E poll(@GuardSatisfied Queue<E> this);
+    @Nullable E poll(@GuardSatisfied @Shrinkable Queue<E> this);
 
     /**
      * Retrieves, but does not remove, the head of this queue.  This method
