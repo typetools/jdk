@@ -35,6 +35,7 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -50,7 +51,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.checker.index.qual.Shrinkable;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
@@ -376,7 +376,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeFirst(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
+    public E removeFirst(@GuardSatisfied @NonEmpty @Shrinkable ArrayDeque<E> this) {
         E e = pollFirst();
         if (e == null)
             throw new NoSuchElementException();
@@ -386,7 +386,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E removeLast(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
+    public E removeLast(@GuardSatisfied @NonEmpty @Shrinkable ArrayDeque<E> this) {
         E e = pollLast();
         if (e == null)
             throw new NoSuchElementException();
@@ -542,7 +542,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty @Shrinkable ArrayDeque<E> this) {
         return removeFirst();
     }
 
@@ -613,7 +613,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      *         of the stack represented by this deque)
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public E pop(@GuardSatisfied @Shrinkable @NonEmpty ArrayDeque<E> this) {
+    public E pop(@GuardSatisfied @NonEmpty @Shrinkable ArrayDeque<E> this) {
         return removeFirst();
     }
 
