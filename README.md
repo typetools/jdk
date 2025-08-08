@@ -128,7 +128,7 @@ cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar check
   unzip ../../../../checker-qual.jar -x 'META-INF*' && \
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
-jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort | uniq
+jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
 ```
 The result of the command will be a list of export lines.
 Replace the existing export lines present in
