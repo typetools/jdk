@@ -5,16 +5,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.checkerframework.framework.qual.SubtypeOf;
+import org.checkerframework.framework.qual.PolymorphicQualifier;
 
 /**
- * The bottom qualifier in the GrowShrink hierarchy. Programmers should rarely write this type.
+ * A polymorphic qualifier for @GrowOnly type system.
  *
- * @checker_framework.manual #growonly-checker Grow-only Checker
- * @checker_framework.manual #bottom-type the bottom type
+ * @checker_framework.manual #index-checker Index Checker
+ * @checker_framework.manual #qualifier-polymorphism Qualifier polymorphism
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({GrowOnly.class, UncheckedShrinkable.class})
-public @interface BottomGrowShrink {}
+@PolymorphicQualifier(UnshrinkableRef.class)
+public @interface PolyGrowShrink {}

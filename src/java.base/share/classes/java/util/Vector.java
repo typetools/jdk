@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -352,7 +353,7 @@ public class Vector<E>
      * @return  an enumeration of the components of this vector
      * @see     Iterator
      */
-    public Enumeration<E> elements() {
+    public @PolyGrowShrink @PolyNonEmpty Enumeration<E> elements(@PolyGrowShrink @PolyNonEmpty Vector<E> this) {
         return new Enumeration<E>() {
             int count = 0;
 
@@ -999,7 +1000,7 @@ public class Vector<E>
      */
     @SuppressWarnings({"unchecked"})
     @Override
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable Vector<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -1161,7 +1162,7 @@ public class Vector<E>
      *         {@code (fromIndex > toIndex)}
      */
     @SideEffectFree
-    public synchronized List<E> subList(@GuardSatisfied Vector<E> this, int fromIndex, int toIndex) {
+    public synchronized @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink Vector<E> this, int fromIndex, int toIndex) {
         return Collections.synchronizedList(super.subList(fromIndex, toIndex),
                                             this);
     }
@@ -1173,7 +1174,7 @@ public class Vector<E>
      * This call shortens the list by {@code (toIndex - fromIndex)} elements.
      * (If {@code toIndex==fromIndex}, this operation has no effect.)
      */
-    protected synchronized void removeRange(int fromIndex, int toIndex) {
+    protected synchronized void removeRange(@GuardSatisfied @Shrinkable Vector<E> this, int fromIndex, int toIndex) {
         modCount++;
         shiftTailOverGap(elementData, fromIndex, toIndex);
     }
@@ -1244,7 +1245,7 @@ public class Vector<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public synchronized ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
+    public synchronized @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink Vector<E> this, @IndexOrHigh({"this"}) int index) {
         if (index < 0 || index > elementCount)
             throw new IndexOutOfBoundsException("Index: "+index);
         return new ListItr(index);
@@ -1258,7 +1259,7 @@ public class Vector<E>
      *
      * @see #listIterator(int)
      */
-    public synchronized ListIterator<E> listIterator() {
+    public synchronized @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink Vector<E> this) {
         return new ListItr(0);
     }
 
@@ -1270,7 +1271,7 @@ public class Vector<E>
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    public synchronized Iterator<E> iterator() {
+    public synchronized @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty Vector<E> this) {
         return new Itr();
     }
 
