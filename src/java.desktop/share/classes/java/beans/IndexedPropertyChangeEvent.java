@@ -25,6 +25,10 @@
 
 package java.beans;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.io.Serial;
 
 /**
@@ -43,6 +47,9 @@ import java.io.Serial;
  * @since 1.5
  * @author Mark Davidson
  */
+@AnnotatedFor({"nullness"})
+@CFComment({"nullness: don't permit null property name, class documentation may ",
+            "be a typo caused by cut-and-paste from PropertyChangeEvent"})
 public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
 
     /**
@@ -67,7 +74,7 @@ public class IndexedPropertyChangeEvent extends PropertyChangeEvent {
      * @param index index of the property element that was changed.
      */
     public IndexedPropertyChangeEvent(Object source, String propertyName,
-                                      Object oldValue, Object newValue,
+                                      @Nullable Object oldValue, @Nullable Object newValue,
                                       int index) {
         super (source, propertyName, oldValue, newValue);
         this.index = index;

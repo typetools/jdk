@@ -26,6 +26,7 @@
 package java.beans;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
@@ -84,7 +85,7 @@ import java.util.Map.Entry;
  * @see PropertyChangeSupport
  * @since 1.1
  */
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
     private VetoableChangeListenerMap map = new VetoableChangeListenerMap();
 
@@ -110,7 +111,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      *
      * @param listener  The VetoableChangeListener to be added
      */
-    public void addVetoableChangeListener(VetoableChangeListener listener) {
+    public void addVetoableChangeListener(@Nullable VetoableChangeListener listener) {
         if (listener == null) {
             return;
         }
@@ -136,7 +137,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      *
      * @param listener  The VetoableChangeListener to be removed
      */
-    public void removeVetoableChangeListener(VetoableChangeListener listener) {
+    public void removeVetoableChangeListener(@Nullable VetoableChangeListener listener) {
         if (listener == null) {
             return;
         }
@@ -201,8 +202,8 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @since 1.2
      */
     public void addVetoableChangeListener(
-                                String propertyName,
-                VetoableChangeListener listener) {
+                                @Nullable String propertyName,
+                @Nullable VetoableChangeListener listener) {
         if (listener == null || propertyName == null) {
             return;
         }
@@ -227,8 +228,8 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @since 1.2
      */
     public void removeVetoableChangeListener(
-                                String propertyName,
-                VetoableChangeListener listener) {
+                                @Nullable String propertyName,
+                @Nullable VetoableChangeListener listener) {
         if (listener == null || propertyName == null) {
             return;
         }
@@ -249,7 +250,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      *         returned.
      * @since 1.4
      */
-    public VetoableChangeListener[] getVetoableChangeListeners(String propertyName) {
+    public VetoableChangeListener[] getVetoableChangeListeners(@Nullable String propertyName) {
         return this.map.getListeners(propertyName);
     }
 
@@ -274,7 +275,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @param newValue      the new value of the property
      * @throws PropertyVetoException if one of listeners vetoes the property update
      */
-    public void fireVetoableChange(String propertyName, Object oldValue, Object newValue)
+    public void fireVetoableChange(@Nullable String propertyName, @Nullable Object oldValue, @Nullable Object newValue)
             throws PropertyVetoException {
         if (oldValue == null || newValue == null || !oldValue.equals(newValue)) {
             fireVetoableChange(new PropertyChangeEvent(this.source, propertyName, oldValue, newValue));
@@ -303,7 +304,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @throws PropertyVetoException if one of listeners vetoes the property update
      * @since 1.2
      */
-    public void fireVetoableChange(String propertyName, int oldValue, int newValue)
+    public void fireVetoableChange(@Nullable String propertyName, int oldValue, int newValue)
             throws PropertyVetoException {
         if (oldValue != newValue) {
             fireVetoableChange(propertyName, Integer.valueOf(oldValue), Integer.valueOf(newValue));
@@ -332,7 +333,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @throws PropertyVetoException if one of listeners vetoes the property update
      * @since 1.2
      */
-    public void fireVetoableChange(String propertyName, boolean oldValue, boolean newValue)
+    public void fireVetoableChange(@Nullable String propertyName, boolean oldValue, boolean newValue)
             throws PropertyVetoException {
         if (oldValue != newValue) {
             fireVetoableChange(propertyName, Boolean.valueOf(oldValue), Boolean.valueOf(newValue));
@@ -413,7 +414,7 @@ public @UsesObjectEquals class VetoableChangeSupport implements Serializable {
      * @return true if there are one or more listeners for the given property
      * @since 1.2
      */
-    public boolean hasListeners(String propertyName) {
+    public boolean hasListeners(@Nullable String propertyName) {
         return this.map.hasListeners(propertyName);
     }
 

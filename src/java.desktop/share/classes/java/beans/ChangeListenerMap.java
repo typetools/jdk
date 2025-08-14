@@ -25,7 +25,10 @@
 package java.beans;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,9 +50,10 @@ import java.util.Set;
  *
  * @author Sergey A. Malenkov
  */
-@AnnotatedFor({"interning"})
+@CFComment("nullness: null values are permitted for property names, though not documented in Javadoc")
+@AnnotatedFor({"interning", "nullness"})
 abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
-    private Map<String, L[]> map;
+    private @MonotonicNonNull Map<@Nullable String, L[]> map;
 
     /**
      * Creates an array of listeners.
@@ -78,7 +82,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @param name      the name of the property to listen on
      * @param listener  the listener to process events
      */
-    public final synchronized void add(String name, L listener) {
+    public final synchronized void add(@Nullable String name, L listener) {
         if (this.map == null) {
             this.map = new HashMap<>();
         }
@@ -103,7 +107,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @param name      the name of the property to listen on
      * @param listener  the listener to process events
      */
-    public final synchronized void remove(String name, L listener) {
+    public final synchronized void remove(@Nullable String name, L listener) {
         if (this.map != null) {
             L[] array = this.map.get(name);
             if (array != null) {
@@ -135,7 +139,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @param name  the name of the property
      * @return      the corresponding list of listeners
      */
-    public final synchronized L[] get(String name) {
+    public final synchronized L[] get(@Nullable String name) {
         return (this.map != null)
                 ? this.map.get(name)
                 : null;
@@ -147,7 +151,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @param name       the name of the property
      * @param listeners  new list of listeners
      */
-    public final void set(String name, L[] listeners) {
+    public final void set(@Nullable String name, @Nullable L[] listeners) {
         if (listeners != null) {
             if (this.map == null) {
                 this.map = new HashMap<>();
@@ -196,7 +200,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @param name  the name of the property
      * @return an array of listeners for the named property
      */
-    public final L[] getListeners(String name) {
+    public final L[] getListeners(@Nullable String name) {
         if (name != null) {
             L[] listeners = get(name);
             if (listeners != null) {
@@ -214,7 +218,7 @@ abstract @UsesObjectEquals class ChangeListenerMap<L extends EventListener> {
      * @return      {@code true} if at least one listener exists or
      *              {@code false} otherwise
      */
-    public final synchronized boolean hasListeners(String name) {
+    public final synchronized boolean hasListeners(@Nullable String name) {
         if (this.map == null) {
             return false;
         }
