@@ -806,13 +806,13 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             this.modCount = root.modCount;
         }
 
-        public E set(int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             Objects.checkIndex(index, size);
             checkForComodification();
             return root.set(offset + index, element);
         }
 
-        public E get(int index) {
+        public E get(@IndexFor({"this"}) int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
             return root.get(offset + index);
@@ -824,14 +824,14 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return size;
         }
 
-        public void add(int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             rangeCheckForAdd(index);
             checkForComodification();
             root.add(offset + index, element);
             updateSizeAndModCount(1);
         }
 
-        public E remove(int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
             E result = root.remove(offset + index);
@@ -839,7 +839,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return result;
         }
 
-        protected void removeRange(int fromIndex, int toIndex) {
+        protected void removeRange(@IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
             checkForComodification();
             root.removeRange(offset + fromIndex, offset + toIndex);
             updateSizeAndModCount(fromIndex - toIndex);
@@ -849,7 +849,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return addAll(size, c);
         }
 
-        public boolean addAll(int index, Collection<? extends E> c) {
+        public boolean addAll(@IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
             rangeCheckForAdd(index);
             int cSize = c.size();
             if (cSize==0)
@@ -864,7 +864,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return listIterator();
         }
 
-        public ListIterator<E> listIterator(int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
             checkForComodification();
             rangeCheckForAdd(index);
 
@@ -925,7 +925,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             };
         }
 
-        public List<E> subList(int fromIndex, int toIndex) {
+        public List<E> subList(@IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList<>(this, fromIndex, toIndex);
         }
@@ -974,7 +974,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             super(parent, fromIndex, toIndex);
         }
 
-        public List<E> subList(int fromIndex, int toIndex) {
+        public List<E> subList(@IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new RandomAccessSubList<>(this, fromIndex, toIndex);
         }
