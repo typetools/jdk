@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
@@ -95,7 +97,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied AbstractSequentialList<E> this, int index) {
+    public E get(@GuardSatisfied AbstractSequentialList<E> this, @IndexFor({"this"}) int index) {
         try {
             return listIterator(index).next();
         } catch (NoSuchElementException exc) {
@@ -122,7 +124,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    public E set(@GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
+    public E set(@GuardSatisfied AbstractSequentialList<E> this, @IndexFor({"this"}) int index, E element) {
         try {
             ListIterator<E> e = listIterator(index);
             E oldVal = e.next();
@@ -153,7 +155,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    public void add(@GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
+    public void add(@GuardSatisfied AbstractSequentialList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         try {
             listIterator(index).add(element);
         } catch (NoSuchElementException exc) {
@@ -178,7 +180,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable AbstractSequentialList<E> this, int index) {
+    public E remove(@GuardSatisfied @Shrinkable AbstractSequentialList<E> this, @IndexFor({"this"}) int index) {
         try {
             ListIterator<E> e = listIterator(index);
             E outCast = e.next();
@@ -221,7 +223,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    public boolean addAll(@GuardSatisfied AbstractSequentialList<E> this, int index, Collection<? extends E> c) {
+    public boolean addAll(@GuardSatisfied AbstractSequentialList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         try {
             boolean modified = false;
             ListIterator<E> e1 = listIterator(index);
@@ -261,5 +263,5 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      *         sequence)
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public abstract @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink AbstractSequentialList<E> this, int index);
+    public abstract @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink AbstractSequentialList<E> this, @IndexOrHigh({"this"}) int index);
 }
