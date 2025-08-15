@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.index.qual.Shrinkable;
@@ -434,7 +436,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean addAll(@GuardSatisfied LinkedList<E> this, @NonNegative int index, Collection<? extends E> c) {
+    public boolean addAll(@GuardSatisfied LinkedList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         checkPositionIndex(index);
 
         Object[] a = c.toArray();
@@ -505,7 +507,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied LinkedList<E> this, @NonNegative int index) {
+    public E get(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) int index) {
         checkElementIndex(index);
         return node(index).item;
     }
@@ -519,7 +521,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public E set(@GuardSatisfied LinkedList<E> this, @IndexFor({"this"}) int index, E element) {
         checkElementIndex(index);
         Node<E> x = node(index);
         E oldVal = x.item;
@@ -536,7 +538,7 @@ public class LinkedList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied LinkedList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         checkPositionIndex(index);
 
         if (index == size)
@@ -554,7 +556,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable LinkedList<E> this, @IndexFor({"this"}) int index) {
         checkElementIndex(index);
         return unlink(node(index));
     }
@@ -901,7 +903,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see List#listIterator(int)
      */
-    public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty LinkedList<E> this, @NonNegative int index) {
+    public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty LinkedList<E> this, @IndexOrHigh({"this"}) int index) {
         checkPositionIndex(index);
         return new ListItr(index);
     }
