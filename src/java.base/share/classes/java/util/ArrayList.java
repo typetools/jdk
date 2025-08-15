@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.index.qual.Shrinkable;
@@ -460,7 +462,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied ArrayList<E> this, @NonNegative int index) {
+    public E get(@GuardSatisfied ArrayList<E> this, @IndexFor({"this"}) int index) {
         Objects.checkIndex(index, size);
         return elementData(index);
     }
@@ -475,7 +477,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @SideEffectsOnly("this")
-    public E set(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
+    public E set(@GuardSatisfied ArrayList<E> this, @IndexFor({"this"}) int index, E element) {
         Objects.checkIndex(index, size);
         E oldValue = elementData(index);
         elementData[index] = element;
@@ -519,7 +521,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @SideEffectsOnly("this")
-    public void add(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied ArrayList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         rangeCheckForAdd(index);
         modCount++;
         final int s;
@@ -542,7 +544,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return the element that was removed from the list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @NonNegative int index) {
+    public E remove(@GuardSatisfied @Shrinkable ArrayList<E> this, @IndexFor({"this"}) int index) {
         Objects.checkIndex(index, size);
         final Object[] es = elementData;
 
@@ -742,7 +744,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NullPointerException if the specified collection is null
      */
     @SideEffectsOnly("this")
-    public boolean addAll(@GuardSatisfied ArrayList<E> this, @NonNegative int index, Collection<? extends E> c) {
+    public boolean addAll(@GuardSatisfied ArrayList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         rangeCheckForAdd(index);
 
         Object[] a = c.toArray();
@@ -965,7 +967,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink ArrayList<E> this, @NonNegative int index) {
+    public @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink ArrayList<E> this, @IndexOrHigh({"this"}) int index) {
         rangeCheckForAdd(index);
         return new ListItr(index);
     }
@@ -1155,7 +1157,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
-    public @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink ArrayList<E> this, @NonNegative int fromIndex, @NonNegative int toIndex) {
+    public @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink ArrayList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
         subListRangeCheck(fromIndex, toIndex, size);
         return new SubList<>(this, fromIndex, toIndex);
     }
@@ -1188,7 +1190,7 @@ public class ArrayList<E> extends AbstractList<E>
             this.modCount = parent.modCount;
         }
 
-        public E set(@NonNegative int index, E element) {
+        public E set(@IndexFor({"this"}) int index, E element) {
             Objects.checkIndex(index, size);
             checkForComodification();
             E oldValue = root.elementData(offset + index);
@@ -1196,7 +1198,7 @@ public class ArrayList<E> extends AbstractList<E>
             return oldValue;
         }
 
-        public E get(@NonNegative int index) {
+        public E get(@IndexFor({"this"}) int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
             return root.elementData(offset + index);
@@ -1208,14 +1210,14 @@ public class ArrayList<E> extends AbstractList<E>
             return size;
         }
 
-        public void add(@NonNegative int index, E element) {
+        public void add(@IndexOrHigh({"this"}) int index, E element) {
             rangeCheckForAdd(index);
             checkForComodification();
             root.add(offset + index, element);
             updateSizeAndModCount(1);
         }
 
-        public E remove(@NonNegative int index) {
+        public E remove(@IndexFor({"this"}) int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
             E result = root.remove(offset + index);
@@ -1233,7 +1235,7 @@ public class ArrayList<E> extends AbstractList<E>
             return addAll(this.size, c);
         }
 
-        public boolean addAll(@NonNegative int index, Collection<? extends E> c) {
+        public boolean addAll(@IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
             rangeCheckForAdd(index);
             int cSize = c.size();
             if (cSize==0)
@@ -1334,7 +1336,7 @@ public class ArrayList<E> extends AbstractList<E>
             return listIterator();
         }
 
-        public ListIterator<E> listIterator(@NonNegative int index) {
+        public ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index) {
             checkForComodification();
             rangeCheckForAdd(index);
 
@@ -1453,7 +1455,7 @@ public class ArrayList<E> extends AbstractList<E>
             };
         }
 
-        public List<E> subList(int fromIndex, int toIndex) {
+        public List<E> subList(@IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList<>(this, fromIndex, toIndex);
         }
