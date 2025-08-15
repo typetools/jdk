@@ -805,6 +805,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             this.size = toIndex - fromIndex;
             this.modCount = root.modCount;
         }
+
         public E set(@IndexFor({"this"}) int index, E element) {
             Objects.checkIndex(index, size);
             checkForComodification();
