@@ -26,6 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.index.qual.Shrinkable;
@@ -780,7 +782,7 @@ public class Vector<E>
      * @since 1.2
      */
     @Pure
-    public synchronized E get(@GuardSatisfied Vector<E> this, @NonNegative int index) {
+    public synchronized E get(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) int index) {
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
 
@@ -798,7 +800,7 @@ public class Vector<E>
      *         ({@code index < 0 || index >= size()})
      * @since 1.2
      */
-    public synchronized E set(@GuardSatisfied Vector<E> this, @NonNegative int index, E element) {
+    public synchronized E set(@GuardSatisfied Vector<E> this, @IndexFor({"this"}) int index, E element) {
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
 
@@ -860,7 +862,7 @@ public class Vector<E>
      *         ({@code index < 0 || index > size()})
      * @since 1.2
      */
-    public void add(@GuardSatisfied Vector<E> this, @NonNegative int index, E element) {
+    public void add(@GuardSatisfied Vector<E> this, @IndexOrHigh({"this"}) int index, E element) {
         insertElementAt(element, index);
     }
 
@@ -875,7 +877,7 @@ public class Vector<E>
      *         ({@code index < 0 || index >= size()})
      * @since 1.2
      */
-    public synchronized E remove(@GuardSatisfied @Shrinkable Vector<E> this, @NonNegative int index) {
+    public synchronized E remove(@GuardSatisfied @Shrinkable Vector<E> this, @IndexFor({"this"}) int index) {
         modCount++;
         if (index >= elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
@@ -1067,7 +1069,7 @@ public class Vector<E>
      * @throws NullPointerException if the specified collection is null
      * @since 1.2
      */
-    public synchronized boolean addAll(@GuardSatisfied Vector<E> this, @NonNegative int index, Collection<? extends E> c) {
+    public synchronized boolean addAll(@GuardSatisfied Vector<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         if (index < 0 || index > elementCount)
             throw new ArrayIndexOutOfBoundsException(index);
 
@@ -1160,7 +1162,7 @@ public class Vector<E>
      *         {@code (fromIndex > toIndex)}
      */
     @SideEffectFree
-    public synchronized @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink Vector<E> this, int fromIndex, int toIndex) {
+    public synchronized @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink Vector<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
         return Collections.synchronizedList(super.subList(fromIndex, toIndex),
                                             this);
     }
@@ -1243,7 +1245,7 @@ public class Vector<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public synchronized @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink Vector<E> this, @NonNegative int index) {
+    public synchronized @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink Vector<E> this, @IndexOrHigh({"this"}) int index) {
         if (index < 0 || index > elementCount)
             throw new IndexOutOfBoundsException("Index: "+index);
         return new ListItr(index);
