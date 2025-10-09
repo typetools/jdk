@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception thrown by an {@link Executor} when a task cannot be
  * accepted for execution.
@@ -42,6 +45,7 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor({"nullness"})
 public class RejectedExecutionException extends RuntimeException {
     private static final long serialVersionUID = -375805702767069545L;
 
@@ -60,7 +64,7 @@ public class RejectedExecutionException extends RuntimeException {
      *
      * @param message the detail message
      */
-    public RejectedExecutionException(String message) {
+    public RejectedExecutionException(@Nullable String message) {
         super(message);
     }
 
@@ -72,7 +76,7 @@ public class RejectedExecutionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
-    public RejectedExecutionException(String message, Throwable cause) {
+    public RejectedExecutionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -85,7 +89,7 @@ public class RejectedExecutionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
-    public RejectedExecutionException(Throwable cause) {
+    public RejectedExecutionException(@Nullable Throwable cause) {
         super(cause);
     }
 }

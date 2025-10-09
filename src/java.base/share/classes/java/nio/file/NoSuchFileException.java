@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when an attempt is made to access a file that does
  * not exist.
@@ -32,6 +35,7 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class NoSuchFileException
     extends FileSystemException
 {
@@ -44,7 +48,7 @@ public class NoSuchFileException
      * @param   file
      *          a string identifying the file or {@code null} if not known.
      */
-    public NoSuchFileException(String file) {
+    public NoSuchFileException(@Nullable String file) {
         super(file);
     }
 
@@ -58,7 +62,7 @@ public class NoSuchFileException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public NoSuchFileException(String file, String other, String reason) {
+    public NoSuchFileException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(file, other, reason);
     }
 }

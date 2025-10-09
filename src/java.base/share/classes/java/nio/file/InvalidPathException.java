@@ -25,6 +25,8 @@
 
 package java.nio.file;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Unchecked exception thrown when path string cannot be converted into a
  * {@link Path} because the path string contains invalid characters, or
@@ -33,6 +35,7 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class InvalidPathException
     extends IllegalArgumentException
 {

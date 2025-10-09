@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file system operation is denied, typically
  * due to a file permission or other access check.
@@ -36,7 +39,7 @@ package java.nio.file;
  *
  * @since 1.7
  */
-
+@AnnotatedFor({"nullness"})
 public class AccessDeniedException
     extends FileSystemException
 {
@@ -49,7 +52,7 @@ public class AccessDeniedException
      * @param   file
      *          a string identifying the file or {@code null} if not known
      */
-    public AccessDeniedException(String file) {
+    public AccessDeniedException(@Nullable String file) {
         super(file);
     }
 
@@ -63,7 +66,7 @@ public class AccessDeniedException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public AccessDeniedException(String file, String other, String reason) {
+    public AccessDeniedException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(file, other, reason);
     }
 }

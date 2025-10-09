@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file system operation, intended for a
  * directory, fails because the file is not a directory.
@@ -32,6 +35,7 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class NotDirectoryException
     extends FileSystemException
 {
@@ -44,7 +48,7 @@ public class NotDirectoryException
      * @param   file
      *          a string identifying the file or {@code null} if not known
      */
-    public NotDirectoryException(String file) {
+    public NotDirectoryException(@Nullable String file) {
         super(file);
     }
 }
