@@ -35,6 +35,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -103,7 +104,7 @@ import sun.nio.fs.AbstractFileSystemProvider;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning", "mustcall", "signedness"})
+@AnnotatedFor({"interning", "mustcall", "signedness", "nullness"})
 public final @UsesObjectEquals class Files {
     // buffer size used for reading and writing
     private static final int BUFFER_SIZE = 8192;
@@ -895,8 +896,8 @@ public final @UsesObjectEquals class Files {
      */
     @ReleasesNoLocks
     public static Path createTempFile(Path dir,
-                                      String prefix,
-                                      String suffix,
+                                      @Nullable String prefix,
+                                      @Nullable String suffix,
                                       FileAttribute<?>... attrs)
         throws IOException
     {
@@ -941,8 +942,8 @@ public final @UsesObjectEquals class Files {
      *          method is invoked to check write access to the file.
      */
     @ReleasesNoLocks
-    public static Path createTempFile(String prefix,
-                                      String suffix,
+    public static Path createTempFile(@Nullable String prefix,
+                                      @Nullable String suffix,
                                       FileAttribute<?>... attrs)
         throws IOException
     {
@@ -996,7 +997,7 @@ public final @UsesObjectEquals class Files {
      */
     @ReleasesNoLocks
     public static Path createTempDirectory(Path dir,
-                                           String prefix,
+                                           @Nullable String prefix,
                                            FileAttribute<?>... attrs)
         throws IOException
     {
@@ -1038,7 +1039,7 @@ public final @UsesObjectEquals class Files {
      *          directory.
      */
     @ReleasesNoLocks
-    public static Path createTempDirectory(String prefix,
+    public static Path createTempDirectory(@Nullable String prefix,
                                            FileAttribute<?>... attrs)
         throws IOException
     {
@@ -1763,7 +1764,7 @@ public final @UsesObjectEquals class Files {
      *          permission required by a file type detector implementation.
      */
     @ReleasesNoLocks
-    public static String probeContentType(Path path)
+    public static @Nullable String probeContentType(Path path)
         throws IOException
     {
         // try installed file type detectors
@@ -1822,7 +1823,7 @@ public final @UsesObjectEquals class Files {
      *          the attribute view type is not available
      */
     @ReleasesNoLocks
-    public static <V extends FileAttributeView> V getFileAttributeView(Path path,
+    public static <V extends @Nullable FileAttributeView> V getFileAttributeView(Path path,
                                                                        Class<V> type,
                                                                        LinkOption... options)
     {

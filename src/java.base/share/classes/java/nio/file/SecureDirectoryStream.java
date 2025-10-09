@@ -29,6 +29,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Set;
 import java.io.IOException;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.AnnotatedFor;
+
 /**
  * A {@code DirectoryStream} that defines operations on files that are located
  * relative to an open directory. A {@code SecureDirectoryStream} is intended
@@ -55,6 +58,8 @@ import java.io.IOException;
  *
  * @since   1.7
  */
+
+@AnnotatedFor({"nullness"})
 
 public interface SecureDirectoryStream<T>
     extends DirectoryStream<T>
@@ -271,7 +276,7 @@ public interface SecureDirectoryStream<T>
      *          this directory stream, or {@code null} if the attribute view
      *          type is not available
      */
-    <V extends FileAttributeView> V getFileAttributeView(Class<V> type);
+    <V extends @Nullable FileAttributeView> V getFileAttributeView(Class<V> type);
 
     /**
      * Returns a new file attribute view to access the file attributes of a file
@@ -306,7 +311,7 @@ public interface SecureDirectoryStream<T>
      *          type is not available
      *
      */
-    <V extends FileAttributeView> V getFileAttributeView(T path,
+    <V extends @Nullable FileAttributeView> V getFileAttributeView(T path,
                                                          Class<V> type,
                                                          LinkOption... options);
 }
