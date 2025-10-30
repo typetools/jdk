@@ -276,7 +276,7 @@ public interface SecureDirectoryStream<T>
      *          this directory stream, or {@code null} if the attribute view
      *          type is not available
      */
-    <V extends @Nullable FileAttributeView> V getFileAttributeView(Class<V> type);
+    <V extends FileAttributeView> @Nullable V getFileAttributeView(Class<V> type);
 
     /**
      * Returns a new file attribute view to access the file attributes of a file
@@ -311,7 +311,7 @@ public interface SecureDirectoryStream<T>
      *          type is not available
      *
      */
-    <V extends @Nullable FileAttributeView> V getFileAttributeView(T path,
+    <V extends FileAttributeView> @Nullable V getFileAttributeView(T path,
                                                          Class<V> type,
                                                          LinkOption... options);
 }
