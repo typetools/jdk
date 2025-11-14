@@ -110,7 +110,9 @@ cftests_all_job(11)
 cftests_all_job(17)
 cftests_all_job(21)
 
-daikon_job
+daikon_job(1)
+daikon_job(2)
+daikon_job(3)
 
 plume_lib_job(canary_version)
 
