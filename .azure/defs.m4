@@ -3,14 +3,13 @@ define(`LBRACKET',`[')dnl
 define(`RBRACKET',`]')dnl
 changequote(`[',`]')dnl
 ifelse([The built-in "dnl" m4 macro means "discard to next line",])dnl
-define([here_i_am], [Here I am.])
 define([canary_os], [ubuntu])dnl
 define([canary_version], [25])dnl
 define([latest_version], [25])dnl
 define([canary_test], [canary_os[]canary_version])dnl
 define([docker_testing], [])dnl
 ifelse([uncomment the next line to use the "testing" Docker images])dnl
-ifelse([define([docker_testing], [-testing]])dnl
+ifelse([define([docker_testing], [-testing])])dnl
 dnl
 define([cftests_all_job], [dnl
 - job: test_cftests_all_jdk$1
