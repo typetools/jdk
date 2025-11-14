@@ -109,6 +109,7 @@ jobs:
 cftests_all_job(11)
 cftests_all_job(17)
 cftests_all_job(21)
+cftests_all_job(25)
 
 daikon_job
 
