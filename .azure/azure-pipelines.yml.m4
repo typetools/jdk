@@ -1,0 +1,121 @@
+# DO NOT EDIT azure-pipelines.yml.  Edit azure-pipelines.yml.m4 and defs.m4 instead.
+
+changequote
+changequote(`[',`]')dnl
+include([defs.m4])dnl
+variables:
+  system.debug: true
+
+jobs:
+
+- job: build_jdk
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17-plus:latest
+  steps:
+  - bash: |
+      whoami
+      git config --get remote.origin.url
+      pwd
+      ls -al
+      env | sort
+    displayName: show environment
+  - bash: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
+    displayName: configure
+  - bash: make jdk
+    timeoutInMinutes: 90
+    displayName: make jdk
+  ## This works only after `make images`
+  # - bash: build/*/images/jdk/bin/java -version
+  #   displayName: version
+  ## Don't run tests, which pass only with old version of tools (compilers, etc.).
+  # - bash: make -C /jdk run-test-tier1
+  #   displayName: make run-test-tier1
+
+- job: build_jdk17u
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17-plus:latest
+  timeoutInMinutes: 0
+  steps:
+  - bash: |
+      whoami
+      git config --get remote.origin.url
+      pwd
+      ls -al
+      env | sort
+    displayName: show environment
+  - bash: |
+      set -ex
+      if test -d /tmp/$USER/git-scripts ; \
+        then git -C /tmp/$USER/git-scripts pull -q > /dev/null 2>&1 ; \
+        else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git ; \
+      fi
+    displayName: git-scripts
+  - bash: |
+      set -ex
+      if test -d /tmp/$USER/plume-scripts ; \
+        then git -C /tmp/$USER/plume-scripts pull -q > /dev/null 2>&1 ; \
+        else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/plume-scripts.git ; \
+      fi
+    displayName: plume-scripts
+  # This creates ../jdk17u .
+  # If the depth is too small, the merge will fail.  However, we cannot use "--filter=blob:none"
+  # because that leads to "fatal: remote error: filter 'combine' not supported".
+  - bash: |
+      set -ex
+      pwd
+      ls -al .. || true
+      ls -al ../jdk17u || true
+      df .
+      /tmp/$USER/git-scripts/git-clone-related typetools jdk17u ../jdk17u --depth 999
+      git config --global user.email "you@example.com"
+      git config --global user.name "Your Name"
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
+      cd ../jdk17u && git status
+      git diff --exit-code
+      echo $?
+    displayName: clone-related-jdk17u
+  - bash: |
+      set -ex
+      git config --global user.email "you@example.com"
+      git config --global user.name "Your Name"
+      git config --global pull.ff true
+      git config --global pull.rebase false
+      git config --global core.longpaths true
+      git config --global core.protectNTFS false
+      eval $(/tmp/$USER/plume-scripts/ci-info typetools)
+      cd ../jdk17u && git status
+      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+      cd ../jdk17u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
+    displayName: git merge
+  - bash: cd ../jdk17u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
+    displayName: configure
+  - bash: cd ../jdk17u && make jdk
+    displayName: make jdk
+  ## This works only after `make images`
+  # - bash: cd ../jdk17u && build/*/images/jdk/bin/java -version
+  #   displayName: version
+  # - bash: make -C /jdk17u run-test-tier1
+  #   timeoutInMinutes: 0
+  #   displayName: make run-test-tier1
+  # - bash: make -C /jdk17u :test/jdk:tier1
+  ## Temporarily comment out because of trouble finding junit and jasm
+  # - bash: cd ../jdk17u && make run-test TEST="jtreg:test/jdk:tier1"
+  #   timeoutInMinutes: 0
+  #   displayName: make run-test
+
+cftests_all_job(11)
+cftests_all_job(17)
+cftests_all_job(21)
+
+daikon_job
+
+plume_lib_job(canary_version)
+
+ifelse([
+Local Variables:
+eval: (add-hook 'after-save-hook '(lambda () (run-command nil "make")) nil 'local)
+end:
+])
