@@ -11,12 +11,12 @@ define([docker_testing], [])dnl
 ifelse([uncomment the next line to use the "testing" Docker images])dnl
 ifelse([define([docker_testing], [-testing])])dnl
 dnl
-define([cftests_all_job], [dnl
-- job: test_cftests_all_jdk$1
+define([cftests_job], [dnl
+- job: test_cftests_$1_jdk$3
   timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
-  container: mdernst/cf-ubuntu-jdk$1:latest
+  container: mdernst/cf-ubuntu-jdk$3:latest
   steps:
   - checkout: self
     fetchDepth: 25
@@ -24,27 +24,9 @@ define([cftests_all_job], [dnl
     displayName: clone git-scripts
   - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
-# test-cftests-all.sh sometimes runs out of memory (under JDK 11 and 17), but running its component parts in sequence does not.
-#   - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-all.sh)
-#     displayName: test-cftests-all.sh
-  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-junit.sh)
-    displayName: test-cftests-junit.sh
-  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-nonjunit.sh)
-    displayName: test-cftests-nonjunit.sh
-  - bash: (cd ../checker-framework && checker/bin-devel/test-cftests-inference.sh)
-    displayName: test-cftests-inference.sh
-  - bash: (cd ../checker-framework && checker/bin-devel/test-typecheck.sh)
-    displayName: test-typecheck.sh
-## Here is how to create artifacts that can be downloaded.
-#   - bash: (cd ../checker-framework/checker/build/jtregJdk$1/ && tar -czvf all.tgz all)
-#     condition: succeededOrFailed()
-#     displayName: tar jtregJdk$1/all
-#   - publish: $(System.DefaultWorkingDirectory)/../checker-framework/checker/build/jtregJdk$1/all.tgz
-#     artifact: all.tgz
-#     condition: failed()
-#     displayName: publish all.tgz
-])
-
+  - bash: (cd ../checker-framework && checker/bin-devel/test-$2.sh)
+    displayName: test-$2.sh])dnl
+dnl
 define([junit_job], [dnl
   - job: junit_jdk$1
 ifelse($1,canary_version,,[    dependsOn:
