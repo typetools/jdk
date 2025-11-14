@@ -150,7 +150,7 @@ ifelse($1,canary_version,[dnl
         displayName: test-typecheck.sh])])dnl
 dnl
 define([daikon_job], [dnl
-- job: test_daikon
+- job: test_daikon_part$1
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
@@ -162,8 +162,8 @@ define([daikon_job], [dnl
     displayName: clone git-scripts
   - bash: /tmp/$USER/git-scripts/git-clone-related typetools checker-framework
     displayName: clone checker-framework
-  - bash: (cd ../checker-framework && checker/bin-devel/test-daikon.sh)
-    displayName: test-daikon.sh])dnl
+  - bash: (cd ../checker-framework && checker/bin-devel/test-daikon-part$1.sh)
+    displayName: test-daikon-part$1.sh])dnl
 dnl
 define([plume_lib_job], [dnl
 - job: test_plume_lib

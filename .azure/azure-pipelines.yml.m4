@@ -123,7 +123,9 @@ cftests_job(nonjunit, cftests-nonjunit, 25)
 cftests_job(inference, cftests-inference, 25)
 cftests_job(typecheck, typecheck, 25)
 
-daikon_job
+daikon_job(1)
+daikon_job(2)
+daikon_job(3)
 
 plume_lib_job(canary_version)
 
