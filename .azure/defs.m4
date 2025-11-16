@@ -12,7 +12,7 @@ ifelse([uncomment the next line to use the "testing" Docker images])dnl
 ifelse([define([docker_testing], [-testing])])dnl
 dnl
 define([cftests_job], [dnl
-- job: test_cftests_$1_jdk$3
+- job: cftests_$1_jdk$3
   timeoutInMinutes: 120
   pool:
     vmImage: 'ubuntu-latest'
