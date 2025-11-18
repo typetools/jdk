@@ -150,6 +150,7 @@ Make changes in the `typetools/jdk` repository.
 (Note that this README file appears in both the `typetools/jdk` and `typetools/jdk17u` repositories!)
 
 To update jdk17u from its upstreams:
+(These are the only edits to jdk17u allowed, plus changes needed to resolve merge conflicts.)
 ```
 cd jdk17u
 git pull
