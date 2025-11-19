@@ -30,7 +30,7 @@ import java.util.Set;
 import java.io.IOException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * A {@code DirectoryStream} that defines operations on files that are located
