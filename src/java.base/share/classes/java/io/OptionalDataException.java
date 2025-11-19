@@ -24,6 +24,8 @@
  */
 package java.io;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception indicating the failure of an object read operation due to
  * unread primitive data, or the end of data belonging to a serialized
@@ -44,6 +46,7 @@ package java.io;
  *
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class OptionalDataException extends ObjectStreamException {
 
     @java.io.Serial

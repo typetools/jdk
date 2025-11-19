@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file system loop, or cycle, is encountered.
  *
@@ -32,6 +35,7 @@ package java.nio.file;
  * @see Files#walkFileTree
  */
 
+@AnnotatedFor({"nullness"})
 public class FileSystemLoopException
     extends FileSystemException
 {
@@ -45,7 +49,7 @@ public class FileSystemLoopException
      *          a string identifying the file causing the cycle or {@code null} if
      *          not known
      */
-    public FileSystemLoopException(String file) {
+    public FileSystemLoopException(@Nullable String file) {
         super(file);
     }
 }

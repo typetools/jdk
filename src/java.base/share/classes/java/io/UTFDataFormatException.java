@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that a malformed string in
  * <a href="DataInput.html#modified-utf-8">modified UTF-8</a>
@@ -42,6 +45,7 @@ package java.io;
  * @see     java.io.IOException
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class UTFDataFormatException extends IOException {
     @java.io.Serial
     private static final long serialVersionUID = 420743449228280612L;
@@ -63,7 +67,7 @@ public class UTFDataFormatException extends IOException {
      *
      * @param   s   the detail message.
      */
-    public UTFDataFormatException(String s) {
+    public UTFDataFormatException(@Nullable String s) {
         super(s);
     }
 }

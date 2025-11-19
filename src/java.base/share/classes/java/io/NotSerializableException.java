@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when an instance is required to have a Serializable interface.
  * The serialization runtime or the class of the instance can throw
@@ -32,6 +35,7 @@ package java.io;
  *
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class NotSerializableException extends ObjectStreamException {
 
     @java.io.Serial
@@ -42,7 +46,7 @@ public class NotSerializableException extends ObjectStreamException {
      *
      * @param classname Class of the instance being serialized/deserialized.
      */
-    public NotSerializableException(String classname) {
+    public NotSerializableException(@Nullable String classname) {
         super(classname);
     }
 
