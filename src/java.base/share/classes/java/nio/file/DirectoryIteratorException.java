@@ -31,6 +31,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.InvalidObjectException;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Runtime exception thrown if an I/O error is encountered when iterating over
  * the entries in a directory. The I/O error is retrieved as an {@link
@@ -40,6 +43,7 @@ import java.io.InvalidObjectException;
  * @see DirectoryStream
  */
 
+@AnnotatedFor({"nullness"})
 public final class DirectoryIteratorException
     extends ConcurrentModificationException
 {
