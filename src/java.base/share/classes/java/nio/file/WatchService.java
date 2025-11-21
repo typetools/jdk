@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A watch service that <em>watches</em> registered objects for changes and
@@ -105,7 +106,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *
  * @see FileSystem#newWatchService
  */
-@AnnotatedFor({"mustcall"})
+@AnnotatedFor({"mustcall", "nullness"})
 @InheritableMustCall({})
 public interface WatchService
     extends Closeable
@@ -140,7 +141,7 @@ public interface WatchService
      * @throws  ClosedWatchServiceException
      *          if this watch service is closed
      */
-    WatchKey poll();
+    @Nullable WatchKey poll();
 
     /**
      * Retrieves and removes the next watch key, waiting if necessary up to the
@@ -160,7 +161,7 @@ public interface WatchService
      * @throws  InterruptedException
      *          if interrupted while waiting
      */
-    WatchKey poll(long timeout, TimeUnit unit)
+    @Nullable WatchKey poll(long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**

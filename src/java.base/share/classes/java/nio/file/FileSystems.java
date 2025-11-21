@@ -27,6 +27,7 @@ package java.nio.file;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.nio.file.spi.FileSystemProvider;
 import java.net.URI;
@@ -89,7 +90,7 @@ import sun.nio.fs.DefaultFileSystemProvider;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public final @UsesObjectEquals class FileSystems {
     private FileSystems() { }
 
@@ -331,7 +332,7 @@ public final @UsesObjectEquals class FileSystems {
      *          if a security manager is installed and it denies an unspecified
      *          permission required by the file system provider implementation
      */
-    public static FileSystem newFileSystem(URI uri, Map<String,?> env, ClassLoader loader)
+    public static FileSystem newFileSystem(URI uri, Map<String,?> env, @Nullable ClassLoader loader)
         throws IOException
     {
         String scheme = uri.getScheme();
@@ -398,7 +399,7 @@ public final @UsesObjectEquals class FileSystems {
      *          permission
      */
     public static FileSystem newFileSystem(Path path,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         return newFileSystem(path, Map.of(), loader);
@@ -521,7 +522,7 @@ public final @UsesObjectEquals class FileSystems {
      * @since 13
      */
     public static FileSystem newFileSystem(Path path, Map<String,?> env,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         if (path == null)

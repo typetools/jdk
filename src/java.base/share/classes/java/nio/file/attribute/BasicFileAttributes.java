@@ -27,6 +27,7 @@ package java.nio.file.attribute;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Basic attributes associated with a file in a file system.
@@ -46,7 +47,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @see BasicFileAttributeView
  */
 
-@AnnotatedFor({"index"})
+@AnnotatedFor({"index", "nullness"})
 public interface BasicFileAttributes {
 
     /**
@@ -155,5 +156,5 @@ public interface BasicFileAttributes {
      *
      * @see java.nio.file.Files#walkFileTree
      */
-    Object fileKey();
+    @Nullable Object fileKey();
 }
