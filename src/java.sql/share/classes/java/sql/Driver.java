@@ -25,6 +25,8 @@
 
 package java.sql;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.logging.Logger;
 
 /**
@@ -88,7 +90,7 @@ public interface Driver {
      * @throws SQLException if a database access error occurs or the url is
      * {@code null}
      */
-    Connection connect(String url, java.util.Properties info)
+    @Nullable Connection connect(String url, java.util.Properties info)
         throws SQLException;
 
     /**
