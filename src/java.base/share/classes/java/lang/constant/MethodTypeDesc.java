@@ -24,6 +24,8 @@
  */
 package java.lang.constant;
 
+import org.checkerframework.checker.signature.qual.MethodDescriptor;
+
 import java.lang.invoke.MethodType;
 import java.lang.invoke.TypeDescriptor;
 import java.util.List;
@@ -166,7 +168,7 @@ public sealed interface MethodTypeDesc
      * @return the method type descriptor string
      * @jvms 4.3.3 Method Descriptors
      */
-    default String descriptorString() {
+    default @MethodDescriptor String descriptorString() {
         return String.format("(%s)%s",
                              Stream.of(parameterArray())
                                    .map(ClassDesc::descriptorString)

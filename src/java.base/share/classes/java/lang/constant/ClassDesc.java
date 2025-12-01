@@ -24,6 +24,8 @@
  */
 package java.lang.constant;
 
+import org.checkerframework.checker.signature.qual.FieldDescriptor;
+
 import java.lang.invoke.TypeDescriptor;
 import java.util.stream.Stream;
 
@@ -316,7 +318,7 @@ public sealed interface ClassDesc
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors
      */
-    String descriptorString();
+    @FieldDescriptor String descriptorString();
 
     /**
      * Compare the specified object with this descriptor for equality.  Returns
