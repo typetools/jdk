@@ -25,6 +25,7 @@
 
 package java.util.logging;
 
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
@@ -34,6 +35,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.checker.confidential.qual.NonConfidential;
 
 import java.lang.ref.WeakReference;
 import java.security.AccessController;
@@ -234,7 +236,7 @@ import static jdk.internal.logger.DefaultLoggerFinder.isSystem;
             "public boolean containsAll(@GuardSatisfied LinkedList<E> this, Collection<?> c);",
             "public int hashCode(@GuardSatisfied LinkedList<E> this);",
             "public boolean equals(@GuardSatisfied LinkedList<E> this, Object o);"})
-@AnnotatedFor({"index", "interning", "lock", "signature"})
+@AnnotatedFor({"index", "interning", "lock", "signature", "confidential"})
 public @UsesObjectEquals class Logger {
     private static final Handler emptyHandlers[] = new Handler[0];
     private static final int offValue = Level.OFF.intValue();
@@ -983,7 +985,7 @@ public @UsesObjectEquals class Logger {
      * @param record the LogRecord to be published
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, LogRecord record) {
+    public void log(@GuardSatisfied Logger this, @NonConfidential LogRecord record) {
         if (!isLoggable(record.getLevel())) {
             return;
         }
@@ -1049,7 +1051,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @Nullable String msg) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1072,7 +1074,7 @@ public @UsesObjectEquals class Logger {
      * @since 1.8
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @GuardSatisfied Supplier<String> msgSupplier) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @GuardSatisfied Supplier<String> msgSupplier) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1092,7 +1094,7 @@ public @UsesObjectEquals class Logger {
      * @param   param1  parameter to the message
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg, @GuardSatisfied @Nullable Object param1) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @Nullable String msg, @NonConfidential @GuardSatisfied @Nullable Object param1) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1114,7 +1116,7 @@ public @UsesObjectEquals class Logger {
      * @param   params  array of parameters to the message
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg, @Nullable Object params @GuardSatisfied @Nullable []) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @Nullable String msg, @NonConfidential @Nullable Object params @GuardSatisfied @Nullable []) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1140,7 +1142,7 @@ public @UsesObjectEquals class Logger {
      * @param   thrown  Throwable associated with log message.
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String msg, @GuardSatisfied @Nullable Throwable thrown) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @Nullable String msg, @NonConfidential @GuardSatisfied @Nullable Throwable thrown) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1169,7 +1171,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @GuardSatisfied @Nullable Throwable thrown, @GuardSatisfied Supplier<String> msgSupplier) {
+    public void log(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @GuardSatisfied @Nullable Throwable thrown, @NonConfidential @GuardSatisfied Supplier<String> msgSupplier) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1196,7 +1198,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, @GuardSatisfied Level level, @Nullable String sourceClass, @Nullable String sourceMethod, @Nullable String msg) {
+    public void logp(@GuardSatisfied Logger this, @GuardSatisfied Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod, @NonConfidential @Nullable String msg) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1223,8 +1225,8 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, Level level, @Nullable String sourceClass, @Nullable String sourceMethod,
-                     Supplier<String> msgSupplier) {
+    public void logp(@GuardSatisfied Logger this, Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod,
+                     @NonConfidential Supplier<String> msgSupplier) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1249,8 +1251,8 @@ public @UsesObjectEquals class Logger {
      * @param   param1    Parameter to the log message.
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, Level level, @Nullable String sourceClass, @Nullable String sourceMethod,
-                                                @Nullable String msg, @Nullable Object param1) {
+    public void logp(@GuardSatisfied Logger this, Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod,
+                     @NonConfidential @Nullable String msg, @NonConfidential @Nullable Object param1) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1277,8 +1279,8 @@ public @UsesObjectEquals class Logger {
      * @param   params  Array of parameters to the message
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, Level level, @Nullable String sourceClass, @Nullable String sourceMethod,
-                                                @Nullable String msg, @Nullable Object params @Nullable []) {
+    public void logp(@GuardSatisfied Logger this, Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod,
+                     @NonConfidential @Nullable String msg, @NonConfidential @Nullable Object params @Nullable []) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1309,8 +1311,8 @@ public @UsesObjectEquals class Logger {
      * @param   thrown  Throwable associated with log message.
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, Level level, @Nullable String sourceClass, @Nullable String sourceMethod,
-                     @Nullable String msg, @Nullable Throwable thrown) {
+    public void logp(@GuardSatisfied Logger this, Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod,
+                     @NonConfidential @Nullable String msg, @NonConfidential @Nullable Throwable thrown) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1344,8 +1346,8 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void logp(@GuardSatisfied Logger this, Level level, @Nullable String sourceClass, @Nullable String sourceMethod,
-                     @Nullable Throwable thrown, Supplier<String> msgSupplier) {
+    public void logp(@GuardSatisfied Logger this, Level level, @NonConfidential @Nullable String sourceClass, @NonConfidential @Nullable String sourceMethod,
+                     @NonConfidential @Nullable Throwable thrown, @NonConfidential Supplier<String> msgSupplier) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1515,8 +1517,8 @@ public @UsesObjectEquals class Logger {
      * @param   params  Parameters to the message (optional, may be none).
      * @since 1.8
      */
-    public void logrb(Level level, String sourceClass, String sourceMethod,
-                      ResourceBundle bundle, String msg, Object... params) {
+    public void logrb(Level level, @NonConfidential String sourceClass, @NonConfidential String sourceMethod,
+                      ResourceBundle bundle, @NonConfidential String msg, @NonConfidential Object... params) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1548,7 +1550,7 @@ public @UsesObjectEquals class Logger {
      * @param   params  Parameters to the message (optional, may be none).
      * @since 9
      */
-    public void logrb(Level level, ResourceBundle bundle, String msg, Object... params) {
+    public void logrb(Level level, ResourceBundle bundle, @NonConfidential String msg, @NonConfidential Object... params) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1628,8 +1630,8 @@ public @UsesObjectEquals class Logger {
      * @param   thrown  Throwable associated with the log message.
      * @since 1.8
      */
-    public void logrb(Level level, String sourceClass, String sourceMethod,
-                      ResourceBundle bundle, String msg, Throwable thrown) {
+    public void logrb(Level level, @NonConfidential String sourceClass, @NonConfidential String sourceMethod,
+                      ResourceBundle bundle, @NonConfidential String msg, @NonConfidential Throwable thrown) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1666,8 +1668,8 @@ public @UsesObjectEquals class Logger {
      * @param   thrown  Throwable associated with the log message.
      * @since 9
      */
-    public void logrb(Level level, ResourceBundle bundle, String msg,
-            Throwable thrown) {
+    public void logrb(Level level, ResourceBundle bundle, @NonConfidential String msg,
+                      @NonConfidential Throwable thrown) {
         if (!isLoggable(level)) {
             return;
         }
@@ -1823,7 +1825,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void severe(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void severe(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.SEVERE, msg);
     }
 
@@ -1837,7 +1839,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void warning(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void warning(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.WARNING, msg);
     }
 
@@ -1851,7 +1853,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void info(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void info(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.INFO, msg);
     }
 
@@ -1865,7 +1867,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void config(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void config(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.CONFIG, msg);
     }
 
@@ -1879,7 +1881,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void fine(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void fine(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.FINE, msg);
     }
 
@@ -1893,7 +1895,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void finer(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void finer(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.FINER, msg);
     }
 
@@ -1907,7 +1909,7 @@ public @UsesObjectEquals class Logger {
      * @param   msg     The string message (or a key in the message catalog)
      */
     @SideEffectFree
-    public void finest(@GuardSatisfied Logger this, @Nullable String msg) {
+    public void finest(@GuardSatisfied Logger this, @NonConfidential @Nullable String msg) {
         log(Level.FINEST, msg);
     }
 
@@ -1930,7 +1932,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void severe(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void severe(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.SEVERE, msgSupplier);
     }
 
@@ -1948,7 +1950,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void warning(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void warning(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.WARNING, msgSupplier);
     }
 
@@ -1966,7 +1968,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void info(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void info(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.INFO, msgSupplier);
     }
 
@@ -1984,7 +1986,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void config(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void config(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.CONFIG, msgSupplier);
     }
 
@@ -2002,7 +2004,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void fine(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void fine(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.FINE, msgSupplier);
     }
 
@@ -2020,7 +2022,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void finer(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void finer(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.FINER, msgSupplier);
     }
 
@@ -2038,7 +2040,7 @@ public @UsesObjectEquals class Logger {
      * @since   1.8
      */
     @SideEffectFree
-    public void finest(@GuardSatisfied Logger this, Supplier<String> msgSupplier) {
+    public void finest(@GuardSatisfied Logger this, @NonConfidential Supplier<String> msgSupplier) {
         log(Level.FINEST, msgSupplier);
     }
 
