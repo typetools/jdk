@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file cannot be moved as an atomic file system
  * operation.
@@ -32,6 +35,7 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class AtomicMoveNotSupportedException
     extends FileSystemException
 {
@@ -48,9 +52,9 @@ public class AtomicMoveNotSupportedException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public AtomicMoveNotSupportedException(String source,
-                                           String target,
-                                           String reason)
+    public AtomicMoveNotSupportedException(@Nullable String source,
+                                           @Nullable String target,
+                                           @Nullable String reason)
     {
         super(source, target, reason);
     }

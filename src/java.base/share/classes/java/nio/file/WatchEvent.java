@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * An event or a repeated event for an object that is registered with a {@link
  * WatchService}.
@@ -44,7 +47,8 @@ package java.nio.file;
  * @since 1.7
  */
 
-public interface WatchEvent<T> {
+@AnnotatedFor({"nullness"})
+public interface WatchEvent<T extends @Nullable Object> {
 
     /**
      * An event kind, for the purposes of identification.
@@ -52,7 +56,7 @@ public interface WatchEvent<T> {
      * @since 1.7
      * @see StandardWatchEventKinds
      */
-    public static interface Kind<T> {
+    public static interface Kind<T extends @Nullable Object> {
         /**
          * Returns the name of the event kind.
          *

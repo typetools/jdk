@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that a sync operation has failed.
  *
@@ -33,6 +36,7 @@ package java.io;
  * @see     java.io.IOException
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class SyncFailedException extends IOException {
     @java.io.Serial
     private static final long serialVersionUID = -2353342684412443330L;
@@ -43,7 +47,7 @@ public class SyncFailedException extends IOException {
      *
      * @param desc  a String describing the exception.
      */
-    public SyncFailedException(String desc) {
+    public SyncFailedException(@Nullable String desc) {
         super(desc);
     }
 }

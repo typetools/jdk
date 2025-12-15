@@ -27,6 +27,7 @@ package java.nio.file;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.nio.file.attribute.*;
 import java.io.IOException;
@@ -46,7 +47,7 @@ import java.io.IOException;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public abstract @UsesObjectEquals class FileStore {
 
     /**
@@ -215,7 +216,7 @@ public abstract @UsesObjectEquals class FileStore {
      * @return  a file store attribute view of the specified type or
      *          {@code null} if the attribute view is not available
      */
-    public abstract <V extends FileStoreAttributeView> V
+    public abstract <V extends @Nullable FileStoreAttributeView> V
         getFileStoreAttributeView(Class<V> type);
 
     /**
@@ -251,5 +252,5 @@ public abstract @UsesObjectEquals class FileStore {
      * @throws  IOException
      *          if an I/O error occurs
      */
-    public abstract Object getAttribute(String attribute) throws IOException;
+    public abstract @Nullable Object getAttribute(String attribute) throws IOException;
 }

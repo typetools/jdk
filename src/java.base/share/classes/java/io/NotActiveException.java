@@ -25,11 +25,15 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when serialization or deserialization is not active.
  *
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class NotActiveException extends ObjectStreamException {
 
     @java.io.Serial
@@ -40,7 +44,7 @@ public class NotActiveException extends ObjectStreamException {
      *
      * @param reason  a String describing the reason for the exception.
      */
-    public NotActiveException(String reason) {
+    public NotActiveException(@Nullable String reason) {
         super(reason);
     }
 
