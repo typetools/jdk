@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,12 +28,9 @@ package java.security;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.io.IOException;
-import java.io.EOFException;
-import java.io.InputStream;
 import java.io.FilterInputStream;
-import java.io.PrintStream;
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * A transparent stream that updates the associated message digest using
@@ -56,6 +53,16 @@ import java.io.ByteArrayInputStream;
  * so that in order to compute intermediate digests, a caller should
  * retain a handle onto the digest object, and clone it for each
  * digest to be computed, leaving the original digest untouched.
+ *
+ * @implNote This implementation only updates the message digest
+ *      with data actually read from the input stream when it is
+ *      {@linkplain #on(boolean) turned on}. This includes the various
+ *      {@code read} methods, {@code transferTo}, {@code readAllBytes},
+ *      and {@code readNBytes}. Please note that data bypassed by the
+ *      {@code skip} method are ignored. On the other hand,
+ *      if the underlying stream supports the {@code mark} and
+ *      {@code reset} methods, and the same data is read again after
+ *      {@code reset}, then the message digest is updated again.
  *
  * @see MessageDigest
  *
@@ -176,8 +183,8 @@ public class DigestInputStream extends FilterInputStream {
      * update on the message digest.  But when it is off, the message
      * digest is not updated.
      *
-     * @param on true to turn the digest function on, false to turn
-     * it off.
+     * @param on {@code true} to turn the digest function on,
+     * {@code false} to turn it off.
      */
     public void on(boolean on) {
         this.on = on;

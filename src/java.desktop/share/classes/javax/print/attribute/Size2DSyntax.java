@@ -271,10 +271,9 @@ public abstract class Size2DSyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        return(object != null &&
-               object instanceof Size2DSyntax &&
-               this.x == ((Size2DSyntax) object).x &&
-               this.y == ((Size2DSyntax) object).y);
+        return object instanceof Size2DSyntax size2DSyntax &&
+                this.x == size2DSyntax.x &&
+                this.y == size2DSyntax.y;
     }
 
     /**

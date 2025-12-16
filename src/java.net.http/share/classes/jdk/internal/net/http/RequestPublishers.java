@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -200,7 +201,7 @@ public final class RequestPublishers {
         @Override
         public long contentLength() {
             if (contentLength == 0) {
-                synchronized(this) {
+                synchronized (this) {
                     if (contentLength == 0) {
                         contentLength = computeLength(content);
                     }
@@ -392,6 +393,7 @@ public final class RequestPublishers {
         volatile ByteBuffer nextBuffer;
         volatile boolean need2Read = true;
         volatile boolean haveNext;
+        final ReentrantLock stateLock = new ReentrantLock();
 
         StreamIterator(InputStream is) {
             this(is, Utils::getBuffer);
@@ -439,7 +441,16 @@ public final class RequestPublishers {
 
         @Override
         @Pure
-        public synchronized boolean hasNext() {
+        public boolean hasNext() {
+            stateLock.lock();
+            try {
+                return hasNext0();
+            } finally {
+                stateLock.unlock();
+            }
+        }
+
+        private boolean hasNext0() {
             if (need2Read) {
                 try {
                     haveNext = read() != -1;
@@ -461,12 +472,17 @@ public final class RequestPublishers {
 
         @Override
         @SideEffectsOnly("this")
-        public synchronized ByteBuffer next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
+        public ByteBuffer next() {
+            stateLock.lock();
+            try {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                need2Read = true;
+                return nextBuffer;
+            } finally {
+                stateLock.unlock();
             }
-            need2Read = true;
-            return nextBuffer;
         }
 
     }

@@ -162,7 +162,7 @@ git pull https://github.com/typetools/jdk.git
 
 ## Updating
 
-Whenever Oracle relasese a new version of Java, this repository should be
+Whenever Oracle releases a new version of Java, this repository should be
 updated to pull in more commits from upstream.  Here are some commands to run
 when updating to JDK ${VER}.
 
@@ -190,6 +190,12 @@ cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
 git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 ```
 
+Now, you will have to resolve many merge conflicts.  The commands in
+`README-merging.el` automate a great deal of work (requires using Emacs).
+
+Next, you will need to replace many uses of the old JDK version (such as 17)
+with the new one (such as 21).
+
 ## Design
 
 The goal of this repository is to write Checker Framework annotations in
@@ -207,11 +213,12 @@ The remainder of this file is the `README.md` from `openjdk/jdk`.
 # Welcome to the JDK
 
 For build instructions please see the
-[online documentation](https://openjdk.java.net/groups/build/doc/building.html),
+[online documentation](https://openjdk.org/groups/build/doc/building.html),
 or either of these files:
 
 * [doc/building.html](doc/building.html) (html version)
 * [doc/building.md](doc/building.md) (markdown version)
 
-See <https://openjdk.java.net/> for more information about
-the OpenJDK Community and the JDK.
+See <https://openjdk.org/> for more information about the OpenJDK
+Community and the JDK and see <https://bugs.openjdk.org> for JDK issue
+tracking.

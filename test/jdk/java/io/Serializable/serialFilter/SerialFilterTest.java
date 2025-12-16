@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,8 +53,9 @@ import org.testng.annotations.DataProvider;
 /* @test
  * @bug 8234836
  * @build SerialFilterTest
- * @run testng/othervm -Djdk.serialFilterTrace=true SerialFilterTest
- * @run testng/othervm -Djdk.serialSetFilterAfterRead=true -Djdk.serialFilterTrace=true SerialFilterTest
+ * @run testng/othervm -Djava.util.logging.config.file=${test.src}/logging.properties
+ *                      SerialFilterTest
+ * @run testng/othervm -Djdk.serialSetFilterAfterRead=true SerialFilterTest
  *
  * @summary Test ObjectInputFilters using Builtin Filter Factory
  */
@@ -518,7 +519,7 @@ public class SerialFilterTest implements Serializable {
                     filter.depth(), filter.streamBytes());
             count++;
             if (serialClass != null) {
-                if (serialClass.getName().contains("$$Lambda$")) {
+                if (serialClass.getName().contains("$$Lambda")) {
                     // TBD: proper identification of serialized Lambdas?
                     // Fold the serialized Lambda into the SerializedLambda type
                     classes.add(SerializedLambda.class);
@@ -709,7 +710,7 @@ public class SerialFilterTest implements Serializable {
     }
 
     /**
-     * Generate an an object that will be serialized to some number of bytes.
+     * Generate an object that will be serialized to some number of bytes.
      * Or 1 greater if allowed is false.
      * It returns a two element Object array holding a byte array sized
      * to achieve the desired total size.

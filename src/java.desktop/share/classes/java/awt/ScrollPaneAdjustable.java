@@ -44,7 +44,7 @@ import sun.awt.AWTAccessor;
  * @since       1.4
  */
 @AnnotatedFor({"interning"})
-public @UsesObjectEquals class ScrollPaneAdjustable implements Adjustable, Serializable {
+public final @UsesObjectEquals class ScrollPaneAdjustable implements Adjustable, Serializable {
 
     /**
      * The {@code ScrollPane} this object is a scrollbar of.

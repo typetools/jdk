@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,6 @@ package java.net;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
-
-import sun.net.www.protocol.http.AuthenticatorKeys;
 
 /**
  * The class Authenticator represents an object that knows how to obtain
@@ -76,7 +74,6 @@ public abstract
     private String requestingScheme;
     private URL requestingURL;
     private RequestorType requestingAuthType;
-    private final String key = AuthenticatorKeys.computeKey(this);
 
     /**
      * Constructor for subclasses to call.
@@ -579,12 +576,5 @@ public abstract
      */
     protected RequestorType getRequestorType () {
         return requestingAuthType;
-    }
-
-    static String getKey(Authenticator a) {
-        return a.key;
-    }
-    static {
-        AuthenticatorKeys.setAuthenticatorKeyAccess(Authenticator::getKey);
     }
 }

@@ -400,7 +400,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @see         java.awt.MediaTracker#waitForAll(long)
      * @see         java.awt.MediaTracker#isErrorAny
      * @see         java.awt.MediaTracker#isErrorID
-     * @exception   InterruptedException  if any thread has
+     * @throws   InterruptedException  if any thread has
      *                                     interrupted this thread
      */
     public void waitForAll() throws InterruptedException {
@@ -422,10 +422,9 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @return      {@code true} if all images were successfully
      *                       loaded; {@code false} otherwise
      * @see         java.awt.MediaTracker#waitForID(int)
-     * @see         java.awt.MediaTracker#waitForAll(long)
      * @see         java.awt.MediaTracker#isErrorAny
      * @see         java.awt.MediaTracker#isErrorID
-     * @exception   InterruptedException  if any thread has
+     * @throws   InterruptedException  if any thread has
      *                                     interrupted this thread.
      */
     public synchronized boolean waitForAll(long ms)
@@ -531,7 +530,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @return      {@code true} if all images have finished loading,
      *                       have been aborted, or have encountered
      *                       an error; {@code false} otherwise
-     * @see         java.awt.MediaTracker#checkID(int, boolean)
+     * @see         java.awt.MediaTracker#checkID(int)
      * @see         java.awt.MediaTracker#checkAll()
      * @see         java.awt.MediaTracker#isErrorAny()
      * @see         java.awt.MediaTracker#isErrorID(int)
@@ -631,7 +630,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @see           java.awt.MediaTracker#waitForAll
      * @see           java.awt.MediaTracker#isErrorAny()
      * @see           java.awt.MediaTracker#isErrorID(int)
-     * @exception     InterruptedException  if any thread has
+     * @throws     InterruptedException  if any thread has
      *                          interrupted this thread.
      */
     public void waitForID(int id) throws InterruptedException {
@@ -659,7 +658,7 @@ public @UsesObjectEquals class MediaTracker implements java.io.Serializable {
      * @see           java.awt.MediaTracker#statusID
      * @see           java.awt.MediaTracker#isErrorAny()
      * @see           java.awt.MediaTracker#isErrorID(int)
-     * @exception     InterruptedException  if any thread has
+     * @throws     InterruptedException  if any thread has
      *                          interrupted this thread.
      */
     public synchronized boolean waitForID(int id, long ms)

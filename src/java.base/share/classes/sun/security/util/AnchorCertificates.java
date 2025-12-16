@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,8 +71,14 @@ public class AnchorCertificates {
                             if (alias.contains(" [jdk")) {
                                 X509Certificate cert = (X509Certificate) cacerts
                                         .getCertificate(alias);
-                                certs.add(X509CertImpl.getFingerprint(HASH, cert));
-                                certIssuers.add(cert.getSubjectX500Principal());
+                                String fp =
+                                    X509CertImpl.getFingerprint(HASH, cert, debug);
+                                // only add trust anchor if fingerprint can
+                                // be calculated
+                                if (fp != null) {
+                                    certs.add(fp);
+                                    certIssuers.add(cert.getSubjectX500Principal());
+                                }
                             }
                         }
                     }
@@ -95,8 +101,8 @@ public class AnchorCertificates {
      */
     @Pure
     public static boolean contains(X509Certificate cert) {
-        String key = X509CertImpl.getFingerprint(HASH, cert);
-        boolean result = certs.contains(key);
+        String key = X509CertImpl.getFingerprint(HASH, cert, debug);
+        boolean result = (key != null && certs.contains(key));
         if (result && debug != null) {
             debug.println("AnchorCertificate.contains: matched " +
                     cert.getSubjectX500Principal());

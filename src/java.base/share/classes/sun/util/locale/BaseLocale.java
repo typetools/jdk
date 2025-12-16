@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,8 +39,8 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import jdk.internal.misc.CDS;
+import jdk.internal.util.StaticProperty;
 import jdk.internal.vm.annotation.Stable;
-import sun.security.action.GetPropertyAction;
 
 import java.lang.ref.SoftReference;
 import java.util.StringJoiner;
@@ -103,13 +103,14 @@ public final class BaseLocale {
     private final String region;
     private final String variant;
 
-    private volatile int hash;
+    private @Stable int hash;
 
     /**
      * Boolean for the old ISO language code compatibility.
+     * The system property "java.locale.useOldISOCodes" is not security sensitive,
+     * so no need to ensure privileged access here.
      */
-    private static final boolean OLD_ISO_CODES = GetPropertyAction.privilegedGetProperties()
-            .getProperty("java.locale.useOldISOCodes", "false")
+    private static final boolean OLD_ISO_CODES = StaticProperty.javaLocaleUseOldISOCodes()
             .equalsIgnoreCase("true");
 
     // This method must be called with normalize = false only when creating the
@@ -145,7 +146,7 @@ public final class BaseLocale {
             region = "";
         }
         if (language == null) {
-            language = null;
+            language = "";
         }
         if (variant == null) {
             variant = "";

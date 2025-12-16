@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -138,8 +138,7 @@ public class BasicAttribute implements Attribute {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj != null) && (obj instanceof Attribute)) {
-            Attribute target = (Attribute)obj;
+        if (obj instanceof Attribute target) {
 
             // Check order first
             if (isOrdered() != target.isOrdered()) {
@@ -224,10 +223,10 @@ public class BasicAttribute implements Attribute {
             answer.append("No values");
         } else {
             boolean start = true;
-            for (Enumeration<Object> e = values.elements(); e.hasMoreElements(); ) {
+            for (Object value : values) {
                 if (!start)
                     answer.append(", ");
-                answer.append(e.nextElement());
+                answer.append(value);
                 start = false;
             }
         }
@@ -484,6 +483,8 @@ public class BasicAttribute implements Attribute {
       *<p>
       * This method by default throws OperationNotSupportedException. A subclass
       * should override this method if it supports schema.
+      *
+      * @throws OperationNotSupportedException {@inheritDoc}
       */
     public DirContext getAttributeSyntaxDefinition() throws NamingException {
             throw new OperationNotSupportedException("attribute syntax");
@@ -494,6 +495,8 @@ public class BasicAttribute implements Attribute {
       *<p>
       * This method by default throws OperationNotSupportedException. A subclass
       * should override this method if it supports schema.
+      *
+      * @throws OperationNotSupportedException {@inheritDoc}
       */
     public DirContext getAttributeDefinition() throws NamingException {
         throw new OperationNotSupportedException("attribute definition");

@@ -144,7 +144,7 @@ public class Button extends Component implements Accessible {
     /**
      * Constructs a button with an empty string for its label.
      *
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -157,7 +157,7 @@ public class Button extends Component implements Accessible {
      *
      * @param label  a string label for the button, or
      *               {@code null} for no label
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -343,7 +343,7 @@ public class Button extends Component implements Accessible {
      *          <code><em>Foo</em>Listener</code>s on this button,
      *          or an empty array if no such
      *          listeners have been added
-     * @exception ClassCastException if {@code listenerType}
+     * @throws ClassCastException if {@code listenerType}
      *          doesn't specify a class or interface that implements
      *          {@code java.util.EventListener}
      *
@@ -488,7 +488,7 @@ public class Button extends Component implements Accessible {
      * @throws IOException if an I/O error occurs
      * @throws HeadlessException if {@code GraphicsEnvironment.isHeadless()}
      *         returns {@code true}
-     * @serial
+     *
      * @see #removeActionListener(ActionListener)
      * @see #addActionListener(ActionListener)
      * @see java.awt.GraphicsEnvironment#isHeadless

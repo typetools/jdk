@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,9 +36,10 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
- * This class implements a character buffer that can be used as an Writer.
+ * This class implements a character buffer that can be used as a Writer.
  * The buffer automatically grows when data is written to the stream.  The data
  * can be retrieved using toCharArray() and toString().
  * <P>
@@ -55,7 +56,7 @@ public class CharArrayWriter extends Writer {
     /**
      * The buffer where data is stored.
      */
-    protected char buf[];
+    protected char[] buf;
 
     /**
      * The number of chars in the buffer.
@@ -108,11 +109,9 @@ public class CharArrayWriter extends Writer {
      *          or {@code off + len} is negative or greater than the length
      *          of the given array
      */
-    public void write(char c[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
-        if ((off < 0) || (off > c.length) || (len < 0) ||
-            ((off + len) > c.length) || ((off + len) < 0)) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+    public void write(char[] c, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
+        Objects.checkFromIndexSize(off, len, c.length);
+        if (len == 0) {
             return;
         }
         synchronized (lock) {
@@ -165,8 +164,9 @@ public class CharArrayWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(csq)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>
-     *     out.write(csq.toString()) </pre>
+     * {@snippet lang=java :
+     *     out.write(csq.toString())
+     * }
      *
      * <p> Depending on the specification of {@code toString} for the
      * character sequence {@code csq}, the entire sequence may not be
@@ -197,8 +197,9 @@ public class CharArrayWriter extends Writer {
      * {@code csq} is not {@code null}, behaves in
      * exactly the same way as the invocation
      *
-     * <pre>
-     *     out.write(csq.subSequence(start, end).toString()) </pre>
+     * {@snippet lang=java :
+     *     out.write(csq.subSequence(start, end).toString())
+     * }
      *
      * @param  csq
      *         The character sequence from which a subsequence will be
@@ -233,8 +234,9 @@ public class CharArrayWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(c)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>
-     *     out.write(c) </pre>
+     * {@snippet lang=java :
+     *     out.write(c)
+     * }
      *
      * @param  c
      *         The 16-bit character to append

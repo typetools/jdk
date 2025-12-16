@@ -24,18 +24,13 @@
  */
 package javax.swing;
 
-import java.applet.Applet;
 import java.awt.*;
-import java.awt.event.*;
 import java.beans.*;
 import java.security.AccessController;
 import javax.accessibility.*;
 import javax.swing.plaf.RootPaneUI;
-import java.util.Vector;
 import java.io.Serializable;
-import javax.swing.border.*;
 
-import sun.awt.AWTAccessor;
 import sun.security.action.GetBooleanAction;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -204,7 +199,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 /// PENDING(klobad) Who should be opaque in this component?
 @AnnotatedFor({"nullness"})
-@SuppressWarnings({"removal","serial"})
+@SuppressWarnings("serial")
 public class JRootPane extends JComponent implements Accessible {
 
     private static final String uiClassID = "RootPaneUI";
@@ -213,13 +208,19 @@ public class JRootPane extends JComponent implements Accessible {
      * Whether or not we should dump the stack when true double buffering
      * is disabled. Default is false.
      */
-    private static final boolean LOG_DISABLE_TRUE_DOUBLE_BUFFERING;
+    @SuppressWarnings("removal")
+    private static final boolean LOG_DISABLE_TRUE_DOUBLE_BUFFERING
+            = AccessController.doPrivileged(new GetBooleanAction(
+                                   "swing.logDoubleBufferingDisable"));
 
     /**
      * Whether or not we should ignore requests to disable true double
      * buffering. Default is false.
      */
-    private static final boolean IGNORE_DISABLE_TRUE_DOUBLE_BUFFERING;
+    @SuppressWarnings("removal")
+    private static final boolean IGNORE_DISABLE_TRUE_DOUBLE_BUFFERING
+            = AccessController.doPrivileged(new GetBooleanAction(
+                                   "swing.ignoreDoubleBufferingDisable"));
 
     /**
      * Constant used for the windowDecorationStyle property. Indicates that
@@ -330,15 +331,6 @@ public class JRootPane extends JComponent implements Accessible {
      * heavy weight popups (backed by a window) set this to false.
      */
     boolean useTrueDoubleBuffering = true;
-
-    static {
-        LOG_DISABLE_TRUE_DOUBLE_BUFFERING =
-            AccessController.doPrivileged(new GetBooleanAction(
-                                   "swing.logDoubleBufferingDisable"));
-        IGNORE_DISABLE_TRUE_DOUBLE_BUFFERING =
-            AccessController.doPrivileged(new GetBooleanAction(
-                                   "swing.ignoreDoubleBufferingDisable"));
-    }
 
     /**
      * Creates a <code>JRootPane</code>, setting up its
@@ -519,10 +511,10 @@ public class JRootPane extends JComponent implements Accessible {
       * @return the default <code>glassPane</code>
       */
     protected Component createGlassPane() {
-        JComponent c = new JPanel();
+        JPanel c = new JPanel();
         c.setName(this.getName()+".glassPane");
         c.setVisible(false);
-        ((JPanel)c).setOpaque(false);
+        c.setOpaque(false);
         return c;
     }
 
@@ -591,7 +583,7 @@ public class JRootPane extends JComponent implements Accessible {
      * replace it with an opaque <code>JComponent</code>.
      *
      * @param content the <code>Container</code> to use for component-contents
-     * @exception java.awt.IllegalComponentStateException (a runtime
+     * @throws java.awt.IllegalComponentStateException (a runtime
      *            exception) if the content pane parameter is <code>null</code>
      */
     public void setContentPane(Container content) {
@@ -618,7 +610,7 @@ public class JRootPane extends JComponent implements Accessible {
      * typically holds a content pane and an optional <code>JMenuBar</code>.
      *
      * @param layered  the <code>JLayeredPane</code> to use
-     * @exception java.awt.IllegalComponentStateException (a runtime
+     * @throws java.awt.IllegalComponentStateException (a runtime
      *            exception) if the layered pane parameter is <code>null</code>
      */
     public void setLayeredPane(JLayeredPane layered) {
@@ -660,7 +652,7 @@ public class JRootPane extends JComponent implements Accessible {
      *
      * @param glass the <code>Component</code> to use as the glass pane
      *              for this <code>JRootPane</code>
-     * @exception NullPointerException if the <code>glass</code> parameter is
+     * @throws NullPointerException if the <code>glass</code> parameter is
      *          <code>null</code>
      */
     public void setGlassPane(Component glass) {

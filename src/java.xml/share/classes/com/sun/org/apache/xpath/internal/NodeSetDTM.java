@@ -1,6 +1,5 @@
 /*
- * reserved comment block
- * DO NOT REMOVE OR ALTER!
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,6 +57,7 @@ import org.w3c.dom.traversal.NodeIterator;
  * to the same calls; the disadvantage is that some of them may return
  * less-than-enlightening results when you do so.</p>
  * @xsl.usage advanced
+ * @LastModified: May 2022
  */
 public class NodeSetDTM extends NodeVector
         implements /* NodeList, NodeIterator, */ DTMIterator,
@@ -359,6 +359,7 @@ public class NodeSetDTM extends NodeVector
   }
 
   /* An instance of the DTMManager. */
+  @SuppressWarnings("serial") // Type of field is not Serializable
   DTMManager m_manager;
 
   /**
@@ -536,11 +537,7 @@ public class NodeSetDTM extends NodeVector
    */
   public void addNode(int n)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
-    this.addElement(n);
+    addElement(n);
   }
 
   /**
@@ -554,10 +551,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void insertNode(int n, int pos)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     insertElementAt(n, pos);
   }
 
@@ -570,10 +563,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void removeNode(int n)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     this.removeElement(n);
   }
 
@@ -647,10 +636,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void addNodes(DTMIterator iterator)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     if (null != iterator)  // defensive to fix a bug that Sanjiva reported.
     {
       int obj;
@@ -704,10 +689,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void addNodesInDocOrder(DTMIterator iterator, XPathContext support)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     int node;
 
     while (DTM.NULL != (node = iterator.nextNode()))
@@ -793,10 +774,6 @@ public class NodeSetDTM extends NodeVector
    */
   public int addNodeInDocOrder(int node, boolean test, XPathContext support)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     int insertIndex = -1;
 
     if (test)
@@ -868,10 +845,6 @@ public class NodeSetDTM extends NodeVector
    */
   public int addNodeInDocOrder(int node, XPathContext support)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     return addNodeInDocOrder(node, true, support);
   }  // end addNodeInDocOrder(Vector v, Object obj)
 
@@ -894,10 +867,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void addElement(int value)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.addElement(value);
   }
 
@@ -914,10 +883,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void insertElementAt(int value, int at)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.insertElementAt(value, at);
   }
 
@@ -930,10 +895,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void appendNodes(NodeVector nodes)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.appendNodes(nodes);
   }
 
@@ -947,10 +908,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void removeAllElements()
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.removeAllElements();
   }
 
@@ -969,10 +926,6 @@ public class NodeSetDTM extends NodeVector
    */
   public boolean removeElement(int s)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     return super.removeElement(s);
   }
 
@@ -988,10 +941,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void removeElementAt(int i)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.removeElementAt(i);
   }
 
@@ -1009,10 +958,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void setElementAt(int node, int index)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.setElementAt(node, index);
   }
 
@@ -1026,10 +971,6 @@ public class NodeSetDTM extends NodeVector
    */
   public void setItem(int node, int index)
   {
-
-    if (!m_mutable)
-      throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_NODESETDTM_NOT_MUTABLE, null)); //"This NodeSetDTM is not mutable!");
-
     super.setElementAt(node, index);
   }
 
@@ -1158,9 +1099,6 @@ public class NodeSetDTM extends NodeVector
     return n;
   }
 
-  /** True if this list can be mutated.  */
-  transient protected boolean m_mutable = true;
-
   /** True if this list is cached.
    *  @serial  */
   transient protected boolean m_cacheNodes = true;
@@ -1198,7 +1136,6 @@ public class NodeSetDTM extends NodeVector
         XSLMessages.createXPATHMessage(XPATHErrorResources.ER_CANNOT_CALL_SETSHOULDCACHENODE, null)); //"Can not call setShouldCacheNodes after nextNode has been called!");
 
     m_cacheNodes = b;
-    m_mutable = true;
   }
 
   /**
@@ -1209,7 +1146,7 @@ public class NodeSetDTM extends NodeVector
    */
   public boolean isMutable()
   {
-    return m_mutable;
+    return true;
   }
 
   transient private int m_last = 0;

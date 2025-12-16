@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@ package java.security.spec;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.access.JavaSecuritySpecAccess;
 import jdk.internal.access.SharedSecrets;
 
 import java.util.Arrays;
@@ -51,20 +50,15 @@ import java.util.Arrays;
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class EncodedKeySpec implements KeySpec {
 
-    private byte[] encodedKey;
+    private final byte[] encodedKey;
     private String algorithmName;
 
     static {
         SharedSecrets.setJavaSecuritySpecAccess(
-                new JavaSecuritySpecAccess() {
-                    @Override
-                    public void clearEncodedKeySpec(EncodedKeySpec keySpec) {
-                        keySpec.clear();
-                    }
-                });
+                EncodedKeySpec::clear);
     }
 
-                    /**
+    /**
      * Creates a new {@code EncodedKeySpec} with the given encoded key.
      *
      * @param encodedKey the encoded key. The contents of the

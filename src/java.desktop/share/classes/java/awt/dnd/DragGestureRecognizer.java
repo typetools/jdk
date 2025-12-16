@@ -138,7 +138,7 @@ public abstract @UsesObjectEquals class DragGestureRecognizer implements Seriali
         try {
             if (dgl != null) addDragGestureListener(dgl);
         } catch (TooManyListenersException tmle) {
-            // cant happen ...
+            // can't happen ...
         }
     }
 

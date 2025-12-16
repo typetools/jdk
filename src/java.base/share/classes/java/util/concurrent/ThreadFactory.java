@@ -57,17 +57,20 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * to known values before returning it.
  * @since 1.5
  * @author Doug Lea
+ * @see Thread.Builder#factory()
  */
 @AnnotatedFor("nullness")
 public interface ThreadFactory {
 
     /**
-     * Constructs a new {@code Thread}.  Implementations may also initialize
-     * priority, name, daemon status, {@code ThreadGroup}, etc.
+     * Constructs a new unstarted {@code Thread} to run the given runnable.
      *
      * @param r a runnable to be executed by new thread instance
      * @return constructed thread, or {@code null} if the request to
      *         create a thread is rejected
+     *
+     * @see <a href="../../lang/Thread.html#inheritance">Inheritance when
+     * creating threads</a>
      */
     @Nullable Thread newThread(Runnable r);
 }

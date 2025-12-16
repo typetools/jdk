@@ -198,7 +198,7 @@ public class LineNumberReader extends BufferedReader {
      * @throws  IOException {@inheritDoc}
      */
     @SuppressWarnings("fallthrough")
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied LineNumberReader this, char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(@GuardSatisfied LineNumberReader this, char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             int n = super.read(cbuf, off, len);
 

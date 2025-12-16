@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -362,7 +362,8 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      * of the {@link #wakeup wakeup} method.  </p>
      *
      * @return  The number of keys, possibly zero, whose ready-operation sets
-     *          were updated by the selection operation
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
@@ -390,8 +391,9 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      *                  channel to become ready; if zero, block indefinitely;
      *                  must not be negative
      *
-     * @return  The number of keys, possibly zero,
-     *          whose ready-operation sets were updated
+     * @return  The number of keys, possibly zero, whose ready-operation sets
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
@@ -413,8 +415,9 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      * this selector's {@link #wakeup wakeup} method is invoked, or the current
      * thread is interrupted, whichever comes first.  </p>
      *
-     * @return  The number of keys, possibly zero,
-     *          whose ready-operation sets were updated
+     * @return  The number of keys, possibly zero, whose ready-operation sets
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
