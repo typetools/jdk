@@ -214,6 +214,8 @@ cd jdk21u-fork-typetools
 git pull ../jdk-fork-${USER}-branch-jdk21
 ```
 
+Push and wait for CI to pass.
+
 ## Design
 
 The goal of this repository is to write Checker Framework annotations in
