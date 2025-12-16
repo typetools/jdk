@@ -60,6 +60,7 @@ jobs:
       fi
     displayName: plume-scripts
   # This creates ../jdk21u .
+  # --depth 999
   # If the depth is too small, the merge will fail.  However, we cannot use "--filter=blob:none"
   # because that leads to "fatal: remote error: filter 'combine' not supported".
   - bash: |
@@ -68,7 +69,7 @@ jobs:
       ls -al .. || true
       ls -al ../jdk21u || true
       df .
-      /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --depth 999
+      /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       git config --global core.longpaths true
