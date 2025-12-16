@@ -866,7 +866,7 @@ class StubGenerator: public StubCodeGenerator {
    *   goto copy_small;
    * }
    * bool is_backwards = step < 0;
-   * int granularity = uabs(step);
+   * int granularity = g_uabs(step);
    * count = count  *  granularity;   * count bytes
    *
    * if (is_backwards) {
@@ -896,7 +896,7 @@ class StubGenerator: public StubCodeGenerator {
 
   void copy_memory_v(Register s, Register d, Register count, int step) {
     bool is_backward = step < 0;
-    int granularity = uabs(step);
+    int granularity = g_uabs(step);
 
     const Register src = x30, dst = x31, vl = x14, cnt = x15, tmp1 = x16, tmp2 = x17;
     assert_different_registers(s, d, cnt, vl, tmp1, tmp2);
@@ -952,7 +952,7 @@ class StubGenerator: public StubCodeGenerator {
     }
 
     bool is_backwards = step < 0;
-    int granularity = uabs(step);
+    int granularity = g_uabs(step);
 
     const Register src = x30, dst = x31, cnt = x15, tmp3 = x16, tmp4 = x17, tmp5 = x14, tmp6 = x13;
     const Register gct1 = x28, gct2 = x29, gct3 = t2;

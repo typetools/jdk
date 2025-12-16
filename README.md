@@ -163,7 +163,7 @@ git pull https://github.com/openjdk/jdk21u.git
 git pull https://github.com/typetools/jdk.git
 ```
 
-## Updating
+## Upgrading to a new version of Java
 
 Whenever Oracle releases a new version of Java, this repository should be
 updated to pull in more commits from upstream.  Here are some commands to run
@@ -193,14 +193,19 @@ cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
 git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 ```
 
-Now, you will have to resolve many merge conflicts.  The commands in
-`README-merging.el` automate a great deal of work (requires using Emacs).
+Resolve the merge conflicts.  The commands in `README-merging.el` automate a
+great deal of work (requires using Emacs).
 
-Next, you will need to replace uses of the old JDK version (such as 17)
-with the new one (such as 21).
+Replace uses of the old JDK version (such as 17) with the new one (such as 21).
 
 * In this file
 * In .azure/azure-pipelines.yml.m4
+
+Build the JDK to detect errors.
+
+* "error: package org.checkerframework.dataflow.qual does not exist":
+
+Diff jdk21u with jdk to detect errors and to copy back changes.
 
 ## Design
 
