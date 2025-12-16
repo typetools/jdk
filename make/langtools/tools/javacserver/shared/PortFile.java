@@ -25,7 +25,7 @@
 
 package javacserver.shared;
 
-import org.checkerframework.dataflow.qual.Pure;
+// import org.checkerframework.dataflow.qual.Pure;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -136,7 +136,7 @@ public class PortFile {
     /**
      * Did the locking and getValues succeed?
      */
-    @Pure
+    // @Pure
     public boolean containsPortInfo() {
         return containsPortInfo;
     }
