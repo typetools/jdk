@@ -28,6 +28,7 @@ package java.nio.file;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
