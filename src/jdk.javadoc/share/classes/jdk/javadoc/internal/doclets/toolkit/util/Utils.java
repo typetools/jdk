@@ -2115,9 +2115,9 @@ public class Utils {
         return mdle.getQualifiedName().toString();
     }
 
-    @Pure
     private final CommentHelperCache commentHelperCache = new CommentHelperCache(this);
 
+    @Pure
     public CommentHelper getCommentHelper(Element element) {
         return commentHelperCache.computeIfAbsent(element);
     }

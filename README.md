@@ -201,11 +201,13 @@ Replace uses of the old JDK version (such as 17) with the new one (such as 21).
 * In this file
 * In .azure/azure-pipelines.yml.m4
 
-Build the JDK to detect errors.
+Follow the instructions in "The typetools/jdk21u repository" above, except
+replace `git pull https://github.com/typetools/jdk.git` by the JDK you are
+currently working on.
 
-* "error: package org.checkerframework.dataflow.qual does not exist":
+Build JDK 21u (not the main JDK!) to detect errors.
 
-Diff jdk21u with jdk to detect errors and to copy back changes.
+Diff with OpenJDK to detect errors and to copy back changes.
 
 ## Design
 
