@@ -1087,13 +1087,13 @@ public class LinkedHashMap<K,V>
     final class LinkedValueIterator extends LinkedHashIterator
         implements Iterator<V> {
         LinkedValueIterator(boolean reversed) { super(reversed); }
-        public final V next(@NonEmpty LinkedKeyIterator this) { return nextNode().value; }
+        public final V next(@NonEmpty LinkedValueIterator this) { return nextNode().value; }
     }
 
     final class LinkedEntryIterator extends LinkedHashIterator
         implements Iterator<Map.Entry<K,V>> {
         LinkedEntryIterator(boolean reversed) { super(reversed); }
-        public final Map.Entry<K,V> next(@NonEmpty LinkedKeyIterator this) { return nextNode(); }
+        public final Map.Entry<K,V> next(@NonEmpty LinkedEntryIterator this) { return nextNode(); }
     }
 
     /**
