@@ -205,10 +205,14 @@ Follow the instructions in "The typetools/jdk21u repository" above, except
 replace `git pull https://github.com/typetools/jdk.git` by the JDK you are
 currently working on.
 
-Build JDK 21u (not the main JDK!) to detect errors.
+Build JDK 21u (not the main JDK!).
 
-Diff JDK 21 with the upstream commit of OpenJDK, to detect errors and to copy
-back changes.
+Diff JDK 21 with the upstream commit of OpenJDK, to detect errors.
+
+```sh
+cd jdk21u-fork-typetools
+git pull ../jdk-fork-${USER}-branch-jdk21
+```
 
 ## Design
 
