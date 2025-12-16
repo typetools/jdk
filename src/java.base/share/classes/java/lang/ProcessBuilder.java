@@ -30,7 +30,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.util.OperatingSystem;import java.io.File;
+import jdk.internal.util.OperatingSystem;
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;

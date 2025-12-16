@@ -26,7 +26,8 @@ package java.lang.constant;
 
 import org.checkerframework.checker.signature.qual.MethodDescriptor;
 
-import java.lang.invoke.MethodHandles;import java.lang.invoke.MethodType;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.TypeDescriptor;
 import java.util.List;
 import java.util.stream.Collectors;

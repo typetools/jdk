@@ -852,7 +852,7 @@ class ImmutableCollections {
 
         @Override
         public Iterator<E> iterator() {
-            return new Iterator<E>() {
+            return new Iterator<>() {
                 private int idx = (e1 == EMPTY) ? 1 : 2;
 
                 @Override

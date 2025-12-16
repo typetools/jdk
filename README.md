@@ -207,7 +207,8 @@ currently working on.
 
 Build JDK 21u (not the main JDK!) to detect errors.
 
-Diff with OpenJDK to detect errors and to copy back changes.
+Diff JDK 21 with the upstream commit of OpenJDK, to detect errors and to copy
+back changes.
 
 ## Design
 
@@ -223,14 +224,14 @@ The remainder of this file is the `README.md` from `openjdk/jdk`.
 
 <!-- markdownlint-disable single-h1 -->
 
-# Welcome to the JDK
+# Welcome to the JDK!
 
 For build instructions please see the
 [online documentation](https://openjdk.org/groups/build/doc/building.html),
 or either of these files:
 
-* [doc/building.html](doc/building.html) (html version)
-* [doc/building.md](doc/building.md) (markdown version)
+- [doc/building.html](doc/building.html) (html version)
+- [doc/building.md](doc/building.md) (markdown version)
 
 See <https://openjdk.org/> for more information about the OpenJDK
 Community and the JDK and see <https://bugs.openjdk.org> for JDK issue

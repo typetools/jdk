@@ -408,7 +408,7 @@ public @UsesObjectEquals class RandomAccessFile implements DataOutput, DataInput
      * @param     len the number of bytes to read.
      * @throws    IOException If an I/O error has occurred.
      */
-    private int readBytes(@PolySigned byte[] b, int off, int len) throws IOException;
+    private int readBytes(@PolySigned byte[] b, int off, int len) throws IOException {
         long comp = Blocker.begin();
         try {
             return readBytes0(b, off, len);

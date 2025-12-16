@@ -3573,7 +3573,8 @@ public final class Arrays {
     public static @PolySigned byte[] copyOf(@PolySigned byte[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        byte[] copy = new byte[newLength];
+        }
+        byte[] copy = new byte[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3600,7 +3601,8 @@ public final class Arrays {
     public static @PolySigned short[] copyOf(@PolySigned short[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        short[] copy = new short[newLength];
+        }
+        short[] copy = new short[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3627,7 +3629,8 @@ public final class Arrays {
     public static @PolySigned int[] copyOf(@PolySigned int[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        int[] copy = new int[newLength];
+        }
+        int[] copy = new int[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3655,7 +3658,8 @@ public final class Arrays {
     public static @PolySigned long[] copyOf(@PolySigned long[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        long[] copy = new long[newLength];
+        }
+        long[] copy = new long[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3682,7 +3686,8 @@ public final class Arrays {
     public static @PolySigned char[] copyOf(@PolySigned char[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        char[] copy = new char[newLength];
+        }
+        char[] copy = new char[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3709,7 +3714,8 @@ public final class Arrays {
     public static float[] copyOf(float[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        float[] copy = new float[newLength];
+        }
+        float[] copy = new float[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3736,7 +3742,8 @@ public final class Arrays {
     public static double[] copyOf(double[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        double[] copy = new double[newLength];
+        }
+        double[] copy = new double[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3763,7 +3770,8 @@ public final class Arrays {
     public static boolean[] copyOf(boolean[] original, @NonNegative int newLength) {
         if (newLength == original.length) {
             return original.clone();
-        }        boolean[] copy = new boolean[newLength];
+        }
+        boolean[] copy = new boolean[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
@@ -3896,7 +3904,8 @@ public final class Arrays {
 
     @ForceInline
     private static byte[] copyOfRangeByte(byte[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         byte[] copy = new byte[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -3940,7 +3949,8 @@ public final class Arrays {
 
     @ForceInline
     private static short[] copyOfRangeShort(short[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         short[] copy = new short[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -3984,7 +3994,8 @@ public final class Arrays {
 
     @ForceInline
     private static int[] copyOfRangeInt(int[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         int[] copy = new int[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4028,7 +4039,8 @@ public final class Arrays {
 
     @ForceInline
     private static long[] copyOfRangeLong(long[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         long[] copy = new long[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4072,7 +4084,8 @@ public final class Arrays {
 
     @ForceInline
     private static char[] copyOfRangeChar(char[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         char[] copy = new char[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4116,7 +4129,8 @@ public final class Arrays {
 
     @ForceInline
     private static float[] copyOfRangeFloat(float[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         float[] copy = new float[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4160,7 +4174,8 @@ public final class Arrays {
 
     @ForceInline
     private static double[] copyOfRangeDouble(double[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         double[] copy = new double[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4204,7 +4219,8 @@ public final class Arrays {
 
     @ForceInline
     private static boolean[] copyOfRangeBoolean(boolean[] original, int from, int to) {
-        checkLength(from, to);        int newLength = to - from;
+        checkLength(from, to);
+        int newLength = to - from;
         boolean[] copy = new boolean[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));

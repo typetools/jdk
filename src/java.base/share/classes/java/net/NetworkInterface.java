@@ -408,7 +408,7 @@ public final class NetworkInterface {
     }
 
     private static <T> Enumeration<T> enumerationFromArray(T[] a) {
-        return new Enumeration<T>() {
+        return new Enumeration<>() {
             int i = 0;
 
             @Override

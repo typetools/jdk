@@ -28,7 +28,8 @@ package java.security;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.net.MalformedURLException;import java.util.*;
+import java.net.MalformedURLException;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
 import java.net.URL;

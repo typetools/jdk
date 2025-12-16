@@ -1420,7 +1420,8 @@ public final @UsesObjectEquals class Pattern
     }
 
     private String[] split(CharSequence input, int limit, boolean withDelimiters) {
-        int matchCount = 0;        int index = 0;
+        int matchCount = 0;
+        int index = 0;
         boolean matchLimited = limit > 0;
         ArrayList<String> matchList = new ArrayList<>();
         Matcher m = matcher(input);

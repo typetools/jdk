@@ -656,7 +656,8 @@ public class LinkedHashMap<K,V>
      * @return {@inheritDoc}
      * @since 21
      */
-    public SequencedSet<K> sequencedKeySet() {        Set<K> ks = keySet;
+    public SequencedSet<K> sequencedKeySet() {
+        Set<K> ks = keySet;
         if (ks == null) {
             SequencedSet<K> sks = new LinkedKeySet(false);
             keySet = sks;

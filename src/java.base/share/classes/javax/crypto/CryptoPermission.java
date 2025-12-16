@@ -31,7 +31,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.Serial;import java.security.*;
+import java.io.Serial;
+import java.security.*;
 import java.security.spec.AlgorithmParameterSpec;
 import java.io.Serializable;
 import java.util.Enumeration;

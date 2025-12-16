@@ -38,7 +38,8 @@ package java.util.concurrent.locks;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.misc.VirtualThreads;import jdk.internal.misc.Unsafe;
+import jdk.internal.misc.VirtualThreads;
+import jdk.internal.misc.Unsafe;
 
 /**
  * Basic thread blocking primitives for creating locks and other

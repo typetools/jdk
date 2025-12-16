@@ -930,7 +930,7 @@ public interface Map<K, V> {
      */
     @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
     default boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
-        Object curValue = (key);
+        Object curValue = get(key);
         if (!Objects.equals(curValue, value) ||
             (curValue == null && !containsKey(key))) {
             return false;

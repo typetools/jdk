@@ -32,7 +32,8 @@ import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import jdk.internal.util.ArraysSupport;import sun.nio.cs.UTF_32BE;
+import jdk.internal.util.ArraysSupport;
+import sun.nio.cs.UTF_32BE;
 import sun.util.calendar.CalendarDate;
 import sun.util.calendar.CalendarSystem;
 

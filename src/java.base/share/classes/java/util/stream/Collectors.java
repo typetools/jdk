@@ -2009,7 +2009,8 @@ public final class Collectors {
             return Objects.equals(value, forTrue) || Objects.equals(value, forFalse);
         }
 
-        @Override        public Set<Map.Entry<Boolean, T>> entrySet() {
+        @Override
+        public Set<Map.Entry<Boolean, T>> entrySet() {
             return new AbstractSet<>() {
                 @Override
                 public Iterator<Map.Entry<Boolean, T>> iterator() {

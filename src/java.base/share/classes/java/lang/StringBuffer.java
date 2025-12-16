@@ -748,6 +748,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
         super.repeat(cs, count);
         return this;
     }
+
     @Override
     @IntrinsicCandidate
     public synchronized String toString(@GuardSatisfied StringBuffer this) {

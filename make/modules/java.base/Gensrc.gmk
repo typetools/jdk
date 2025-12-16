@@ -61,7 +61,7 @@ $(CLDR_GEN_DONE): $(wildcard $(CLDR_DATA_DIR)/dtd/*.dtd) \
 	    -baselocales "en-US" \
 	    -o $(GENSRC_DIR) \
 	    -basemodule \
-	    -year 2025 \
+	    -year $(COPYRIGHT_YEAR) \
 	    -zntempfile $(ZONENAME_TEMPLATE) \
 	    -tzdatadir $(TZ_DATA_DIR))
 	$(TOUCH) $@

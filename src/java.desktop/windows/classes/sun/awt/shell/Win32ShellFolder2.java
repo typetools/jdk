@@ -31,7 +31,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.awt.Graphics2D;import java.awt.Image;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.AbstractMultiResolutionImage;
 import java.awt.image.BufferedImage;

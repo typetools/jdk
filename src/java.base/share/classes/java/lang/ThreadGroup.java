@@ -455,7 +455,8 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(Thread[] list, boolean recurse) {
-        Objects.requireNonNull(list);        checkAccess();
+        Objects.requireNonNull(list);
+        checkAccess();
         int n = 0;
         if (list.length > 0) {
             for (Thread thread : Thread.getAllThreads()) {
@@ -467,11 +468,6 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
                         break;
                     }
                 }
-            }
-        }
-        if (recurse) {
-            for (int i = 0 ; i < ngroupsSnapshot ; i++) {
-                n = groupsSnapshot[i].enumerate(list, n, true);
             }
         }
         return n;

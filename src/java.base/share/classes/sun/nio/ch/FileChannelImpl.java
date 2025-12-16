@@ -27,7 +27,8 @@ package sun.nio.ch;
 
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.io.Closeable;import java.io.FileDescriptor;
+import java.io.Closeable;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.foreign.MemorySegment;

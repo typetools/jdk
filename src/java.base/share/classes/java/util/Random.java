@@ -298,6 +298,7 @@ public @UsesObjectEquals class Random implements RandomGenerator, java.io.Serial
             return "RandomWrapper[" + generator + "]";
         }
     }
+
     /** use serialVersionUID from JDK 1.1 for interoperability */
     @java.io.Serial
     static final long serialVersionUID = 3905348978240129619L;

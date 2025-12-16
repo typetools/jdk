@@ -31,7 +31,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.Serial;import java.util.Arrays;
+import java.io.Serial;
+import java.util.Arrays;
 import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;

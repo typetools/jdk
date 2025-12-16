@@ -476,7 +476,8 @@ public class File
      *          pathname, or the empty string if this pathname's name sequence
      *          is empty
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getName() {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) return path.substring(prefixLength);
@@ -497,7 +498,8 @@ public class File
      *          does not name a parent
      */
     @Pure
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public @Nullable String getParent(@GuardSatisfied File this) {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) {
@@ -525,7 +527,8 @@ public class File
      * @since 1.2
      */
     @Pure
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public @Nullable File getParentFile(@GuardSatisfied File this) {
         String p = this.getParent();
         if (p == null) return null;
@@ -542,7 +545,8 @@ public class File
      *
      * @return  The string form of this abstract pathname
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getPath() {
         return path;
     }
@@ -605,7 +609,8 @@ public class File
      *
      * @since 1.2
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getAbsoluteFile() {
         String absPath = getAbsolutePath();
         if (getClass() != File.class) {
@@ -652,8 +657,10 @@ public class File
      * @since   1.1
      * @see     Path#toRealPath
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
-    @ReleasesNoLocks // rest of file is not annotated for the Lock Checker
+    @CFComment({"rest of file is not annotated for the Lock Checker",
+                "pure with respect to .equals but not =="})
+    @SideEffectFree
+    @ReleasesNoLocks
     public String getCanonicalPath() throws IOException {
         if (isInvalid()) {
             throw new IOException("Invalid file path");
@@ -682,7 +689,8 @@ public class File
      * @since 1.2
      * @see     Path#toRealPath
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getCanonicalFile() throws IOException {
         String canonPath = getCanonicalPath();
         if (getClass() != File.class) {
@@ -691,7 +699,8 @@ public class File
         return new File(canonPath, FS.prefixLength(canonPath));
     }
 
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     private static String slashify(String path, boolean isDirectory) {
         String p = path;
         if (File.separatorChar != '/')
@@ -726,7 +735,8 @@ public class File
      * {@link #toURI() toURI} method, and then converting the URI into a URL
      * via the {@link java.net.URI#toURL() URI.toURL} method.
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     @Deprecated
     public URL toURL() throws MalformedURLException {
         if (isInvalid()) {
@@ -778,7 +788,8 @@ public class File
      * @see java.net.URI#toURL()
      * @since 1.4
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public URI toURI() {
         try {
             File f = getAbsoluteFile();

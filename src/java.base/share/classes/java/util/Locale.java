@@ -2123,7 +2123,7 @@ public final class Locale implements Cloneable, Serializable {
             .getResourceBundleBased()
             .getLocaleResources(inLocale);
 
-        String[] names = getDisplayVariantArray(inLocale);
+        String names[] = getDisplayVariantArray(inLocale);
 
         // Get the localized patterns for formatting a list, and use
         // them to format the list.

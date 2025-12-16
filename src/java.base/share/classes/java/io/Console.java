@@ -189,6 +189,7 @@ public sealed @UsesObjectEquals class Console implements Flushable permits Proxy
      */
     @FormatMethod
     public Console format(String fmt, @Nullable Object ...args) {
+        throw newUnsupportedOperationException();
     }
 
     /**

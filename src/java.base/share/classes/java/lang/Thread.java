@@ -227,8 +227,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * @since   1.0
  */
 @AnnotatedFor({"interning", "lock", "nullness"})
-public
-@UsesObjectEquals class Thread implements Runnable {
+public @UsesObjectEquals class Thread implements Runnable {
     /* Make sure registerNatives is the first thing <clinit> does. */
     private static native void registerNatives();
     static {
@@ -2319,7 +2318,8 @@ public
         sb.append(getName());
         sb.append(",");
         sb.append(getPriority());
-        sb.append(",");        ThreadGroup group = getThreadGroup();
+        sb.append(",");
+        ThreadGroup group = getThreadGroup();
         if (group != null)
             sb.append(group.getName());
         sb.append("]");

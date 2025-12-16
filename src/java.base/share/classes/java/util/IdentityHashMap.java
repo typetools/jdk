@@ -42,7 +42,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;import java.lang.reflect.Array;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;

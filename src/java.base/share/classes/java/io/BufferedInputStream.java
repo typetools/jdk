@@ -330,7 +330,8 @@ public class BufferedInputStream extends FilterInputStream {
         }
     }
 
-    private int implRead() throws IOException {        if (pos >= count) {
+    private int implRead() throws IOException {
+        if (pos >= count) {
             fill();
             if (pos >= count)
                 return -1;
@@ -519,7 +520,8 @@ public class BufferedInputStream extends FilterInputStream {
         }
     }
 
-    private int implAvailable() throws IOException {        int n = count - pos;
+    private int implAvailable() throws IOException {
+        int n = count - pos;
         int avail = getInIfOpen().available();
         return n > (Integer.MAX_VALUE - avail)
                     ? Integer.MAX_VALUE

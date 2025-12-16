@@ -47,7 +47,8 @@ import org.checkerframework.framework.qual.CFComment;
 
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.io.ObjectOutput;import java.util.function.Consumer;
+import java.io.ObjectOutput;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;

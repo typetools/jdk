@@ -240,6 +240,7 @@ public class Utils {
     public boolean isInterface(Element e) {
         return e.getKind().isInterface();
     }
+
     public boolean isConstructor(Element e) {
          return e.getKind() == CONSTRUCTOR;
     }
@@ -297,7 +298,8 @@ public class Utils {
      *
      * This is to avoid confusion with unrelated _default_ methods which
      * appeared in JDK 8.
-     */    public boolean isPackagePrivate(Element e) {
+     */
+    public boolean isPackagePrivate(Element e) {
         var m = e.getModifiers();
         return !m.contains(Modifier.PUBLIC)
                 && !m.contains(Modifier.PROTECTED)

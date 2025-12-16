@@ -230,7 +230,7 @@ final class AllPermissionCollection
             private boolean hasMore = all_allowed;
 
             @EnsuresNonEmptyIf(result = true, expression = "this")
-            public boolean hasMoreElements(/**/) {
+            public boolean hasMoreElements() {
                 return hasMore;
             }
 

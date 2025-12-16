@@ -26,8 +26,8 @@
 package javax.swing;
 
 import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -1192,8 +1192,8 @@ public class JOptionPane extends JComponent implements Accessible
      * @return an integer indicating the option selected by the user
      */
     public static int showInternalConfirmDialog(@Nullable Component parentComponent,
-                                                @Nullable Object message,
-                                                @Nullable String title, int optionType,
+                                        @Nullable Object message,
+                                        @Nullable String title, int optionType,
                                         int messageType) {
         return showInternalConfirmDialog(parentComponent, message, title, optionType,
                                          messageType, null);
@@ -1404,7 +1404,7 @@ public class JOptionPane extends JComponent implements Accessible
      * @return user's input
      */
     public static String showInternalInputDialog(@Nullable Component parentComponent,
-                                                 @Nullable Object message, @Nullable String title, int messageType) {
+                             @Nullable Object message, @Nullable String title, int messageType) {
         return (String)showInternalInputDialog(parentComponent, message, title,
                                        messageType, null, null, null);
     }
@@ -1517,7 +1517,7 @@ public class JOptionPane extends JComponent implements Accessible
      *          not have a valid parent
      */
     public JInternalFrame createInternalFrame(@Nullable Component parentComponent,
-                                              @Nullable String title) {
+                                 @Nullable String title) {
         Container parent =
                 JOptionPane.getDesktopPaneForComponent(parentComponent);
 

@@ -81,7 +81,7 @@ public interface ListIterator<E> extends Iterator<E> {
      * @return {@code true} if the list iterator has more elements when
      *         traversing the list in the forward direction
      */
-    @Pure // @Pure is not necessary here: it's inherited from Iterator
+    @CFComment({"@Pure is not necessary here, because it's inherited from Iterator"})
     @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasNext();
 

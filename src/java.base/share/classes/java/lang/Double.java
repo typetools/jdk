@@ -845,7 +845,8 @@ public final class Double extends Number
      */
     @Pure
     @StaticallyExecutable
-    @IntrinsicCandidate    public static boolean isInfinite(double v) {
+    @IntrinsicCandidate
+    public static boolean isInfinite(double v) {
         return Math.abs(v) > MAX_VALUE;
     }
 
@@ -865,7 +866,8 @@ public final class Double extends Number
      */
     @Pure
     @StaticallyExecutable
-    @IntrinsicCandidate    public static boolean isFinite(double d) {
+    @IntrinsicCandidate
+    public static boolean isFinite(double d) {
         return Math.abs(d) <= Double.MAX_VALUE;
     }
 

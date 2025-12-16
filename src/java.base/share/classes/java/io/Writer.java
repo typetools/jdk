@@ -330,7 +330,7 @@ public abstract @UsesObjectEquals class Writer implements Appendable, Closeable,
     }
 
     private void implWrite(String str, int off, int len) throws IOException {
-        char[] cbuf;
+        char cbuf[];
         if (len <= WRITE_BUFFER_SIZE) {
             if (writeBuffer == null) {
                 writeBuffer = new char[WRITE_BUFFER_SIZE];

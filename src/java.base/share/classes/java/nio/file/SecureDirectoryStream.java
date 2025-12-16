@@ -61,7 +61,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 
 @AnnotatedFor({"nullness"})
-
 public interface SecureDirectoryStream<T>
     extends DirectoryStream<T>
 {

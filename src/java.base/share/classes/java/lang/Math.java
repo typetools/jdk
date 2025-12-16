@@ -800,7 +800,8 @@ public final @UsesObjectEquals class Math {
      * @see     java.lang.Integer#MIN_VALUE
      */
     @Pure
-    @IntrinsicCandidate    public static int round(float a) {
+    @IntrinsicCandidate
+    public static int round(float a) {
         int intBits = Float.floatToRawIntBits(a);
         int biasedExp = (intBits & FloatConsts.EXP_BIT_MASK)
                 >> (FloatConsts.SIGNIFICAND_WIDTH - 1);
@@ -850,7 +851,8 @@ public final @UsesObjectEquals class Math {
      * @see     java.lang.Long#MIN_VALUE
      */
     @Pure
-    @IntrinsicCandidate    public static long round(double a) {
+    @IntrinsicCandidate
+    public static long round(double a) {
         long longBits = Double.doubleToRawLongBits(a);
         long biasedExp = (longBits & DoubleConsts.EXP_BIT_MASK)
                 >> (DoubleConsts.SIGNIFICAND_WIDTH - 1);

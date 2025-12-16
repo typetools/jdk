@@ -43,7 +43,8 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
-import jdk.internal.misc.Blocker;import jdk.internal.vm.annotation.IntrinsicCandidate;
+import jdk.internal.misc.Blocker;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
  * Class {@code Object} is the root of the class hierarchy.

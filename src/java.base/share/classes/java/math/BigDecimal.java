@@ -3789,7 +3789,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
     @Override
-    public @PolyValue float floatValue(@PolyValue BigDecimal this){
+    public @PolyValue float floatValue(@PolyValue BigDecimal this) {
         /* For details, see the extensive comments in doubleValue(). */
         if (intCompact != INFLATED) {
             float v = intCompact;

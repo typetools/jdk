@@ -1498,6 +1498,7 @@ public class CopyOnWriteArrayList<E>
                     return get(size - 1);
             }
         }
+
         public int size() {
             synchronized (lock) {
                 checkForComodification();

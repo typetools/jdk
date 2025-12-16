@@ -26,8 +26,6 @@
 package jdk.javadoc.internal.doclets.toolkit.builders;
 
 import org.checkerframework.dataflow.qual.Pure;
-import java.text.MessageFormat;
-import java.util.*;
 
 import java.util.Collection;
 import java.util.Comparator;

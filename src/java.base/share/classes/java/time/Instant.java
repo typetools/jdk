@@ -68,7 +68,8 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import static java.time.LocalTime.MICROS_PER_SECOND;
-import static java.time.LocalTime.MILLIS_PER_SECOND;import static java.time.LocalTime.NANOS_PER_SECOND;
+import static java.time.LocalTime.MILLIS_PER_SECOND;
+import static java.time.LocalTime.NANOS_PER_SECOND;
 import static java.time.LocalTime.SECONDS_PER_DAY;
 import static java.time.LocalTime.SECONDS_PER_HOUR;
 import static java.time.LocalTime.SECONDS_PER_MINUTE;

@@ -70,7 +70,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  * @author jrose
  */
 /*non-public*/
-@AnnotatedFor({"interning"}) abstract @UsesObjectEquals class MethodHandleImpl {
+@AnnotatedFor({"interning"})
+abstract @UsesObjectEquals class MethodHandleImpl {
 
     /// Factory methods to create method handles:
 

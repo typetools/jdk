@@ -10578,7 +10578,8 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      */
     @Pure
     @StaticallyExecutable
-    @SuppressWarnings("doclint:reference") // cross-module links    public static boolean isJavaIdentifierStart(char ch) {
+    @SuppressWarnings("doclint:reference") // cross-module links
+    public static boolean isJavaIdentifierStart(char ch) {
         return isJavaIdentifierStart((int)ch);
     }
 
@@ -10609,7 +10610,8 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      */
     @Pure
     @StaticallyExecutable
-    @SuppressWarnings("doclint:reference") // cross-module links    public static boolean isJavaIdentifierStart(int codePoint) {
+    @SuppressWarnings("doclint:reference") // cross-module links
+    public static boolean isJavaIdentifierStart(int codePoint) {
         return CharacterData.of(codePoint).isJavaIdentifierStart(codePoint);
     }
 
@@ -10648,7 +10650,8 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      */
     @Pure
     @StaticallyExecutable
-    @SuppressWarnings("doclint:reference") // cross-module links    public static boolean isJavaIdentifierPart(char ch) {
+    @SuppressWarnings("doclint:reference") // cross-module links
+    public static boolean isJavaIdentifierPart(char ch) {
         return isJavaIdentifierPart((int)ch);
     }
 
@@ -10683,7 +10686,8 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
      */
     @Pure
     @StaticallyExecutable
-    @SuppressWarnings("doclint:reference") // cross-module links    public static boolean isJavaIdentifierPart(int codePoint) {
+    @SuppressWarnings("doclint:reference") // cross-module links
+    public static boolean isJavaIdentifierPart(int codePoint) {
         return CharacterData.of(codePoint).isJavaIdentifierPart(codePoint);
     }
 

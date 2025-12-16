@@ -515,6 +515,7 @@ public final class StringBuilder
         super.repeat(cs, count);
         return this;
     }
+
     @Override
     @IntrinsicCandidate
     public @PolyRegex String toString(@GuardSatisfied @PolyRegex StringBuilder this) {

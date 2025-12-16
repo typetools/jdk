@@ -100,7 +100,7 @@ import java.io.IOException;
  */
 
 @AnnotatedFor({"interning", "mustcall"})
-// FileSystem_s cannot leak - their close() method is a convenience for closing the channels/files/etc that they wrap
+@CFComment({"FileSystem_s cannot leak.  Their close() method is a convenience for closing the channels/files/etc that they wrap."})
 @InheritableMustCall({})
 public abstract @UsesObjectEquals class FileSystem
     implements Closeable

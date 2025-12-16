@@ -767,7 +767,8 @@ public class SecureRandom extends java.util.Random {
      */
     @Override
     public void nextBytes(@PolySigned byte[] bytes) {
-        Objects.requireNonNull(bytes);        if (threadSafe) {
+        Objects.requireNonNull(bytes);
+        if (threadSafe) {
             secureRandomSpi.engineNextBytes(bytes);
         } else {
             synchronized (this) {

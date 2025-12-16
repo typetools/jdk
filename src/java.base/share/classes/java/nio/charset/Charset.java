@@ -30,7 +30,8 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
-import jdk.internal.misc.ThreadTracker;import jdk.internal.misc.VM;
+import jdk.internal.misc.ThreadTracker;
+import jdk.internal.misc.VM;
 import jdk.internal.util.StaticProperty;
 import jdk.internal.vm.annotation.Stable;
 import sun.nio.cs.ThreadLocalCoders;

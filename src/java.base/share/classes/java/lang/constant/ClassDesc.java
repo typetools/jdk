@@ -26,7 +26,8 @@ package java.lang.constant;
 
 import org.checkerframework.checker.signature.qual.FieldDescriptor;
 
-import java.lang.invoke.MethodHandles;import java.lang.invoke.TypeDescriptor;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.TypeDescriptor;
 import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
