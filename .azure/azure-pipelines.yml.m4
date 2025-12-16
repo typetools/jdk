@@ -79,9 +79,10 @@ jobs:
       echo $?
     displayName: clone-related-jdk21u
   - bash: |
-      eval $(/tmp/$USER/plume-scripts/ci-info typetools)
       cd ../jdk21u && git status
+      eval $(/tmp/$USER/plume-scripts/ci-info typetools)
       echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+      set
     displayName: git merge plan
   - bash: |
       set -ex
@@ -91,8 +92,9 @@ jobs:
       git config --global pull.rebase false
       git config --global core.longpaths true
       git config --global core.protectNTFS false
-      eval $(/tmp/$USER/plume-scripts/ci-info typetools)
       cd ../jdk21u && git status
+      eval $(/tmp/$USER/plume-scripts/ci-info typetools)
+      set
       echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
       cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
     displayName: git merge
