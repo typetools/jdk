@@ -170,11 +170,17 @@ Fork into typetools:  <https://github.com/openjdk/jdk${VER}u>
 
 Clone jdk${VER}u repositories into, say, $t/libraries/ .
 
-Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:
-run `git log --graph | tac` on both and find the common prefix.
+Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:  run
 
 ```sh
-last_common_commit=d562d3fcbe22a0443037c5b447e1a41401275814
+git log --graph | tac > git-log-reversed.txt
+```
+
+on both and find the common prefix.
+
+```sh
+VER=21
+last_common_commit=bb377b26730f3d9da7c76e0d171517e811cef3ce
 cd $t/libraries
 git clone -- git@github.com:openjdk/jdk.git jdk-fork-openjdk-commit-${last_common_commit}
 cd jdk-fork-openjdk-commit-${last_common_commit}
