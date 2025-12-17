@@ -65,8 +65,11 @@ jobs:
   # leads to "fatal: remote error:  filter 'combine' not supported".
   - bash: |
       set -ex
-      pwd
+      echo "pwd = $(pwd)"
+      git status
+      ls -al
       ls -al .. || true
+      echo "../jdk21u should not exist yet"
       ls -al ../jdk21u || true
       df .
       /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
