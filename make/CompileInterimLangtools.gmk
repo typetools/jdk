@@ -121,7 +121,9 @@ define SetupInterimModule
           --add-exports java.base/org.checkerframework.checker.builder.qual=jdk.compiler.interim \
           --add-exports java.base/org.checkerframework.checker.builder.qual=jdk.javadoc.interim \
           --add-exports java.base/org.checkerframework.checker.builder.qual=javacserver.shared \
-          --add-exports java.base/org.checkerframework.checker.builder.qual=build.tools.pandocfilter.json \
+          --add-exports java.base/org.checkerframework.checker.nullness.qual=build.tools.pandocfilter.json \
+          --add-exports java.base/org.checkerframework.dataflow.qual=build.tools.pandocfilter.json \
+          --add-exports java.base/org.checkerframework.dataflow.qual=javacserver.shared \
           --add-exports jdk.internal.opt/jdk.internal.opt=jdk.compiler.interim \
           --add-exports jdk.internal.opt/jdk.internal.opt=jdk.javadoc.interim, \
   ))
