@@ -219,6 +219,9 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 
 Push and wait for CI to pass.
 
+DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
+need to be merged, retaining history.
+
 ## Design
 
 The goal of this repository is to write Checker Framework annotations in
