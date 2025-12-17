@@ -201,13 +201,16 @@ Replace uses of the old JDK version (such as 17) with the new one (such as 21).
 * In this file
 * In .azure/azure-pipelines.yml.m4
 
-Follow the instructions in "The typetools/jdk21u repository" above, except
-replace `git pull https://github.com/typetools/jdk.git` by the JDK you are
-currently working on.
+Make a fork of jdk21u.  Follow the instructions in "The typetools/jdk21u
+repository" above, except replace
+`git pull https://github.com/typetools/jdk.git`
+by the JDK you are currently working on.
 
 Build JDK 21u (not the main JDK!).
 
 Diff JDK 21 with the upstream commit of OpenJDK, to detect unintentional edits.
+The commands in `README-diffing.el` automate a great deal of work (requires
+using Emacs).
 
 ```sh
 cd jdk21u-fork-typetools
@@ -215,6 +218,9 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 ```
 
 Push and wait for CI to pass.
+
+DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
+need to be merged, retaining history.
 
 ## Design
 
