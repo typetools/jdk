@@ -228,8 +228,6 @@ but I wasn't able to make that work for JDK 17.
 
 The remainder of this file is the `README.md` from `openjdk/jdk`.
 
-<!-- markdownlint-disable single-h1 -->
-
 # Welcome to the JDK
 
 For build instructions please see the
