@@ -60,7 +60,6 @@ jobs:
       fi
     displayName: plume-scripts
   # This creates ../jdk21u .
-  # --depth 999
   # If the depth is too small, the merge will fail.  However, we cannot use "--filter=blob:none"
   # because that leads to "fatal: remote error: filter 'combine' not supported".
   - bash: |
@@ -69,7 +68,7 @@ jobs:
       ls -al .. || true
       ls -al ../jdk21u || true
       df .
-      /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u
+      GIT_CLONE_ARGS="--single-branch" /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       git config --global core.longpaths true
@@ -81,9 +80,8 @@ jobs:
   - bash: |
       cd ../jdk21u && git status
       eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-      if test -n "${CI_BRANCH_NAME}"; then export CI_BRANCH="--branch ${CI_BRANCH_NAME}"; fi
       set
-      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
     displayName: git merge plan
   - bash: |
       set -ex
@@ -95,10 +93,9 @@ jobs:
       git config --global core.protectNTFS false
       cd ../jdk21u && git status
       eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-      if test -n "${CI_BRANCH_NAME}"; then export CI_BRANCH="--branch ${CI_BRANCH_NAME}"; fi
       set
-      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
-      cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
+      echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
+      cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
     displayName: git merge
   - bash: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
     displayName: configure
