@@ -72,7 +72,7 @@ jobs:
       echo "../jdk21u should not exist yet"
       ls -al ../jdk21u || true
       df .
-      /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
+      /tmp/$USER/git-scripts/git-clone-related --debug typetools jdk21u ../jdk21u --single-branch
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       git config --global core.longpaths true
