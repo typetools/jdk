@@ -77,8 +77,12 @@ jobs:
       git config --global user.name "Your Name"
       git config --global core.longpaths true
       git config --global core.protectNTFS false
-      cd ../jdk21u && git status
+      cd ../jdk21u
+      git status
       git diff --exit-code
+      echo "git log length: $(git log --graph | wc)"
+      echo "first 100 lines:"
+      git log --graph | head -100
       echo $?
     displayName: clone-related-jdk21u
   - bash: |
