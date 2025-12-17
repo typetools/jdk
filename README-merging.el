@@ -1,6 +1,7 @@
 ;; This file contains editor commands that are helpful when merging the JDK.
 
 ;; Run at the top level: etags $(rg --files-with-matches '<<<<<<')
+;; Then, visit that tags table and run these expressions.
 
 ;; To fix Java array declarations from
 ;; "short a2[]" to "short[] a2" or from
@@ -11,17 +12,18 @@
 (setq annotation-line-regex
       " *@\\(CallerSensitive\\|ForceInline\\|Override\\|Covariant({[0-9]})\\|CreatesMustCallFor\\|Deterministic\\|EqualsMethod\\|ForName\\|FormatMethod\\|GetConstructor\\|GetClass\\|GetMethod\\|InheritableMustCall(.*)\\|I18nMakeFormat\\|Invoke\\|MayReleaseLocks\\|MustCall(.*)\\|NewInstance\\|NotOwning\\|OptionalCreator\\|OptionalEliminator\\|OptionalPropagator\\|PolyUIEffect\\|PolyUIType\\|Pure\\|ReleasesNoLocks\\|SafeEffect\\|SideEffectFree\\|SideEffectsOnly.*\\|StaticallyExecutable\\|TerminatesExecution\\|UIEffect\\|UIPackage\\|UIType\\|UsesObjectEquals\\|CFComment(.*)\\|Ensures.*\\|Requires.*\\|AnnotatedFor.*\\)")
 
-;; Annotations only on the HEAD method.
+;; Move annotations only on the HEAD method before the hunk.
 (tags-query-replace
  ;; "\\|SuppressWarnings.*" intentionally omitted; it should be the last annotation and should be resolved by hand.
  (concat "^\\(<<<<<<< HEAD\n\\)\\(\\(" annotation-line-regex "\n\\)+\\)")
  "\\2\\1")
 
-;; Annotations only on the OTHER method.
+;; Move annotations only on the OTHER method before the hunk.
 (tags-query-replace
  (concat "^\\(<<<<<<< HEAD\n[^|]*\n|||||||.*\n[^=]*=======\n\\)\\(\\(?:" annotation-line-regex "\n\\)+\\)")
  "\\2\\1")
 
+;; Move Checker Framework imports before the hunk.
 (tags-query-replace
  "^\\(<<<<<<< HEAD\n\\)\\(\\(import org.checkerframework..*;\n\\)+\n\\)"
  "\\2\\1")
@@ -38,11 +40,16 @@
   "\\(\\(?:\\(?:[^=\n][^\n]*\\)?\n\\)*=======\n\\)"
   "\\4")
  "\\2\\1\\3\\5")
-;; The more general version.
+;; The more general version, which I don't seem to need.
 (tags-query-replace
- "^\\(<<<<<<< HEAD\n\\)\\(.*\n\\)\\([^|]*\n|||||||.*\n\\)\\(.*\n\\)\\([^=]*\n=======\n\\)\\4"
+ (concat
+  "^\\(<<<<<<< HEAD\n\\)"
+  "\\(.*\n\\)"
+  "\\([^|]*\n|||||||.*\n\\)"
+  "\\(.*\n\\)"
+  "\\([^=]*\n=======\n\\)"
+  "\\4")
  "\\2\\1\\3\\5")
-
 
 ;; Resolve the first line of a diff, when OTHER has been edited.
 ;; This version requires "public" at start of \2 and \4.
@@ -56,42 +63,43 @@
   "\\( *public .*\n\\)")
  "\\5\\1\\3\\4")
 
+;; Special case for the `equals()` method.
 (tags-query-replace
  (concat
   "<<<<<<< HEAD\n"
   "    public boolean equals(Object obj) {\n"
-  "||||||| bb377b26730\n"
+  "||||||| [0-9a-f]\\{11\\}\n"
   "    public boolean equals(Object obj) {\n"
   "=======\n"
   "    public boolean equals(@Nullable Object obj) {\n"
-  ">>>>>>> 79b055b580460e3d02ae44ca3e9bf1b6c6d0d581\n")
+  ">>>>>>> [0-9a-f]\\{40\\}\n")
  "    public boolean equals(@Nullable Object obj) {\n")
 
+;; Resolve completely empty diffs.
 (tags-query-replace
  (concat
   "<<<<<<< HEAD\n"
-  "||||||| bb377b26730\n"
+  "||||||| [0-9a-f]\\{11\\}\n"
   "=======\n"
-  ">>>>>>> 79b055b580460e3d02ae44ca3e9bf1b6c6d0d581\n")
+  ">>>>>>> [0-9a-f]\\{40\\}\n")
  "")
 
-
-;; Resolve trivial diffs
+;; Resolve diffs where one of the ancestors is empty.
 (tags-query-replace
  (concat
   "<<<<<<< HEAD\n"
-  "||||||| 74007890bb9\n"
+  "||||||| [0-9a-f]\\{11\\}\n"
   "=======\n"
   "\\([^~]*?\\)\n"
-  ">>>>>>> bb377b26730f3d9da7c76e0d171517e811cef3ce\n")
+  ">>>>>>> [0-9a-f]\\{40\\}\n")
  "\\1")
 (tags-query-replace
  (concat
   "<<<<<<< HEAD\n"
   "\\([^~]*?\n\\)"
-  "||||||| 74007890bb9\n"
+  "||||||| [0-9a-f]\\{11\\}\n"
   "\\1"
   "=======\n"
   "\\([^~]*?\\)"
-  ">>>>>>> bb377b26730f3d9da7c76e0d171517e811cef3ce\n")
+  ">>>>>>> [0-9a-f]\\{40\\}\n")
  "\\2")
