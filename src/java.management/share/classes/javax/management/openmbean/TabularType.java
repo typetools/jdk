@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,16 +32,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
-// java import
-//
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-
-// jmx import
-//
 
 
 /**
@@ -145,7 +138,7 @@ public class TabularType extends OpenType<TabularData> {
         // modifs to the array referenced by the indexNames parameter
         // have no impact)
         //
-        List<String> tmpList = new ArrayList<String>(indexNames.length + 1);
+        List<String> tmpList = new ArrayList<>(indexNames.length + 1);
         for (int i=0; i<indexNames.length; i++) {
             tmpList.add(indexNames[i]);
         }
@@ -255,7 +248,7 @@ public class TabularType extends OpenType<TabularData> {
     }
 
 
-    /* *** Methods overriden from class Object *** */
+    /* *** Methods overridden from class Object *** */
 
     /**
      * Compares the specified <code>obj</code> parameter with this <code>TabularType</code> instance for equality.
@@ -309,7 +302,7 @@ public class TabularType extends OpenType<TabularData> {
             return false;
         }
 
-        // All tests for equality were successfull
+        // All tests for equality were successful
         //
         return true;
     }

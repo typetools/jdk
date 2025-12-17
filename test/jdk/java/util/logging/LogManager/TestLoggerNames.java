@@ -1,5 +1,3 @@
-import org.checkerframework.checker.signature.qual.BinaryName;
-
 /*
  * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -22,6 +20,9 @@ import org.checkerframework.checker.signature.qual.BinaryName;
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;

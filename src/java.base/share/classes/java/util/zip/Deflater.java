@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,13 +31,15 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.ref.Cleaner.Cleanable;
-import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.util.Objects;
 
 import jdk.internal.ref.CleanerFactory;
+import jdk.internal.util.Preconditions;
 import sun.nio.ch.DirectBuffer;
+
+import static java.util.zip.ZipUtils.NIO_ACCESS;
 
 /**
  * This class provides support for general purpose compression using the
@@ -236,9 +238,7 @@ public @UsesObjectEquals class Deflater {
      * @see Deflater#needsInput
      */
     public void setInput(byte[] input, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
-        if (off < 0 || len < 0 || off > input.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, input.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             this.input = null;
             this.inputArray = input;
@@ -300,12 +300,10 @@ public @UsesObjectEquals class Deflater {
      * @param off the start offset of the data
      * @param len the length of the data
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(byte[] dictionary, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
-        if (off < 0 || len < 0 || off > dictionary.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, dictionary.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             ensureOpen();
             setDictionary(zsRef.address(), dictionary, off, len);
@@ -320,7 +318,7 @@ public @UsesObjectEquals class Deflater {
      * decompression.
      * @param dictionary the dictionary data bytes
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(byte[] dictionary) {
         setDictionary(dictionary, 0, dictionary.length);
@@ -338,7 +336,7 @@ public @UsesObjectEquals class Deflater {
      *
      * @param dictionary the dictionary data bytes
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(ByteBuffer dictionary) {
         synchronized (zsRef) {
@@ -346,11 +344,12 @@ public @UsesObjectEquals class Deflater {
             int remaining = Math.max(dictionary.limit() - position, 0);
             ensureOpen();
             if (dictionary.isDirect()) {
-                long address = ((DirectBuffer) dictionary).address();
+                NIO_ACCESS.acquireSession(dictionary);
                 try {
+                    long address = ((DirectBuffer) dictionary).address();
                     setDictionaryBuffer(zsRef.address(), address + position, remaining);
                 } finally {
-                    Reference.reachabilityFence(dictionary);
+                    NIO_ACCESS.releaseSession(dictionary);
                 }
             } else {
                 byte[] array = ZipUtils.getBufferArray(dictionary);
@@ -504,6 +503,7 @@ public @UsesObjectEquals class Deflater {
      * @param output the buffer for the compressed data
      * @return the actual number of bytes of compressed data written to the
      *         output buffer
+     * @throws ReadOnlyBufferException if the given output buffer is read-only
      * @since 11
      */
     public int deflate(ByteBuffer output) {
@@ -562,9 +562,7 @@ public @UsesObjectEquals class Deflater {
      * @since 1.7
      */
     public @GTENegativeOne int deflate(byte[] output, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len, int flush) {
-        if (off < 0 || len < 0 || off > output.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, output.length, Preconditions.AIOOBE_FORMATTER);
         if (flush != NO_FLUSH && flush != SYNC_FLUSH && flush != FULL_FLUSH) {
             throw new IllegalArgumentException();
         }
@@ -597,6 +595,7 @@ public @UsesObjectEquals class Deflater {
                 inputPos = input.position();
                 int inputRem = Math.max(input.limit() - inputPos, 0);
                 if (input.isDirect()) {
+                    NIO_ACCESS.acquireSession(input);
                     try {
                         long inputAddress = ((DirectBuffer) input).address();
                         result = deflateBufferBytes(zsRef.address(),
@@ -604,7 +603,7 @@ public @UsesObjectEquals class Deflater {
                             output, off, len,
                             flush, params);
                     } finally {
-                        Reference.reachabilityFence(input);
+                        NIO_ACCESS.releaseSession(input);
                     }
                 } else {
                     byte[] inputArray = ZipUtils.getBufferArray(input);
@@ -685,6 +684,7 @@ public @UsesObjectEquals class Deflater {
      *         the output buffer
      *
      * @throws IllegalArgumentException if the flush mode is invalid
+     * @throws ReadOnlyBufferException if the given output buffer is read-only
      * @since 11
      */
     public int deflate(ByteBuffer output, int flush) {
@@ -718,14 +718,15 @@ public @UsesObjectEquals class Deflater {
             if (input == null) {
                 inputPos = this.inputPos;
                 if (output.isDirect()) {
-                    long outputAddress = ((DirectBuffer) output).address();
+                    NIO_ACCESS.acquireSession(output);
                     try {
+                        long outputAddress = ((DirectBuffer) output).address();
                         result = deflateBytesBuffer(zsRef.address(),
                             inputArray, inputPos, inputLim - inputPos,
                             outputAddress + outputPos, outputRem,
                             flush, params);
                     } finally {
-                        Reference.reachabilityFence(output);
+                        NIO_ACCESS.releaseSession(output);
                     }
                 } else {
                     byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -739,17 +740,19 @@ public @UsesObjectEquals class Deflater {
                 inputPos = input.position();
                 int inputRem = Math.max(input.limit() - inputPos, 0);
                 if (input.isDirect()) {
-                    long inputAddress = ((DirectBuffer) input).address();
+                    NIO_ACCESS.acquireSession(input);
                     try {
+                        long inputAddress = ((DirectBuffer) input).address();
                         if (output.isDirect()) {
-                            long outputAddress = outputPos + ((DirectBuffer) output).address();
+                            NIO_ACCESS.acquireSession(output);
                             try {
+                                long outputAddress = outputPos + ((DirectBuffer) output).address();
                                 result = deflateBufferBuffer(zsRef.address(),
                                     inputAddress + inputPos, inputRem,
                                     outputAddress, outputRem,
                                     flush, params);
                             } finally {
-                                Reference.reachabilityFence(output);
+                                NIO_ACCESS.releaseSession(output);
                             }
                         } else {
                             byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -760,20 +763,21 @@ public @UsesObjectEquals class Deflater {
                                 flush, params);
                         }
                     } finally {
-                        Reference.reachabilityFence(input);
+                        NIO_ACCESS.releaseSession(input);
                     }
                 } else {
                     byte[] inputArray = ZipUtils.getBufferArray(input);
                     int inputOffset = ZipUtils.getBufferOffset(input);
                     if (output.isDirect()) {
-                        long outputAddress = ((DirectBuffer) output).address();
+                        NIO_ACCESS.acquireSession(output);
                         try {
+                            long outputAddress = ((DirectBuffer) output).address();
                             result = deflateBytesBuffer(zsRef.address(),
                                 inputArray, inputOffset + inputPos, inputRem,
                                 outputAddress + outputPos, outputRem,
                                 flush, params);
                         } finally {
-                            Reference.reachabilityFence(output);
+                            NIO_ACCESS.releaseSession(output);
                         }
                     } else {
                         byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -902,6 +906,16 @@ public @UsesObjectEquals class Deflater {
         assert Thread.holdsLock(zsRef);
         if (zsRef.address() == 0)
             throw new NullPointerException("Deflater has been closed");
+    }
+
+    /**
+     * Returns the value of 'finish' flag.
+     * 'finish' will be set to true if def.finish() method is called.
+     */
+    boolean shouldFinish() {
+        synchronized (zsRef) {
+            return finish;
+        }
     }
 
     private static native long init(int level, int strategy, boolean nowrap);

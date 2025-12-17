@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -201,8 +201,7 @@ final class CipherCore {
         if (mode.length() > offset) {
             int numInt;
             try {
-                Integer num = Integer.valueOf(mode.substring(offset));
-                numInt = num.intValue();
+                numInt = Integer.parseInt(mode.substring(offset));
                 result = numInt >> 3;
             } catch (NumberFormatException e) {
                 throw new NoSuchAlgorithmException
@@ -435,50 +434,54 @@ final class CipherCore {
 
         byte[] keyBytes = getKeyBytes(key);
         byte[] ivBytes = null;
-        if (params != null) {
-            if (params instanceof IvParameterSpec) {
-                ivBytes = ((IvParameterSpec) params).getIV();
-                if ((ivBytes == null) || (ivBytes.length != blockSize)) {
+        try {
+            if (params != null) {
+                if (params instanceof IvParameterSpec) {
+                    ivBytes = ((IvParameterSpec) params).getIV();
+                    if ((ivBytes == null) || (ivBytes.length != blockSize)) {
+                        throw new InvalidAlgorithmParameterException
+                                ("Wrong IV length: must be " + blockSize +
+                                        " bytes long");
+                    }
+                } else if (params instanceof RC2ParameterSpec) {
+                    ivBytes = ((RC2ParameterSpec) params).getIV();
+                    if ((ivBytes != null) && (ivBytes.length != blockSize)) {
+                        throw new InvalidAlgorithmParameterException
+                                ("Wrong IV length: must be " + blockSize +
+                                        " bytes long");
+                    }
+                } else {
                     throw new InvalidAlgorithmParameterException
-                        ("Wrong IV length: must be " + blockSize +
-                            " bytes long");
+                            ("Unsupported parameter: " + params);
                 }
-            } else if (params instanceof RC2ParameterSpec) {
-                ivBytes = ((RC2ParameterSpec) params).getIV();
-                if ((ivBytes != null) && (ivBytes.length != blockSize)) {
+            }
+            if (cipherMode == ECB_MODE) {
+                if (ivBytes != null) {
                     throw new InvalidAlgorithmParameterException
-                        ("Wrong IV length: must be " + blockSize +
-                            " bytes long");
+                            ("ECB mode cannot use IV");
                 }
-            } else {
-                throw new InvalidAlgorithmParameterException
-                    ("Unsupported parameter: " + params);
+            } else if (ivBytes == null) {
+                if (decrypting) {
+                    throw new InvalidAlgorithmParameterException("Parameters "
+                            + "missing");
+                }
+
+                if (random == null) {
+                    random = SunJCE.getRandom();
+                }
+
+                ivBytes = new byte[blockSize];
+                random.nextBytes(ivBytes);
             }
+
+            buffered = 0;
+            diffBlocksize = blockSize;
+
+            String algorithm = key.getAlgorithm();
+            cipher.init(decrypting, algorithm, keyBytes, ivBytes);
+        } finally {
+            Arrays.fill(keyBytes, (byte)0);
         }
-        if (cipherMode == ECB_MODE) {
-            if (ivBytes != null) {
-                throw new InvalidAlgorithmParameterException
-                    ("ECB mode cannot use IV");
-            }
-        } else if (ivBytes == null) {
-            if (decrypting) {
-                throw new InvalidAlgorithmParameterException("Parameters "
-                    + "missing");
-            }
-
-            if (random == null) {
-                random = SunJCE.getRandom();
-            }
-
-            ivBytes = new byte[blockSize];
-            random.nextBytes(ivBytes);
-        }
-
-        buffered = 0;
-        diffBlocksize = blockSize;
-
-        String algorithm = key.getAlgorithm();
-        cipher.init(decrypting, algorithm, keyBytes, ivBytes);
     }
 
     void init(int opmode, Key key, AlgorithmParameters params,
@@ -809,10 +812,13 @@ final class CipherCore {
             if (outputCapacity < estOutSize) {
                 cipher.save();
             }
-            // create temporary output buffer if the estimated size is larger
-            // than the user-provided buffer.
-            internalOutput = new byte[estOutSize];
-            offset = 0;
+            if (outputCapacity < estOutSize || padding != null) {
+                // create temporary output buffer if the estimated size is larger
+                // than the user-provided buffer or a padding needs to be removed
+                // before copying the unpadded result to the output buffer
+                internalOutput = new byte[estOutSize];
+                offset = 0;
+            }
         }
 
         byte[] outBuffer = (internalOutput != null) ? internalOutput : output;

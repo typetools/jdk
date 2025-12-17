@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,8 +29,8 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.text.BreakIterator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Locale;
 import sun.text.Normalizer;
@@ -93,7 +93,7 @@ final @UsesObjectEquals class ConditionalSpecialCasing {
     };
 
     // A hash table that contains the above entries
-    static Hashtable<Integer, HashSet<Entry>> entryTable = new Hashtable<>();
+    private static final HashMap<Integer, HashSet<Entry>> entryTable = new HashMap<>();
     static {
         // create hashtable from the entry
         for (Entry cur : entry) {

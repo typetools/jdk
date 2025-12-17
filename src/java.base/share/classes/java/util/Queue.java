@@ -222,10 +222,4 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue, or {@code null} if this queue is empty
      */
     @Nullable E peek();
-
-    @CFComment("Copied from Collection to make it annotatable")
-    @Pure
-    // @EnsuresNonNullIf(expression={"poll()", "peek()"}, result=true)
-    @EnsuresNonEmptyIf(result = false, expression = "this")
-    boolean isEmpty(@GuardSatisfied Queue<E> this);
 }

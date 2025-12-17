@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,18 +32,13 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.text.DateFormat;
-import java.time.LocalDate;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
-import java.lang.ref.SoftReference;
 import java.time.Instant;
 import sun.util.calendar.BaseCalendar;
-import sun.util.calendar.CalendarDate;
 import sun.util.calendar.CalendarSystem;
 import sun.util.calendar.CalendarUtils;
-import sun.util.calendar.Era;
-import sun.util.calendar.Gregorian;
 import sun.util.calendar.ZoneInfo;
 
 /**
@@ -272,6 +267,8 @@ public class Date
      * {@link Date#parse} method.
      *
      * @param   s   a string representation of the date.
+     * @throws IllegalArgumentException if {@code s} cannot be interpreted as a
+     * representation of a date and time.
      * @see     java.text.DateFormat
      * @see     java.util.Date#parse(java.lang.String)
      * @deprecated As of JDK version 1.1,
@@ -454,6 +451,8 @@ public class Date
      * @param   s   a string to be parsed as a date.
      * @return  the number of milliseconds since January 1, 1970, 00:00:00 GMT
      *          represented by the string argument.
+     * @throws IllegalArgumentException if {@code s} cannot be interpreted as a
+     * representation of a date and time.
      * @see     java.text.DateFormat
      * @deprecated As of JDK version 1.1,
      * replaced by {@code DateFormat.parse(String s)}.
@@ -985,10 +984,9 @@ public class Date
      * @throws    NullPointerException if {@code anotherDate} is null.
      */
     @Pure
+    @Override
     public int compareTo(@GuardSatisfied Date this, @GuardSatisfied Date anotherDate) {
-        long thisTime = getMillisOf(this);
-        long anotherTime = getMillisOf(anotherDate);
-        return (thisTime<anotherTime ? -1 : (thisTime==anotherTime ? 0 : 1));
+        return Long.compare(getMillisOf(this), getMillisOf(anotherDate));
     }
 
     /**

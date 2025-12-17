@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -70,28 +70,28 @@ abstract class KeyWrapCipher extends CipherSpi {
     // for AES/KW/NoPadding
     public static final class AES_KW_PKCS5Padding extends KeyWrapCipher {
         public AES_KW_PKCS5Padding() {
-            super(new AESKeyWrap(), new PKCS5Padding(16), -1);
+            super(new AESKeyWrap(), new PKCS5Padding(8), -1);
         }
     }
 
     // for AES_128/KW/NoPadding
     public static final class AES128_KW_PKCS5Padding extends KeyWrapCipher {
         public AES128_KW_PKCS5Padding() {
-            super(new AESKeyWrap(), new PKCS5Padding(16), 16);
+            super(new AESKeyWrap(), new PKCS5Padding(8), 16);
         }
     }
 
     // for AES_192/KW/NoPadding
     public static final class AES192_KW_PKCS5Padding extends KeyWrapCipher {
         public AES192_KW_PKCS5Padding() {
-            super(new AESKeyWrap(), new PKCS5Padding(16), 24);
+            super(new AESKeyWrap(), new PKCS5Padding(8), 24);
         }
     }
 
     // for AES_256/KW/NoPadding
     public static final class AES256_KW_PKCS5Padding extends KeyWrapCipher {
         public AES256_KW_PKCS5Padding() {
-            super(new AESKeyWrap(), new PKCS5Padding(16), 32);
+            super(new AESKeyWrap(), new PKCS5Padding(8), 32);
         }
     }
 
@@ -121,6 +121,25 @@ abstract class KeyWrapCipher extends CipherSpi {
         public AES256_KWP_NoPadding() {
             super(new AESKeyWrapPadded(), null, 32);
         }
+    }
+
+    // validate the key algorithm/encoding and then returns the key bytes
+    // which callers should erase after use
+    private static byte[] checkKey(Key key, int fixedKeySize)
+            throws InvalidKeyException {
+
+        byte[] keyBytes = key.getEncoded();
+        if (keyBytes == null) {
+            throw new InvalidKeyException("Null key");
+        }
+        int keyLen = keyBytes.length;
+        if (!key.getAlgorithm().equalsIgnoreCase("AES") ||
+            !AESCrypt.isKeySizeValid(keyLen) ||
+            (fixedKeySize != -1 && fixedKeySize != keyLen)) {
+                throw new InvalidKeyException("Invalid key length: " +
+                        keyLen + " bytes");
+        }
+        return keyBytes;
     }
 
     // store the specified bytes, e.g. in[inOfs...(inOfs+inLen-1)] into
@@ -161,6 +180,7 @@ abstract class KeyWrapCipher extends CipherSpi {
     }
 
     // internal cipher object which does the real work.
+    // AESKeyWrap for KW, AESKeyWrapPadded for KWP
     private final FeedbackCipher cipher;
 
     // internal padding object; null if NoPadding
@@ -229,13 +249,11 @@ abstract class KeyWrapCipher extends CipherSpi {
     }
 
     /**
-     * Returns the block size (in bytes). i.e. 16 bytes.
-     *
-     * @return the block size (in bytes), i.e. 16 bytes.
+     * @return the block size (in bytes)
      */
     @Override
     protected int engineGetBlockSize() {
-        return cipher.getBlockSize();
+        return 8;
     }
 
     /**
@@ -279,22 +297,22 @@ abstract class KeyWrapCipher extends CipherSpi {
     }
 
     /**
-     * Returns the initialization vector (IV).
+     * Returns the initialization vector (IV) in a new buffer.
      *
-     * @return the user-specified iv or null if default iv is used.
+     * @return the user-specified iv, or null if the underlying algorithm does
+     * not use an IV, or if the IV has not yet been set.
      */
     @Override
     protected byte[] engineGetIV() {
-        return cipher.getIV().clone();
+        byte[] iv = cipher.getIV();
+        return (iv == null? null : iv.clone());
     }
 
     // actual impl for various engineInit(...) methods
     private void implInit(int opmode, Key key, byte[] iv, SecureRandom random)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
-        byte[] keyBytes = key.getEncoded();
-        if (keyBytes == null) {
-            throw new InvalidKeyException("Null key");
-        }
+        byte[] keyBytes = checkKey(key, fixedKeySize);
+
         this.opmode = opmode;
         boolean decrypting = (opmode == Cipher.DECRYPT_MODE ||
                 opmode == Cipher.UNWRAP_MODE);
@@ -472,7 +490,11 @@ abstract class KeyWrapCipher extends CipherSpi {
             int outLen = engineDoFinal(in, inOfs, inLen, out, 0);
 
             if (outLen < estOutLen) {
-                return Arrays.copyOf(out, outLen);
+                try {
+                    return Arrays.copyOf(out, outLen);
+                } finally {
+                    Arrays.fill(out, (byte)0);
+                }
             } else {
                 return out;
             }
@@ -529,6 +551,9 @@ abstract class KeyWrapCipher extends CipherSpi {
                 return outLen;
             }
         } finally {
+            if (dataBuf != null) {
+                Arrays.fill(dataBuf, (byte)0);
+            }
             dataBuf = null;
             dataIdx = 0;
         }
@@ -537,7 +562,7 @@ abstract class KeyWrapCipher extends CipherSpi {
     // actual impl for various engineDoFinal(...) methods.
     // prepare 'out' buffer with the buffered bytes in 'dataBuf',
     // and the to-be-processed bytes in 'in', then perform single-part
-    // encryption/decrytion over 'out' buffer
+    // encryption/decryption over 'out' buffer
     private int implDoFinal(byte[] in, int inOfs, int inLen, byte[] out)
         throws IllegalBlockSizeException, BadPaddingException,
             ShortBufferException {
@@ -559,8 +584,14 @@ abstract class KeyWrapCipher extends CipherSpi {
             len += inLen;
         }
 
-        return (opmode == Cipher.ENCRYPT_MODE?
-                helperEncrypt(out, len) : helperDecrypt(out, len));
+        try {
+            return (opmode == Cipher.ENCRYPT_MODE ?
+                    helperEncrypt(out, len) : helperDecrypt(out, len));
+        } finally {
+            if (dataBuf != null && dataBuf != out) {
+                Arrays.fill(dataBuf, (byte)0);
+            }
+        }
     }
 
     // helper routine for in-place encryption.
@@ -610,13 +641,18 @@ abstract class KeyWrapCipher extends CipherSpi {
     /**
      * Returns the parameters used with this cipher.
      *
-     * @return AlgorithmParameters object containing IV.
+     * @return AlgorithmParameters object containing IV, or null if this cipher
+     * does not use any parameters.
      */
     @Override
     protected AlgorithmParameters engineGetParameters() {
         AlgorithmParameters params = null;
 
         byte[] iv = cipher.getIV();
+        if (iv == null) {
+            iv = (cipher instanceof AESKeyWrap?
+                    AESKeyWrap.ICV1 : AESKeyWrapPadded.ICV2);
+        }
         try {
             params = AlgorithmParameters.getInstance("AES");
             params.init(new IvParameterSpec(iv));
@@ -637,21 +673,11 @@ abstract class KeyWrapCipher extends CipherSpi {
      * @exception InvalidKeyException if <code>key</code> is invalid.
      */
     protected int engineGetKeySize(Key key) throws InvalidKeyException {
-        byte[] encoded = key.getEncoded();
-        if (encoded == null)  {
-            throw new InvalidKeyException("Cannot decide key length");
-        }
+        byte[] keyBytes = checkKey(key, fixedKeySize);
+        // only need length; erase immediately
+        Arrays.fill(keyBytes, (byte) 0);
+        return Math.multiplyExact(keyBytes.length, 8);
 
-        // only need length
-        Arrays.fill(encoded, (byte) 0);
-        int keyLen = encoded.length;
-        if (!key.getAlgorithm().equalsIgnoreCase("AES") ||
-            !AESCrypt.isKeySizeValid(keyLen) ||
-            (fixedKeySize != -1 && fixedKeySize != keyLen)) {
-            throw new InvalidKeyException("Invalid key length: " +
-                    keyLen + " bytes");
-        }
-        return Math.multiplyExact(keyLen, 8);
     }
 
     /**

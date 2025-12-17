@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -759,6 +759,8 @@ public interface Set<E> extends Collection<E> {
     static <E extends Object> @PolyNonEmpty Set<E> copyOf(@PolyNonEmpty Collection<? extends E> coll) {
         if (coll instanceof ImmutableCollections.AbstractImmutableSet) {
             return (Set<E>)coll;
+        } else if (coll.isEmpty()) { // Implicit nullcheck of coll
+            return Set.of();
         } else {
             return (Set<E>)Set.of(new HashSet<>(coll).toArray());
         }

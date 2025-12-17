@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+
+import java.util.Objects;
 
 /**
  * This class is the superclass of all classes that filter output
@@ -91,7 +93,7 @@ public class FilterOutputStream extends OutputStream {
      * <p>
      * Implements the abstract {@code write} method of {@code OutputStream}.
      *
-     * @param      b   the {@code byte}.
+     * @param      b   {@inheritDoc}
      * @throws     IOException  if an I/O error occurs.
      */
     @Override
@@ -101,22 +103,22 @@ public class FilterOutputStream extends OutputStream {
 
     /**
      * Writes {@code b.length} bytes to this output stream.
-     * <p>
+     * @implSpec
      * The {@code write} method of {@code FilterOutputStream}
      * calls its {@code write} method of three arguments with the
      * arguments {@code b}, {@code 0}, and
      * {@code b.length}.
-     * <p>
-     * Note that this method does not call the one-argument
+     * @implNote
+     * Note that this method does <em>not</em> call the one-argument
      * {@code write} method of its underlying output stream with
      * the single argument {@code b}.
      *
      * @param      b   the data to be written.
-     * @throws     IOException  if an I/O error occurs.
+     * @throws     IOException  {@inheritDoc}
      * @see        java.io.FilterOutputStream#write(byte[], int, int)
      */
     @Override
-    public void write(@GuardSatisfied FilterOutputStream this, @PolySigned byte b[]) throws IOException {
+    public void write(@GuardSatisfied FilterOutputStream this, @PolySigned byte[] b) throws IOException {
         write(b, 0, b.length);
     }
 
@@ -124,26 +126,26 @@ public class FilterOutputStream extends OutputStream {
      * Writes {@code len} bytes from the specified
      * {@code byte} array starting at offset {@code off} to
      * this output stream.
-     * <p>
+     * @implSpec
      * The {@code write} method of {@code FilterOutputStream}
      * calls the {@code write} method of one argument on each
      * {@code byte} to output.
-     * <p>
+     * @implNote
      * Note that this method does not call the {@code write} method
      * of its underlying output stream with the same arguments. Subclasses
      * of {@code FilterOutputStream} should provide a more efficient
      * implementation of this method.
      *
-     * @param      b     the data.
-     * @param      off   the start offset in the data.
-     * @param      len   the number of bytes to write.
+     * @param      b     {@inheritDoc}
+     * @param      off   {@inheritDoc}
+     * @param      len   {@inheritDoc}
      * @throws     IOException  if an I/O error occurs.
+     * @throws     IndexOutOfBoundsException {@inheritDoc}
      * @see        java.io.FilterOutputStream#write(int)
      */
     @Override
-    public void write(@GuardSatisfied FilterOutputStream this, @PolySigned byte b[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
-        if ((off | len | (b.length - (len + off)) | (off + len)) < 0)
-            throw new IndexOutOfBoundsException();
+    public void write(@GuardSatisfied FilterOutputStream this, @PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+        Objects.checkFromIndexSize(off, len, b.length);
 
         for (int i = 0 ; i < len ; i++) {
             write(b[off + i]);
@@ -153,11 +155,11 @@ public class FilterOutputStream extends OutputStream {
     /**
      * Flushes this output stream and forces any buffered output bytes
      * to be written out to the stream.
-     * <p>
+     * @implSpec
      * The {@code flush} method of {@code FilterOutputStream}
      * calls the {@code flush} method of its underlying output stream.
      *
-     * @throws     IOException  if an I/O error occurs.
+     * @throws     IOException  {@inheritDoc}
      * @see        java.io.FilterOutputStream#out
      */
     @Override
@@ -168,7 +170,7 @@ public class FilterOutputStream extends OutputStream {
     /**
      * Closes this output stream and releases any system resources
      * associated with the stream.
-     * <p>
+     * @implSpec
      * When not already closed, the {@code close} method of {@code
      * FilterOutputStream} calls its {@code flush} method, and then
      * calls the {@code close} method of its underlying output stream.
@@ -202,17 +204,9 @@ public class FilterOutputStream extends OutputStream {
                 try {
                     out.close();
                 } catch (Throwable closeException) {
-                   // evaluate possible precedence of flushException over closeException
-                   if ((flushException instanceof ThreadDeath) &&
-                       !(closeException instanceof ThreadDeath)) {
-                       flushException.addSuppressed(closeException);
-                       throw (ThreadDeath) flushException;
-                   }
-
                     if (flushException != closeException) {
                         closeException.addSuppressed(flushException);
                     }
-
                     throw closeException;
                 }
             }

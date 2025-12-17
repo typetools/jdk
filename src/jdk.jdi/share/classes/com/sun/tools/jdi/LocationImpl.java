@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -70,8 +70,7 @@ public class LocationImpl extends MirrorImpl implements Location {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj != null) && (obj instanceof Location)) {
-            Location other = (Location)obj;
+        if (obj instanceof Location other) {
             return (method().equals(other.method())) &&
                    (codeIndex() == other.codeIndex()) &&
                    super.equals(obj);
@@ -141,7 +140,7 @@ public class LocationImpl extends MirrorImpl implements Location {
     LineInfo getLineInfo(SDE.Stratum stratum) {
         LineInfo lineInfo;
 
-        /* base stratum is done slighly differently */
+        /* base stratum is done slightly differently */
         if (stratum.isJava()) {
             return getBaseLineInfo(stratum);
         }

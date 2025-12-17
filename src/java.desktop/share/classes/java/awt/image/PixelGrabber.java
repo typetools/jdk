@@ -223,7 +223,7 @@ public @UsesObjectEquals class PixelGrabber implements ImageConsumer {
      * delivered.
      * @return true if the pixels were successfully grabbed, false on
      * abort, error or timeout
-     * @exception InterruptedException
+     * @throws InterruptedException
      *            Another thread has interrupted this thread.
      */
     public boolean grabPixels() throws InterruptedException {
@@ -247,7 +247,7 @@ public @UsesObjectEquals class PixelGrabber implements ImageConsumer {
      * to arrive before timing out
      * @return true if the pixels were successfully grabbed, false on
      * abort, error or timeout
-     * @exception InterruptedException
+     * @throws InterruptedException
      *            Another thread has interrupted this thread.
      */
     public synchronized boolean grabPixels(long ms)

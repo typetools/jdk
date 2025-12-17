@@ -357,7 +357,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      *
      * @param expectedValue the expected value
      * @param newValue the new value
-     * @return the witness value, which will be the same as the
+     * @return the <em>witness value</em>, which will be the same as the
      * expected value if successful
      * @since 9
      */
@@ -373,7 +373,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      *
      * @param expectedValue the expected value
      * @param newValue the new value
-     * @return the witness value, which will be the same as the
+     * @return the <em>witness value</em>, which will be the same as the
      * expected value if successful
      * @since 9
      */
@@ -389,7 +389,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      *
      * @param expectedValue the expected value
      * @param newValue the new value
-     * @return the witness value, which will be the same as the
+     * @return the <em>witness value</em>, which will be the same as the
      * expected value if successful
      * @since 9
      */

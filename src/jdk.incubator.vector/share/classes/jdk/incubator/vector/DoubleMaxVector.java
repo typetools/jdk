@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
+import java.lang.foreign.MemorySegment;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -141,24 +141,9 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     DoubleMaxShuffle iotaShuffle() { return DoubleMaxShuffle.IOTA; }
 
-    @ForceInline
-    DoubleMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
-      if (wrap) {
-        return (DoubleMaxShuffle)VectorSupport.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
-      } else {
-        return (DoubleMaxShuffle)VectorSupport.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
-      }
-    }
-
     @Override
     @ForceInline
-    DoubleMaxShuffle shuffleFromBytes(byte[] reorder) { return new DoubleMaxShuffle(reorder); }
-
-    @Override
-    @ForceInline
-    DoubleMaxShuffle shuffleFromArray(int[] indexes, int i) { return new DoubleMaxShuffle(indexes, i); }
+    DoubleMaxShuffle shuffleFromArray(int[] indices, int i) { return new DoubleMaxShuffle(indices, i); }
 
     @Override
     @ForceInline
@@ -236,8 +221,8 @@ final class DoubleMaxVector extends DoubleVector {
 
     @ForceInline
     final @Override
-    double rOp(double v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    double rOp(double v, VectorMask<Double> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -275,8 +260,20 @@ final class DoubleMaxVector extends DoubleVector {
 
     @Override
     @ForceInline
+    public DoubleMaxVector lanewise(Unary op, VectorMask<Double> m) {
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public DoubleMaxVector lanewise(Binary op, Vector<Double> v) {
         return (DoubleMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public DoubleMaxVector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v, (DoubleMaxMask) m);  // specialize
     }
 
 
@@ -285,8 +282,16 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final
     DoubleMaxVector
-    lanewise(VectorOperators.Ternary op, Vector<Double> v1, Vector<Double> v2) {
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2) {
         return (DoubleMaxVector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    DoubleMaxVector
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v1, v2, (DoubleMaxMask) m);  // specialize
     }
 
     @Override
@@ -308,7 +313,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final double reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Double> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialized
     }
 
     @Override
@@ -321,12 +326,14 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Double> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialized
     }
 
+    @Override
     @ForceInline
-    public VectorShuffle<Double> toShuffle() {
-        return super.toShuffleTemplate(DoubleMaxShuffle.class); // specialize
+    public final
+    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
+        return super.toShuffleTemplate(dsp);
     }
 
     // Specialized unary testing
@@ -335,6 +342,12 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final DoubleMaxMask test(Test op) {
         return super.testTemplate(DoubleMaxMask.class, op);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final DoubleMaxMask test(Test op, VectorMask<Double> m) {
+        return super.testTemplate(DoubleMaxMask.class, op, (DoubleMaxMask) m);  // specialize
     }
 
     // Specialized comparisons
@@ -356,6 +369,13 @@ final class DoubleMaxVector extends DoubleVector {
     public final DoubleMaxMask compare(Comparison op, long s) {
         return super.compareTemplate(DoubleMaxMask.class, op, s);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final DoubleMaxMask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return super.compareTemplate(DoubleMaxMask.class, op, v, (DoubleMaxMask) m);
+    }
+
 
     @Override
     @ForceInline
@@ -413,6 +433,7 @@ final class DoubleMaxVector extends DoubleVector {
                                   VectorMask<Double> m) {
         return (DoubleMaxVector)
             super.rearrangeTemplate(DoubleMaxShuffle.class,
+                                    DoubleMaxMask.class,
                                     (DoubleMaxShuffle) shuffle,
                                     (DoubleMaxMask) m);  // specialize
     }
@@ -425,6 +446,22 @@ final class DoubleMaxVector extends DoubleVector {
             super.rearrangeTemplate(DoubleMaxShuffle.class,
                                     (DoubleMaxShuffle) s,
                                     (DoubleMaxVector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public DoubleMaxVector compress(VectorMask<Double> m) {
+        return (DoubleMaxVector)
+            super.compressTemplate(DoubleMaxMask.class,
+                                   (DoubleMaxMask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public DoubleMaxVector expand(VectorMask<Double> m) {
+        return (DoubleMaxVector)
+            super.expandTemplate(DoubleMaxMask.class,
+                                   (DoubleMaxMask) m);  // specialize
     }
 
     @Override
@@ -565,18 +602,10 @@ final class DoubleMaxVector extends DoubleVector {
         @ForceInline
         private final <E>
         VectorMask<E> defaultMaskCast(AbstractSpecies<E> dsp) {
-            assert(length() == dsp.laneCount());
+            if (length() != dsp.laneCount())
+                throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            return switch (dsp.laneType.switchKey) {
-                     case LaneType.SK_BYTE   -> new ByteMaxVector.ByteMaxMask(maskArray).check(dsp);
-                     case LaneType.SK_SHORT  -> new ShortMaxVector.ShortMaxMask(maskArray).check(dsp);
-                     case LaneType.SK_INT    -> new IntMaxVector.IntMaxMask(maskArray).check(dsp);
-                     case LaneType.SK_LONG   -> new LongMaxVector.LongMaxMask(maskArray).check(dsp);
-                     case LaneType.SK_FLOAT  -> new FloatMaxVector.FloatMaxMask(maskArray).check(dsp);
-                     case LaneType.SK_DOUBLE -> new DoubleMaxVector.DoubleMaxMask(maskArray).check(dsp);
-                     default                 -> throw new AssertionError(dsp);
-            };
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -585,24 +614,21 @@ final class DoubleMaxVector extends DoubleVector {
             AbstractSpecies<E> species = (AbstractSpecies<E>) dsp;
             if (length() != species.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
-            if (VSIZE == species.vectorBitSize()) {
-                Class<?> dtype = species.elementType();
-                Class<?> dmtype = species.maskType();
-                return VectorSupport.convert(VectorSupport.VECTOR_OP_REINTERPRET,
-                    this.getClass(), ETYPE, VLENGTH,
-                    dmtype, dtype, VLENGTH,
-                    this, species,
-                    DoubleMaxMask::defaultMaskCast);
-            }
-            return this.defaultMaskCast(species);
+
+            return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
+                this.getClass(), ETYPE, VLENGTH,
+                species.maskType(), species.elementType(), VLENGTH,
+                this, species,
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override
         @ForceInline
-        public DoubleMaxMask eq(VectorMask<Double> mask) {
-            Objects.requireNonNull(mask);
-            DoubleMaxMask m = (DoubleMaxMask)mask;
-            return xor(m.not());
+        /*package-private*/
+        DoubleMaxMask indexPartiallyInUpperRange(long offset, long limit) {
+            return (DoubleMaxMask) VectorSupport.indexPartiallyInUpperRange(
+                DoubleMaxMask.class, double.class, VLENGTH, offset, limit,
+                (o, l) -> (DoubleMaxMask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
         // Unary operations
@@ -613,6 +639,15 @@ final class DoubleMaxVector extends DoubleVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public DoubleMaxMask compress() {
+            return (DoubleMaxMask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                DoubleMaxVector.class, DoubleMaxMask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
@@ -620,9 +655,9 @@ final class DoubleMaxVector extends DoubleVector {
         public DoubleMaxMask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             DoubleMaxMask m = (DoubleMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, DoubleMaxMask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, DoubleMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -630,19 +665,19 @@ final class DoubleMaxVector extends DoubleVector {
         public DoubleMaxMask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             DoubleMaxMask m = (DoubleMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, DoubleMaxMask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, DoubleMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        DoubleMaxMask xor(VectorMask<Double> mask) {
+        public DoubleMaxMask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             DoubleMaxMask m = (DoubleMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, DoubleMaxMask.class, long.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, DoubleMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Mask Query operations
@@ -650,22 +685,32 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, DoubleMaxMask.class, long.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(((DoubleMaxMask)m).getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, DoubleMaxMask.class, long.class, VLENGTH, this,
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, DoubleMaxMask.class, long.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(((DoubleMaxMask)m).getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, DoubleMaxMask.class, long.class, VLENGTH, this,
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, DoubleMaxMask.class, long.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(((DoubleMaxMask)m).getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, DoubleMaxMask.class, long.class, VLENGTH, this,
+                                                      (m) -> lastTrueHelper(m.getBits()));
+        }
+
+        @Override
+        @ForceInline
+        public long toLong() {
+            if (length() > Long.SIZE) {
+                throw new UnsupportedOperationException("too many lanes for one long");
+            }
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, DoubleMaxMask.class, long.class, VLENGTH, this,
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions
@@ -689,9 +734,9 @@ final class DoubleMaxVector extends DoubleVector {
         @ForceInline
         /*package-private*/
         static DoubleMaxMask maskAll(boolean bit) {
-            return VectorSupport.broadcastCoerced(DoubleMaxMask.class, long.class, VLENGTH,
-                                                  (bit ? -1 : 0), null,
-                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
+            return VectorSupport.fromBitsCoerced(DoubleMaxMask.class, long.class, VLENGTH,
+                                                 (bit ? -1 : 0), MODE_BROADCAST, null,
+                                                 (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
         private static final DoubleMaxMask  TRUE_MASK = new DoubleMaxMask(true);
         private static final DoubleMaxMask FALSE_MASK = new DoubleMaxMask(false);
@@ -702,25 +747,28 @@ final class DoubleMaxVector extends DoubleVector {
 
     static final class DoubleMaxShuffle extends AbstractShuffle<Double> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Double> ETYPE = double.class; // used by the JVM
+        static final Class<Long> ETYPE = long.class; // used by the JVM
 
-        DoubleMaxShuffle(byte[] reorder) {
-            super(VLENGTH, reorder);
+        DoubleMaxShuffle(long[] indices) {
+            super(indices);
+            assert(VLENGTH == indices.length);
+            assert(indicesInRange(indices));
         }
 
-        public DoubleMaxShuffle(int[] reorder) {
-            super(VLENGTH, reorder);
+        DoubleMaxShuffle(int[] indices, int i) {
+            this(prepare(indices, i));
         }
 
-        public DoubleMaxShuffle(int[] reorder, int i) {
-            super(VLENGTH, reorder, i);
+        DoubleMaxShuffle(IntUnaryOperator fn) {
+            this(prepare(fn));
         }
 
-        public DoubleMaxShuffle(IntUnaryOperator fn) {
-            super(VLENGTH, fn);
+        long[] indices() {
+            return (long[])getPayload();
         }
 
         @Override
+        @ForceInline
         public DoubleSpecies vspecies() {
             return VSPECIES;
         }
@@ -728,57 +776,94 @@ final class DoubleMaxVector extends DoubleVector {
         static {
             // There must be enough bits in the shuffle lanes to encode
             // VLENGTH valid indexes and VLENGTH exceptional ones.
-            assert(VLENGTH < Byte.MAX_VALUE);
-            assert(Byte.MIN_VALUE <= -VLENGTH);
+            assert(VLENGTH < Long.MAX_VALUE);
+            assert(Long.MIN_VALUE <= -VLENGTH);
         }
         static final DoubleMaxShuffle IOTA = new DoubleMaxShuffle(IDENTITY);
 
         @Override
         @ForceInline
-        public DoubleMaxVector toVector() {
-            return VectorSupport.shuffleToVector(VCLASS, ETYPE, DoubleMaxShuffle.class, this, VLENGTH,
-                                                    (s) -> ((DoubleMaxVector)(((AbstractShuffle<Double>)(s)).toVectorTemplate())));
+        LongMaxVector toBitsVector() {
+            return (LongMaxVector) super.toBitsVectorTemplate();
         }
 
         @Override
         @ForceInline
-        public <F> VectorShuffle<F> cast(VectorSpecies<F> s) {
-            AbstractSpecies<F> species = (AbstractSpecies<F>) s;
-            if (length() != species.laneCount())
-                throw new IllegalArgumentException("VectorShuffle length and species length differ");
-            int[] shuffleArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            switch (species.laneType.switchKey) {
-            case LaneType.SK_BYTE:
-                return new ByteMaxVector.ByteMaxShuffle(shuffleArray).check(species);
-            case LaneType.SK_SHORT:
-                return new ShortMaxVector.ShortMaxShuffle(shuffleArray).check(species);
-            case LaneType.SK_INT:
-                return new IntMaxVector.IntMaxShuffle(shuffleArray).check(species);
-            case LaneType.SK_LONG:
-                return new LongMaxVector.LongMaxShuffle(shuffleArray).check(species);
-            case LaneType.SK_FLOAT:
-                return new FloatMaxVector.FloatMaxShuffle(shuffleArray).check(species);
-            case LaneType.SK_DOUBLE:
-                return new DoubleMaxVector.DoubleMaxShuffle(shuffleArray).check(species);
-            }
-
-            // Should not reach here.
-            throw new AssertionError(species);
+        LongVector toBitsVector0() {
+            return LongMaxVector.VSPECIES.dummyVector().vectorFactory(indices());
         }
 
-        @ForceInline
         @Override
-        public DoubleMaxShuffle rearrange(VectorShuffle<Double> shuffle) {
-            DoubleMaxShuffle s = (DoubleMaxShuffle) shuffle;
-            byte[] reorder1 = reorder();
-            byte[] reorder2 = s.reorder();
-            byte[] r = new byte[reorder1.length];
-            for (int i = 0; i < reorder1.length; i++) {
-                int ssi = reorder2[i];
-                r[i] = reorder1[ssi];  // throws on exceptional index
+        @ForceInline
+        public int laneSource(int i) {
+            return (int)toBitsVector().lane(i);
+        }
+
+        @Override
+        @ForceInline
+        public void intoArray(int[] a, int offset) {
+            switch (length()) {
+                case 1 -> a[offset] = laneSource(0);
+                case 2 -> toBitsVector()
+                        .convertShape(VectorOperators.L2I, IntVector.SPECIES_64, 0)
+                        .reinterpretAsInts()
+                        .intoArray(a, offset);
+                case 4 -> toBitsVector()
+                        .convertShape(VectorOperators.L2I, IntVector.SPECIES_128, 0)
+                        .reinterpretAsInts()
+                        .intoArray(a, offset);
+                case 8 -> toBitsVector()
+                        .convertShape(VectorOperators.L2I, IntVector.SPECIES_256, 0)
+                        .reinterpretAsInts()
+                        .intoArray(a, offset);
+                case 16 -> toBitsVector()
+                        .convertShape(VectorOperators.L2I, IntVector.SPECIES_512, 0)
+                        .reinterpretAsInts()
+                        .intoArray(a, offset);
+                default -> {
+                    VectorIntrinsics.checkFromIndexSize(offset, length(), a.length);
+                    for (int i = 0; i < length(); i++) {
+                        a[offset + i] = laneSource(i);
+                    }
+                }
             }
-            return new DoubleMaxShuffle(r);
+        }
+
+        private static long[] prepare(int[] indices, int offset) {
+            long[] a = new long[VLENGTH];
+            for (int i = 0; i < VLENGTH; i++) {
+                int si = indices[offset + i];
+                si = partiallyWrapIndex(si, VLENGTH);
+                a[i] = (long)si;
+            }
+            return a;
+        }
+
+        private static long[] prepare(IntUnaryOperator f) {
+            long[] a = new long[VLENGTH];
+            for (int i = 0; i < VLENGTH; i++) {
+                int si = f.applyAsInt(i);
+                si = partiallyWrapIndex(si, VLENGTH);
+                a[i] = (long)si;
+            }
+            return a;
+        }
+
+        private static boolean indicesInRange(long[] indices) {
+            int length = indices.length;
+            for (long si : indices) {
+                if (si >= (long)length || si < (long)(-length)) {
+                    boolean assertsEnabled = false;
+                    assert(assertsEnabled = true);
+                    if (assertsEnabled) {
+                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                                  java.util.Arrays.toString(indices));
+                        throw new AssertionError(msg);
+                    }
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -793,20 +878,34 @@ final class DoubleMaxVector extends DoubleVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
-
-
     @ForceInline
     @Override
     final
-    DoubleVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m, int offsetInRange) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m, offsetInRange);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
+    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
+    }
+
+
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m, int offsetInRange) {
+        return super.fromMemorySegment0Template(DoubleMaxMask.class, ms, offset, (DoubleMaxMask) m, offsetInRange);  // specialize
     }
 
     @ForceInline
@@ -819,12 +918,29 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     @Override
     final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
+    void intoArray0(double[] a, int offset, VectorMask<Double> m) {
+        super.intoArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);
     }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        super.intoArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
+    }
+
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m) {
+        super.intoMemorySegment0Template(DoubleMaxMask.class, ms, offset, (DoubleMaxMask) m);
+    }
+
 
     // End of specialized low-level memory operations.
 
     // ================================================
 
 }
+

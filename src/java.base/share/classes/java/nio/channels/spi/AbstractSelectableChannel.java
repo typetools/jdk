@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,7 +81,7 @@ public abstract class AbstractSelectableChannel
     // Lock for registration and configureBlocking operations
     private final Object regLock = new Object();
 
-    // True when non-blocking, need regLock to change;
+    // True when the channel is configured non-blocking, need regLock to change;
     private volatile boolean nonBlocking;
 
     /**
@@ -315,6 +315,8 @@ public abstract class AbstractSelectableChannel
      * mode then this method invokes the {@link #implConfigureBlocking
      * implConfigureBlocking} method, while holding the appropriate locks, in
      * order to change the mode.  </p>
+     *
+     * @throws  ClosedChannelException {@inheritDoc}
      */
     public final @MustCallAlias @This SelectableChannel configureBlocking(@MustCallAlias AbstractSelectableChannel this, boolean block)
         throws IOException

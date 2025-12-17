@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -78,7 +78,7 @@ public @UsesObjectEquals class StreamTokenizer {
     private Reader reader = null;
     private InputStream input = null;
 
-    private char buf[] = new char[20];
+    private char[] buf = new char[20];
 
     /**
      * The next character to be considered by the nextToken method.  May also
@@ -101,7 +101,7 @@ public @UsesObjectEquals class StreamTokenizer {
     private boolean slashSlashCommentsP = false;
     private boolean slashStarCommentsP = false;
 
-    private byte ctype[] = new byte[256];
+    private final byte[] ctype = new byte[256];
     private static final byte CT_WHITESPACE = 1;
     private static final byte CT_DIGIT = 2;
     private static final byte CT_ALPHA = 4;
@@ -227,10 +227,10 @@ public @UsesObjectEquals class StreamTokenizer {
      *
      * @deprecated As of JDK version 1.1, the preferred way to tokenize an
      * input stream is to convert it into a character stream, for example:
-     * <blockquote><pre>
-     *   Reader r = new BufferedReader(new InputStreamReader(is));
-     *   StreamTokenizer st = new StreamTokenizer(r);
-     * </pre></blockquote>
+     * {@snippet lang=java :
+     *     Reader r = new BufferedReader(new InputStreamReader(is));
+     *     StreamTokenizer st = new StreamTokenizer(r);
+     * }
      *
      * @param      is        an input stream.
      * @see        java.io.BufferedReader
@@ -401,7 +401,7 @@ public @UsesObjectEquals class StreamTokenizer {
      * syntax table of this tokenizer is modified so that each of the twelve
      * characters:
      * <blockquote><pre>
-     *      0 1 2 3 4 5 6 7 8 9 . -
+     *     0 1 2 3 4 5 6 7 8 9 . -
      * </pre></blockquote>
      * <p>
      * has the "numeric" attribute.
@@ -780,7 +780,9 @@ public @UsesObjectEquals class StreamTokenizer {
      * <p>The precise string returned is unspecified, although the following
      * example can be considered typical:
      *
-     * <blockquote><pre>Token['a'], line 10</pre></blockquote>
+     * <blockquote><pre>
+     *         Token['a'], line 10
+     * </pre></blockquote>
      *
      * @return  a string representation of the token
      * @see     java.io.StreamTokenizer#nval

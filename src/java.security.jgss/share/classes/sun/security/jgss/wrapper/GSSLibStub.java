@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,13 +31,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.util.Hashtable;
-import org.ietf.jgss.Oid;
-import org.ietf.jgss.GSSName;
 import org.ietf.jgss.ChannelBinding;
-import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.GSSException;
-import sun.security.jgss.GSSUtil;
+import org.ietf.jgss.MessageProp;
+import org.ietf.jgss.Oid;
+
+import java.util.Hashtable;
 
 /**
  * This class is essentially a JNI calling stub for all wrapper classes.
@@ -48,7 +47,7 @@ import sun.security.jgss.GSSUtil;
 
 class GSSLibStub {
 
-    private Oid mech;
+    private final Oid mech;
     private long pMech; // Warning: used by NativeUtil.c
 
     /**
@@ -100,8 +99,8 @@ class GSSLibStub {
     native byte[] wrap(long pContext, byte[] msg, MessageProp prop);
     native byte[] unwrap(long pContext, byte[] msgToken, MessageProp prop);
 
-    private static Hashtable<Oid, GSSLibStub>
-        table = new Hashtable<Oid, GSSLibStub>(5);
+    private static final Hashtable<Oid, GSSLibStub>
+        table = new Hashtable<>(5);
 
     static GSSLibStub getInstance(Oid mech) throws GSSException {
         GSSLibStub s = table.get(mech);
@@ -112,7 +111,9 @@ class GSSLibStub {
         return s;
     }
     private GSSLibStub(Oid mech) throws GSSException {
-        SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
+        if (SunNativeProvider.DEBUG) {
+            SunNativeProvider.debug("Created GSSLibStub for mech " + mech);
+        }
         this.mech = mech;
         this.pMech = getMechPtr(mech.getDER());
     }
