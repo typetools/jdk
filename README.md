@@ -207,7 +207,7 @@ currently working on.
 
 Build JDK 21u (not the main JDK!).
 
-Diff JDK 21 with the upstream commit of OpenJDK, to detect errors.
+Diff JDK 21 with the upstream commit of OpenJDK, to detect unintentional edits.
 
 ```sh
 cd jdk21u-fork-typetools
