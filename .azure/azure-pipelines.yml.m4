@@ -68,7 +68,7 @@ jobs:
       ls -al .. || true
       ls -al ../jdk21u || true
       df .
-      GIT_CLONE_ARGS="--single-branch" /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u
+      /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       git config --global core.longpaths true
@@ -95,7 +95,7 @@ jobs:
       eval $(/tmp/$USER/plume-scripts/ci-info typetools)
       set
       echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
-      cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
+      cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && git diff | head -10000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md" && false)
     displayName: git merge
   - bash: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
     displayName: configure
