@@ -63,7 +63,11 @@ public class HTML {
      */
     public static class Tag {
 
-        /** @since 1.3 */
+        /**
+         * Constructs a {@code Tag}.
+         *
+         * @since 1.3
+         */
         public Tag() {}
 
         /**
@@ -1266,7 +1270,7 @@ public class HTML {
         String istr = (String) attr.getAttribute(key);
         if (istr != null) {
             try {
-                value = Integer.valueOf(istr).intValue();
+                value = Integer.parseInt(istr);
             } catch (NumberFormatException e) {
                 value = def;
             }

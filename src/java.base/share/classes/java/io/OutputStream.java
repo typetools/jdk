@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -93,7 +93,7 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
             }
 
             @Override
-            public void write(@PolySigned byte b[], int off, int len) throws IOException {
+            public void write(@PolySigned byte[] b, int off, int len) throws IOException {
                 Objects.checkFromIndexSize(off, len, b.length);
                 ensureOpen();
             }
@@ -111,9 +111,6 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * to the output stream. The byte to be written is the eight
      * low-order bits of the argument {@code b}. The 24
      * high-order bits of {@code b} are ignored.
-     * <p>
-     * Subclasses of {@code OutputStream} must provide an
-     * implementation for this method.
      *
      * @param      b   the {@code byte}.
      * @throws     IOException  if an I/O error occurs. In particular,
@@ -132,7 +129,7 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * @throws     IOException  if an I/O error occurs.
      * @see        java.io.OutputStream#write(byte[], int, int)
      */
-    public void write(@PolySigned byte b[]) throws IOException {
+    public void write(@PolySigned byte[] b) throws IOException {
         write(b, 0, b.length);
     }
 
@@ -144,11 +141,7 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * output stream in order; element {@code b[off]} is the first
      * byte written and {@code b[off+len-1]} is the last byte written
      * by this operation.
-     * <p>
-     * The {@code write} method of {@code OutputStream} calls
-     * the write method of one argument on each of the bytes to be
-     * written out. Subclasses are encouraged to override this method and
-     * provide a more efficient implementation.
+     *
      * <p>
      * If {@code b} is {@code null}, a
      * {@code NullPointerException} is thrown.
@@ -157,14 +150,26 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * {@code off+len} is greater than the length of the array
      * {@code b}, then an {@code IndexOutOfBoundsException} is thrown.
      *
+     * @implSpec
+     * The {@code write} method of {@code OutputStream} calls
+     * the write method of one argument on each of the bytes to be
+     * written out.
+     *
+     * @apiNote
+     * Subclasses are encouraged to override this method and
+     * provide a more efficient implementation.
+     *
      * @param      b     the data.
      * @param      off   the start offset in the data.
      * @param      len   the number of bytes to write.
      * @throws     IOException  if an I/O error occurs. In particular,
      *             an {@code IOException} is thrown if the output
      *             stream is closed.
+     * @throws     IndexOutOfBoundsException If {@code off} is negative,
+     *             {@code len} is negative, or {@code len} is greater than
+     *             {@code b.length - off}
      */
-    public void write(@PolySigned byte b[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+    public void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         Objects.checkFromIndexSize(off, len, b.length);
         // len == 0 condition implicitly handled by loop bounds
         for (int i = 0 ; i < len ; i++) {
@@ -185,7 +190,8 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * stream guarantees only that bytes previously written to the stream are
      * passed to the operating system for writing; it does not guarantee that
      * they are actually written to a physical device such as a disk drive.
-     * <p>
+     *
+     * @implSpec
      * The {@code flush} method of {@code OutputStream} does nothing.
      *
      * @throws     IOException  if an I/O error occurs.
@@ -198,7 +204,8 @@ public abstract @UsesObjectEquals class OutputStream implements Closeable, Flush
      * associated with this stream. The general contract of {@code close}
      * is that it closes the output stream. A closed stream cannot perform
      * output operations and cannot be reopened.
-     * <p>
+     *
+     * @implSpec
      * The {@code close} method of {@code OutputStream} does nothing.
      *
      * @throws     IOException  if an I/O error occurs.

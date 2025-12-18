@@ -30,6 +30,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.util.OperatingSystem;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -298,15 +300,11 @@ public abstract @UsesObjectEquals class Preferences {
         }
 
         // 3. Use platform-specific system-wide default
-        String osName = System.getProperty("os.name");
-        String platformFactory;
-        if (osName.startsWith("Windows")) {
-            platformFactory = "java.util.prefs.WindowsPreferencesFactory";
-        } else if (osName.contains("OS X")) {
-            platformFactory = "java.util.prefs.MacOSXPreferencesFactory";
-        } else {
-            platformFactory = "java.util.prefs.FileSystemPreferencesFactory";
-        }
+        String platformFactory = switch (OperatingSystem.current()) {
+            case WINDOWS -> "java.util.prefs.WindowsPreferencesFactory";
+            case MACOS -> "java.util.prefs.MacOSXPreferencesFactory";
+            default -> "java.util.prefs.FileSystemPreferencesFactory";
+        };
         try {
             @SuppressWarnings("deprecation")
             Object result = Class.forName(platformFactory, false,

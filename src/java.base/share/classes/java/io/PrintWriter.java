@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,9 @@ import java.util.Locale;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
+import jdk.internal.access.JavaIOPrintWriterAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.misc.InternalLock;
 
 /**
  * Prints formatted representations of objects to a text-output stream.  This
@@ -105,7 +108,7 @@ public class PrintWriter extends Writer {
      *
      * @param  out        A character-output stream
      */
-    public @MustCallAlias PrintWriter (@MustCallAlias Writer out) {
+    public @MustCallAlias PrintWriter(@MustCallAlias Writer out) {
         this(out, false);
     }
 
@@ -117,8 +120,7 @@ public class PrintWriter extends Writer {
      *                    {@code printf}, or {@code format} methods will
      *                    flush the output buffer
      */
-    public @MustCallAlias PrintWriter(@MustCallAlias Writer out,
-                       boolean autoFlush) {
+    public @MustCallAlias PrintWriter(@MustCallAlias Writer out, boolean autoFlush) {
         super(out);
         this.out = out;
         this.autoFlush = autoFlush;
@@ -128,11 +130,13 @@ public class PrintWriter extends Writer {
      * Creates a new PrintWriter, without automatic line flushing, from an
      * existing OutputStream.  This convenience constructor creates the
      * necessary intermediate OutputStreamWriter, which will convert characters
-     * into bytes using the default character encoding.
+     * into bytes using the default charset, or where {@code out} is a
+     * {@code PrintStream}, the charset used by the print stream.
      *
      * @param  out        An output stream
      *
-     * @see java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
+     * @see OutputStreamWriter#OutputStreamWriter(OutputStream)
+     * @see Charset#defaultCharset()
      */
     public @MustCallAlias PrintWriter(@MustCallAlias OutputStream out) {
         this(out, false);
@@ -141,18 +145,20 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter from an existing OutputStream.  This
      * convenience constructor creates the necessary intermediate
-     * OutputStreamWriter, which will convert characters into bytes using the
-     * default character encoding.
+     * OutputStreamWriter, which will convert characters into bytes using
+     * the default charset, or where {@code out} is a {@code PrintStream},
+     * the charset used by the print stream.
      *
      * @param  out        An output stream
      * @param  autoFlush  A boolean; if true, the {@code println},
      *                    {@code printf}, or {@code format} methods will
      *                    flush the output buffer
      *
-     * @see java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
+     * @see OutputStreamWriter#OutputStreamWriter(OutputStream)
+     * @see Charset#defaultCharset()
      */
     public @MustCallAlias PrintWriter(@MustCallAlias OutputStream out, boolean autoFlush) {
-        this(out, autoFlush, Charset.defaultCharset());
+        this(out, autoFlush, out instanceof PrintStream ps ? ps.charset() : Charset.defaultCharset());
     }
 
     /**
@@ -166,7 +172,7 @@ public class PrintWriter extends Writer {
      *                    {@code printf}, or {@code format} methods will
      *                    flush the output buffer
      * @param  charset
-     *         A {@linkplain java.nio.charset.Charset charset}
+     *         A {@linkplain Charset charset}
      *
      * @since 10
      */
@@ -182,9 +188,9 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter, without automatic line flushing, with the
      * specified file name.  This convenience constructor creates the necessary
-     * intermediate {@link java.io.OutputStreamWriter OutputStreamWriter},
+     * intermediate {@link OutputStreamWriter OutputStreamWriter},
      * which will encode characters using the {@linkplain
-     * java.nio.charset.Charset#defaultCharset() default charset} for this
+     * Charset#defaultCharset() default charset} for this
      * instance of the Java virtual machine.
      *
      * @param  fileName
@@ -203,12 +209,22 @@ public class PrintWriter extends Writer {
      *          If a security manager is present and {@link
      *          SecurityManager#checkWrite checkWrite(fileName)} denies write
      *          access to the file
+     * @see Charset#defaultCharset()
      *
      * @since  1.5
      */
     public PrintWriter(String fileName) throws FileNotFoundException {
         this(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName))),
              false);
+    }
+
+    /* Package private constructor, using the specified lock
+     * for synchronization.
+     */
+    PrintWriter(Writer out, Object lock) {
+        super(lock);
+        this.out = out;
+        this.autoFlush = false;
     }
 
     /* Private constructor */
@@ -222,7 +238,7 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter, without automatic line flushing, with the
      * specified file name and charset.  This convenience constructor creates
-     * the necessary intermediate {@link java.io.OutputStreamWriter
+     * the necessary intermediate {@link OutputStreamWriter
      * OutputStreamWriter}, which will encode characters using the provided
      * charset.
      *
@@ -233,8 +249,7 @@ public class PrintWriter extends Writer {
      *         written to the file and is buffered.
      *
      * @param  csn
-     *         The name of a supported {@linkplain java.nio.charset.Charset
-     *         charset}
+     *         The name of a supported {@linkplain Charset charset}
      *
      * @throws  FileNotFoundException
      *          If the given string does not denote an existing, writable
@@ -261,7 +276,7 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter, without automatic line flushing, with the
      * specified file name and charset.  This convenience constructor creates
-     * the necessary intermediate {@link java.io.OutputStreamWriter
+     * the necessary intermediate {@link OutputStreamWriter
      * OutputStreamWriter}, which will encode characters using the provided
      * charset.
      *
@@ -272,7 +287,7 @@ public class PrintWriter extends Writer {
      *         written to the file and is buffered.
      *
      * @param  charset
-     *         A {@linkplain java.nio.charset.Charset charset}
+     *         A {@linkplain Charset charset}
      *
      * @throws  IOException
      *          if an I/O error occurs while opening or creating the file
@@ -291,9 +306,9 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter, without automatic line flushing, with the
      * specified file.  This convenience constructor creates the necessary
-     * intermediate {@link java.io.OutputStreamWriter OutputStreamWriter},
+     * intermediate {@link OutputStreamWriter OutputStreamWriter},
      * which will encode characters using the {@linkplain
-     * java.nio.charset.Charset#defaultCharset() default charset} for this
+     * Charset#defaultCharset() default charset} for this
      * instance of the Java virtual machine.
      *
      * @param  file
@@ -312,6 +327,7 @@ public class PrintWriter extends Writer {
      *          If a security manager is present and {@link
      *          SecurityManager#checkWrite checkWrite(file.getPath())}
      *          denies write access to the file
+     * @see Charset#defaultCharset()
      *
      * @since  1.5
      */
@@ -323,7 +339,7 @@ public class PrintWriter extends Writer {
     /**
      * Creates a new PrintWriter, without automatic line flushing, with the
      * specified file and charset.  This convenience constructor creates the
-     * necessary intermediate {@link java.io.OutputStreamWriter
+     * necessary intermediate {@link OutputStreamWriter
      * OutputStreamWriter}, which will encode characters using the provided
      * charset.
      *
@@ -334,8 +350,7 @@ public class PrintWriter extends Writer {
      *         and is buffered.
      *
      * @param  csn
-     *         The name of a supported {@linkplain java.nio.charset.Charset
-     *         charset}
+     *         The name of a supported {@linkplain Charset charset}
      *
      * @throws  FileNotFoundException
      *          If the given file object does not denote an existing, writable
@@ -373,7 +388,7 @@ public class PrintWriter extends Writer {
      *         and is buffered.
      *
      * @param  charset
-     *         A {@linkplain java.nio.charset.Charset charset}
+     *         A {@linkplain Charset charset}
      *
      * @throws  IOException
      *          if an I/O error occurs while opening or creating the file
@@ -400,13 +415,26 @@ public class PrintWriter extends Writer {
      * @see #checkError()
      */
     public void flush(@GuardSatisfied PrintWriter this) {
-        try {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implFlush();
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                ensureOpen();
-                out.flush();
+                implFlush();
             }
         }
-        catch (IOException x) {
+    }
+
+    private void implFlush() {
+        try {
+            ensureOpen();
+            out.flush();
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -418,15 +446,28 @@ public class PrintWriter extends Writer {
      * @see #checkError()
      */
     public void close(@GuardSatisfied PrintWriter this) {
-        try {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implClose();
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                if (out == null)
-                    return;
+                implClose();
+            }
+        }
+    }
+
+    private void implClose() {
+        try {
+            if (out != null) {
                 out.close();
                 out = null;
             }
-        }
-        catch (IOException x) {
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -434,9 +475,9 @@ public class PrintWriter extends Writer {
     /**
      * Flushes the stream if it's not closed and checks its error state.
      *
-     * @return {@code true} if the print stream has encountered an error,
-     *          either on the underlying output stream or during a format
-     *          conversion.
+     * @return {@code true} if and only if this stream has encountered an
+     *         {@code IOException}, or the {@code setError} method has been
+     *         invoked
      */
     public boolean checkError(@GuardSatisfied PrintWriter this) {
         if (out != null) {
@@ -451,7 +492,7 @@ public class PrintWriter extends Writer {
     }
 
     /**
-     * Indicates that an error has occurred.
+     * Sets the error state of the stream to {@code true}.
      *
      * <p> This method will cause subsequent invocations of {@link
      * #checkError()} to return {@code true} until {@link
@@ -484,16 +525,28 @@ public class PrintWriter extends Writer {
      * @param c int specifying a character to be written.
      */
     public void write(@GuardSatisfied PrintWriter this, int c) {
-        try {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implWrite(c);
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                ensureOpen();
-                out.write(c);
+                implWrite(c);
             }
         }
-        catch (InterruptedIOException x) {
+    }
+
+    private void implWrite(int c) {
+        try {
+            ensureOpen();
+            out.write(c);
+        } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (IOException x) {
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -509,17 +562,29 @@ public class PrintWriter extends Writer {
      *          cause the corresponding method of the underlying {@code Writer}
      *          to throw an {@code IndexOutOfBoundsException}
      */
-    public void write(@GuardSatisfied PrintWriter this, char buf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
-        try {
+    public void write(@GuardSatisfied PrintWriter this, char[] buf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implWrite(buf, off, len);
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                ensureOpen();
-                out.write(buf, off, len);
+                implWrite(buf, off, len);
             }
         }
-        catch (InterruptedIOException x) {
+    }
+
+    private void implWrite(char[] buf, int off, int len) {
+        try {
+            ensureOpen();
+            out.write(buf, off, len);
+        } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (IOException x) {
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -529,7 +594,7 @@ public class PrintWriter extends Writer {
      * Writer class because it must suppress I/O exceptions.
      * @param buf Array of characters to be written
      */
-    public void write(@GuardSatisfied PrintWriter this, char buf[]) {
+    public void write(@GuardSatisfied PrintWriter this, char[] buf) {
         write(buf, 0, buf.length);
     }
 
@@ -545,16 +610,28 @@ public class PrintWriter extends Writer {
      *          to throw an {@code IndexOutOfBoundsException}
      */
     public void write(@GuardSatisfied PrintWriter this, String s, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
-        try {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implWrite(s, off, len);
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                ensureOpen();
-                out.write(s, off, len);
+                implWrite(s, off, len);
             }
         }
-        catch (InterruptedIOException x) {
+    }
+
+    private void implWrite(String s, int off, int len) {
+        try {
+            ensureOpen();
+            out.write(s, off, len);
+        } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (IOException x) {
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -569,18 +646,30 @@ public class PrintWriter extends Writer {
     }
 
     private void newLine() {
-        try {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implNewLine();
+            } finally {
+                locker.unlock();
+            }
+        } else {
             synchronized (lock) {
-                ensureOpen();
-                out.write(System.lineSeparator());
-                if (autoFlush)
-                    out.flush();
+                implNewLine();
             }
         }
-        catch (InterruptedIOException x) {
+    }
+
+    private void implNewLine() {
+        try {
+            ensureOpen();
+            out.write(System.lineSeparator());
+            if (autoFlush)
+                out.flush();
+        } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (IOException x) {
+        } catch (IOException x) {
             trouble = true;
         }
     }
@@ -590,11 +679,12 @@ public class PrintWriter extends Writer {
     /**
      * Prints a boolean value.  The string produced by {@link
      * java.lang.String#valueOf(boolean)} is translated into bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link
      * #write(int)} method.
      *
      * @param      b   The {@code boolean} to be printed
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, boolean b) {
         write(String.valueOf(b));
@@ -602,11 +692,12 @@ public class PrintWriter extends Writer {
 
     /**
      * Prints a character.  The character is translated into one or more bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link
      * #write(int)} method.
      *
      * @param      c   The {@code char} to be printed
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, char c) {
         write(c);
@@ -615,12 +706,13 @@ public class PrintWriter extends Writer {
     /**
      * Prints an integer.  The string produced by {@link
      * java.lang.String#valueOf(int)} is translated into bytes according
-     * to the platform's default character encoding, and these bytes are
+     * to the default charset, and these bytes are
      * written in exactly the manner of the {@link #write(int)}
      * method.
      *
      * @param      i   The {@code int} to be printed
      * @see        java.lang.Integer#toString(int)
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, int i) {
         write(String.valueOf(i));
@@ -629,12 +721,13 @@ public class PrintWriter extends Writer {
     /**
      * Prints a long integer.  The string produced by {@link
      * java.lang.String#valueOf(long)} is translated into bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link #write(int)}
      * method.
      *
      * @param      l   The {@code long} to be printed
      * @see        java.lang.Long#toString(long)
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, long l) {
         write(String.valueOf(l));
@@ -643,12 +736,13 @@ public class PrintWriter extends Writer {
     /**
      * Prints a floating-point number.  The string produced by {@link
      * java.lang.String#valueOf(float)} is translated into bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link #write(int)}
      * method.
      *
      * @param      f   The {@code float} to be printed
      * @see        java.lang.Float#toString(float)
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, float f) {
         write(String.valueOf(f));
@@ -657,12 +751,13 @@ public class PrintWriter extends Writer {
     /**
      * Prints a double-precision floating-point number.  The string produced by
      * {@link java.lang.String#valueOf(double)} is translated into
-     * bytes according to the platform's default character encoding, and these
+     * bytes according to the default charset, and these
      * bytes are written in exactly the manner of the {@link
      * #write(int)} method.
      *
      * @param      d   The {@code double} to be printed
      * @see        java.lang.Double#toString(double)
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, double d) {
         write(String.valueOf(d));
@@ -670,26 +765,28 @@ public class PrintWriter extends Writer {
 
     /**
      * Prints an array of characters.  The characters are converted into bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link #write(int)}
      * method.
      *
      * @param      s   The array of chars to be printed
+     * @see Charset#defaultCharset()
      *
      * @throws  NullPointerException  If {@code s} is {@code null}
      */
-    public void print(@GuardSatisfied PrintWriter this, char s[]) {
+    public void print(@GuardSatisfied PrintWriter this, char[] s) {
         write(s);
     }
 
     /**
      * Prints a string.  If the argument is {@code null} then the string
      * {@code "null"} is printed.  Otherwise, the string's characters are
-     * converted into bytes according to the platform's default character
-     * encoding, and these bytes are written in exactly the manner of the
+     * converted into bytes according to the default charset,
+     * and these bytes are written in exactly the manner of the
      * {@link #write(int)} method.
      *
      * @param      s   The {@code String} to be printed
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, @Nullable String s) {
         write(String.valueOf(s));
@@ -698,12 +795,13 @@ public class PrintWriter extends Writer {
     /**
      * Prints an object.  The string produced by the {@link
      * java.lang.String#valueOf(Object)} method is translated into bytes
-     * according to the platform's default character encoding, and these bytes
+     * according to the default charset, and these bytes
      * are written in exactly the manner of the {@link #write(int)}
      * method.
      *
      * @param      obj   The {@code Object} to be printed
      * @see        java.lang.Object#toString()
+     * @see Charset#defaultCharset()
      */
     public void print(@GuardSatisfied PrintWriter this, @Nullable Object obj) {
         write(String.valueOf(obj));
@@ -728,9 +826,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code boolean} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, boolean x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -742,9 +851,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code char} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, char x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -756,9 +876,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code int} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, int x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -770,9 +901,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code long} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, long x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -784,9 +926,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code float} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, float x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -798,9 +951,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code double} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, double x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -811,10 +975,21 @@ public class PrintWriter extends Writer {
      *
      * @param x the array of {@code char} values to be printed
      */
-    public void println(@GuardSatisfied PrintWriter this, char x[]) {
-        synchronized (lock) {
-            print(x);
-            println();
+    public void println(@GuardSatisfied PrintWriter this, char[] x) {
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -826,9 +1001,20 @@ public class PrintWriter extends Writer {
      * @param x the {@code String} value to be printed
      */
     public void println(@GuardSatisfied PrintWriter this, @Nullable String x) {
-        synchronized (lock) {
-            print(x);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(x);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(x);
+                println();
+            }
         }
     }
 
@@ -843,9 +1029,20 @@ public class PrintWriter extends Writer {
      */
     public void println(@GuardSatisfied PrintWriter this, @Nullable Object x) {
         String s = String.valueOf(x);
-        synchronized (lock) {
-            print(s);
-            println();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                print(s);
+                println();
+            } finally {
+                locker.unlock();
+            }
+        } else {
+            synchronized (lock) {
+                print(s);
+                println();
+            }
         }
     }
 
@@ -858,9 +1055,9 @@ public class PrintWriter extends Writer {
      * {@code out.printf(format, args)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.format(format, args)
-     * }</pre>
+     * }
      *
      * @param  format
      *         A format string as described in <a
@@ -907,9 +1104,9 @@ public class PrintWriter extends Writer {
      * {@code out.printf(l, format, args)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.format(l, format, args)
-     * }</pre>
+     * }
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -994,22 +1191,36 @@ public class PrintWriter extends Writer {
      */
     @FormatMethod
     public @MustCallAlias PrintWriter format(@GuardSatisfied @MustCallAlias PrintWriter this, String format, @Nullable Object ... args) {
-        try {
-            synchronized (lock) {
-                ensureOpen();
-                if ((formatter == null)
-                    || (formatter.locale() != Locale.getDefault()))
-                    formatter = new Formatter(this);
-                formatter.format(Locale.getDefault(), format, args);
-                if (autoFlush)
-                    out.flush();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implFormat(format, args);
+            } finally {
+                locker.unlock();
             }
+        } else {
+            synchronized (lock) {
+                implFormat(format, args);
+            }
+        }
+        return this;
+    }
+
+    private void implFormat(String format, Object ... args) {
+        try {
+            ensureOpen();
+            if ((formatter == null)
+                || (formatter.locale() != Locale.getDefault()))
+                formatter = new Formatter(this);
+            formatter.format(Locale.getDefault(), format, args);
+            if (autoFlush)
+                out.flush();
         } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
         } catch (IOException x) {
             trouble = true;
         }
-        return this;
     }
 
     /**
@@ -1055,21 +1266,35 @@ public class PrintWriter extends Writer {
      */
     @FormatMethod
     public @MustCallAlias PrintWriter format(@GuardSatisfied @MustCallAlias PrintWriter this, @Nullable Locale l, String format, @Nullable Object ... args) {
-        try {
-            synchronized (lock) {
-                ensureOpen();
-                if ((formatter == null) || (formatter.locale() != l))
-                    formatter = new Formatter(this, l);
-                formatter.format(l, format, args);
-                if (autoFlush)
-                    out.flush();
+        Object lock = this.lock;
+        if (lock instanceof InternalLock locker) {
+            locker.lock();
+            try {
+                implFormat(l, format, args);
+            } finally {
+                locker.unlock();
             }
+        } else {
+            synchronized (lock) {
+                implFormat(l, format, args);
+            }
+        }
+        return this;
+    }
+
+    private void implFormat(Locale l, String format, Object ... args) {
+        try {
+            ensureOpen();
+            if ((formatter == null) || (formatter.locale() != l))
+                formatter = new Formatter(this, l);
+            formatter.format(l, format, args);
+            if (autoFlush)
+                out.flush();
         } catch (InterruptedIOException x) {
             Thread.currentThread().interrupt();
         } catch (IOException x) {
             trouble = true;
         }
-        return this;
     }
 
     /**
@@ -1078,9 +1303,9 @@ public class PrintWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(csq)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.write(csq.toString())
-     * }</pre>
+     * }
      *
      * <p> Depending on the specification of {@code toString} for the
      * character sequence {@code csq}, the entire sequence may not be
@@ -1110,9 +1335,9 @@ public class PrintWriter extends Writer {
      * when {@code csq} is not {@code null}, behaves in
      * exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.write(csq.subSequence(start, end).toString())
-     * }</pre>
+     * }
      *
      * @param  csq
      *         The character sequence from which a subsequence will be
@@ -1147,9 +1372,9 @@ public class PrintWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(c)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.write(c)
-     * }</pre>
+     * }
      *
      * @param  c
      *         The 16-bit character to append
@@ -1161,5 +1386,13 @@ public class PrintWriter extends Writer {
     public @MustCallAlias PrintWriter append(@GuardSatisfied @MustCallAlias PrintWriter this, char c) {
         write(c);
         return this;
+    }
+
+    static {
+        SharedSecrets.setJavaIOCPrintWriterAccess(new JavaIOPrintWriterAccess() {
+            public Object lock(PrintWriter pw) {
+                return pw.lock;
+            }
+        });
     }
 }

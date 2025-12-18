@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -59,7 +59,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  *     <LI>Smaller memory footprint.
  * </UL>
  * A compact array is composed of a index array and value array.  The index
- * array contains the indicies of Unicode characters to the value array.
+ * array contains the indices of Unicode characters to the value array.
  *
  * @see                CompactIntArray
  * @see                CompactShortArray
@@ -94,7 +94,7 @@ public final class CompactByteArray implements Cloneable {
 
     /**
      * Constructor for CompactByteArray.
-     * @param indexArray the indicies of the compact array.
+     * @param indexArray the indices of the compact array.
      * @param newValues the values of the compact array.
      * @exception IllegalArgumentException If index is out of range.
      */
@@ -134,7 +134,7 @@ public final class CompactByteArray implements Cloneable {
     {
         if (isCompact)
             expand();
-        values[(int)index] = value;
+        values[index] = value;
         touchBlock(index >> BLOCKSHIFT, value);
     }
 
@@ -333,15 +333,9 @@ public final class CompactByteArray implements Cloneable {
             for (i = 0; i < INDEXCOUNT; ++i) {
                 indices[i] = (short)(i<<BLOCKSHIFT);
             }
-            values = null;
             values = tempArray;
             isCompact = false;
         }
-    }
-
-    private byte[] getArray()
-    {
-        return values;
     }
 
     private static  final int BLOCKSHIFT =7;
@@ -354,4 +348,4 @@ public final class CompactByteArray implements Cloneable {
     private short indices[];
     private boolean isCompact;
     private int[] hashes;
-};
+}

@@ -28,7 +28,6 @@ package java.security.cert;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -59,7 +58,7 @@ import java.util.Collections;
 public @UsesObjectEquals class CollectionCertStoreParameters
     implements CertStoreParameters {
 
-    private Collection<?> coll;
+    private final Collection<?> coll;
 
     /**
      * Creates an instance of {@code CollectionCertStoreParameters}
@@ -136,10 +135,8 @@ public @UsesObjectEquals class CollectionCertStoreParameters
      * @return a formatted string describing the parameters
      */
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("CollectionCertStoreParameters: [\n");
-        sb.append("  collection: " + coll + "\n");
-        sb.append("]");
-        return sb.toString();
+        return "CollectionCertStoreParameters: [\n" +
+                "  collection: " + coll + "\n" +
+                "]";
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,9 +27,6 @@ package java.awt;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.io.*;
-import java.lang.*;
-import java.util.*;
 import java.awt.image.ImageObserver;
 import java.text.AttributedCharacterIterator;
 
@@ -718,9 +715,9 @@ public abstract @UsesObjectEquals class Graphics {
      * 1&nbsp;&le;&nbsp;<i>i</i>&nbsp;&le;&nbsp;{@code nPoints}.
      * The figure is automatically closed by drawing a line connecting
      * the final point to the first point, if those points are different.
-     * @param        xPoints   a an array of {@code x} coordinates.
-     * @param        yPoints   a an array of {@code y} coordinates.
-     * @param        nPoints   a the total number of points.
+     * @param        xPoints   an array of {@code x} coordinates.
+     * @param        yPoints   an array of {@code y} coordinates.
+     * @param        nPoints   the total number of points.
      * @see          java.awt.Graphics#fillPolygon
      * @see          java.awt.Graphics#drawPolyline
      */
@@ -753,9 +750,9 @@ public abstract @UsesObjectEquals class Graphics {
      * <p>
      * The area inside the polygon is defined using an
      * even-odd fill rule, also known as the alternating rule.
-     * @param        xPoints   a an array of {@code x} coordinates.
-     * @param        yPoints   a an array of {@code y} coordinates.
-     * @param        nPoints   a the total number of points.
+     * @param        xPoints   an array of {@code x} coordinates.
+     * @param        yPoints   an array of {@code y} coordinates.
+     * @param        nPoints   the total number of points.
      * @see          java.awt.Graphics#drawPolygon(int[], int[], int)
      */
     public abstract void fillPolygon(int[] xPoints, int[] yPoints,
@@ -1166,17 +1163,14 @@ public abstract @UsesObjectEquals class Graphics {
     /**
      * Disposes of this graphics context once it is no longer referenced.
      *
-     * @deprecated The {@code finalize} method has been deprecated.
-     *     Subclasses that override {@code finalize} in order to perform cleanup
-     *     should be modified to use alternative cleanup mechanisms and
-     *     to remove the overriding {@code finalize} method.
-     *     When overriding the {@code finalize} method, its implementation must explicitly
-     *     ensure that {@code super.finalize()} is invoked as described in {@link Object#finalize}.
-     *     See the specification for {@link Object#finalize()} for further
-     *     information about migration options.
+     * @deprecated Finalization has been deprecated for removal.  See
+     * {@link java.lang.Object#finalize} for background information and details
+     * about migration options.
+     *
      * @see #dispose
      */
-    @Deprecated(since="9")
+    @Deprecated(since="9", forRemoval=true)
+    @SuppressWarnings("removal")
     public void finalize() {
         dispose();
     }

@@ -40,6 +40,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.text.Bidi;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -347,7 +348,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      *          <code><em>Foo</em>Listener</code>s on this component,
      *          or an empty array if no such
      *          listeners have been added
-     * @exception ClassCastException if <code>listenerType</code>
+     * @throws ClassCastException if <code>listenerType</code>
      *          doesn't specify a class or interface that implements
      *          <code>java.util.EventListener</code>
      *
@@ -607,7 +608,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      *
      * @param offs the starting offset &gt;= 0
      * @param len the number of characters to remove &gt;= 0
-     * @exception BadLocationException  the given remove position is not a valid
+     * @throws BadLocationException  the given remove position is not a valid
      *   position within the document
      * @see Document#remove
      */
@@ -677,7 +678,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      *              <code>null</code>
      *              is legal, and typically treated as an empty attributeset,
      *              but exact interpretation is left to the subclass
-     * @exception BadLocationException the given position is not a valid
+     * @throws BadLocationException the given position is not a valid
      *            position within the document
      * @since 1.4
      */
@@ -721,7 +722,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      * @param offs the starting offset &gt;= 0
      * @param str the string to insert; does nothing with null/empty strings
      * @param a the attributes for the inserted content
-     * @exception BadLocationException  the given insert position is not a valid
+     * @throws BadLocationException  the given insert position is not a valid
      *   position within the document
      * @see Document#insertString
      */
@@ -795,7 +796,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      * @param offset the starting offset &gt;= 0
      * @param length the number of characters to retrieve &gt;= 0
      * @return the text
-     * @exception BadLocationException  the range given includes a position
+     * @throws BadLocationException  the range given includes a position
      *   that is not a valid position within the document
      * @see Document#getText
      */
@@ -836,7 +837,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      * @param offset the starting offset &gt;= 0
      * @param length the number of characters to retrieve &gt;= 0
      * @param txt the Segment object to retrieve the text into
-     * @exception BadLocationException  the range given includes a position
+     * @throws BadLocationException  the range given includes a position
      *   that is not a valid position within the document
      */
     public void getText(int offset, int length, Segment txt) throws BadLocationException {
@@ -857,7 +858,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      *
      * @param offs the position in the model &gt;= 0
      * @return the position
-     * @exception BadLocationException  if the given position does not
+     * @throws BadLocationException  if the given position does not
      *   represent a valid location in the associated document
      * @see Document#createPosition
      */
@@ -1087,7 +1088,7 @@ public abstract class AbstractDocument implements Document, Serializable {
         byte[] levels = calculateBidiLevels( firstPStart, lastPEnd );
 
 
-        Vector<Element> newElements = new Vector<Element>();
+        ArrayList<Element> newElements = new ArrayList<Element>();
 
         // Calculate the first span of characters in the affected range with
         // the same bidi level.  If this level is the same as the level of the
@@ -1106,9 +1107,9 @@ public abstract class AbstractDocument implements Document, Serializable {
             if( prevLevel==levels[0] ) {
                 firstSpanStart = prevElem.getStartOffset();
             } else if( prevElem.getEndOffset() > firstPStart ) {
-                newElements.addElement(new BidiElement(bidiRoot,
-                                                       prevElem.getStartOffset(),
-                                                       firstPStart, prevLevel));
+                newElements.add(new BidiElement(bidiRoot,
+                                                prevElem.getStartOffset(),
+                                                firstPStart, prevLevel));
             } else {
                 removeFromIndex++;
             }
@@ -1155,32 +1156,32 @@ public abstract class AbstractDocument implements Document, Serializable {
         // Otherwise, create elements for the first and last spans as well as
         // any spans in between.
         if((firstSpanEnd==lastSpanStart)&&(levels[0]==levels[levels.length-1])){
-            newElements.addElement(new BidiElement(bidiRoot, firstSpanStart,
-                                                   lastSpanEnd, levels[0]));
+            newElements.add(new BidiElement(bidiRoot, firstSpanStart,
+                                            lastSpanEnd, levels[0]));
         } else {
             // Create an element for the first span.
-            newElements.addElement(new BidiElement(bidiRoot, firstSpanStart,
-                                                   firstSpanEnd+firstPStart,
-                                                   levels[0]));
+            newElements.add(new BidiElement(bidiRoot, firstSpanStart,
+                                            firstSpanEnd+firstPStart,
+                                            levels[0]));
             // Create elements for the spans in between the first and last
             for( int i=firstSpanEnd; i<lastSpanStart; ) {
                 //System.out.println("executed line 872");
                 int j;
                 for( j=i;  (j<levels.length) && (levels[j] == levels[i]); j++ );
-                newElements.addElement(new BidiElement(bidiRoot, firstPStart+i,
-                                                       firstPStart+j,
-                                                       (int)levels[i]));
+                newElements.add(new BidiElement(bidiRoot, firstPStart+i,
+                                                firstPStart+j,
+                                                (int)levels[i]));
                 i=j;
             }
             // Create an element for the last span.
-            newElements.addElement(new BidiElement(bidiRoot,
-                                                   lastSpanStart+firstPStart,
-                                                   lastSpanEnd,
-                                                   levels[levels.length-1]));
+            newElements.add(new BidiElement(bidiRoot,
+                                            lastSpanStart+firstPStart,
+                                            lastSpanEnd,
+                                            levels[levels.length-1]));
         }
 
         if( newNextElem != null )
-            newElements.addElement( newNextElem );
+            newElements.add( newNextElem );
 
 
         // Calculate the set of existing bidi elements which must be
@@ -1194,8 +1195,7 @@ public abstract class AbstractDocument implements Document, Serializable {
             removedElems[i] = bidiRoot.getElement(removeFromIndex+i);
         }
 
-        Element[] addedElems = new Element[ newElements.size() ];
-        newElements.copyInto( addedElems );
+        Element[] addedElems = newElements.toArray(new Element[0]);
 
         // Update the change record.
         ElementEdit ee = new ElementEdit( bidiRoot, removeFromIndex,
@@ -1358,7 +1358,7 @@ public abstract class AbstractDocument implements Document, Serializable {
      * <code>Document</code> will be left in a locked state so that no
      * reading or writing can be done.
      *
-     * @exception IllegalStateException thrown on illegal lock
+     * @throws IllegalStateException thrown on illegal lock
      *  attempt.  If the document is implemented properly, this can
      *  only happen if a document listener attempts to mutate the
      *  document.  This situation violates the bean event model
@@ -1637,7 +1637,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          *
          * @param offset the offset in the content &gt;= 0
          * @return a Position
-         * @exception BadLocationException for an invalid offset
+         * @throws BadLocationException for an invalid offset
          */
         public Position createPosition(int offset) throws BadLocationException;
 
@@ -1656,7 +1656,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          * @return  if the implementation supports a history mechanism,
          *    a reference to an <code>Edit</code> implementation will be returned,
          *    otherwise returns <code>null</code>
-         * @exception BadLocationException  thrown if the area covered by
+         * @throws BadLocationException  thrown if the area covered by
          *   the arguments is not contained in the character sequence
          */
         public UndoableEdit insertString(int where, String str) throws BadLocationException;
@@ -1670,7 +1670,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          * @return  If the implementation supports a history mechanism,
          *    a reference to an Edit implementation will be returned,
          *    otherwise null.
-         * @exception BadLocationException  Thrown if the area covered by
+         * @throws BadLocationException  Thrown if the area covered by
          *   the arguments is not contained in the character sequence.
          */
         public UndoableEdit remove(int where, int nitems) throws BadLocationException;
@@ -1681,7 +1681,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          * @param where   Offset into the sequence to fetch &gt;= 0.
          * @param len     number of characters to copy &gt;= 0.
          * @return the string
-         * @exception BadLocationException  Thrown if the area covered by
+         * @throws BadLocationException  Thrown if the area covered by
          *   the arguments is not contained in the character sequence.
          */
         public String getString(int where, int len) throws BadLocationException;
@@ -1692,7 +1692,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          * @param where the starting offset &gt;= 0
          * @param len the number of characters &gt;= 0
          * @param txt the target location to copy into
-         * @exception BadLocationException  Thrown if the area covered by
+         * @throws BadLocationException  Thrown if the area covered by
          *   the arguments is not contained in the character sequence.
          */
         public void getChars(int where, int len, Segment txt) throws BadLocationException;
@@ -2823,7 +2823,7 @@ public abstract class AbstractDocument implements Document, Serializable {
         /**
          * Redoes a change.
          *
-         * @exception CannotRedoException if the change cannot be redone
+         * @throws CannotRedoException if the change cannot be redone
          */
         public void redo() throws CannotRedoException {
             writeLock();
@@ -2847,7 +2847,7 @@ public abstract class AbstractDocument implements Document, Serializable {
         /**
          * Undoes a change.
          *
-         * @exception CannotUndoException if the change cannot be undone
+         * @throws CannotUndoException if the change cannot be undone
          */
         public void undo() throws CannotUndoException {
             writeLock();
@@ -3191,7 +3191,7 @@ public abstract class AbstractDocument implements Document, Serializable {
         /**
          * Redoes a change.
          *
-         * @exception CannotRedoException if the change cannot be redone
+         * @throws CannotRedoException if the change cannot be redone
          */
         public void redo() throws CannotRedoException {
             super.redo();
@@ -3208,7 +3208,7 @@ public abstract class AbstractDocument implements Document, Serializable {
         /**
          * Undoes a change.
          *
-         * @exception CannotUndoException if the change cannot be undone
+         * @throws CannotUndoException if the change cannot be undone
          */
         public void undo() throws CannotUndoException {
             super.undo();

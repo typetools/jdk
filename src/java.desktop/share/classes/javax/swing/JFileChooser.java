@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -59,6 +59,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serial;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import javax.accessibility.Accessible;
@@ -238,7 +239,7 @@ public class JFileChooser extends JComponent implements Accessible {
     public static final @Interned String ACCESSORY_CHANGED_PROPERTY = "AccessoryChangedProperty";
 
     /**
-     * Identifies whether a the AcceptAllFileFilter is used or not.
+     * Identifies whether the AcceptAllFileFilter is used or not.
      */
     public static final @Interned String ACCEPT_ALL_FILE_FILTER_USED_CHANGED_PROPERTY = "acceptAllFileFilterUsedChanged";
 
@@ -307,7 +308,7 @@ public class JFileChooser extends JComponent implements Accessible {
     /**
      * Constructs a <code>JFileChooser</code> pointing to the user's
      * default directory. This default depends on the operating system.
-     * It is typically the "My Documents" folder on Windows, and the
+     * It is typically the "Documents" folder on Windows, and the
      * user's home directory on Unix.
      */
     public JFileChooser() {
@@ -319,7 +320,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Passing in a <code>null</code>
      * string causes the file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * @param currentDirectoryPath  a <code>String</code> giving the path
@@ -334,7 +335,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * as the path. Passing in a <code>null</code> file
      * causes the file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * @param currentDirectory  a <code>File</code> object specifying
@@ -450,7 +451,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <code>TransferHandler</code>.
      *
      * @param b the value to set the <code>dragEnabled</code> property to
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *            <code>b</code> is <code>true</code> and
      *            <code>GraphicsEnvironment.isHeadless()</code>
      *            returns <code>true</code>
@@ -574,7 +575,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Sets the current directory. Passing in <code>null</code> sets the
      * file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * If the file passed in as <code>currentDirectory</code> is not a
@@ -662,7 +663,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #showDialog
@@ -687,7 +688,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #showDialog
@@ -747,7 +748,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -788,7 +789,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Creates and returns a new <code>JDialog</code> wrapping
      * <code>this</code> centered on the <code>parent</code>
      * in the <code>parent</code>'s frame.
-     * This method can be overriden to further manipulate the dialog,
+     * This method can be overridden to further manipulate the dialog,
      * to disable resizing, set the location, etc. Example:
      * <pre>
      *     class MyFileChooser extends JFileChooser {
@@ -804,7 +805,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * @param   parent  the parent component of the dialog;
      *                  can be <code>null</code>
      * @return a new <code>JDialog</code> containing this instance
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @since 1.4
@@ -928,7 +929,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.CUSTOM_DIALOG
      * </ul>
      *
-     * @exception IllegalArgumentException if <code>dialogType</code> is
+     * @throws IllegalArgumentException if <code>dialogType</code> is
      *                          not legal
      *
      * @see #getDialogType
@@ -1315,7 +1316,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.FILES_AND_DIRECTORIES
      * </ul>
      *
-     * @exception IllegalArgumentException  if <code>mode</code> is an
+     * @throws IllegalArgumentException  if <code>mode</code> is an
      *                          illegal file selection mode
      *
      * @see #getFileSelectionMode
@@ -1416,7 +1417,8 @@ public class JFileChooser extends JComponent implements Accessible {
 
     /**
      * Returns true if hidden files are not shown in the file chooser;
-     * otherwise, returns false.
+     * otherwise, returns false. The default value of this property may be
+     * derived from the underlying Operating System.
      *
      * @return the status of the file hiding property
      * @see #setFileHidingEnabled
@@ -1461,7 +1463,7 @@ public class JFileChooser extends JComponent implements Accessible {
         fileFilter = filter;
         if (filter != null) {
             if (isMultiSelectionEnabled() && selectedFiles != null && selectedFiles.length > 0) {
-                Vector<File> fList = new Vector<File>();
+                ArrayList<File> fList = new ArrayList<File>();
                 boolean failed = false;
                 for (File file : selectedFiles) {
                     if (filter.accept(file)) {

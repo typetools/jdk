@@ -20,16 +20,19 @@ appear in jdkX.astub files, such as jdk11.astub, in repository
 You **do not need to build** the annotated JDK in order to use it in the Checker
 Framework.
 
-Put the annotated JDK is in a directory named `jdk/` that is a sibling of your
+Put the annotated JDK in a directory named `jdk/` that is a sibling of your
 `checker-framework/` directory.  Now, when you build the Checker Framework
 (e.g., `cd checker-framework && ./gradlew assemble`), it will automatically
 incorporate the annotated JDK into the resulting Checker Framework binaries.
 The `jdk/` and `checker-framework/` directories can be clones of the relevant
 repositories, or they can be (hard or soft) symbolic links to the clones.
 
-However, if for some reason you want to build the JDK on its own rather than
-just use it from the Checker Framework, see file `azure-pipelines.yml`.
-Briefly:
+If there is a mistake in an annotated JDK file (such as a typo in an annotation
+name or a missing `import` statement), the entire file is ignored.  CI builds
+the JDK in order to detect such errors.
+
+If you want to build the JDK rather than just use it from the Checker Framework,
+see file `.azure/azure-pipelines.yml`.  Briefly:
 
 ```sh
 bash configure --disable-warnings-as-errors --with-jtreg
@@ -56,25 +59,25 @@ at <https://checkerframework.org/manual/#library-tips-fully-annotate> .
 
 The typetools:jdk fork is not up to date with respect to `openjdk:jdk` (the
 current OpenJDK version).  The typetools:jdk fork contains all commits through
-the release of JDK 20 (that is, the last commit that is in both openjdk:jdk and
-in openjdk:jdk20u):
+the release of JDK 21 (that is, the last commit that is in both openjdk:jdk and
+in openjdk:jdk21u):
 <https://github.com/typetools/jdk/commit/d562d3fcbe22a0443037c5b447e1a41401275814>
 
 The typetools:jdk fork is an ancestor of JDK release forks such as
-typetools:jdk17u.  The typetools:jdk fork may not compile, because the commit of
+typetools:jdk21u.  The typetools:jdk fork may not compile, because the commit of
 openjdk:jdk on which it is based may not compile, due to changes to tools such
-as compilers.  Repositories such as jdk11u, jdk17u, and jdk20u have been updated
+as compilers.  Repositories such as jdk11u, jdk17u, and jdk21u have been updated
 and do compile.
 
 This fork's annotations are pulled into those repositories, in order to build an
-annotated JDK.  We do not write annotations in (say) typetools:jdk20u, because
+annotated JDK.  We do not write annotations in (say) typetools:jdk21u, because
 it would be painful to get them into typetools:jdk21u due to subsequent commits.
 
 ## Pull request merge conflicts
 
-If a pull request is failing with a merge conflict in `jdk17u`, first
-update jdk17u from its upstreams, using the directions in section
-"The typetools/jdk17u repository" below.
+If a pull request is failing with a merge conflict in `jdk21u`, first
+update jdk21u from its upstreams, using the directions in section
+"The typetools/jdk21u repository" below.
 
 If that does not resolve the issue, then do the following in a clone of the
 branch of `jdk` whose pull request is failing.
@@ -86,18 +89,18 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 URL=`git config --get remote.origin.url`
 SLUG=${URL#*:}
 ORG=${SLUG%/*}
-JDK17DIR=../jdk17u-fork-$ORG-branch-$BRANCH
-JDK17URL=`echo "$URL" | sed 's/jdk/jdk17u/'`
+JDK21DIR=../jdk21u-fork-$ORG-branch-$BRANCH
+JDK21URL=`echo "$URL" | sed 's/jdk/jdk21u/'`
 echo BRANCH=$BRANCH
 echo URL=$URL
-echo JDK17DIR=$JDK17DIR
-echo JDK17URL=$JDK17URL
-if [ -d $JDK17DIR ] ; then
-  (cd $JDK17DIR && git pull)
+echo JDK21DIR=$JDK21DIR
+echo JDK21URL=$JDK21URL
+if [ -d $JDK21DIR ] ; then
+  (cd $JDK21DIR && git pull)
 else
-  git clone $JDK17URL $JDK17DIR && (cd $JDK17DIR && (git checkout $BRANCH || git checkout -b $BRANCH))
+  git clone $JDK21URL $JDK21DIR && (cd $JDK21DIR && (git checkout $BRANCH || git checkout -b $BRANCH))
 fi
-cd $JDK17DIR
+cd $JDK21DIR
 git pull $URL $BRANCH
 ```
 
@@ -110,9 +113,9 @@ git push --set-upstream origin $BRANCH
 Manual step: restart the pull request CI job.
 
 After the pull request is merged to <https://github.com/typetools/jdk>,
-follow the instructions at <https://github.com/typetools/jdk17u> to update
-jdk17u, taking guidance from the merge done in the fork of jdk17u to
-resolve conflicts.  Then, discard the branch in the fork of jdk17u.
+follow the instructions at <https://github.com/typetools/jdk21u> to update
+jdk21u, taking guidance from the merge done in the fork of jdk21u to
+resolve conflicts.  Then, discard the branch in the fork of jdk21u.
 
 ## Qualifier definitions
 
@@ -139,30 +142,30 @@ in the `module-info.java` file.
 Commit the changes, including the new `checker.jar` file and any new `.java`
 files in a `qual/` directory.  (Both are used, by different parts of the build.)
 
-## The typetools/jdk17u repository
+## The typetools/jdk21u repository
 
-The typetools/jdk17u repository is a merge of `openjdk/jdk17u` and `typetools/jdk`.
-That is, it is a fork of `openjdk/jdk17u`, with Checker Framework type annotations.
+The typetools/jdk21u repository is a merge of `openjdk/jdk21u` and `typetools/jdk`.
+That is, it is a fork of `openjdk/jdk21u`, with Checker Framework type annotations.
 
-**Do not edit the `typetools/jdk17u` repository.**
+**Do not edit the `typetools/jdk21u` repository.**
 Make changes in the `typetools/jdk` repository.
 (Note that this README file appears in both the `typetools/jdk`
-and `typetools/jdk17u` repositories!)
+and `typetools/jdk21u` repositories!)
 
-To update jdk17u from its upstreams:
-(These are the only edits to jdk17u allowed, plus changes needed to resolve
+To update jdk21u from its upstreams:
+(These are the only edits to jdk21u allowed, plus changes needed to resolve
 merge conflicts.)
 
 ```sh
-cd jdk17u
+cd jdk21u
 git pull
-git pull https://github.com/openjdk/jdk17u.git
+git pull https://github.com/openjdk/jdk21u.git
 git pull https://github.com/typetools/jdk.git
 ```
 
-## Updating
+## Upgrading to a new version of Java
 
-Whenever Oracle relasese a new version of Java, this repository should be
+Whenever Oracle releases a new version of Java, this repository should be
 updated to pull in more commits from upstream.  Here are some commands to run
 when updating to JDK ${VER}.
 
@@ -170,11 +173,17 @@ Fork into typetools:  <https://github.com/openjdk/jdk${VER}u>
 
 Clone jdk${VER}u repositories into, say, $t/libraries/ .
 
-Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:
-run `git log --graph | tac` on both and find the common prefix.
+Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:  run
 
 ```sh
-last_common_commit=d562d3fcbe22a0443037c5b447e1a41401275814
+git log --graph | tac > git-log-reversed.txt
+```
+
+on both and find the common prefix.
+
+```sh
+VER=21
+last_common_commit=bb377b26730f3d9da7c76e0d171517e811cef3ce
 cd $t/libraries
 git clone -- git@github.com:openjdk/jdk.git jdk-fork-openjdk-commit-${last_common_commit}
 cd jdk-fork-openjdk-commit-${last_common_commit}
@@ -184,28 +193,56 @@ cd $t/libraries/jdk-fork-${USER}-branch-jdk${VER}
 git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 ```
 
+Resolve the merge conflicts.  The commands in `README-merging.el` automate a
+great deal of work (requires using Emacs).
+
+Replace uses of the old JDK version (such as 17) with the new one (such as 21).
+
+* In this file
+* In .azure/azure-pipelines.yml.m4
+
+Make a fork of jdk21u.  Follow the instructions in "The typetools/jdk21u
+repository" above, except replace
+`git pull https://github.com/typetools/jdk.git` 
+by the JDK you are currently working on.
+
+Build JDK 21u (not the main JDK!).
+
+Diff JDK 21 with the upstream commit of OpenJDK, to detect unintentional edits.
+The commands in `README-diffing.el` automate a great deal of work (requires
+using Emacs).
+
+```sh
+cd jdk21u-fork-typetools
+git pull ../jdk-fork-${USER}-branch-jdk21
+```
+
+Push and wait for CI to pass.
+
+DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
+need to be merged, retaining history.
+
 ## Design
 
 The goal of this repository is to write Checker Framework annotations in
 JDK source code.  In order to compile, it is necessary that definitions of
 those annotations are available -- in a module such as java.base, or on the
-classpath.  I tried putting them in `java.base` (which worked for JDK 11),
+classpath.  Putting them in `java.base` worked for JDK 11,
 but I wasn't able to make that work for JDK 17.
 
 ## Upstream README follows
 
 The remainder of this file is the `README.md` from `openjdk/jdk`.
 
-<!-- markdownlint-disable single-h1 -->
-
 # Welcome to the JDK
 
 For build instructions please see the
-[online documentation](https://openjdk.java.net/groups/build/doc/building.html),
+[online documentation](https://openjdk.org/groups/build/doc/building.html),
 or either of these files:
 
 * [doc/building.html](doc/building.html) (html version)
 * [doc/building.md](doc/building.md) (markdown version)
 
-See <https://openjdk.java.net/> for more information about
-the OpenJDK Community and the JDK.
+See <https://openjdk.org/> for more information about the OpenJDK
+Community and the JDK and see <https://bugs.openjdk.org> for JDK issue
+tracking.

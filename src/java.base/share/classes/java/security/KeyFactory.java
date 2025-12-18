@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,7 +44,7 @@ import sun.security.jca.GetInstance.Instance;
  * (transparent representations of the underlying key material), and vice
  * versa.
  *
- * <P> Key factories are bi-directional. That is, they allow you to build an
+ * <P> Key factories are bidirectional. That is, they allow you to build an
  * opaque key object from a given key specification (key material), or to
  * retrieve the underlying key material of a key object in a suitable format.
  *
@@ -119,7 +119,7 @@ public @UsesObjectEquals class KeyFactory {
     private Iterator<Service> serviceIterator;
 
     /**
-     * Creates a KeyFactory object.
+     * Creates a {@code KeyFactory} object.
      *
      * @param keyFacSpi the delegate
      * @param provider the provider
@@ -145,14 +145,14 @@ public @UsesObjectEquals class KeyFactory {
     }
 
     /**
-     * Returns a KeyFactory object that converts
+     * Returns a {@code KeyFactory} object that converts
      * public/private keys of the specified algorithm.
      *
-     * <p> This method traverses the list of registered security Providers,
-     * starting with the most preferred Provider.
-     * A new KeyFactory object encapsulating the
-     * KeyFactorySpi implementation from the first
-     * Provider that supports the specified algorithm is returned.
+     * <p> This method traverses the list of registered security providers,
+     * starting with the most preferred provider.
+     * A new {@code KeyFactory} object encapsulating the
+     * {@code KeyFactorySpi} implementation from the first
+     * provider that supports the specified algorithm is returned.
      *
      * <p> Note that the list of registered providers may be retrieved via
      * the {@link Security#getProviders() Security.getProviders()} method.
@@ -162,7 +162,7 @@ public @UsesObjectEquals class KeyFactory {
      * {@code jdk.security.provider.preferred}
      * {@link Security#getProperty(String) Security} property to determine
      * the preferred provider order for the specified algorithm. This
-     * may be different than the order of providers returned by
+     * may be different from the order of providers returned by
      * {@link Security#getProviders() Security.getProviders()}.
      *
      * @param algorithm the name of the requested key algorithm.
@@ -188,11 +188,11 @@ public @UsesObjectEquals class KeyFactory {
     }
 
     /**
-     * Returns a KeyFactory object that converts
+     * Returns a {@code KeyFactory} object that converts
      * public/private keys of the specified algorithm.
      *
-     * <p> A new KeyFactory object encapsulating the
-     * KeyFactorySpi implementation from the specified provider
+     * <p> A new {@code KeyFactory} object encapsulating the
+     * {@code KeyFactorySpi} implementation from the specified provider
      * is returned.  The specified provider must be registered
      * in the security provider list.
      *
@@ -233,13 +233,13 @@ public @UsesObjectEquals class KeyFactory {
     }
 
     /**
-     * Returns a KeyFactory object that converts
+     * Returns a {@code KeyFactory} object that converts
      * public/private keys of the specified algorithm.
      *
-     * <p> A new KeyFactory object encapsulating the
-     * KeyFactorySpi implementation from the specified Provider
-     * object is returned.  Note that the specified Provider object
-     * does not have to be registered in the provider list.
+     * <p> A new {@code KeyFactory} object encapsulating the
+     * {@code KeyFactorySpi} implementation from the specified provider
+     * is returned.  Note that the specified provider does not
+     * have to be registered in the provider list.
      *
      * @param algorithm the name of the requested key algorithm.
      * See the KeyFactory section in the <a href=
@@ -298,10 +298,10 @@ public @UsesObjectEquals class KeyFactory {
     }
 
     /**
-     * Update the active KeyFactorySpi of this class and return the next
-     * implementation for failover. If no more implemenations are
+     * Update the active {@code KeyFactorySpi} of this class and return the next
+     * implementation for failover. If no more implementations are
      * available, this method returns null. However, the active spi of
-     * this class is never set to null.
+     * this class is never set to {@code null}.
      */
     private KeyFactorySpi nextSpi(KeyFactorySpi oldSpi) {
         synchronized (lock) {

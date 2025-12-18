@@ -45,7 +45,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since 1.5
  */
 @AnnotatedFor({"interning"})
-public @UsesObjectEquals class PointerInfo {
+public final @UsesObjectEquals class PointerInfo {
 
     private final GraphicsDevice device;
     private final Point location;

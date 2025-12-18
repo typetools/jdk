@@ -56,6 +56,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package jdk.internal.org.objectweb.asm.tree;
 
 import org.checkerframework.dataflow.qual.Pure;
@@ -520,12 +521,19 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         AbstractInsnNode remove;
 
         InsnListIterator(final int index) {
-            if (index == size()) {
+            if (index < 0 || index > size()) {
+                throw new IndexOutOfBoundsException();
+            } else if (index == size()) {
                 nextInsn = null;
                 previousInsn = getLast();
             } else {
-                nextInsn = get(index);
-                previousInsn = nextInsn.previousInsn;
+                AbstractInsnNode currentInsn = getFirst();
+                for (int i = 0; i < index; i++) {
+                    currentInsn = currentInsn.nextInsn;
+                }
+
+                nextInsn = currentInsn;
+                previousInsn = currentInsn.previousInsn;
             }
         }
 
@@ -628,3 +636,4 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
     }
 }
+

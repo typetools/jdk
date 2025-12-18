@@ -153,7 +153,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * with the current system color values.
      *
      * @param     systemColors an integer array.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since     1.1
@@ -185,7 +185,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @param     dynamic  If true, Containers should re-layout their
      *            components as the Container is being resized.  If false,
      *            the layout will be validated after resizing is completed.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      *            returns true
      * @see       #isDynamicLayoutSet()
      * @see       #isDynamicLayoutActive()
@@ -212,7 +212,7 @@ public abstract @UsesObjectEquals class Toolkit {
      *
      * @return    true if validation of Containers is done dynamically,
      *            false if validation is done after resizing is finished.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      *            returns true
      * @see       #setDynamicLayout(boolean dynamic)
      * @see       #isDynamicLayoutActive()
@@ -278,7 +278,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * available from {@code GraphicsConfiguration} and
      * {@code GraphicsDevice}.
      * @return    the size of this toolkit's screen, in pixels.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsConfiguration#getBounds
      * @see       java.awt.GraphicsDevice#getDisplayMode
@@ -290,7 +290,7 @@ public abstract @UsesObjectEquals class Toolkit {
     /**
      * Returns the screen resolution in dots-per-inch.
      * @return    this toolkit's screen resolution, in dots-per-inch.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      */
@@ -301,7 +301,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * Gets the insets of the screen.
      * @param     gc a {@code GraphicsConfiguration}
      * @return    the insets of this toolkit's screen, in pixels.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since     1.4
@@ -328,7 +328,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * {@code getColorModel} method
      * of the {@code Component} class.
      * @return    the color model of this toolkit's screen.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @see       java.awt.image.ColorModel
@@ -417,12 +417,10 @@ public abstract @UsesObjectEquals class Toolkit {
                     File propsFile = new File(
                       System.getProperty("user.home") +
                       sep + ".accessibility.properties");
-                    FileInputStream in =
-                        new FileInputStream(propsFile);
-
-                    // Inputstream has been buffered in Properties class
-                    properties.load(in);
-                    in.close();
+                    try (FileInputStream in = new FileInputStream(propsFile)) {
+                        // Inputstream has been buffered in Properties class
+                        properties.load(in);
+                    }
                 } catch (Exception e) {
                     // Per-user accessibility properties file does not exist
                 }
@@ -435,12 +433,10 @@ public abstract @UsesObjectEquals class Toolkit {
                         File propsFile = new File(
                             System.getProperty("java.home") + sep + "conf" +
                             sep + "accessibility.properties");
-                        FileInputStream in =
-                            new FileInputStream(propsFile);
-
-                        // Inputstream has been buffered in Properties class
-                        properties.load(in);
-                        in.close();
+                        try (FileInputStream in = new FileInputStream(propsFile)) {
+                            // Inputstream has been buffered in Properties class
+                            properties.load(in);
+                        }
                     } catch (Exception e) {
                         // System-wide accessibility properties file does
                         // not exist;
@@ -855,7 +851,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * the security manager's {@code checkPrintJobAccess} method to
      * ensure initiation of a print operation is allowed. If the default
      * implementation of {@code checkPrintJobAccess} is used (that is,
-     * that method is not overriden), then this results in a call to the
+     * that method is not overridden), then this results in a call to the
      * security manager's {@code checkPermission} method with a
      * {@code RuntimePermission("queuePrintJob")} permission.
      *
@@ -891,7 +887,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * the security manager's {@code checkPrintJobAccess} method to
      * ensure initiation of a print operation is allowed. If the default
      * implementation of {@code checkPrintJobAccess} is used (that is,
-     * that method is not overriden), then this results in a call to the
+     * that method is not overridden), then this results in a call to the
      * security manager's {@code checkPermission} method with a
      * {@code RuntimePermission("queuePrintJob")} permission.
      *
@@ -981,7 +977,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * checkPermission} method to check {@code AWTPermission("accessClipboard")}.
      *
      * @return    the system Clipboard
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @see       java.awt.datatransfer.Clipboard
@@ -1028,7 +1024,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @return the system selection as a {@code Clipboard}, or
      *         {@code null} if the native platform does not support a
      *         system selection {@code Clipboard}
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      *            returns true
      *
      * @see java.awt.datatransfer.Clipboard
@@ -1065,7 +1061,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * <b>Control</b> key isn't the correct key for accelerators.
      * @return    the modifier mask on the {@code Event} class
      *                 that is used for menu shortcuts on this toolkit.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @see       java.awt.MenuBar
@@ -1119,12 +1115,12 @@ public abstract @UsesObjectEquals class Toolkit {
      * @param  keyCode the key code
      * @return {@code true} if the given key is currently in its "on" state;
      *          otherwise {@code false}
-     * @exception java.lang.IllegalArgumentException if {@code keyCode}
+     * @throws java.lang.IllegalArgumentException if {@code keyCode}
      * is not one of the valid key codes
-     * @exception java.lang.UnsupportedOperationException if the host system doesn't
+     * @throws java.lang.UnsupportedOperationException if the host system doesn't
      * allow getting the state of this key programmatically, or if the keyboard
      * doesn't have this key
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since 1.3
@@ -1155,12 +1151,12 @@ public abstract @UsesObjectEquals class Toolkit {
      *
      * @param  keyCode the key code
      * @param  on the state of the key
-     * @exception java.lang.IllegalArgumentException if {@code keyCode}
+     * @throws java.lang.IllegalArgumentException if {@code keyCode}
      * is not one of the valid key codes
-     * @exception java.lang.UnsupportedOperationException if the host system doesn't
+     * @throws java.lang.UnsupportedOperationException if the host system doesn't
      * allow setting the state of this key programmatically, or if the keyboard
      * doesn't have this key
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since 1.3
@@ -1201,10 +1197,10 @@ public abstract @UsesObjectEquals class Toolkit {
      *   hotSpot values must be less than the Dimension returned by
      *   {@code getBestCursorSize}
      * @param     name a localized description of the cursor, for Java Accessibility use
-     * @exception IndexOutOfBoundsException if the hotSpot values are outside
+     * @throws IndexOutOfBoundsException if the hotSpot values are outside
      *   the bounds of the cursor
      * @return the cursor created
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since     1.2
@@ -1240,7 +1236,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * to use.
      * @return    the closest matching supported cursor size, or a dimension of 0,0 if
      * the Toolkit implementation doesn't support custom cursors.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since     1.2
@@ -1270,7 +1266,7 @@ public abstract @UsesObjectEquals class Toolkit {
      *
      * @return    the maximum number of colors, or zero if custom cursors are not
      * supported by this Toolkit implementation.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since     1.2
@@ -1318,7 +1314,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * @param state one of named frame state constants.
      * @return {@code true} is this frame state is supported by
      *     this Toolkit implementation, {@code false} otherwise.
-     * @exception HeadlessException
+     * @throws HeadlessException
      *     if {@code GraphicsEnvironment.isHeadless()}
      *     returns {@code true}.
      * @see java.awt.Window#addWindowStateListener
@@ -2094,7 +2090,7 @@ public abstract @UsesObjectEquals class Toolkit {
         }
     }
 
-    private class SelectiveAWTEventListener implements AWTEventListener {
+    private static class SelectiveAWTEventListener implements AWTEventListener {
         AWTEventListener listener;
         private long eventMask;
         // This array contains the number of times to call the eventlistener
@@ -2211,7 +2207,7 @@ public abstract @UsesObjectEquals class Toolkit {
      * returned is unmodifiable.
      * @param highlight input method highlight
      * @return style attribute map, or {@code null}
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *     {@code GraphicsEnvironment.isHeadless} returns true
      * @see       java.awt.GraphicsEnvironment#isHeadless
      * @since 1.3
@@ -2368,7 +2364,7 @@ public abstract @UsesObjectEquals class Toolkit {
     * initialized with {@code true}.
     * Changing this value after the {@code Toolkit} class initialization will have no effect.
     *
-    * @exception HeadlessException if GraphicsEnvironment.isHeadless() returns true
+    * @throws HeadlessException if GraphicsEnvironment.isHeadless() returns true
     * @return {@code true} if events from extra mouse buttons are allowed to be processed and posted;
     *         {@code false} otherwise
     * @see System#getProperty(String propertyName)

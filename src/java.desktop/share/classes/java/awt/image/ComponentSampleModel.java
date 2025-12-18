@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -158,9 +158,6 @@ public class ComponentSampleModel extends SampleModel
             throw new IllegalArgumentException("Unsupported dataType.");
         }
         bankIndices = new int[numBands];
-        for (int i=0; i<numBands; i++) {
-            bankIndices[i] = 0;
-        }
         verify();
     }
 
@@ -1193,11 +1190,10 @@ public class ComponentSampleModel extends SampleModel
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        if ((o == null) || !(o instanceof ComponentSampleModel)) {
+        if (!(o instanceof ComponentSampleModel that)) {
             return false;
         }
 
-        ComponentSampleModel that = (ComponentSampleModel)o;
         return this.width == that.width &&
             this.height == that.height &&
             this.numBands == that.numBands &&

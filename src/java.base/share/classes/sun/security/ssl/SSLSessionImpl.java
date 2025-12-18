@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import sun.security.x509.X509CertImpl;
+import sun.security.provider.X509Factory;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -160,7 +160,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         this.port = -1;
         this.localSupportedSignAlgs = Collections.emptySet();
         this.serverNameIndication = null;
-        this.requestedServerNames = Collections.<SNIServerName>emptyList();
+        this.requestedServerNames = Collections.emptyList();
         this.useExtendedMasterSecret = false;
         this.creationTime = System.currentTimeMillis();
         this.identificationProtocol = null;
@@ -410,7 +410,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         // List of SNIServerName
         int len = Short.toUnsignedInt(buf.getShort());
         if (len == 0) {
-            this.requestedServerNames = Collections.<SNIServerName>emptyList();
+            this.requestedServerNames = Collections.emptyList();
         } else {
             requestedServerNames = new ArrayList<>();
             while (len > 0) {
@@ -446,7 +446,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         // Get Peer host & port
         i = Byte.toUnsignedInt(buf.get());
         if (i == 0) {
-            this.host = new String();
+            this.host = "";
         } else {
             b = new byte[i];
             buf.get(b, 0, i);
@@ -465,7 +465,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
                 b = new byte[buf.getInt()];
                 buf.get(b);
                 try {
-                    this.peerCerts[j] = new X509CertImpl(b);
+                    this.peerCerts[j] = X509Factory.cachedGetX509Cert(b);
                 } catch (Exception e) {
                     throw new IOException(e);
                 }
@@ -486,7 +486,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
                     b = new byte[buf.getInt()];
                     buf.get(b);
                     try {
-                        this.localCerts[i] = new X509CertImpl(b);
+                        this.localCerts[i] = X509Factory.cachedGetX509Cert(b);
                     } catch (Exception e) {
                         throw new IOException(e);
                     }
@@ -1010,8 +1010,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             return true;
         }
 
-        if (obj instanceof SSLSessionImpl) {
-            SSLSessionImpl sess = (SSLSessionImpl) obj;
+        if (obj instanceof SSLSessionImpl sess) {
             return (sessionId != null) && (sessionId.equals(
                         sess.getSessionId()));
         }
@@ -1044,7 +1043,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         // Certs are immutable objects, therefore we don't clone them.
         // But do need to clone the array, so that nothing is inserted
         // into peerCerts.
-        return (java.security.cert.Certificate[])peerCerts.clone();
+        return peerCerts.clone();
     }
 
     /**
@@ -1062,8 +1061,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         // clone to preserve integrity of session ... caller can't
         // change record of peer identity even by accident, much
         // less do it intentionally.
-        return (localCerts == null ? null :
-            (java.security.cert.Certificate[])localCerts.clone());
+        return (localCerts == null ? null : localCerts.clone());
     }
 
     /**
@@ -1321,9 +1319,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
     public String[] getValueNames() {
         ArrayList<Object> v = new ArrayList<>();
         Object securityCtx = SecureKey.getCurrentSecurityContext();
-        for (Enumeration<SecureKey> e = boundValues.keys();
-                e.hasMoreElements(); ) {
-            SecureKey key = e.nextElement();
+        for (SecureKey key : boundValues.keySet()) {
             if (securityCtx.equals(key.getSecurityContext())) {
                 v.add(key.getAppKey());
             }
@@ -1380,8 +1376,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             }
 
             if (maximumPacketSize > 0) {
-                return (maximumPacketSize > packetSize) ?
-                        maximumPacketSize : packetSize;
+                return Math.max(maximumPacketSize, packetSize);
             }
 
             if (packetSize != 0) {
@@ -1417,8 +1412,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             }
 
             if (negotiatedMaxFragLen > 0) {
-                return (negotiatedMaxFragLen > fragmentSize) ?
-                        negotiatedMaxFragLen : fragmentSize;
+                return Math.max(negotiatedMaxFragLen, fragmentSize);
             }
 
             if (fragmentSize != 0) {
