@@ -219,8 +219,16 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 
 Push and wait for CI to pass.
 
+Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
+in Javadoc.  For example, the regex "@since[ \t](18|19|20|21)".  For each
+relevant `@since`, add annotations for all the type systems in `@AnnotatedFor`.
+Note: I have not yet done this for JDK 18-21.
+
 DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
 need to be merged, retaining history.
+
+For Michael Ernst only:  update `~/bin/src/mdedots/share/mdevcupdate`
+to refer to jdk21u, not jdk17u.
 
 ## Design
 
