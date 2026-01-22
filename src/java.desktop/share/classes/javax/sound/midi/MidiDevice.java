@@ -27,7 +27,7 @@ package javax.sound.midi;
 
 import java.util.List;
 
-import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 
