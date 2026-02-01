@@ -35,7 +35,7 @@
 
 package java.util;
 
-import org.checkerframework.checker.index.qual.Shrinkable;
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -117,7 +117,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E remove(@GuardSatisfied @NonEmpty @Shrinkable AbstractQueue<E> this) {
+    public E remove(@GuardSatisfied @NonEmpty @CanShrink AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
             return x;
@@ -151,7 +151,7 @@ public abstract class AbstractQueue<E>
      * <p>This implementation repeatedly invokes {@link #poll poll} until it
      * returns {@code null}.
      */
-    public void clear(@GuardSatisfied @Shrinkable AbstractQueue<E> this) {
+    public void clear(@GuardSatisfied @CanShrink AbstractQueue<E> this) {
         while (poll() != null)
             ;
     }

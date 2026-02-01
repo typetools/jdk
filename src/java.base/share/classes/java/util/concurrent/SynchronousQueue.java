@@ -36,8 +36,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
-import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
@@ -897,7 +897,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return the head of this queue
      * @throws InterruptedException {@inheritDoc}
      */
-    public E take(@GuardSatisfied @Shrinkable SynchronousQueue<E> this) throws InterruptedException {
+    public E take(@GuardSatisfied @CanShrink SynchronousQueue<E> this) throws InterruptedException {
         E e = transferer.transfer(null, false, 0);
         if (e != null)
             return e;
@@ -914,7 +914,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      *         specified waiting time elapses before an element is present
      * @throws InterruptedException {@inheritDoc}
      */
-    public E poll(@GuardSatisfied @Shrinkable SynchronousQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
+    public E poll(@GuardSatisfied @CanShrink SynchronousQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         E e = transferer.transfer(null, true, unit.toNanos(timeout));
         if (e != null || !Thread.interrupted())
             return e;
@@ -928,7 +928,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return the head of this queue, or {@code null} if no
      *         element is available
      */
-    public E poll(@GuardSatisfied @Shrinkable SynchronousQueue<E> this) {
+    public E poll(@GuardSatisfied @CanShrink SynchronousQueue<E> this) {
         return transferer.transfer(null, true, 0);
     }
 
@@ -969,7 +969,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * Does nothing.
      * A {@code SynchronousQueue} has no internal capacity.
      */
-    public void clear(@GuardSatisfied @Shrinkable SynchronousQueue<E> this) {
+    public void clear(@GuardSatisfied @CanShrink SynchronousQueue<E> this) {
     }
 
     /**
@@ -992,7 +992,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param o the element to remove
      * @return {@code false}
      */
-    public boolean remove(@Shrinkable SynchronousQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@CanShrink SynchronousQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -1015,7 +1015,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean removeAll(@Shrinkable SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    public boolean removeAll(@CanShrink SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -1026,7 +1026,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @param c the collection
      * @return {@code false}
      */
-    public boolean retainAll(@GuardSatisfied @Shrinkable SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
+    public boolean retainAll(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -1103,7 +1103,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(@GuardSatisfied @Shrinkable SynchronousQueue<E> this, Collection<? super E> c) {
+    public int drainTo(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? super E> c) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -1119,7 +1119,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(@GuardSatisfied @Shrinkable SynchronousQueue<E> this, Collection<? super E> c, int maxElements) {
+    public int drainTo(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
