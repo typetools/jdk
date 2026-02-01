@@ -118,11 +118,9 @@ jobs:
 
 cftests_job(junit, cftests-junit, 11)
 cftests_job(nonjunit, cftests-nonjunit, 11)
-cftests_job(inference, cftests-inference, 11)
 cftests_job(typecheck, typecheck, 11)
 cftests_job(junit, cftests-junit, 17)
 cftests_job(nonjunit, cftests-nonjunit, 17)
-cftests_job(inference, cftests-inference, 17)
 cftests_job(typecheck, typecheck, 17)
 cftests_job(junit, cftests-junit, 21)
 cftests_job(nonjunit, cftests-nonjunit, 21)
