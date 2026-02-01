@@ -14,13 +14,14 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * <p>The Index Checker does not issue warnings about possible {@code IndexOutOfBoundsException}s
  * when the collection has type {@code UncheckedCanShrink}.
  *
- * <p>Thus, {@code @UncheckedCanShrink} is combination of {@code @}{@link CanShrink} and a warning
+ * <p>Thus, {@code @UncheckedCanShrink} is a combination of {@code @}{@link CanShrink} and a warning
  * suppression. It is particularly useful when first annotating a codebase, to temporarily suppress
  * some warnings while focusing on others.
  *
  * @checker_framework.manual #index-checker Index Checker
- * @checker_framework.manual #growonly-checker Grow-only Checker
  */
+// Reinstate when lists are supported:
+//  * @checker_framework.manual #growonly-checker Grow-only Checker
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
