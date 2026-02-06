@@ -28,6 +28,9 @@ package java.sql;
 import org.checkerframework.checker.sqlquotes.qual.SqlEvenQuotes;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.regex.Pattern;
 import static java.util.stream.Collectors.joining;
 
@@ -47,6 +50,8 @@ import static java.util.stream.Collectors.joining;
  * @see ResultSet
  * @since 1.1
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface Statement extends Wrapper, AutoCloseable {
 
     /**
