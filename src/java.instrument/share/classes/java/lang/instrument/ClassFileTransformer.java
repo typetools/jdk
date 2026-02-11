@@ -25,6 +25,10 @@
 
 package java.lang.instrument;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signature.qual.InternalForm;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.security.ProtectionDomain;
 
 /*
@@ -179,6 +183,7 @@ import java.security.ProtectionDomain;
  * @since   1.5
  */
 
+@AnnotatedFor({"nullness", "signature"})
 public interface ClassFileTransformer {
 
     /**
@@ -206,10 +211,10 @@ public interface ClassFileTransformer {
      * @return a well-formed class file buffer (the result of the transform),
      *         or {@code null} if no transform is performed
      */
-    default byte[]
-    transform(  ClassLoader         loader,
-                String              className,
-                Class<?>            classBeingRedefined,
+    default byte @Nullable []
+    transform(  @Nullable ClassLoader         loader,
+                @InternalForm String              className,
+                @Nullable Class<?>            classBeingRedefined,
                 ProtectionDomain    protectionDomain,
                 byte[]              classfileBuffer)
         throws IllegalClassFormatException {
@@ -247,7 +252,7 @@ public interface ClassFileTransformer {
     default byte[]
     transform(  Module              module,
                 ClassLoader         loader,
-                String              className,
+                @InternalForm String              className,
                 Class<?>            classBeingRedefined,
                 ProtectionDomain    protectionDomain,
                 byte[]              classfileBuffer)

@@ -25,6 +25,10 @@
 
 package java.nio.file.spi;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.file.Path;
 import java.io.IOException;
 
@@ -47,7 +51,8 @@ import java.io.IOException;
  * @since 1.7
  */
 
-public abstract class FileTypeDetector {
+@AnnotatedFor({"interning", "nullable"})
+public abstract @UsesObjectEquals class FileTypeDetector {
 
     /**
      * Initializes a new instance of this class.
@@ -83,6 +88,6 @@ public abstract class FileTypeDetector {
      *      RFC 2045: Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies
      * @see java.nio.file.Files#probeContentType
      */
-    public abstract String probeContentType(Path path)
+    public abstract @Nullable String probeContentType(Path path)
         throws IOException;
 }

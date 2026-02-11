@@ -25,6 +25,12 @@
 
 package com.sun.jndi.ldap.pool;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -68,7 +74,9 @@ final class ConnectionDesc {
      * This is useful when searching for a ConnectionDesc using only its
      * PooledConnection.
      */
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         return (obj instanceof ConnectionDesc other)
             && other.conn == conn;
     }

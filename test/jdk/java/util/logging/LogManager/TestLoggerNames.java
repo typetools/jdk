@@ -20,6 +20,9 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -50,7 +53,7 @@ public class TestLoggerNames {
         final Semaphore sem = new Semaphore(0);
         final Semaphore wait = new Semaphore(0);
 
-        public TestLogger(String name, String resourceBundleName) {
+        public TestLogger(String name, @BinaryName String resourceBundleName) {
             super(name, resourceBundleName);
         }
 

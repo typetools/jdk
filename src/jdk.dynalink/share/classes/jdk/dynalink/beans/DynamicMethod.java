@@ -60,6 +60,7 @@
 
 package jdk.dynalink.beans;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.invoke.MethodHandle;
 import jdk.dynalink.CallSiteDescriptor;
 import jdk.dynalink.linker.LinkerServices;
@@ -111,6 +112,7 @@ abstract class DynamicMethod {
      * @param method the method to check
      * @return true if it already contains an equivalent method.
      */
+    @Pure
     abstract boolean contains(SingleDynamicMethod method);
 
     static String getClassAndMethodName(final Class<?> clazz, final String name) {

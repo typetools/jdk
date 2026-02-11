@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * This class is a simple holder for a key pair (a public key and a
  * private key). It does not enforce any security, and, when initialized,
@@ -37,7 +40,8 @@ package java.security;
  * @since 1.1
  */
 
-public final class KeyPair implements java.io.Serializable, DEREncodable {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class KeyPair implements java.io.Serializable, DEREncodable {
 
     @java.io.Serial
     private static final long serialVersionUID = -7565189502268009837L;

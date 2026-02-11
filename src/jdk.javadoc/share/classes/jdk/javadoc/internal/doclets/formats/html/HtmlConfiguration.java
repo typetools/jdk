@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;

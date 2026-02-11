@@ -25,6 +25,13 @@
 
 package java.awt;
 
+import org.checkerframework.checker.guieffect.qual.SafeEffect;
+import org.checkerframework.checker.guieffect.qual.UIType;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.applet.Applet;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
@@ -211,7 +218,8 @@ import static sun.java2d.pipe.hw.ExtendedBufferCapabilities.VSyncType.VSYNC_ON;
  * @author      Arthur van Hoff
  * @author      Sami Shaio
  */
-public abstract class Component implements ImageObserver, MenuContainer,
+@AnnotatedFor({"guieffect", "interning", "nullness"})
+public abstract @UsesObjectEquals @UIType class Component implements ImageObserver, MenuContainer,
                                            Serializable
 {
 
@@ -234,7 +242,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * for top-level components.
      * @see #getParent
      */
-    transient Container parent;
+    transient @Nullable Container parent;
 
     /**
      * The {@code AppContext} of the component. Applets/Plugin may
@@ -282,7 +290,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #getForeground
      * @see #setForeground
      */
-    Color       foreground;
+    @Nullable Color       foreground;
 
     /**
      * The background color for this component.
@@ -292,7 +300,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #getBackground
      * @see #setBackground
      */
-    Color       background;
+    @Nullable Color       background;
 
     /**
      * The font used by this component.
@@ -402,7 +410,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #setDropTarget
      * @see #getDropTarget
      */
-    DropTarget dropTarget;
+    @MonotonicNonNull DropTarget dropTarget;
 
     /**
      * @serial
@@ -518,7 +526,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      *
      * @serial
      */
-    Dimension prefSize;
+    @Nullable Dimension prefSize;
 
     /**
      * @serial Whether or not setPreferredSize has been invoked with a non-null value.
@@ -989,7 +997,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * Constructs a name for this component.  Called by {@code getName}
      * when the name is {@code null}.
      */
-    String constructComponentName() {
+    @Nullable String constructComponentName() {
         return null; // For strict compliance with prior platform versions, a Component
                      // that doesn't set its name should return null from
                      // getName()
@@ -1033,7 +1041,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @return the parent container of this component
      * @since 1.0
      */
-    public Container getParent() {
+    public @Nullable Container getParent() {
         return getParent_NoClientCode();
     }
 
@@ -1041,14 +1049,14 @@ public abstract class Component implements ImageObserver, MenuContainer,
     //       This functionality is implemented in a package-private method
     //       to insure that it cannot be overridden by client subclasses.
     //       DO NOT INVOKE CLIENT CODE ON THIS THREAD!
-    final Container getParent_NoClientCode() {
+    final @Nullable Container getParent_NoClientCode() {
         return parent;
     }
 
     // This method is overridden in the Window class to return null,
     //    because the parent field of the Window object contains
     //    the owner of the window, not its parent.
-    Container getContainer() {
+    @Nullable Container getContainer() {
         return getParent_NoClientCode();
     }
 
@@ -1107,7 +1115,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @return the drop target
      */
 
-    public synchronized DropTarget getDropTarget() { return dropTarget; }
+    public synchronized @Nullable DropTarget getDropTarget() { return dropTarget; }
 
     /**
      * Gets the {@code GraphicsConfiguration} associated with this
@@ -1124,11 +1132,11 @@ public abstract class Component implements ImageObserver, MenuContainer,
      *          {@code Component} or {@code null}
      * @since 1.3
      */
-    public GraphicsConfiguration getGraphicsConfiguration() {
+    public @Nullable GraphicsConfiguration getGraphicsConfiguration() {
         return getGraphicsConfiguration_NoClientCode();
     }
 
-    final GraphicsConfiguration getGraphicsConfiguration_NoClientCode() {
+    final @Nullable GraphicsConfiguration getGraphicsConfiguration_NoClientCode() {
         return graphicsConfig;
     }
 
@@ -1349,7 +1357,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * tree lock, as it is done in Component.getMousePosition() and
      * Container.getMousePosition(boolean).
      */
-    Component findUnderMouseInWindow(PointerInfo pi) {
+    @Nullable Component findUnderMouseInWindow(PointerInfo pi) {
         if (!isShowing()) {
             return null;
         }
@@ -1758,7 +1766,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @since 1.0
      */
     @Transient
-    public Color getForeground() {
+    public @Nullable Color getForeground() {
         Color foreground = this.foreground;
         if (foreground != null) {
             return foreground;
@@ -1776,7 +1784,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #getForeground
      * @since 1.0
      */
-    public void setForeground(Color c) {
+    public void setForeground(@Nullable Color c) {
         Color oldColor = foreground;
         ComponentPeer peer = this.peer;
         foreground = c;
@@ -1813,7 +1821,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @since 1.0
      */
     @Transient
-    public Color getBackground() {
+    public @Nullable Color getBackground() {
         Color background = this.background;
         if (background != null) {
             return background;
@@ -1835,7 +1843,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #getBackground
      * @since 1.0
      */
-    public void setBackground(Color c) {
+    public void setBackground(@Nullable Color c) {
         Color oldColor = background;
         ComponentPeer peer = this.peer;
         background = c;
@@ -1871,7 +1879,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @since 1.0
      */
     @Transient
-    public Font getFont() {
+    public @Nullable Font getFont() {
         return getFont_NoClientCode();
     }
 
@@ -1879,7 +1887,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     //       This functionality is implemented in a package-private method
     //       to insure that it cannot be overridden by client subclasses.
     //       DO NOT INVOKE CLIENT CODE ON THIS THREAD!
-    final Font getFont_NoClientCode() {
+    final @Nullable Font getFont_NoClientCode() {
         Font font = this.font;
         if (font != null) {
             return font;
@@ -2633,7 +2641,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #isPreferredSizeSet
      * @since 1.5
      */
-    public void setPreferredSize(Dimension preferredSize) {
+    public void setPreferredSize(@Nullable Dimension preferredSize) {
         Dimension old;
         // If the preferred size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set preferred
@@ -2709,7 +2717,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #isMinimumSizeSet
      * @since 1.5
      */
-    public void setMinimumSize(Dimension minimumSize) {
+    public void setMinimumSize(@Nullable Dimension minimumSize) {
         Dimension old;
         // If the minimum size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set minimum
@@ -2783,7 +2791,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #isMaximumSizeSet
      * @since 1.5
      */
-    public void setMaximumSize(Dimension maximumSize) {
+    public void setMaximumSize(@Nullable Dimension maximumSize) {
         // If the maximum size was set, use it as the old value, otherwise
         // use null to indicate we didn't previously have a set maximum
         // size.
@@ -3076,7 +3084,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       #paint
      * @since     1.0
      */
-    public Graphics getGraphics() {
+    public @Nullable Graphics getGraphics() {
         if (peer instanceof LightweightPeer) {
             // This is for a lightweight component, need to
             // translate coordinate spaces and clip relative
@@ -3098,7 +3106,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
     }
 
-    final Graphics getGraphics_NoClientCode() {
+    final @Nullable Graphics getGraphics_NoClientCode() {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             // This is for a lightweight component, need to
@@ -3168,7 +3176,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       Cursor
      * @since     1.1
      */
-    public void setCursor(Cursor cursor) {
+    public void setCursor(@Nullable Cursor cursor) {
         this.cursor = cursor;
         updateCursorImmediately();
     }
@@ -3353,6 +3361,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       #update(Graphics)
      * @since     1.0
      */
+    @SafeEffect
     public void repaint() {
         repaint(0, 0, 0, width, height);
     }
@@ -3372,6 +3381,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #update(Graphics)
      * @since 1.0
      */
+    @SafeEffect
     public void repaint(long tm) {
         repaint(tm, 0, 0, width, height);
     }
@@ -3396,6 +3406,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       #update(Graphics)
      * @since     1.0
      */
+    @SafeEffect
     public void repaint(int x, int y, int width, int height) {
         repaint(0, x, y, width, height);
     }
@@ -3422,6 +3433,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       #update(Graphics)
      * @since     1.0
      */
+    @SafeEffect
     public void repaint(long tm, int x, int y, int width, int height) {
         if (this.peer instanceof LightweightPeer) {
             // Needs to be translated to parent coordinates since
@@ -3612,7 +3624,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see GraphicsEnvironment#isHeadless
      * @since 1.0
      */
-    public Image createImage(int width, int height) {
+    public @Nullable Image createImage(int width, int height) {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             if (parent != null) { return parent.createImage(width, height); }
@@ -3637,7 +3649,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see GraphicsEnvironment#isHeadless
      * @since 1.4
      */
-    public VolatileImage createVolatileImage(int width, int height) {
+    public @Nullable VolatileImage createVolatileImage(int width, int height) {
         ComponentPeer peer = this.peer;
         if (peer instanceof LightweightPeer) {
             if (parent != null) {
@@ -3668,7 +3680,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see java.awt.image.VolatileImage
      * @since 1.4
      */
-    public VolatileImage createVolatileImage(int width, int height,
+    public @Nullable VolatileImage createVolatileImage(int width, int height,
                                              ImageCapabilities caps)
             throws AWTException {
         // REMIND : check caps
@@ -4738,7 +4750,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see       #contains(int, int)
      * @since     1.0
      */
-    public Component getComponentAt(int x, int y) {
+    public @Nullable Component getComponentAt(int x, int y) {
         return locate(x, y);
     }
 
@@ -4754,7 +4766,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * replaced by getComponentAt(int, int).
      */
     @Deprecated
-    public Component locate(int x, int y) {
+    public @Nullable Component locate(int x, int y) {
         return contains(x, y) ? this : null;
     }
 
@@ -4766,7 +4778,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see java.awt.Component#contains
      * @since 1.1
      */
-    public Component getComponentAt(Point p) {
+    public @Nullable Component getComponentAt(Point p) {
         return getComponentAt(p.x, p.y);
     }
 
@@ -6094,7 +6106,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      *          {@code null} if no context can be determined
      * @since 1.2
      */
-    public InputContext getInputContext() {
+    public @Nullable InputContext getInputContext() {
         Container parent = this.parent;
         if (parent == null) {
             return null;
@@ -8066,7 +8078,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see Container#isFocusCycleRoot()
      * @since 1.4
      */
-    public Container getFocusCycleRootAncestor() {
+    public @Nullable Container getFocusCycleRootAncestor() {
         Container rootAncestor = this.parent;
         while (rootAncestor != null && !rootAncestor.isFocusCycleRoot()) {
             rootAncestor = rootAncestor.parent;
@@ -8658,7 +8670,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @param newValue the property's new value
      */
     protected void firePropertyChange(String propertyName,
-                                      Object oldValue, Object newValue) {
+                                      @Nullable Object oldValue, @Nullable Object newValue) {
         PropertyChangeSupport changeSupport;
         synchronized (getObjectLock()) {
             changeSupport = this.changeSupport;
@@ -9215,7 +9227,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @return Window ancestor of the component or component by itself if it is Window;
      *         null, if component is not a part of window hierarchy
      */
-    Window getContainingWindow() {
+    @Nullable Window getContainingWindow() {
         return SunToolkit.getContainingWindow(this);
     }
 
@@ -10136,7 +10148,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         return nextAbove < 0 ? -1 : nextAbove;
     }
 
-    final ComponentPeer getHWPeerAboveMe() {
+    final @Nullable ComponentPeer getHWPeerAboveMe() {
         checkTreeLock();
 
         Container cont = getContainer();
@@ -10452,7 +10464,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @param shape the new 'mixing-cutout' shape
      * @since 9
      */
-    public void setMixingCutoutShape(Shape shape) {
+    public void setMixingCutoutShape(@Nullable Shape shape) {
         Region region = shape == null ? null : Region.getInstance(shape, null);
 
         synchronized (getTreeLock()) {

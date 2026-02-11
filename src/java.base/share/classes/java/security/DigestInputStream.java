@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,6 +72,7 @@ import java.io.InputStream;
  * @since 1.2
  */
 
+@AnnotatedFor({"mustcall"})
 public class DigestInputStream extends FilterInputStream {
 
     /* NOTE: This should be made a generic UpdaterInputStream */
@@ -90,7 +94,7 @@ public class DigestInputStream extends FilterInputStream {
      * @param digest the message digest to associate with this stream.
      */
     @SuppressWarnings("this-escape")
-    public DigestInputStream(InputStream stream, MessageDigest digest) {
+    public @MustCallAlias DigestInputStream(@MustCallAlias InputStream stream, MessageDigest digest) {
         super(stream);
         setMessageDigest(digest);
     }

@@ -25,6 +25,8 @@
 
 package javax.xml.transform;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import java.security.CodeSigner;
@@ -88,7 +90,7 @@ public class TransformerException extends Exception {
      * @return the cause, or null if unknown
      */
     @Override
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
 
         return ((containedException == this)
                 ? null

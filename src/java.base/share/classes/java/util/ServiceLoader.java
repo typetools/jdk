@@ -25,6 +25,16 @@
 
 package java.util;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -374,7 +384,8 @@ import jdk.internal.reflect.Reflection;
  * @since 1.6
  */
 
-public final class ServiceLoader<S>
+@AnnotatedFor({"interning", "lock", "nullness"})
+public final @UsesObjectEquals class ServiceLoader<S>
     implements Iterable<S>
 {
     // The class or interface representing the service being loaded
@@ -817,6 +828,8 @@ public final class ServiceLoader<S>
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (nextProvider == null && nextError == null) {
                 // get next provider to load
@@ -850,7 +863,8 @@ public final class ServiceLoader<S>
         }
 
         @Override
-        public Provider<T> next() {
+        @SideEffectsOnly("this")
+        public Provider<T> next(@NonEmpty LayerLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -936,6 +950,8 @@ public final class ServiceLoader<S>
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (nextProvider == null && nextError == null) {
                 // get next provider to load
@@ -962,7 +978,7 @@ public final class ServiceLoader<S>
         }
 
         @Override
-        public Provider<T> next() {
+        public Provider<T> next(@NonEmpty ModuleServicesLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -1138,12 +1154,15 @@ public final class ServiceLoader<S>
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return hasNextService();
         }
 
         @Override
-        public Provider<T> next() {
+        @SideEffectsOnly("this")
+        public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
             return nextService();
         }
     }
@@ -1160,11 +1179,14 @@ public final class ServiceLoader<S>
             Iterator<Provider<S>> second = new LazyClassPathLookupIterator<>();
             return new Iterator<Provider<S>>() {
                 @Override
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return (first.hasNext() || second.hasNext());
                 }
                 @Override
-                public Provider<S> next() {
+                @SideEffectsOnly("this")
+                public Provider<S> next(/*@NonEmpty Iterator<Provider<S>> this*/) {
                     if (first.hasNext()) {
                         return first.next();
                     } else if (second.hasNext()) {
@@ -1214,6 +1236,7 @@ public final class ServiceLoader<S>
      * @return  An iterator that lazily loads providers for this loader's
      *          service
      */
+    @SideEffectFree
     public Iterator<S> iterator() {
 
         // create lookup iterator if needed
@@ -1239,6 +1262,8 @@ public final class ServiceLoader<S>
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 checkReloadCount();
                 if (index < instantiatedProviders.size())
@@ -1247,7 +1272,8 @@ public final class ServiceLoader<S>
             }
 
             @Override
-            public S next() {
+            @SideEffectsOnly("this")
+            public S next(/*@NonEmpty Iterator<S> this*/) {
                 checkReloadCount();
                 S next;
                 if (index < instantiatedProviders.size()) {
@@ -1500,7 +1526,7 @@ public final class ServiceLoader<S>
     @CallerSensitive
     @SuppressWarnings("doclint:reference") // cross-module links
     public static <S> ServiceLoader<S> load(Class<S> service,
-                                            ClassLoader loader)
+                                            @Nullable ClassLoader loader)
     {
         return new ServiceLoader<>(Reflection.getCallerClass(), service, loader);
     }
@@ -1692,7 +1718,8 @@ public final class ServiceLoader<S>
      *
      * @return  A descriptive string
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied ServiceLoader<S> this) {
         return "java.util.ServiceLoader[" + service.getName() + "]";
     }
 

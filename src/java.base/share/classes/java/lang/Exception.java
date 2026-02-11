@@ -25,6 +25,11 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.common.aliasing.qual.Unique;
+
 /**
  * The class {@code Exception} and its subclasses are a form of
  * {@code Throwable} that indicates conditions that a reasonable
@@ -42,6 +47,7 @@ package java.lang;
  * @jls 11.2 Compile-Time Checking of Exceptions
  * @since   1.0
  */
+@AnnotatedFor({"aliasing", "nullness"})
 public class Exception extends Throwable {
     @java.io.Serial
     static final long serialVersionUID = -3387516993124229948L;
@@ -51,7 +57,8 @@ public class Exception extends Throwable {
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public Exception() {
+    @SideEffectFree
+    public @Unique Exception() {
         super();
     }
 
@@ -63,7 +70,8 @@ public class Exception extends Throwable {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public Exception(String message) {
+    @SideEffectFree
+    public @Unique Exception(@Nullable String message) {
         super(message);
     }
 
@@ -81,7 +89,8 @@ public class Exception extends Throwable {
      *         unknown.)
      * @since  1.4
      */
-    public Exception(String message, Throwable cause) {
+    @SideEffectFree
+    public @Unique Exception(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -99,7 +108,8 @@ public class Exception extends Throwable {
      *         unknown.)
      * @since  1.4
      */
-    public Exception(Throwable cause) {
+    @SideEffectFree
+    public @Unique Exception(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -117,7 +127,7 @@ public class Exception extends Throwable {
      *                           be writable
      * @since 1.7
      */
-    protected Exception(String message, Throwable cause,
+    protected @Unique Exception(@Nullable String message, @Nullable Throwable cause,
                         boolean enableSuppression,
                         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);

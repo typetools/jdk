@@ -35,6 +35,9 @@
 
 package java.util.concurrent.locks;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.concurrent.TimeUnit;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
@@ -139,7 +142,8 @@ import jdk.internal.misc.Unsafe;
  *
  * @since 1.5
  */
-public final class LockSupport {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class LockSupport {
     private LockSupport() {} // Cannot be instantiated.
 
     private static void setBlocker(Thread t, Object arg) {

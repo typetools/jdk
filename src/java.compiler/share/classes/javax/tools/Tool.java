@@ -25,10 +25,14 @@
 
 package javax.tools;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Set;
 import java.io.InputStream;
 import java.io.OutputStream;
 import javax.lang.model.SourceVersion;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Common interface for tools that can be invoked from a program.
@@ -41,6 +45,7 @@ import javax.lang.model.SourceVersion;
  *
  * @since 1.6
  */
+@AnnotatedFor("nullness")
 public interface Tool {
     /**
      * Returns the name of this tool, or an empty string if no name is provided.
@@ -70,7 +75,7 @@ public interface Tool {
      * @throws NullPointerException if the array of arguments contains
      * any {@code null} elements.
      */
-    int run(InputStream in, OutputStream out, OutputStream err, String... arguments);
+    int run(@Nullable InputStream in, @Nullable OutputStream out, @Nullable OutputStream err, String... arguments);
 
     /**
      * Returns the source versions of the Java programming language

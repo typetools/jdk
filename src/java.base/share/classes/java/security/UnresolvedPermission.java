@@ -25,6 +25,12 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import sun.security.util.IOUtils;
 
 import java.io.IOException;
@@ -287,8 +293,10 @@ implements java.io.Serializable
      * and has the same type (class) name, permission name, actions, and
      * certificates as this object.
      */
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (obj == this)
             return true;
 

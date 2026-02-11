@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that a method has been invoked at an illegal or
  * inappropriate time.  In other words, the Java environment or
@@ -34,11 +38,13 @@ package java.lang;
  * @author  Jonni Kanerva
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class IllegalStateException extends RuntimeException {
     /**
      * Constructs an IllegalStateException with no detail message.
      * A detail message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public IllegalStateException() {
         super();
     }
@@ -50,7 +56,8 @@ public class IllegalStateException extends RuntimeException {
      *
      * @param s the String that contains a detailed message
      */
-    public IllegalStateException(String s) {
+    @SideEffectFree
+    public IllegalStateException(@Nullable String s) {
         super(s);
     }
 
@@ -70,7 +77,8 @@ public class IllegalStateException extends RuntimeException {
      *         unknown.)
      * @since 1.5
      */
-    public IllegalStateException(String message, Throwable cause) {
+    @SideEffectFree
+    public IllegalStateException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -88,7 +96,8 @@ public class IllegalStateException extends RuntimeException {
      *         unknown.)
      * @since  1.5
      */
-    public IllegalStateException(Throwable cause) {
+    @SideEffectFree
+    public IllegalStateException(@Nullable Throwable cause) {
         super(cause);
     }
 

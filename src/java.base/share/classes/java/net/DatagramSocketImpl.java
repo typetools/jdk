@@ -25,6 +25,10 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,7 +42,8 @@ import java.util.Set;
  * @since  1.1
  */
 
-public abstract class DatagramSocketImpl implements SocketOptions {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class DatagramSocketImpl implements SocketOptions {
 
     /**
      * Constructor for subclasses to call.
@@ -135,6 +140,7 @@ public abstract class DatagramSocketImpl implements SocketOptions {
      *            to a currently unreachable destination. Note, there is no guarantee that the
      *            exception will be thrown.
      */
+    @Pure
     protected abstract int peek(InetAddress i) throws IOException;
 
     /**

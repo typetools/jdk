@@ -25,6 +25,11 @@
 
 package java.nio;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.foreign.MappedMemoryUtilsProxy;
@@ -199,6 +204,7 @@ import java.util.function.Function;
  * @sealedGraph
  */
 
+@AnnotatedFor({"index"})
 public abstract sealed class Buffer
     permits ByteBuffer, CharBuffer, DoubleBuffer, FloatBuffer, IntBuffer,
         LongBuffer, ShortBuffer {
@@ -247,7 +253,7 @@ public abstract sealed class Buffer
     // Creates a new buffer with the given mark, position, limit, and capacity,
     // after checking invariants.
     //
-    Buffer(int mark, int pos, int lim, int cap, MemorySegment segment) {       // package-private
+    Buffer(@GTENegativeOne @LessThan({"#2 + 1"}) int mark, @LessThan({"#3 + 1"}) @NonNegative int pos, @LessThan({"#4 + 1"}) @NonNegative int lim, @NonNegative int cap, MemorySegment segment) {       // package-private
         if (cap < 0)
             throw createCapacityException(cap);
         this.capacity = cap;
@@ -295,7 +301,7 @@ public abstract sealed class Buffer
      *
      * @return  The capacity of this buffer
      */
-    public final int capacity() {
+    public final @NonNegative int capacity() {
         return capacity;
     }
 
@@ -304,7 +310,7 @@ public abstract sealed class Buffer
      *
      * @return  The position of this buffer
      */
-    public final int position() {
+    public final @NonNegative int position() {
         return position;
     }
 
@@ -321,7 +327,7 @@ public abstract sealed class Buffer
      * @throws  IllegalArgumentException
      *          If the preconditions on {@code newPosition} do not hold
      */
-    public Buffer position(int newPosition) {
+    public Buffer position(@NonNegative int newPosition) {
         if (newPosition > limit | newPosition < 0)
             throw createPositionException(newPosition);
         if (mark > newPosition) mark = -1;
@@ -356,7 +362,7 @@ public abstract sealed class Buffer
      *
      * @return  The limit of this buffer
      */
-    public final int limit() {
+    public final @NonNegative int limit() {
         return limit;
     }
 
@@ -374,7 +380,7 @@ public abstract sealed class Buffer
      * @throws  IllegalArgumentException
      *          If the preconditions on {@code newLimit} do not hold
      */
-    public Buffer limit(int newLimit) {
+    public Buffer limit(@NonNegative int newLimit) {
         if (newLimit > capacity | newLimit < 0)
             throw createLimitException(newLimit);
         limit = newLimit;
@@ -516,7 +522,7 @@ public abstract sealed class Buffer
      *
      * @return  The number of elements remaining in this buffer
      */
-    public final int remaining() {
+    public final @NonNegative int remaining() {
         int rem = limit - position;
         return rem > 0 ? rem : 0;
     }
@@ -603,7 +609,7 @@ public abstract sealed class Buffer
      *
      * @since 1.6
      */
-    public abstract int arrayOffset();
+    public abstract @NonNegative int arrayOffset();
 
     /**
      * Tells whether or not this buffer is
@@ -795,7 +801,7 @@ public abstract sealed class Buffer
                                                    boolean readOnly,
                                                    MemorySessionImpl bufferScope);
 
-    final int markValue() {                             // package-private
+    final @GTENegativeOne int markValue() {                             // package-private
         return mark;
     }
 

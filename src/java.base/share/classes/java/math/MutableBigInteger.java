@@ -25,6 +25,9 @@
 
 package java.math;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.math.BigDecimal.INFLATED;
 import static java.math.BigInteger.LONG_MASK;
 import java.util.Arrays;
@@ -46,7 +49,8 @@ import java.util.Arrays;
  * @since   1.3
  */
 
-class MutableBigInteger {
+@AnnotatedFor({"interning"})
+@UsesObjectEquals class MutableBigInteger {
     /**
      * Holds the magnitude of this MutableBigInteger in big endian order.
      * The magnitude may start at an offset into the value array, and it may

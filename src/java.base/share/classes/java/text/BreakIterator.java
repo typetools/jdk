@@ -40,6 +40,11 @@
 
 package java.text;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.common.value.qual.IntVal;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.ref.SoftReference;
 import java.text.spi.BreakIteratorProvider;
 import java.util.Locale;
@@ -235,6 +240,7 @@ import sun.util.locale.provider.LocaleServiceProviderPool;
  *
  */
 
+@AnnotatedFor({"index"})
 public abstract class BreakIterator implements Cloneable
 {
     /**
@@ -264,21 +270,21 @@ public abstract class BreakIterator implements Cloneable
      * and following(int) when either the first or last text boundary has been
      * reached.
      */
-    public static final int DONE = -1;
+    public static final @IntVal({-1}) int DONE = -1;
 
     /**
      * Returns the first boundary. The iterator's current position is set
      * to the first text boundary.
      * @return The character index of the first text boundary.
      */
-    public abstract int first();
+    public abstract @GTENegativeOne int first();
 
     /**
      * Returns the last boundary. The iterator's current position is set
      * to the last text boundary.
      * @return The character index of the last text boundary.
      */
-    public abstract int last();
+    public abstract @GTENegativeOne int last();
 
     /**
      * Returns the nth boundary from the current boundary. If either
@@ -299,7 +305,7 @@ public abstract class BreakIterator implements Cloneable
      * or {@code BreakIterator.DONE} if either first or last text boundary
      * has been reached.
      */
-    public abstract int next(int n);
+    public abstract @GTENegativeOne int next(int n);
 
     /**
      * Returns the boundary following the current boundary. If the current boundary
@@ -312,7 +318,7 @@ public abstract class BreakIterator implements Cloneable
      * Equivalent to next(1).
      * @see #next(int)
      */
-    public abstract int next();
+    public abstract @GTENegativeOne int next();
 
     /**
      * Returns the boundary preceding the current boundary. If the current boundary
@@ -323,7 +329,7 @@ public abstract class BreakIterator implements Cloneable
      * {@code BreakIterator.DONE} if the current boundary is the first text
      * boundary.
      */
-    public abstract int previous();
+    public abstract @GTENegativeOne int previous();
 
     /**
      * Returns the first boundary following the specified character offset. If the
@@ -339,7 +345,7 @@ public abstract class BreakIterator implements Cloneable
      * @throws     IllegalArgumentException if the specified offset is less than
      * the first text boundary or greater than the last text boundary.
      */
-    public abstract int following(int offset);
+    public abstract @GTENegativeOne int following(@NonNegative int offset);
 
     /**
      * Returns the last boundary preceding the specified character offset. If the
@@ -356,7 +362,7 @@ public abstract class BreakIterator implements Cloneable
      * the first text boundary or greater than the last text boundary.
      * @since 1.2
      */
-    public int preceding(int offset) {
+    public @GTENegativeOne int preceding(@NonNegative int offset) {
         // NOTE:  This implementation is here solely because we can't add new
         // abstract methods to an existing class.  There is almost ALWAYS a
         // better, faster way to do this.
@@ -376,7 +382,7 @@ public abstract class BreakIterator implements Cloneable
      * the first text boundary or greater than the last text boundary.
      * @since 1.2
      */
-    public boolean isBoundary(int offset) {
+    public boolean isBoundary(@NonNegative int offset) {
         // NOTE: This implementation probably is wrong for most situations
         // because it fails to take into account the possibility that a
         // CharacterIterator passed to setText() may not have a begin offset
@@ -412,7 +418,7 @@ public abstract class BreakIterator implements Cloneable
      * @see #following(int)
      * @see #preceding(int)
      */
-    public abstract int current();
+    public abstract @GTENegativeOne int current();
 
     /**
      * Get the text being scanned

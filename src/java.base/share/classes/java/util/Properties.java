@@ -25,6 +25,17 @@
 
 package java.util;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.propkey.qual.PropertyKey;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -141,6 +152,7 @@ import jdk.internal.util.xml.PropertiesDefaultHandler;
  * @author  Xueming Shen
  * @since   1.0
  */
+@AnnotatedFor({"index", "lock", "nullness", "propkey"})
 public class Properties extends Hashtable<Object,Object> {
     /**
      * use serialVersionUID from JDK 1.1.X for interoperability
@@ -227,7 +239,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @see #getProperty
      * @since    1.2
      */
-    public synchronized Object setProperty(String key, String value) {
+    public synchronized @Nullable Object setProperty(@GuardSatisfied Properties this, @PropertyKey String key, String value) {
         return put(key, value);
     }
 
@@ -790,7 +802,7 @@ public class Properties extends Hashtable<Object,Object> {
      *             {@code Strings}.
      */
     @Deprecated
-    public void save(OutputStream out, String comments)  {
+    public void save(OutputStream out, @Nullable String comments)  {
         try {
             store(out, comments);
         } catch (IOException e) {
@@ -856,7 +868,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @throws     NullPointerException  if {@code writer} is null.
      * @since 1.6
      */
-    public void store(Writer writer, String comments)
+    public void store(Writer writer, @Nullable String comments)
         throws IOException
     {
         store0((writer instanceof BufferedWriter)?(BufferedWriter)writer
@@ -903,7 +915,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @throws     NullPointerException  if {@code out} is null.
      * @since 1.2
      */
-    public void store(OutputStream out, String comments)
+    public void store(OutputStream out, @Nullable String comments)
         throws IOException
     {
         store0(new BufferedWriter(new OutputStreamWriter(out, ISO_8859_1.INSTANCE)),
@@ -1020,7 +1032,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @see    #loadFromXML(InputStream)
      * @since 1.5
      */
-    public void storeToXML(OutputStream os, String comment)
+    public void storeToXML(OutputStream os, @Nullable String comment)
         throws IOException
     {
         storeToXML(os, comment, UTF_8.INSTANCE);
@@ -1071,7 +1083,7 @@ public class Properties extends Hashtable<Object,Object> {
      *         Encoding in Entities</a>
      * @since 1.5
      */
-    public void storeToXML(OutputStream os, String comment, String encoding)
+    public void storeToXML(OutputStream os, @Nullable String comment, String encoding)
         throws IOException {
         Objects.requireNonNull(os);
         Objects.requireNonNull(encoding);
@@ -1141,7 +1153,8 @@ public class Properties extends Hashtable<Object,Object> {
      * @see     #setProperty
      * @see     #defaults
      */
-    public String getProperty(String key) {
+    @Pure
+    public @Nullable String getProperty(@GuardSatisfied Properties this, @PropertyKey String key) {
         Object oval = map.get(key);
         String sval = (oval instanceof String) ? (String)oval : null;
         Properties defaults;
@@ -1161,7 +1174,8 @@ public class Properties extends Hashtable<Object,Object> {
      * @see     #setProperty
      * @see     #defaults
      */
-    public String getProperty(String key, String defaultValue) {
+    @Pure
+    public @PolyNull String getProperty(@GuardSatisfied Properties this, @PropertyKey String key, @PolyNull String defaultValue) {
         String val = getProperty(key);
         return (val == null) ? defaultValue : val;
     }
@@ -1298,11 +1312,14 @@ public class Properties extends Hashtable<Object,Object> {
     // Hashtable methods overridden and delegated to a ConcurrentHashMap instance
 
     @Override
+    @Pure
     public int size() {
         return map.size();
     }
 
     @Override
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -1320,22 +1337,26 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public boolean contains(Object value) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.contains(value);
     }
 
     @Override
-    public boolean containsValue(Object value) {
+    @Pure
+    public boolean containsValue(@GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.containsValue(value);
     }
 
     @Override
-    public boolean containsKey(Object key) {
+    @Pure
+    public boolean containsKey(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.containsKey(key);
     }
 
     @Override
-    public Object get(Object key) {
+    public @Nullable Object get(Object key) {
         return map.get(key);
     }
 
@@ -1345,7 +1366,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized Object remove(Object key) {
+    public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
@@ -1365,7 +1386,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public Set<Object> keySet() {
+    public Set<@KeyFor("this") Object> keySet() {
         return Collections.synchronizedSet(map.keySet(), this);
     }
 
@@ -1375,7 +1396,8 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public Set<Map.Entry<Object, Object>> entrySet() {
+    @SideEffectFree
+    public Set<Map.Entry<@KeyFor("this") Object, Object>> entrySet() {
         return Collections.synchronizedSet(new EntrySet(map.entrySet()), this);
     }
 
@@ -1391,13 +1413,17 @@ public class Properties extends Hashtable<Object,Object> {
             this.entrySet = entrySet;
         }
 
-        @Override public int size() { return entrySet.size(); }
+        @Pure @Override public int size() { return entrySet.size(); }
+        @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Override public boolean isEmpty() { return entrySet.isEmpty(); }
-        @Override public boolean contains(Object o) { return entrySet.contains(o); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
-        @Override public <T> T[] toArray(T[] a) { return entrySet.toArray(a); }
+        @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         @Override public void clear() { entrySet.clear(); }
-        @Override public boolean remove(Object o) { return entrySet.remove(o); }
+        @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 
         @Override
         public boolean add(Map.Entry<Object, Object> e) {
@@ -1410,7 +1436,8 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        public boolean containsAll(Collection<?> c) {
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.containsAll(c);
         }
 
@@ -1430,12 +1457,12 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
-        public boolean retainAll(Collection<?> c) {
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
         }
 
@@ -1456,7 +1483,8 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public Object getOrDefault(Object key, Object defaultValue) {
+    @Pure
+    public Object getOrDefault(@GuardSatisfied @Nullable @UnknownSignedness Object key, Object defaultValue) {
         return map.getOrDefault(key, defaultValue);
     }
 
@@ -1476,7 +1504,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized boolean remove(Object key, Object value) {
+    public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 
@@ -1491,25 +1519,25 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    public synchronized Object computeIfAbsent(Object key,
-            Function<? super Object, ?> mappingFunction) {
+    public synchronized @PolyNull Object computeIfAbsent(Object key,
+            Function<? super Object, ? extends @PolyNull Object> mappingFunction) {
         return map.computeIfAbsent(key, mappingFunction);
     }
 
     @Override
-    public synchronized Object computeIfPresent(Object key,
-            BiFunction<? super Object, ? super Object, ?> remappingFunction) {
+    public synchronized @PolyNull Object computeIfPresent(Object key,
+            BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
         return map.computeIfPresent(key, remappingFunction);
     }
 
     @Override
-    public synchronized Object compute(Object key,
-            BiFunction<? super Object, ? super Object, ?> remappingFunction) {
+    public synchronized @PolyNull Object compute(Object key,
+            BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
         return map.compute(key, remappingFunction);
     }
 
     @Override
-    public synchronized Object merge(Object key, Object value,
+    public synchronized @Nullable Object merge(Object key, Object value,
             BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return map.merge(key, value, remappingFunction);
     }

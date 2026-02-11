@@ -25,6 +25,10 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -42,7 +46,8 @@ import static java.util.zip.ZipUtils.NIO_ACCESS;
  * @author      David Connelly
  * @since 1.1
  */
-public class CRC32 implements Checksum {
+@AnnotatedFor({"index", "interning"})
+public @UsesObjectEquals class CRC32 implements Checksum {
     private int crc;
 
     /**
@@ -70,7 +75,7 @@ public class CRC32 implements Checksum {
      *         the array {@code b}.
      */
     @Override
-    public void update(byte[] b, int off, int len) {
+    public void update(byte[] b, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
         if (b == null) {
             throw new NullPointerException();
         }

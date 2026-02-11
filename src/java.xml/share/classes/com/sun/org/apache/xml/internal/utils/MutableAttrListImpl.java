@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.xml.internal.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.Serializable;
 
 import org.xml.sax.Attributes;
@@ -131,6 +132,7 @@ public MutableAttrListImpl()
    *
    * @return true if an attribute is found with this name
    */
+  @Pure
   public boolean contains(String name)
   {
     return getValue(name) != null;

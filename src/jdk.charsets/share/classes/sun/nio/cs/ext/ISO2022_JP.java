@@ -25,6 +25,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -150,6 +151,7 @@ public class ISO2022_JP
         return "ISO2022JP";
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs instanceof JIS_X_0201)
                 || (cs instanceof US_ASCII)

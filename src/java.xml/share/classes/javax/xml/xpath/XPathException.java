@@ -25,6 +25,8 @@
 
 package javax.xml.xpath;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -96,7 +98,7 @@ public class XPathException extends Exception {
      *
      * @return Cause of this XPathException.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return super.getCause();
     }
 

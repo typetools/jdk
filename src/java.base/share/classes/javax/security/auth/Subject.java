@@ -25,6 +25,17 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -749,7 +760,9 @@ public final class Subject implements java.io.Serializable {
      *          {@code Subject}.
      */
     @Override
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
 
         if (this == o) {
             return true;
@@ -1011,10 +1024,13 @@ public final class Subject implements java.io.Serializable {
             return new Iterator<>() {
                 final ListIterator<E> i = list.listIterator(0);
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return i.hasNext();
                 }
 
+                @SideEffectsOnly("this")
                 public E next() {
                     return i.next();
                 }
@@ -1031,6 +1047,7 @@ public final class Subject implements java.io.Serializable {
             };
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(E o) {
 
             Objects.requireNonNull(o,
@@ -1061,7 +1078,7 @@ public final class Subject implements java.io.Serializable {
             }
         }
 
-        public boolean remove(Object o) {
+        public boolean remove(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1078,7 +1095,9 @@ public final class Subject implements java.io.Serializable {
             return false;
         }
 
-        public boolean contains(Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
 
             Objects.requireNonNull(o,
                     ResourcesMgr.getString("invalid.null.input.s."));
@@ -1106,7 +1125,7 @@ public final class Subject implements java.io.Serializable {
             return result;
         }
 
-        public boolean removeAll(Collection<?> c) {
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;
@@ -1125,7 +1144,8 @@ public final class Subject implements java.io.Serializable {
             return modified;
         }
 
-        public boolean containsAll(Collection<?> c) {
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             for (Object item : c) {
@@ -1137,7 +1157,7 @@ public final class Subject implements java.io.Serializable {
             return true;
         }
 
-        public boolean retainAll(Collection<?> c) {
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             c = collectionNullClean(c);
 
             boolean modified = false;
@@ -1162,6 +1182,7 @@ public final class Subject implements java.io.Serializable {
             }
         }
 
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return elements.isEmpty();
         }
@@ -1307,6 +1328,7 @@ public final class Subject implements java.io.Serializable {
         }
 
         @Override
+        @EnsuresNonEmpty("this")
         public boolean add(T o) {
 
             if (!c.isAssignableFrom(o.getClass())) {

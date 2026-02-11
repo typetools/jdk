@@ -25,6 +25,10 @@
 
 package java.nio.file.spi;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -107,7 +111,8 @@ import sun.nio.ch.FileChannelImpl;
  * @since 1.7
  */
 
-public abstract class FileSystemProvider {
+@AnnotatedFor({"interning", "nullness"})
+public abstract @UsesObjectEquals class FileSystemProvider {
     // lock using when loading providers
     private static final Object lock = new Object();
 
@@ -512,7 +517,7 @@ public abstract class FileSystemProvider {
      */
     public AsynchronousFileChannel newAsynchronousFileChannel(Path path,
                                                               Set<? extends OpenOption> options,
-                                                              ExecutorService executor,
+                                                              @Nullable ExecutorService executor,
                                                               FileAttribute<?>... attrs)
         throws IOException
     {
@@ -924,7 +929,7 @@ public abstract class FileSystemProvider {
      * @return  a file attribute view of the specified type, or {@code null} if
      *          the attribute view type is not available
      */
-    public abstract <V extends FileAttributeView> V
+    public abstract <V extends @Nullable FileAttributeView> V
         getFileAttributeView(Path path, Class<V> type, LinkOption... options);
 
     /**

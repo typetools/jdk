@@ -25,6 +25,12 @@
 
 package sun.nio.fs;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.nio.file.FileStore;
 import java.nio.file.FileSystemException;
 import java.nio.file.attribute.AclFileAttributeView;
@@ -236,7 +242,9 @@ class WindowsFileStore
     }
 
     @Override
-    public boolean equals(Object ob) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object ob) {
         if (ob == this)
             return true;
         if (ob instanceof WindowsFileStore other) {

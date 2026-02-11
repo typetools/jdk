@@ -26,14 +26,18 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * A parameter that contains a URI pointing to data intended for a
  * PolicySpi or ConfigurationSpi implementation.
  *
  * @since 1.6
  */
+@AnnotatedFor({"interning"})
 @SuppressWarnings("removal")
-public class URIParameter implements
+public @UsesObjectEquals class URIParameter implements
         Policy.Parameters, javax.security.auth.login.Configuration.Parameters {
 
     private final java.net.URI uri;

@@ -25,6 +25,17 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.regex.qual.Regex;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.net.URI;
 import java.net.URL;
 import java.net.MalformedURLException;
@@ -150,6 +161,12 @@ import jdk.internal.util.StaticProperty;
  * @since   1.0
  */
 
+@CFComment({"nullness:",
+"This @EnsuresNonNullIfTrue is not true, since the list methods also",
+"return null in the case of an IO error (instead of throwing IOException).",
+"EnsuresNonNullIf(expression={\"list()\",\"list(FilenameFilter)\",\"listFiles()\",\"listFiles(FilenameFilter)\",\"listFiles(FileFilter)\"}, result=true)\""
+})
+@AnnotatedFor({"index", "interning", "lock", "nullness"})
 public class File
     implements Serializable, Comparable<File>
 {
@@ -187,6 +204,7 @@ public class File
      *
      * @return true if the file path is invalid.
      */
+    @Pure
     final boolean isInvalid() {
         PathStatus s = status;
         if (s == null) {
@@ -206,6 +224,7 @@ public class File
      * Returns the length of this abstract pathname's prefix.
      * For use by FileSystem classes.
      */
+    @Pure
     int getPrefixLength() {
         return prefixLength;
     }
@@ -225,7 +244,7 @@ public class File
      * string for convenience.  This string contains a single character, namely
      * {@link #separatorChar}.
      */
-    public static final String separator = String.valueOf(separatorChar);
+    public static final @Interned String separator = String.valueOf(separatorChar);
 
     /**
      * The system-dependent path-separator character.  This field is
@@ -244,7 +263,7 @@ public class File
      * for convenience.  This string contains a single character, namely
      * {@link #pathSeparatorChar}.
      */
-    public static final String pathSeparator = String.valueOf(pathSeparatorChar);
+    public static final @Interned @Regex String pathSeparator = String.valueOf(pathSeparatorChar);
 
 
     /* -- Constructors -- */
@@ -262,6 +281,7 @@ public class File
      * The parameter order is used to disambiguate this method from the
      * public(File, String) constructor.
      */
+    @SideEffectFree
     private File(String child, File parent) {
         assert parent.path != null;
         assert (!parent.path.isEmpty());
@@ -278,6 +298,7 @@ public class File
      * @throws  NullPointerException
      *          If the {@code pathname} argument is {@code null}
      */
+    @SideEffectFree
     public File(String pathname) {
         if (pathname == null) {
             throw new NullPointerException();
@@ -318,7 +339,8 @@ public class File
      * @throws  NullPointerException
      *          If {@code child} is {@code null}
      */
-    public File(String parent, String child) {
+    @SideEffectFree
+    public File(@Nullable String parent, String child) {
         if (child == null) {
             throw new NullPointerException();
         }
@@ -361,7 +383,8 @@ public class File
      * @throws  NullPointerException
      *          If {@code child} is {@code null}
      */
-    public File(File parent, String child) {
+    @SideEffectFree
+    public File(@Nullable File parent, String child) {
         if (child == null) {
             throw new NullPointerException();
         }
@@ -416,6 +439,7 @@ public class File
      * @see java.net.URI
      * @since 1.4
      */
+    @SideEffectFree
     public File(URI uri) {
 
         // Check our many preconditions
@@ -457,6 +481,8 @@ public class File
      *          pathname, or the empty string if this pathname's name sequence
      *          is empty
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getName() {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) return path.substring(prefixLength);
@@ -476,7 +502,10 @@ public class File
      *          abstract pathname, or {@code null} if this pathname
      *          does not name a parent
      */
-    public String getParent() {
+    @Pure
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
+    public @Nullable String getParent(@GuardSatisfied File this) {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) {
             if ((prefixLength > 0) && (path.length() > prefixLength))
@@ -502,7 +531,10 @@ public class File
      *
      * @since 1.2
      */
-    public File getParentFile() {
+    @Pure
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
+    public @Nullable File getParentFile(@GuardSatisfied File this) {
         String p = this.getParent();
         if (p == null) return null;
         if (getClass() != File.class) {
@@ -518,6 +550,8 @@ public class File
      *
      * @return  The string form of this abstract pathname
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getPath() {
         return path;
     }
@@ -535,7 +569,8 @@ public class File
      * @return  {@code true} if this abstract pathname is absolute,
      *          {@code false} otherwise
      */
-    public boolean isAbsolute() {
+    @Pure
+    public boolean isAbsolute(@GuardSatisfied File this) {
         return FS.isAbsolute(this);
     }
 
@@ -559,6 +594,7 @@ public class File
      *
      * @see     java.io.File#isAbsolute()
      */
+    @SideEffectFree
     public String getAbsolutePath() {
         return FS.resolve(this);
     }
@@ -572,6 +608,8 @@ public class File
      *
      * @since 1.2
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getAbsoluteFile() {
         String absPath = getAbsolutePath();
         if (getClass() != File.class) {
@@ -612,6 +650,10 @@ public class File
      * @since   1.1
      * @see     Path#toRealPath
      */
+    @CFComment({"rest of file is not annotated for the Lock Checker",
+                "pure with respect to .equals but not =="})
+    @SideEffectFree
+    @ReleasesNoLocks
     public String getCanonicalPath() throws IOException {
         if (isInvalid()) {
             throw new IOException("Invalid file path");
@@ -634,6 +676,8 @@ public class File
      * @since 1.2
      * @see     Path#toRealPath
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getCanonicalFile() throws IOException {
         String canonPath = getCanonicalPath();
         if (getClass() != File.class) {
@@ -642,6 +686,8 @@ public class File
         return new File(canonPath, FS.prefixLength(canonPath));
     }
 
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     private static String slashify(String path, boolean isDirectory) {
         String p = path;
         if (File.separatorChar != '/')
@@ -676,6 +722,8 @@ public class File
      * {@link #toURI() toURI} method, and then converting the URI into a URL
      * via the {@link java.net.URI#toURL() URI.toURL} method.
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     @Deprecated
     public URL toURL() throws MalformedURLException {
         if (isInvalid()) {
@@ -724,6 +772,8 @@ public class File
      * @see java.net.URI#toURL()
      * @since 1.4
      */
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public URI toURI() {
         try {
             File f = getAbsoluteFile();
@@ -750,6 +800,7 @@ public class File
      *          abstract pathname exists <em>and</em> can be read by the
      *          application; {@code false} otherwise
      */
+    @SideEffectFree
     public boolean canRead() {
         if (isInvalid()) {
             return false;
@@ -769,6 +820,7 @@ public class File
      *          the application is allowed to write to the file;
      *          {@code false} otherwise.
      */
+    @SideEffectFree
     public boolean canWrite() {
         if (isInvalid()) {
             return false;
@@ -783,6 +835,7 @@ public class File
      * @return  {@code true} if and only if the file or directory denoted
      *          by this abstract pathname exists; {@code false} otherwise
      */
+    @SideEffectFree
     public boolean exists() {
         if (isInvalid()) {
             return false;
@@ -804,6 +857,7 @@ public class File
      *          abstract pathname exists <em>and</em> is a directory;
      *          {@code false} otherwise
      */
+    @SideEffectFree
     public boolean isDirectory() {
         if (isInvalid()) {
             return false;
@@ -827,6 +881,7 @@ public class File
      *          abstract pathname exists <em>and</em> is a normal file;
      *          {@code false} otherwise
      */
+    @SideEffectFree
     public boolean isFile() {
         if (isInvalid()) {
             return false;
@@ -855,6 +910,7 @@ public class File
      *
      * @since 1.2
      */
+    @SideEffectFree
     public boolean isHidden() {
         if (isInvalid()) {
             return false;
@@ -889,6 +945,7 @@ public class File
      *          be negative indicating the number of milliseconds before the
      *          epoch
      */
+    @SideEffectFree
     public long lastModified() {
         if (isInvalid()) {
             return 0L;
@@ -911,7 +968,8 @@ public class File
      *          operating systems may return {@code 0L} for pathnames
      *          denoting system-dependent entities such as devices or pipes.
      */
-    public long length() {
+    @SideEffectFree
+    public @NonNegative long length() {
         if (isInvalid()) {
             return 0L;
         }
@@ -1028,7 +1086,8 @@ public class File
      *          this abstract pathname does not denote a directory, or if an
      *          I/O error occurs.
      */
-    public String[] list() {
+    @SideEffectFree
+    public String @Nullable [] list() {
         return normalizedList();
     }
 
@@ -1082,7 +1141,8 @@ public class File
      *
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
-    public String[] list(FilenameFilter filter) {
+    @SideEffectFree
+    public String @Nullable [] list(@Nullable FilenameFilter filter) {
         String[] names = normalizedList();
         if ((names == null) || (filter == null)) {
             return names;
@@ -1129,7 +1189,8 @@ public class File
      *
      * @since  1.2
      */
-    public File[] listFiles() {
+    @SideEffectFree
+    public File @Nullable [] listFiles() {
         String[] ss = normalizedList();
         if (ss == null) return null;
         int n = ss.length;
@@ -1165,7 +1226,8 @@ public class File
      * @since  1.2
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
-    public File[] listFiles(FilenameFilter filter) {
+    @SideEffectFree
+    public File @Nullable [] listFiles(@Nullable FilenameFilter filter) {
         String[] ss = normalizedList();
         if (ss == null) return null;
         ArrayList<File> files = new ArrayList<>();
@@ -1199,7 +1261,8 @@ public class File
      * @since  1.2
      * @see java.nio.file.Files#newDirectoryStream(Path,java.nio.file.DirectoryStream.Filter)
      */
-    public File[] listFiles(FileFilter filter) {
+    @SideEffectFree
+    public File @Nullable [] listFiles(@Nullable FileFilter filter) {
         String[] ss = normalizedList();
         if (ss == null) return null;
         ArrayList<File> files = new ArrayList<>();
@@ -1559,6 +1622,7 @@ public class File
      *
      * @since 1.6
      */
+    @SideEffectFree
     public boolean canExecute() {
         if (isInvalid()) {
             return false;
@@ -1608,7 +1672,8 @@ public class File
      * @since  1.2
      * @see java.nio.file.FileStore
      */
-    public static File[] listRoots() {
+    @SideEffectFree
+    public static File @Nullable [] listRoots() {
         return FS.listRoots();
     }
 
@@ -1628,7 +1693,8 @@ public class File
      * @since  1.6
      * @see FileStore#getTotalSpace
      */
-    public long getTotalSpace() {
+    @SideEffectFree
+    public @NonNegative long getTotalSpace() {
         if (isInvalid()) {
             return 0L;
         }
@@ -1660,7 +1726,8 @@ public class File
      * @since  1.6
      * @see FileStore#getUnallocatedSpace
      */
-    public long getFreeSpace() {
+    @SideEffectFree
+    public @NonNegative long getFreeSpace() {
         if (isInvalid()) {
             return 0L;
         }
@@ -1695,7 +1762,8 @@ public class File
      * @since  1.6
      * @see FileStore#getUsableSpace
      */
-    public long getUsableSpace() {
+    @SideEffectFree
+    public @NonNegative long getUsableSpace() {
         if (isInvalid()) {
             return 0L;
         }
@@ -1865,8 +1933,8 @@ public class File
      *
      * @since 1.2
      */
-    public static File createTempFile(String prefix, String suffix,
-                                      File directory)
+    public static File createTempFile(String prefix, @Nullable String suffix,
+                                      @Nullable File directory)
         throws IOException
     {
         if (prefix.length() < 3) {
@@ -1922,7 +1990,7 @@ public class File
      * @since 1.2
      * @see java.nio.file.Files#createTempDirectory(String,FileAttribute[])
      */
-    public static File createTempFile(String prefix, String suffix)
+    public static File createTempFile(String prefix, @Nullable String suffix)
         throws IOException
     {
         return createTempFile(prefix, suffix, null);
@@ -1947,7 +2015,8 @@ public class File
      *
      * @since   1.2
      */
-    public int compareTo(File pathname) {
+    @Pure
+    public int compareTo(@GuardSatisfied File this, @GuardSatisfied File pathname) {
         return FS.compare(this, pathname);
     }
 
@@ -1972,7 +2041,8 @@ public class File
      * @see #compareTo(File)
      * @see java.nio.file.Files#isSameFile(Path,Path)
      */
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@GuardSatisfied File this, @GuardSatisfied @Nullable Object obj) {
         if (obj instanceof File file) {
             return compareTo(file) == 0;
         }
@@ -1993,7 +2063,8 @@ public class File
      *
      * @return  A hash code for this abstract pathname
      */
-    public int hashCode() {
+    @Pure
+    public int hashCode(@GuardSatisfied File this) {
         return FS.hashCode(this);
     }
 
@@ -2003,7 +2074,8 @@ public class File
      *
      * @return  The string form of this abstract pathname
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied File this) {
         return getPath();
     }
 
@@ -2090,6 +2162,7 @@ public class File
      * @since   1.7
      * @see Path#toFile
      */
+    @SideEffectFree
     public Path toPath() {
         Path result = filePath;
         if (result == null) {

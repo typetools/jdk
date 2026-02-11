@@ -25,6 +25,7 @@
 
 package sun.nio.cs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 
 abstract class Unicode extends Charset
@@ -34,6 +35,7 @@ abstract class Unicode extends Charset
         super(name, aliases);
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs instanceof US_ASCII)
                 || (cs instanceof ISO_8859_1)

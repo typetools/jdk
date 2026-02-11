@@ -25,6 +25,10 @@
 
 package java.nio.channels.spi;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.common.returnsreceiver.qual.This;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
@@ -56,6 +60,7 @@ import java.util.function.Consumer;
  * @since 1.4
  */
 
+@AnnotatedFor({"mustcall", "returnsreceiver"})
 public abstract class AbstractSelectableChannel
     extends SelectableChannel
 {
@@ -315,7 +320,7 @@ public abstract class AbstractSelectableChannel
      *
      * @throws  ClosedChannelException {@inheritDoc}
      */
-    public final SelectableChannel configureBlocking(boolean block)
+    public final @MustCallAlias @This SelectableChannel configureBlocking(@MustCallAlias AbstractSelectableChannel this, boolean block)
         throws IOException
     {
         synchronized (regLock) {

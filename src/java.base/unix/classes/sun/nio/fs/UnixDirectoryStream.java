@@ -25,6 +25,9 @@
 
 package sun.nio.fs;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.nio.file.*;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -193,12 +196,14 @@ class UnixDirectoryStream
         }
 
         @Override
+        @Pure
         public synchronized boolean hasNext() {
             if (nextEntry == null && !atEof)
                 nextEntry = readNextEntry();
             return nextEntry != null;
         }
 
+        @SideEffectsOnly("this")
         @Override
         public synchronized Path next() {
             Path result;

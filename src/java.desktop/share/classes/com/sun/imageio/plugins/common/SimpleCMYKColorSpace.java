@@ -25,6 +25,12 @@
 
 package com.sun.imageio.plugins.common;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.awt.color.ColorSpace;
 import java.io.Serial;
 
@@ -58,7 +64,9 @@ public final class SimpleCMYKColorSpace extends ColorSpace {
         csRGB = ColorSpace.getInstance(ColorSpace.CS_LINEAR_RGB);
     }
 
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         return o instanceof SimpleCMYKColorSpace;
     }
 

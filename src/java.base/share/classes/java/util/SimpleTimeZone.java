@@ -38,6 +38,12 @@
 
 package java.util;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -148,6 +154,7 @@ import sun.util.calendar.Gregorian;
  * @author   David Goldsmith, Mark Davis, Chen-Lieh Huang, Alan Liu
  */
 
+@AnnotatedFor({"lock", "nullness", "index"})
 public class SimpleTimeZone extends TimeZone {
     /**
      * Constructs a SimpleTimeZone with the given base time zone offset from GMT
@@ -361,7 +368,7 @@ public class SimpleTimeZone extends TimeZone {
      *
      * @param year  The daylight saving starting year.
      */
-    public void setStartYear(int year)
+    public void setStartYear(@GuardSatisfied SimpleTimeZone this, int year)
     {
         startYear = year;
         invalidateCache();
@@ -385,7 +392,7 @@ public class SimpleTimeZone extends TimeZone {
      * @throws    IllegalArgumentException if the {@code startMonth}, {@code startDay},
      * {@code startDayOfWeek}, or {@code startTime} parameters are out of range
      */
-    public void setStartRule(int startMonth, int startDay, int startDayOfWeek, int startTime)
+    public void setStartRule(@GuardSatisfied SimpleTimeZone this, int startMonth, int startDay, int startDayOfWeek, int startTime)
     {
         this.startMonth = startMonth;
         this.startDay = startDay;
@@ -412,7 +419,7 @@ public class SimpleTimeZone extends TimeZone {
      * {@code startDayOfMonth}, or {@code startTime} parameters are out of range
      * @since 1.2
      */
-    public void setStartRule(int startMonth, int startDay, int startTime) {
+    public void setStartRule(@GuardSatisfied SimpleTimeZone this, int startMonth, int startDay, int startTime) {
         setStartRule(startMonth, startDay, 0, startTime);
     }
 
@@ -435,7 +442,7 @@ public class SimpleTimeZone extends TimeZone {
      * {@code startDayOfWeek}, or {@code startTime} parameters are out of range
      * @since 1.2
      */
-    public void setStartRule(int startMonth, int startDay, int startDayOfWeek,
+    public void setStartRule(@GuardSatisfied SimpleTimeZone this, int startMonth, int startDay, int startDayOfWeek,
                              int startTime, boolean after)
     {
         // TODO: this method doesn't check the initial values of dayOfMonth or dayOfWeek.
@@ -465,7 +472,7 @@ public class SimpleTimeZone extends TimeZone {
      * @throws    IllegalArgumentException if the {@code endMonth}, {@code endDay},
      * {@code endDayOfWeek}, or {@code endTime} parameters are out of range
      */
-    public void setEndRule(int endMonth, int endDay, int endDayOfWeek,
+    public void setEndRule(@GuardSatisfied SimpleTimeZone this, int endMonth, int endDay, int endDayOfWeek,
                            int endTime)
     {
         this.endMonth = endMonth;
@@ -493,7 +500,7 @@ public class SimpleTimeZone extends TimeZone {
      * or {@code endTime} parameters are out of range
      * @since 1.2
      */
-    public void setEndRule(int endMonth, int endDay, int endTime)
+    public void setEndRule(@GuardSatisfied SimpleTimeZone this, int endMonth, int endDay, int endTime)
     {
         setEndRule(endMonth, endDay, 0, endTime);
     }
@@ -518,7 +525,7 @@ public class SimpleTimeZone extends TimeZone {
      * {@code endDayOfWeek}, or {@code endTime} parameters are out of range
      * @since 1.2
      */
-    public void setEndRule(int endMonth, int endDay, int endDayOfWeek, int endTime, boolean after)
+    public void setEndRule(@GuardSatisfied SimpleTimeZone this, int endMonth, int endDay, int endDayOfWeek, int endTime, boolean after)
     {
         if (after) {
             setEndRule(endMonth, endDay, -endDayOfWeek, endTime);
@@ -538,7 +545,7 @@ public class SimpleTimeZone extends TimeZone {
      * local time.
      * @since 1.4
      */
-    public int getOffset(long date) {
+    public int getOffset(@GuardSatisfied SimpleTimeZone this, long date) {
         return getOffsets(date, null);
     }
 
@@ -603,7 +610,7 @@ public class SimpleTimeZone extends TimeZone {
      *                  {@code month}, {@code day}, {@code dayOfWeek},
      *                  or {@code millis} parameters are out of range
      */
-    public int getOffset(int era, int year, int month, int day, int dayOfWeek,
+    public int getOffset(@GuardSatisfied SimpleTimeZone this, int era, int year, int month, int day, int dayOfWeek,
                          int millis)
     {
         if (era != GregorianCalendar.AD && era != GregorianCalendar.BC) {
@@ -765,7 +772,7 @@ public class SimpleTimeZone extends TimeZone {
      * @return the GMT offset value in milliseconds
      * @see #setRawOffset
      */
-    public int getRawOffset()
+    public int getRawOffset(@GuardSatisfied SimpleTimeZone this)
     {
         // The given date will be taken into account while
         // we have the historical time zone data in place.
@@ -777,7 +784,7 @@ public class SimpleTimeZone extends TimeZone {
      * This is the offset to add to UTC to get local time.
      * @see #getRawOffset
      */
-    public void setRawOffset(int offsetMillis)
+    public void setRawOffset(@GuardSatisfied SimpleTimeZone this, int offsetMillis)
     {
         this.rawOffset = offsetMillis;
     }
@@ -791,7 +798,7 @@ public class SimpleTimeZone extends TimeZone {
      * @see #getDSTSavings
      * @since 1.2
      */
-    public void setDSTSavings(int millisSavedDuringDST) {
+    public void setDSTSavings(@GuardSatisfied SimpleTimeZone this, int millisSavedDuringDST) {
         if (millisSavedDuringDST <= 0) {
             throw new IllegalArgumentException("Illegal daylight saving value: "
                                                + millisSavedDuringDST);
@@ -811,7 +818,7 @@ public class SimpleTimeZone extends TimeZone {
      * @see #setDSTSavings
      * @since 1.2
      */
-    public int getDSTSavings() {
+    public int getDSTSavings(@GuardSatisfied SimpleTimeZone this) {
         return useDaylight ? dstSavings : 0;
     }
 
@@ -820,7 +827,7 @@ public class SimpleTimeZone extends TimeZone {
      * @return true if this time zone uses daylight saving time;
      * false otherwise.
      */
-    public boolean useDaylightTime()
+    public boolean useDaylightTime(@GuardSatisfied SimpleTimeZone this)
     {
         return useDaylight;
     }
@@ -848,7 +855,7 @@ public class SimpleTimeZone extends TimeZone {
      * @throws NullPointerException This method may throw a
      * {@code NullPointerException} if {@code date} is {@code null}
      */
-    public boolean inDaylightTime(Date date)
+    public boolean inDaylightTime(@GuardSatisfied SimpleTimeZone this, Date date)
     {
         return (getOffset(date.getTime()) != rawOffset);
     }
@@ -857,7 +864,8 @@ public class SimpleTimeZone extends TimeZone {
      * Returns a clone of this {@code SimpleTimeZone} instance.
      * @return a clone of this instance.
      */
-    public Object clone()
+    @SideEffectFree
+    public Object clone(@GuardSatisfied SimpleTimeZone this)
     {
         return super.clone();
     }
@@ -866,7 +874,8 @@ public class SimpleTimeZone extends TimeZone {
      * Generates the hash code for the SimpleDateFormat object.
      * @return the hash code for this object
      */
-    public int hashCode()
+    @Pure
+    public int hashCode(@GuardSatisfied SimpleTimeZone this)
     {
         return startMonth ^ startDay ^ startDayOfWeek ^ startTime ^
             endMonth ^ endDay ^ endDayOfWeek ^ endTime ^ rawOffset;
@@ -879,7 +888,8 @@ public class SimpleTimeZone extends TimeZone {
      * @return     True if the given {@code obj} is the same as this
      *             {@code SimpleTimeZone} object; false otherwise.
      */
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@GuardSatisfied SimpleTimeZone this, @GuardSatisfied @Nullable Object obj) {
         if (this == obj) {
             return true;
         }
@@ -926,7 +936,8 @@ public class SimpleTimeZone extends TimeZone {
      * Returns a string representation of this time zone.
      * @return a string representation of this time zone.
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied SimpleTimeZone this) {
         return getClass().getName() +
             "[id=" + getID() +
             ",offset=" + rawOffset +

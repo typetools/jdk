@@ -25,6 +25,10 @@
 
 package java.nio.channels;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -58,7 +62,8 @@ import sun.nio.cs.StreamEncoder;
  * @since 1.4
  */
 
-public final class Channels {
+@AnnotatedFor({"interning","mustcall"})
+public final @UsesObjectEquals class Channels {
 
     private Channels() { throw new Error("no instances"); }
 
@@ -83,7 +88,7 @@ public final class Channels {
      *
      * @return  A new input stream
      */
-    public static InputStream newInputStream(ReadableByteChannel ch) {
+    public static @MustCallAlias InputStream newInputStream(@MustCallAlias ReadableByteChannel ch) {
         Objects.requireNonNull(ch, "ch");
         return sun.nio.ch.Streams.of(ch);
     }
@@ -102,7 +107,7 @@ public final class Channels {
      *
      * @return  A new output stream
      */
-    public static OutputStream newOutputStream(WritableByteChannel ch) {
+    public static @MustCallAlias OutputStream newOutputStream(@MustCallAlias WritableByteChannel ch) {
         Objects.requireNonNull(ch, "ch");
         return sun.nio.ch.Streams.of(ch);
     }
@@ -122,7 +127,7 @@ public final class Channels {
      *
      * @since 1.7
      */
-    public static InputStream newInputStream(AsynchronousByteChannel ch) {
+    public static @MustCallAlias InputStream newInputStream(@MustCallAlias AsynchronousByteChannel ch) {
         Objects.requireNonNull(ch, "ch");
         return new InputStream() {
 
@@ -195,7 +200,7 @@ public final class Channels {
      *
      * @since 1.7
      */
-    public static OutputStream newOutputStream(AsynchronousByteChannel ch) {
+    public static @MustCallAlias OutputStream newOutputStream(@MustCallAlias AsynchronousByteChannel ch) {
         Objects.requireNonNull(ch, "ch");
         return new OutputStream() {
 
@@ -270,7 +275,7 @@ public final class Channels {
      *
      * @return  A new readable byte channel
      */
-    public static ReadableByteChannel newChannel(InputStream in) {
+    public static @MustCallAlias ReadableByteChannel newChannel(@MustCallAlias InputStream in) {
         Objects.requireNonNull(in, "in");
 
         if (in.getClass() == FileInputStream.class) {
@@ -351,7 +356,7 @@ public final class Channels {
      *
      * @return  A new writable byte channel
      */
-    public static WritableByteChannel newChannel(OutputStream out) {
+    public static @MustCallAlias WritableByteChannel newChannel(@MustCallAlias OutputStream out) {
         Objects.requireNonNull(out, "out");
 
         if (out.getClass() == FileOutputStream.class) {
@@ -436,7 +441,7 @@ public final class Channels {
      *
      * @return  A new reader
      */
-    public static Reader newReader(ReadableByteChannel ch,
+    public static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel ch,
                                    CharsetDecoder dec,
                                    int minBufferCap)
     {
@@ -472,7 +477,7 @@ public final class Channels {
      *          If no support for the named charset is available
      *          in this instance of the Java virtual machine
      */
-    public static Reader newReader(ReadableByteChannel ch,
+    public static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel ch,
                                    String csName)
     {
         Objects.requireNonNull(csName, "csName");
@@ -508,7 +513,7 @@ public final class Channels {
      *
      * @since 10
      */
-    public static Reader newReader(ReadableByteChannel ch, Charset charset) {
+    public static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel ch, Charset charset) {
         Objects.requireNonNull(charset, "charset");
         return newReader(ch, charset.newDecoder(), -1);
     }
@@ -542,7 +547,7 @@ public final class Channels {
      *
      * @return  A new writer
      */
-    public static Writer newWriter(WritableByteChannel ch,
+    public static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel ch,
                                    CharsetEncoder enc,
                                    int minBufferCap)
     {
@@ -580,7 +585,7 @@ public final class Channels {
      *          If no support for the named charset is available
      *          in this instance of the Java virtual machine
      */
-    public static Writer newWriter(WritableByteChannel ch,
+    public static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel ch,
                                    String csName)
     {
         Objects.requireNonNull(csName, "csName");
@@ -618,7 +623,7 @@ public final class Channels {
      *
      * @since 10
      */
-    public static Writer newWriter(WritableByteChannel ch, Charset charset) {
+    public static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel ch, Charset charset) {
         Objects.requireNonNull(charset, "charset");
         return newWriter(ch, charset.newEncoder(), -1);
 }

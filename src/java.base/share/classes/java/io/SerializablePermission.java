@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.security.BasicPermission;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -52,6 +55,7 @@ import java.util.StringTokenizer;
 /* code was borrowed originally from java.lang.RuntimePermission. */
 
 @Deprecated(since="25", forRemoval=true)
+@AnnotatedFor({"nullness"})
 public final class SerializablePermission extends BasicPermission {
 
     @java.io.Serial
@@ -89,7 +93,7 @@ public final class SerializablePermission extends BasicPermission {
      * @throws IllegalArgumentException if {@code name} is empty.
      */
 
-    public SerializablePermission(String name, String actions)
+    public SerializablePermission(String name, @Nullable String actions)
     {
         super(name, actions);
     }

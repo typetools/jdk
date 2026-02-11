@@ -35,6 +35,12 @@
 
 package java.util.concurrent.locks;
 
+import org.checkerframework.checker.lock.qual.EnsuresLockHeld;
+import org.checkerframework.checker.lock.qual.EnsuresLockHeldIf;
+import org.checkerframework.checker.lock.qual.MayReleaseLocks;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import jdk.internal.vm.annotation.ReservedStackAccess;
@@ -214,6 +220,7 @@ import jdk.internal.vm.annotation.ReservedStackAccess;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor({"lock"})
 public class ReentrantReadWriteLock
         implements ReadWriteLock, java.io.Serializable {
     private static final long serialVersionUID = -6992448646407690164L;
@@ -740,6 +747,8 @@ public class ReentrantReadWriteLock
          * the current thread becomes disabled for thread scheduling
          * purposes and lies dormant until the read lock has been acquired.
          */
+        @EnsuresLockHeld({"this"})
+        @ReleasesNoLocks
         public void lock() {
             sync.acquireShared(1);
         }
@@ -785,6 +794,8 @@ public class ReentrantReadWriteLock
          *
          * @throws InterruptedException if the current thread is interrupted
          */
+        @EnsuresLockHeld({"this"})
+        @ReleasesNoLocks
         public void lockInterruptibly() throws InterruptedException {
             sync.acquireSharedInterruptibly(1);
         }
@@ -812,6 +823,8 @@ public class ReentrantReadWriteLock
          *
          * @return {@code true} if the read lock was acquired
          */
+        @EnsuresLockHeldIf(expression={"this"}, result=true)
+        @ReleasesNoLocks
         public boolean tryLock() {
             return sync.tryReadLock();
         }
@@ -883,6 +896,8 @@ public class ReentrantReadWriteLock
          * @throws InterruptedException if the current thread is interrupted
          * @throws NullPointerException if the time unit is null
          */
+        @EnsuresLockHeldIf(expression={"this"}, result=true)
+        @ReleasesNoLocks
         public boolean tryLock(long timeout, TimeUnit unit)
                 throws InterruptedException {
             return sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
@@ -899,6 +914,7 @@ public class ReentrantReadWriteLock
          * @throws IllegalMonitorStateException if the current thread
          * does not hold this lock
          */
+        @MayReleaseLocks
         public void unlock() {
             sync.releaseShared(1);
         }
@@ -962,6 +978,8 @@ public class ReentrantReadWriteLock
          * lies dormant until the write lock has been acquired, at which
          * time the write lock hold count is set to one.
          */
+        @EnsuresLockHeld({"this"})
+        @ReleasesNoLocks
         public void lock() {
             sync.acquire(1);
         }
@@ -1017,6 +1035,8 @@ public class ReentrantReadWriteLock
          *
          * @throws InterruptedException if the current thread is interrupted
          */
+        @EnsuresLockHeld({"this"})
+        @ReleasesNoLocks
         public void lockInterruptibly() throws InterruptedException {
             sync.acquireInterruptibly(1);
         }
@@ -1050,6 +1070,8 @@ public class ReentrantReadWriteLock
          * by the current thread, or the write lock was already held
          * by the current thread; and {@code false} otherwise.
          */
+        @EnsuresLockHeldIf(expression={"this"}, result=true)
+        @ReleasesNoLocks
         public boolean tryLock() {
             return sync.tryWriteLock();
         }
@@ -1133,6 +1155,8 @@ public class ReentrantReadWriteLock
          * @throws InterruptedException if the current thread is interrupted
          * @throws NullPointerException if the time unit is null
          */
+        @EnsuresLockHeldIf(expression={"this"}, result=true)
+        @ReleasesNoLocks
         public boolean tryLock(long timeout, TimeUnit unit)
                 throws InterruptedException {
             return sync.tryAcquireNanos(1, unit.toNanos(timeout));
@@ -1150,6 +1174,7 @@ public class ReentrantReadWriteLock
          * @throws IllegalMonitorStateException if the current thread does not
          * hold this lock
          */
+        @MayReleaseLocks
         public void unlock() {
             sync.release(1);
         }
@@ -1225,6 +1250,8 @@ public class ReentrantReadWriteLock
          *         {@code false} otherwise
          * @since 1.6
          */
+        @EnsuresLockHeldIf(expression={"this"}, result=true)
+        @ReleasesNoLocks
         public boolean isHeldByCurrentThread() {
             return sync.isHeldExclusively();
         }

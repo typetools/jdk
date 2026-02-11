@@ -26,6 +26,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Enumeration;
 import java.util.Objects;
 import sun.security.jca.GetInstance;
@@ -48,8 +51,9 @@ import sun.security.jca.GetInstance;
  *       replacement for the Security Manager or this class.
  */
 
+@AnnotatedFor({"interning"})
 @Deprecated(since="17", forRemoval=true)
-public abstract class Policy {
+public abstract @UsesObjectEquals class Policy {
 
     private static Policy NO_PERMISSIONS_POLICY = new Policy() {};
 

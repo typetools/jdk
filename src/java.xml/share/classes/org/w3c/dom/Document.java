@@ -41,6 +41,10 @@
 
 package org.w3c.dom;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The <code>Document</code> interface represents the entire HTML or XML
  * document. Conceptually, it is the root of the document tree, and provides
@@ -55,6 +59,7 @@ package org.w3c.dom;
  *
  * @since 1.4, DOM Level 2
  */
+@AnnotatedFor("nullness")
 public interface Document extends Node {
     /**
      * The Document Type Declaration (see <code>DocumentType</code>)
@@ -77,18 +82,21 @@ public interface Document extends Node {
      *
      * @since 1.4, DOM Level 3
      */
-    public DocumentType getDoctype();
+    @Pure
+    public @Nullable DocumentType getDoctype();
 
     /**
      * The <code>DOMImplementation</code> object that handles this document. A
      * DOM application may use objects from multiple implementations.
      */
+    @Pure
     public DOMImplementation getImplementation();
 
     /**
      * This is a convenience attribute that allows direct access to the child
      * node that is the document element of the document.
      */
+    @Pure
     public Element getDocumentElement();
 
     /**
@@ -228,6 +236,7 @@ public interface Document extends Node {
      * @return A new <code>NodeList</code> object containing all the matched
      *   <code>Elements</code>.
      */
+    @Pure
     public NodeList getElementsByTagName(String tagname);
 
     /**
@@ -410,7 +419,7 @@ public interface Document extends Node {
      *   defined by XML.
      * @since 1.4, DOM Level 2
      */
-    public Element createElementNS(String namespaceURI,
+    public Element createElementNS(@Nullable String namespaceURI,
                                    String qualifiedName)
                                    throws DOMException;
 
@@ -484,7 +493,7 @@ public interface Document extends Node {
      *   defined by XML.
      * @since 1.4, DOM Level 2
      */
-    public Attr createAttributeNS(String namespaceURI,
+    public Attr createAttributeNS(@Nullable String namespaceURI,
                                   String qualifiedName)
                                   throws DOMException;
 
@@ -499,7 +508,8 @@ public interface Document extends Node {
      *   <code>Elements</code>.
      * @since 1.4, DOM Level 2
      */
-    public NodeList getElementsByTagNameNS(String namespaceURI,
+    @Pure
+    public NodeList getElementsByTagNameNS(@Nullable String namespaceURI,
                                            String localName);
 
     /**
@@ -515,7 +525,8 @@ public interface Document extends Node {
      * @return The matching element or <code>null</code> if there is none.
      * @since 1.4, DOM Level 2
      */
-    public Element getElementById(String elementId);
+    @Pure
+    public @Nullable Element getElementById(String elementId);
 
     /**
      * An attribute specifying the encoding used for this document at the time
@@ -523,7 +534,8 @@ public interface Document extends Node {
      * as when the <code>Document</code> was created in memory.
      * @since 1.5, DOM Level 3
      */
-    public String getInputEncoding();
+    @Pure
+    public @Nullable String getInputEncoding();
 
     /**
      * An attribute specifying, as part of the <a href='http://www.w3.org/TR/2004/REC-xml-20040204#NT-XMLDecl'>XML declaration</a>, the encoding of this document. This is <code>null</code> when
@@ -531,7 +543,8 @@ public interface Document extends Node {
      * <code>Document</code> was created in memory.
      * @since 1.5, DOM Level 3
      */
-    public String getXmlEncoding();
+    @Pure
+    public @Nullable String getXmlEncoding();
 
     /**
      * An attribute specifying, as part of the <a href='http://www.w3.org/TR/2004/REC-xml-20040204#NT-XMLDecl'>XML declaration</a>, whether this document is standalone. This is <code>false</code> when
@@ -543,6 +556,7 @@ public interface Document extends Node {
      * constraint for standalone document declaration</a> as defined in [<a href='http://www.w3.org/TR/2004/REC-xml-20040204'>XML 1.0</a>].
      * @since 1.5, DOM Level 3
      */
+    @Pure
     public boolean getXmlStandalone();
     /**
      * An attribute specifying, as part of the <a href='http://www.w3.org/TR/2004/REC-xml-20040204#NT-XMLDecl'>XML declaration</a>, whether this document is standalone. This is <code>false</code> when
@@ -584,7 +598,8 @@ public interface Document extends Node {
      * number when using <code>Document.xmlVersion</code>.
      * @since 1.5, DOM Level 3
      */
-    public String getXmlVersion();
+    @Pure
+    public @Nullable String getXmlVersion();
     /**
      *  An attribute specifying, as part of the <a href='http://www.w3.org/TR/2004/REC-xml-20040204#NT-XMLDecl'>XML declaration</a>, the version number of this document. If there is no declaration and if
      * this document supports the "XML" feature, the value is
@@ -626,6 +641,7 @@ public interface Document extends Node {
      * <code>true</code> by default.
      * @since 1.5, DOM Level 3
      */
+    @Pure
     public boolean getStrictErrorChecking();
     /**
      * An attribute specifying whether error checking is enforced or not. When
@@ -652,7 +668,8 @@ public interface Document extends Node {
      * this attribute when computing <code>Node.baseURI</code>.
      * @since 1.5, DOM Level 3
      */
-    public String getDocumentURI();
+    @Pure
+    public @Nullable String getDocumentURI();
     /**
      *  The location of the document or <code>null</code> if undefined or if
      * the <code>Document</code> was created using
@@ -666,7 +683,7 @@ public interface Document extends Node {
      * this attribute when computing <code>Node.baseURI</code>.
      * @since 1.5, DOM Level 3
      */
-    public void setDocumentURI(String documentURI);
+    public void setDocumentURI(@Nullable String documentURI);
 
     /**
      *  Attempts to adopt a node from another document to this document. If
@@ -737,7 +754,7 @@ public interface Document extends Node {
      *   readonly.
      * @since 1.5, DOM Level 3
      */
-    public Node adoptNode(Node source)
+    public @Nullable Node adoptNode(@Nullable Node source)
                           throws DOMException;
 
     /**
@@ -745,6 +762,7 @@ public interface Document extends Node {
      * is invoked.
      * @since 1.5, DOM Level 3
      */
+    @Pure
     public DOMConfiguration getDomConfig();
 
     /**
@@ -849,7 +867,7 @@ public interface Document extends Node {
      * @since 1.5, DOM Level 3
      */
     public Node renameNode(Node n,
-                           String namespaceURI,
+                           @Nullable String namespaceURI,
                            String qualifiedName)
                            throws DOMException;
 

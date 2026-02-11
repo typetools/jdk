@@ -23,6 +23,8 @@
  */
 package com.sun.hotspot.igv.filter;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.hotspot.igv.graph.*;
 import java.util.ArrayList;
 import java.util.List;

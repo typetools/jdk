@@ -26,6 +26,12 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.tainting.qual.Untainted;
+import org.checkerframework.dataflow.qual.TerminatesExecution;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.util.regex.Matcher;
@@ -120,7 +126,8 @@ import jdk.internal.reflect.Reflection;
  * @since   1.0
  */
 
-public final class Runtime {
+@AnnotatedFor({"interning", "nullness", "tainting"})
+public final @UsesObjectEquals class Runtime {
     private static final Runtime currentRuntime = new Runtime();
 
     private static Version version;
@@ -173,6 +180,7 @@ public final class Runtime {
      * @see #removeShutdownHook
      * @see #halt(int)
      */
+    @TerminatesExecution
     public void exit(int status) {
         Shutdown.exit(status);
     }
@@ -317,7 +325,7 @@ public final class Runtime {
      * @see     ProcessBuilder
      */
     @Deprecated(since="18")
-    public Process exec(String command) throws IOException {
+    public Process exec(@Untainted String command) throws IOException {
         return exec(command, null, null);
     }
 
@@ -364,7 +372,7 @@ public final class Runtime {
      * @see     ProcessBuilder
      */
     @Deprecated(since="18")
-    public Process exec(String command, String[] envp) throws IOException {
+    public Process exec(@Untainted String command, @Untainted String @Nullable [] envp) throws IOException {
         return exec(command, envp, null);
     }
 
@@ -424,7 +432,7 @@ public final class Runtime {
      * @since 1.3
      */
     @Deprecated(since="18")
-    public Process exec(String command, String[] envp, File dir)
+    public Process exec(@Untainted String command, @Untainted String @Nullable [] envp, @Nullable File dir)
         throws IOException {
         if (command.isEmpty())
             throw new IllegalArgumentException("Empty command");
@@ -466,7 +474,7 @@ public final class Runtime {
      *
      * @see     ProcessBuilder
      */
-    public Process exec(String[] cmdarray) throws IOException {
+    public Process exec(@Untainted String[] cmdarray) throws IOException {
         return exec(cmdarray, null, null);
     }
 
@@ -508,7 +516,7 @@ public final class Runtime {
      *
      * @see     ProcessBuilder
      */
-    public Process exec(String[] cmdarray, String[] envp) throws IOException {
+    public Process exec(@Untainted String[] cmdarray, @Untainted String @Nullable [] envp) throws IOException {
         return exec(cmdarray, envp, null);
     }
 
@@ -597,7 +605,7 @@ public final class Runtime {
      * @see     ProcessBuilder
      * @since 1.3
      */
-    public Process exec(String[] cmdarray, String[] envp, File dir)
+    public Process exec(@Untainted String[] cmdarray, @Untainted String @Nullable [] envp, @Nullable File dir)
         throws IOException {
         return new ProcessBuilder(cmdarray)
             .environment(envp)

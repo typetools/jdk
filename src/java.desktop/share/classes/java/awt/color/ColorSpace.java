@@ -35,6 +35,9 @@
 
 package java.awt.color;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.lang.annotation.Native;
@@ -91,7 +94,8 @@ import java.lang.annotation.Native;
  *
  * @see ICC_ColorSpace
  */
-public abstract class ColorSpace implements Serializable {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class ColorSpace implements Serializable {
 
     /**
      * Use serialVersionUID from JDK 1.2 for interoperability.

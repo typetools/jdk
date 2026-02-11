@@ -25,6 +25,15 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * A {@code FilterInputStream} wraps some other input stream, which it uses as
  * its basic source of data, possibly transforming the data along the way or
@@ -38,6 +47,7 @@ package java.io;
  * @author  Jonathan Payne
  * @since   1.0
  */
+@AnnotatedFor({"index", "mustcall", "nullness"})
 public class FilterInputStream extends InputStream {
     /**
      * The input stream to be filtered.
@@ -53,7 +63,7 @@ public class FilterInputStream extends InputStream {
      * @param   in   the underlying input stream, or {@code null} if
      *          this instance is to be created without an underlying stream.
      */
-    protected FilterInputStream(InputStream in) {
+    protected @MustCallAlias FilterInputStream(@MustCallAlias @Nullable InputStream in) {
         this.in = in;
     }
 
@@ -67,7 +77,7 @@ public class FilterInputStream extends InputStream {
      * @see        java.io.FilterInputStream#in
      */
     @Override
-    public int read() throws IOException {
+    public @GTENegativeOne int read() throws IOException {
         return in.read();
     }
 
@@ -91,7 +101,7 @@ public class FilterInputStream extends InputStream {
      * @see        java.io.FilterInputStream#read(byte[], int, int)
      */
     @Override
-    public int read(byte[] b) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
@@ -115,7 +125,7 @@ public class FilterInputStream extends InputStream {
      * @see        java.io.FilterInputStream#in
      */
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         return in.read(b, off, len);
     }
 
@@ -134,7 +144,7 @@ public class FilterInputStream extends InputStream {
      * @throws     IOException  if {@code in.skip(n)} throws an IOException.
      */
     @Override
-    public long skip(long n) throws IOException {
+    public @NonNegative long skip(long n) throws IOException {
         return in.skip(n);
     }
 
@@ -153,7 +163,7 @@ public class FilterInputStream extends InputStream {
      * @throws     IOException  {@inheritDoc}
      */
     @Override
-    public int available() throws IOException {
+    public @NonNegative int available() throws IOException {
         return in.available();
     }
 
@@ -187,7 +197,7 @@ public class FilterInputStream extends InputStream {
      * @see     java.io.FilterInputStream#reset()
      */
     @Override
-    public void mark(int readlimit) {
+    public void mark(@NonNegative int readlimit) {
         in.mark(readlimit);
     }
 

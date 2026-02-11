@@ -157,5 +157,9 @@
  *
  * @since 1.0
  */
+@DefaultQualifier(value = KeyForBottom.class, locations = TypeUseLocation.LOWER_BOUND)
 @SuppressWarnings("doclint:reference") // cross-module links
 package java.net;
+import org.checkerframework.checker.nullness.qual.KeyForBottom;
+import org.checkerframework.framework.qual.DefaultQualifier;
+import org.checkerframework.framework.qual.TypeUseLocation;

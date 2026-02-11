@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.annotation.Documented;
 import java.lang.ref.SoftReference;
 import java.net.URI;
@@ -189,6 +190,7 @@ public class Utils {
      * According to <cite>The Java Language Specification</cite>,
      * all the outer classes and static inner classes are core classes.
      */
+    @Pure
     public boolean isCoreClass(TypeElement e) {
         return getEnclosingTypeElement(e) == null || isStatic(e);
     }
@@ -217,19 +219,23 @@ public class Utils {
                 : StandardLocation.CLASS_PATH;
     }
 
+    @Pure
     public boolean isAnnotated(TypeMirror e) {
         return !e.getAnnotationMirrors().isEmpty();
     }
 
+    @Pure
     public boolean isAnnotationInterface(Element e) {
         return e.getKind() == ANNOTATION_TYPE;
     }
 
+    @Pure
     // Note that e.getKind().isClass() is not the same as e.getKind() == CLASS
     public boolean isClass(Element e) {
         return e.getKind().isClass();
     }
 
+    @Pure
     // Note that e.getKind().isInterface() is not the same as e.getKind() == INTERFACE
     // See Also: isPlainInterface(Element)
     public boolean isInterface(Element e) {
@@ -240,42 +246,52 @@ public class Utils {
          return e.getKind() == CONSTRUCTOR;
     }
 
+    @Pure
     public boolean isEnum(Element e) {
         return e.getKind() == ENUM;
     }
 
+    @Pure
     public boolean isField(Element e) {
         return e.getKind() == FIELD;
     }
 
+    @Pure
     public boolean isPlainInterface(Element e) {
         return e.getKind() == INTERFACE;
     }
 
+    @Pure
     public boolean isMethod(Element e) {
         return e.getKind() == METHOD;
     }
 
+    @Pure
     public boolean isModule(Element e) {
         return e.getKind() == ElementKind.MODULE;
     }
 
+    @Pure
     public boolean isPackage(Element e) {
         return e.getKind() == ElementKind.PACKAGE;
     }
 
+    @Pure
     public boolean isAbstract(Element e) {
         return e.getModifiers().contains(Modifier.ABSTRACT);
     }
 
+    @Pure
     public boolean isDefault(Element e) {
         return e.getModifiers().contains(Modifier.DEFAULT);
     }
 
+    @Pure
     public boolean isFinal(Element e) {
         return e.getModifiers().contains(Modifier.FINAL);
     }
 
+    @Pure
     /*
      * A contemporary JLS term for "package private" or "default access" is
      * "package access". For example: "a member is declared with package
@@ -291,18 +307,22 @@ public class Utils {
                 && !m.contains(Modifier.PRIVATE);
     }
 
+    @Pure
     public boolean isPrivate(Element e) {
         return e.getModifiers().contains(Modifier.PRIVATE);
     }
 
+    @Pure
     public boolean isProtected(Element e) {
         return e.getModifiers().contains(Modifier.PROTECTED);
     }
 
+    @Pure
     public boolean isPublic(Element e) {
         return e.getModifiers().contains(Modifier.PUBLIC);
     }
 
+    @Pure
     public boolean isProperty(String name) {
         return options.javafx() && name.endsWith("Property");
     }
@@ -317,18 +337,22 @@ public class Utils {
         return name.substring(0, name.lastIndexOf("Property"));
     }
 
+    @Pure
     public boolean isOverviewElement(Element e) {
         return e.getKind() == ElementKind.OTHER;
     }
 
+    @Pure
     public boolean isStatic(Element e) {
         return e.getModifiers().contains(Modifier.STATIC);
     }
 
+    @Pure
     public boolean isSerializable(TypeElement e) {
         return typeUtils.isSubtype(e.asType(), getSerializableType());
     }
 
+    @Pure
     public boolean isExternalizable(TypeElement e) {
         return typeUtils.isSubtype(e.asType(), getExternalizableType());
     }
@@ -371,6 +395,7 @@ public class Utils {
         return configuration.workArounds.definesSerializableFields( aclass);
     }
 
+    @Pure
     public boolean isFunctionalInterface(AnnotationMirror amirror) {
         return typeUtils.isSameType(amirror.getAnnotationType(), getFunctionalInterface()) &&
                 configuration.docEnv.getSourceVersion()
@@ -382,28 +407,34 @@ public class Utils {
                 .anyMatch(this::isFunctionalInterface);
     }
 
+    @Pure
     public boolean isUndocumentedEnclosure(TypeElement enclosingTypeElement) {
         return (isPackagePrivate(enclosingTypeElement) || isPrivate(enclosingTypeElement)
                     || isHidden(enclosingTypeElement))
                 && !isLinkable(enclosingTypeElement);
     }
 
+    @Pure
     public boolean isNonThrowableClass(TypeElement te) {
         return te.getKind() == CLASS && !isThrowable(te);
     }
 
+    @Pure
     public boolean isThrowable(TypeElement te) {
         return te.getKind() == CLASS && typeUtils.isSubtype(te.asType(), getThrowableType());
     }
 
+    @Pure
     public boolean isExecutableElement(Element e) {
         return e.getKind().isExecutable();
     }
 
+    @Pure
     public boolean isVariableElement(Element e) {
         return e.getKind().isVariable();
     }
 
+    @Pure
     public boolean isTypeElement(Element e) {
         return e.getKind().isDeclaredType();
     }
@@ -529,26 +560,32 @@ public class Utils {
         }.visit(t).toString();
     }
 
+    @Pure
     public boolean isArrayType(TypeMirror t) {
         return t.getKind() == ARRAY;
     }
 
+    @Pure
     public boolean isDeclaredType(TypeMirror t) {
         return t.getKind() == DECLARED;
     }
 
+    @Pure
     public boolean isTypeParameterElement(Element e) {
         return e.getKind() == TYPE_PARAMETER;
     }
 
+    @Pure
     public boolean isTypeVariable(TypeMirror t) {
         return t.getKind() == TYPEVAR;
     }
 
+    @Pure
     public boolean isVoid(TypeMirror t) {
         return t.getKind() == VOID;
     }
 
+    @Pure
     public boolean ignoreBounds(TypeMirror bound) {
         return typeUtils.isSameType(bound, getObjectType()) && !isAnnotated(bound);
     }
@@ -825,6 +862,7 @@ public class Utils {
      *
      * @return true return true if it should be documented and false otherwise.
      */
+    @Pure
     public boolean isDocumentedAnnotation(TypeElement annotation) {
         for (AnnotationMirror anno : annotation.getAnnotationMirrors()) {
             if (getFullyQualifiedName(anno.getAnnotationType().asElement()).equals(
@@ -845,6 +883,7 @@ public class Utils {
      * @return true if this class is linkable and false if we can't link to the
      * desired class.
      */
+    @Pure
     public boolean isLinkable(TypeElement typeElem) {
         return
             typeElem != null &&
@@ -1157,6 +1196,7 @@ public class Utils {
      * @param e the Element to check.
      * @return true if the given Element is deprecated.
      */
+    @Pure
     public boolean isDeprecated(Element e) {
         if (isPackage(e)) {
             return configuration.workArounds.isDeprecated0(e);
@@ -1170,6 +1210,7 @@ public class Utils {
      * @param e the Element to check.
      * @return true if the given Element is deprecated for removal.
      */
+    @Pure
     public boolean isDeprecatedForRemoval(Element e) {
         Object forRemoval = getAnnotationElement(e, getDeprecatedType(), "forRemoval");
         return forRemoval != null && (boolean) forRemoval;
@@ -1296,6 +1337,7 @@ public class Utils {
      * specification is deemed unchanged and this method returns true;
      * otherwise this method returns false.
      */
+    @Pure
     public boolean isSimpleOverride(ExecutableElement m) {
         if (!options.summarizeOverriddenMethods() || !isIncluded(m)) {
             return false;
@@ -1967,20 +2009,24 @@ public class Utils {
             buf.append(chars.charAt(15 & (c >> 0)));
         }
 
+        @Pure
         private boolean isPrintableAscii(char c) {
             return c >= ' ' && c <= '~';
         }
     }
 
+    @Pure
     public boolean isEnclosingPackageIncluded(TypeElement te) {
         return isIncluded(containingPackage(te));
     }
 
+    @Pure
     public boolean isIncluded(Element e) {
         return configuration.docEnv.isIncluded(e);
     }
 
     private SimpleElementVisitor14<Boolean, Void> specifiedVisitor = null;
+    @Pure
     public boolean isSpecified(Element e) {
         if (specifiedVisitor == null) {
             specifiedVisitor = new SimpleElementVisitor14<>() {
@@ -2038,6 +2084,7 @@ public class Utils {
 
     private final CommentHelperCache commentHelperCache = new CommentHelperCache(this);
 
+    @Pure
     public CommentHelper getCommentHelper(Element element) {
         return commentHelperCache.computeIfAbsent(element);
     }

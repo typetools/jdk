@@ -35,6 +35,9 @@
 
 package java.awt.color;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -84,7 +87,8 @@ import static sun.java2d.cmm.ProfileDataVerifier.HEADER_SIZE;
  *
  * @see ICC_ColorSpace
  */
-public sealed class ICC_Profile implements Serializable
+@AnnotatedFor({"interning"})
+public sealed @UsesObjectEquals class ICC_Profile implements Serializable
     permits ICC_ProfileGray,
             ICC_ProfileRGB {
 

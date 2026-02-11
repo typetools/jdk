@@ -25,6 +25,12 @@
 
 package javax.naming.directory;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Vector;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
@@ -129,7 +135,9 @@ public class BasicAttribute implements Attribute {
       * @see #hashCode
       * @see #contains
       */
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (obj instanceof Attribute target) {
 
             // Check order first
@@ -320,6 +328,7 @@ public class BasicAttribute implements Attribute {
       * {@code Object.equals()}.
       * A subclass may use schema information to determine equality.
       */
+    @Pure
     public boolean contains(Object attrVal) {
         return (find(attrVal) >= 0);
     }

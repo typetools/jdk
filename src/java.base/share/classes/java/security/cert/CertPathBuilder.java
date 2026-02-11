@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -97,7 +100,8 @@ import sun.security.jca.GetInstance.Instance;
  * @author      Sean Mullan
  * @author      Yassir Elley
  */
-public class CertPathBuilder {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class CertPathBuilder {
 
     /*
      * Constant to lookup in the Security properties file to determine

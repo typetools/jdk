@@ -25,6 +25,12 @@
 
 package sun.print;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.io.BufferedReader;
@@ -2125,7 +2131,9 @@ public final class IPPPrintService implements PrintService, SunPrinterJobService
     }
 
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         return  (obj == this ||
                  (obj instanceof IPPPrintService &&
                   ((IPPPrintService)obj).getName().equals(getName())));

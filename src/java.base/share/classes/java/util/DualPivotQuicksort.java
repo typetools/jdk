@@ -25,6 +25,11 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.concurrent.CountedCompleter;
 import java.util.concurrent.RecursiveTask;
 import jdk.internal.misc.Unsafe;
@@ -51,7 +56,8 @@ import jdk.internal.vm.annotation.ForceInline;
  *
  * @since 1.7 * 14
  */
-final class DualPivotQuicksort {
+@AnnotatedFor({"index", "interning"})
+final @UsesObjectEquals class DualPivotQuicksort {
 
     /**
      * Prevents instantiation.
@@ -227,7 +233,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(int[] a, int parallelism, int low, int high) {
+    static void sort(int[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
         if (parallelism > 1 && size > MIN_PARALLEL_SORT_SIZE) {
@@ -250,7 +256,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(Sorter sorter, int[] a, int bits, int low, int high) {
+    static void sort(Sorter sorter, int[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
             /*
@@ -569,7 +575,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void mixedInsertionSort(int[] a, int low, int high) {
+    private static void mixedInsertionSort(int[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
         int end = high - 3 * ((size >> 5) << 3);
         if (end == high) {
@@ -684,7 +690,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(int[] a, int low, int high) {
+    private static void insertionSort(int[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             int ai = a[i = k];
 
@@ -704,7 +710,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void heapSort(int[] a, int low, int high) {
+    private static void heapSort(int[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k = (low + high) >>> 1; k > low; ) {
             pushDown(a, --k, a[k], low, high);
         }
@@ -724,7 +730,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void pushDown(int[] a, int p, int value, int low, int high) {
+    private static void pushDown(int[] a, int p, int value, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k ;; a[p] = a[p = k]) {
             k = (p << 1) - low + 2; // Index of the right child
 
@@ -750,7 +756,7 @@ final class DualPivotQuicksort {
      * @param size the array size
      * @return true if finally sorted, false otherwise
      */
-    private static boolean tryMergeRuns(Sorter sorter, int[] a, int low, int size) {
+    private static boolean tryMergeRuns(Sorter sorter, int[] a, @IndexOrHigh({"#1"}) int low, int size) {
 
         /*
          * The run array is constructed only if initial runs are
@@ -1029,7 +1035,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(long[] a, int parallelism, int low, int high) {
+    static void sort(long[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
         if (parallelism > 1 && size > MIN_PARALLEL_SORT_SIZE) {
@@ -1052,7 +1058,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(Sorter sorter, long[] a, int bits, int low, int high) {
+    static void sort(Sorter sorter, long[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
 
@@ -1371,7 +1377,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void mixedInsertionSort(long[] a, int low, int high) {
+    private static void mixedInsertionSort(long[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
         int end = high - 3 * ((size >> 5) << 3);
         if (end == high) {
@@ -1486,7 +1492,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(long[] a, int low, int high) {
+    private static void insertionSort(long[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             long ai = a[i = k];
 
@@ -1506,7 +1512,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void heapSort(long[] a, int low, int high) {
+    private static void heapSort(long[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k = (low + high) >>> 1; k > low; ) {
             pushDown(a, --k, a[k], low, high);
         }
@@ -1526,7 +1532,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void pushDown(long[] a, int p, long value, int low, int high) {
+    private static void pushDown(long[] a, int p, long value, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k ;; a[p] = a[p = k]) {
             k = (p << 1) - low + 2; // Index of the right child
 
@@ -1552,7 +1558,7 @@ final class DualPivotQuicksort {
      * @param size the array size
      * @return true if finally sorted, false otherwise
      */
-    private static boolean tryMergeRuns(Sorter sorter, long[] a, int low, int size) {
+    private static boolean tryMergeRuns(Sorter sorter, long[] a, @IndexOrHigh({"#1"}) int low, int size) {
 
         /*
          * The run array is constructed only if initial runs are
@@ -1824,7 +1830,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(byte[] a, int low, int high) {
+    static void sort(byte[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_BYTE_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
         } else {
@@ -1839,7 +1845,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(byte[] a, int low, int high) {
+    private static void insertionSort(byte[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             byte ai = a[i = k];
 
@@ -1869,7 +1875,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void countingSort(byte[] a, int low, int high) {
+    private static void countingSort(byte[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int[] count = new int[NUM_BYTE_VALUES];
 
         /*
@@ -1912,7 +1918,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(char[] a, int low, int high) {
+    static void sort(char[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
         } else {
@@ -1930,7 +1936,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(char[] a, int bits, int low, int high) {
+    static void sort(char[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
 
@@ -2167,7 +2173,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(char[] a, int low, int high) {
+    private static void insertionSort(char[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             char ai = a[i = k];
 
@@ -2192,7 +2198,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void countingSort(char[] a, int low, int high) {
+    private static void countingSort(char[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int[] count = new int[NUM_CHAR_VALUES];
 
         /*
@@ -2231,7 +2237,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(short[] a, int low, int high) {
+    static void sort(short[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
         } else {
@@ -2249,7 +2255,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(short[] a, int bits, int low, int high) {
+    static void sort(short[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
 
@@ -2486,7 +2492,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(short[] a, int low, int high) {
+    private static void insertionSort(short[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             short ai = a[i = k];
 
@@ -2516,7 +2522,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void countingSort(short[] a, int low, int high) {
+    private static void countingSort(short[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int[] count = new int[NUM_SHORT_VALUES];
 
         /*
@@ -2566,7 +2572,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(float[] a, int parallelism, int low, int high) {
+    static void sort(float[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0f,
          * turn them into positive zero, and move all NaNs
@@ -2641,7 +2647,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(Sorter sorter, float[] a, int bits, int low, int high) {
+    static void sort(Sorter sorter, float[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
 
@@ -2959,7 +2965,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void mixedInsertionSort(float[] a, int low, int high) {
+    private static void mixedInsertionSort(float[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
         int end = high - 3 * ((size >> 5) << 3);
         if (end == high) {
@@ -3074,7 +3080,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(float[] a, int low, int high) {
+    private static void insertionSort(float[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             float ai = a[i = k];
 
@@ -3094,7 +3100,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void heapSort(float[] a, int low, int high) {
+    private static void heapSort(float[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k = (low + high) >>> 1; k > low; ) {
             pushDown(a, --k, a[k], low, high);
         }
@@ -3114,7 +3120,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void pushDown(float[] a, int p, float value, int low, int high) {
+    private static void pushDown(float[] a, int p, float value, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k ;; a[p] = a[p = k]) {
             k = (p << 1) - low + 2; // Index of the right child
 
@@ -3140,7 +3146,7 @@ final class DualPivotQuicksort {
      * @param size the array size
      * @return true if finally sorted, false otherwise
      */
-    private static boolean tryMergeRuns(Sorter sorter, float[] a, int low, int size) {
+    private static boolean tryMergeRuns(Sorter sorter, float[] a, @IndexOrHigh({"#1"}) int low, int size) {
 
         /*
          * The run array is constructed only if initial runs are
@@ -3419,7 +3425,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(double[] a, int parallelism, int low, int high) {
+    static void sort(double[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0d,
          * turn them into positive zero, and move all NaNs
@@ -3494,7 +3500,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    static void sort(Sorter sorter, double[] a, int bits, int low, int high) {
+    static void sort(Sorter sorter, double[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
             /*
@@ -3812,7 +3818,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void mixedInsertionSort(double[] a, int low, int high) {
+    private static void mixedInsertionSort(double[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
         int end = high - 3 * ((size >> 5) << 3);
         if (end == high) {
@@ -3927,7 +3933,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void insertionSort(double[] a, int low, int high) {
+    private static void insertionSort(double[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int i, k = low; ++k < high; ) {
             double ai = a[i = k];
 
@@ -3947,7 +3953,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void heapSort(double[] a, int low, int high) {
+    private static void heapSort(double[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k = (low + high) >>> 1; k > low; ) {
             pushDown(a, --k, a[k], low, high);
         }
@@ -3967,7 +3973,7 @@ final class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    private static void pushDown(double[] a, int p, double value, int low, int high) {
+    private static void pushDown(double[] a, int p, double value, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         for (int k ;; a[p] = a[p = k]) {
             k = (p << 1) - low + 2; // Index of the right child
 
@@ -3993,7 +3999,7 @@ final class DualPivotQuicksort {
      * @param size the array size
      * @return true if finally sorted, false otherwise
      */
-    private static boolean tryMergeRuns(Sorter sorter, double[] a, int low, int size) {
+    private static boolean tryMergeRuns(Sorter sorter, double[] a, @IndexOrHigh({"#2"}) int low, int size) {
 
         /*
          * The run array is constructed only if initial runs are
@@ -4320,7 +4326,7 @@ final class DualPivotQuicksort {
             }
         }
 
-        private void forkSorter(int depth, int low, int high) {
+        private void forkSorter(int depth, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
             addToPendingCount(1);
             Object a = this.a; // Use local variable for performance
             new Sorter(this, a, b, low, high - low, offset, depth).fork();

@@ -21,6 +21,8 @@
  * questions.
  */
 
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.PlatformLoggingMXBean;
@@ -47,7 +49,7 @@ import java.util.logging.*;
  */
 
 public class CustomLevel extends Level {
-    public CustomLevel(String name, int value, String resourceBundleName) {
+    public CustomLevel(String name, int value, @BinaryName String resourceBundleName) {
         super(name, value, resourceBundleName);
     }
 

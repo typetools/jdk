@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -56,7 +59,8 @@ import java.util.List;
  * @author Jean-Christophe Collet
  * @since 1.5
  */
-public abstract class ProxySelector {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class ProxySelector {
     /**
      * The system wide proxy selector that selects the proxy server to
      * use, if any, when connecting to a remote object referenced by

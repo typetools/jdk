@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Objects;
 
 import com.sun.org.apache.bcel.internal.classfile.LineNumber;

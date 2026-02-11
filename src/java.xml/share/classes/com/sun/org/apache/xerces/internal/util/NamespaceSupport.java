@@ -20,6 +20,8 @@
 
 package com.sun.org.apache.xerces.internal.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import com.sun.org.apache.xerces.internal.xni.NamespaceContext;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -318,6 +320,7 @@ public class NamespaceSupport implements NamespaceContext {
      *
      * @return true if the given prefix exists in the context
      */
+    @Pure
     public boolean containsPrefix(String prefix) {
 
         // find prefix in context
@@ -339,6 +342,7 @@ public class NamespaceSupport implements NamespaceContext {
      *
      * @return true if the given prefix exists in the current context
      */
+    @Pure
     public boolean containsPrefixInCurrentContext(String prefix) {
 
         // find prefix in current context
@@ -368,6 +372,7 @@ public class NamespaceSupport implements NamespaceContext {
         /**
          * @see java.util.Enumeration#hasMoreElements()
          */
+        @Pure
         public boolean hasNext() {
             return (counter < size);
         }
@@ -375,6 +380,7 @@ public class NamespaceSupport implements NamespaceContext {
         /**
          * @see java.util.Enumeration#nextElement()
          */
+        @SideEffectsOnly("this")
         public String next() {
             if (counter< size){
                 return fPrefixes[counter++];

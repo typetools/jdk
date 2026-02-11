@@ -25,6 +25,11 @@
 
 package java.lang;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.common.value.qual.PolyValue;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The abstract class {@code Number} is the superclass of platform
  * classes representing numeric values that are convertible to the
@@ -52,6 +57,7 @@ package java.lang;
  * @jls 5.1.3 Narrowing Primitive Conversion
  * @since   1.0
  */
+@AnnotatedFor({"lock", "nullness", "value"})
 public abstract class Number implements java.io.Serializable {
     /**
      * Constructor for subclasses to call.
@@ -64,7 +70,8 @@ public abstract class Number implements java.io.Serializable {
      * @return  the numeric value represented by this object after conversion
      *          to type {@code int}.
      */
-    public abstract int intValue();
+    @Pure
+    public abstract @PolyValue int intValue(@GuardSatisfied @PolyValue Number this);
 
     /**
      * Returns the value of the specified number as a {@code long}.
@@ -72,7 +79,8 @@ public abstract class Number implements java.io.Serializable {
      * @return  the numeric value represented by this object after conversion
      *          to type {@code long}.
      */
-    public abstract long longValue();
+    @Pure
+    public abstract @PolyValue long longValue(@GuardSatisfied @PolyValue Number this);
 
     /**
      * Returns the value of the specified number as a {@code float}.
@@ -80,7 +88,8 @@ public abstract class Number implements java.io.Serializable {
      * @return  the numeric value represented by this object after conversion
      *          to type {@code float}.
      */
-    public abstract float floatValue();
+    @Pure
+    public abstract @PolyValue float floatValue(@GuardSatisfied @PolyValue Number this);
 
     /**
      * Returns the value of the specified number as a {@code double}.
@@ -88,7 +97,8 @@ public abstract class Number implements java.io.Serializable {
      * @return  the numeric value represented by this object after conversion
      *          to type {@code double}.
      */
-    public abstract double doubleValue();
+    @Pure
+    public abstract @PolyValue double doubleValue(@GuardSatisfied @PolyValue Number this);
 
     /**
      * Returns the value of the specified number as a {@code byte}.
@@ -101,7 +111,8 @@ public abstract class Number implements java.io.Serializable {
      *          to type {@code byte}.
      * @since   1.1
      */
-    public byte byteValue() {
+    @Pure
+    public @PolyValue byte byteValue(@GuardSatisfied @PolyValue Number this) {
         return (byte)intValue();
     }
 
@@ -116,7 +127,8 @@ public abstract class Number implements java.io.Serializable {
      *          to type {@code short}.
      * @since   1.1
      */
-    public short shortValue() {
+    @Pure
+    public @PolyValue short shortValue(@GuardSatisfied @PolyValue Number this) {
         return (short)intValue();
     }
 

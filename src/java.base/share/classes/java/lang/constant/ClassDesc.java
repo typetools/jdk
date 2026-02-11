@@ -24,6 +24,8 @@
  */
 package java.lang.constant;
 
+import org.checkerframework.checker.signature.qual.FieldDescriptor;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.TypeDescriptor;
 
@@ -289,7 +291,7 @@ public sealed interface ClassDesc
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors
      */
-    String descriptorString();
+    @FieldDescriptor String descriptorString();
 
     /**
      * @since 21

@@ -25,6 +25,11 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 
 import java.util.Objects;
 
@@ -35,6 +40,7 @@ import java.util.Objects;
  * @since       1.1
  */
 
+@AnnotatedFor({"nullness", "index"})
 public class PipedWriter extends Writer {
 
     /* REMIND: identification of the read and write sides needs to be
@@ -152,7 +158,7 @@ public class PipedWriter extends Writer {
      *          {@link #connect(java.io.PipedReader) unconnected}, closed
      *          or an I/O error occurs.
      */
-    public void write(char[] cbuf, int off, int len) throws IOException {
+    public void write(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         if (sink == null) {
             throw new IOException("Pipe not connected");
         }

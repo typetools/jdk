@@ -25,6 +25,11 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -46,6 +51,7 @@ import sun.nio.cs.UTF_8;
  * @author      David Connelly
  * @since 1.1
  */
+@AnnotatedFor({"index", "signedness"})
 public class ZipOutputStream extends DeflaterOutputStream implements ZipConstants {
 
     /**
@@ -117,7 +123,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
      *
      * @param out the actual output stream
      */
-    public ZipOutputStream(OutputStream out) {
+    public @MustCallAlias ZipOutputStream(@MustCallAlias OutputStream out) {
         this(out, UTF_8.INSTANCE);
     }
 
@@ -131,7 +137,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
      *
      * @since 1.7
      */
-    public ZipOutputStream(OutputStream out, Charset charset) {
+    public @MustCallAlias ZipOutputStream(@MustCallAlias OutputStream out, Charset charset) {
         super(out, out != null ? new Deflater(Deflater.DEFAULT_COMPRESSION, true) : null);
         if (charset == null)
             throw new NullPointerException("charset is null");
@@ -352,7 +358,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
      * @throws    ZipException if a ZIP file error has occurred
      * @throws    IOException if an I/O error has occurred
      */
-    public synchronized void write(byte[] b, int off, int len)
+    public synchronized void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len)
         throws IOException
     {
         ensureOpen();
@@ -819,7 +825,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     /*
      * Writes a 8-bit byte to the output stream.
      */
-    private void writeByte(int v) throws IOException {
+    private void writeByte(@PolySigned int v) throws IOException {
         OutputStream out = this.out;
         out.write(v & 0xff);
         written += 1;
@@ -828,7 +834,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     /*
      * Writes a 16-bit short to the output stream in little-endian byte order.
      */
-    private void writeShort(int v) throws IOException {
+    private void writeShort(@PolySigned int v) throws IOException {
         OutputStream out = this.out;
         out.write((v >>> 0) & 0xff);
         out.write((v >>> 8) & 0xff);
@@ -838,7 +844,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     /*
      * Writes a 32-bit int to the output stream in little-endian byte order.
      */
-    private void writeInt(long v) throws IOException {
+    private void writeInt(@PolySigned long v) throws IOException {
         OutputStream out = this.out;
         out.write((int)((v >>>  0) & 0xff));
         out.write((int)((v >>>  8) & 0xff));
@@ -850,7 +856,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     /*
      * Writes a 64-bit int to the output stream in little-endian byte order.
      */
-    private void writeLong(long v) throws IOException {
+    private void writeLong(@PolySigned long v) throws IOException {
         OutputStream out = this.out;
         out.write((int)((v >>>  0) & 0xff));
         out.write((int)((v >>>  8) & 0xff));
@@ -866,7 +872,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     /*
      * Writes an array of bytes to the output stream.
      */
-    private void writeBytes(byte[] b, int off, int len) throws IOException {
+    private void writeBytes(@PolySigned byte[] b, int off, int len) throws IOException {
         super.out.write(b, off, len);
         written += len;
     }

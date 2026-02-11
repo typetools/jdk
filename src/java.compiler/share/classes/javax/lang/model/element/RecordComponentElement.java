@@ -25,6 +25,12 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeKind;
 

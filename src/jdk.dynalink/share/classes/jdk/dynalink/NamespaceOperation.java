@@ -60,6 +60,7 @@
 
 package jdk.dynalink;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -215,6 +216,7 @@ public final class NamespaceOperation implements Operation {
      * @return true if the if this namespace operation contains a namespace
      * equal to the specified namespace.
      */
+    @Pure
     public boolean contains(final Namespace namespace) {
         Objects.requireNonNull(namespace);
         for(final Namespace component: namespaces) {
@@ -299,6 +301,7 @@ public final class NamespaceOperation implements Operation {
      * its base operation equals the searched base operation, and contains a namespace
      * equal to the searched namespace.
      */
+    @Pure
     public static boolean contains(final Operation op, final Operation baseOperation, final Namespace namespace) {
         if (op instanceof NamespaceOperation) {
             final NamespaceOperation no = (NamespaceOperation)op;

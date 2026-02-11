@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.InputStream;
 import java.security.Provider;
 import java.security.Security;
@@ -123,7 +126,8 @@ import sun.security.jca.GetInstance.Instance;
  * @since 1.2
  */
 
-public class CertificateFactory {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class CertificateFactory {
 
     // The certificate type
     private final String type;

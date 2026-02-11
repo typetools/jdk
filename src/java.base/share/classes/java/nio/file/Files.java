@@ -25,6 +25,18 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -90,7 +102,8 @@ import sun.nio.fs.AbstractFileSystemProvider;
  * @since 1.7
  */
 
-public final class Files {
+@AnnotatedFor({"interning", "mustcall", "signedness", "nullness"})
+public final @UsesObjectEquals class Files {
     // buffer size used for reading and writing
     private static final int BUFFER_SIZE = 8192;
 
@@ -148,6 +161,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static InputStream newInputStream(Path path, OpenOption... options)
         throws IOException
     {
@@ -209,6 +223,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static OutputStream newOutputStream(Path path, OpenOption... options)
         throws IOException
     {
@@ -349,6 +364,7 @@ public final class Files {
      *
      * @see java.nio.channels.FileChannel#open(Path,Set,FileAttribute[])
      */
+    @ReleasesNoLocks
     public static SeekableByteChannel newByteChannel(Path path,
                                                      Set<? extends OpenOption> options,
                                                      FileAttribute<?>... attrs)
@@ -386,6 +402,7 @@ public final class Files {
      *
      * @see java.nio.channels.FileChannel#open(Path,OpenOption[])
      */
+    @ReleasesNoLocks
     public static SeekableByteChannel newByteChannel(Path path, OpenOption... options)
         throws IOException
     {
@@ -407,6 +424,7 @@ public final class Files {
         private AcceptAllFilter() { }
 
         @Override
+        @ReleasesNoLocks
         public boolean accept(Path entry) { return true; }
 
         static final AcceptAllFilter FILTER = new AcceptAllFilter();
@@ -439,7 +457,8 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir)
+    @ReleasesNoLocks
+    public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir)
         throws IOException
     {
         return provider(dir).newDirectoryStream(dir, AcceptAllFilter.FILTER);
@@ -490,7 +509,8 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+    @ReleasesNoLocks
+    public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
         throws IOException
     {
         // avoid creating a matcher if all entries are required.
@@ -502,6 +522,7 @@ public final class Files {
         final PathMatcher matcher = fs.getPathMatcher("glob:" + glob);
         DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<>() {
             @Override
+            @ReleasesNoLocks
             public boolean accept(Path entry)  {
                 return matcher.matches(entry.getFileName());
             }
@@ -562,7 +583,8 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir,
+    @ReleasesNoLocks
+    public static @MustCall("close") DirectoryStream<Path> newDirectoryStream(Path dir,
                                                            DirectoryStream.Filter<? super Path> filter)
         throws IOException
     {
@@ -603,6 +625,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs or the parent directory does not exist
      */
+    @ReleasesNoLocks
     public static Path createFile(Path path, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -641,6 +664,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs or the parent directory does not exist
      */
+    @ReleasesNoLocks
     public static Path createDirectory(Path dir, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -681,6 +705,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path createDirectories(Path dir, FileAttribute<?>... attrs)
         throws IOException
     {
@@ -792,9 +817,10 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs or {@code dir} does not exist
      */
+    @ReleasesNoLocks
     public static Path createTempFile(Path dir,
-                                      String prefix,
-                                      String suffix,
+                                      @Nullable String prefix,
+                                      @Nullable String suffix,
                                       FileAttribute<?>... attrs)
         throws IOException
     {
@@ -834,8 +860,9 @@ public final class Files {
      *          if an I/O error occurs or the temporary-file directory does not
      *          exist
      */
-    public static Path createTempFile(String prefix,
-                                      String suffix,
+    @ReleasesNoLocks
+    public static Path createTempFile(@Nullable String prefix,
+                                      @Nullable String suffix,
                                       FileAttribute<?>... attrs)
         throws IOException
     {
@@ -885,8 +912,9 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs or {@code dir} does not exist
      */
+    @ReleasesNoLocks
     public static Path createTempDirectory(Path dir,
-                                           String prefix,
+                                           @Nullable String prefix,
                                            FileAttribute<?>... attrs)
         throws IOException
     {
@@ -922,7 +950,8 @@ public final class Files {
      *          if an I/O error occurs or the temporary-file directory does not
      *          exist
      */
-    public static Path createTempDirectory(String prefix,
+    @ReleasesNoLocks
+    public static Path createTempDirectory(@Nullable String prefix,
                                            FileAttribute<?>... attrs)
         throws IOException
     {
@@ -969,6 +998,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path createSymbolicLink(Path link, Path target,
                                           FileAttribute<?>... attrs)
         throws IOException
@@ -1012,6 +1042,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path createLink(Path link, Path existing) throws IOException {
         provider(link).createLink(link, existing);
         return link;
@@ -1048,6 +1079,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static void delete(Path path) throws IOException {
         provider(path).delete(path);
     }
@@ -1083,6 +1115,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static boolean deleteIfExists(Path path) throws IOException {
         return provider(path).deleteIfExists(path);
     }
@@ -1183,6 +1216,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path copy(Path source, Path target, CopyOption... options)
         throws IOException
     {
@@ -1310,6 +1344,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path move(Path source, Path target, CopyOption... options)
         throws IOException
     {
@@ -1348,6 +1383,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path readSymbolicLink(Path link) throws IOException {
         return provider(link).readSymbolicLink(link);
     }
@@ -1371,6 +1407,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static FileStore getFileStore(Path path) throws IOException {
         return provider(path).getFileStore(path);
     }
@@ -1410,6 +1447,7 @@ public final class Files {
      *
      * @see java.nio.file.attribute.BasicFileAttributes#fileKey
      */
+    @SideEffectFree
     public static boolean isSameFile(Path path, Path path2) throws IOException {
         return provider(path).isSameFile(path, path2);
     }
@@ -1461,6 +1499,7 @@ public final class Files {
      *
      * @since 12
      */
+    @ReleasesNoLocks
     public static long mismatch(Path path, Path path2) throws IOException {
         if (isSameFile(path, path2)) {
             return -1;
@@ -1507,6 +1546,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @SideEffectFree
     public static boolean isHidden(Path path) throws IOException {
         return provider(path).isHidden(path);
     }
@@ -1580,7 +1620,8 @@ public final class Files {
      *      RFC 2045: Multipurpose Internet Mail Extensions (MIME) Part One:
      *              Format of Internet Message Bodies
      */
-    public static String probeContentType(Path path)
+    @ReleasesNoLocks
+    public static @Nullable String probeContentType(Path path)
         throws IOException
     {
         // try installed file type detectors
@@ -1638,7 +1679,8 @@ public final class Files {
      * @return  a file attribute view of the specified type, or {@code null} if
      *          the attribute view type is not available
      */
-    public static <V extends FileAttributeView> V getFileAttributeView(Path path,
+    @ReleasesNoLocks
+    public static <V extends @Nullable FileAttributeView> V getFileAttributeView(Path path,
                                                                        Class<V> type,
                                                                        LinkOption... options)
     {
@@ -1694,6 +1736,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static <A extends BasicFileAttributes> A readAttributes(Path path,
                                                                    Class<A> type,
                                                                    LinkOption... options)
@@ -1757,6 +1800,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path setAttribute(Path path, String attribute, Object value,
                                     LinkOption... options)
         throws IOException
@@ -1812,6 +1856,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Object getAttribute(Path path, String attribute,
                                       LinkOption... options)
         throws IOException
@@ -1910,6 +1955,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Map<String,Object> readAttributes(Path path, String attributes,
                                                     LinkOption... options)
         throws IOException
@@ -1945,6 +1991,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Set<PosixFilePermission> getPosixFilePermissions(Path path,
                                                                    LinkOption... options)
         throws IOException
@@ -1977,6 +2024,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static Path setPosixFilePermissions(Path path,
                                                Set<PosixFilePermission> perms)
         throws IOException
@@ -2009,6 +2057,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs
      */
+    @ReleasesNoLocks
     public static UserPrincipal getOwner(Path path, LinkOption... options) throws IOException {
         FileOwnerAttributeView view =
             getFileAttributeView(path, FileOwnerAttributeView.class, options);
@@ -2050,6 +2099,7 @@ public final class Files {
      * @see FileSystem#getUserPrincipalLookupService
      * @see java.nio.file.attribute.UserPrincipalLookupService
      */
+    @ReleasesNoLocks
     public static Path setOwner(Path path, UserPrincipal owner)
         throws IOException
     {
@@ -2076,6 +2126,7 @@ public final class Files {
      *          the file does not exist, is not a symbolic link, or it cannot
      *          be determined if the file is a symbolic link or not.
      */
+    @SideEffectFree
     public static boolean isSymbolicLink(Path path) {
         try {
             return readAttributes(path,
@@ -2110,6 +2161,7 @@ public final class Files {
      *          the file does not exist, is not a directory, or it cannot
      *          be determined if the file is a directory or not.
      */
+    @SideEffectFree
     public static boolean isDirectory(Path path, LinkOption... options) {
         try {
             var attrs = provider(path)
@@ -2144,6 +2196,7 @@ public final class Files {
      *          the file does not exist, is not a regular file, or it
      *          cannot be determined if the file is a regular file or not.
      */
+    @SideEffectFree
     public static boolean isRegularFile(Path path, LinkOption... options) {
         try {
             var attrs = provider(path)
@@ -2178,6 +2231,7 @@ public final class Files {
      *
      * @see BasicFileAttributes#lastModifiedTime
      */
+    @ReleasesNoLocks
     public static FileTime getLastModifiedTime(Path path, LinkOption... options)
         throws IOException
     {
@@ -2213,6 +2267,7 @@ public final class Files {
      *
      * @see BasicFileAttributeView#setTimes
      */
+    @ReleasesNoLocks
     public static Path setLastModifiedTime(Path path, FileTime time)
         throws IOException
     {
@@ -2238,6 +2293,7 @@ public final class Files {
      *
      * @see BasicFileAttributes#size
      */
+    @ReleasesNoLocks
     public static long size(Path path) throws IOException {
         return readAttributes(path, BasicFileAttributes.class).size();
     }
@@ -2285,6 +2341,7 @@ public final class Files {
      * @see #notExists
      * @see FileSystemProvider#checkAccess
      */
+    @SideEffectFree
     public static boolean exists(Path path, LinkOption... options) {
         return provider(path).exists(path, options);
     }
@@ -2315,6 +2372,7 @@ public final class Files {
      * @return  {@code true} if the file does not exist; {@code false} if the
      *          file exists or its existence cannot be determined
      */
+    @SideEffectFree
     public static boolean notExists(Path path, LinkOption... options) {
         try {
             if (followLinks(options)) {
@@ -2368,6 +2426,7 @@ public final class Files {
      *          the Java virtual machine has insufficient privileges, or access
      *          cannot be determined
      */
+    @SideEffectFree
     public static boolean isReadable(Path path) {
         FileSystemProvider provider = provider(path);
         if (provider instanceof AbstractFileSystemProvider afsp)
@@ -2398,6 +2457,7 @@ public final class Files {
      *          the Java virtual machine has insufficient privileges, or access
      *          cannot be determined
      */
+    @SideEffectFree
     public static boolean isWritable(Path path) {
         FileSystemProvider provider = provider(path);
         if (provider instanceof AbstractFileSystemProvider afsp)
@@ -2432,6 +2492,7 @@ public final class Files {
      *          the Java virtual machine has insufficient privileges, or access
      *          cannot be determined
      */
+    @SideEffectFree
     public static boolean isExecutable(Path path) {
         FileSystemProvider provider = provider(path);
         if (provider instanceof AbstractFileSystemProvider afsp)
@@ -2522,6 +2583,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error is thrown by a visitor method
      */
+    @ReleasesNoLocks
     public static Path walkFileTree(Path start,
                                     Set<FileVisitOption> options,
                                     int maxDepth,
@@ -2603,6 +2665,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error is thrown by a visitor method
      */
+    @ReleasesNoLocks
     public static Path walkFileTree(Path start, FileVisitor<? super Path> visitor)
         throws IOException
     {
@@ -2638,6 +2701,7 @@ public final class Files {
      *
      * @see #readAllLines
      */
+    @ReleasesNoLocks
     public static BufferedReader newBufferedReader(Path path, Charset cs)
         throws IOException
     {
@@ -2670,6 +2734,7 @@ public final class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static BufferedReader newBufferedReader(Path path) throws IOException {
         return newBufferedReader(path, UTF_8.INSTANCE);
     }
@@ -2717,6 +2782,7 @@ public final class Files {
      *
      * @see #write(Path,Iterable,Charset,OpenOption[])
      */
+    @ReleasesNoLocks
     public static BufferedWriter newBufferedWriter(Path path, Charset cs,
                                                    OpenOption... options)
         throws IOException
@@ -2760,6 +2826,7 @@ public final class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static BufferedWriter newBufferedWriter(Path path, OpenOption... options)
         throws IOException
     {
@@ -2824,6 +2891,7 @@ public final class Files {
      * @throws  UnsupportedOperationException
      *          if {@code options} contains a copy option that is not supported
      */
+    @ReleasesNoLocks
     public static long copy(InputStream in, Path target, CopyOption... options)
         throws IOException
     {
@@ -2894,6 +2962,7 @@ public final class Files {
      * @throws  IOException
      *          if an I/O error occurs when reading or writing
      */
+    @ReleasesNoLocks
     public static long copy(Path source, OutputStream out) throws IOException {
         // ensure not null before opening file
         Objects.requireNonNull(out);
@@ -2969,6 +3038,7 @@ public final class Files {
      *          if an array of the required size cannot be allocated, for
      *          example the file is larger that {@code 2GB}
      */
+    @SideEffectFree
     public static byte[] readAllBytes(Path path) throws IOException {
         try (SeekableByteChannel sbc = Files.newByteChannel(path);
              InputStream in = Channels.newInputStream(sbc)) {
@@ -3002,6 +3072,7 @@ public final class Files {
      *
      * @since 11
      */
+    @SideEffectFree
     public static String readString(Path path) throws IOException {
         return readString(path, UTF_8.INSTANCE);
     }
@@ -3036,6 +3107,7 @@ public final class Files {
      *
      * @since 11
      */
+    @SideEffectFree
     public static String readString(Path path, Charset cs) throws IOException {
         Objects.requireNonNull(path);
         Objects.requireNonNull(cs);
@@ -3081,6 +3153,7 @@ public final class Files {
      *
      * @see #newBufferedReader
      */
+    @SideEffectFree
     public static List<String> readAllLines(Path path, Charset cs) throws IOException {
         try (BufferedReader reader = newBufferedReader(path, cs)) {
             List<String> result = new ArrayList<>();
@@ -3118,6 +3191,7 @@ public final class Files {
      *
      * @since 1.8
      */
+    @SideEffectFree
     public static List<String> readAllLines(Path path) throws IOException {
         return readAllLines(path, UTF_8.INSTANCE);
     }
@@ -3165,7 +3239,8 @@ public final class Files {
      *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
      *          <i>(optional specific exception)</i>
      */
-    public static Path write(Path path, byte[] bytes, OpenOption... options)
+    @ReleasesNoLocks
+    public static Path write(Path path, @PolySigned byte[] bytes, OpenOption... options)
         throws IOException
     {
         // ensure bytes is not null before opening file
@@ -3226,6 +3301,7 @@ public final class Files {
      *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
      *          <i>(optional specific exception)</i>
      */
+    @ReleasesNoLocks
     public static Path write(Path path, Iterable<? extends CharSequence> lines,
                              Charset cs, OpenOption... options)
         throws IOException
@@ -3273,6 +3349,7 @@ public final class Files {
      *
      * @since 1.8
      */
+    @ReleasesNoLocks
     public static Path write(Path path,
                              Iterable<? extends CharSequence> lines,
                              OpenOption... options)
@@ -3309,6 +3386,7 @@ public final class Files {
      *
      * @since 11
      */
+    @ReleasesNoLocks
     public static Path writeString(Path path, CharSequence csq, OpenOption... options)
             throws IOException
     {
@@ -3354,6 +3432,7 @@ public final class Files {
      *
      * @since 11
      */
+    @ReleasesNoLocks
     public static Path writeString(Path path, CharSequence csq, Charset cs, OpenOption... options)
             throws IOException
     {
@@ -3418,7 +3497,8 @@ public final class Files {
      * @see     #newDirectoryStream(Path)
      * @since   1.8
      */
-    public static Stream<Path> list(Path dir) throws IOException {
+    @ReleasesNoLocks
+    public static @MustCall("close") Stream<Path> list(Path dir) throws IOException {
         DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
         try {
             final Iterator<Path> delegate = ds.iterator();
@@ -3426,6 +3506,8 @@ public final class Files {
             // Re-wrap DirectoryIteratorException to UncheckedIOException
             Iterator<Path> iterator = new Iterator<>() {
                 @Override
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     try {
                         return delegate.hasNext();
@@ -3433,8 +3515,9 @@ public final class Files {
                         throw new UncheckedIOException(e.getCause());
                     }
                 }
+                @SideEffectsOnly("this")
                 @Override
-                public Path next() {
+                public Path next(/*@NonEmpty Iterator<Path> this*/) {
                     try {
                         return delegate.next();
                     } catch (DirectoryIteratorException e) {
@@ -3532,7 +3615,8 @@ public final class Files {
      *          if an I/O error is thrown when accessing the starting file.
      * @since   1.8
      */
-    public static Stream<Path> walk(Path start,
+    @ReleasesNoLocks
+    public static @MustCall("close") Stream<Path> walk(Path start,
                                     int maxDepth,
                                     FileVisitOption... options)
         throws IOException
@@ -3587,7 +3671,8 @@ public final class Files {
      * @see     #walk(Path, int, FileVisitOption...)
      * @since   1.8
      */
-    public static Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
+    @ReleasesNoLocks
+    public static @MustCall("close") Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
         return walk(start, Integer.MAX_VALUE, options);
     }
 
@@ -3640,7 +3725,8 @@ public final class Files {
      * @see     #walk(Path, int, FileVisitOption...)
      * @since   1.8
      */
-    public static Stream<Path> find(Path start,
+    @ReleasesNoLocks
+    public static @MustCall("close") Stream<Path> find(Path start,
                                     int maxDepth,
                                     BiPredicate<Path, BasicFileAttributes> matcher,
                                     FileVisitOption... options)
@@ -3730,7 +3816,8 @@ public final class Files {
      * @see     java.io.BufferedReader#lines()
      * @since   1.8
      */
-    public static Stream<String> lines(Path path, Charset cs) throws IOException {
+    @SideEffectFree
+    public static @MustCall("close") Stream<String> lines(Path path, Charset cs) throws IOException {
         // Use the good splitting spliterator if:
         // 1) the path is associated with the default file system;
         // 2) the character set is supported; and
@@ -3828,7 +3915,8 @@ public final class Files {
      *
      * @since 1.8
      */
-    public static Stream<String> lines(Path path) throws IOException {
+    @SideEffectFree
+    public static @MustCall("close") Stream<String> lines(Path path) throws IOException {
         return lines(path, UTF_8.INSTANCE);
     }
 }

@@ -25,6 +25,13 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Arrays;
 import java.util.Objects;
 import jdk.internal.misc.VM;
@@ -71,6 +78,7 @@ import jdk.internal.misc.VM;
  * @since       1.1
  */
 
+@AnnotatedFor({"index", "mustcall", "nullness"})
 public class BufferedWriter extends Writer {
     private static final int DEFAULT_INITIAL_BUFFER_SIZE = 512;
     private static final int DEFAULT_MAX_BUFFER_SIZE = 8192;
@@ -114,7 +122,7 @@ public class BufferedWriter extends Writer {
      *
      * @param  out  A Writer
      */
-    public BufferedWriter(Writer out) {
+    public @MustCallAlias BufferedWriter(@MustCallAlias Writer out) {
         this(out, initialBufferSize(), DEFAULT_MAX_BUFFER_SIZE);
     }
 
@@ -127,7 +135,7 @@ public class BufferedWriter extends Writer {
      *
      * @throws     IllegalArgumentException  If {@code sz <= 0}
      */
-    public BufferedWriter(Writer out, int sz) {
+    public @MustCallAlias BufferedWriter(@MustCallAlias Writer out, @Positive int sz) {
         this(out, sz, sz);
     }
 
@@ -215,7 +223,7 @@ public class BufferedWriter extends Writer {
      *
      * @throws  IOException  If an I/O error occurs
      */
-    public void write(char[] cbuf, int off, int len) throws IOException {
+    public void write(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
             Objects.checkFromIndexSize(off, len, cbuf.length);
@@ -268,7 +276,7 @@ public class BufferedWriter extends Writer {
      *
      * @throws  IOException  If an I/O error occurs
      */
-    public void write(String s, int off, int len) throws IOException {
+    public void write(String s, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
             growIfNeeded(len);

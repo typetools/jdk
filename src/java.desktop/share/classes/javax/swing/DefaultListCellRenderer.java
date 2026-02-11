@@ -25,6 +25,10 @@
 
 package javax.swing;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Rectangle;
@@ -71,6 +75,7 @@ import sun.swing.SwingUtilities2;
  * @author Hans Muller
  * @since 1.2
  */
+@AnnotatedFor({"interning", "nullness"})
 @SuppressWarnings("serial") // Same-version serialization only
 public class DefaultListCellRenderer extends JLabel
     implements ListCellRenderer<Object>, Serializable
@@ -111,7 +116,7 @@ public class DefaultListCellRenderer extends JLabel
 
     public Component getListCellRendererComponent(
         JList<?> list,
-        Object value,
+        @Nullable Object value,
         int index,
         boolean isSelected,
         boolean cellHasFocus)
@@ -254,7 +259,7 @@ public class DefaultListCellRenderer extends JLabel
     * for more information.
     */
     @Override
-    protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+    protected void firePropertyChange(@Interned String propertyName, Object oldValue, Object newValue) {
         // Strings get interned...
         if (propertyName == "text"
             || ((SwingUtilities2.isScaleChanged(propertyName, oldValue, newValue)

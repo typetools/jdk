@@ -26,6 +26,12 @@
 
 package javax.management.openmbean;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -293,6 +299,7 @@ public class CompositeDataSupport
      * an item whose name is {@code key}.
      * If {@code key} is a null or empty String, this method simply returns false.
      */
+    @Pure
     public boolean containsKey(String key) {
 
         if ( (key == null) || (key.trim().equals("")) ) {
@@ -306,6 +313,7 @@ public class CompositeDataSupport
      * contains an item
      * whose value is {@code value}.
      */
+    @Pure
     public boolean containsValue(Object value) {
 
         return contents.containsValue(value);
@@ -351,7 +359,9 @@ public class CompositeDataSupport
      * <code>CompositeDataSupport</code> instance.
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }

@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import jdk.javadoc.internal.doclets.toolkit.DocletException;
 
 /**

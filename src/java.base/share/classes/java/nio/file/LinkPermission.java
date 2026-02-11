@@ -27,6 +27,9 @@ package java.nio.file;
 
 import java.security.BasicPermission;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The {@code Permission} class for link creation operations.
  *
@@ -37,6 +40,7 @@ import java.security.BasicPermission;
  * @since 1.7
  */
 @Deprecated(since="25", forRemoval=true)
+@AnnotatedFor({"nullness"})
 public final class LinkPermission extends BasicPermission {
     @java.io.Serial
     static final long serialVersionUID = -1441492453772213220L;
@@ -73,7 +77,7 @@ public final class LinkPermission extends BasicPermission {
      * @throws  IllegalArgumentException
      *          if name is empty or invalid, or actions is a non-empty string
      */
-    public LinkPermission(String name, String actions) {
+    public LinkPermission(String name, @Nullable String actions) {
         super(name);
         checkName(name);
         if (actions != null && !actions.isEmpty()) {

@@ -61,6 +61,12 @@
  */
 package java.time;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import static java.time.LocalTime.MINUTES_PER_HOUR;
 import static java.time.LocalTime.NANOS_PER_MILLI;
 import static java.time.LocalTime.NANOS_PER_SECOND;
@@ -1444,7 +1450,9 @@ public final class Duration
      * @return true if the other duration is equal to this one
      */
     @Override
-    public boolean equals(Object other) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object other) {
         if (this == other) {
             return true;
         }

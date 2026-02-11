@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import sun.security.jca.JCAUtil;
 
 import java.nio.ByteBuffer;
@@ -47,7 +50,8 @@ import java.security.spec.AlgorithmParameterSpec;
  * @see Signature
  */
 
-public abstract class SignatureSpi {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class SignatureSpi {
 
     /**
      * Constructor for subclasses to call.

@@ -24,6 +24,9 @@
  */
 package java.util.function;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.Covariant;
+
 /**
  * Represents a function that accepts a long-valued argument and produces a
  * result.  This is the {@code long}-consuming primitive specialization for
@@ -37,6 +40,8 @@ package java.util.function;
  * @see Function
  * @since 1.8
  */
+@AnnotatedFor({"lock", "nullness"})
+@Covariant(0)
 @FunctionalInterface
 public interface LongFunction<R> {
 

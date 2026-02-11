@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Objects;
 import sun.security.jca.JCAUtil;
@@ -98,7 +101,8 @@ import sun.security.jca.JCAUtil;
  * @since 1.2
  */
 
-public class AlgorithmParameterGenerator {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class AlgorithmParameterGenerator {
 
     // The provider
     private final Provider provider;

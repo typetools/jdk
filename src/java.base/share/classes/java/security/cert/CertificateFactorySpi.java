@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Iterator;
@@ -60,7 +63,8 @@ import java.util.List;
  * @since 1.2
  */
 
-public abstract class CertificateFactorySpi {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class CertificateFactorySpi {
 
     /**
      * Constructor for subclasses to call.

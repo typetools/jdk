@@ -25,6 +25,24 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Private implementation class for EnumSet, for "jumbo" enum types
  * (i.e., those with more than 64 elements).
@@ -33,6 +51,7 @@ package java.util;
  * @since 1.5
  * @serial exclude
  */
+@AnnotatedFor({"index"})
 final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
     @java.io.Serial
     private static final long serialVersionUID = 334349849919042784L;
@@ -91,7 +110,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return an iterator over the elements contained in this set
      */
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty JumboEnumSet<E> this) {
         return new EnumSetIterator<>();
     }
 
@@ -123,6 +142,8 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             while (unseen == 0 && unseenIndex < elements.length - 1)
                 unseen = elements[++unseenIndex];
@@ -131,7 +152,8 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty EnumSetIterator<E> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
             lastReturned = unseen & -unseen;
@@ -159,7 +181,8 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return the number of elements in this set
      */
-    public int size() {
+    @Pure
+    public @NonNegative int size() {
         return size;
     }
 
@@ -168,6 +191,8 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return {@code true} if this set contains no elements
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return size == 0;
     }
@@ -178,7 +203,9 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be checked for containment in this collection
      * @return {@code true} if this set contains the specified element
      */
-    public boolean contains(Object e) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -199,6 +226,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @throws NullPointerException if {@code e} is null
      */
+    @EnsuresNonEmpty("this")
     public boolean add(E e) {
         typeCheck(e);
 
@@ -219,7 +247,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(Object e) {
+    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
         Class<?> eClass = e.getClass();
@@ -247,7 +275,8 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *        in the specified collection
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean containsAll(Collection<?> c) {
+    @Pure
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.containsAll(c);
 
@@ -293,7 +322,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.removeAll(c);
 
@@ -313,7 +342,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.retainAll(c);
 
@@ -345,7 +374,9 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param o object to be compared for equality with this set
      * @return {@code true} if the specified object is equal to this set
      */
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof JumboEnumSet<?> es))
             return super.equals(o);
 

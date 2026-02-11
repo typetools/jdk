@@ -25,6 +25,7 @@
 
 package javax.tools;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
@@ -294,6 +295,7 @@ public class ForwardingJavaFileManager<M extends JavaFileManager> implements Jav
      * @since 9
      */
     @Override
+    @Pure
     public boolean contains(Location location, FileObject fo) throws IOException {
         return fileManager.contains(location, fo);
     }

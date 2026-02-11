@@ -25,6 +25,13 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.channels.FileChannel;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.JavaIOFileDescriptorAccess;
@@ -61,6 +68,7 @@ import sun.nio.ch.FileChannelImpl;
  * @see     java.nio.file.Files#newOutputStream
  * @since   1.0
  */
+@AnnotatedFor({"index", "mustcall", "nullness", "signedness"})
 public class FileOutputStream extends OutputStream
 {
     /**
@@ -227,7 +235,7 @@ public class FileOutputStream extends OutputStream
      * @param      fdObj   the file descriptor to be opened for writing
      */
     @SuppressWarnings("this-escape")
-    public FileOutputStream(FileDescriptor fdObj) {
+    public @MustCallAlias FileOutputStream(@MustCallAlias FileDescriptor fdObj) {
         if (fdObj == null) {
             throw new NullPointerException();
         }
@@ -283,7 +291,7 @@ public class FileOutputStream extends OutputStream
      * @throws     IOException  if an I/O error occurs.
      */
     @Override
-    public void write(int b) throws IOException {
+    public void write(@PolySigned int b) throws IOException {
         boolean append = FD_ACCESS.getAppend(fd);
         if (jfrTracing && FileWriteEvent.enabled()) {
             traceWrite(b, append);
@@ -301,7 +309,7 @@ public class FileOutputStream extends OutputStream
      *     end of file
      * @throws    IOException If an I/O error has occurred.
      */
-    private native void writeBytes(byte[] b, int off, int len, boolean append)
+    private native void writeBytes(@PolySigned byte[] b, int off, int len, boolean append)
         throws IOException;
 
     private void traceWriteBytes(byte b[], int off, int len, boolean append) throws IOException {
@@ -323,7 +331,7 @@ public class FileOutputStream extends OutputStream
      * @throws     IOException  {@inheritDoc}
      */
     @Override
-    public void write(byte[] b) throws IOException {
+    public void write(@PolySigned byte[] b) throws IOException {
         boolean append = FD_ACCESS.getAppend(fd);
         if (jfrTracing && FileWriteEvent.enabled()) {
             traceWriteBytes(b, 0, b.length, append);
@@ -343,7 +351,7 @@ public class FileOutputStream extends OutputStream
      * @throws     IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         boolean append = FD_ACCESS.getAppend(fd);
         if (jfrTracing && FileWriteEvent.enabled()) {
             traceWriteBytes(b, off, len, append);
@@ -411,7 +419,7 @@ public class FileOutputStream extends OutputStream
      * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FileDescriptor
      */
-     public final FileDescriptor getFD()  throws IOException {
+     public final @MustCallAlias FileDescriptor getFD(@MustCallAlias FileOutputStream this)  throws IOException {
         if (fd != null) {
             return fd;
         }
@@ -434,7 +442,7 @@ public class FileOutputStream extends OutputStream
      *
      * @since 1.4
      */
-    public FileChannel getChannel() {
+    public @MustCallAlias FileChannel getChannel(@MustCallAlias FileOutputStream this) {
         FileChannel fc = this.channel;
         if (fc == null) {
             synchronized (this) {

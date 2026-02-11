@@ -25,6 +25,12 @@
 
 package com.sun.tools.javac.file;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.nio.file.FileSystem;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -72,7 +78,9 @@ public abstract class RelativePath implements Comparable<RelativePath> {
     }
 
     @Override
-    public boolean equals(Object other) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object other) {
         return (other instanceof RelativePath relativePath) && path.equals(relativePath.path);
     }
 
@@ -140,6 +148,7 @@ public abstract class RelativePath implements Comparable<RelativePath> {
          * Return true if this subdirectory "contains" the other path.
          * A subdirectory path does not contain itself.
          **/
+        @Pure
         boolean contains(RelativePath other) {
             return other.path.length() > path.length() && other.path.startsWith(path);
         }

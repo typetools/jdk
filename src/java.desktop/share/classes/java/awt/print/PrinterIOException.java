@@ -25,6 +25,8 @@
 
 package java.awt.print;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -89,7 +91,7 @@ public class PrinterIOException extends PrinterException {
      * @return  the cause of this exception.
      * @since   1.4
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return mException;
     }
 }

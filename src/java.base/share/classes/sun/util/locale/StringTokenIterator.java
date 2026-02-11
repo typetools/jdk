@@ -30,6 +30,9 @@
  */
 package sun.util.locale;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 public class StringTokenIterator {
     private final String text;
     private final String dlms;        // null if a single char delimiter
@@ -73,6 +76,7 @@ public class StringTokenIterator {
         return done;
     }
 
+    @SideEffectsOnly("this")
     public String next() {
         if (hasNext()) {
             start = end + 1;
@@ -86,6 +90,7 @@ public class StringTokenIterator {
         return token;
     }
 
+    @Pure
     public boolean hasNext() {
         return (end < text.length());
     }

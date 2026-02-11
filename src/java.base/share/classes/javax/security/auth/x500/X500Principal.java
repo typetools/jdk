@@ -25,6 +25,14 @@
 
 package javax.security.auth.x500;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.*;
 import java.security.Principal;
 import java.util.Collections;
@@ -71,6 +79,7 @@ import sun.security.util.*;
  * @see java.security.cert.X509Certificate
  * @since 1.4
  */
+@AnnotatedFor({"interning"})
 public final class X500Principal implements Principal, java.io.Serializable {
 
     @java.io.Serial
@@ -79,15 +88,15 @@ public final class X500Principal implements Principal, java.io.Serializable {
     /**
      * RFC 1779 String format of Distinguished Names.
      */
-    public static final String RFC1779 = "RFC1779";
+    public static final @Interned String RFC1779 = "RFC1779";
     /**
      * RFC 2253 String format of Distinguished Names.
      */
-    public static final String RFC2253 = "RFC2253";
+    public static final @Interned String RFC2253 = "RFC2253";
     /**
      * Canonical String format of Distinguished Names.
      */
-    public static final String CANONICAL = "CANONICAL";
+    public static final @Interned String CANONICAL = "CANONICAL";
 
     /**
      * The X500Name representing this principal.
@@ -491,7 +500,9 @@ public final class X500Principal implements Principal, java.io.Serializable {
      *          to this {@code X500Principal}, {@code false} otherwise
      */
     @Override
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         if (this == o) {
             return true;
         }

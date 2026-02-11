@@ -24,6 +24,9 @@
  */
 package java.security.interfaces;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.spec.ECParameterSpec;
@@ -39,7 +42,8 @@ import java.security.spec.ECParameterSpec;
  *
  * @since 1.5
  */
-public interface ECPrivateKey extends PrivateKey, ECKey {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals interface ECPrivateKey extends PrivateKey, ECKey {
    /**
     * The class fingerprint that is set to indicate
     * serialization compatibility.

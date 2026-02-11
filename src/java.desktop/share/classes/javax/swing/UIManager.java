@@ -24,6 +24,11 @@
  */
 package javax.swing;
 
+import org.checkerframework.checker.guieffect.qual.SafeEffect;
+import org.checkerframework.checker.guieffect.qual.UIType;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Color;
@@ -172,6 +177,8 @@ import sun.awt.AWTAccessor;
  * @author Hans Muller
  * @since 1.2
  */
+@AnnotatedFor({"guieffect", "nullness"})
+@UIType
 @SuppressWarnings("serial") // Same-version serialization only
 public class UIManager implements Serializable
 {
@@ -563,6 +570,7 @@ public class UIManager implements Serializable
      *          {@code false}
      * @see #getLookAndFeel
      */
+    @SafeEffect
     public static void setLookAndFeel(LookAndFeel newLookAndFeel)
         throws UnsupportedLookAndFeelException
     {
@@ -614,6 +622,7 @@ public class UIManager implements Serializable
      *         a class that extends {@code LookAndFeel}
      * @throws NullPointerException if {@code className} is {@code null}
      */
+    @SafeEffect
     @SuppressWarnings("deprecation")
     public static void setLookAndFeel(String className)
         throws ClassNotFoundException,
@@ -994,7 +1003,7 @@ public class UIManager implements Serializable
      * @return the <code>Object</code>
      * @throws NullPointerException if {@code key} is {@code null}
      */
-    public static Object get(Object key) {
+    public static @Nullable Object get(Object key) {
         return getDefaults().get(key);
     }
 
@@ -1010,7 +1019,7 @@ public class UIManager implements Serializable
      * @throws NullPointerException if {@code key} is {@code null}
      * @since 1.4
      */
-    public static Object get(Object key, Locale l) {
+    public static @Nullable Object get(Object key, Locale l) {
         return getDefaults().get(key,l);
     }
 
@@ -1027,7 +1036,7 @@ public class UIManager implements Serializable
      * @throws NullPointerException if {@code key} is {@code null}
      * @see UIDefaults#put
      */
-    public static Object put(Object key, Object value) {
+    public static @Nullable Object put(Object key, @Nullable Object value) {
         return getDefaults().put(key, value);
     }
 

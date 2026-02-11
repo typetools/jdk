@@ -26,6 +26,9 @@
 
 package java.util.logging;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * ErrorManager objects can be attached to Handlers to process
  * any error that occurs on a Handler during Logging.
@@ -38,7 +41,8 @@ package java.util.logging;
  * @since 1.4
  */
 
-public class ErrorManager {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class ErrorManager {
    private boolean reported = false;
 
     /**

@@ -25,6 +25,10 @@
 
 package java.security;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -50,6 +54,7 @@ import java.io.OutputStream;
  * @author Benjamin Renaud
  * @since 1.2
  */
+@AnnotatedFor({"mustcall", "signedness"})
 public class DigestOutputStream extends FilterOutputStream {
 
     private boolean on = true;
@@ -68,7 +73,7 @@ public class DigestOutputStream extends FilterOutputStream {
      * @param digest the message digest to associate with this stream.
      */
     @SuppressWarnings("this-escape")
-    public DigestOutputStream(OutputStream stream, MessageDigest digest) {
+    public @MustCallAlias DigestOutputStream(@MustCallAlias OutputStream stream, MessageDigest digest) {
         super(stream);
         setMessageDigest(digest);
     }
@@ -140,7 +145,7 @@ public class DigestOutputStream extends FilterOutputStream {
      *
      * @see MessageDigest#update(byte[], int, int)
      */
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@PolySigned byte[] b, int off, int len) throws IOException {
         out.write(b, off, len);
         if (on) {
             digest.update(b, off, len);

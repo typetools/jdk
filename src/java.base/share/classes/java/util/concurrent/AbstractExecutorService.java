@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.util.ArrayList;
@@ -75,7 +78,8 @@ import java.util.Objects;
  * @since 1.5
  * @author Doug Lea
  */
-public abstract class AbstractExecutorService implements ExecutorService {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class AbstractExecutorService implements ExecutorService {
 
     /**
      * Constructor for subclasses to call.

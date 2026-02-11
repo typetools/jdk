@@ -25,6 +25,11 @@
 
 package java.net;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +69,7 @@ import jdk.internal.perf.PerfCounter;
  * @author  David Connelly
  * @since   1.2
  */
+@AnnotatedFor("nullness")
 public class URLClassLoader extends SecureClassLoader implements Closeable {
     /* The search path for classes and resources */
     private final URLClassPath ucp;
@@ -89,7 +95,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @throws     NullPointerException if {@code urls} or any of its
      *             elements is {@code null}.
      */
-    public URLClassLoader(URL[] urls, ClassLoader parent) {
+    public URLClassLoader(URL[] urls, @Nullable ClassLoader parent) {
         super(parent);
         this.ucp = new URLClassPath(urls);
     }
@@ -239,7 +245,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      *
      * @since  1.7
      */
-    public InputStream getResourceAsStream(String name) {
+    public @Nullable InputStream getResourceAsStream(String name) {
         Objects.requireNonNull(name);
         URL url = getResource(name);
         try {
@@ -332,7 +338,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      *
      * @param url the URL to be added to the search path of URLs
      */
-    protected void addURL(URL url) {
+    protected void addURL(@Nullable URL url) {
         ucp.addURL(url);
     }
 
@@ -382,7 +388,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * If non-null, verify the package using the specified code
      * source and manifest.
      */
-    private Package getAndVerifyPackage(String pkgname,
+    private @Nullable Package getAndVerifyPackage(String pkgname,
                                         Manifest man, URL url) {
         Package pkg = getDefinedPackage(pkgname);
         if (pkg != null) {
@@ -470,7 +476,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      *              already defined by this class loader
      * @return      the newly defined {@code Package} object
      */
-    protected Package definePackage(String name, Manifest man, URL url) {
+    protected Package definePackage(String name, Manifest man, @Nullable URL url) {
         String specTitle = null, specVersion = null, specVendor = null;
         String implTitle = null, implVersion = null, implVendor = null;
         String sealed = null;
@@ -546,7 +552,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @return a {@code URL} for the resource, or {@code null}
      * if the resource could not be found, or if the loader is closed.
      */
-    public URL findResource(final String name) {
+    public @Nullable URL findResource(final String name) {
         return ucp.findResource(name);
     }
 
@@ -580,7 +586,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
             }
 
             @Override
-            public URL nextElement() {
+            public URL nextElement(/*@NonEmpty Enumeration<URL> this*/) {
                 if (!next()) {
                     throw new NoSuchElementException();
                 }
@@ -590,6 +596,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
             }
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return next();
             }

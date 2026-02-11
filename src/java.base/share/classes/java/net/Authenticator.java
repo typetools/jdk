@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The class Authenticator represents an object that knows how to obtain
  * authentication for a network connection.  Usually, it will do this
@@ -56,8 +59,9 @@ package java.net;
 
 // There are no abstract methods, but to be useful the user must
 // subclass.
+@AnnotatedFor({"interning"})
 public abstract
-class Authenticator {
+@UsesObjectEquals class Authenticator {
 
     // The system-wide authenticator object.  See setDefault().
     private static volatile Authenticator theAuthenticator;

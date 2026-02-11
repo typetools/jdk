@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 
 /**
@@ -34,6 +37,7 @@ import java.io.IOException;
  * @since 1.7
  */
 
+@AnnotatedFor("nullness")
 public class FileSystemException
     extends IOException
 {
@@ -43,13 +47,13 @@ public class FileSystemException
     /**
      * @serial String identifying the file or {@code null} if not known.
      */
-    private final String file;
+    private final @Nullable String file;
 
     /**
      * @serial String identifying the other file or {@code null} if there isn't
      *  another file or if not known.
      */
-    private final String other;
+    private final @Nullable String other;
 
     /**
      * Constructs an instance of this class. This constructor should be used
@@ -59,7 +63,7 @@ public class FileSystemException
      * @param   file
      *          a string identifying the file or {@code null} if not known.
      */
-    public FileSystemException(String file) {
+    public FileSystemException(@Nullable String file) {
         super((String)null);
         this.file = file;
         this.other = null;
@@ -78,7 +82,7 @@ public class FileSystemException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public FileSystemException(String file, String other, String reason) {
+    public FileSystemException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(reason);
         this.file = file;
         this.other = other;
@@ -89,7 +93,7 @@ public class FileSystemException
      *
      * @return  the file (can be {@code null})
      */
-    public String getFile() {
+    public @Nullable String getFile() {
         return file;
     }
 
@@ -98,7 +102,7 @@ public class FileSystemException
      *
      * @return  the other file (can be {@code null})
      */
-    public String getOtherFile() {
+    public @Nullable String getOtherFile() {
         return other;
     }
 
@@ -107,7 +111,7 @@ public class FileSystemException
      *
      * @return  the string explaining why the file system operation failed
      */
-    public String getReason() {
+    public @Nullable String getReason() {
         return super.getMessage();
     }
 
@@ -115,7 +119,7 @@ public class FileSystemException
      * Returns the detail message string.
      */
     @Override
-    public String getMessage() {
+    public @Nullable String getMessage() {
         if (file == null && other == null)
             return getReason();
         StringBuilder sb = new StringBuilder();

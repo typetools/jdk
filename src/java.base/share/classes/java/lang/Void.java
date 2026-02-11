@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The {@code Void} class is an uninstantiable placeholder class to hold a
  * reference to the {@code Class} object representing the Java keyword
@@ -32,8 +35,9 @@ package java.lang;
  *
  * @since   1.1
  */
+@AnnotatedFor({"interning", "nullness"})
 public final
-class Void {
+@UsesObjectEquals class Void {
 
     /**
      * The {@code Class} object representing the pseudo-type corresponding to

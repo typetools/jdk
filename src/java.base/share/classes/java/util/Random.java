@@ -25,6 +25,13 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;
@@ -75,7 +82,8 @@ import jdk.internal.misc.Unsafe;
  * @author  Frank Yellin
  * @since   1.0
  */
-public class Random implements RandomGenerator, java.io.Serializable {
+@AnnotatedFor({"index", "interning", "lock", "nullness", "signedness"})
+public @UsesObjectEquals class Random implements RandomGenerator, java.io.Serializable {
 
     /**
      * Class used to wrap a {@link java.util.random.RandomGenerator} to
@@ -394,7 +402,7 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * @throws UnsupportedOperationException if the {@code setSeed}
      *         operation is not supported by this random number generator
      */
-    public synchronized void setSeed(long seed) {
+    public synchronized void setSeed(@GuardSatisfied Random this, long seed) {
         this.seed.set(initialScramble(seed));
         haveNextNextGaussian = false;
     }
@@ -459,7 +467,7 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * @since  1.1
      */
     @Override
-    public void nextBytes(byte[] bytes) {
+    public void nextBytes(@PolySigned byte[] bytes) {
         for (int i = 0, len = bytes.length; i < len; )
             for (int rnd = nextInt(),
                  n = Math.min(len - i, Integer.SIZE/Byte.SIZE);
@@ -546,7 +554,7 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * @since 1.2
      */
     @Override
-    public int nextInt(int bound) {
+    public @NonNegative int nextInt(@Positive int bound) {
         if (bound <= 0)
             throw new IllegalArgumentException(BAD_BOUND);
         int r = next(31);

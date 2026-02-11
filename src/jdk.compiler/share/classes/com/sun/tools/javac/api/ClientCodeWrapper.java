@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.api;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -328,6 +329,7 @@ public class ClientCodeWrapper {
         }
 
         @Override @DefinedBy(Api.COMPILER)
+        @Pure
         public FileObject getFileForOutputForOriginatingFiles(Location location, String packageName, String relativeName, FileObject... originatingFiles) throws IOException {
             try {
                 return wrap(clientJavaFileManager.getFileForOutputForOriginatingFiles(location, packageName, relativeName, originatingFiles));
@@ -338,8 +340,7 @@ public class ClientCodeWrapper {
             }
         }
 
-        @Override @DefinedBy(Api.COMPILER)
-        public boolean contains(Location location, FileObject file) throws IOException {
+        @Override @DefinedBy(Api.COMPILER)        public boolean contains(Location location, FileObject file) throws IOException {
             try {
                 return clientJavaFileManager.contains(location, unwrap(file));
             } catch (ClientCodeException e) {

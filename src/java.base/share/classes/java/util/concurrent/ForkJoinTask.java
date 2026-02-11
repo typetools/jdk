@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
@@ -203,7 +206,8 @@ import jdk.internal.misc.Unsafe;
  * @since 1.7
  * @author Doug Lea
  */
-public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class ForkJoinTask<V> implements Future<V>, Serializable {
 
     /*
      * See the internal documentation of class ForkJoinPool for a

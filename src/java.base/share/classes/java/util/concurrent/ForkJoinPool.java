@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -1395,6 +1398,7 @@ public class ForkJoinPool extends AbstractExecutorService
         /**
          * Returns next task, if one exists, in order specified by mode.
          */
+        @Pure
         final ForkJoinTask<?> peek() {
             ForkJoinTask<?>[] a = array;
             int b = base, cfg = config, p = top, cap;

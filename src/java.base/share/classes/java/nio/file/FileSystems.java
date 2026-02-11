@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -85,7 +89,8 @@ import sun.nio.fs.DefaultFileSystemProvider;
  * @since 1.7
  */
 
-public final class FileSystems {
+@AnnotatedFor({"interning", "nullness"})
+public final @UsesObjectEquals class FileSystems {
     private FileSystems() { }
 
     // lazy initialization of default file system
@@ -310,7 +315,7 @@ public final class FileSystems {
      * @throws  IOException
      *          an I/O error occurs creating the file system
      */
-    public static FileSystem newFileSystem(URI uri, Map<String,?> env, ClassLoader loader)
+    public static FileSystem newFileSystem(URI uri, Map<String,?> env, @Nullable ClassLoader loader)
         throws IOException
     {
         String scheme = uri.getScheme();
@@ -374,7 +379,7 @@ public final class FileSystems {
      *          if an I/O error occurs
      */
     public static FileSystem newFileSystem(Path path,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         return newFileSystem(path, Map.of(), loader);
@@ -496,7 +501,7 @@ public final class FileSystems {
      * @since 13
      */
     public static FileSystem newFileSystem(Path path, Map<String,?> env,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         if (path == null)

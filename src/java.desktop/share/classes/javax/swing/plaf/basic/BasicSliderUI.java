@@ -25,6 +25,9 @@
 
 package javax.swing.plaf.basic;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -76,6 +79,7 @@ import sun.swing.UIAction;
  *
  * @author Tom Santos
  */
+@AnnotatedFor({"interning"})
 public class BasicSliderUI extends SliderUI{
     // Old actions forward to an instance of this.
     private static final Actions SHARED_ACTION = new Actions();
@@ -2379,8 +2383,8 @@ public class BasicSliderUI extends SliderUI{
             "negativeUnitIncrement";
         public static final String NEGATIVE_BLOCK_INCREMENT =
             "negativeBlockIncrement";
-        public static final String MIN_SCROLL_INCREMENT = "minScroll";
-        public static final String MAX_SCROLL_INCREMENT = "maxScroll";
+        public static final @Interned String MIN_SCROLL_INCREMENT = "minScroll";
+        public static final @Interned String MAX_SCROLL_INCREMENT = "maxScroll";
 
 
         Actions() {

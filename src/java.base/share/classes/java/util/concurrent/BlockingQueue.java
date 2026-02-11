@@ -35,6 +35,17 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Collection;
 import java.util.Queue;
 
@@ -176,7 +187,8 @@ import java.util.Queue;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-public interface BlockingQueue<E> extends Queue<E> {
+@AnnotatedFor({"nullness"})
+public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
     /**
      * Inserts the specified element into this queue if it is possible to do
      * so immediately without violating capacity restrictions, returning
@@ -195,6 +207,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
+    @EnsuresNonEmpty("this")
     boolean add(E e);
 
     /**
@@ -272,7 +285,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    E poll(long timeout, TimeUnit unit)
+    @Nullable E poll(long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -306,7 +319,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(Object o);
+    boolean remove(@CanShrink BlockingQueue<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this queue contains the specified element.
@@ -321,7 +334,9 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean contains(Object o);
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean contains(@UnknownSignedness Object o);
 
     /**
      * Removes all available elements from this queue and adds them
@@ -346,7 +361,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    int drainTo(Collection<? super E> c);
+    int drainTo(@GuardSatisfied @CanShrink BlockingQueue<E> this, Collection<? super E> c);
 
     /**
      * Removes at most the given number of available elements from
@@ -371,5 +386,5 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    int drainTo(Collection<? super E> c, int maxElements);
+    int drainTo(@GuardSatisfied @CanShrink BlockingQueue<E> this, Collection<? super E> c, int maxElements);
 }

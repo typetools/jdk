@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.reflect.Field;
 
 /**
@@ -36,7 +44,8 @@ import java.lang.reflect.Field;
  * @see ObjectStreamClass
  * @since 1.2
  */
-public class ObjectStreamField
+@AnnotatedFor({"interning", "lock", "nullness"})
+public @UsesObjectEquals class ObjectStreamField
     implements Comparable<Object>
 {
 
@@ -190,7 +199,7 @@ public class ObjectStreamField
      * @return  null if this field has a primitive type.
      */
     // REMIND: deprecate?
-    public String getTypeString() {
+    public @Nullable @Interned String getTypeString() {
         return isPrimitive() ? null : getSignature();
     }
 
@@ -222,7 +231,8 @@ public class ObjectStreamField
      * @return  true if and only if this field corresponds to a primitive type
      */
     // REMIND: deprecate?
-    public boolean isPrimitive() {
+    @Pure
+    public boolean isPrimitive(@GuardSatisfied ObjectStreamField this) {
         char tcode = getTypeCode();
         return ((tcode != 'L') && (tcode != '['));
     }
@@ -235,7 +245,8 @@ public class ObjectStreamField
      *
      * @since 1.4
      */
-    public boolean isUnshared() {
+    @Pure
+    public boolean isUnshared(@GuardSatisfied ObjectStreamField this) {
         return unshared;
     }
 
@@ -246,7 +257,8 @@ public class ObjectStreamField
      * are compared.
      */
     // REMIND: deprecate?
-    public int compareTo(Object obj) {
+    @Pure
+    public int compareTo(@GuardSatisfied ObjectStreamField this, @GuardSatisfied Object obj) {
         ObjectStreamField other = (ObjectStreamField) obj;
         boolean isPrim = isPrimitive();
         if (isPrim != other.isPrimitive()) {
@@ -258,7 +270,8 @@ public class ObjectStreamField
     /**
      * Return a string that describes this field.
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied ObjectStreamField this) {
         return getSignature() + ' ' + name;
     }
 

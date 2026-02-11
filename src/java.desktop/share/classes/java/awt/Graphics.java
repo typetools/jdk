@@ -24,6 +24,9 @@
  */
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.image.ImageObserver;
 import java.text.AttributedCharacterIterator;
 
@@ -98,7 +101,8 @@ import java.text.AttributedCharacterIterator;
  * @see     java.awt.Graphics#setFont(java.awt.Font)
  * @since       1.0
  */
-public abstract class Graphics {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class Graphics {
 
     /**
      * Constructs a new {@code Graphics} object.

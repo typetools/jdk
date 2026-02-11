@@ -25,6 +25,7 @@
 
 package sun.security.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
@@ -88,6 +89,7 @@ public class AnchorCertificates {
      * @param cert the certificate to check
      * @return true if the certificate is a JDK trust anchor
      */
+    @Pure
     public static boolean contains(X509Certificate cert) {
         String key = X509CertImpl.getFingerprint(HASH, cert, debug);
         boolean result = (key != null && certs.contains(key));

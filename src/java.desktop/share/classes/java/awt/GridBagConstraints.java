@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Serial;
 
 /**
@@ -37,7 +40,8 @@ import java.io.Serial;
  * @see java.awt.GridBagLayout
  * @since 1.0
  */
-public class GridBagConstraints implements Cloneable, java.io.Serializable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class GridBagConstraints implements Cloneable, java.io.Serializable {
 
     /**
      * Specifies that this component is the next-to-last component in its

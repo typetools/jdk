@@ -25,6 +25,9 @@
 
 package javax.swing;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -103,6 +106,7 @@ import sun.swing.SwingUtilities2;
  * @author Steve Wilson
  * @since 1.2
  */
+@AnnotatedFor({"interning"})
 @JavaBean(defaultProperty = "UI", description = "A component that supports selecting a Color.")
 @SwingContainer(false)
 @SuppressWarnings("serial") // Same-version serialization only
@@ -125,17 +129,17 @@ public class JColorChooser extends JComponent implements Accessible {
     /**
      * The selection model property name.
      */
-    public static final String      SELECTION_MODEL_PROPERTY = "selectionModel";
+    public static final @Interned String      SELECTION_MODEL_PROPERTY = "selectionModel";
 
     /**
      * The preview panel property name.
      */
-    public static final String      PREVIEW_PANEL_PROPERTY = "previewPanel";
+    public static final @Interned String      PREVIEW_PANEL_PROPERTY = "previewPanel";
 
     /**
      * The chooserPanel array property name.
      */
-    public static final String      CHOOSER_PANELS_PROPERTY = "chooserPanels";
+    public static final @Interned String      CHOOSER_PANELS_PROPERTY = "chooserPanels";
 
 
     /**

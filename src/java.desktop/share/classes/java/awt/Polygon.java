@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
@@ -58,7 +61,8 @@ import sun.awt.geom.Crossings;
  * @author      Herb Jellinek
  * @since       1.0
  */
-public class Polygon implements Shape, java.io.Serializable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class Polygon implements Shape, java.io.Serializable {
 
     /**
      * The total number of points.  The value of {@code npoints}

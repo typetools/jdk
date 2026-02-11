@@ -25,6 +25,7 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Represents a wildcard type argument.
@@ -48,6 +49,7 @@ public interface WildcardType extends TypeMirror {
      * If no upper bound is explicitly declared,
      * {@code null} is returned.
      */
+    @Pure
     TypeMirror getExtendsBound();
 
     /**
@@ -55,5 +57,6 @@ public interface WildcardType extends TypeMirror {
      * If no lower bound is explicitly declared,
      * {@code null} is returned.
      */
+    @Pure
     TypeMirror getSuperBound();
 }

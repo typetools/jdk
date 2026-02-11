@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.doclets.formats.html.taglets;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Set;
 
 import javax.lang.model.element.Element;
@@ -84,6 +85,7 @@ public class BaseTaglet implements Taglet {
         return sites;
     }
 
+    @Pure
     @Override
     public final boolean isInlineTag() {
         return inline;

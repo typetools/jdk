@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * {@code AccessController} was used with the Security Manager for access
  * control operations and decisions. This feature no longer exists.
@@ -36,8 +39,9 @@ package java.security;
  *       SecurityManager the Security Manager}, which is no longer supported.
  *       There is no replacement for the Security Manager or this class.
  */
+@AnnotatedFor({"interning"})
 @Deprecated(since="17", forRemoval=true)
-public final class AccessController {
+public final @UsesObjectEquals class AccessController {
 
     /**
      * Don't allow anyone to instantiate an {@code AccessController}

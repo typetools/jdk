@@ -25,6 +25,12 @@
 
 package sun.security.x509;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 import java.security.cert.PolicyQualifierInfo;
 import java.util.Collections;
@@ -126,7 +132,9 @@ public class PolicyInformation implements DerEncoder {
      * @return true iff the PolicyInformation objects match
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         return obj instanceof PolicyInformation other
                 && policyIdentifier.equals(other.getPolicyIdentifier())
                 && policyQualifiers.equals(other.getPolicyQualifiers());

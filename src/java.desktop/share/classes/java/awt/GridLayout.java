@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Serial;
 
 /**
@@ -96,7 +99,8 @@ import java.io.Serial;
  * @author  Arthur van Hoff
  * @since   1.0
  */
-public class GridLayout implements LayoutManager, java.io.Serializable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class GridLayout implements LayoutManager, java.io.Serializable {
 
     /**
      * Use serialVersionUID from JDK 1.6 for interoperability.

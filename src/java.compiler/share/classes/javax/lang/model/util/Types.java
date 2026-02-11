@@ -25,6 +25,10 @@
 
 package javax.lang.model.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.List;
 import javax.lang.model.element.*;
 import javax.lang.model.type.*;
@@ -58,6 +62,7 @@ import javax.lang.model.type.*;
  * @see javax.annotation.processing.ProcessingEnvironment#getTypeUtils
  * @since 1.6
  */
+@AnnotatedFor("nullness")
 public interface Types {
 
     /**
@@ -84,7 +89,7 @@ public interface Types {
      * @param t the type to map to an element
      * @return the element corresponding to the given type
      */
-    Element asElement(TypeMirror t);
+    @Nullable Element asElement(TypeMirror t);
 
     /**
      * Tests whether two {@code TypeMirror} objects represent the same type.
@@ -146,6 +151,7 @@ public interface Types {
      * @throws IllegalArgumentException if given a type for an executable, package, or module
      * @jls 4.5.1 Type Arguments of Parameterized Types
      */
+    @Pure
     boolean contains(TypeMirror t1, TypeMirror t2);
 
     /**
@@ -285,8 +291,8 @@ public interface Types {
      * reference types}.
      * @jls 4.5.1 Type Arguments of Parameterized Types
      */
-    WildcardType getWildcardType(TypeMirror extendsBound,
-                                 TypeMirror superBound);
+    WildcardType getWildcardType(@Nullable TypeMirror extendsBound,
+                                 @Nullable TypeMirror superBound);
 
     /**
      * {@return the type corresponding to a type element and
@@ -346,7 +352,7 @@ public interface Types {
      *          type arguments are given, or if an inappropriate type
      *          argument, type element, or containing type is provided
      */
-    DeclaredType getDeclaredType(DeclaredType containing,
+    DeclaredType getDeclaredType(@Nullable DeclaredType containing,
                                  TypeElement typeElem, TypeMirror... typeArgs);
 
     /**

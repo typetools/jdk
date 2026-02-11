@@ -25,6 +25,8 @@
 
 package java.io;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.ObjectOutput;
 import java.io.ObjectInput;
 
@@ -62,6 +64,7 @@ import java.io.ObjectInput;
  * @see java.io.Serializable
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public interface Externalizable extends java.io.Serializable {
     /**
      * The object implements the writeExternal method to save its contents

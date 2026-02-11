@@ -25,6 +25,9 @@
 
 package java.nio;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.JavaLangRefAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
@@ -37,7 +40,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Access to bits, native and otherwise.
  */
 
-class Bits {                            // package-private
+@AnnotatedFor({"interning"})
+@UsesObjectEquals class Bits {                            // package-private
 
     private Bits() { }
 

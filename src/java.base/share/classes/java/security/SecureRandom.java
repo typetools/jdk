@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import sun.security.jca.GetInstance;
 import sun.security.jca.GetInstance.Instance;
 import sun.security.jca.Providers;
@@ -152,7 +155,7 @@ import java.util.regex.Pattern;
  * @author Josh Bloch
  * @since 1.1
  */
-
+@AnnotatedFor({"signedness"})
 public class SecureRandom extends java.util.Random {
 
     private static final Debug pdebug =
@@ -770,7 +773,7 @@ public class SecureRandom extends java.util.Random {
      * @throws NullPointerException if {@code bytes} is {@code null}
      */
     @Override
-    public void nextBytes(byte[] bytes) {
+    public void nextBytes(@PolySigned byte[] bytes) {
         Objects.requireNonNull(bytes);
         if (threadSafe) {
             secureRandomSpi.engineNextBytes(bytes);

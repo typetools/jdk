@@ -26,6 +26,7 @@
 package javax.management;
 
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * When a <CODE>java.lang.Error</CODE> occurs in the agent it should be caught and
@@ -78,7 +79,7 @@ public class RuntimeErrorException extends JMRuntimeException   {
      *
      * @return the wrapped {@link Error}.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return error;
     }
 }

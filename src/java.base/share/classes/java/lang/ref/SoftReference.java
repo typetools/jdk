@@ -25,6 +25,10 @@
 
 package java.lang.ref;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Soft reference objects, which are cleared at the discretion of the garbage
@@ -61,7 +65,7 @@ package java.lang.ref;
  * @author   Mark Reinhold
  * @since    1.2
  */
-
+@AnnotatedFor({"lock", "nullness"})
 public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends Reference<T> {
 
     /**
@@ -82,7 +86,7 @@ public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends 
      *
      * @param referent object the new soft reference will refer to
      */
-    public SoftReference(@jdk.internal.RequiresIdentity T referent) {
+    public SoftReference(@jdk.internal.RequiresIdentity @Nullble T referent) {
         super(referent);
         this.timestamp = clock;
     }
@@ -96,7 +100,7 @@ public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends 
      *          or {@code null} if registration is not required
      *
      */
-    public SoftReference(@jdk.internal.RequiresIdentity T referent, ReferenceQueue<? super T> q) {
+    public SoftReference(@jdk.internal.RequiresIdentity @Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
         this.timestamp = clock;
     }
@@ -109,7 +113,8 @@ public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends 
      * @return   The object to which this reference refers, or
      *           {@code null} if this reference object has been cleared
      */
-    public T get() {
+    @SideEffectFree
+    public @Nullable T get(@GuardSatisfied SoftReference<T> this) {
         T o = super.get();
         if (o != null && this.timestamp != clock)
             this.timestamp = clock;

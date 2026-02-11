@@ -25,6 +25,16 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.FieldAccessor;
@@ -64,6 +74,14 @@ import sun.reflect.annotation.TypeAnnotationParser;
  * @author Nakul Saraiya
  * @since 1.1
  */
+@CFComment({"In general, the field value 'get' methods should take a top-qualified 'obj' parameter ",
+	    "and have a top-qualified return type; the field value 'set' methods should take a ",
+	    "top-qualified 'obj' parameter and a bottom-qualified 'value' parameter.",
+	    "nullness: the 'obj' parameter in 'get' or 'set' methods is @NonNull, because instance fields ",
+	    "require a receiver. Static field accesses need to suppress the errors.",
+	    "initialization: using fully-initialized types should make the typical use case easier.",
+	    "lock: require @GuardSatisfied to ensure type system soundness."})
+@AnnotatedFor({"interning", "lock", "nullness"})
 public final
 class Field extends AccessibleObject implements Member {
     private final Class<?>            clazz;
@@ -183,15 +201,17 @@ class Field extends AccessibleObject implements Member {
      * Returns the {@code Class} object representing the class or interface
      * that declares the field represented by this {@code Field} object.
      */
+    @SideEffectFree
     @Override
-    public Class<?> getDeclaringClass() {
+    public Class<?> getDeclaringClass(@GuardSatisfied Field this) {
         return clazz;
     }
 
     /**
      * Returns the name of the field represented by this {@code Field} object.
      */
-    public String getName() {
+    @SideEffectFree
+    public @Interned String getName(@GuardSatisfied Field this) {
         return name;
     }
 
@@ -205,7 +225,8 @@ class Field extends AccessibleObject implements Member {
      * @jls 8.3 Field Declarations
      * @jls 9.3 Field (Constant) Declarations
      */
-    public int getModifiers() {
+    @Pure
+    public int getModifiers(@GuardSatisfied Field this) {
         return modifiers;
     }
 
@@ -230,7 +251,8 @@ class Field extends AccessibleObject implements Member {
      * @since 1.5
      * @jls 8.9.1 Enum Constants
      */
-    public boolean isEnumConstant() {
+    @Pure
+    public boolean isEnumConstant(@GuardSatisfied Field this) {
         return (getModifiers() & Modifier.ENUM) != 0;
     }
 
@@ -245,7 +267,8 @@ class Field extends AccessibleObject implements Member {
      * href="{@docRoot}/java.base/java/lang/reflect/package-summary.html#LanguageJvmModel">Java
      * programming language and JVM modeling in core reflection</a>
      */
-    public boolean isSynthetic() {
+    @Pure
+    public boolean isSynthetic(@GuardSatisfied Field this) {
         return Modifier.isSynthetic(getModifiers());
     }
 
@@ -257,7 +280,8 @@ class Field extends AccessibleObject implements Member {
      * @return a {@code Class} object identifying the declared
      * type of the field represented by this object
      */
-    public Class<?> getType() {
+    @SideEffectFree
+    public Class<?> getType(@GuardSatisfied Field this) {
         return type;
     }
 
@@ -285,7 +309,8 @@ class Field extends AccessibleObject implements Member {
      *     that cannot be instantiated for any reason
      * @since 1.5
      */
-    public Type getGenericType() {
+    @SideEffectFree
+    public Type getGenericType(@GuardSatisfied Field this) {
         if (getGenericSignature() != null)
             return getGenericInfo().getGenericType();
         else
@@ -299,7 +324,8 @@ class Field extends AccessibleObject implements Member {
      * they were declared by the same class and have the same name
      * and type.
      */
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@GuardSatisfied Field this, @GuardSatisfied @Nullable Object obj) {
         if (obj instanceof Field other) {
             return (getDeclaringClass() == other.getDeclaringClass())
                 && (getName() == other.getName())
@@ -313,7 +339,8 @@ class Field extends AccessibleObject implements Member {
      * exclusive-or of the hashcodes for the underlying field's
      * declaring class name and its name.
      */
-    public int hashCode() {
+    @Pure
+    public int hashCode(@GuardSatisfied Field this) {
         return getDeclaringClass().getName().hashCode() ^ getName().hashCode();
     }
 
@@ -338,7 +365,8 @@ class Field extends AccessibleObject implements Member {
      * @return a string describing this {@code Field}
      * @jls 8.3.1 Field Modifiers
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied Field this) {
         int mod = getModifiers();
         return (((mod == 0) ? "" : (Modifier.toString(mod) + " "))
             + getType().getTypeName() + " "
@@ -371,7 +399,8 @@ class Field extends AccessibleObject implements Member {
      * @since 1.5
      * @jls 8.3.1 Field Modifiers
      */
-    public String toGenericString() {
+    @SideEffectFree
+    public String toGenericString(@GuardSatisfied Field this) {
         int mod = getModifiers();
         Type fieldType = getGenericType();
         return (((mod == 0) ? "" : (Modifier.toString(mod) + " "))
@@ -427,9 +456,10 @@ class Field extends AccessibleObject implements Member {
      * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      */
+    @SideEffectFree
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public Object get(Object obj)
+    public @Nullable Object get(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -463,9 +493,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public boolean getBoolean(Object obj)
+    public boolean getBoolean(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -499,9 +530,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public byte getByte(Object obj)
+    public byte getByte(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -537,9 +569,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public char getChar(Object obj)
+    public char getChar(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -575,9 +608,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public short getShort(Object obj)
+    public short getShort(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -613,9 +647,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public int getInt(Object obj)
+    public int getInt(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -651,9 +686,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public long getLong(Object obj)
+    public long getLong(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -689,9 +725,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public float getFloat(Object obj)
+    public float getFloat(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -727,9 +764,10 @@ class Field extends AccessibleObject implements Member {
      *              by this method fails.
      * @see       Field#get
      */
+    @Pure
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public double getDouble(Object obj)
+    public double getDouble(@GuardSatisfied Field this, @GuardSatisfied Object obj)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -821,7 +859,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void set(Object obj, Object value)
+    public void set(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, @GuardSatisfied @Interned Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -860,7 +898,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setBoolean(Object obj, boolean z)
+    public void setBoolean(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, boolean z)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -899,7 +937,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setByte(Object obj, byte b)
+    public void setByte(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, byte b)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -938,7 +976,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setChar(Object obj, char c)
+    public void setChar(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, char c)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -977,7 +1015,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setShort(Object obj, short s)
+    public void setShort(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, short s)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1016,7 +1054,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setInt(Object obj, int i)
+    public void setInt(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, int i)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1055,7 +1093,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setLong(Object obj, long l)
+    public void setLong(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, long l)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1094,7 +1132,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setFloat(Object obj, float f)
+    public void setFloat(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, float f)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1133,7 +1171,7 @@ class Field extends AccessibleObject implements Member {
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void setDouble(Object obj, double d)
+    public void setDouble(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, double d)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
@@ -1235,8 +1273,9 @@ class Field extends AccessibleObject implements Member {
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
+    @SideEffectFree
     @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+    public <T extends Annotation> @Nullable T getAnnotation(@GuardSatisfied Field this, Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
         return annotationClass.cast(declaredAnnotations().get(annotationClass));
     }
@@ -1257,8 +1296,9 @@ class Field extends AccessibleObject implements Member {
     /**
      * {@inheritDoc}
      */
+    @SideEffectFree
     @Override
-    public Annotation[] getDeclaredAnnotations()  {
+    public Annotation[] getDeclaredAnnotations(@GuardSatisfied Field this)  {
         return AnnotationParser.toArray(declaredAnnotations());
     }
 

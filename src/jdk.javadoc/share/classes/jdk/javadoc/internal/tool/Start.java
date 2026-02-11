@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.tool;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -901,6 +902,7 @@ public class Start {
         return success;
     }
 
+    @Pure
     private <T> boolean isEmpty(Iterable<T> iter) {
         return !iter.iterator().hasNext();
     }

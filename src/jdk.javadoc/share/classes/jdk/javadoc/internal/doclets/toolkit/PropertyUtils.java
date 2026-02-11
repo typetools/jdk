@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,6 +156,7 @@ public class PropertyUtils {
      * @param setterMethod
      * @return true if setter method, false otherwise.
      */
+    @Pure
     public boolean isValidSetterMethod(ExecutableElement setterMethod) {
         return setterMethod.getReturnType().getKind() == TypeKind.VOID;
     }
@@ -164,6 +166,7 @@ public class PropertyUtils {
      * @param propertyMethod
      * @return true if the method is a property method, false otherwise.
      */
+    @Pure
     public boolean isPropertyMethod(ExecutableElement propertyMethod) {
         if (!javafx ||
                 !propertyMethod.getParameters().isEmpty() ||

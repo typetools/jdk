@@ -25,7 +25,12 @@
 
 package java.lang;
 
-abstract sealed class CharacterData
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.common.value.qual.IntRange;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
+@AnnotatedFor({"index", "interning"})
+abstract sealed @UsesObjectEquals class CharacterData
     permits CharacterData00, CharacterData01, CharacterData02, CharacterData03,
         CharacterData0E, CharacterDataLatin1, CharacterDataPrivateUse, CharacterDataUndefined {
     abstract int getProperties(int ch);
@@ -49,7 +54,7 @@ abstract sealed class CharacterData
     abstract int toLowerCase(int ch);
     abstract int toUpperCase(int ch);
     abstract int toTitleCase(int ch);
-    abstract int digit(int ch, int radix);
+    abstract int digit(int ch, @IntRange(from = 2, to = 36) int radix);
     abstract int getNumericValue(int ch);
     abstract byte getDirectionality(int ch);
 

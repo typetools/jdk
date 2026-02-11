@@ -25,6 +25,9 @@
 
 package sun.security.jca;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.*;
 
 import java.security.Provider;
@@ -516,11 +519,13 @@ public final class ProviderList {
         int index;
 
         @Override
+        @Pure
         public boolean hasNext() {
             return tryGet(index) != null;
         }
 
         @Override
+        @SideEffectsOnly("this")
         public Service next() {
             Service s = tryGet(index);
             if (s == null) {

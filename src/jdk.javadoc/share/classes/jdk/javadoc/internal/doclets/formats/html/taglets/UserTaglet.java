@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.formats.html.taglets;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.List;
 import java.util.Set;
 
@@ -67,6 +69,7 @@ public final class UserTaglet implements Taglet {
         return userTaglet.getName();
     }
 
+    @Pure
     @Override
     public Content getInlineTagOutput(Element element, DocTree tag, TagletWriter tagletWriter) {
         Content output = tagletWriter.getOutputInstance();

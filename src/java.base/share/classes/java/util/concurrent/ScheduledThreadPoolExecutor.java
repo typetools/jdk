@@ -35,6 +35,15 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -1015,7 +1024,9 @@ public class ScheduledThreadPoolExecutor
             return -1;
         }
 
-        public boolean contains(Object x) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1025,7 +1036,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
-        public boolean remove(Object x) {
+        public boolean remove(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1048,6 +1059,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
+        @Pure
         public int size() {
             final ReentrantLock lock = this.lock;
             lock.lock();
@@ -1058,6 +1070,8 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size() == 0;
         }
@@ -1066,6 +1080,7 @@ public class ScheduledThreadPoolExecutor
             return Integer.MAX_VALUE;
         }
 
+        @Pure
         public RunnableScheduledFuture<?> peek() {
             final ReentrantLock lock = this.lock;
             lock.lock();
@@ -1107,6 +1122,7 @@ public class ScheduledThreadPoolExecutor
             offer(e);
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(Runnable e) {
             return offer(e);
         }
@@ -1276,7 +1292,7 @@ public class ScheduledThreadPoolExecutor
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1313,11 +1329,14 @@ public class ScheduledThreadPoolExecutor
                 this.array = array;
             }
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cursor < array.length;
             }
 
-            public Runnable next() {
+            @SideEffectsOnly("this")
+            public Runnable next(@NonEmpty Itr this) {
                 if (cursor >= array.length)
                     throw new NoSuchElementException();
                 return array[lastRet = cursor++];

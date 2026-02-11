@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FileDescriptor;
 import java.net.InetAddress;
 import java.security.AccessController;
@@ -41,8 +44,9 @@ import java.util.Set;
  * @since   1.0
  * @deprecated There is no replacement for this class.
  */
+@AnnotatedFor({"interning", "nullness"})
 @Deprecated(since="17", forRemoval=true)
-public class SecurityManager {
+public @UsesObjectEquals class SecurityManager {
 
     /**
      * Constructs a new {@code SecurityManager}. Setting a security manager with

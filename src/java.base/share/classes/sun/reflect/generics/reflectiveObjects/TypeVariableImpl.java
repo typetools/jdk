@@ -25,6 +25,12 @@
 
 package sun.reflect.generics.reflectiveObjects;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.lang.annotation.*;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
@@ -150,7 +156,9 @@ public class TypeVariableImpl<D extends GenericDeclaration>
     public String toString() {return getName();}
 
     @Override
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         return o instanceof TypeVariable<?> that &&
                 o.getClass() == TypeVariableImpl.class &&
                 Objects.equals(genericDeclaration, that.getGenericDeclaration()) &&

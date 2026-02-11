@@ -25,6 +25,12 @@
 
 package sun.security.jgss.spi;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import org.ietf.jgss.*;
 import java.security.Provider;
 
@@ -64,7 +70,9 @@ public interface GSSNameSpi {
      * @see #equals(GSSNameSpi)
      */
     @Override
-    boolean equals(Object another);
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    boolean equals(@Nullable Object another);
 
     /**
      * {@return a hashcode value for this GSSNameSpi}

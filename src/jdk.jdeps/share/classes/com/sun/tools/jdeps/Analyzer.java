@@ -25,6 +25,7 @@
 
 package com.sun.tools.jdeps;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.tools.jdeps.Dependency.Location;
 
 import java.io.BufferedReader;
@@ -395,6 +396,7 @@ public class Analyzer {
             return getName();
         }
 
+        @Pure
         public boolean contains(Location location) {
             String cn = location.getClassName();
             int i = cn.lastIndexOf('.');

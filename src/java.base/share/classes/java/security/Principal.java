@@ -25,6 +25,12 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import javax.security.auth.Subject;
 
 /**
@@ -51,6 +57,8 @@ public interface Principal {
      * that encapsulated by this {@code Principal}, and {@code false} otherwise.
      */
     @Override
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
     boolean equals(Object another);
 
     /**

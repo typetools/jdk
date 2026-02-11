@@ -25,12 +25,17 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when an unknown but serious exception has occurred in the
  * Java Virtual Machine.
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class UnknownError extends VirtualMachineError {
     @java.io.Serial
     private static final long serialVersionUID = 2524784860676771849L;
@@ -38,6 +43,7 @@ public class UnknownError extends VirtualMachineError {
     /**
      * Constructs an {@code UnknownError} with no detail message.
      */
+    @SideEffectFree
     public UnknownError() {
         super();
     }
@@ -48,7 +54,8 @@ public class UnknownError extends VirtualMachineError {
      *
      * @param   s   the detail message.
      */
-    public UnknownError(String s) {
+    @SideEffectFree
+    public UnknownError(@Nullable String s) {
         super(s);
     }
 }

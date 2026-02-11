@@ -25,6 +25,7 @@
 
 package sun.net.httpserver;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import java.util.function.BiFunction;
 import com.sun.net.httpserver.*;
@@ -49,9 +50,11 @@ public class UnmodifiableHeaders extends Headers {
     public boolean isEmpty() {return headers.isEmpty();}
 
     @Override
+    @Pure
     public boolean containsKey(Object key) { return headers.containsKey(key); }
 
     @Override
+    @Pure
     public boolean containsValue(Object value) { return headers.containsValue(value); }
 
     @Override

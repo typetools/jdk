@@ -25,6 +25,12 @@
 
 package com.sun.xml.internal.stream.writers;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.PropertyManager;
 import com.sun.org.apache.xerces.internal.util.NamespaceSupport;
@@ -2196,6 +2202,7 @@ public final class XMLStreamWriterImpl extends AbstractMap<Object, Object>
     }
 
     @Override
+    @Pure
     public boolean containsKey(Object key) {
         return key.equals(OUTPUTSTREAM_PROPERTY);
     }
@@ -2241,7 +2248,9 @@ public final class XMLStreamWriterImpl extends AbstractMap<Object, Object>
      * This is required to satisfy the contract for hashCode.
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         return (this == obj);
     }
 }

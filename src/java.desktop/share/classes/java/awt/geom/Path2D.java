@@ -25,6 +25,9 @@
 
 package java.awt.geom;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.io.IOException;
@@ -71,7 +74,8 @@ import sun.awt.geom.Curve;
  * @since 1.6
  * @sealedGraph
  */
-public abstract sealed class Path2D implements Shape, Cloneable
+@AnnotatedFor({"interning"})
+public abstract sealed @UsesObjectEquals class Path2D implements Shape, Cloneable
     permits Path2D.Double,
             Path2D.Float   {
     /**

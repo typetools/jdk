@@ -25,6 +25,10 @@
 
 package org.xml.sax;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 
 
@@ -78,6 +82,7 @@ import java.io.IOException;
  * @see org.xml.sax.XMLReader#setEntityResolver
  * @see org.xml.sax.InputSource
  */
+@AnnotatedFor("nullness")
 public interface EntityResolver {
 
 
@@ -122,7 +127,8 @@ public interface EntityResolver {
      *            or Reader for the InputSource.
      * @see org.xml.sax.InputSource
      */
-    public abstract InputSource resolveEntity (String publicId,
+    @Pure
+    public abstract @Nullable InputSource resolveEntity (@Nullable String publicId,
                                                String systemId)
         throws SAXException, IOException;
 

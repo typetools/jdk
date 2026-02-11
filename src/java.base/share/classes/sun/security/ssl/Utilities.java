@@ -25,6 +25,8 @@
 
 package sun.security.ssl;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -171,7 +173,7 @@ final class Utilities {
         return "0x" + HEX_FORMATTER.toHexDigits((short)id);
     }
 
-    static String toHexString(byte[] bytes) {
+    static String toHexString(@PolySigned byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return "";
         }
@@ -179,7 +181,7 @@ final class Utilities {
         return HEX_FORMATTER.formatHex(bytes);
     }
 
-    static String toHexString(long lv) {
+    static String toHexString(@UnknownSignedness long lv) {
         StringBuilder builder = new StringBuilder(128);
 
         boolean isFirst = true;

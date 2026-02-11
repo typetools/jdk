@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
@@ -104,7 +107,8 @@ import sun.awt.image.SunVolatileImage;
  * implements the interface for that capability.
  *
  */
-public abstract class GraphicsConfiguration {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class GraphicsConfiguration {
 
     private static BufferCapabilities defaultBufferCaps;
     private static ImageCapabilities defaultImageCaps;

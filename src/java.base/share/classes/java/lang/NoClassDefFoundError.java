@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown if the Java Virtual Machine or a {@code ClassLoader} instance
  * tries to load in the definition of a class (as part of a normal method call
@@ -37,6 +41,7 @@ package java.lang;
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class NoClassDefFoundError extends LinkageError {
     @java.io.Serial
     private static final long serialVersionUID = 9095859863287012458L;
@@ -44,6 +49,7 @@ public class NoClassDefFoundError extends LinkageError {
     /**
      * Constructs a {@code NoClassDefFoundError} with no detail message.
      */
+    @SideEffectFree
     public NoClassDefFoundError() {
         super();
     }
@@ -54,7 +60,8 @@ public class NoClassDefFoundError extends LinkageError {
      *
      * @param   s   the detail message.
      */
-    public NoClassDefFoundError(String s) {
+    @SideEffectFree
+    public NoClassDefFoundError(@Nullable String s) {
         super(s);
     }
 }

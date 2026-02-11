@@ -26,6 +26,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * This class defines the <i>Service Provider Interface</i> (<b>SPI</b>)
  * for the {@code Policy} class. Installing a system-wide {@code Policy}
@@ -38,8 +41,9 @@ package java.security;
  *       the Security Manager or this class.
  */
 
+@AnnotatedFor({"interning"})
 @Deprecated(since="17", forRemoval=true)
-public abstract class PolicySpi {
+public abstract @UsesObjectEquals class PolicySpi {
 
     /**
      * Constructor.

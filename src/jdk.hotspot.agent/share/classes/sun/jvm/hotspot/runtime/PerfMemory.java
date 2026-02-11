@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.runtime;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.oops.*;
@@ -83,6 +84,7 @@ public class PerfMemory {
                    PerfDataPrologue.class, prologueField.getValue());
     }
 
+    @Pure
     public static boolean contains(Address addr) {
         return start() != null &&
             addr.minus(start()) >= 0 &&

@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Unchecked exception thrown when an attempt is made to invoke a method on an
  * object created by one file system provider with a parameter created by a
@@ -32,6 +35,7 @@ package java.nio.file;
  *
  * @since 1.7
  */
+@AnnotatedFor({"nullness"})
 public class ProviderMismatchException
     extends java.lang.IllegalArgumentException
 {
@@ -50,7 +54,7 @@ public class ProviderMismatchException
      * @param   msg
      *          the detail message
      */
-    public ProviderMismatchException(String msg) {
+    public ProviderMismatchException(@Nullable String msg) {
         super(msg);
     }
 }

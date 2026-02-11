@@ -19,6 +19,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -182,6 +183,7 @@ public abstract class BranchInstruction extends Instruction implements Instructi
      * @param position the position to set
      * @since 6.0
      */
+    @Pure
     protected void setPosition(final int position) {
         this.position = position;
     }

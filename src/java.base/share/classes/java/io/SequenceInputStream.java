@@ -25,6 +25,13 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -43,6 +50,7 @@ import java.util.Objects;
  * @author  Arthur van Hoff
  * @since   1.0
  */
+@AnnotatedFor({"nullness", "index"})
 public class SequenceInputStream extends InputStream {
     private final Enumeration<? extends InputStream> e;
     private InputStream in;
@@ -123,7 +131,7 @@ public class SequenceInputStream extends InputStream {
      * @since    1.1
      */
     @Override
-    public int available() throws IOException {
+    public @NonNegative int available() throws IOException {
         if (in == null) {
             return 0; // no way to signal EOF from available()
         }
@@ -183,7 +191,7 @@ public class SequenceInputStream extends InputStream {
      * @throws     IOException  if an I/O error occurs.
      */
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         if (in == null) {
             return -1;
         } else if (b == null) {

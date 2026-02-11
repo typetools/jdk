@@ -24,6 +24,9 @@
  */
 package javax.swing.text;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import javax.swing.event.DocumentListener;
 import javax.swing.event.UndoableEditListener;
 
@@ -353,6 +356,7 @@ import javax.swing.event.UndoableEditListener;
  * @see Position
  * @see AttributeSet
  */
+@AnnotatedFor({"interning"})
 public interface Document {
 
     /**
@@ -649,13 +653,13 @@ public interface Document {
      * if the document was initialized from a stream and
      * anything is known about the stream.
      */
-    public static final String StreamDescriptionProperty = "stream";
+    public static final @Interned String StreamDescriptionProperty = "stream";
 
     /**
      * The property name for the title of the document, if
      * there is one.
      */
-    public static final String TitleProperty = "title";
+    public static final @Interned String TitleProperty = "title";
 
 
 }

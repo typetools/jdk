@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.List;
 
 /**
@@ -43,6 +44,7 @@ public interface StringList extends List<String> {
      * @return  True if this list contains the <code>GenericString</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(String item);
 
     /**

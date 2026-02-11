@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.CharBuffer;
 import java.util.Objects;
 
@@ -35,6 +43,8 @@ import java.util.Objects;
  * @author      Herb Jellinek
  * @since       1.1
  */
+@AnnotatedFor({"index", "mustcall", "nullness"})
+@InheritableMustCall({})
 public class CharArrayReader extends Reader {
     /** The character buffer. */
     protected char[] buf;
@@ -78,7 +88,7 @@ public class CharArrayReader extends Reader {
      * @param offset    Offset of the first char to read
      * @param length    Number of chars to read
      */
-    public CharArrayReader(char[] buf, int offset, int length) {
+    public CharArrayReader(char[] buf, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length) {
         if ((offset < 0) || (offset > buf.length) || (length < 0) ||
             ((offset + length) < 0)) {
             throw new IllegalArgumentException();
@@ -100,7 +110,7 @@ public class CharArrayReader extends Reader {
      *
      * @throws      IOException  If an I/O error occurs
      */
-    public int read() throws IOException {
+    public @GTENegativeOne int read() throws IOException {
         synchronized (lock) {
             ensureOpen();
             if (pos >= count)
@@ -128,7 +138,7 @@ public class CharArrayReader extends Reader {
      * @throws     IndexOutOfBoundsException  {@inheritDoc}
      * @throws     IOException  {@inheritDoc}
      */
-    public int read(char[] cbuf, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
             Objects.checkFromIndexSize(off, len, cbuf.length);
@@ -185,7 +195,7 @@ public class CharArrayReader extends Reader {
      *
      * @throws IOException {@inheritDoc}
      */
-    public long skip(long n) throws IOException {
+    public @NonNegative long skip(long n) throws IOException {
         synchronized (lock) {
             ensureOpen();
 
@@ -233,7 +243,7 @@ public class CharArrayReader extends Reader {
      *
      * @throws     IOException  If an I/O error occurs
      */
-    public void mark(int readAheadLimit) throws IOException {
+    public void mark(@NonNegative int readAheadLimit) throws IOException {
         synchronized (lock) {
             ensureOpen();
             markedPos = pos;

@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.xs.datatypes;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xs.XSException;
 import java.util.List;
 
@@ -47,6 +48,7 @@ public interface ByteList extends List<Byte> {
      * @return  True if this list contains the <code>byte</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(byte item);
 
     /**

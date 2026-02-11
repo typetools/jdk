@@ -27,6 +27,8 @@
  */
 package javax.xml.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
@@ -156,7 +158,7 @@ public class URIReferenceException extends Exception {
      * @return the cause of this {@code URIReferenceException} or
      *    {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

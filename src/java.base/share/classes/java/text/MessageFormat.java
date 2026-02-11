@@ -38,6 +38,14 @@
 
 package java.text;
 
+import org.checkerframework.checker.i18nformatter.qual.I18nFormatFor;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -492,6 +500,7 @@ import java.util.Objects;
  * @since 1.1
  */
 
+@AnnotatedFor({"i18nformatter", "nullness"})
 public class MessageFormat extends Format {
 
     @java.io.Serial
@@ -923,7 +932,7 @@ public class MessageFormat extends Format {
      * @return the formats used for the arguments within the pattern
      * @since 1.4
      */
-    public Format[] getFormatsByArgumentIndex() {
+    public @Nullable Format[] getFormatsByArgumentIndex() {
         int maximumArgumentNumber = -1;
         for (int i = 0; i <= maxOffset; i++) {
             if (argumentNumbers[i] > maximumArgumentNumber) {
@@ -1031,8 +1040,8 @@ public class MessageFormat extends Format {
      *            has locale set to null, and the implementation
      *            uses a locale-dependent subformat.
      */
-    public final StringBuffer format(Object[] arguments, StringBuffer result,
-                                     FieldPosition pos)
+    public final StringBuffer format(@Nullable Object @Nullable [] arguments, StringBuffer result,
+                                     @Nullable FieldPosition pos)
     {
         return subformat(arguments, StringBufFactory.of(result), pos, null).asStringBuffer();
     }
@@ -1054,7 +1063,7 @@ public class MessageFormat extends Format {
      *            that use it.
      * @throws    NullPointerException if {@code pattern} is {@code null}
      */
-    public static String format(String pattern, Object ... arguments) {
+    public static String format(@I18nFormatFor("#2") String pattern, @Nullable Object ... arguments) {
         MessageFormat temp = new MessageFormat(pattern);
         return temp.format(arguments);
     }
@@ -1174,7 +1183,7 @@ public class MessageFormat extends Format {
      * @throws    NullPointerException if {@code pos} is {@code null}
      *            for a non-null {@code source} string.
      */
-    public Object[] parse(String source, ParsePosition pos) {
+    public Object[] parse(@Nullable String source, ParsePosition pos) {
         if (source == null) {
             Object[] empty = {};
             return empty;
@@ -1298,7 +1307,7 @@ public class MessageFormat extends Format {
      *         error, returns null.
      * @throws NullPointerException if {@code pos} is null.
      */
-    public Object parseObject(String source, ParsePosition pos) {
+    public @Nullable Object parseObject(String source, ParsePosition pos) {
         return parse(source, pos);
     }
 
@@ -1337,7 +1346,9 @@ public class MessageFormat extends Format {
      * @see Object#equals(Object)
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj)                      // quick check
             return true;
         if (obj == null || getClass() != obj.getClass())
@@ -1491,7 +1502,7 @@ public class MessageFormat extends Format {
      *            {@code arguments} array is not of the type
      *            expected by the format element(s) that use it.
      */
-    private StringBuf subformat(Object[] arguments, StringBuf result,
+    private StringBuf subformat(@Nullable Object @Nullable [] arguments, StringBuf result,
                                    FieldPosition fp, List<AttributedCharacterIterator> characterIterators) {
         // note: this implementation assumes a fast substring & index.
         // if this is not true, would be better to append chars one by one.

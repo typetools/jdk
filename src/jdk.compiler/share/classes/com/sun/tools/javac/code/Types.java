@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.code;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
 import java.util.HashMap;
@@ -1515,6 +1516,7 @@ public class Types {
         }
     }
 
+    @Pure
     boolean containsType(List<Type> ts, List<Type> ss) {
         while (ts.nonEmpty() && ss.nonEmpty()
                && containsType(ts.head, ss.head)) {
@@ -1549,6 +1551,7 @@ public class Types {
      * @param t a type
      * @param s a type
      */
+    @Pure
     public boolean containsType(Type t, Type s) {
         return containsType.visit(t, s);
     }
@@ -1617,6 +1620,7 @@ public class Types {
         return w.kind == t.kind && w.type == t.type;
     }
 
+    @Pure
     public boolean containsTypeEquivalent(List<Type> ts, List<Type> ss) {
         while (ts.nonEmpty() && ss.nonEmpty()
                && containsTypeEquivalent(ts.head, ss.head)) {

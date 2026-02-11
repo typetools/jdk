@@ -24,6 +24,8 @@
  */
 package com.sun.org.apache.xerces.internal.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.xml.internal.stream.StaxEntityResolverWrapper;
 import java.util.HashMap;
 import javax.xml.XMLConstants;
@@ -171,6 +173,7 @@ public class PropertyManager {
      * @return true if the property is managed by the PropertyManager, false
      * otherwise
      */
+    @Pure
     public boolean containsProperty(String property) {
         return supportedProps.containsKey(property)
                 || (fSecurityManager != null && fSecurityManager.getIndex(property) > -1)

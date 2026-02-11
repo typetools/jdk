@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.i18n.qual.Localized;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.peer.ButtonPeer;
@@ -92,6 +95,7 @@ import javax.accessibility.AccessibleValue;
  * @see         java.awt.Component#addMouseListener
  * @since       1.0
  */
+@AnnotatedFor({"i18n"})
 public class Button extends Component implements Accessible {
 
     /**
@@ -179,7 +183,7 @@ public class Button extends Component implements Accessible {
      *                if the button has no label.
      * @see       java.awt.Button#setLabel
      */
-    public String getLabel() {
+    public @Localized String getLabel() {
         return label;
     }
 
@@ -190,7 +194,7 @@ public class Button extends Component implements Accessible {
      *                if the button has no label.
      * @see       java.awt.Button#getLabel
      */
-    public void setLabel(String label) {
+    public void setLabel(@Localized String label) {
         boolean testvalid = false;
 
         synchronized (this) {

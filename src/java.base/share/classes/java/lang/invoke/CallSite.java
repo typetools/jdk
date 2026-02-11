@@ -25,6 +25,9 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.lang.invoke.MethodHandleStatics.*;
 import static java.lang.invoke.MethodHandles.Lookup.IMPL_LOOKUP;
 
@@ -85,8 +88,9 @@ private static CallSite bootstrapDynamic(MethodHandles.Lookup caller, String nam
  * @since 1.7
  * @sealedGraph
  */
+@AnnotatedFor({"interning"})
 public
-abstract sealed class CallSite permits ConstantCallSite, MutableCallSite, VolatileCallSite {
+abstract sealed @UsesObjectEquals class CallSite permits ConstantCallSite, MutableCallSite, VolatileCallSite {
 
     // The actual payload of this call site.
     // Can be modified using {@link MethodHandleNatives#setCallSiteTargetNormal} or {@link MethodHandleNatives#setCallSiteTargetVolatile}.

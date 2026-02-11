@@ -25,6 +25,9 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+
 import java.io.*;
 import java.util.*;
 import java.security.CodeSigner;

@@ -25,6 +25,12 @@
 
 package java.awt;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Collections;
@@ -1289,7 +1295,9 @@ public class RenderingHints
      * @return {@code true} if the specified {@code Object}
      * is equal to this {@code RenderingHints}.
      */
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         if (o instanceof RenderingHints) {
             return hintmap.equals(((RenderingHints) o).hintmap);
         } else if (o instanceof Map) {

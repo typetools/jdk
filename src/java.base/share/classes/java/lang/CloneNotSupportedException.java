@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown to indicate that the {@code clone} method in class
  * {@code Object} has been called to clone an object, but that
@@ -40,6 +44,7 @@ package java.lang;
  * @since   1.0
  */
 
+@AnnotatedFor({"nullness"})
 public class CloneNotSupportedException extends Exception {
     @java.io.Serial
     private static final long serialVersionUID = 5195511250079656443L;
@@ -48,6 +53,7 @@ public class CloneNotSupportedException extends Exception {
      * Constructs a {@code CloneNotSupportedException} with no
      * detail message.
      */
+    @SideEffectFree
     public CloneNotSupportedException() {
         super();
     }
@@ -58,7 +64,8 @@ public class CloneNotSupportedException extends Exception {
      *
      * @param   s   the detail message.
      */
-    public CloneNotSupportedException(String s) {
+    @SideEffectFree
+    public CloneNotSupportedException(@Nullable String s) {
         super(s);
     }
 }

@@ -21,6 +21,8 @@
  * questions.
  */
 
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import java.io.*;
 import java.util.*;
 import java.util.logging.*;
@@ -144,7 +146,7 @@ public class CustomLogManager extends LogManager {
         checkLogger(name, null);
     }
 
-    public static void checkLogger(String name, String resourceBundleName) {
+    public static void checkLogger(String name, @BinaryName String resourceBundleName) {
         Logger logger = INSTANCE.getLogger(name);
         if (logger == null) {
             throw new RuntimeException("Logger \"" + name + "\" not exist");

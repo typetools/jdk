@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.geom.AffineTransform;
 import java.awt.image.ColorModel;
 import java.lang.ref.SoftReference;
@@ -40,7 +43,8 @@ import java.util.Arrays;
  * @since 1.6
  * @sealedGraph
  */
-public abstract sealed class MultipleGradientPaint implements Paint
+@AnnotatedFor({"interning"})
+public abstract sealed @UsesObjectEquals class MultipleGradientPaint implements Paint
     permits LinearGradientPaint,
             RadialGradientPaint {
 

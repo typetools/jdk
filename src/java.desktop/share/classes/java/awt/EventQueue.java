@@ -25,6 +25,12 @@
 
 package java.awt;
 
+import org.checkerframework.checker.guieffect.qual.SafeEffect;
+import org.checkerframework.checker.guieffect.qual.UI;
+import org.checkerframework.checker.guieffect.qual.UIType;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.*;
 
 import java.awt.peer.ComponentPeer;
@@ -86,7 +92,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @since       1.1
  */
-public class EventQueue {
+@UIType
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class EventQueue {
     private static final AtomicInteger threadInitNumber = new AtomicInteger();
 
     private static final int LOW_PRIORITY = 0;
@@ -1253,7 +1261,8 @@ public class EventQueue {
      * @see             #isDispatchThread
      * @since           1.2
      */
-    public static void invokeLater(Runnable runnable) {
+    @SafeEffect
+    public static void invokeLater(@UI Runnable runnable) {
         Toolkit.getEventQueue().postEvent(
             new InvocationEvent(Toolkit.getDefaultToolkit(), runnable));
     }

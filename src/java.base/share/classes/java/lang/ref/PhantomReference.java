@@ -25,6 +25,11 @@
 
 package java.lang.ref;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
@@ -51,6 +56,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * @since    1.2
  */
 
+@AnnotatedFor({"lock", "nullness"})
 public non-sealed class PhantomReference<@jdk.internal.RequiresIdentity T> extends Reference<T> {
 
     /**
@@ -60,7 +66,8 @@ public non-sealed class PhantomReference<@jdk.internal.RequiresIdentity T> exten
      *
      * @return {@code null}
      */
-    public T get() {
+    @SideEffectFree
+    public @Nullable T get(@GuardSatisfied PhantomReference<T> this) {
         return null;
     }
 
@@ -101,7 +108,7 @@ public non-sealed class PhantomReference<@jdk.internal.RequiresIdentity T> exten
      * @param q the queue with which the reference is to be registered,
      *          or {@code null} if registration is not required
      */
-    public PhantomReference(@jdk.internal.RequiresIdentity T referent, ReferenceQueue<? super T> q) {
+    public PhantomReference(@jdk.internal.RequiresIdentity @Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
     }
 

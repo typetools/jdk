@@ -26,6 +26,7 @@
 package javax.management;
 
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Represents exceptions thrown in the MBean server when using the
@@ -81,7 +82,7 @@ public class ReflectionException extends JMException   {
      *
      * @return the wrapped {@link Exception}.
      */
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return exception;
     }
 }

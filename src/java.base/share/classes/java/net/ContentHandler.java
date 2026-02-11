@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 
 /**
@@ -77,7 +80,8 @@ import java.io.IOException;
  * @see     java.net.URLConnection#setContentHandlerFactory(java.net.ContentHandlerFactory)
  * @since   1.0
  */
-public abstract class ContentHandler {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class ContentHandler {
 
     /**
      * Constructor for subclasses to call.

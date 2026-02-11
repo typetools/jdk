@@ -24,6 +24,8 @@
 
 package sun.jvm.hotspot.code;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
@@ -79,6 +81,7 @@ public class StubQueue extends VMObject {
     this.stubType = stubType;
   }
 
+  @Pure
   public boolean contains(Address pc) {
     if (pc == null) return false;
     long offset = pc.minus(getStubBuffer());

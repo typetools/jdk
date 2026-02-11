@@ -34,6 +34,7 @@
 
 package com.sun.jndi.toolkit.dir;
 
+import org.checkerframework.dataflow.qual.Pure;
 import javax.naming.*;
 import javax.naming.directory.*;
 
@@ -51,6 +52,7 @@ public class ContainmentFilter implements AttrFilter {
     }
 
     // returns true if superset contains subset
+    @Pure
     public static boolean contains(Attributes superset, Attributes subset)
         throws NamingException {
           if (subset == null)

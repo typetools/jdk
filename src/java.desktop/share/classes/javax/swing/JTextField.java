@@ -25,6 +25,9 @@
 
 package javax.swing;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.AWTEvent;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -174,6 +177,7 @@ import javax.swing.text.TextAction;
  * @see #addActionListener
  * @since 1.2
  */
+@AnnotatedFor({"interning"})
 @JavaBean(defaultProperty = "UIClassID", description = "A component which allows for the editing of a single line of text.")
 @SwingContainer(false)
 @SuppressWarnings("serial") // Same-version serialization only
@@ -822,7 +826,7 @@ public class JTextField extends JTextComponent implements SwingConstants {
      * contents of the field have been accepted.  Typically
      * this is bound to a carriage-return.
      */
-    public static final String notifyAction = "notify-field-accept";
+    public static final @Interned String notifyAction = "notify-field-accept";
 
     private BoundedRangeModel visibility;
     private int horizontalAlignment = LEADING;

@@ -25,6 +25,8 @@
 
 package com.sun.net.httpserver;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;

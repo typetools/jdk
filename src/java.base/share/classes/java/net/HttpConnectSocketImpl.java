@@ -25,6 +25,8 @@
 
 package java.net;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -40,6 +42,7 @@ import java.util.Set;
  * @since 1.8
  */
 
+@AnnotatedFor("nullness")
 /*package*/ class HttpConnectSocketImpl extends DelegatingSocketImpl {
 
     private static final String httpURLClazzStr =

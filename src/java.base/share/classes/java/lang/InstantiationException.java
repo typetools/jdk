@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when an application tries to create an instance of a class
  * using the {@code newInstance} method in class
@@ -41,6 +45,7 @@ package java.lang;
  * @see     java.lang.Class#newInstance()
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class InstantiationException extends ReflectiveOperationException {
     @java.io.Serial
     private static final long serialVersionUID = -8441929162975509110L;
@@ -48,6 +53,7 @@ public class InstantiationException extends ReflectiveOperationException {
     /**
      * Constructs an {@code InstantiationException} with no detail message.
      */
+    @SideEffectFree
     public InstantiationException() {
         super();
     }
@@ -58,7 +64,8 @@ public class InstantiationException extends ReflectiveOperationException {
      *
      * @param   s   the detail message.
      */
-    public InstantiationException(String s) {
+    @SideEffectFree
+    public InstantiationException(@Nullable String s) {
         super(s);
     }
 }

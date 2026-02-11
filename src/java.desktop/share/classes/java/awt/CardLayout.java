@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -56,7 +59,8 @@ import java.util.Vector;
  * @since       1.0
  */
 
-public class CardLayout implements LayoutManager2,
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class CardLayout implements LayoutManager2,
                                    Serializable {
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.

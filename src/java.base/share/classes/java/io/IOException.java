@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that an I/O exception of some sort has occurred. This
  * class is the general class of exceptions produced by failed or
@@ -34,6 +37,7 @@ package java.io;
  * @see     java.io.OutputStream
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class IOException extends Exception {
     @java.io.Serial
     static final long serialVersionUID = 7818375828146090155L;
@@ -53,7 +57,7 @@ public class IOException extends Exception {
      *        The detail message (which is saved for later retrieval
      *        by the {@link #getMessage()} method)
      */
-    public IOException(String message) {
+    public IOException(@Nullable String message) {
         super(message);
     }
 
@@ -76,7 +80,7 @@ public class IOException extends Exception {
      *
      * @since 1.6
      */
-    public IOException(String message, Throwable cause) {
+    public IOException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -94,7 +98,7 @@ public class IOException extends Exception {
      *
      * @since 1.6
      */
-    public IOException(Throwable cause) {
+    public IOException(@Nullable Throwable cause) {
         super(cause);
     }
 }

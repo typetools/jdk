@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.file;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -503,6 +504,7 @@ public class Locations {
         /**
          * @see JavaFileManager#contains
          */
+        @Pure
         abstract boolean contains(Path file) throws IOException;
     }
 
@@ -673,6 +675,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             if (moduleTable != null) {
                 return moduleTable.contains(file);
@@ -735,6 +738,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             return Locations.this.contains(searchPath, file);
         }
@@ -969,6 +973,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             return Locations.this.contains(searchPath, file);
         }
@@ -1041,6 +1046,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             return Locations.this.contains(searchPath, file);
         }
@@ -1105,6 +1111,7 @@ public class Locations {
             return nameMap.isEmpty();
         }
 
+        @Pure
         boolean contains(Path file) throws IOException {
             return Locations.this.contains(pathMap.keySet(), file);
         }
@@ -1173,6 +1180,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             if (moduleTable == null) {
                 initModuleLocations();
@@ -1817,6 +1825,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             return (moduleTable == null) ? false : moduleTable.contains(file);
         }
@@ -1940,6 +1949,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             initSystemModules();
             return moduleTable.contains(file);
@@ -2079,6 +2089,7 @@ public class Locations {
         }
 
         @Override
+        @Pure
         boolean contains(Path file) throws IOException {
             return moduleTable.contains(file);
         }
@@ -2190,6 +2201,7 @@ public class Locations {
         return (h == null ? null : h.listLocationsForModules());
     }
 
+    @Pure
     boolean contains(Location location, Path file) throws IOException {
         LocationHandler h = getHandler(location);
         if (h == null)

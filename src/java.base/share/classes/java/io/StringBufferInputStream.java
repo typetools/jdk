@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * This class allows an application to create an input stream in
  * which the bytes read are supplied by the contents of a string.
@@ -42,7 +50,9 @@ package java.io;
  *             of JDK&nbsp;1.1, the preferred way to create a stream from a
  *             string is via the {@code StringReader} class.
  */
+@AnnotatedFor({"index", "nullness", "mustcall"})
 @Deprecated
+@InheritableMustCall({})
 public class StringBufferInputStream extends InputStream {
     /**
      * The string from which bytes are read.
@@ -108,7 +118,7 @@ public class StringBufferInputStream extends InputStream {
      */
     @Override
     @SuppressWarnings("deprecation")
-    public synchronized int read(byte[] b, int off, int len) {
+    public synchronized @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         if (b == null) {
             throw new NullPointerException();
         } else if ((off < 0) || (off > b.length) || (len < 0) ||
@@ -139,7 +149,7 @@ public class StringBufferInputStream extends InputStream {
      * @return     the actual number of bytes skipped.
      */
     @Override
-    public synchronized long skip(long n) {
+    public synchronized @NonNegative long skip(long n) {
         if (n < 0) {
             return 0;
         }
@@ -158,7 +168,7 @@ public class StringBufferInputStream extends InputStream {
      *             number of bytes remaining to be read from the input buffer.
      */
     @Override
-    public synchronized int available() {
+    public synchronized @NonNegative int available() {
         return count - pos;
     }
 

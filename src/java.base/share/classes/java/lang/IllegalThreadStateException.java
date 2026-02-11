@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown to indicate that a thread is not in an appropriate state
  * for the requested operation.
@@ -32,6 +36,7 @@ package java.lang;
  * @see Thread#start()
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class IllegalThreadStateException extends IllegalArgumentException {
     @java.io.Serial
     private static final long serialVersionUID = -7626246362397460174L;
@@ -40,6 +45,7 @@ public class IllegalThreadStateException extends IllegalArgumentException {
      * Constructs an {@code IllegalThreadStateException} with no
      * detail message.
      */
+    @SideEffectFree
     public IllegalThreadStateException() {
         super();
     }
@@ -50,7 +56,8 @@ public class IllegalThreadStateException extends IllegalArgumentException {
      *
      * @param   s   the detail message.
      */
-    public IllegalThreadStateException(String s) {
+    @SideEffectFree
+    public IllegalThreadStateException(@Nullable String s) {
         super(s);
     }
 }

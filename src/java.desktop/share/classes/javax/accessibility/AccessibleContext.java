@@ -25,6 +25,9 @@
 
 package javax.accessibility;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.IllegalComponentStateException;
 import java.beans.BeanProperty;
 import java.beans.JavaBean;
@@ -76,6 +79,7 @@ import sun.awt.AppContext;
  * @author Willie Walker
  * @author Lynn Monsanto
  */
+@AnnotatedFor({"interning"})
 @JavaBean(description = "Minimal information that all accessible objects return")
 public abstract class AccessibleContext {
 
@@ -123,7 +127,7 @@ public abstract class AccessibleContext {
      * @see #getAccessibleName
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_NAME_PROPERTY = "AccessibleName";
+    public static final @Interned String ACCESSIBLE_NAME_PROPERTY = "AccessibleName";
 
     /**
      * Constant used to determine when the {@link #accessibleDescription}
@@ -134,7 +138,7 @@ public abstract class AccessibleContext {
      * @see #getAccessibleDescription
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_DESCRIPTION_PROPERTY = "AccessibleDescription";
+    public static final @Interned String ACCESSIBLE_DESCRIPTION_PROPERTY = "AccessibleDescription";
 
     /**
      * Constant used to determine when the {@code accessibleStateSet} property
@@ -153,7 +157,7 @@ public abstract class AccessibleContext {
      * @see AccessibleStateSet
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_STATE_PROPERTY = "AccessibleState";
+    public static final @Interned String ACCESSIBLE_STATE_PROPERTY = "AccessibleState";
 
     /**
      * Constant used to determine when the {@code accessibleValue} property has
@@ -164,7 +168,7 @@ public abstract class AccessibleContext {
      * @see #getAccessibleValue
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_VALUE_PROPERTY = "AccessibleValue";
+    public static final @Interned String ACCESSIBLE_VALUE_PROPERTY = "AccessibleValue";
 
     /**
      * Constant used to determine when the {@code accessibleSelection} has
@@ -174,7 +178,7 @@ public abstract class AccessibleContext {
      * @see #getAccessibleSelection
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_SELECTION_PROPERTY = "AccessibleSelection";
+    public static final @Interned String ACCESSIBLE_SELECTION_PROPERTY = "AccessibleSelection";
 
     /**
      * Constant used to determine when the {@code accessibleText} caret has
@@ -184,7 +188,7 @@ public abstract class AccessibleContext {
      *
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_CARET_PROPERTY = "AccessibleCaret";
+    public static final @Interned String ACCESSIBLE_CARET_PROPERTY = "AccessibleCaret";
 
     /**
      * Constant used to determine when the visual appearance of the object has
@@ -193,7 +197,7 @@ public abstract class AccessibleContext {
      *
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_VISIBLE_DATA_PROPERTY = "AccessibleVisibleData";
+    public static final @Interned String ACCESSIBLE_VISIBLE_DATA_PROPERTY = "AccessibleVisibleData";
 
     /**
      * Constant used to determine when {@code Accessible} children are
@@ -205,7 +209,7 @@ public abstract class AccessibleContext {
      *
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_CHILD_PROPERTY = "AccessibleChild";
+    public static final @Interned String ACCESSIBLE_CHILD_PROPERTY = "AccessibleChild";
 
     /**
      * Constant used to determine when the active descendant of a component has
@@ -218,7 +222,7 @@ public abstract class AccessibleContext {
      *
      * @see #addPropertyChangeListener
      */
-    public static final String ACCESSIBLE_ACTIVE_DESCENDANT_PROPERTY = "AccessibleActiveDescendant";
+    public static final @Interned String ACCESSIBLE_ACTIVE_DESCENDANT_PROPERTY = "AccessibleActiveDescendant";
 
     /**
      * Constant used to indicate that the table caption has changed. The old

@@ -25,6 +25,9 @@
 
 package com.sun.org.apache.xerces.internal.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import com.sun.org.apache.xerces.internal.util.NamespaceContextWrapper;
 import com.sun.org.apache.xerces.internal.util.NamespaceSupport;
 import com.sun.org.apache.xerces.internal.util.SymbolTable;
@@ -516,6 +519,7 @@ public class XMLStreamReaderImpl implements javax.xml.stream.XMLStreamReader {
      * @throws XMLStreamException
      * @return
      */
+    @Pure
     public boolean hasNext() throws XMLStreamException {
         //the scanner returns -1 when it detects a broken stream
         if (fEventType == -1) {

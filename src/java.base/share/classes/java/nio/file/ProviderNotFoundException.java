@@ -25,12 +25,16 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Runtime exception thrown when a provider of the required type cannot be found.
  *
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class ProviderNotFoundException
     extends RuntimeException
 {
@@ -49,7 +53,7 @@ public class ProviderNotFoundException
      * @param   msg
      *          the detail message
      */
-    public ProviderNotFoundException(String msg) {
+    public ProviderNotFoundException(@Nullable String msg) {
         super(msg);
     }
 }

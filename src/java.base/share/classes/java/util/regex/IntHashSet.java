@@ -25,6 +25,8 @@
 
 package java.util.regex;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 
 /**
@@ -43,6 +45,8 @@ class IntHashSet {
         Arrays.fill(this.hashes, -1);
     }
 
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean contains(int i) {
         int h = hashes[i % hashes.length];
         while (h != -1) {

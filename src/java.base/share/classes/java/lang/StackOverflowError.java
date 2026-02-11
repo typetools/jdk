@@ -25,12 +25,17 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when a stack overflow occurs because an application
  * recurses too deeply.
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class StackOverflowError extends VirtualMachineError {
     @java.io.Serial
     private static final long serialVersionUID = 8609175038441759607L;
@@ -38,6 +43,7 @@ public class StackOverflowError extends VirtualMachineError {
     /**
      * Constructs a {@code StackOverflowError} with no detail message.
      */
+    @SideEffectFree
     public StackOverflowError() {
         super();
     }
@@ -48,7 +54,8 @@ public class StackOverflowError extends VirtualMachineError {
      *
      * @param   s   the detail message.
      */
-    public StackOverflowError(String s) {
+    @SideEffectFree
+    public StackOverflowError(@Nullable String s) {
         super(s);
     }
 }

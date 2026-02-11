@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.html;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -131,6 +132,7 @@ public abstract class Content {
      *
      * @return true if this content can be discarded without affecting the output
      */
+    @Pure
     public boolean isDiscardable() {
         return isEmpty();
     }

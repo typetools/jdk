@@ -26,6 +26,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -169,6 +177,7 @@ import static jdk.internal.util.ModifiedUtf.utfLen;
  *      <cite>Java Object Serialization Specification,</cite> Section 2, "Object Output Classes"</a>
  * @since       1.1
  */
+@AnnotatedFor({"nullness", "index", "signedness"})
 public class ObjectOutputStream
     extends OutputStream implements ObjectOutput, ObjectStreamConstants
 {
@@ -229,7 +238,7 @@ public class ObjectOutputStream
      * @see     ObjectInputStream#ObjectInputStream(InputStream)
      */
     @SuppressWarnings("this-escape")
-    public ObjectOutputStream(OutputStream out) throws IOException {
+    public @MustCallAlias ObjectOutputStream(@MustCallAlias OutputStream out) throws IOException {
         bout = new BlockDataOutputStream(out);
         handles = new HandleTable(10, (float) 3.00);
         subs = new ReplaceTable(10, (float) 3.00);
@@ -316,7 +325,7 @@ public class ObjectOutputStream
      * @throws  IOException Any exception thrown by the underlying
      *          OutputStream.
      */
-    public final void writeObject(Object obj) throws IOException {
+    public final void writeObject(@Nullable Object obj) throws IOException {
         if (enableOverride) {
             writeObjectOverride(obj);
             return;
@@ -381,7 +390,7 @@ public class ObjectOutputStream
      * @throws  IOException if an I/O error occurs during serialization
      * @since 1.4
      */
-    public void writeUnshared(Object obj) throws IOException {
+    public void writeUnshared(@Nullable Object obj) throws IOException {
         try {
             writeObject0(obj, true);
         } catch (IOException ex) {
@@ -630,7 +639,7 @@ public class ObjectOutputStream
      * @throws  IOException If an I/O error has occurred.
      */
     @Override
-    public void write(int val) throws IOException {
+    public void write(@PolySigned int val) throws IOException {
         bout.write(val);
     }
 
@@ -642,7 +651,7 @@ public class ObjectOutputStream
      * @throws  IOException If an I/O error has occurred.
      */
     @Override
-    public void write(byte[] buf) throws IOException {
+    public void write(@PolySigned byte[] buf) throws IOException {
         bout.write(buf, 0, buf.length, false);
     }
 
@@ -656,7 +665,7 @@ public class ObjectOutputStream
      * @throws  IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public void write(byte[] buf, int off, int len) throws IOException {
+    public void write(@PolySigned byte[] buf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         if (buf == null) {
             throw new NullPointerException();
         }
@@ -945,7 +954,7 @@ public class ObjectOutputStream
          * are being written, or if the type of the named field is not a
          * reference type
          */
-        public abstract void put(String name, Object val);
+        public abstract void put(String name, @Nullable Object val);
 
         /**
          * Write the data and fields to the specified ObjectOutput stream,
@@ -1702,7 +1711,7 @@ public class ObjectOutputStream
             write(b, 0, b.length, false);
         }
 
-        public void write(byte[] b, int off, int len) throws IOException {
+        public void write(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
             write(b, off, len, false);
         }
 
@@ -1722,7 +1731,7 @@ public class ObjectOutputStream
          * them to underlying stream (to avoid exposing a reference to the
          * original byte array).
          */
-        void write(byte[] b, int off, int len, boolean copy)
+        void write(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len, boolean copy)
             throws IOException
         {
             if (!(copy || blkmode)) {           // write directly

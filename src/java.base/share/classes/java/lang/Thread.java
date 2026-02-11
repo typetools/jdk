@@ -25,6 +25,16 @@
 
 package java.lang;
 
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.EnsuresLockHeldIf;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.ref.Reference;
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -205,7 +215,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  *
  * @since   1.0
  */
-public class Thread implements Runnable {
+@AnnotatedFor({"interning", "lock", "nullness"})
+public @UsesObjectEquals class Thread implements Runnable {
     /* Make sure registerNatives is the first thing <clinit> does. */
     private static native void registerNatives();
     static {
@@ -1111,7 +1122,7 @@ public class Thread implements Runnable {
      *
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(Runnable task) {
+    public Thread(@Nullable Runnable task) {
         this(null, null, 0, task, 0);
     }
 
@@ -1136,7 +1147,7 @@ public class Thread implements Runnable {
      *
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(ThreadGroup group, Runnable task) {
+    public Thread(@Nullable ThreadGroup group, @Nullable Runnable task) {
         this(group, null, 0, task, 0);
     }
 
@@ -1174,7 +1185,7 @@ public class Thread implements Runnable {
      *
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(ThreadGroup group, String name) {
+    public Thread(@Nullable ThreadGroup group, String name) {
         this(group, checkName(name), 0, null, 0);
     }
 
@@ -1196,7 +1207,7 @@ public class Thread implements Runnable {
      *
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(Runnable task, String name) {
+    public Thread(@Nullable Runnable task, String name) {
         this(null, checkName(name), 0, task, 0);
     }
 
@@ -1232,7 +1243,7 @@ public class Thread implements Runnable {
      *
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(ThreadGroup group, Runnable task, String name) {
+    public Thread(@Nullable ThreadGroup group, @Nullable Runnable task, String name) {
         this(group, checkName(name), 0, task, 0);
     }
 
@@ -1306,7 +1317,7 @@ public class Thread implements Runnable {
      * @since 1.4
      * @see <a href="#inheritance">Inheritance when creating threads</a>
      */
-    public Thread(ThreadGroup group, Runnable task, String name, long stackSize) {
+    public Thread(@Nullable ThreadGroup group, @Nullable Runnable task, String name, long stackSize) {
         this(group, checkName(name), 0, task, stackSize);
     }
 
@@ -1633,7 +1644,8 @@ public class Thread implements Runnable {
      *          {@code false} otherwise.
      * @see     #interrupted()
      */
-    public boolean isInterrupted() {
+    @Pure
+    public boolean isInterrupted(@GuardSatisfied Thread this) {
         return interrupted;
     }
 
@@ -1672,7 +1684,8 @@ public class Thread implements Runnable {
      * @return  {@code true} if this thread is alive;
      *          {@code false} otherwise.
      */
-    public final boolean isAlive() {
+    @Pure
+    public final boolean isAlive(@GuardSatisfied Thread this) {
         return alive();
     }
 
@@ -1700,7 +1713,7 @@ public class Thread implements Runnable {
      * @see #setPriority(int)
      * @see ThreadGroup#getMaxPriority()
      */
-    public final void setPriority(int newPriority) {
+    public final void setPriority(@UnknownInitialization(java.lang.Thread.class) Thread this, int newPriority) {
         if (newPriority > MAX_PRIORITY || newPriority < MIN_PRIORITY) {
             throw new IllegalArgumentException();
         }
@@ -1782,7 +1795,7 @@ public class Thread implements Runnable {
      *
      * @return  this thread's thread group or {@code null}
      */
-    public final ThreadGroup getThreadGroup() {
+    public final @Nullable ThreadGroup getThreadGroup() {
         if (isTerminated()) {
             return null;
         } else {
@@ -2037,7 +2050,7 @@ public class Thread implements Runnable {
      * @throws  IllegalThreadStateException
      *          if this thread is {@linkplain #isAlive alive}
      */
-    public final void setDaemon(boolean on) {
+    public final void setDaemon(@UnknownInitialization Thread this, boolean on) {
         if (isVirtual() && !on)
             throw new IllegalArgumentException("'false' not legal for virtual threads");
         if (isAlive())
@@ -2058,7 +2071,8 @@ public class Thread implements Runnable {
      *          {@code false} otherwise.
      * @see     #setDaemon(boolean)
      */
-    public final boolean isDaemon() {
+    @Pure
+    public final boolean isDaemon(@GuardSatisfied Thread this) {
         if (isVirtual()) {
             return true;
         } else {
@@ -2086,7 +2100,8 @@ public class Thread implements Runnable {
      *
      * @return  a string representation of this thread.
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied Thread this) {
         StringBuilder sb = new StringBuilder("Thread[#");
         sb.append(threadId());
         sb.append(",");
@@ -2117,7 +2132,7 @@ public class Thread implements Runnable {
      *
      * @since 1.2
      */
-    public ClassLoader getContextClassLoader() {
+    public @Nullable ClassLoader getContextClassLoader() {
         return contextClassLoader;
     }
 
@@ -2133,7 +2148,7 @@ public class Thread implements Runnable {
      *
      * @since 1.2
      */
-    public void setContextClassLoader(ClassLoader cl) {
+    public void setContextClassLoader(@Nullable ClassLoader cl) {
         contextClassLoader = cl;
     }
 
@@ -2152,6 +2167,8 @@ public class Thread implements Runnable {
      *         the specified object.
      * @since 1.4
      */
+    @EnsuresLockHeldIf(expression={"#1"}, result=true)
+    @ReleasesNoLocks
     public static native boolean holdsLock(Object obj);
 
     private static final StackTraceElement[] EMPTY_STACK_TRACE
@@ -2492,7 +2509,7 @@ public class Thread implements Runnable {
      * @see ThreadGroup#uncaughtException
      * @since 1.5
      */
-    public static void setDefaultUncaughtExceptionHandler(UncaughtExceptionHandler ueh) {
+    public static void setDefaultUncaughtExceptionHandler(@Nullable UncaughtExceptionHandler ueh) {
         defaultUncaughtExceptionHandler = ueh;
     }
 
@@ -2504,7 +2521,7 @@ public class Thread implements Runnable {
      * @see #setDefaultUncaughtExceptionHandler
      * @return the default uncaught exception handler for all threads
      */
-    public static UncaughtExceptionHandler getDefaultUncaughtExceptionHandler(){
+    public static @Nullable UncaughtExceptionHandler getDefaultUncaughtExceptionHandler(){
         return defaultUncaughtExceptionHandler;
     }
 
@@ -2517,7 +2534,7 @@ public class Thread implements Runnable {
      * @since 1.5
      * @return the uncaught exception handler for this thread
      */
-    public UncaughtExceptionHandler getUncaughtExceptionHandler() {
+    public @Nullable UncaughtExceptionHandler getUncaughtExceptionHandler() {
         if (isTerminated()) {
             // uncaughtExceptionHandler may be set to null after thread terminates
             return null;
@@ -2540,7 +2557,7 @@ public class Thread implements Runnable {
      * @see ThreadGroup#uncaughtException
      * @since 1.5
      */
-    public void setUncaughtExceptionHandler(UncaughtExceptionHandler ueh) {
+    public void setUncaughtExceptionHandler(@Nullable UncaughtExceptionHandler ueh) {
         uncaughtExceptionHandler(ueh);
     }
 

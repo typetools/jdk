@@ -25,6 +25,7 @@
 
 package sun.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import sun.nio.cs.ISO_8859_1;
 import sun.nio.cs.UTF_8;
 
@@ -52,6 +53,7 @@ public class PropertyResourceBundleCharset extends Charset {
     }
 
     @Override
+    @Pure
     public boolean contains(Charset cs) {
         return false;
     }

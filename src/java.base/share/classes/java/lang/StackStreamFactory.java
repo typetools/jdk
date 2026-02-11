@@ -24,6 +24,9 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.ConstructorAccessor;
 import java.lang.StackWalker.Option;
@@ -380,6 +383,7 @@ final class StackStreamFactory {
          *
          * @see #tryNextFrame
          */
+        @SideEffectsOnly("this")
         final Class<?> nextFrame() {
             if (!hasNext()) {
                 return null;
@@ -395,6 +399,7 @@ final class StackStreamFactory {
          * This skips hidden frames unless this StackWalker has
          * {@link Option#SHOW_REFLECT_FRAMES}
          */
+        @Pure
         final boolean hasNext() {
             return peekFrame() != null;
         }
@@ -878,6 +883,7 @@ final class StackStreamFactory {
         /*
          * Tests if this frame buffer is empty.  All frames are fetched.
          */
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         final boolean isEmpty() {
             return origin >= fence || (origin == START_POS && fence == 0);
         }

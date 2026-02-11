@@ -25,6 +25,7 @@
 
 package javax.naming.directory;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Vector;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
@@ -137,6 +138,7 @@ public interface Attribute extends Cloneable, java.io.Serializable {
       * @see java.lang.Object#equals
       * @see BasicAttribute#equals
       */
+    @Pure
     boolean contains(Object attrVal);
     /**
       * Adds a new value to the attribute.

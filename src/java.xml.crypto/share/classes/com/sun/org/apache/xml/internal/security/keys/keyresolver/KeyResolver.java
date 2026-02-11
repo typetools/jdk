@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.DEREncodedKeyValueResolver;
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.DSAKeyValueResolver;
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.ECKeyValueResolver;
@@ -295,11 +298,13 @@ public class KeyResolver {
         }
 
         @Override
+        @Pure
         public boolean hasNext() {
             return it.hasNext();
         }
 
         @Override
+        @SideEffectsOnly("this")
         public KeyResolverSpi next() {
             KeyResolverSpi resolver = it.next();
             if (resolver == null) {

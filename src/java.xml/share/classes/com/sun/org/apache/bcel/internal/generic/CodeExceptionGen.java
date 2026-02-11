@@ -20,6 +20,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.bcel.internal.classfile.CodeException;
 
 /**

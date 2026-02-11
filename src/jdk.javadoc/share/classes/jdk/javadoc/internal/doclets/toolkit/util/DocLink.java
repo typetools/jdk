@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * Abstraction for simple relative URIs, consisting of a path and an
  * optional fragment. DocLink objects can be created by the constructors
@@ -101,6 +103,7 @@ public class DocLink {
     }
 
     // return true if the path begins <letters>://
+    @Pure
     private boolean isAbsoluteURL(DocPath path) {
         String s = path.getPath();
         for (int i = 0; i < s.length(); i++) {

@@ -24,6 +24,9 @@
  */
 package javax.swing;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.JavaBean;
@@ -93,6 +96,7 @@ import javax.accessibility.*;
  * @author Scott Violet
  * @since 1.2
  */
+@AnnotatedFor({"nullness"})
 @JavaBean(defaultProperty = "JMenuBar", description = "A toplevel window for creating dialog boxes.")
 @SwingContainer(delegate = "getContentPane")
 @SuppressWarnings({"serial"}) // Same-version serialization only
@@ -133,7 +137,7 @@ public class JDialog extends Dialog implements WindowConstants,
     /**
      * The {@code TransferHandler} for this dialog.
      */
-    private TransferHandler transferHandler;
+    private @Nullable TransferHandler transferHandler;
 
     /**
      * Creates a modeless dialog without a title and without a specified
@@ -233,7 +237,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Frame owner, String title) {
+    public JDialog(Frame owner, @Nullable String title) {
         this(owner, title, false);
     }
 
@@ -272,7 +276,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Frame owner, String title, boolean modal) {
+    public JDialog(@Nullable Frame owner, @Nullable String title, boolean modal) {
         super(owner == null? SwingUtilities.getSharedOwnerFrame() : owner,
               title, modal);
         if (owner == null) {
@@ -322,7 +326,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      * @since 1.4
      */
-    public JDialog(Frame owner, String title, boolean modal,
+    public JDialog(@Nullable Frame owner, @Nullable String title, boolean modal,
                    GraphicsConfiguration gc) {
         super(owner == null? SwingUtilities.getSharedOwnerFrame() : owner,
               title, modal, gc);
@@ -348,7 +352,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner) {
+    public JDialog(@Nullable Dialog owner) {
         this(owner, false);
     }
 
@@ -374,7 +378,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, boolean modal) {
+    public JDialog(@Nullable Dialog owner, boolean modal) {
         this(owner, "", modal);
     }
 
@@ -394,7 +398,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, String title) {
+    public JDialog(@Nullable Dialog owner, @Nullable String title) {
         this(owner, title, false);
     }
 
@@ -422,7 +426,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see JComponent#getDefaultLocale
      */
-    public JDialog(Dialog owner, String title, boolean modal) {
+    public JDialog(@Nullable Dialog owner, @Nullable String title, boolean modal) {
         super(owner, title, modal);
         dialogInit();
     }
@@ -460,7 +464,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      * @since 1.4
      */
-    public JDialog(Dialog owner, String title, boolean modal,
+    public JDialog(@Nullable Dialog owner, @Nullable String title, boolean modal,
                    GraphicsConfiguration gc) {
         super(owner, title, modal, gc);
         dialogInit();
@@ -489,7 +493,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner) {
+    public JDialog(@Nullable Window owner) {
         this(owner, Dialog.ModalityType.MODELESS);
     }
 
@@ -522,7 +526,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, ModalityType modalityType) {
+    public JDialog(@Nullable Window owner, @Nullable ModalityType modalityType) {
         this(owner, "", modalityType);
     }
 
@@ -551,7 +555,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title) {
+    public JDialog(@Nullable Window owner, @Nullable String title) {
         this(owner, title, Dialog.ModalityType.MODELESS);
     }
 
@@ -586,7 +590,7 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title, Dialog.ModalityType modalityType) {
+    public JDialog(@Nullable Window owner, @Nullable String title, Dialog.ModalityType modalityType) {
         super(owner, title, modalityType);
         dialogInit();
     }
@@ -628,8 +632,8 @@ public class JDialog extends Dialog implements WindowConstants,
      *
      * @since 1.6
      */
-    public JDialog(Window owner, String title, Dialog.ModalityType modalityType,
-                   GraphicsConfiguration gc) {
+    public JDialog(@Nullable Window owner, @Nullable String title, Dialog.ModalityType modalityType,
+                   @Nullable GraphicsConfiguration gc) {
         super(owner, title, modalityType, gc);
         dialogInit();
     }
@@ -795,7 +799,7 @@ public class JDialog extends Dialog implements WindowConstants,
      */
     @BeanProperty(hidden = true, description
             = "Mechanism for transfer of data into the component")
-    public void setTransferHandler(TransferHandler newHandler) {
+    public void setTransferHandler(@Nullable TransferHandler newHandler) {
         TransferHandler oldHandler = transferHandler;
         transferHandler = newHandler;
         SwingUtilities.installSwingDropTargetAsNecessary(this, transferHandler);
@@ -811,7 +815,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setTransferHandler
      * @since 1.6
      */
-    public TransferHandler getTransferHandler() {
+    public @Nullable TransferHandler getTransferHandler() {
         return transferHandler;
     }
 
@@ -903,7 +907,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setRootPaneCheckingEnabled
      * @see javax.swing.RootPaneContainer
      */
-    protected void addImpl(Component comp, Object constraints, int index)
+    protected void addImpl(Component comp, @Nullable Object constraints, int index)
     {
         if(isRootPaneCheckingEnabled()) {
             getContentPane().add(comp, constraints, index);
@@ -945,7 +949,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see #setRootPaneCheckingEnabled
      * @see javax.swing.RootPaneContainer
      */
-    public void setLayout(LayoutManager manager) {
+    public void setLayout(@Nullable LayoutManager manager) {
         if(isRootPaneCheckingEnabled()) {
             getContentPane().setLayout(manager);
         }
@@ -1091,7 +1095,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @since 1.6
      */
     @BeanProperty(bound = false)
-    public Graphics getGraphics() {
+    public @Nullable Graphics getGraphics() {
         JComponent.getGraphicsInvoked(this);
         return super.getGraphics();
     }

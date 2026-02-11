@@ -25,6 +25,12 @@
 
 package javax.print.attribute;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -266,7 +272,9 @@ public abstract class ResolutionSyntax implements Serializable, Cloneable {
      * @return {@code true} if {@code object} is equivalent to this resolution
      *         attribute, {@code false} otherwise
      */
-    public boolean equals(Object object) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object object) {
         return object instanceof ResolutionSyntax other &&
                 this.crossFeedResolution == other.crossFeedResolution &&
                 this.feedResolution == other.feedResolution;

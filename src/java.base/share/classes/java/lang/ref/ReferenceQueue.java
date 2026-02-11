@@ -25,6 +25,9 @@
 
 package java.lang.ref;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.function.Consumer;
 import jdk.internal.misc.VM;
 import jdk.internal.vm.ContinuationSupport;
@@ -46,7 +49,9 @@ import jdk.internal.vm.ContinuationSupport;
  * @since    1.2
  */
 
-public class ReferenceQueue<@jdk.internal.RequiresIdentity T> {
+@AnnotatedFor({"interning", "nullness"})
+@SuppressWarnings({"rawtypes"})
+public @UsesObjectEquals class ReferenceQueue<@jdk.internal.RequiresIdentity T> {
     private static class Null extends ReferenceQueue<Object> {
         @Override
         boolean enqueue(Reference<?> r) {

@@ -26,12 +26,16 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
  * Utility class for string encoding and decoding.
  */
-class StringCoding {
+@AnnotatedFor({"index", "interning"})
+@UsesObjectEquals class StringCoding {
 
     private StringCoding() { }
 

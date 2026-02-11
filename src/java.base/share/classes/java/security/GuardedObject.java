@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 
 /**
@@ -49,7 +52,8 @@ import java.io.IOException;
  * @since 1.2
  */
 
-public class GuardedObject implements java.io.Serializable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class GuardedObject implements java.io.Serializable {
 
     @java.io.Serial
     private static final long serialVersionUID = -5240450096227834308L;

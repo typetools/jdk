@@ -25,6 +25,26 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import jdk.internal.access.SharedSecrets;
@@ -83,8 +103,10 @@ import jdk.internal.util.ArraysSupport;
  * @author Josh Bloch, Doug Lea
  * @param <E> the type of elements held in this queue
  */
+@CFComment({"lock/nullness: This class doesn't permits null elements"})
+@AnnotatedFor({"lock", "nullness", "index"})
 @SuppressWarnings("unchecked")
-public class PriorityQueue<E> extends AbstractQueue<E>
+public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
     implements java.io.Serializable {
 
     @java.io.Serial
@@ -138,7 +160,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code initialCapacity} is less
      *         than 1
      */
-    public PriorityQueue(int initialCapacity) {
+    public PriorityQueue(@Positive int initialCapacity) {
         this(initialCapacity, null);
     }
 
@@ -166,7 +188,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code initialCapacity} is
      *         less than 1
      */
-    public PriorityQueue(int initialCapacity,
+    public PriorityQueue(@Positive int initialCapacity,
                          Comparator<? super E> comparator) {
         // Note: This restriction of at least one is not actually needed,
         // but continues for 1.5 compatibility
@@ -192,7 +214,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public PriorityQueue(Collection<? extends E> c) {
+    public @PolyNonEmpty PriorityQueue(@PolyNonEmpty Collection<? extends E> c) {
         if (c instanceof SortedSet<?>) {
             SortedSet<? extends E> ss = (SortedSet<? extends E>) c;
             this.comparator = (Comparator<? super E>) ss.comparator();
@@ -307,7 +329,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *         according to the priority queue's ordering
      * @throws NullPointerException if the specified element is null
      */
-    public boolean add(E e) {
+    @EnsuresNonEmpty("this")
+    public boolean add(@GuardSatisfied PriorityQueue<E> this, E e) {
         return offer(e);
     }
 
@@ -332,11 +355,12 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         return true;
     }
 
-    public E peek() {
+    @Pure
+    public @Nullable E peek(@GuardSatisfied PriorityQueue<E> this) {
         return (E) queue[0];
     }
 
-    private int indexOf(Object o) {
+    private int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o != null) {
             final Object[] es = queue;
             for (int i = 0, n = size; i < n; i++)
@@ -357,7 +381,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(Object o) {
+    public boolean remove(@GuardSatisfied @CanShrink PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         int i = indexOf(o);
         if (i == -1)
             return false;
@@ -372,7 +396,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *
      * @param o element to be removed from this queue, if present
      */
-    void removeEq(Object o) {
+    void removeEq(@GuardSatisfied @CanShrink PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         final Object[] es = queue;
         for (int i = 0, n = size; i < n; i++) {
             if (o == es[i]) {
@@ -390,7 +414,9 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @param o object to be checked for containment in this queue
      * @return {@code true} if this queue contains the specified element
      */
-    public boolean contains(Object o) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied PriorityQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -407,7 +433,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
-    public Object[] toArray() {
+    @SideEffectFree
+    public @PolyNull @PolySigned Object[] toArray(PriorityQueue<@PolyNull @PolySigned E> this) {
         return Arrays.copyOf(queue, size);
     }
 
@@ -447,7 +474,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *         this queue
      * @throws NullPointerException if the specified array is null
      */
-    public <T> T[] toArray(T[] a) {
+    @SideEffectFree
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final int size = this.size;
         if (a.length < size)
             // Make a new array of a's runtime type, but my contents:
@@ -464,7 +492,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue
      */
-    public Iterator<E> iterator() {
+    @SideEffectFree
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty PriorityQueue<E> this) {
         return new Itr();
     }
 
@@ -510,12 +539,15 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
         Itr() {}                        // prevent access constructor creation
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < size ||
                 (forgetMeNot != null && !forgetMeNot.isEmpty());
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty Itr this) {
             if (expectedModCount != modCount)
                 throw new ConcurrentModificationException();
             if (cursor < size)
@@ -552,7 +584,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         }
     }
 
-    public int size() {
+    @Pure
+    public @NonNegative int size(@GuardSatisfied PriorityQueue<E> this) {
         return size;
     }
 
@@ -560,7 +593,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * Removes all of the elements from this priority queue.
      * The queue will be empty after this call returns.
      */
-    public void clear() {
+    public void clear(@GuardSatisfied @CanShrink PriorityQueue<E> this) {
         modCount++;
         final Object[] es = queue;
         for (int i = 0, n = size; i < n; i++)
@@ -568,7 +601,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         size = 0;
     }
 
-    public E poll() {
+    public @Nullable E poll(@GuardSatisfied @CanShrink PriorityQueue<E> this) {
         final Object[] es;
         final E result;
 
@@ -600,7 +633,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * position before i. This fact is used by iterator.remove so as to
      * avoid missing traversing elements.
      */
-    E removeAt(int i) {
+    E removeAt(@GuardSatisfied @NonEmpty @CanShrink PriorityQueue<E> this, int i) {
         // assert i >= 0 && i < size;
         final Object[] es = queue;
         modCount++;
@@ -743,7 +776,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      *         {@code null} if this queue is sorted according to the
      *         natural ordering of its elements
      */
-    public Comparator<? super E> comparator() {
+    @Pure
+    public @Nullable Comparator<? super E> comparator(@GuardSatisfied PriorityQueue<E> this) {
         return comparator;
     }
 
@@ -890,7 +924,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@GuardSatisfied @CanShrink PriorityQueue<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -898,7 +932,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(@GuardSatisfied @CanShrink PriorityQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -906,7 +940,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(@GuardSatisfied @CanShrink PriorityQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

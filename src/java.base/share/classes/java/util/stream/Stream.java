@@ -24,6 +24,17 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -161,6 +172,9 @@ import java.util.function.UnaryOperator;
  * @see DoubleStream
  * @see <a href="package-summary.html">java.util.stream</a>
  */
+@AnnotatedFor({"lock", "mustcall", "nullness"})
+@CFComment({"MustCall: most Streams do not need to be closed.  There is no need for",
+   "`@InheritableMustCall({})` because `AutoCloseable` already has that class annotation."})
 public interface Stream<T> extends BaseStream<T, Stream<T>> {
 
     /**
@@ -191,7 +205,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *               function to apply to each element
      * @return the new stream
      */
-    <R> Stream<R> map(Function<? super T, ? extends R> mapper);
+    <R> @PolyNonEmpty Stream<R> map(@PolyNonEmpty Stream<T> this, Function<? super T, ? extends R> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of applying the
@@ -278,7 +292,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #mapMulti mapMulti
      */
-    <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper);
+    <R> Stream<R> flatMap(Function<? super T, ? extends @Nullable Stream<? extends R>> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of replacing each
@@ -298,7 +312,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap flatMap
      */
-    IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper);
+    IntStream flatMapToInt(Function<? super T, ? extends @Nullable IntStream> mapper);
 
     /**
      * Returns an {@code LongStream} consisting of the results of replacing each
@@ -318,7 +332,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap flatMap
      */
-    LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper);
+    LongStream flatMapToLong(Function<? super T, ? extends @Nullable LongStream> mapper);
 
     /**
      * Returns an {@code DoubleStream} consisting of the results of replacing
@@ -338,7 +352,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap flatMap
      */
-    DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper);
+    DoubleStream flatMapToDouble(Function<? super T, ? extends @Nullable DoubleStream> mapper);
 
     // THE EXAMPLES USED IN THE JAVADOC MUST BE IN SYNC WITH THEIR CORRESPONDING
     // TEST IN test/jdk/java/util/stream/examples/JavadocExamples.java.
@@ -573,7 +587,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> distinct();
+    @PolyNonEmpty Stream<T> distinct(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -589,7 +603,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> sorted();
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -606,7 +620,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                   {@code Comparator} to be used to compare stream elements
      * @return the new stream
      */
-    Stream<T> sorted(Comparator<? super T> comparator);
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this, Comparator<? super T> comparator);
 
     /**
      * Returns a stream consisting of the elements of this stream, additionally
@@ -878,7 +892,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return an array, whose {@linkplain Class#getComponentType runtime component
      * type} is {@code Object}, containing the elements of this stream
      */
-    Object[] toArray();
+    @SideEffectFree
+    @PolyNull Object @PolyNonEmpty[] toArray(@PolyNonEmpty Stream<@PolyNull T> this);
 
     /**
      * Returns an array containing the elements of this stream, using the
@@ -907,6 +922,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         stream is not assignable to the {@linkplain Class#getComponentType
      *         runtime component type} of the generated array
      */
+    @SideEffectFree
     <A> A[] toArray(IntFunction<A[]> generator);
 
     /**
@@ -1157,6 +1173,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                    first result container.
      * @return the result of the reduction
      */
+    @CFComment("@SideEffectFree: the supplied functions should not have side effects")
+    @SideEffectFree
     <R> R collect(Supplier<R> supplier,
                   BiConsumer<R, ? super T> accumulator,
                   BiConsumer<R, R> combiner);
@@ -1213,6 +1231,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @see #collect(Supplier, BiConsumer, BiConsumer)
      * @see Collectors
      */
+    @CFComment("@SideEffectFree: the collector should not have side effects")
+    @SideEffectFree
     <R, A> R collect(Collector<? super T, A, R> collector);
 
     /**
@@ -1334,7 +1354,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if any elements of the stream match the provided
      * predicate, otherwise {@code false}
      */
-    boolean anyMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean anyMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether all elements of this stream match the provided predicate.
@@ -1357,7 +1378,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either all elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean allMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean allMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether no elements of this stream match the provided predicate.
@@ -1380,7 +1402,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either no elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean noneMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean noneMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns an {@link Optional} describing the first element of this stream,
@@ -1445,7 +1468,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @param <T> the type of stream elements
      * @return a singleton sequential stream
      */
-    public static<T> Stream<T> of(T t) {
+    public static<T> @NonEmpty Stream<T> of(T t) {
         return StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
 
@@ -1459,7 +1482,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         is non-null, otherwise an empty stream
      * @since 9
      */
-    public static<T> Stream<T> ofNullable(T t) {
+    public static<T> Stream<T> ofNullable(@Nullable T t) {
         return t == null ? Stream.empty()
                          : StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
@@ -1473,7 +1496,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @SafeVarargs
     @SuppressWarnings("varargs") // Creating a stream from an array is safe
-    public static<T> Stream<T> of(T... values) {
+    public static<T> @PolyNonEmpty Stream<T> of(T @PolyNonEmpty... values) {
         return Arrays.stream(values);
     }
 
@@ -1697,7 +1720,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * the built state
          */
         @Override
-        void accept(T t);
+        @EnsuresNonEmpty("this")
+        void accept(Stream.Builder<T> this, T t);
 
         /**
          * Adds an element to the stream being built.
@@ -1714,7 +1738,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        default Builder<T> add(T t) {
+        default @NonEmpty Builder<T> add(Stream.@GuardSatisfied Builder<T> this, T t) {
             accept(t);
             return this;
         }
@@ -1728,7 +1752,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        Stream<T> build();
+        @PolyNonEmpty Stream<T> build(Stream.@PolyNonEmpty Builder<T> this);
 
     }
 }

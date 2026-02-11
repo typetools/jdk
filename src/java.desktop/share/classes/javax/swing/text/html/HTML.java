@@ -25,6 +25,9 @@
 
 package javax.swing.text.html;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serial;
@@ -44,6 +47,7 @@ import javax.swing.text.StyleContext;
  * @author  Sunita Mani
  *
  */
+@AnnotatedFor({"interning"})
 public class HTML {
 
     /**
@@ -1280,7 +1284,7 @@ public class HTML {
      *  {@code NULL_ATTRIBUTE_VALUE} used in cases where the value for the attribute has not
      *  been specified.
      */
-    public static final String NULL_ATTRIBUTE_VALUE = "#DEFAULT";
+    public static final @Interned String NULL_ATTRIBUTE_VALUE = "#DEFAULT";
 
     // size determined similar to size of tagHashtable
     private static final Hashtable<String, Attribute> attHashtable = new Hashtable<String, Attribute>(77);

@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Objects;
 
 /**
@@ -38,6 +46,8 @@ import java.util.Objects;
  * @since       1.1
  */
 
+@AnnotatedFor({"index", "mustcall", "nullness"})
+@InheritableMustCall({})
 public class StringReader extends Reader {
 
     private final Reader r;
@@ -83,7 +93,7 @@ public class StringReader extends Reader {
      * @throws     IndexOutOfBoundsException  {@inheritDoc}
      * @throws     IOException  {@inheritDoc}
      */
-    public int read(char[] cbuf, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         synchronized (lock) {
             return r.read(cbuf, off, len);
         }
@@ -109,7 +119,7 @@ public class StringReader extends Reader {
      *
      * @throws IOException {@inheritDoc}
      */
-    public long skip(long n) throws IOException {
+    public @NonNegative long skip(long n) throws IOException {
         synchronized (lock) {
             return r.skip(n);
         }
@@ -148,7 +158,7 @@ public class StringReader extends Reader {
      * @throws     IllegalArgumentException  If {@code readAheadLimit < 0}
      * @throws     IOException  If an I/O error occurs
      */
-    public void mark(int readAheadLimit) throws IOException {
+    public void mark(@NonNegative int readAheadLimit) throws IOException {
         synchronized (lock) {
             r.mark(readAheadLimit);
         }

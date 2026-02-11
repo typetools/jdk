@@ -28,6 +28,14 @@
  */
 
 package java.math;
+
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.*;
 
 /**
@@ -55,7 +63,7 @@ import java.io.*;
  * @author  Joseph D. Darcy
  * @since 1.5
  */
-
+@AnnotatedFor("nullness")
 public final class MathContext implements Serializable {
 
     /* ----- Constants ----- */
@@ -245,7 +253,9 @@ public final class MathContext implements Serializable {
      *         a {@code MathContext} object which has exactly the same
      *         settings as this object
      */
-    public boolean equals(Object x){
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object x){
         if (!(x instanceof MathContext mc))
             return false;
         return mc.precision == this.precision

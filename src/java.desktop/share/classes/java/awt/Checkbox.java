@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.i18n.qual.Localized;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.peer.CheckboxPeer;
@@ -82,6 +85,7 @@ import javax.accessibility.AccessibleValue;
  * @see         java.awt.CheckboxGroup
  * @since       1.0
  */
+@AnnotatedFor({"i18n"})
 public class Checkbox extends Component implements ItemSelectable, Accessible {
 
     static {
@@ -266,7 +270,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      *                  if this check box has no label.
      * @see      #setLabel(String)
      */
-    public String getLabel() {
+    public @Localized String getLabel() {
         return label;
     }
 
@@ -277,7 +281,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      *                        {@code null} for no label.
      * @see      #getLabel
      */
-    public void setLabel(String label) {
+    public void setLabel(@Localized String label) {
         boolean testvalid = false;
 
         synchronized (this) {

@@ -25,6 +25,12 @@
 
 package javax.management;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.security.BasicPermission;
@@ -34,6 +40,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.StringTokenizer;
+
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /** A Permission to perform actions related to MBeanServers.
     The <em>name</em> of the permission specifies the operation requested
@@ -75,6 +84,7 @@ import java.util.StringTokenizer;
  * @since 1.5
  */
 @Deprecated(since="25", forRemoval=true)
+@AnnotatedFor({"interning"})
 public class MBeanServerPermission extends BasicPermission {
     private static final long serialVersionUID = -5661980843569388590L;
 
@@ -189,7 +199,7 @@ public class MBeanServerPermission extends BasicPermission {
         return mask;
     }
 
-    static String getCanonicalName(int mask) {
+    static @Interned String getCanonicalName(int mask) {
         if (mask == ALL_MASK)
             return "*";
 
@@ -298,7 +308,9 @@ public class MBeanServerPermission extends BasicPermission {
      * @param obj the object we are testing for equality with this object.
      * @return true if the objects are equal.
      */
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (obj == this)
             return true;
 

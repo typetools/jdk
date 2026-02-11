@@ -25,6 +25,9 @@
 
 package javax.naming.ldap;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Iterator;
 import javax.naming.ConfigurationException;
 import javax.naming.NamingException;
@@ -73,6 +76,7 @@ import java.util.ServiceLoader;
  * @see StartTlsResponse
  * @author Vincent Ryan
  */
+@AnnotatedFor({"interning"})
 public class StartTlsRequest implements ExtendedRequest {
 
     // Constant
@@ -81,7 +85,7 @@ public class StartTlsRequest implements ExtendedRequest {
      * The StartTLS extended request's assigned object identifier
      * is 1.3.6.1.4.1.1466.20037.
      */
-    public static final String OID = "1.3.6.1.4.1.1466.20037";
+    public static final @Interned String OID = "1.3.6.1.4.1.1466.20037";
 
 
     // Constructors

@@ -25,6 +25,10 @@
 
 package java.nio.channels.spi;
 
+import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethodsIf;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.Channel;
@@ -83,7 +87,8 @@ import sun.nio.ch.Interruptible;
  * @since 1.4
  */
 
-public abstract class AbstractInterruptibleChannel
+@AnnotatedFor({"calledmethods", "interning"})
+public abstract @UsesObjectEquals class AbstractInterruptibleChannel
     implements Channel, InterruptibleChannel
 {
     private final Object closeLock = new Object();
@@ -148,6 +153,7 @@ public abstract class AbstractInterruptibleChannel
      */
     protected abstract void implCloseChannel() throws IOException;
 
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
     public final boolean isOpen() {
         return !closed;
     }

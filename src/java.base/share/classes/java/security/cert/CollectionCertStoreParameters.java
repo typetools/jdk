@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Collection;
 import java.util.Collections;
 
@@ -51,7 +54,8 @@ import java.util.Collections;
  * @see         java.util.Collection
  * @see         CertStore
  */
-public class CollectionCertStoreParameters
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class CollectionCertStoreParameters
     implements CertStoreParameters {
 
     private final Collection<?> coll;

@@ -25,7 +25,13 @@
 
 package com.sun.tools.jdeps;
 
-import com.sun.tools.jdeps.Dependency.Location;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import com.sun.tools.classfile.Dependency.Location;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -91,6 +97,7 @@ public class Archive implements Closeable {
         return Module.UNNAMED_MODULE;
     }
 
+    @Pure
     public boolean contains(String entry) {
         return reader.entries().contains(entry);
     }
@@ -145,7 +152,9 @@ public class Archive implements Closeable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object o) {
         if (o instanceof Archive) {
             Archive other = (Archive)o;
             if (path == other.path || isSameLocation(this, other))

@@ -25,6 +25,9 @@
  */
 package org.jcp.xml.dsig.internal.dom;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -82,6 +85,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
         }
 
         @Override
+        @Pure
         public boolean hasNext() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);
@@ -91,6 +95,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
         }
 
         @Override
+        @SideEffectsOnly("this")
         public Node next() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);

@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -43,6 +51,8 @@ import java.util.Objects;
  * @see     java.io.StringBufferInputStream
  * @since   1.0
  */
+@AnnotatedFor({"index", "mustcall", "nullness"})
+@InheritableMustCall({})
 public class ByteArrayInputStream extends InputStream {
     private static final int MAX_TRANSFER_SIZE = 128*1024;
 
@@ -123,7 +133,7 @@ public class ByteArrayInputStream extends InputStream {
      * @param   offset   the offset in the buffer of the first byte to read.
      * @param   length   the maximum number of bytes to read from the buffer.
      */
-    public ByteArrayInputStream(byte[] buf, int offset, int length) {
+    public ByteArrayInputStream(byte[] buf, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int length) {
         this.buf = buf;
         this.pos = offset;
         this.count = Math.min(offset + length, buf.length);
@@ -143,7 +153,7 @@ public class ByteArrayInputStream extends InputStream {
      * @return  {@inheritDoc}
      */
     @Override
-    public synchronized int read() {
+    public synchronized @GTENegativeOne int read() {
         return (pos < count) ? (buf[pos++] & 0xff) : -1;
     }
 
@@ -171,7 +181,7 @@ public class ByteArrayInputStream extends InputStream {
      * @throws  IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public synchronized int read(byte[] b, int off, int len) {
+    public synchronized @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         Objects.checkFromIndexSize(off, len, b.length);
 
         if (pos >= count) {
@@ -247,7 +257,7 @@ public class ByteArrayInputStream extends InputStream {
      * @return  the actual number of bytes skipped.
      */
     @Override
-    public synchronized long skip(long n) {
+    public synchronized @NonNegative long skip(long n) {
         long k = count - pos;
         if (n < k) {
             k = n < 0 ? 0 : n;
@@ -268,7 +278,7 @@ public class ByteArrayInputStream extends InputStream {
      *          over) from this input stream without blocking.
      */
     @Override
-    public synchronized int available() {
+    public synchronized @NonNegative int available() {
         return count - pos;
     }
 
@@ -301,7 +311,7 @@ public class ByteArrayInputStream extends InputStream {
      * @since   1.1
      */
     @Override
-    public void mark(int readAheadLimit) {
+    public void mark(@NonNegative int readAheadLimit) {
         mark = pos;
     }
 

@@ -24,6 +24,7 @@
  */
 package jdk.tools.jlink.plugin;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.ByteOrder;
 import java.util.Optional;
 import java.util.function.Function;
@@ -77,6 +78,7 @@ public interface ResourcePool {
      * @param data The module data to check existence for.
      * @return The module data or null if not found.
      */
+    @Pure
     public boolean contains(ResourcePoolEntry data);
 
     /**

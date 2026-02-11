@@ -20,6 +20,7 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xs.StringList;
 import java.lang.reflect.Array;
 import java.util.AbstractList;
@@ -85,6 +86,7 @@ public final class StringListImpl extends AbstractList<String> implements String
      * @return  True if this list contains the <code>GenericString</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(String item) {
         if (fVector != null) {
             return fVector.contains(item);

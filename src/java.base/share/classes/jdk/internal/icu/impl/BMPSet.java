@@ -34,6 +34,7 @@
 
 package jdk.internal.icu.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
 import jdk.internal.icu.text.UnicodeSet.SpanCondition;
 import jdk.internal.icu.util.OutputInt;
 
@@ -111,6 +112,7 @@ public final class BMPSet {
         initBits();
     }
 
+    @Pure
     public boolean contains(int c) {
         if (c <= 0xff) {
             return (latin1Contains[c]);

@@ -25,6 +25,12 @@
 
 package com.sun.crypto.provider;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.Objects;
@@ -309,8 +315,10 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
         return Objects.hash(y, p, g);
     }
 
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) return true;
 
         if (!(obj instanceof javax.crypto.interfaces.DHPublicKey other)) {

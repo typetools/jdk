@@ -25,6 +25,11 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.ref.Cleaner.Cleanable;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
@@ -71,7 +76,8 @@ import static java.util.zip.ZipUtils.NIO_ACCESS;
  * @since 1.1
  */
 
-public class Deflater implements AutoCloseable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class Deflater implements AutoCloseable {
 
     private final DeflaterZStreamRef zsRef;
     private ByteBuffer input = ZipUtils.defaultBuf;
@@ -207,7 +213,7 @@ public class Deflater implements AutoCloseable {
      * @param len the length of the data
      * @see Deflater#needsInput
      */
-    public void setInput(byte[] input, int off, int len) {
+    public void setInput(byte[] input, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
         Preconditions.checkFromIndexSize(off, len, input.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             this.input = null;
@@ -273,7 +279,7 @@ public class Deflater implements AutoCloseable {
      * @see Inflater#inflate
      * @see Inflater#getAdler()
      */
-    public void setDictionary(byte[] dictionary, int off, int len) {
+    public void setDictionary(byte[] dictionary, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
         Preconditions.checkFromIndexSize(off, len, dictionary.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             ensureOpen();
@@ -442,7 +448,7 @@ public class Deflater implements AutoCloseable {
      *         output buffer
      * @throws IllegalStateException if the Deflater is closed
      */
-    public int deflate(byte[] output, int off, int len) {
+    public @GTENegativeOne int deflate(byte[] output, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
         return deflate(output, off, len, NO_FLUSH);
     }
 
@@ -462,7 +468,7 @@ public class Deflater implements AutoCloseable {
      *         output buffer
      * @throws IllegalStateException if the Deflater is closed
      */
-    public int deflate(byte[] output) {
+    public @GTENegativeOne int deflate(byte[] output) {
         return deflate(output, 0, output.length, NO_FLUSH);
     }
 
@@ -540,7 +546,7 @@ public class Deflater implements AutoCloseable {
      * @throws IllegalStateException if the Deflater is closed
      * @since 1.7
      */
-    public int deflate(byte[] output, int off, int len, int flush) {
+    public @GTENegativeOne int deflate(byte[] output, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len, int flush) {
         Preconditions.checkFromIndexSize(off, len, output.length, Preconditions.AIOOBE_FORMATTER);
         if (flush != NO_FLUSH && flush != SYNC_FLUSH && flush != FULL_FLUSH) {
             throw new IllegalArgumentException();

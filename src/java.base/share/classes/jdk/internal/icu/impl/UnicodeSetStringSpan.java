@@ -34,6 +34,7 @@
 
 package jdk.internal.icu.impl;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 
 import jdk.internal.icu.text.UTF16;
@@ -244,6 +245,7 @@ public class UnicodeSetStringSpan {
     }
 
     /** For fast UnicodeSet::contains(c). */
+    @Pure
     public boolean contains(int c) {
         return spanSet.contains(c);
     }
@@ -1116,6 +1118,7 @@ public class UnicodeSetStringSpan {
         /**
          * @param offset [1..maxLength]
          */
+        @Pure
         public boolean containsOffset(int offset) {
             int i = start + offset;
             if (i >= list.length) {

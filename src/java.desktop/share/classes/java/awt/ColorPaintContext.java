@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.image.ColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -32,7 +35,8 @@ import java.util.Arrays;
 
 import sun.awt.image.IntegerComponentRaster;
 
-final class ColorPaintContext implements PaintContext {
+@AnnotatedFor({"interning"})
+final @UsesObjectEquals class ColorPaintContext implements PaintContext {
 
     private final int color;
     private volatile WritableRaster savedTile;

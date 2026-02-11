@@ -25,6 +25,9 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.security.CodeSigner;
@@ -35,6 +38,7 @@ import java.security.cert.Certificate;
  *
  * @since 1.2
  */
+@AnnotatedFor({"nullness"})
 public class JarEntry extends ZipEntry {
     Attributes attr;
     Certificate[] certs;
@@ -86,7 +90,7 @@ public class JarEntry extends ZipEntry {
      * entry, or {@code null} if none
      * @throws IOException  if an I/O error has occurred
      */
-    public Attributes getAttributes() throws IOException {
+    public @Nullable Attributes getAttributes() throws IOException {
         return attr;
     }
 
@@ -118,7 +122,7 @@ public class JarEntry extends ZipEntry {
      * {@code null} if none.
      *
      */
-    public Certificate[] getCertificates() {
+    public Certificate @Nullable [] getCertificates() {
         return certs == null ? null : certs.clone();
     }
 
@@ -144,7 +148,7 @@ public class JarEntry extends ZipEntry {
      *
      * @since 1.5
      */
-    public CodeSigner[] getCodeSigners() {
+    public CodeSigner @Nullable [] getCodeSigners() {
         return signers == null ? null : signers.clone();
     }
 

@@ -25,6 +25,9 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+
 import java.security.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -114,6 +117,7 @@ implements Serializable {
      * contain any {@code CryptoPermission} objects; otherwise, returns
      * {@code false}.
      */
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     boolean isEmpty() {
         return perms.isEmpty();
     }
@@ -466,6 +470,7 @@ final class PermissionsEnumerator implements Enumeration<Permission> {
     }
 
     @Override
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public synchronized boolean hasMoreElements() {
         // if we enter with permissionimpl null, we know
         // there are no more left.
@@ -488,7 +493,7 @@ final class PermissionsEnumerator implements Enumeration<Permission> {
     }
 
     @Override
-    public synchronized Permission nextElement() {
+    public synchronized Permission nextElement(@NonEmpty PermissionsEnumerator this) {
         // hasMoreElements will update permset to the next permset
         // with something in it...
 

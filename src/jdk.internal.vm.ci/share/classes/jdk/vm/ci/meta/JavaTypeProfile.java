@@ -22,6 +22,12 @@
  */
 package jdk.vm.ci.meta;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
@@ -134,7 +140,9 @@ public final class JavaTypeProfile extends AbstractJavaProfile<ProfiledType, Res
     }
 
     @Override
-    public boolean equals(Object other) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object other) {
         return super.equals(other) && nullSeen.equals(((JavaTypeProfile) other).nullSeen);
     }
 

@@ -26,6 +26,9 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.net.*;
 import javax.net.SocketFactory;
 import java.io.IOException;
@@ -40,6 +43,7 @@ import java.util.Locale;
  * @see SSLSocket
  * @author David Brownell
  */
+@AnnotatedFor({"mustcall"})
 public abstract class SSLSocketFactory extends SocketFactory {
     static final boolean DEBUG;
 
@@ -151,7 +155,7 @@ public abstract class SSLSocketFactory extends SocketFactory {
      * @throws IOException if an I/O error occurs when creating the socket
      * @throws NullPointerException if the parameter s is null
      */
-    public abstract Socket createSocket(Socket s, String host,
+    public abstract @MustCallAlias Socket createSocket(@MustCallAlias Socket s, String host,
             int port, boolean autoClose) throws IOException;
 
     /**
@@ -199,7 +203,7 @@ public abstract class SSLSocketFactory extends SocketFactory {
      *      RFC 6066: Transport Layer Security (TLS) Extensions: Extension Definitions
      * @since 1.8
      */
-    public Socket createSocket(Socket s, InputStream consumed,
+    public @MustCallAlias Socket createSocket(@MustCallAlias Socket s, InputStream consumed,
             boolean autoClose) throws IOException {
         throw new UnsupportedOperationException();
     }

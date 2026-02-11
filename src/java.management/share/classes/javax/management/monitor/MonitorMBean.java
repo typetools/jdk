@@ -27,6 +27,7 @@ package javax.management.monitor;
 
 // jmx imports
 //
+import org.checkerframework.dataflow.qual.Pure;
 import javax.management.ObjectName;
 
 /**
@@ -74,6 +75,7 @@ public interface MonitorMBean {
      * @return <CODE>true</CODE> if the specified object is in the set, <CODE>false</CODE> otherwise.
      *
      */
+    @Pure
     public boolean containsObservedObject(ObjectName object);
 
     /**

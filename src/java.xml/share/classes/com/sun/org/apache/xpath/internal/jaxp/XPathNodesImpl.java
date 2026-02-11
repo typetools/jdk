@@ -29,6 +29,8 @@ import java.util.Iterator;
 import javax.xml.xpath.XPathException;
 import javax.xml.xpath.XPathNodes;
 import javax.xml.xpath.XPathEvaluationResult.XPathResultType;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -56,6 +58,7 @@ public class XPathNodesImpl implements XPathNodes {
         NodeSetIterator(Class<E> elementType) {
             this.elementType = elementType;
         }
+        @Pure
         public boolean hasNext() {
             if (nodeList != null) {
                 return currentIndex < nodeList.getLength();
@@ -64,6 +67,7 @@ public class XPathNodesImpl implements XPathNodes {
             return false;
         }
 
+        @SideEffectsOnly("this")
         public E next() {
             if (nodeList != null && nodeList.getLength() > 0) {
                 return elementType.cast(nodeList.item(currentIndex++));

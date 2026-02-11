@@ -25,6 +25,13 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Objects;
 
 /**
@@ -43,6 +50,7 @@ import java.util.Objects;
  * @see     java.io.PipedInputStream
  * @since   1.0
  */
+@AnnotatedFor({"nullness", "index", "signedness"})
 public class PipedOutputStream extends OutputStream {
 
         /* REMIND: identification of the read and write sides needs to be
@@ -60,7 +68,7 @@ public class PipedOutputStream extends OutputStream {
      * @throws     IOException  if an I/O error occurs.
      */
     @SuppressWarnings("this-escape")
-    public PipedOutputStream(PipedInputStream snk)  throws IOException {
+    public @MustCallAlias PipedOutputStream(@MustCallAlias PipedInputStream snk)  throws IOException {
         connect(snk);
     }
 
@@ -118,7 +126,7 @@ public class PipedOutputStream extends OutputStream {
      *          closed, or if an I/O error occurs.
      */
     @Override
-    public void write(int b)  throws IOException {
+    public void write(@PolySigned int b)  throws IOException {
         var sink = this.sink;
         if (sink == null) {
             throw new IOException("Pipe not connected");
@@ -141,7 +149,7 @@ public class PipedOutputStream extends OutputStream {
      * @throws  IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         var sink = this.sink;
         if (sink == null) {
             throw new IOException("Pipe not connected");

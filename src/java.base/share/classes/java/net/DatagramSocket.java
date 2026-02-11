@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.DatagramChannel;
@@ -243,7 +246,8 @@ import sun.nio.ch.DefaultSelectorProvider;
  * @see     java.nio.channels.DatagramChannel
  * @since 1.0
  */
-public class DatagramSocket implements java.io.Closeable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class DatagramSocket implements java.io.Closeable {
 
     // An instance of DatagramSocketAdaptor, NetMulticastSocket, or null
     private final DatagramSocket delegate;

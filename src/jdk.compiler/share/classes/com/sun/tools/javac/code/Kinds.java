@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.code;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.Locale;
@@ -200,6 +201,7 @@ public class Kinds {
             return (data & ~other.data) == 0;
         }
 
+        @Pure
         public boolean contains(KindSelector other) {
             return (data & other.data) != 0;
         }

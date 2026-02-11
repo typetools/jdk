@@ -25,6 +25,8 @@
 
 package sun.security.provider;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -240,6 +242,7 @@ public class PolicyParser {
         }
     }
 
+    @Pure
     private boolean peek(String expect) {
         boolean found = false;
 

@@ -25,6 +25,14 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.util.ArraysSupport;
 
 import java.util.ArrayList;
@@ -49,6 +57,7 @@ import java.util.Objects;
  * @see     java.io.PushbackInputStream
  * @since   1.0
  */
+@AnnotatedFor({"index"})
 public abstract class InputStream implements Closeable {
 
     // MAX_SKIP_BUFFER_SIZE is used to determine the maximum buffer size to
@@ -84,7 +93,7 @@ public abstract class InputStream implements Closeable {
      *
      * @since 11
      */
-    public static InputStream nullInputStream() {
+    public static @MustCall() InputStream nullInputStream() {
         return new InputStream() {
             private volatile boolean closed;
 
@@ -179,7 +188,7 @@ public abstract class InputStream implements Closeable {
      *             stream is reached.
      * @throws     IOException  if an I/O error occurs.
      */
-    public abstract int read() throws IOException;
+    public abstract @GTENegativeOne int read() throws IOException;
 
     /**
      * Reads some number of bytes from the input stream and stores them into
@@ -218,7 +227,7 @@ public abstract class InputStream implements Closeable {
      * @throws     NullPointerException  if {@code b} is {@code null}.
      * @see        java.io.InputStream#read(byte[], int, int)
      */
-    public int read(byte[] b) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
@@ -280,7 +289,7 @@ public abstract class InputStream implements Closeable {
      *             {@code b.length - off}
      * @see        java.io.InputStream#read()
      */
-    public int read(byte[] b, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         Objects.checkFromIndexSize(off, len, b.length);
         if (len == 0) {
             return 0;
@@ -536,7 +545,7 @@ public abstract class InputStream implements Closeable {
      * @throws     IOException  if an I/O error occurs.
      * @see        java.io.InputStream#skipNBytes(long)
      */
-    public long skip(long n) throws IOException {
+    public @NonNegative long skip(long n) throws IOException {
         long remaining = n;
         int nr;
 
@@ -647,7 +656,7 @@ public abstract class InputStream implements Closeable {
      *             {@code 0} when it reaches the end of the input stream.
      * @throws     IOException if an I/O error occurs.
      */
-    public int available() throws IOException {
+    public @NonNegative int available() throws IOException {
         return 0;
     }
 
@@ -689,7 +698,7 @@ public abstract class InputStream implements Closeable {
      *                      the mark position becomes invalid.
      * @see     java.io.InputStream#reset()
      */
-    public void mark(int readlimit) {}
+    public void mark(@NonNegative int readlimit) {}
 
     /**
      * Repositions this stream to the position at the time the

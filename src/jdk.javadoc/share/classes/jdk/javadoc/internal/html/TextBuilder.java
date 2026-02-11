@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.html;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.io.Writer;
 
@@ -68,6 +69,7 @@ public class TextBuilder extends Content {
     }
 
     @Override
+    @Pure
     public boolean isEmpty() {
         return (stringBuilder.length() == 0);
     }

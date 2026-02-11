@@ -25,6 +25,10 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 
 /**
  * ParameterizedType represents a parameterized type such as
@@ -45,6 +49,7 @@ package java.lang.reflect;
  * @jls 4.5 Parameterized Types
  * @since 1.5
  */
+@AnnotatedFor({"nullness"})
 public interface ParameterizedType extends Type {
     /**
      * Returns an array of {@code Type} objects representing the actual type
@@ -63,7 +68,7 @@ public interface ParameterizedType extends Type {
      *     be instantiated for any reason
      * @since 1.5
      */
-    Type[] getActualTypeArguments();
+    @NonNull Type @NonNull [] getActualTypeArguments();
 
     /**
      * {@return the {@code Type} object representing the class or interface
@@ -77,7 +82,7 @@ public interface ParameterizedType extends Type {
      *
      * @since 1.5
      */
-    Type getRawType();
+    @NonNull Type getRawType();
 
     /**
      * Returns a {@code Type} object representing the type that this type
@@ -96,5 +101,5 @@ public interface ParameterizedType extends Type {
      *     for any reason
      * @since 1.5
      */
-    Type getOwnerType();
+    @Nullable Type getOwnerType();
 }

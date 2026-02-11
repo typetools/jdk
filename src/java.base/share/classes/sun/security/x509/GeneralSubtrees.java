@@ -25,6 +25,12 @@
 
 package sun.security.x509;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.*;
 import java.util.*;
 
@@ -98,6 +104,7 @@ public class GeneralSubtrees implements Cloneable, DerEncoder {
         trees.add(tree);
     }
 
+    @Pure
     public boolean contains(GeneralSubtree tree) {
         if (tree == null) {
             throw new NullPointerException();
@@ -150,7 +157,9 @@ public class GeneralSubtrees implements Cloneable, DerEncoder {
      * @param obj GeneralSubtrees to compare to this
      * @return true if match
      */
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }

@@ -25,6 +25,9 @@
 
 package java.awt.dnd;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.InputEvent;
@@ -81,7 +84,8 @@ import java.util.TooManyListenersException;
  * @see java.awt.dnd.DragSource
  */
 
-public abstract class DragGestureRecognizer implements Serializable {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class DragGestureRecognizer implements Serializable {
 
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.

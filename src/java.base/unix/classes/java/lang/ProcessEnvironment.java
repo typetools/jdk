@@ -54,6 +54,9 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.*;
 
 import static java.lang.ProcessImpl.JNU_CHARSET;
@@ -227,12 +230,16 @@ final class ProcessEnvironment
             return v == null ? null : v.toString();
         }
         public StringEnvironment(Map<Variable,Value> m) {this.m = m;}
+        @Pure
         public int size()        {return m.size();}
+        @Pure
         public boolean isEmpty() {return m.isEmpty();}
         public void clear()      {       m.clear();}
+        @Pure
         public boolean containsKey(Object key) {
             return m.containsKey(Variable.valueOfQueryOnly(key));
         }
+        @Pure
         public boolean containsValue(Object value) {
             return m.containsValue(Value.valueOfQueryOnly(value));
         }
@@ -329,7 +336,9 @@ final class ProcessEnvironment
         public Iterator<Map.Entry<String,String>> iterator() {
             return new Iterator<Map.Entry<String,String>>() {
                 Iterator<Map.Entry<Variable,Value>> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new StringEntry(i.next());
                 }
@@ -351,12 +360,15 @@ final class ProcessEnvironment
                 }
             };
         }
+        @Pure
         public boolean contains(Object o) { return s.contains(vvEntry(o)); }
         public boolean remove(Object o)   { return s.remove(vvEntry(o)); }
+        @Pure
         public boolean equals(Object o) {
             return o instanceof StringEntrySet
                 && s.equals(((StringEntrySet) o).s);
         }
+        @Pure
         public int hashCode() {return s.hashCode();}
     }
 
@@ -371,11 +383,14 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Value> i = c.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return c.contains(Value.valueOfQueryOnly(o));
         }
@@ -386,6 +401,7 @@ final class ProcessEnvironment
             return o instanceof StringValues
                 && c.equals(((StringValues)o).c);
         }
+        @Pure
         public int hashCode() {return c.hashCode();}
     }
 
@@ -398,11 +414,14 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Variable> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {       i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return s.contains(Variable.valueOfQueryOnly(o));
         }

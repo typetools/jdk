@@ -25,6 +25,9 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Map;
@@ -49,6 +52,7 @@ import sun.reflect.generics.repository.ConstructorRepository;
  * @sealedGraph
  * @since 1.8
  */
+@AnnotatedFor({"nullness"})
 public abstract sealed class Executable extends AccessibleObject
     implements Member, GenericDeclaration permits Constructor, Method {
     /*
@@ -629,7 +633,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @throws NullPointerException  {@inheritDoc}
      */
     @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+    public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
         return annotationClass.cast(declaredAnnotations().get(annotationClass));
     }
@@ -738,7 +742,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @jls 8.4.1 Formal Parameters
      * @jls 8.8 Constructor Declarations
      */
-    public AnnotatedType getAnnotatedReceiverType() {
+    public @Nullable AnnotatedType getAnnotatedReceiverType() {
         if (Modifier.isStatic(this.getModifiers()))
             return null;
         return TypeAnnotationParser.buildAnnotatedType(getTypeAnnotationBytes0(),

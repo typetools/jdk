@@ -25,6 +25,13 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.StringVal;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.JavaUtilZipFileAccess;
 import jdk.internal.misc.ThreadTracker;
@@ -139,6 +146,7 @@ import java.util.zip.ZipFile;
  * @see     java.util.jar.JarEntry
  * @since   1.2
  */
+@AnnotatedFor({"nullness"})
 public class JarFile extends ZipFile {
     private static final Runtime.Version BASE_VERSION;
     private static final int BASE_VERSION_FEATURE;
@@ -197,14 +205,14 @@ public class JarFile extends ZipFile {
         }
     }
 
-    private static final String META_INF = "META-INF/";
+    private static final @Interned @StringVal("META-INF/") String META_INF = "META-INF/";
 
-    private static final String META_INF_VERSIONS = META_INF + "versions/";
+    private static final @Interned @StringVal("META-INF/versions/") String META_INF_VERSIONS = META_INF + "versions/";
 
     /**
      * The JAR manifest file name.
      */
-    public static final String MANIFEST_NAME = META_INF + "MANIFEST.MF";
+    public static final @Interned @StringVal("META-INF/MANIFEST.MF") String MANIFEST_NAME = META_INF + "MANIFEST.MF";
 
     /**
      * The 'JAR index' feature has been removed, but JarInputStream and
@@ -389,11 +397,11 @@ public class JarFile extends ZipFile {
      *         may be thrown if the jar file has been closed
      * @throws IOException  if an I/O error has occurred
      */
-    public Manifest getManifest() throws IOException {
+    public @Nullable Manifest getManifest() throws IOException {
         return getManifestFromReference();
     }
 
-    private Manifest getManifestFromReference() throws IOException {
+    private @Nullable Manifest getManifestFromReference() throws IOException {
         Manifest man = manRef != null ? manRef.get() : null;
 
         if (man == null) {
@@ -456,7 +464,7 @@ public class JarFile extends ZipFile {
      * This implementation invokes {@link JarFile#getEntry(String)}.
      * </div>
      */
-    public JarEntry getJarEntry(String name) {
+    public @Nullable JarEntry getJarEntry(String name) {
         return (JarEntry)getEntry(name);
     }
 
@@ -494,7 +502,7 @@ public class JarFile extends ZipFile {
      * invokes {@code super.getEntry(name)} to obtain all versioned entries.
      * </div>
      */
-    public ZipEntry getEntry(String name) {
+    public @Nullable ZipEntry getEntry(String name) {
         if (isMultiRelease()) {
             JarEntry je = getVersionedEntry(name, null);
             if (je == null) {
@@ -620,7 +628,7 @@ public class JarFile extends ZipFile {
         }
 
         @Override
-        public Attributes getAttributes() throws IOException {
+        public @Nullable Attributes getAttributes() throws IOException {
             Manifest man = JarFile.this.getManifest();
             if (man != null) {
                 return man.getAttributes(super.getName());
@@ -630,7 +638,7 @@ public class JarFile extends ZipFile {
         }
 
         @Override
-        public Certificate[] getCertificates() {
+        public Certificate @Nullable [] getCertificates() {
             try {
                 maybeInstantiateVerifier();
             } catch (IOException e) {
@@ -643,7 +651,7 @@ public class JarFile extends ZipFile {
         }
 
         @Override
-        public CodeSigner[] getCodeSigners() {
+        public CodeSigner @Nullable [] getCodeSigners() {
             try {
                 maybeInstantiateVerifier();
             } catch (IOException e) {

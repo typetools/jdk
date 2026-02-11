@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -39,6 +43,7 @@ import java.io.ObjectStreamField;
  * @author  Frank Yellin
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class ExceptionInInitializerError extends LinkageError {
     /**
      * Use serialVersionUID from JDK 1.1.X for interoperability
@@ -53,6 +58,7 @@ public class ExceptionInInitializerError extends LinkageError {
      * A detail message is a String that describes this particular exception.
      */
     @SuppressWarnings("this-escape")
+    @SideEffectFree
     public ExceptionInInitializerError() {
         initCause(null); // Disallow subsequent initCause
     }
@@ -65,7 +71,8 @@ public class ExceptionInInitializerError extends LinkageError {
      *
      * @param thrown The exception thrown
      */
-    public ExceptionInInitializerError(Throwable thrown) {
+    @SideEffectFree
+    public ExceptionInInitializerError(@Nullable Throwable thrown) {
         super(null, thrown); // Disallow subsequent initCause
     }
 
@@ -78,7 +85,8 @@ public class ExceptionInInitializerError extends LinkageError {
      *
      * @param s the detail message
      */
-    public ExceptionInInitializerError(String s) {
+    @SideEffectFree
+    public ExceptionInInitializerError(@Nullable String s) {
         super(s, null);  // Disallow subsequent initCause
     }
 
@@ -96,7 +104,7 @@ public class ExceptionInInitializerError extends LinkageError {
      *         if this {@code ExceptionInInitializerError} has no saved
      *         throwable object.
      */
-    public Throwable getException() {
+    public @Nullable Throwable getException() {
         return super.getCause();
     }
 

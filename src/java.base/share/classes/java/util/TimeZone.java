@@ -38,6 +38,12 @@
 
 package java.util;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Serializable;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -139,6 +145,7 @@ import sun.util.locale.provider.TimeZoneNameUtility;
  * @author       Mark Davis, David Goldsmith, Chen-Lieh Huang, Alan Liu
  * @since        1.1
  */
+@AnnotatedFor({"lock", "nullness"})
 public abstract class TimeZone implements Serializable, Cloneable {
     /**
      * Sole constructor.  (For invocation by subclass constructors, typically
@@ -263,7 +270,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      *
      * @param offsetMillis the given base time zone offset to GMT.
      */
-    public abstract void setRawOffset(int offsetMillis);
+    public abstract void setRawOffset(@GuardSatisfied TimeZone this, int offsetMillis);
 
     /**
      * Returns the amount of time in milliseconds to add to UTC to get
@@ -301,7 +308,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @throws NullPointerException This method may throw a
      * {@code NullPointerException} if {@code ID} is {@code null}
      */
-    public void setID(String ID)
+    public void setID(@GuardSatisfied TimeZone this, String ID)
     {
         if (ID == null) {
             throw new NullPointerException();
@@ -330,6 +337,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @see Locale#getDefault(Locale.Category)
      * @see Locale.Category
      */
+    @Pure
     public final String getDisplayName() {
         return getDisplayName(false, LONG,
                               Locale.getDefault(Locale.Category.DISPLAY));
@@ -353,6 +361,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @since 1.2
      * @see #getDisplayName(boolean, int, Locale)
      */
+    @Pure
     public final String getDisplayName(Locale locale) {
         return getDisplayName(false, LONG, locale);
     }
@@ -384,6 +393,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @see Locale.Category
      * @see java.text.DateFormatSymbols#getZoneStrings()
      */
+    @Pure
     public final String getDisplayName(boolean daylight, int style) {
         return getDisplayName(daylight, style,
                               Locale.getDefault(Locale.Category.DISPLAY));
@@ -422,6 +432,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @since 1.2
      * @see java.text.DateFormatSymbols#getZoneStrings()
      */
+    @Pure
     public String getDisplayName(boolean daylight, int style, Locale locale) {
         if (style != SHORT && style != LONG) {
             throw new IllegalArgumentException("Illegal style: " + style);
@@ -475,6 +486,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @see #getOffset(int,int,int,int,int,int)
      * @see Calendar#ZONE_OFFSET
      */
+    @Pure
     public int getDSTSavings() {
         if (useDaylightTime()) {
             return 3600000;
@@ -497,6 +509,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @see #inDaylightTime(Date)
      * @see Calendar#DST_OFFSET
      */
+    @Pure
     public abstract boolean useDaylightTime();
 
     /**
@@ -531,6 +544,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @throws NullPointerException This method may throw a
      * {@code NullPointerException} if {@code date} is {@code null}
      */
+    @Pure
     public abstract boolean inDaylightTime(Date date);
 
     /**
@@ -545,6 +559,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * cannot be understood.
      * @throws NullPointerException if {@code ID} is {@code null}
      */
+    @Pure
     public static TimeZone getTimeZone(String ID) {
         return getTimeZone(ID, true);
     }
@@ -771,7 +786,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @param zone the new default {@code TimeZone}, or null
      * @see #getDefault
      */
-    public static void setDefault(TimeZone zone)
+    public static void setDefault(@Nullable TimeZone zone)
     {
         // by saving a defensive clone and returning a clone in getDefault() too,
         // the defaultTimeZone instance is isolated from user code which makes it
@@ -790,7 +805,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * with the possible exception of the ID
      * @since 1.2
      */
-    public boolean hasSameRules(TimeZone other) {
+    public boolean hasSameRules(@Nullable TimeZone other) {
         return other != null && getRawOffset() == other.getRawOffset() &&
             useDaylightTime() == other.useDaylightTime();
     }
@@ -800,7 +815,8 @@ public abstract class TimeZone implements Serializable, Cloneable {
      *
      * @return a clone of this {@code TimeZone}
      */
-    public Object clone()
+    @SideEffectFree
+    public Object clone(@GuardSatisfied TimeZone this)
     {
         try {
             return super.clone();

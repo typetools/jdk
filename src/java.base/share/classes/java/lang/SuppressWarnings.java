@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.annotation.*;
 import static java.lang.annotation.ElementType.*;
 
@@ -83,6 +85,7 @@ import static java.lang.annotation.ElementType.*;
  * @jls 5.5 Casting Contexts
  * @jls 9.6.4.5 @SuppressWarnings
  */
+@AnnotatedFor({"nullness"})
 // Implicitly target all declaration contexts by omitting a @Target annotation
 @Retention(RetentionPolicy.SOURCE)
 public @interface SuppressWarnings {

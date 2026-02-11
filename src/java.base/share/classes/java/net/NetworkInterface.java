@@ -25,6 +25,14 @@
 
 package java.net;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -420,7 +428,7 @@ public final class NetworkInterface {
             int i = 0;
 
             @Override
-            public T nextElement() {
+            public T nextElement(/*@NonEmpty Enumeration<T> this*/) {
                 if (i < a.length) {
                     return a[i++];
                 } else {
@@ -429,6 +437,7 @@ public final class NetworkInterface {
             }
 
             @Override
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return i < a.length;
             }
@@ -587,7 +596,9 @@ public final class NetworkInterface {
      * @see     java.net.InetAddress#getAddress()
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (!(obj instanceof NetworkInterface that)) {
             return false;
         }

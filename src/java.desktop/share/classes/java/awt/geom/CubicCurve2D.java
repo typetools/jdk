@@ -25,6 +25,9 @@
 
 package java.awt.geom;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.io.Serial;
@@ -49,7 +52,8 @@ import static java.lang.Math.ulp;
  * @author      Jim Graham
  * @since 1.2
  */
-public abstract class CubicCurve2D implements Shape, Cloneable {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class CubicCurve2D implements Shape, Cloneable {
 
     /**
      * A cubic parametric curve segment specified with

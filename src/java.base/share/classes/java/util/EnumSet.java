@@ -25,6 +25,9 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.SharedSecrets;
 
 /**
@@ -78,6 +81,7 @@ import jdk.internal.access.SharedSecrets;
  * @since 1.5
  * @see EnumMap
  */
+@AnnotatedFor({"nullness", "index"})
 public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     implements Cloneable, java.io.Serializable permits JumboEnumSet, RegularEnumSet
 {
@@ -437,7 +441,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
          *
          * @serial
          */
-        private final Enum<?>[] elements;
+        private final @Nullable Enum<?>[] elements;
 
         SerializationProxy(EnumSet<E> set) {
             elementType = set.elementType;

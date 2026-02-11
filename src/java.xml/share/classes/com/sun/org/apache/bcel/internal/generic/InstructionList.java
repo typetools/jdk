@@ -19,6 +19,9 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -388,6 +391,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
         return findInstruction1(i) != null;
     }
 
+    @Pure
     public boolean contains(final InstructionHandle i) {
         if (i == null) {
             return false;
@@ -400,6 +404,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
         return false;
     }
 
+    @Pure
     /**
      * @return complete, i.e., deep copy of this list
      */

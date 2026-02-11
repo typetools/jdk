@@ -25,6 +25,17 @@
 
 package java.io;
 
+import org.checkerframework.checker.formatter.qual.FormatMethod;
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.*;
 import java.nio.charset.Charset;
 import jdk.internal.access.JavaIOAccess;
@@ -103,7 +114,8 @@ import sun.nio.cs.UTF_8;
  * @author  Xueming Shen
  * @since   1.6
  */
-public sealed class Console implements Flushable permits ProxyingConsole {
+@AnnotatedFor({"formatter", "index", "interning", "nullness"})
+public sealed @UsesObjectEquals class Console implements Flushable permits ProxyingConsole {
     /**
      * Package private no-arg constructor.
      */
@@ -185,7 +197,8 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *
      * @return  This console
      */
-    public Console format(String format, Object ... args) {
+    @FormatMethod
+    public Console format(String format, @Nullable Object ... args) {
         throw newUnsupportedOperationException();
     }
 
@@ -262,7 +275,8 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *
      * @return  This console
      */
-    public Console printf(String format, Object ... args) {
+    @FormatMethod
+    public Console printf(String format, @Nullable Object ... args) {
         throw newUnsupportedOperationException();
     }
 
@@ -389,7 +403,7 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *          if an end of stream has been reached.
      * @since   23
      */
-    public String readLine(Locale locale, String format, Object ... args) {
+    public @Nullable String readLine(Locale locale, String format, @Nullable Object ... args) {
         throw newUnsupportedOperationException();
     }
 
@@ -403,7 +417,7 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *          including any line-termination characters, or {@code null}
      *          if an end of stream has been reached.
      */
-    public String readLine() {
+    public @Nullable String readLine() {
         throw newUnsupportedOperationException();
     }
 
@@ -444,7 +458,7 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *          from the console, not including any line-termination characters,
      *          or {@code null} if an end of stream has been reached.
      */
-    public char[] readPassword(String format, Object ... args) {
+    public char @Nullable [] readPassword(String format, @Nullable Object ... args) {
         throw newUnsupportedOperationException();
     }
 
@@ -503,7 +517,7 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *          from the console, not including any line-termination characters,
      *          or {@code null} if an end of stream has been reached.
      */
-    public char[] readPassword() {
+    public char @Nullable [] readPassword() {
         throw newUnsupportedOperationException();
     }
 
@@ -527,6 +541,7 @@ public sealed class Console implements Flushable permits ProxyingConsole {
      *
      * @since 17
      */
+    @Pure
     public Charset charset() {
         throw newUnsupportedOperationException();
     }

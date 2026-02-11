@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown if an application attempts to access or modify a field, or
  * to call a method that it does not have access to.
@@ -35,6 +39,7 @@ package java.lang;
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class IllegalAccessError extends IncompatibleClassChangeError {
     @java.io.Serial
     private static final long serialVersionUID = -8988904074992417891L;
@@ -42,6 +47,7 @@ public class IllegalAccessError extends IncompatibleClassChangeError {
     /**
      * Constructs an {@code IllegalAccessError} with no detail message.
      */
+    @SideEffectFree
     public IllegalAccessError() {
         super();
     }
@@ -52,7 +58,8 @@ public class IllegalAccessError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
-    public IllegalAccessError(String s) {
+    @SideEffectFree
+    public IllegalAccessError(@Nullable String s) {
         super(s);
     }
 }

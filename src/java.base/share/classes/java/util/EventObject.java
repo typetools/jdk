@@ -25,6 +25,11 @@
 
 package java.util;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * <p>
  * The root class from which all event state objects shall be derived.
@@ -36,7 +41,8 @@ package java.util;
  * @since 1.1
  */
 
-public class EventObject implements java.io.Serializable {
+@AnnotatedFor({"index", "interning", "lock", "nullness"})
+public @UsesObjectEquals class EventObject implements java.io.Serializable {
 
     @java.io.Serial
     private static final long serialVersionUID = 5516075349620653480L;
@@ -64,7 +70,7 @@ public class EventObject implements java.io.Serializable {
      *
      * @return the object on which the Event initially occurred
      */
-    public Object getSource() {
+    public Object getSource(@GuardSatisfied EventObject this) {
         return source;
     }
 
@@ -73,7 +79,8 @@ public class EventObject implements java.io.Serializable {
      *
      * @return a String representation of this EventObject
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied EventObject this) {
         return getClass().getName() + "[source=" + source + "]";
     }
 }

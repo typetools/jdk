@@ -87,6 +87,10 @@ TARGETS += $(COPY_PREVIEW_FEATURES)
 # would require the source files to be copied into directories named after the
 # actual interim modules.
 
+# DON'T PUT COMMAS within this macro definition, as in
+#          --add-exports java.base/org.checkerframework.checker.builder.qual=java.compiler.interim,jdk.compiler.interim \
+# The export to javacserver.shared does not seem to have any effect.
+
 # Param 1 - Name of module to compile
 define SetupInterimModule
   $$(eval $$(call SetupJavaCompilation, BUILD_$1.interim, \
@@ -112,10 +116,19 @@ define SetupInterimModule
       DISABLED_WARNINGS := module options, \
       JAVAC_FLAGS := \
           --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
+          -cp $(TOPDIR)/checker-qual.jar \
+          --add-reads $1.interim=ALL-UNNAMED \
           $$(INTERIM_LANGTOOLS_ADD_EXPORTS) \
           --patch-module java.base=$(BUILDTOOLS_OUTPUTDIR)/gensrc/java.base.interim \
           --add-exports java.base/jdk.internal.javac=java.compiler.interim \
           --add-exports java.base/jdk.internal.javac=jdk.compiler.interim \
+          --add-exports java.base/org.checkerframework.checker.builder.qual=java.compiler.interim \
+          --add-exports java.base/org.checkerframework.checker.builder.qual=jdk.compiler.interim \
+          --add-exports java.base/org.checkerframework.checker.builder.qual=jdk.javadoc.interim \
+          --add-exports java.base/org.checkerframework.checker.builder.qual=javacserver.shared \
+          --add-exports java.base/org.checkerframework.checker.nullness.qual=build.tools.pandocfilter.json \
+          --add-exports java.base/org.checkerframework.dataflow.qual=build.tools.pandocfilter.json \
+          --add-exports java.base/org.checkerframework.dataflow.qual=javacserver.shared \
           --add-exports jdk.internal.opt/jdk.internal.opt=jdk.compiler.interim \
           --add-exports jdk.internal.opt/jdk.internal.opt=jdk.javadoc.interim, \
   ))

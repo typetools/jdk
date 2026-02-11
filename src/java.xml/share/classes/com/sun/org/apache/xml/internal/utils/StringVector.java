@@ -21,6 +21,8 @@
 
 package com.sun.org.apache.xml.internal.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A very simple table that stores a list of strings, optimized
  * for small lists.
@@ -130,6 +132,7 @@ public class StringVector implements java.io.Serializable
    *
    * @return True if the string is in this table
    */
+  @Pure
   public final boolean contains(String s)
   {
 
@@ -152,6 +155,7 @@ public class StringVector implements java.io.Serializable
    *
    * @return True if the String is in this vector
    */
+  @Pure
   public final boolean containsIgnoreCase(String s)
   {
 

@@ -25,6 +25,12 @@
 
 package sun.security.pkcs10;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.PrintStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -337,7 +343,9 @@ public class PKCS10 {
      * requests match, false otherwise.
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj)
             return true;
         if (!(obj instanceof PKCS10 other))

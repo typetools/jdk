@@ -25,6 +25,16 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.reflection.qual.NewInstance;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.Covariant;
+
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.VM;
 import jdk.internal.reflect.CallerSensitive;
@@ -64,6 +74,13 @@ import java.util.StringJoiner;
  * @author      Nakul Saraiya
  * @since 1.1
  */
+@CFComment({"nullness: The type argument to Constructor is meaningless.",
+"Constructor<@NonNull String> and Constructor<@Nullable String> have the same",
+"meaning, but are unrelated by the Java type hierarchy.",
+"@Covariant makes Constructor<@NonNull String> a subtype of Constructor<@Nullable String>."
+})
+@AnnotatedFor({"lock", "nullness"})
+@Covariant({0})
 public final class Constructor<T> extends Executable {
     private final Class<T>            clazz;
     private final int                 slot;
@@ -311,7 +328,8 @@ public final class Constructor<T> extends Executable {
      * the same if they were declared by the same class and have the
      * same formal parameter types.
      */
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@GuardSatisfied Constructor<T> this, @GuardSatisfied @Nullable Object obj) {
         if (obj instanceof Constructor<?> other) {
             if (getDeclaringClass() == other.getDeclaringClass()) {
                 return equalParamTypes(parameterTypes, other.parameterTypes);
@@ -325,7 +343,8 @@ public final class Constructor<T> extends Executable {
      * the same as the hashcode for the underlying constructor's
      * declaring class name.
      */
-    public int hashCode() {
+    @Pure
+    public int hashCode(@GuardSatisfied Constructor<T> this) {
         return getDeclaringClass().getName().hashCode();
     }
 
@@ -353,7 +372,8 @@ public final class Constructor<T> extends Executable {
      * @jls 8.8.3 Constructor Modifiers
      * @jls 8.9.2 Enum Body Declarations
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied Constructor<T> this) {
         return sharedToString(Modifier.constructorModifiers(),
                               false,
                               parameterTypes,
@@ -473,9 +493,10 @@ public final class Constructor<T> extends Executable {
      * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      */
+    @NewInstance
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public T newInstance(Object ... initargs)
+    public @NonNull T newInstance(Object ... initargs)
         throws InstantiationException, IllegalAccessException,
                IllegalArgumentException, InvocationTargetException
     {
@@ -505,8 +526,9 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      * @jls 8.4.1 Formal Parameters
      */
+    @Pure
     @Override
-    public boolean isVarArgs() {
+    public boolean isVarArgs(@GuardSatisfied Constructor<T> this) {
         return super.isVarArgs();
     }
 
@@ -519,8 +541,9 @@ public final class Constructor<T> extends Executable {
      * href="{@docRoot}/java.base/java/lang/reflect/package-summary.html#LanguageJvmModel">Java
      * programming language and JVM modeling in core reflection</a>
      */
+    @Pure
     @Override
-    public boolean isSynthetic() {
+    public boolean isSynthetic(@GuardSatisfied Constructor<T> this) {
         return super.isSynthetic();
     }
 
@@ -593,7 +616,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+    public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
     }
 
@@ -653,7 +676,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.8
      */
     @Override
-    public AnnotatedType getAnnotatedReceiverType() {
+    public @Nullable AnnotatedType getAnnotatedReceiverType() {
         Class<?> thisDeclClass = getDeclaringClass();
         Class<?> enclosingClass = thisDeclClass.getEnclosingClass();
 

@@ -40,6 +40,21 @@
 
 package java.util;
 
+import org.checkerframework.checker.i18n.qual.LocalizableKey;
+import org.checkerframework.checker.i18n.qual.Localized;
+import org.checkerframework.checker.i18nformatter.qual.I18nMakeFormat;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
+import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.propkey.qual.PropertyKey;
+import org.checkerframework.checker.signature.qual.BinaryName;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.Reference;
@@ -366,6 +381,7 @@ import sun.util.resources.Bundles;
  * @see ResourceBundleProvider
  * @since 1.1
  */
+@AnnotatedFor({"i18n", "i18nformatter", "index", "lock", "nullness", "propkey", "signature"})
 public abstract class ResourceBundle {
 
     /** initial size of the bundle cache */
@@ -396,7 +412,7 @@ public abstract class ResourceBundle {
                 }
 
                 @Override
-                public ResourceBundle getBundle(String baseName, Locale locale, Module module) {
+                public ResourceBundle getBundle(@BinaryName String baseName, Locale locale, Module module) {
                     // use the given module as the caller to bypass the access check
                     return getBundleImpl(module, module,
                                          baseName, locale,
@@ -510,7 +526,8 @@ public abstract class ResourceBundle {
      * @throws    ClassCastException if the object found for the given key is not a string
      * @return the string for the given key
      */
-    public final String getString(String key) {
+    @I18nMakeFormat
+    public final @Localized String getString(@LocalizableKey @PropertyKey String key) {
         return (String) getObject(key);
     }
 
@@ -528,7 +545,7 @@ public abstract class ResourceBundle {
      * @throws    ClassCastException if the object found for the given key is not a string array
      * @return the string array for the given key
      */
-    public final String[] getStringArray(String key) {
+    public final @Localized String[] getStringArray(@LocalizableKey @PropertyKey String key) {
         return (String[]) getObject(key);
     }
 
@@ -545,7 +562,7 @@ public abstract class ResourceBundle {
      * @throws    MissingResourceException if no object for the given key can be found
      * @return the object for the given key
      */
-    public final Object getObject(String key) {
+    public final @Localized Object getObject(@LocalizableKey @PropertyKey String key) {
         Object obj = handleGetObject(key);
         if (obj == null) {
             if (parent != null) {
@@ -755,7 +772,7 @@ public abstract class ResourceBundle {
             }
         }
 
-        private Throwable getCause() {
+        private @Nullable Throwable getCause() {
             return cause;
         }
 
@@ -842,7 +859,7 @@ public abstract class ResourceBundle {
      * @see <a href="#resource-bundle-modules">Resource Bundles and Named Modules</a>
      */
     @CallerSensitive
-    public static final ResourceBundle getBundle(String baseName)
+    public static final ResourceBundle getBundle(@BinaryName String baseName)
     {
         Class<?> caller = Reflection.getCallerClass();
         return getBundleImpl(baseName, Locale.getDefault(),
@@ -885,7 +902,7 @@ public abstract class ResourceBundle {
      * @since 1.6
      */
     @CallerSensitive
-    public static final ResourceBundle getBundle(String baseName,
+    public static final ResourceBundle getBundle(@BinaryName String baseName,
                                                  Control control) {
         Class<?> caller = Reflection.getCallerClass();
         Locale targetLocale = Locale.getDefault();
@@ -914,7 +931,7 @@ public abstract class ResourceBundle {
      * @see <a href="#resource-bundle-modules">Resource Bundles and Named Modules</a>
      */
     @CallerSensitive
-    public static final ResourceBundle getBundle(String baseName,
+    public static final ResourceBundle getBundle(@BinaryName String baseName,
                                                  Locale locale)
     {
         Class<?> caller = Reflection.getCallerClass();
@@ -944,7 +961,7 @@ public abstract class ResourceBundle {
      * @see <a href="#resource-bundle-modules">Resource Bundles and Named Modules</a>
      */
     @CallerSensitive
-    public static ResourceBundle getBundle(String baseName, Module module) {
+    public static ResourceBundle getBundle(@BinaryName String baseName, Module module) {
         return getBundleFromModule(Reflection.getCallerClass(), module, baseName,
                                    Locale.getDefault(),
                                    getDefaultControl(module, baseName));
@@ -993,7 +1010,7 @@ public abstract class ResourceBundle {
      * @see <a href="#resource-bundle-modules">Resource Bundles and Named Modules</a>
      */
     @CallerSensitive
-    public static ResourceBundle getBundle(String baseName, Locale targetLocale, Module module) {
+    public static ResourceBundle getBundle(@BinaryName String baseName, Locale targetLocale, Module module) {
         return getBundleFromModule(Reflection.getCallerClass(), module, baseName, targetLocale,
                                    getDefaultControl(module, baseName));
     }
@@ -1038,7 +1055,7 @@ public abstract class ResourceBundle {
      * @since 1.6
      */
     @CallerSensitive
-    public static final ResourceBundle getBundle(String baseName, Locale targetLocale,
+    public static final ResourceBundle getBundle(@BinaryName String baseName, Locale targetLocale,
                                                  Control control) {
         Class<?> caller = Reflection.getCallerClass();
         checkNamedModule(caller);
@@ -1251,7 +1268,7 @@ public abstract class ResourceBundle {
      * @see <a href="#resource-bundle-modules">Resource Bundles and Named Modules</a>
      */
     @CallerSensitive
-    public static ResourceBundle getBundle(String baseName, Locale locale,
+    public static ResourceBundle getBundle(@BinaryName String baseName, Locale locale,
                                            ClassLoader loader)
     {
         if (loader == null) {
@@ -1474,7 +1491,7 @@ public abstract class ResourceBundle {
      * @since 1.6
      */
     @CallerSensitive
-    public static ResourceBundle getBundle(String baseName, Locale targetLocale,
+    public static ResourceBundle getBundle(@BinaryName String baseName, Locale targetLocale,
                                            ClassLoader loader, Control control) {
         if (loader == null || control == null) {
             throw new NullPointerException();
@@ -2237,7 +2254,8 @@ public abstract class ResourceBundle {
      * @return an {@code Enumeration} of the keys contained in
      *         this {@code ResourceBundle} and its parent bundles.
      */
-    public abstract Enumeration<String> getKeys();
+    @SideEffectFree
+    public abstract Enumeration<String> getKeys(@GuardSatisfied ResourceBundle this);
 
     /**
      * Determines whether the given {@code key} is contained in
@@ -2252,7 +2270,9 @@ public abstract class ResourceBundle {
      *         if {@code key} is {@code null}
      * @since 1.6
      */
-    public boolean containsKey(String key) {
+    @Pure
+    @EnsuresKeyForIf(result=true, expression="#1", map="this")
+    public boolean containsKey(@GuardSatisfied ResourceBundle this, String key) {
         if (key == null) {
             throw new NullPointerException();
         }
@@ -2272,7 +2292,8 @@ public abstract class ResourceBundle {
      *         {@code ResourceBundle} and its parent bundles.
      * @since 1.6
      */
-    public Set<String> keySet() {
+    @SideEffectFree
+    public Set<@KeyFor("this") @LocalizableKey @PropertyKey String> keySet(@GuardSatisfied ResourceBundle this) {
         Set<String> keys = new HashSet<>();
         for (ResourceBundle rb = this; rb != null; rb = rb.parent) {
             keys.addAll(rb.handleKeySet());
@@ -3099,7 +3120,7 @@ public abstract class ResourceBundle {
          *        any I/O operations
          * @see java.util.spi.ResourceBundleProvider#getBundle(String, Locale)
          */
-        public ResourceBundle newBundle(String baseName, Locale locale, String format,
+        public ResourceBundle newBundle(@BinaryName String baseName, Locale locale, String format,
                                         ClassLoader loader, boolean reload)
                     throws IllegalAccessException, InstantiationException, IOException {
             /*
@@ -3238,7 +3259,7 @@ public abstract class ResourceBundle {
          *        if {@code baseName} or {@code locale} is
          *        {@code null}
          */
-        public long getTimeToLive(String baseName, Locale locale) {
+        public @NonNegative long getTimeToLive(String baseName, Locale locale) {
             if (baseName == null || locale == null) {
                 throw new NullPointerException();
             }
@@ -3294,7 +3315,7 @@ public abstract class ResourceBundle {
          *        {@code format}, {@code loader}, or
          *        {@code bundle} is {@code null}
          */
-        public boolean needsReload(String baseName, Locale locale,
+        public boolean needsReload(@BinaryName String baseName, Locale locale,
                                    String format, ClassLoader loader,
                                    ResourceBundle bundle, long loadTime) {
             if (bundle == null) {
@@ -3381,7 +3402,7 @@ public abstract class ResourceBundle {
          *        is {@code null}
          * @see java.util.spi.AbstractResourceBundleProvider#toBundleName(String, Locale)
          */
-        public String toBundleName(String baseName, Locale locale) {
+        public @BinaryName String toBundleName(@BinaryName String baseName, Locale locale) {
             if (locale == Locale.ROOT) {
                 return baseName;
             }
@@ -3414,7 +3435,10 @@ public abstract class ResourceBundle {
                     sb.append(language);
                 }
             }
-            return sb.toString();
+            @CFComment("signature: string concatenation")
+            @SuppressWarnings("signature")
+            @BinaryName String result = sb.toString();
+            return result;
 
         }
 

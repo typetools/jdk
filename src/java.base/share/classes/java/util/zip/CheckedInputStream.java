@@ -25,6 +25,12 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FilterInputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -37,6 +43,7 @@ import java.io.IOException;
  * @author      David Connelly
  * @since 1.1
  */
+@AnnotatedFor({"index", "mustcall"})
 public class CheckedInputStream extends FilterInputStream {
     private Checksum cksum;
 
@@ -45,7 +52,7 @@ public class CheckedInputStream extends FilterInputStream {
      * @param in the input stream
      * @param cksum the Checksum
      */
-    public CheckedInputStream(InputStream in, Checksum cksum) {
+    public @MustCallAlias CheckedInputStream(@MustCallAlias InputStream in, Checksum cksum) {
         super(in);
         this.cksum = cksum;
     }
@@ -78,7 +85,7 @@ public class CheckedInputStream extends FilterInputStream {
      * {@code buf.length - off}
      * @throws    IOException if an I/O error has occurred
      */
-    public int read(byte[] buf, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] buf, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) throws IOException {
         len = in.read(buf, off, len);
         if (len != -1) {
             cksum.update(buf, off, len);

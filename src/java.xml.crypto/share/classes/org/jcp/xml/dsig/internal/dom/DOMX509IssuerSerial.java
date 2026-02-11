@@ -25,6 +25,12 @@
  */
 package org.jcp.xml.dsig.internal.dom;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.math.BigInteger;
 
 import javax.security.auth.x500.X500Principal;
@@ -117,8 +123,10 @@ public final class DOMX509IssuerSerial extends DOMStructure
         parent.appendChild(isElem);
     }
 
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }

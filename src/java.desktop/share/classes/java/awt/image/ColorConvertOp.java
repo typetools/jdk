@@ -36,6 +36,9 @@
 
 package java.awt.image;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
@@ -70,7 +73,8 @@ import sun.java2d.cmm.PCMM;
  * @see java.awt.RenderingHints#KEY_COLOR_RENDERING
  * @see java.awt.RenderingHints#KEY_DITHERING
  */
-public class ColorConvertOp implements BufferedImageOp, RasterOp {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class ColorConvertOp implements BufferedImageOp, RasterOp {
     ICC_Profile[]    profileList;
     ColorSpace[]     CSList;
     ColorTransform    thisTransform, thisRasterTransform;

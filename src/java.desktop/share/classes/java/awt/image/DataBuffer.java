@@ -35,6 +35,9 @@
 
 package java.awt.image;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.annotation.Native;
 
 import sun.awt.image.SunWritableRaster;
@@ -67,7 +70,8 @@ import static sun.java2d.StateTrackable.State.UNTRACKABLE;
  * @see java.awt.image.Raster
  * @see java.awt.image.SampleModel
  */
-public abstract class DataBuffer {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class DataBuffer {
 
     /** Tag for unsigned byte data. */
     @Native public static final int TYPE_BYTE  = 0;

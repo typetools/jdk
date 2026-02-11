@@ -31,6 +31,7 @@
  */
 package jdk.internal.icu.text;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.TreeSet;
@@ -596,6 +597,7 @@ public class UnicodeSet {
      * @return true if the test condition is met
      * @stable ICU 2.0
      */
+    @Pure
     public boolean contains(int c) {
         if (c < MIN_VALUE || c > MAX_VALUE) {
             throw new IllegalArgumentException("Invalid code point U+" + Utility.hex(c, 6));
@@ -1021,6 +1023,7 @@ public class UnicodeSet {
     //----------------------------------------------------------------
 
     private static interface Filter {
+        @Pure
         boolean contains(int codePoint);
     }
 
@@ -1029,6 +1032,7 @@ public class UnicodeSet {
     private static class VersionFilter implements Filter {
         VersionInfo version;
         VersionFilter(VersionInfo version) { this.version = version; }
+        @Pure
         public boolean contains(int ch) {
             VersionInfo v = UCharacter.getAge(ch);
             // Reference comparison ok; VersionInfo caches and reuses

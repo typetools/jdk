@@ -25,6 +25,17 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -161,13 +172,15 @@ class ImmutableCollections {
     @jdk.internal.ValueBased
     abstract static class AbstractImmutableCollection<E> extends AbstractCollection<E> {
         // all mutating methods throw UnsupportedOperationException
-        @Override public boolean add(E e) { throw uoe(); }
+        @Override
+        @EnsuresNonEmpty("this")
+        public boolean add(E e) { throw uoe(); }
         @Override public boolean addAll(Collection<? extends E> c) { throw uoe(); }
         @Override public void    clear() { throw uoe(); }
-        @Override public boolean remove(Object o) { throw uoe(); }
-        @Override public boolean removeAll(Collection<?> c) { throw uoe(); }
+        @Override public boolean remove(@UnknownSignedness Object o) { throw uoe(); }
+        @Override public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) { throw uoe(); }
         @Override public boolean removeIf(Predicate<? super E> filter) { throw uoe(); }
-        @Override public boolean retainAll(Collection<?> c) { throw uoe(); }
+        @Override public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) { throw uoe(); }
     }
 
     // ---------- List Static Factory Methods ----------
@@ -346,7 +359,9 @@ class ImmutableCollections {
         }
 
         @Override
-        public boolean contains(Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
@@ -387,11 +402,14 @@ class ImmutableCollections {
             isListIterator = true;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor != size;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        public E next(@NonEmpty ListItr<E> this) {
             try {
                 int i = cursor;
                 E next = list.get(i);
@@ -489,6 +507,7 @@ class ImmutableCollections {
             return root.get(offset + index);
         }
 
+        @Pure
         public int size() {
             return size;
         }
@@ -554,7 +573,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             T[] array = a.length >= size ? a :
                     (T[])java.lang.reflect.Array
                             .newInstance(a.getClass().getComponentType(), size);
@@ -592,11 +611,13 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return e1 != EMPTY ? 2 : 1;
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -661,7 +682,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = size();
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
@@ -710,12 +731,15 @@ class ImmutableCollections {
             this.allowNulls = allowNulls;
         }
 
+        @Pure
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return elements.length == 0;
         }
 
         @Override
+        @Pure
         public int size() {
             return elements.length;
         }
@@ -742,7 +766,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = elements.length;
             if (a.length < size) {
                 // Make a new array of a's runtime type, but my contents:
@@ -1022,17 +1046,21 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return (e1 == EMPTY) ? 1 : 2;
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
 
         @Override
-        public boolean contains(Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
             return o.equals(e0) || e1.equals(o); // implicit nullcheck of o
         }
 
@@ -1047,13 +1075,16 @@ class ImmutableCollections {
                 private int idx = (e1 == EMPTY) ? 1 : 2;
 
                 @Override
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {
                     return idx > 0;
                 }
 
                 @Override
+                @SideEffectsOnly("this")
                 @SuppressWarnings("unchecked")
-                public E next() {
+                public E next(/*@NonEmpty Iterator<E> this*/) {
                     if (idx == 1) {
                         idx = 0;
                         return (REVERSE || e1 == EMPTY) ? e0 : (E)e1;
@@ -1094,7 +1125,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int size = size();
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
@@ -1169,17 +1200,21 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return size;
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }
 
         @Override
-        public boolean contains(Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;
         }
@@ -1198,12 +1233,15 @@ class ImmutableCollections {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return remaining > 0;
             }
 
             @Override
-            public E next() {
+            @SideEffectsOnly("this")
+            public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
                     E element;
                     int idx = this.idx;
@@ -1292,7 +1330,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             T[] array = a.length >= size ? a :
                     (T[])Array.newInstance(a.getClass().getComponentType(), size);
             Iterator<E> it = iterator();
@@ -1311,15 +1349,15 @@ class ImmutableCollections {
     // Not a jdk.internal.ValueBased class; disqualified by fields in superclass AbstractMap
     abstract static class AbstractImmutableMap<K,V> extends AbstractMap<K,V> {
         @Override public void clear() { throw uoe(); }
-        @Override public V compute(K key, BiFunction<? super K,? super V,? extends V> rf) { throw uoe(); }
-        @Override public V computeIfAbsent(K key, Function<? super K,? extends V> mf) { throw uoe(); }
-        @Override public V computeIfPresent(K key, BiFunction<? super K,? super V,? extends V> rf) { throw uoe(); }
-        @Override public V merge(K key, V value, BiFunction<? super V,? super V,? extends V> rf) { throw uoe(); }
+        @Override public @PolyNull V compute(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @PolyNull V computeIfAbsent(K key, Function<? super K,? extends @PolyNull V> mf) { throw uoe(); }
+        @Override public @PolyNull V computeIfPresent(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @PolyNull V merge(K key, @NonNull V value, BiFunction<? super V,? super V,? extends @PolyNull V> rf) { throw uoe(); }
         @Override public V put(K key, V value) { throw uoe(); }
         @Override public void putAll(Map<? extends K,? extends V> m) { throw uoe(); }
         @Override public V putIfAbsent(K key, V value) { throw uoe(); }
         @Override public V remove(Object key) { throw uoe(); }
-        @Override public boolean remove(Object key, Object value) { throw uoe(); }
+        @Override public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) { throw uoe(); }
         @Override public V replace(K key, V value) { throw uoe(); }
         @Override public boolean replace(K key, V oldValue, V newValue) { throw uoe(); }
         @Override public void replaceAll(BiFunction<? super K,? super V,? extends V> f) { throw uoe(); }
@@ -1352,6 +1390,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet() {
             return Set.of(new KeyValueHolder<>(k0, v0));
         }
@@ -1361,13 +1400,15 @@ class ImmutableCollections {
             return o.equals(k0) ? v0 : null; // implicit nullcheck of o
         }
 
+        @Pure
         @Override
-        public boolean containsKey(Object o) {
+        public boolean containsKey(@UnknownSignedness Object o) {
             return o.equals(k0); // implicit nullcheck of o
         }
 
         @Override
-        public boolean containsValue(Object o) {
+        @Pure
+        public boolean containsValue(@UnknownSignedness Object o) {
             return o.equals(v0); // implicit nullcheck of o
         }
 
@@ -1377,6 +1418,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -1447,13 +1489,15 @@ class ImmutableCollections {
         }
 
         @Override
-        public boolean containsKey(Object o) {
+        @Pure
+        public boolean containsKey(@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             return size > 0 && probe(o) >= 0;
         }
 
         @Override
-        public boolean containsValue(Object o) {
+        @Pure
+        public boolean containsValue(@UnknownSignedness Object o) {
             Objects.requireNonNull(o);
             for (int i = 1; i < table.length; i += 2) {
                 Object v = table[i];
@@ -1492,11 +1536,13 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return size;
         }
 
         @Override
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }
@@ -1515,10 +1561,13 @@ class ImmutableCollections {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return remaining > 0;
             }
 
+            @SideEffectsOnly("this")
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {
@@ -1534,7 +1583,7 @@ class ImmutableCollections {
             }
 
             @Override
-            public Map.Entry<K,V> next() {
+            public Map.Entry<K,V> next(@NonEmpty MapNIterator this) {
                 if (remaining > 0) {
                     int idx;
                     while (table[idx = nextIndex()] == null) {}
@@ -1550,9 +1599,11 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet() {
             return new AbstractSet<>() {
                 @Override
+                @Pure
                 public int size() {
                     return MapN.this.size;
                 }

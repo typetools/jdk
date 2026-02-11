@@ -25,6 +25,14 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.index.qual.GTENegativeOne;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FilterInputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -56,6 +64,7 @@ import java.util.Objects;
  * @see InflaterInputStream
  */
 
+@AnnotatedFor({"index"})
 public class DeflaterInputStream extends FilterInputStream {
     /** Compressor for this stream. */
     protected final Deflater def;
@@ -91,7 +100,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @param in input stream to read the uncompressed data to
      * @throws NullPointerException if {@code in} is null
      */
-    public DeflaterInputStream(InputStream in) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in) {
         this(in, in != null ? new Deflater() : null);
         usesDefaultDeflater = true;
     }
@@ -108,7 +117,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @param defl compressor ("deflater") for this stream
      * @throws NullPointerException if {@code in} or {@code defl} is null
      */
-    public DeflaterInputStream(InputStream in, Deflater defl) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in, Deflater defl) {
         this(in, defl, 512);
     }
 
@@ -126,7 +135,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @throws IllegalArgumentException if {@code bufLen <= 0}
      * @throws NullPointerException if {@code in} or {@code defl} is null
      */
-    public DeflaterInputStream(InputStream in, Deflater defl, int bufLen) {
+    public @MustCallAlias DeflaterInputStream(@MustCallAlias InputStream in, Deflater defl, @Positive int bufLen) {
         super(in);
 
         // Sanity checks
@@ -197,7 +206,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * already closed
      */
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) throws IOException {
         // Sanity checks
         ensureOpen();
         if (b == null) {
@@ -314,7 +323,7 @@ public class DeflaterInputStream extends FilterInputStream {
      * @param limit maximum bytes that can be read before invalidating the position marker
      */
     @Override
-    public void mark(int limit) {
+    public void mark(@NonNegative int limit) {
         // Operation not supported
     }
 

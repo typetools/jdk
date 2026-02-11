@@ -24,6 +24,11 @@
  */
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
@@ -293,6 +298,7 @@ import java.util.function.LongConsumer;
  * @see Collection
  * @since 1.8
  */
+@AnnotatedFor({"lock", "nullness"})
 public interface Spliterator<T> {
     /**
      * If a remaining element exists: performs the given action on it,
@@ -373,7 +379,7 @@ public interface Spliterator<T> {
      * @return a {@code Spliterator} covering some portion of the
      * elements, or {@code null} if this spliterator cannot be split
      */
-    Spliterator<T> trySplit();
+    @Nullable Spliterator<T> trySplit();
 
     /**
      * Returns an estimate of the number of elements that would be
@@ -467,7 +473,8 @@ public interface Spliterator<T> {
      * @throws IllegalStateException if the spliterator does not report
      *         a characteristic of {@code SORTED}.
      */
-    default Comparator<? super T> getComparator() {
+    @Pure
+    default @Nullable Comparator<? super T> getComparator() {
         throw new IllegalStateException();
     }
 
@@ -489,14 +496,14 @@ public interface Spliterator<T> {
      * {@code ORDERED} are expected to preserve ordering constraints in
      * non-commutative parallel computations.
      */
-    public static final int ORDERED    = 0x00000010;
+    public static final @SignedPositive int ORDERED    = 0x00000010;
 
     /**
      * Characteristic value signifying that, for each pair of
      * encountered elements {@code x, y}, {@code !x.equals(y)}. This
      * applies for example, to a Spliterator based on a {@link Set}.
      */
-    public static final int DISTINCT   = 0x00000001;
+    public static final @SignedPositive int DISTINCT   = 0x00000001;
 
     /**
      * Characteristic value signifying that encounter order follows a defined
@@ -510,7 +517,7 @@ public interface Spliterator<T> {
      * @apiNote The spliterators for {@code Collection} classes in the JDK that
      * implement {@link NavigableSet} or {@link SortedSet} report {@code SORTED}.
      */
-    public static final int SORTED     = 0x00000004;
+    public static final @SignedPositive int SORTED     = 0x00000004;
 
     /**
      * Characteristic value signifying that the value returned from
@@ -524,14 +531,14 @@ public interface Spliterator<T> {
      * those for {@link HashSet}, that cover a sub-set of elements and
      * approximate their reported size do not.
      */
-    public static final int SIZED      = 0x00000040;
+    public static final @SignedPositive int SIZED      = 0x00000040;
 
     /**
      * Characteristic value signifying that the source guarantees that
      * encountered elements will not be {@code null}. (This applies,
      * for example, to most concurrent collections, queues, and maps.)
      */
-    public static final int NONNULL    = 0x00000100;
+    public static final @SignedPositive int NONNULL    = 0x00000100;
 
     /**
      * Characteristic value signifying that the element source cannot be
@@ -542,7 +549,7 @@ public interface Spliterator<T> {
      * {@link ConcurrentModificationException}) concerning structural
      * interference detected during traversal.
      */
-    public static final int IMMUTABLE  = 0x00000400;
+    public static final @SignedPositive int IMMUTABLE  = 0x00000400;
 
     /**
      * Characteristic value signifying that the element source may be safely
@@ -570,7 +577,7 @@ public interface Spliterator<T> {
      * Spliterator construction, but possibly not reflecting subsequent
      * additions or removals.
      */
-    public static final int CONCURRENT = 0x00001000;
+    public static final @SignedPositive int CONCURRENT = 0x00001000;
 
     /**
      * Characteristic value signifying that all Spliterators resulting from
@@ -587,7 +594,7 @@ public interface Spliterator<T> {
      * {@code SUBSIZED}, since it is common to know the size of the entire tree
      * but not the exact sizes of subtrees.
      */
-    public static final int SUBSIZED = 0x00004000;
+    public static final @SignedPositive int SUBSIZED = 0x00004000;
 
     /**
      * A Spliterator specialized for primitive values.
@@ -611,7 +618,7 @@ public interface Spliterator<T> {
     public interface OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>
             extends Spliterator<T> {
         @Override
-        T_SPLITR trySplit();
+        @Nullable T_SPLITR trySplit();
 
         /**
          * If a remaining element exists, performs the given action on it,
@@ -661,7 +668,7 @@ public interface Spliterator<T> {
     public interface OfInt extends OfPrimitive<Integer, IntConsumer, OfInt> {
 
         @Override
-        OfInt trySplit();
+        @Nullable OfInt trySplit();
 
         @Override
         boolean tryAdvance(IntConsumer action);
@@ -726,7 +733,7 @@ public interface Spliterator<T> {
     public interface OfLong extends OfPrimitive<Long, LongConsumer, OfLong> {
 
         @Override
-        OfLong trySplit();
+        @Nullable OfLong trySplit();
 
         @Override
         boolean tryAdvance(LongConsumer action);
@@ -791,7 +798,7 @@ public interface Spliterator<T> {
     public interface OfDouble extends OfPrimitive<Double, DoubleConsumer, OfDouble> {
 
         @Override
-        OfDouble trySplit();
+        @Nullable OfDouble trySplit();
 
         @Override
         boolean tryAdvance(DoubleConsumer action);

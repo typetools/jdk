@@ -25,6 +25,9 @@
 
 package java.security.spec;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * This class specifies the set of parameters used with mask generation
  * function MGF1 in OAEP Padding and RSASSA-PSS signature scheme, as
@@ -64,7 +67,8 @@ package java.security.spec;
  *
  * @since 1.5
  */
-public class MGF1ParameterSpec implements AlgorithmParameterSpec {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class MGF1ParameterSpec implements AlgorithmParameterSpec {
 
     /**
      * The {@code MGF1ParameterSpec} uses a "SHA-1" message digest.

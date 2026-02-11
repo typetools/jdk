@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.tools.javac.api.Formattable.LocalizedString;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -5069,6 +5070,7 @@ public class Resolve {
                 }
             };
 
+            @Pure
             boolean containsAny(JCDiagnostic d, List<Type> ts) {
                 return Stream.of(d.getArgs())
                         .anyMatch(o -> containsPredicate.test(o, ts));

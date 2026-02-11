@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.peer.ScrollPanePeer;
@@ -40,7 +43,8 @@ import sun.awt.AWTAccessor;
  *
  * @since       1.4
  */
-public final class ScrollPaneAdjustable implements Adjustable, Serializable {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class ScrollPaneAdjustable implements Adjustable, Serializable {
 
     /**
      * The {@code ScrollPane} this object is a scrollbar of.

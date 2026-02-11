@@ -25,6 +25,11 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
+
 /**
  * This class extends {@code ThreadLocal} to provide inheritance of values
  * from parent thread to child thread: when a child thread is created, the
@@ -51,7 +56,9 @@ package java.lang;
  * @see Thread.Builder#inheritInheritableThreadLocals(boolean)
  */
 
-public class InheritableThreadLocal<T> extends ThreadLocal<T> {
+@CFComment({"nullness: See comment in ThreadLocal class about type parameter annotation."})
+@AnnotatedFor({"nullness"})
+public class InheritableThreadLocal<@Nullable T> extends ThreadLocal<T> {
     /**
      * Creates an inheritable thread local variable.
      */

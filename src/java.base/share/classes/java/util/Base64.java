@@ -25,6 +25,10 @@
 
 package java.util;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.FilterOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -81,6 +85,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * @since   1.8
  */
 
+@AnnotatedFor({"signedness"})
 public final class Base64 {
 
     private Base64() {}
@@ -91,6 +96,7 @@ public final class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getEncoder() {
          return Encoder.RFC4648;
     }
@@ -102,6 +108,7 @@ public final class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getUrlEncoder() {
          return Encoder.RFC4648_URLSAFE;
     }
@@ -112,6 +119,7 @@ public final class Base64 {
      *
      * @return  A Base64 encoder.
      */
+    @Pure
     public static Encoder getMimeEncoder() {
         return Encoder.RFC2045;
     }
@@ -156,6 +164,7 @@ public final class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getDecoder() {
          return Decoder.RFC4648;
     }
@@ -167,6 +176,7 @@ public final class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getUrlDecoder() {
          return Decoder.RFC4648_URLSAFE;
     }
@@ -177,6 +187,7 @@ public final class Base64 {
      *
      * @return  A Base64 decoder.
      */
+    @Pure
     public static Decoder getMimeDecoder() {
          return Decoder.RFC2045;
     }
@@ -345,7 +356,7 @@ public final class Base64 {
          * @return  A String containing the resulting Base64 encoded characters
          */
         @SuppressWarnings("deprecation")
-        public String encodeToString(byte[] src) {
+        public String encodeToString(@PolySigned byte[] src) {
             byte[] encoded = encode(src);
             return new String(encoded, 0, 0, encoded.length);
         }
@@ -589,7 +600,7 @@ public final class Base64 {
          * @throws  IllegalArgumentException
          *          if {@code src} is not in valid Base64 scheme
          */
-        public byte[] decode(String src) {
+        public @PolySigned byte[] decode(String src) {
             return decode(src.getBytes(ISO_8859_1.INSTANCE));
         }
 

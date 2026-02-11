@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.debugger;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 
 /**
@@ -256,6 +257,7 @@ public class LongHashMap
      * key.
      * @param key key whose presence in this Map is to be tested.
      */
+    @Pure
     public boolean containsKey(long key) {
         return getEntry(key) != null;
     }
@@ -285,6 +287,7 @@ public class LongHashMap
      * @return <tt>true</tt> if this map maps one or more keys to the
      *         specified value.
      */
+    @Pure
     public boolean containsValue(Object value) {
         Entry tab[] = table;
 

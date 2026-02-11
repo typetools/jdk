@@ -25,6 +25,15 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import sun.net.util.IPAddressUtil;
 
 import java.io.IOException;
@@ -197,8 +206,9 @@ import static jdk.internal.util.Exceptions.formatMsg;
  * @since 1.4
  */
 
+@AnnotatedFor({"interning"})
 public final
-class Inet6Address extends InetAddress {
+@UsesObjectEquals class Inet6Address extends InetAddress {
     static final int INADDRSZ = 16;
 
     private static class Inet6AddressHolder {
@@ -1036,7 +1046,9 @@ class Inet6Address extends InetAddress {
      * @see     java.net.InetAddress#getAddress()
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (obj instanceof Inet6Address inetAddr) {
             return holder6.equals(inetAddr.holder6);
         }

@@ -24,6 +24,18 @@
  */
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.optional.qual.EnsuresPresent;
+import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
+import org.checkerframework.checker.optional.qual.OptionalCreator;
+import org.checkerframework.checker.optional.qual.OptionalEliminator;
+import org.checkerframework.checker.optional.qual.Present;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -55,8 +67,9 @@ import java.util.stream.LongStream;
  *
  * @since 1.8
  */
+@AnnotatedFor({"lock", "nullness", "optional"})
 @jdk.internal.ValueBased
-public final class OptionalLong {
+public final @NonNull class OptionalLong {
     /**
      * Common instance for {@code empty()}.
      */
@@ -91,6 +104,8 @@ public final class OptionalLong {
      *
      * @return an empty {@code OptionalLong}.
      */
+    @OptionalCreator
+    @SideEffectFree
     public static OptionalLong empty() {
         return EMPTY;
     }
@@ -111,7 +126,9 @@ public final class OptionalLong {
      * @param value the value to describe
      * @return an {@code OptionalLong} with the value present
      */
-    public static OptionalLong of(long value) {
+    @OptionalCreator
+    @SideEffectFree
+    public static @Present OptionalLong of(long value) {
         return new OptionalLong(value);
     }
 
@@ -125,7 +142,9 @@ public final class OptionalLong {
      * @return the value described by this {@code OptionalLong}
      * @throws NoSuchElementException if no value is present
      */
-    public long getAsLong() {
+    @OptionalEliminator
+    @Pure
+    public long getAsLong(@Present OptionalLong this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
         }
@@ -137,6 +156,9 @@ public final class OptionalLong {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @OptionalEliminator
+    @Pure
+    @EnsuresPresentIf(result = true, expression = "this")
     public boolean isPresent() {
         return isPresent;
     }
@@ -148,6 +170,8 @@ public final class OptionalLong {
      * @return  {@code true} if a value is not present, otherwise {@code false}
      * @since   11
      */
+    @Pure
+    @EnsuresPresentIf(result = false, expression = "this")
     public boolean isEmpty() {
         return !isPresent;
     }
@@ -160,6 +184,7 @@ public final class OptionalLong {
      * @throws NullPointerException if value is present and the given action is
      *         {@code null}
      */
+    @OptionalEliminator
     public void ifPresent(LongConsumer action) {
         if (isPresent) {
             action.accept(value);
@@ -178,6 +203,7 @@ public final class OptionalLong {
      *         action is {@code null}.
      * @since 9
      */
+    @OptionalEliminator
     public void ifPresentOrElse(LongConsumer action, Runnable emptyAction) {
         if (isPresent) {
             action.accept(value);
@@ -201,6 +227,7 @@ public final class OptionalLong {
      * @return the optional value as an {@code LongStream}
      * @since 9
      */
+    @SideEffectFree
     public LongStream stream() {
         if (isPresent) {
             return LongStream.of(value);
@@ -216,6 +243,7 @@ public final class OptionalLong {
      * @param other the value to be returned, if no value is present
      * @return the value, if present, otherwise {@code other}
      */
+    @OptionalEliminator
     public long orElse(long other) {
         return isPresent ? value : other;
     }
@@ -230,6 +258,7 @@ public final class OptionalLong {
      * @throws NullPointerException if no value is present and the supplying
      *         function is {@code null}
      */
+    @OptionalEliminator
     public long orElseGet(LongSupplier supplier) {
         return isPresent ? value : supplier.getAsLong();
     }
@@ -242,7 +271,10 @@ public final class OptionalLong {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
-    public long orElseThrow() {
+    @OptionalEliminator
+    @Pure
+    @EnsuresPresent("this")
+    public long orElseThrow(@Present OptionalLong this) {
         if (!isPresent) {
             throw new NoSuchElementException("No value present");
         }
@@ -266,6 +298,8 @@ public final class OptionalLong {
      * @throws NullPointerException if no value is present and the exception
      *         supplying function is {@code null}
      */
+    @OptionalEliminator
+    @EnsuresPresent("this")
     public<X extends Throwable> long orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (isPresent) {
             return value;
@@ -288,7 +322,9 @@ public final class OptionalLong {
      *         otherwise {@code false}
      */
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }
@@ -306,6 +342,8 @@ public final class OptionalLong {
      * @return hash code value of the present value or {@code 0} if no value is
      *         present
      */
+    @OptionalEliminator
+    @Pure
     @Override
     public int hashCode() {
         return isPresent ? Long.hashCode(value) : 0;

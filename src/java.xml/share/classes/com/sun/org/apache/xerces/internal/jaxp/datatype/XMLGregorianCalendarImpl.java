@@ -25,6 +25,12 @@
 
 package com.sun.org.apache.xerces.internal.jaxp.datatype;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import com.sun.org.apache.xerces.internal.util.DatatypeMessageFormatter;
 import java.io.IOException;
 import java.io.ObjectInputStream;

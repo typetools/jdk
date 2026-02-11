@@ -25,6 +25,9 @@
 
 package javax.swing.text;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -78,6 +81,7 @@ import sun.font.FontUtilities;
  *
  * @author  Timothy Prinzing
  */
+@AnnotatedFor({"interning"})
 @SuppressWarnings("serial") // Same-version serialization only
 public class StyleContext implements Serializable, AbstractDocument.AttributeContext {
 
@@ -769,7 +773,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * The name given to the default logical style attached
      * to paragraphs.
      */
-    public static final String DEFAULT_STYLE = "default";
+    public static final @Interned String DEFAULT_STYLE = "default";
 
     private static Hashtable<Object, String> freezeKeyMap;
     private static Hashtable<String, Object> thawKeyMap;

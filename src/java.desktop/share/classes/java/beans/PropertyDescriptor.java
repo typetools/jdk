@@ -24,6 +24,11 @@
  */
 package java.beans;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.ref.Reference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
@@ -36,22 +41,23 @@ import com.sun.beans.introspect.PropertyInfo;
  * exports via a pair of accessor methods.
  * @since 1.1
  */
+@AnnotatedFor({"nullness"})
 public class PropertyDescriptor extends FeatureDescriptor {
 
-    private Reference<? extends Class<?>> propertyTypeRef;
+    private @Nullable Reference<? extends Class<?>> propertyTypeRef;
     private final MethodRef readMethodRef = new MethodRef();
     private final MethodRef writeMethodRef = new MethodRef();
-    private Reference<? extends Class<?>> propertyEditorClassRef;
+    private @Nullable Reference<? extends Class<?>> propertyEditorClassRef;
 
     private boolean bound;
     private boolean constrained;
 
     // The base name of the method name which will be prefixed with the
     // read and write method. If name == "foo" then the baseName is "Foo"
-    private String baseName;
+    private @Nullable String baseName;
 
-    private String writeMethodName;
-    private String readMethodName;
+    private @Nullable String writeMethodName;
+    private @Nullable String readMethodName;
 
     /**
      * Constructs a PropertyDescriptor for a property that follows
@@ -68,6 +74,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @throws IntrospectionException if an exception occurs during
      *              introspection.
      */
+    @SideEffectFree
     public PropertyDescriptor(String propertyName, Class<?> beanClass)
                 throws IntrospectionException {
         this(propertyName, beanClass,
@@ -89,8 +96,9 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @throws IntrospectionException if an exception occurs during
      *              introspection.
      */
+    @SideEffectFree
     public PropertyDescriptor(String propertyName, Class<?> beanClass,
-                String readMethodName, String writeMethodName)
+                @Nullable String readMethodName, @Nullable String writeMethodName)
                 throws IntrospectionException {
         if (beanClass == null) {
             throw new IntrospectionException("Target Bean class is null");
@@ -131,7 +139,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @throws IntrospectionException if an exception occurs during
      *              introspection.
      */
-    public PropertyDescriptor(String propertyName, Method readMethod, Method writeMethod)
+    @SideEffectFree
+    public PropertyDescriptor(String propertyName, @Nullable Method readMethod, @Nullable Method writeMethod)
                 throws IntrospectionException {
         if (propertyName == null || propertyName.length() == 0) {
             throw new IntrospectionException("bad property name");
@@ -201,7 +210,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @return the {@code Class} object that represents the Java type info,
      *         or {@code null} if the type cannot be determined
      */
-    public synchronized Class<?> getPropertyType() {
+    @Pure
+    public synchronized @Nullable Class<?> getPropertyType() {
         Class<?> type = getPropertyType0();
         if (type  == null) {
             try {
@@ -214,11 +224,11 @@ public class PropertyDescriptor extends FeatureDescriptor {
         return type;
     }
 
-    private void setPropertyType(Class<?> type) {
+    private void setPropertyType(@Nullable Class<?> type) {
         this.propertyTypeRef = getWeakReference(type);
     }
 
-    private Class<?> getPropertyType0() {
+    private @Nullable Class<?> getPropertyType0() {
         return (this.propertyTypeRef != null)
                 ? this.propertyTypeRef.get()
                 : null;
@@ -230,7 +240,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @return The method that should be used to read the property value.
      * May return null if the property can't be read.
      */
-    public synchronized Method getReadMethod() {
+    @Pure
+    public synchronized @Nullable Method getReadMethod() {
         Method readMethod = this.readMethodRef.get();
         if (readMethod == null) {
             Class<?> cls = getClass0();
@@ -274,7 +285,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @throws IntrospectionException if the read method is invalid
      * @since 1.2
      */
-    public synchronized void setReadMethod(Method readMethod)
+    public synchronized void setReadMethod(@Nullable Method readMethod)
                                 throws IntrospectionException {
         // The property type is determined by the read method.
         setPropertyType(findPropertyType(readMethod, this.writeMethodRef.get()));
@@ -299,7 +310,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @return The method that should be used to write the property value.
      * May return null if the property can't be written.
      */
-    public synchronized Method getWriteMethod() {
+    @Pure
+    public synchronized @Nullable Method getWriteMethod() {
         Method writeMethod = this.writeMethodRef.get();
         if (writeMethod == null) {
             Class<?> cls = getClass0();
@@ -349,7 +361,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @throws IntrospectionException if the write method is invalid
      * @since 1.2
      */
-    public synchronized void setWriteMethod(Method writeMethod)
+    public synchronized void setWriteMethod(@Nullable Method writeMethod)
                                 throws IntrospectionException {
         // Set the property type - which validates the method
         setPropertyType(findPropertyType(getReadMethod(), writeMethod));
@@ -385,6 +397,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *
      * @return True if this is a bound property.
      */
+    @Pure
     public boolean isBound() {
         return bound;
     }
@@ -405,6 +418,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *
      * @return True if this is a constrained property.
      */
+    @Pure
     public boolean isConstrained() {
         return constrained;
     }
@@ -428,7 +442,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *
      * @param propertyEditorClass  The Class for the desired PropertyEditor.
      */
-    public void setPropertyEditorClass(Class<?> propertyEditorClass) {
+    public void setPropertyEditorClass(@Nullable Class<?> propertyEditorClass) {
         this.propertyEditorClassRef = getWeakReference(propertyEditorClass);
     }
 
@@ -442,7 +456,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *          so the PropertyEditorManager should be used to locate
      *          a suitable PropertyEditor.
      */
-    public Class<?> getPropertyEditorClass() {
+    @Pure
+    public @Nullable Class<?> getPropertyEditorClass() {
         return (this.propertyEditorClassRef != null)
                 ? this.propertyEditorClassRef.get()
                 : null;
@@ -461,8 +476,9 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *         not been defined or cannot be created
      * @since 1.5
      */
+    @SideEffectFree
     @SuppressWarnings("deprecation")
-    public PropertyEditor createPropertyEditor(Object bean) {
+    public @Nullable PropertyEditor createPropertyEditor(@Nullable Object bean) {
         Object editor = null;
 
         final Class<?> cls = getPropertyEditorClass();
@@ -497,7 +513,8 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *
      * @since 1.4
      */
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@Nullable Object obj) {
         if (this == obj) {
             return true;
         }
@@ -531,7 +548,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @param b second method to compare
      * @return boolean to indicate that the methods are equivalent
      */
-    boolean compareMethods(Method a, Method b) {
+    boolean compareMethods(@Nullable Method a, @Nullable Method b) {
         // Note: perhaps this should be a protected method in FeatureDescriptor
         if ((a == null) != (b == null)) {
             return false;
@@ -671,7 +688,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      *         read and write methods are null.
      * @throws IntrospectionException if the read or write method is invalid
      */
-    private Class<?> findPropertyType(Method readMethod, Method writeMethod)
+    private @Nullable Class<?> findPropertyType(@Nullable Method readMethod, @Nullable Method writeMethod)
         throws IntrospectionException {
         Class<?> propertyType = null;
         try {
@@ -712,6 +729,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
      * @return a hash code value for this object.
      * @since 1.5
      */
+    @Pure
     public int hashCode() {
         int result = 7;
 
@@ -751,7 +769,7 @@ public class PropertyDescriptor extends FeatureDescriptor {
         appendTo(sb, "writeMethod", this.writeMethodRef.get());
     }
 
-    boolean isAssignable(Method m1, Method m2) {
+    boolean isAssignable(@Nullable Method m1, @Nullable Method m2) {
         if (m1 == null) {
             return true; // choose second method
         }

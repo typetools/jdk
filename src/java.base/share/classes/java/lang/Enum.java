@@ -25,6 +25,19 @@
 
 package java.lang;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.GuardedByUnknown;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
+import org.checkerframework.checker.tainting.qual.Tainted;
+import org.checkerframework.common.value.qual.PolyValue;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.Covariant;
+
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -75,6 +88,8 @@ import static java.util.Objects.requireNonNull;
  * @jls 8.9.3 Enum Members
  * @since   1.5
  */
+@AnnotatedFor({"lock", "nullness", "index", "value", "tainting"})
+@Covariant(0)
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum classes.
 public abstract class Enum<E extends Enum<E>>
@@ -98,7 +113,8 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return the name of this enum constant
      */
-    public final String name() {
+    @Pure
+    public final @PolyValue String name(@GuardedByUnknown @UnknownInitialization(java.lang.Enum.class) @PolyValue Enum<E> this) {
         return name;
     }
 
@@ -124,7 +140,7 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return the ordinal of this enumeration constant
      */
-    public final int ordinal() {
+    public final @NonNegative int ordinal() {
         return ordinal;
     }
 
@@ -139,7 +155,7 @@ public abstract class Enum<E extends Enum<E>>
      *         in the enum declaration, where the initial constant is assigned
      *         an ordinal of zero).
      */
-    protected Enum(String name, int ordinal) {
+    protected Enum(String name, @NonNegative int ordinal) {
         this.name = name;
         this.ordinal = ordinal;
     }
@@ -152,7 +168,8 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return the name of this enum constant
      */
-    public String toString() {
+    @SideEffectFree
+    public String toString(@GuardSatisfied Enum<E> this) {
         return name;
     }
 
@@ -164,7 +181,8 @@ public abstract class Enum<E extends Enum<E>>
      * @return  true if the specified object is equal to this
      *          enum constant.
      */
-    public final boolean equals(Object other) {
+    @Pure
+    public final boolean equals(@GuardSatisfied Enum<E> this, @GuardSatisfied @Nullable Object other) {
         return this==other;
     }
 
@@ -179,7 +197,8 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return a hash code for this enum constant.
      */
-    public final int hashCode() {
+    @Pure
+    public final int hashCode(@GuardSatisfied Enum<E> this) {
         // Once initialized, the hash field value does not change.
         // HotSpot's identity hash code generation also never returns zero
         // as the identity hash code. This makes zero a convenient marker
@@ -199,7 +218,8 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return (never returns)
      */
-    protected final Object clone() throws CloneNotSupportedException {
+    @SideEffectFree
+    protected final Object clone(@GuardSatisfied Enum<E> this) throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
 
@@ -212,7 +232,8 @@ public abstract class Enum<E extends Enum<E>>
      * same enum type.  The natural order implemented by this
      * method is the order in which the constants are declared.
      */
-    public final int compareTo(E o) {
+    @SuppressWarnings({"rawtypes"})
+    public final int compareTo(@UnknownKeyFor @Tainted E o) {
         Enum<?> other = o;
         Enum<E> self = this;
         if (self.getClass() != other.getClass() && // optimization
@@ -234,7 +255,7 @@ public abstract class Enum<E extends Enum<E>>
      *     enum type
      */
     @SuppressWarnings("unchecked")
-    public final Class<E> getDeclaringClass() {
+    public final Class<@Tainted E> getDeclaringClass() {
         Class<?> clazz = getClass();
         Class<?> zuper = clazz.getSuperclass();
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
@@ -282,8 +303,8 @@ public abstract class Enum<E extends Enum<E>>
      *         is null
      * @since 1.5
      */
-    public static <T extends Enum<T>> T valueOf(Class<T> enumClass,
-                                                String name) {
+    public static <T extends Enum<T>> @PolyValue T valueOf(Class<T> enumClass,
+                                                @PolyValue String name) {
         T result = enumClass.enumConstantDirectory().get(name);
         if (result != null)
             return result;

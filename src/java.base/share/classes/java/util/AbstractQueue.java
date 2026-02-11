@@ -35,6 +35,12 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * This class provides skeletal implementations of some {@link Queue}
  * operations. The implementations in this class are appropriate when
@@ -61,6 +67,7 @@ package java.util;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
+@AnnotatedFor({"lock", "nullness"})
 public abstract class AbstractQueue<E>
     extends AbstractCollection<E>
     implements Queue<E> {
@@ -91,7 +98,8 @@ public abstract class AbstractQueue<E>
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
-    public boolean add(E e) {
+    @EnsuresNonEmpty("this")
+    public boolean add(@GuardSatisfied AbstractQueue<E> this, E e) {
         if (offer(e))
             return true;
         else
@@ -109,7 +117,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E remove() {
+    public E remove(@GuardSatisfied @NonEmpty @CanShrink AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
             return x;
@@ -128,7 +136,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E element() {
+    public E element(@GuardSatisfied @NonEmpty AbstractQueue<E> this) {
         E x = peek();
         if (x != null)
             return x;
@@ -143,7 +151,7 @@ public abstract class AbstractQueue<E>
      * <p>This implementation repeatedly invokes {@link #poll poll} until it
      * returns {@code null}.
      */
-    public void clear() {
+    public void clear(@GuardSatisfied @CanShrink AbstractQueue<E> this) {
         while (poll() != null)
             ;
     }
@@ -177,7 +185,7 @@ public abstract class AbstractQueue<E>
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
-    public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(@GuardSatisfied AbstractQueue<E> this, Collection<? extends E> c) {
         if (c == null)
             throw new NullPointerException();
         if (c == this)

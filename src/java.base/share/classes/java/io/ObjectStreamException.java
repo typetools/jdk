@@ -25,11 +25,15 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Superclass of all exceptions specific to Object Stream classes.
  *
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public abstract class ObjectStreamException extends IOException {
 
     @java.io.Serial
@@ -40,7 +44,7 @@ public abstract class ObjectStreamException extends IOException {
      *
      * @param message the detailed message for the exception
      */
-    protected ObjectStreamException(String message) {
+    protected ObjectStreamException(@Nullable String message) {
         super(message);
     }
 

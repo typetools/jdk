@@ -25,6 +25,10 @@
 
 package java.nio.channels;
 
+import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.NetPermission;
@@ -105,6 +109,7 @@ import static java.util.Objects.requireNonNull;
  * @since 1.4
  */
 
+@AnnotatedFor({"mustcall"})
 public abstract class ServerSocketChannel
     extends AbstractSelectableChannel
     implements NetworkChannel
@@ -215,7 +220,8 @@ public abstract class ServerSocketChannel
      *
      * @since 1.7
      */
-    public final ServerSocketChannel bind(SocketAddress local)
+    @CreatesMustCallFor
+    public final @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress local)
         throws IOException
     {
         return bind(local, 0);
@@ -275,7 +281,8 @@ public abstract class ServerSocketChannel
      *
      * @since 1.7
      */
-    public abstract ServerSocketChannel bind(SocketAddress local, int backlog)
+    @CreatesMustCallFor
+    public abstract @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress local, int backlog)
         throws IOException;
 
     /**
@@ -300,7 +307,7 @@ public abstract class ServerSocketChannel
      * @throws  UnsupportedOperationException
      *          If the channel's socket is not an <i>Internet protocol</i> socket
      */
-    public abstract ServerSocket socket();
+    public abstract @MustCallAlias ServerSocket socket(@MustCallAlias ServerSocketChannel this);
 
     /**
      * Accepts a connection made to this channel's socket.
@@ -336,7 +343,7 @@ public abstract class ServerSocketChannel
      * @throws  IOException
      *          If some other I/O error occurs
      */
-    public abstract SocketChannel accept() throws IOException;
+    public abstract @MustCallAlias SocketChannel accept(@MustCallAlias ServerSocketChannel this) throws IOException;
 
     /**
      * {@inheritDoc}

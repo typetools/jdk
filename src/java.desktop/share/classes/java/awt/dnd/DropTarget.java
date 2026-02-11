@@ -25,6 +25,9 @@
 
 package java.awt.dnd;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
@@ -66,7 +69,8 @@ import sun.awt.AWTAccessor.ComponentAccessor;
  * @since 1.2
  */
 
-public class DropTarget implements DropTargetListener, Serializable {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class DropTarget implements DropTargetListener, Serializable {
 
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.

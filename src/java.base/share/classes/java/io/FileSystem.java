@@ -25,13 +25,19 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.annotation.Native;
 
 /**
  * Package-private abstract class for the local filesystem abstraction.
  */
 
-abstract class FileSystem {
+@AnnotatedFor({"index", "interning"})
+abstract @UsesObjectEquals class FileSystem {
 
     /* -- Current Working Directory --*/
 
@@ -71,7 +77,7 @@ abstract class FileSystem {
      * Compute the length of this pathname string's prefix.  The pathname
      * string must be in normal form.
      */
-    public abstract int prefixLength(String path);
+    public abstract @IndexOrHigh({"#1"}) int prefixLength(String path);
 
     /**
      * Resolve the child pathname string against the parent.
@@ -120,10 +126,10 @@ abstract class FileSystem {
     /* -- Attribute accessors -- */
 
     /* Constants for simple boolean attributes */
-    @Native public static final int BA_EXISTS    = 0x01;
-    @Native public static final int BA_REGULAR   = 0x02;
-    @Native public static final int BA_DIRECTORY = 0x04;
-    @Native public static final int BA_HIDDEN    = 0x08;
+    @Native public static final @SignedPositive int BA_EXISTS    = 0x01;
+    @Native public static final @SignedPositive int BA_REGULAR   = 0x02;
+    @Native public static final @SignedPositive int BA_DIRECTORY = 0x04;
+    @Native public static final @SignedPositive int BA_HIDDEN    = 0x08;
 
     /**
      * Return the simple boolean attributes for the file or directory denoted
@@ -141,9 +147,9 @@ abstract class FileSystem {
         return (getBooleanAttributes(f) & attributes) == attributes;
     }
 
-    @Native public static final int ACCESS_READ    = 0x04;
-    @Native public static final int ACCESS_WRITE   = 0x02;
-    @Native public static final int ACCESS_EXECUTE = 0x01;
+    @Native public static final @SignedPositive int ACCESS_READ    = 0x04;
+    @Native public static final @SignedPositive int ACCESS_WRITE   = 0x02;
+    @Native public static final @SignedPositive int ACCESS_EXECUTE = 0x01;
 
     /**
      * Check whether the file or directory denoted by the given abstract

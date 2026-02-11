@@ -19,6 +19,7 @@
  */
 package com.sun.org.apache.bcel.internal.classfile;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.CharArrayReader;

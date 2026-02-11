@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.*;
 import java.awt.peer.TrayIconPeer;
 import sun.awt.AppContext;
@@ -85,7 +88,8 @@ import java.util.EventObject;
  * @author Sharon Zakhour
  * @author Anton Tarasov
  */
-public class TrayIcon {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class TrayIcon {
 
     private Image image;
     private String tooltip;

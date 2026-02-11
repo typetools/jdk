@@ -25,6 +25,12 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The {@code DataInput} interface provides
  * for reading bytes from a binary stream and
@@ -154,6 +160,7 @@ package java.io;
  * @see     java.io.DataOutput
  * @since   1.0
  */
+@AnnotatedFor({"nullness", "index"})
 public interface DataInput {
     /**
      * Reads some bytes from an input
@@ -246,7 +253,7 @@ public interface DataInput {
      *          all the bytes.
      * @throws  IOException   if an I/O error occurs.
      */
-    void readFully(byte[] b, int off, int len) throws IOException;
+    void readFully(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException;
 
     /**
      * Makes an attempt to skip over
@@ -269,7 +276,7 @@ public interface DataInput {
      * @return     the number of bytes actually skipped.
      * @throws     IOException   if an I/O error occurs.
      */
-    int skipBytes(int n) throws IOException;
+    @NonNegative int skipBytes(int n) throws IOException;
 
     /**
      * Reads one input byte and returns
@@ -320,7 +327,7 @@ public interface DataInput {
      *               all the bytes.
      * @throws     IOException   if an I/O error occurs.
      */
-    int readUnsignedByte() throws IOException;
+    @NonNegative int readUnsignedByte() throws IOException;
 
     /**
      * Reads two input bytes and returns
@@ -364,7 +371,7 @@ public interface DataInput {
      *               all the bytes.
      * @throws     IOException   if an I/O error occurs.
      */
-    int readUnsignedShort() throws IOException;
+    @NonNegative int readUnsignedShort() throws IOException;
 
     /**
      * Reads two input bytes and returns a {@code char} value.
@@ -511,7 +518,7 @@ public interface DataInput {
      *         encountered before a byte can be read.
      * @throws IOException  if an I/O error occurs.
      */
-    String readLine() throws IOException;
+    @Nullable String readLine() throws IOException;
 
     /**
      * Reads in a string that has been encoded using a

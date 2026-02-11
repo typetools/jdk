@@ -25,6 +25,9 @@
 
 package javax.swing.text.html;
 
+import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -215,6 +218,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
  *
  * @author  Timothy Prinzing
  */
+@AnnotatedFor({"interning"})
 @SuppressWarnings({"serial"}) // Same-version serialization only
 public class HTMLEditorKit extends StyledEditorKit implements Accessible {
 
@@ -417,7 +421,7 @@ public class HTMLEditorKit extends StyledEditorKit implements Accessible {
      * Default Cascading Style Sheet file that sets
      * up the tag views.
      */
-    public static final String DEFAULT_CSS = "default.css";
+    public static final @Interned String DEFAULT_CSS = "default.css";
 
     /**
      * Set the set of styles to be used to render the various
@@ -1581,49 +1585,49 @@ public class HTMLEditorKit extends StyledEditorKit implements Accessible {
 
 /** The bold action identifier
 */
-    public static final String  BOLD_ACTION = "html-bold-action";
+    public static final @Interned String  BOLD_ACTION = "html-bold-action";
 /** The italic action identifier
 */
-    public static final String  ITALIC_ACTION = "html-italic-action";
+    public static final @Interned String  ITALIC_ACTION = "html-italic-action";
 /** The paragraph left indent action identifier
 */
-    public static final String  PARA_INDENT_LEFT = "html-para-indent-left";
+    public static final @Interned String  PARA_INDENT_LEFT = "html-para-indent-left";
 /** The paragraph right indent action identifier
 */
-    public static final String  PARA_INDENT_RIGHT = "html-para-indent-right";
+    public static final @Interned String  PARA_INDENT_RIGHT = "html-para-indent-right";
 /** The  font size increase to next value action identifier
 */
-    public static final String  FONT_CHANGE_BIGGER = "html-font-bigger";
+    public static final @Interned String  FONT_CHANGE_BIGGER = "html-font-bigger";
 /** The font size decrease to next value action identifier
 */
-    public static final String  FONT_CHANGE_SMALLER = "html-font-smaller";
+    public static final @Interned String  FONT_CHANGE_SMALLER = "html-font-smaller";
 /** The Color choice action identifier
      The color is passed as an argument
 */
-    public static final String  COLOR_ACTION = "html-color-action";
+    public static final @Interned String  COLOR_ACTION = "html-color-action";
 /** The logical style choice action identifier
      The logical style is passed in as an argument
 */
-    public static final String  LOGICAL_STYLE_ACTION = "html-logical-style-action";
+    public static final @Interned String  LOGICAL_STYLE_ACTION = "html-logical-style-action";
     /**
      * Align images at the top.
      */
-    public static final String  IMG_ALIGN_TOP = "html-image-align-top";
+    public static final @Interned String  IMG_ALIGN_TOP = "html-image-align-top";
 
     /**
      * Align images in the middle.
      */
-    public static final String  IMG_ALIGN_MIDDLE = "html-image-align-middle";
+    public static final @Interned String  IMG_ALIGN_MIDDLE = "html-image-align-middle";
 
     /**
      * Align images at the bottom.
      */
-    public static final String  IMG_ALIGN_BOTTOM = "html-image-align-bottom";
+    public static final @Interned String  IMG_ALIGN_BOTTOM = "html-image-align-bottom";
 
     /**
      * Align images at the border.
      */
-    public static final String  IMG_BORDER = "html-image-border";
+    public static final @Interned String  IMG_BORDER = "html-image-border";
 
 
     /** HTML used when inserting tables. */

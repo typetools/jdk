@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.gc.shared;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.util.*;
 
@@ -106,6 +107,7 @@ public class ContiguousSpace extends VMObject implements LiveRegionsProvider {
   }
 
   /** Testers */
+  @Pure
   public boolean contains(Address p) {
     return (bottom().lessThanOrEqual(p) && top().greaterThan(p));
   }

@@ -59,6 +59,7 @@
 
 package org.objectweb.asm.commons;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -647,6 +648,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
         return stackFrame.remove(stackFrame.size() - 1);
     }
 
+    @Pure
     private Object peekValue() {
         return stackFrame.get(stackFrame.size() - 1);
     }

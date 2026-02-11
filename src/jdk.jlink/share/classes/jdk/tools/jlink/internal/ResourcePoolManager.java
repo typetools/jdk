@@ -24,6 +24,7 @@
  */
 package jdk.tools.jlink.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.module.ModuleDescriptor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -188,6 +189,7 @@ public class ResourcePoolManager {
         }
 
         @Override
+        @Pure
         public boolean contains(ResourcePoolEntry data) {
             return ResourcePoolManager.this.contains(data);
         }
@@ -392,6 +394,7 @@ public class ResourcePoolManager {
      * @param data The module data to check existence for.
      * @return The module data or null if not found.
      */
+    @Pure
     public boolean contains(ResourcePoolEntry data) {
         Objects.requireNonNull(data);
         return findEntry(data.path()).isPresent();

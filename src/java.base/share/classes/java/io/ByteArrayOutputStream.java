@@ -25,6 +25,16 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Objects;
@@ -46,6 +56,8 @@ import jdk.internal.util.ArraysSupport;
  * @since   1.0
  */
 
+@AnnotatedFor({"index", "lock", "mustcall", "nullness", "signedness"})
+@InheritableMustCall({})
 public class ByteArrayOutputStream extends OutputStream {
 
     /**
@@ -56,7 +68,7 @@ public class ByteArrayOutputStream extends OutputStream {
     /**
      * The number of valid bytes in the buffer.
      */
-    protected int count;
+    protected @IndexOrHigh({"this.buf"}) int count;
 
     /**
      * Creates a new {@code ByteArrayOutputStream}. The buffer capacity is
@@ -73,7 +85,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * @param  size   the initial size.
      * @throws IllegalArgumentException if size is negative.
      */
-    public ByteArrayOutputStream(int size) {
+    public ByteArrayOutputStream(@NonNegative int size) {
         if (size < 0) {
             throw new IllegalArgumentException("Negative initial size: "
                                                + size);
@@ -108,7 +120,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * @param   b   the byte to be written.
      */
     @Override
-    public synchronized void write(int b) {
+    public synchronized void write(@PolySigned int b) {
         ensureCapacity(count + 1);
         buf[count] = (byte) b;
         count += 1;
@@ -127,7 +139,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * {@code b.length - off}
      */
     @Override
-    public synchronized void write(byte[] b, int off, int len) {
+    public synchronized void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         Objects.checkFromIndexSize(off, len, b.length);
         ensureCapacity(count + len);
         System.arraycopy(b, off, buf, count, len);
@@ -183,7 +195,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * @return  the current contents of this output stream, as a byte array.
      * @see     java.io.ByteArrayOutputStream#size()
      */
-    public synchronized byte[] toByteArray() {
+    public synchronized @PolySigned byte[] toByteArray() {
         return Arrays.copyOf(buf, count);
     }
 
@@ -194,7 +206,8 @@ public class ByteArrayOutputStream extends OutputStream {
      *          of valid bytes in this output stream.
      * @see     java.io.ByteArrayOutputStream#count
      */
-    public synchronized int size() {
+    @Pure
+    public synchronized @IndexOrHigh({"this.buf"}) int size(@GuardSatisfied ByteArrayOutputStream this) {
         return count;
     }
 
@@ -215,7 +228,8 @@ public class ByteArrayOutputStream extends OutputStream {
      * @since  1.1
      */
     @Override
-    public synchronized String toString() {
+    @SideEffectFree
+    public synchronized String toString(@GuardSatisfied ByteArrayOutputStream this) {
         return new String(buf, 0, count);
     }
 
@@ -248,7 +262,8 @@ public class ByteArrayOutputStream extends OutputStream {
      *         If the named charset is not supported
      * @since  1.1
      */
-    public synchronized String toString(String charsetName)
+    @SideEffectFree
+    public synchronized String toString(@GuardSatisfied ByteArrayOutputStream this, String charsetName)
         throws UnsupportedEncodingException
     {
         return new String(buf, 0, count, charsetName);
@@ -297,8 +312,9 @@ public class ByteArrayOutputStream extends OutputStream {
      * @see        java.io.ByteArrayOutputStream#toString()
      * @see        Charset#defaultCharset()
      */
+    @SideEffectFree
     @Deprecated
-    public synchronized String toString(int hibyte) {
+    public synchronized String toString(@GuardSatisfied ByteArrayOutputStream this, int hibyte) {
         return new String(buf, hibyte, 0, count);
     }
 

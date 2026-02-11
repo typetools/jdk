@@ -37,6 +37,9 @@
 
 package java.text;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.icu.text.NormalizerBase;
 
 /**
@@ -106,7 +109,8 @@ import jdk.internal.icu.text.NormalizerBase;
  * @spec https://www.unicode.org/reports/tr15 Unicode Normalization Forms
  * @since 1.6
  */
-public final class Normalizer {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class Normalizer {
 
    private Normalizer() {};
 

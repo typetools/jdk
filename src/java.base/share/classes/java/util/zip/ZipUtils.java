@@ -25,6 +25,9 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.ByteBuffer;
 import java.nio.file.attribute.FileTime;
 import java.time.DateTimeException;
@@ -41,6 +44,7 @@ import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.Preconditions;
 
+@AnnotatedFor({"signedness"})
 class ZipUtils {
 
     static final JavaNioAccess NIO_ACCESS = SharedSecrets.getJavaNioAccess();
@@ -72,7 +76,7 @@ class ZipUtils {
     /**
      * The upper bound of the 32-bit unix time, the "year 2038 problem".
      */
-    public static final long UPPER_UNIXTIME_BOUND = 0x7fffffff;
+    public static final @SignedPositive long UPPER_UNIXTIME_BOUND = 0x7fffffff;
 
     /**
      * Converts "standard Unix time"(in seconds, UTC/GMT) to FileTime

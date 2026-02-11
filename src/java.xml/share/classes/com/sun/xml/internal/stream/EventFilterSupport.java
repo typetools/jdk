@@ -25,6 +25,9 @@
 
 package com.sun.xml.internal.stream;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.NoSuchElementException;
 import javax.xml.stream.EventFilter;
 import javax.xml.stream.XMLEventReader;
@@ -47,6 +50,7 @@ public class EventFilterSupport extends EventReaderDelegate {
         fEventFilter = eventFilter;
     }
 
+    @SideEffectsOnly("this")
     public Object next(){
         try{
             return nextEvent();
@@ -55,6 +59,7 @@ public class EventFilterSupport extends EventReaderDelegate {
         }
     }
 
+    @Pure
     public boolean hasNext(){
         try{
             return peek() != null ? true : false ;

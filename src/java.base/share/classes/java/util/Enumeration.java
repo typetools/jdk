@@ -25,6 +25,13 @@
 
 package java.util;
 
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * An object that implements the Enumeration interface generates a
  * series of elements, one at a time. Successive calls to the
@@ -63,6 +70,7 @@ package java.util;
  * @author  Lee Boynton
  * @since   1.0
  */
+@AnnotatedFor({"lock", "nullness"})
 public interface Enumeration<E> {
     /**
      * Tests if this enumeration contains more elements.
@@ -71,6 +79,8 @@ public interface Enumeration<E> {
      *           contains at least one more element to provide;
      *          {@code false} otherwise.
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasMoreElements();
 
     /**
@@ -80,7 +90,7 @@ public interface Enumeration<E> {
      * @return     the next element of this enumeration.
      * @throws     NoSuchElementException  if no more elements exist.
      */
-    E nextElement();
+    E nextElement(@GuardSatisfied @NonEmpty Enumeration<E> this);
 
     /**
      * Returns an {@link Iterator} that traverses the remaining elements
@@ -118,10 +128,13 @@ public interface Enumeration<E> {
      */
     default Iterator<E> asIterator() {
         return new Iterator<>() {
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             @Override public boolean hasNext() {
                 return hasMoreElements();
             }
-            @Override public E next() {
+            @SideEffectsOnly("this")
+            @Override public E next(/*@NonEmpty Iterator<E> this*/) {
                 return nextElement();
             }
         };

@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+
 import java.io.InvalidObjectException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -455,6 +458,7 @@ final class PermissionsEnumerator implements Enumeration<Permission> {
     }
 
     // No need to synchronize; caller should sync on object as required
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreElements() {
         // if we enter with permissionimpl null, we know
         // there are no more left.
@@ -475,7 +479,7 @@ final class PermissionsEnumerator implements Enumeration<Permission> {
     }
 
     // No need to synchronize; caller should sync on object as required
-    public Permission nextElement() {
+    public Permission nextElement(@NonEmpty PermissionsEnumerator this) {
 
         // hasMoreElements will update permset to the next permset
         // with something in it...

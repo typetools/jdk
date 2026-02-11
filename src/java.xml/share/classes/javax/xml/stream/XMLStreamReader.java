@@ -25,6 +25,9 @@
 
 package javax.xml.stream;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
 
@@ -298,6 +301,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
    * START_ELEMENT or END_ELEMENT
    * @throws java.util.NoSuchElementException if this is called when hasNext() returns false
    */
+  @SideEffectsOnly("this")
   public int nextTag() throws XMLStreamException;
 
   /**
@@ -308,6 +312,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
    * @return true if there are more events, false otherwise
    * @throws XMLStreamException if there is a fatal error detecting the next state
    */
+  @Pure
   public boolean hasNext() throws XMLStreamException;
 
   /**

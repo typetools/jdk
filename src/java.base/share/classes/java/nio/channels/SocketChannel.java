@@ -25,6 +25,11 @@
 
 package java.nio.channels;
 
+import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.mustcall.qual.NotOwning;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.NetPermission;
@@ -157,6 +162,7 @@ import static java.util.Objects.requireNonNull;
  * @since 1.4
  */
 
+@AnnotatedFor({"mustcall"})
 public abstract class SocketChannel
     extends AbstractSelectableChannel
     implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel
@@ -355,6 +361,7 @@ public abstract class SocketChannel
      * @since 1.7
      */
     @Override
+    @CreatesMustCallFor
     public abstract SocketChannel bind(SocketAddress local)
         throws IOException;
 
@@ -388,7 +395,7 @@ public abstract class SocketChannel
      *
      * @since 1.7
      */
-    public abstract SocketChannel shutdownInput() throws IOException;
+    public abstract @NotOwning SocketChannel shutdownInput() throws IOException;
 
     /**
      * Shutdown the connection for writing without closing the channel.
@@ -409,7 +416,7 @@ public abstract class SocketChannel
      *
      * @since 1.7
      */
-    public abstract SocketChannel shutdownOutput() throws IOException;
+    public abstract @NotOwning SocketChannel shutdownOutput() throws IOException;
 
     /**
      * Retrieves a socket associated with this channel.
@@ -419,7 +426,7 @@ public abstract class SocketChannel
      * @throws  UnsupportedOperationException
      *          If the channel's socket is not an <i>Internet protocol</i> socket
      */
-    public abstract Socket socket();
+    public abstract @MustCallAlias Socket socket(@MustCallAlias SocketChannel this);
 
     /**
      * Tells whether or not this channel's network socket is connected.
@@ -496,6 +503,7 @@ public abstract class SocketChannel
      * @throws  IOException
      *          If some other I/O error occurs
      */
+    @CreatesMustCallFor
     public abstract boolean connect(SocketAddress remote) throws IOException;
 
     /**

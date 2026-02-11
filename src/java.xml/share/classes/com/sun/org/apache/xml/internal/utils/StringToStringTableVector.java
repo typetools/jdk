@@ -21,6 +21,8 @@
 
 package com.sun.org.apache.xml.internal.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A very simple table that stores a list of StringToStringTables, optimized
  * for small lists.
@@ -141,6 +143,7 @@ public class StringToStringTableVector
    *
    * @return True if the string was found in table, null if not
    */
+  @Pure
   public final boolean containsKey(String key)
   {
 
@@ -186,6 +189,7 @@ public class StringToStringTableVector
    *
    * @return True if the StringToStringTable is found
    */
+  @Pure
   public final boolean contains(StringToStringTable s)
   {
 

@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -84,7 +87,8 @@ import jdk.internal.util.ImmutableBitSetPredicate;
  * @author  Herb Jellinek
  * @since   1.0
  */
-public final class URLEncoder {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class URLEncoder {
     private static final IntPredicate DONT_NEED_ENCODING;
 
     static {

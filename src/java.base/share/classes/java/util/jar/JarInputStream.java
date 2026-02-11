@@ -25,6 +25,10 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.zip.*;
 import java.io.*;
 import sun.security.util.ManifestEntryVerifier;
@@ -95,11 +99,12 @@ import sun.security.util.ManifestEntryVerifier;
  * @see     java.util.zip.ZipInputStream
  * @since   1.2
  */
+@AnnotatedFor({"nullness"})
 public class JarInputStream extends ZipInputStream {
-    private Manifest man;
-    private JarEntry first;
-    private JarVerifier jv;
-    private ManifestEntryVerifier mev;
+    private @Nullable Manifest man;
+    private @Nullable JarEntry first;
+    private @Nullable JarVerifier jv;
+    private @Nullable ManifestEntryVerifier mev;
     private final boolean doVerify;
     private boolean tryManifest;
 
@@ -110,7 +115,7 @@ public class JarInputStream extends ZipInputStream {
      * @param in the actual input stream
      * @throws    IOException if an I/O error has occurred
      */
-    public JarInputStream(InputStream in) throws IOException {
+    public @MustCallAlias JarInputStream(@MustCallAlias InputStream in) throws IOException {
         this(in, true);
     }
 
@@ -125,7 +130,7 @@ public class JarInputStream extends ZipInputStream {
      * @throws    IOException if an I/O error has occurred
      */
     @SuppressWarnings("this-escape")
-    public JarInputStream(InputStream in, boolean verify) throws IOException {
+    public @MustCallAlias JarInputStream(@MustCallAlias InputStream in, boolean verify) throws IOException {
         super(in);
         this.doVerify = verify;
 
@@ -175,7 +180,7 @@ public class JarInputStream extends ZipInputStream {
      * @return the {@code Manifest} for this JAR file, or
      *         {@code null} otherwise.
      */
-    public Manifest getManifest() {
+    public @Nullable Manifest getManifest() {
         return man;
     }
 
@@ -228,7 +233,7 @@ public class JarInputStream extends ZipInputStream {
      * @throws    SecurityException if any of the jar file entries
      *         are incorrectly signed.
      */
-    public JarEntry getNextJarEntry() throws IOException {
+    public @Nullable JarEntry getNextJarEntry() throws IOException {
         return (JarEntry)getNextEntry();
     }
 

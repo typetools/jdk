@@ -24,6 +24,8 @@
  */
 package jdk.javadoc.internal.tool;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import javax.tools.JavaFileManager;
 import javax.tools.StandardJavaFileManager;
 import java.io.PrintWriter;
@@ -157,6 +159,7 @@ public class Main {
             this.exitCode = exitCode;
         }
 
+        @Pure
         public boolean isOK() {
             return (exitCode == 0);
         }

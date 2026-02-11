@@ -60,6 +60,7 @@
 
 package jdk.dynalink.beans;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -115,6 +116,7 @@ abstract class SingleDynamicMethod extends DynamicMethod {
     }
 
     @Override
+    @Pure
     boolean contains(final SingleDynamicMethod method) {
         return getMethodType().parameterList().equals(method.getMethodType().parameterList());
     }

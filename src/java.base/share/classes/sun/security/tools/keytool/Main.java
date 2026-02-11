@@ -25,6 +25,13 @@
 
 package sun.security.tools.keytool;
 
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -5350,7 +5357,9 @@ class Pair<A, B> {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         return
             obj instanceof Pair<?, ?> other &&
             Objects.equals(fst, other.fst) &&

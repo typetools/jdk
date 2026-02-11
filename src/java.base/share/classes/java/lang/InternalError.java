@@ -25,18 +25,24 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown to indicate some unexpected internal error has occurred in
  * the Java Virtual Machine.
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class InternalError extends VirtualMachineError {
     private static final long serialVersionUID = -9062593416125562365L;
 
     /**
      * Constructs an {@code InternalError} with no detail message.
      */
+    @SideEffectFree
     public InternalError() {
         super();
     }
@@ -47,7 +53,8 @@ public class InternalError extends VirtualMachineError {
      *
      * @param   message   the detail message.
      */
-    public InternalError(String message) {
+    @SideEffectFree
+    public InternalError(@Nullable String message) {
         super(message);
     }
 
@@ -66,7 +73,8 @@ public class InternalError extends VirtualMachineError {
      *         unknown.)
      * @since  1.8
      */
-    public InternalError(String message, Throwable cause) {
+    @SideEffectFree
+    public InternalError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -82,7 +90,8 @@ public class InternalError extends VirtualMachineError {
      *         unknown.)
      * @since  1.8
      */
-    public InternalError(Throwable cause) {
+    @SideEffectFree
+    public InternalError(@Nullable Throwable cause) {
         super(cause);
     }
 

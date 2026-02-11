@@ -25,6 +25,12 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Date;
@@ -85,7 +91,9 @@ public abstract class X509CRLEntry implements X509Extension {
      * match, false otherwise.
      */
     @Override
-    public boolean equals(Object other) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object other) {
         if (this == other)
             return true;
         if (!(other instanceof X509CRLEntry))

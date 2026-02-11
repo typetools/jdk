@@ -29,6 +29,15 @@
 
 package java.math;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.PolyValue;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.math.BigInteger.LONG_MASK;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -334,6 +343,7 @@ import jdk.internal.util.DecimalDigits;
  * @author  Sergey V. Kuksenko
  * @since 1.1
  */
+@AnnotatedFor("nullness")
 public class BigDecimal extends Number implements Comparable<BigDecimal> {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
@@ -3176,7 +3186,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @see    #hashCode
      */
     @Override
-    public boolean equals(Object x) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object x) {
         if (!(x instanceof BigDecimal xDec))
             return false;
         if (x == this)
@@ -3206,6 +3218,8 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *         method, {@code this} is returned.
      * @see    #compareTo(java.math.BigDecimal)
      */
+    @Pure
+    @StaticallyExecutable
     public BigDecimal min(BigDecimal val) {
         return (compareTo(val) <= 0 ? this : val);
     }
@@ -3220,6 +3234,8 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *         method, {@code this} is returned.
      * @see    #compareTo(java.math.BigDecimal)
      */
+    @Pure
+    @StaticallyExecutable
     public BigDecimal max(BigDecimal val) {
         return (compareTo(val) >= 0 ? this : val);
     }
@@ -3550,7 +3566,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
     @Override
-    public long longValue(){
+    public @PolyValue long longValue(@PolyValue BigDecimal this){
         if (intCompact != INFLATED && scale == 0) {
             return intCompact;
         } else {
@@ -3655,7 +3671,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
     @Override
-    public int intValue() {
+    public @PolyValue int intValue(@PolyValue BigDecimal this) {
         return  (intCompact != INFLATED && scale == 0) ?
             (int)intCompact :
             (int)longValue();
@@ -3739,7 +3755,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
     @Override
-    public float floatValue() {
+    public @PolyValue float floatValue(@PolyValue BigDecimal this) {
         /* For details, see the extensive comments in doubleValue(). */
         if (intCompact != INFLATED) {
             float v = intCompact;
@@ -3822,7 +3838,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @jls 5.1.3 Narrowing Primitive Conversion
      */
     @Override
-    public double doubleValue() {
+    public @PolyValue double doubleValue(@PolyValue BigDecimal this) {
         /*
          * Attempt a fast path when the significand is compact and the
          * scale is small enough.

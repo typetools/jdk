@@ -36,6 +36,20 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.AbstractQueue;
@@ -90,7 +104,8 @@ import java.util.concurrent.TransferQueue;
  * @author Doug Lea and Bill Scherer and Michael Scott
  * @param <E> the type of elements held in this queue
  */
-public class SynchronousQueue<E> extends AbstractQueue<E>
+@AnnotatedFor({"nullness"})
+public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E>
     implements BlockingQueue<E>, java.io.Serializable {
     private static final long serialVersionUID = -3223113410248163686L;
 
@@ -312,7 +327,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public E take() throws InterruptedException {
+    public E take(@GuardSatisfied @CanShrink SynchronousQueue<E> this) throws InterruptedException {
         Object e;
         if (!Thread.interrupted()) {
             if ((e = xfer(null, Long.MAX_VALUE)) != null)
@@ -332,7 +347,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    public E poll(@GuardSatisfied @CanShrink SynchronousQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         Object e;
         long nanos = Math.max(unit.toNanos(timeout), 0L);
         if ((e = xfer(null, nanos)) != null || !Thread.interrupted())
@@ -348,7 +363,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *         element is available
      */
     @SuppressWarnings("unchecked")
-    public E poll() {
+    public E poll(@GuardSatisfied @CanShrink SynchronousQueue<E> this) {
         return (E) xfer(null, 0L);
     }
 
@@ -358,6 +373,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *
      * @return {@code true}
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return true;
     }
@@ -368,6 +385,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *
      * @return zero
      */
+    @Pure
     public int size() {
         return 0;
     }
@@ -386,7 +404,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * Does nothing.
      * A {@code SynchronousQueue} has no internal capacity.
      */
-    public void clear() {
+    public void clear(@GuardSatisfied @CanShrink SynchronousQueue<E> this) {
     }
 
     /**
@@ -396,7 +414,9 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @param o the element
      * @return {@code false}
      */
-    public boolean contains(Object o) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -407,7 +427,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @param o the element to remove
      * @return {@code false}
      */
-    public boolean remove(Object o) {
+    public boolean remove(@CanShrink SynchronousQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return false;
     }
 
@@ -418,7 +438,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @param c the collection
      * @return {@code false} unless given collection is empty
      */
-    public boolean containsAll(Collection<?> c) {
+    @Pure
+    public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
         return c.isEmpty();
     }
 
@@ -429,7 +450,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @param c the collection
      * @return {@code false}
      */
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(@CanShrink SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -440,7 +461,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @param c the collection
      * @return {@code false}
      */
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? extends @UnknownSignedness Object> c) {
         return false;
     }
 
@@ -451,6 +472,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *
      * @return {@code null}
      */
+    @Pure
     public E peek() {
         return null;
     }
@@ -461,7 +483,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *
      * @return an empty iterator
      */
-    public Iterator<E> iterator() {
+    @SideEffectFree
+    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty SynchronousQueue<E> this) {
         return Collections.emptyIterator();
     }
 
@@ -472,6 +495,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @return an empty spliterator
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.emptySpliterator();
     }
@@ -479,7 +503,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
     /**
      * {@return a zero-length array}
      */
-    public Object[] toArray() {
+    @SideEffectFree
+    public @PolyNull @PolySigned Object[] toArray(SynchronousQueue<@PolyNull @PolySigned E> this) {
         return new Object[0];
     }
 
@@ -491,7 +516,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @return the specified array
      * @throws NullPointerException if the specified array is null
      */
-    public <T> T[] toArray(T[] a) {
+    @SideEffectFree
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length > 0)
             a[0] = null;
         return a;
@@ -511,7 +537,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c) {
+    public int drainTo(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? super E> c) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -527,7 +553,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c, int maxElements) {
+    public int drainTo(@GuardSatisfied @CanShrink SynchronousQueue<E> this, Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();

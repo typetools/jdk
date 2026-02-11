@@ -24,6 +24,9 @@
  */
 package java.util.stream;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Iterator;
 import java.util.Spliterator;
 
@@ -54,6 +57,7 @@ import java.util.Spliterator;
  * @see DoubleStream
  * @see <a href="package-summary.html">java.util.stream</a>
  */
+@AnnotatedFor({"lock", "nullness"})
 public interface BaseStream<T, S extends BaseStream<T, S>>
         extends AutoCloseable {
     /**
@@ -69,6 +73,7 @@ public interface BaseStream<T, S extends BaseStream<T, S>>
      *
      * @return the element iterator for this stream
      */
+    @SideEffectFree
     Iterator<T> iterator();
 
     /**
@@ -92,6 +97,7 @@ public interface BaseStream<T, S extends BaseStream<T, S>>
      *
      * @return the element spliterator for this stream
      */
+    @SideEffectFree
     Spliterator<T> spliterator();
 
     /**

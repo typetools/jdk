@@ -24,6 +24,7 @@
 
 package sun.jvm.hotspot.memory;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.runtime.*;
@@ -67,5 +68,6 @@ public class VirtualSpace extends VMObject {
   public long committedSize()                   { return high().minus(low());                                    }
   public long reservedSize()                    { return highBoundary().minus(lowBoundary());                    }
   public long uncommittedSize()                 { return reservedSize() - committedSize();                       }
+  @Pure
   public boolean contains(Address addr)         { return (low().lessThanOrEqual(addr) && addr.lessThan(high())); }
 }

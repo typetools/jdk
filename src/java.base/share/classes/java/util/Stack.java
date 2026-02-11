@@ -25,6 +25,15 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 /**
  * The {@code Stack} class represents a last-in-first-out
  * (LIFO) stack of objects. It extends class {@code Vector} with five
@@ -47,6 +56,8 @@ package java.util;
  * @author  Jonathan Payne
  * @since   1.0
  */
+@CFComment({"lock/nullness: permit null elements"})
+@AnnotatedFor({"lock", "nullness"})
 public class Stack<E> extends Vector<E> {
     /**
      * Creates an empty Stack.
@@ -64,7 +75,7 @@ public class Stack<E> extends Vector<E> {
      * @return  the {@code item} argument.
      * @see     java.util.Vector#addElement
      */
-    public E push(E item) {
+    public E push(@GuardSatisfied Stack<E> this, E item) {
         addElement(item);
 
         return item;
@@ -78,7 +89,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
-    public synchronized E pop() {
+    public synchronized E pop(@GuardSatisfied @NonEmpty @CanShrink Stack<E> this) {
         E       obj;
         int     len = size();
 
@@ -96,6 +107,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
+    @Pure
     public synchronized E peek() {
         int     len = size();
 
@@ -110,6 +122,8 @@ public class Stack<E> extends Vector<E> {
      * @return  {@code true} if and only if this stack contains
      *          no items; {@code false} otherwise.
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean empty() {
         return size() == 0;
     }

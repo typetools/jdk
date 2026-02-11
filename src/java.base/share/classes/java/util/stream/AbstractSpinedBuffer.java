@@ -24,6 +24,9 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * Base class for a data structure for gathering elements into a buffer and then
  * iterating them. Maintains an array of increasingly sized arrays, so there is
@@ -97,6 +100,8 @@ abstract class AbstractSpinedBuffer {
     /**
      * Is the buffer currently empty?
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return (spineIndex == 0) && (elementIndex == 0);
     }

@@ -24,6 +24,9 @@
  */
 
 package sun.reflect.annotation;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.lang.annotation.*;
 
 /**
@@ -51,7 +54,7 @@ public class TypeNotPresentExceptionProxy extends ExceptionProxy {
         return typeName;
     }
 
-    public Throwable getCause() {
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

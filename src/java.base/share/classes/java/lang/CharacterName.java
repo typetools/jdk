@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.util.ArraysSupport;
 
 import java.io.DataInputStream;
@@ -32,7 +35,8 @@ import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.zip.InflaterInputStream;
 
-class CharacterName {
+@AnnotatedFor({"index", "interning"})
+@UsesObjectEquals class CharacterName {
 
     private static SoftReference<CharacterName> refCharName;
 

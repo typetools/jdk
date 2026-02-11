@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -453,6 +455,7 @@ public class HtmlLinkInfo {
      * @return true if this link is linkable and false if we can't link to the
      * desired place.
      */
+    @Pure
     public boolean isLinkable() {
         return configuration.utils.isLinkable(typeElement);
     }

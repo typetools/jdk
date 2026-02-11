@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.source.doctree.AuthorTree;
 import com.sun.source.doctree.BlockTagTree;
 import com.sun.source.doctree.CommentTree;
@@ -113,6 +115,7 @@ public class CommentHelper {
         };
     }
 
+    @Pure
     public String getParameterName(ParamTree p) {
         return p.getName().getName().toString();
     }

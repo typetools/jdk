@@ -132,16 +132,16 @@ public final class JdkProperty<T> {
 
         ISSTANDALONE("isStandalone", FQ_IS_STANDALONE, SP_IS_STANDALONE, true, null, null),
         XSLTCISSTANDALONE("xsltcIsStandalone", JDK_IS_STANDALONE, SP_XSLTC_IS_STANDALONE,
-            true, ORACLE_IS_STANDALONE, null),
+                true, ORACLE_IS_STANDALONE, null),
         CDATACHUNKSIZE("cdataChunkSize", CDATA_CHUNK_SIZE, CDATA_CHUNK_SIZE, false, null, null),
         EXTCLSLOADER("extensionClassLoader", JDK_EXT_CLASSLOADER, null,
-            true, JDK_EXTENSION_CLASSLOADER, null),
+                true, JDK_EXTENSION_CLASSLOADER, null),
         ENABLEEXTFUNC("enableExtensionFunctions", ORACLE_ENABLE_EXTENSION_FUNCTION,
-            SP_ENABLE_EXTENSION_FUNCTION_SPEC, true, null, SP_ENABLE_EXTENSION_FUNCTION),
+                SP_ENABLE_EXTENSION_FUNCTION_SPEC, true, null, SP_ENABLE_EXTENSION_FUNCTION),
         OVERRIDEPARSER("overrideDefaultParser", OVERRIDE_PARSER, OVERRIDE_PARSER,
-            false, ORACLE_FEATURE_SERVICE_MECHANISM, ORACLE_FEATURE_SERVICE_MECHANISM),
+                false, ORACLE_FEATURE_SERVICE_MECHANISM, ORACLE_FEATURE_SERVICE_MECHANISM),
         RESETSYMBOLTABLE("resetSymbolTable", RESET_SYMBOL_TABLE, RESET_SYMBOL_TABLE,
-            false, null, null),
+                false, null, null),
         ENTITYCOUNT("getEntityCountInfo", JDK_DEBUG_LIMIT, null, true, JDK_ENTITY_COUNT_INFO, null)
         ;
 
@@ -162,7 +162,7 @@ public final class JdkProperty<T> {
          * @param oldSPName the legacy System Property name, null if N/A
          */
         ImplPropMap(String name, String qName, String spName, boolean differ,
-                String oldQName, String oldSPName) {
+                    String oldQName, String oldSPName) {
             this.name = name;
             this.qName = qName;
             this.spName = spName;
@@ -182,10 +182,10 @@ public final class JdkProperty<T> {
         public boolean is(String name) {
             // current spec calls for using a name same as spName
             return (spName != null && spName.equals(name)) ||
-                   // check qName only if it differs from spName
-                   (differ && qName.equals(name)) ||
-                   // check the legacy name if applicable
-                   (oldQName != null && oldQName.equals(name));
+                    // check qName only if it differs from spName
+                    (differ && qName.equals(name)) ||
+                    // check the legacy name if applicable
+                    (oldQName != null && oldQName.equals(name));
         }
 
         /**
@@ -209,7 +209,7 @@ public final class JdkProperty<T> {
                     (spName == null && qName.equals(name))) {
                 return State.APIPROPERTY;
             } else if ((differ && qName.equals(name)) ||
-                   (oldQName != null && oldQName.equals(name))) {
+                    (oldQName != null && oldQName.equals(name))) {
                 //both the URI-style qName and an old name if any are legacy
                 return State.LEGACY_APIPROPERTY;
             }

@@ -28,6 +28,7 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -40,6 +41,7 @@ public class ISO2022_CN_CNS extends ISO2022 implements HistoricallyNamedCharset
         super("x-ISO-2022-CN-CNS", ExtendedCharsets.aliasesFor("x-ISO-2022-CN-CNS"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         // overlapping repertoire of EUC_TW, CNS11643
         return ((cs instanceof EUC_TW) ||

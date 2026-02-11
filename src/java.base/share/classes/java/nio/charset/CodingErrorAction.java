@@ -25,6 +25,8 @@
 
 package java.nio.charset;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * A typesafe enumeration for coding-error actions.
@@ -40,7 +42,8 @@ package java.nio.charset;
  * @since 1.4
  */
 
-public final class CodingErrorAction {
+@AnnotatedFor({"interning"})
+public final @UsesObjectEquals class CodingErrorAction {
 
     private String name;
 

@@ -25,6 +25,12 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Objects;
 import java.util.Set;
 
@@ -139,7 +145,9 @@ public final class ResolvedModule {
      *          reference that is equal to this module reference
      */
     @Override
-    public boolean equals(Object ob) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object ob) {
         return (ob instanceof ResolvedModule that)
             && Objects.equals(this.cf, that.cf)
             && Objects.equals(this.mref, that.mref);

@@ -25,6 +25,8 @@
 
 package java.util.spi;
 
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import jdk.internal.access.JavaUtilResourceBundleAccess;
 import jdk.internal.access.SharedSecrets;
 import sun.util.resources.Bundles;
@@ -181,7 +183,7 @@ public abstract class AbstractResourceBundleProvider implements ResourceBundlePr
      *         bundle loading
      */
     @Override
-    public ResourceBundle getBundle(String baseName, Locale locale) {
+    public ResourceBundle getBundle(@BinaryName String baseName, Locale locale) {
         Module module = this.getClass().getModule();
         String bundleName = toBundleName(baseName, locale);
         var bundle = getBundle0(module, bundleName);

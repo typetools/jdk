@@ -25,6 +25,9 @@
 
 package java.beans;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.Component;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -91,7 +94,8 @@ import jdk.internal.access.SharedSecrets;
  * @since 1.1
  */
 
-public class Introspector {
+@AnnotatedFor({"interning"})
+public @UsesObjectEquals class Introspector {
 
     // Flags that can be used to control getBeanInfo:
     /**

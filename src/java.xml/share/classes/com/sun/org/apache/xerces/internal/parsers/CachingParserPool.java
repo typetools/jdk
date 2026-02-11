@@ -21,6 +21,7 @@
 
 package com.sun.org.apache.xerces.internal.parsers;
 
+import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.xerces.internal.xni.grammars.Grammar;
 import com.sun.org.apache.xerces.internal.xni.grammars.XMLGrammarPool;
 import com.sun.org.apache.xerces.internal.xni.grammars.XMLGrammarDescription;
@@ -422,6 +423,7 @@ public class CachingParserPool {
          *
          * @param desc The description of the grammar.
          */
+        @Pure
         public boolean containsGrammar(XMLGrammarDescription desc) {
             return super.containsGrammar(desc);
         } // containsGrammar(XMLGrammarDescription):boolean

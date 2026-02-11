@@ -25,6 +25,11 @@
 
 package javax.print.attribute.standard;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.Serial;
 
 import javax.print.attribute.Attribute;
@@ -89,7 +94,9 @@ public abstract class Media extends EnumSyntax
      * @return {@code true} if {@code object} is equivalent to this media
      *         attribute, {@code false} otherwise
      */
-    public boolean equals(Object object) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object object) {
         return object instanceof Media other &&
                 object.getClass() == this.getClass() &&
                 other.getValue() == this.getValue();

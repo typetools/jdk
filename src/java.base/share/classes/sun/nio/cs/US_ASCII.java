@@ -25,6 +25,7 @@
 
 package sun.nio.cs;
 
+import org.checkerframework.dataflow.qual.Pure;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 
@@ -49,6 +50,7 @@ public class US_ASCII
         return "ASCII";
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return (cs instanceof US_ASCII);
     }

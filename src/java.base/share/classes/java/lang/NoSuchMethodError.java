@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown if an application tries to call a specified method of a
  * class (either static or instance), and that class no longer has a
@@ -36,6 +40,7 @@ package java.lang;
  *
  * @since   1.0
  */
+@AnnotatedFor({"nullness"})
 public class NoSuchMethodError extends IncompatibleClassChangeError {
     @java.io.Serial
     private static final long serialVersionUID = -3765521442372831335L;
@@ -43,6 +48,7 @@ public class NoSuchMethodError extends IncompatibleClassChangeError {
     /**
      * Constructs a {@code NoSuchMethodError} with no detail message.
      */
+    @SideEffectFree
     public NoSuchMethodError() {
         super();
     }
@@ -53,7 +59,8 @@ public class NoSuchMethodError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
-    public NoSuchMethodError(String s) {
+    @SideEffectFree
+    public NoSuchMethodError(@Nullable String s) {
         super(s);
     }
 }

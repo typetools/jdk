@@ -25,6 +25,9 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -43,6 +46,8 @@ import sun.nio.cs.UTF_8;
  * The {@code ZipCoder} for UTF-8 charset is thread safe, {@code ZipCoder}
  * for other charsets require external synchronization.
  */
+@AnnotatedFor({"index", "interning"})
+@UsesObjectEquals
 class ZipCoder {
 
     private static final jdk.internal.access.JavaLangAccess JLA =

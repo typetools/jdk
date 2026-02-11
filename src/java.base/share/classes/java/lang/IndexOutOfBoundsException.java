@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown to indicate that an index of some sort (such as to an array, to a
  * string, or to a vector) is out of range.
@@ -34,6 +38,7 @@ package java.lang;
  * @author Frank Yellin
  * @since 1.0
  */
+@AnnotatedFor({"nullness"})
 public class IndexOutOfBoundsException extends RuntimeException {
     @java.io.Serial
     private static final long serialVersionUID = 234122996006267687L;
@@ -41,6 +46,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
     /**
      * Constructs an {@code IndexOutOfBoundsException} with no detail message.
      */
+    @SideEffectFree
     public IndexOutOfBoundsException() {
         super();
     }
@@ -51,7 +57,8 @@ public class IndexOutOfBoundsException extends RuntimeException {
      *
      * @param s the detail message
      */
-    public IndexOutOfBoundsException(String s) {
+    @SideEffectFree
+    public IndexOutOfBoundsException(@Nullable String s) {
         super(s);
     }
 

@@ -25,13 +25,17 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.JavaLangReflectAccess;
 import jdk.internal.reflect.ConstructorAccessor;
 
 /** Package-private class implementing the
     jdk.internal.access.JavaLangReflectAccess interface, allowing the java.lang
     package to instantiate objects in this package. */
-final class ReflectAccess implements JavaLangReflectAccess {
+@AnnotatedFor({"interning"})
+final @UsesObjectEquals class ReflectAccess implements JavaLangReflectAccess {
     public <T> Constructor<T> newConstructorWithAccessor(Constructor<T> original, ConstructorAccessor accessor) {
         return original.newWithAccessor(accessor);
     }

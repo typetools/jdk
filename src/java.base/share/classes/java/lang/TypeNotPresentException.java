@@ -25,6 +25,11 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signature.qual.FullyQualifiedName;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when an application tries to access a type using a string
  * representing the type's name, but no definition for the type with
@@ -43,6 +48,7 @@ package java.lang;
  * @see     java.lang.reflect.AnnotatedElement
  * @since 1.5
  */
+@AnnotatedFor({"nullness", "signature"})
 public class TypeNotPresentException extends RuntimeException {
     @java.io.Serial
     private static final long serialVersionUID = -5101214195716534496L;
@@ -50,7 +56,7 @@ public class TypeNotPresentException extends RuntimeException {
     /**
      * @serial The type name or the name of a type variable.
      */
-    private String typeName;
+    private @FullyQualifiedName String typeName;
 
     /**
      * Constructs a {@code TypeNotPresentException} for the named type or
@@ -60,7 +66,8 @@ public class TypeNotPresentException extends RuntimeException {
      * @param cause the exception that was thrown when the system attempted to
      *    load the named type, or {@code null} if unavailable or inapplicable
      */
-    public TypeNotPresentException(String typeName, Throwable cause) {
+    @SideEffectFree
+    public TypeNotPresentException(@FullyQualifiedName String typeName, @Nullable Throwable cause) {
         super("Type " + typeName + " not present", cause);
         this.typeName = typeName;
     }
@@ -70,5 +77,5 @@ public class TypeNotPresentException extends RuntimeException {
      *
      * @return the fully qualified name of the unavailable type or type variable name
      */
-    public String typeName() { return typeName;}
+    public @FullyQualifiedName String typeName() { return typeName;}
 }

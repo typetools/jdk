@@ -26,6 +26,15 @@
 
 package java.io;
 
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.ByteArray;
@@ -49,6 +58,7 @@ import static jdk.internal.util.ModifiedUtf.utfLen;
  * @see     java.io.DataInputStream
  * @since   1.0
  */
+@AnnotatedFor({"index", "lock", "mustcall", "nullness", "signedness"})
 public class DataOutputStream extends FilterOutputStream implements DataOutput {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
@@ -74,7 +84,7 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
      *                use.
      * @see     java.io.FilterOutputStream#out
      */
-    public DataOutputStream(OutputStream out) {
+    public @MustCallAlias DataOutputStream(@MustCallAlias OutputStream out) {
         super(out);
     }
 
@@ -102,7 +112,7 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
      * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterOutputStream#out
      */
-    public synchronized void write(int b) throws IOException {
+    public synchronized void write(@PolySigned int b) throws IOException {
         out.write(b);
         incCount(1);
     }
@@ -120,7 +130,7 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
      * @throws     IndexOutOfBoundsException {@inheritDoc}
      * @see        java.io.FilterOutputStream#out
      */
-    public synchronized void write(byte[] b, int off, int len)
+    public synchronized void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len)
         throws IOException
     {
         out.write(b, off, len);
@@ -409,7 +419,8 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
      * @return  the value of the {@code written} field.
      * @see     java.io.DataOutputStream#written
      */
-    public final int size() {
+    @Pure
+    public final @NonNegative int size(@GuardSatisfied DataOutputStream this) {
         return written;
     }
 }

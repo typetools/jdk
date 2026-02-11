@@ -24,10 +24,17 @@
  */
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Static classes and methods for operating on or creating instances of
@@ -56,6 +63,7 @@ public final class Spliterators {
      * @return An empty spliterator
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> Spliterator<T> emptySpliterator() {
         return (Spliterator<T>) EmptySpliterator.OfRef.EMPTY_SPLITERATOR;
     }
@@ -69,6 +77,7 @@ public final class Spliterators {
      *
      * @return An empty spliterator
      */
+    @SideEffectFree
     public static Spliterator.OfInt emptyIntSpliterator() {
         return EmptySpliterator.OfInt.EMPTY_INT_SPLITERATOR;
     }
@@ -82,6 +91,7 @@ public final class Spliterators {
      *
      * @return An empty spliterator
      */
+    @SideEffectFree
     public static Spliterator.OfLong emptyLongSpliterator() {
         return EmptySpliterator.OfLong.EMPTY_LONG_SPLITERATOR;
     }
@@ -95,6 +105,7 @@ public final class Spliterators {
      *
      * @return An empty spliterator
      */
+    @SideEffectFree
     public static Spliterator.OfDouble emptyDoubleSpliterator() {
         return EmptySpliterator.OfDouble.EMPTY_DOUBLE_SPLITERATOR;
     }
@@ -664,6 +675,8 @@ public final class Spliterators {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (!valueReady)
                     spliterator.tryAdvance(this);
@@ -671,7 +684,8 @@ public final class Spliterators {
             }
 
             @Override
-            public T next() {
+            @SideEffectsOnly("this")
+            public T next(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
                 else {
@@ -723,6 +737,8 @@ public final class Spliterators {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (!valueReady)
                     spliterator.tryAdvance(this);
@@ -730,7 +746,8 @@ public final class Spliterators {
             }
 
             @Override
-            public int nextInt() {
+            @SideEffectsOnly("this")
+            public int nextInt(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
                 else {
@@ -778,6 +795,8 @@ public final class Spliterators {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (!valueReady)
                     spliterator.tryAdvance(this);
@@ -785,7 +804,8 @@ public final class Spliterators {
             }
 
             @Override
-            public long nextLong() {
+            @SideEffectsOnly("this")
+            public long nextLong(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
                 else {
@@ -833,6 +853,8 @@ public final class Spliterators {
             }
 
             @Override
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 if (!valueReady)
                     spliterator.tryAdvance(this);
@@ -840,7 +862,8 @@ public final class Spliterators {
             }
 
             @Override
-            public double nextDouble() {
+            @SideEffectsOnly("this")
+            public double nextDouble(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
                 else {
@@ -1420,7 +1443,7 @@ public final class Spliterators {
          * This implementation permits limited parallelism.
          */
         @Override
-        public Spliterator<T> trySplit() {
+        public @Nullable Spliterator<T> trySplit() {
             /*
              * Split into arrays of arithmetically increasing batch
              * sizes.  This will only improve parallel performance if
@@ -1545,7 +1568,7 @@ public final class Spliterators {
          * This implementation permits limited parallelism.
          */
         @Override
-        public Spliterator.OfInt trySplit() {
+        public Spliterator.@Nullable OfInt trySplit() {
             HoldingIntConsumer holder = new HoldingIntConsumer();
             long s = est;
             if (s > 1 && tryAdvance(holder)) {
@@ -1657,7 +1680,7 @@ public final class Spliterators {
          * This implementation permits limited parallelism.
          */
         @Override
-        public Spliterator.OfLong trySplit() {
+        public Spliterator.@Nullable OfLong trySplit() {
             HoldingLongConsumer holder = new HoldingLongConsumer();
             long s = est;
             if (s > 1 && tryAdvance(holder)) {
@@ -1769,7 +1792,7 @@ public final class Spliterators {
          * This implementation permits limited parallelism.
          */
         @Override
-        public Spliterator.OfDouble trySplit() {
+        public Spliterator.@Nullable OfDouble trySplit() {
             HoldingDoubleConsumer holder = new HoldingDoubleConsumer();
             long s = est;
             if (s > 1 && tryAdvance(holder)) {

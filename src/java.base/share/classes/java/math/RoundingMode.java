@@ -28,6 +28,8 @@
  */
 package java.math;
 
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Specifies a <i>rounding policy</i> for numerical operations capable
  * of discarding precision. Each rounding mode indicates how the least
@@ -121,6 +123,7 @@ package java.math;
  * @since 1.5
  */
 @SuppressWarnings("deprecation") // Legacy rounding mode constants in BigDecimal
+@AnnotatedFor("nullness")
 public enum RoundingMode {
 
         /**

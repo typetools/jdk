@@ -27,6 +27,9 @@
  */
 package java.awt.font;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.geom.Point2D;
 
 /**
@@ -40,7 +43,8 @@ import java.awt.geom.Point2D;
  *
  * @since 1.6
  */
-public abstract class LayoutPath {
+@AnnotatedFor({"interning"})
+public abstract @UsesObjectEquals class LayoutPath {
 
     /**
      * Constructor for subclasses to call.

@@ -29,6 +29,9 @@ package com.sun.xml.internal.stream.util;
  * @author K.Venugopal ,Neeraj Bajaj Sun Microsystems.
  */
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.Iterator;
 
 public class ReadOnlyIterator<T> implements Iterator<T> {
@@ -43,6 +46,7 @@ public class ReadOnlyIterator<T> implements Iterator<T> {
     }
 
     @Override
+    @Pure
     public boolean hasNext() {
         if(iterator  != null)
             return iterator.hasNext();
@@ -50,6 +54,7 @@ public class ReadOnlyIterator<T> implements Iterator<T> {
     }
 
     @Override
+    @SideEffectsOnly("this")
     public T next() {
         if(iterator  != null)
             return iterator.next();

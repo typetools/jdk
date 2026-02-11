@@ -25,6 +25,12 @@
 
 package jdk.internal.util;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Objects;
 
 /**
@@ -61,7 +67,9 @@ final class StrongReferenceKey<T> implements ReferenceKey<T> {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    @EnsuresNonNullIf(expression="#1", result=true)
+    public boolean equals(@Nullable Object obj) {
         // Necessary when comparing an unwrapped key
         if (obj instanceof ReferenceKey<?> key) {
             obj = key.get();

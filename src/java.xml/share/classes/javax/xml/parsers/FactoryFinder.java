@@ -25,6 +25,10 @@
 
 package javax.xml.parsers;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.util.Iterator;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -39,6 +43,7 @@ import jdk.xml.internal.SecuritySupport;
  *
  * @author Santiago PericasGeertsen
  */
+@AnnotatedFor("nullness")
 class FactoryFinder {
     private static final String DEFAULT_PACKAGE = "com.sun.org.apache.xerces.internal";
     /**
@@ -70,7 +75,7 @@ class FactoryFinder {
      *
      * Use bootstrap classLoader if cl = null and useBSClsLoader is true
      */
-    static private Class<?> getProviderClass(String className, ClassLoader cl,
+    static private Class<?> getProviderClass(String className, @Nullable ClassLoader cl,
             boolean doFallback, boolean useBSClsLoader) throws ClassNotFoundException
     {
         try {
@@ -118,7 +123,7 @@ class FactoryFinder {
      * @param doFallback True if the current ClassLoader should be tried as
      * a fallback if the class is not found using cl
      */
-    static <T> T newInstance(Class<T> type, String className, ClassLoader cl,
+    static <T> T newInstance(Class<T> type, String className, @Nullable ClassLoader cl,
                              boolean doFallback)
         throws FactoryConfigurationError
     {
@@ -144,7 +149,7 @@ class FactoryFinder {
      * @param useBSClsLoader True if cl=null actually meant bootstrap classLoader. This parameter
      * is needed since DocumentBuilderFactory/SAXParserFactory defined null as context classLoader.
      */
-    static <T> T newInstance(Class<T> type, String className, ClassLoader cl,
+    static <T> T newInstance(Class<T> type, String className, @Nullable ClassLoader cl,
                              boolean doFallback, boolean useBSClsLoader)
         throws FactoryConfigurationError
     {
@@ -183,7 +188,7 @@ class FactoryFinder {
      *
      * Package private so this code can be shared.
      */
-    static <T> T find(Class<T> type, String fallbackClassName)
+    static <T> T find(Class<T> type, @Nullable String fallbackClassName)
         throws FactoryConfigurationError
     {
         final String factoryId = type.getName();
@@ -223,7 +228,7 @@ class FactoryFinder {
      *
      * @return instance of provider class if found or null
      */
-    private static <T> T findServiceProvider(final Class<T> type) {
+    private static <T> @Nullable T findServiceProvider(final Class<T> type) {
         try {
             final ServiceLoader<T> serviceLoader = ServiceLoader.load(type);
             final Iterator<T> iterator = serviceLoader.iterator();
@@ -242,6 +247,8 @@ class FactoryFinder {
             // compatibility issues down the road.
             final RuntimeException x = new RuntimeException(
                     "Provider for " + type + " cannot be created", e);
+            @CFComment({"nullness: x.getMessage() is non-null, per constructor immediately above"})
+            @SuppressWarnings("nullness")
             final FactoryConfigurationError error =
                     new FactoryConfigurationError(x, x.getMessage());
             throw error;

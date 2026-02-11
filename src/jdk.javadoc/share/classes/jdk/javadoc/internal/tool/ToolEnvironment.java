@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.tool;
 
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.*;
 
 import javax.lang.model.element.Element;
@@ -171,6 +172,7 @@ public class ToolEnvironment {
         }
     }
 
+    @Pure
     boolean isSynthetic(Symbol sym) {
         return (sym.flags() & Flags.SYNTHETIC) != 0;
     }
