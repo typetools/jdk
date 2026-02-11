@@ -549,7 +549,8 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(ThreadGroup[] list, boolean recurse) {
-        Objects.requireNonNull(list);        checkAccess();
+        Objects.requireNonNull(list);
+        checkAccess();
         return enumerate(list, 0, recurse);
     }
 
