@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import com.sun.tools.classfile.Dependency.Location;
+import com.sun.tools.jdeps.Dependency.Location;
 
 import java.io.Closeable;
 import java.io.IOException;

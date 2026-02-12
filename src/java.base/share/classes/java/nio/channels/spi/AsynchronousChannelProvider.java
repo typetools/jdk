@@ -53,7 +53,6 @@ import java.util.concurrent.*;
 
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class AsynchronousChannelProvider {
-public abstract class AsynchronousChannelProvider {
 
     /**
      * Initializes a new instance of this class.

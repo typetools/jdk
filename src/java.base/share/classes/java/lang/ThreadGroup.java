@@ -469,7 +469,7 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *
      * @return  the number of thread groups put into the array
      */
-    public @NonNegativeint enumerate(ThreadGroup[] list, boolean recurse) {
+    public @NonNegative int enumerate(ThreadGroup[] list, boolean recurse) {
         Objects.requireNonNull(list);
         return enumerate(list, 0, recurse);
     }

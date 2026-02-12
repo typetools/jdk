@@ -172,9 +172,7 @@ class ImmutableCollections {
     @jdk.internal.ValueBased
     abstract static class AbstractImmutableCollection<E> extends AbstractCollection<E> {
         // all mutating methods throw UnsupportedOperationException
-        @Override
-        @EnsuresNonEmpty("this")
-        public boolean add(E e) { throw uoe(); }
+        @Override @EnsuresNonEmpty("this") public boolean add(E e) { throw uoe(); }
         @Override public boolean addAll(Collection<? extends E> c) { throw uoe(); }
         @Override public void    clear() { throw uoe(); }
         @Override public boolean remove(@UnknownSignedness Object o) { throw uoe(); }

@@ -780,7 +780,6 @@ public final class XAtom {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-    public boolean equals(Object o) {
         if (!(o instanceof XAtom)) {
             return false;
         }

@@ -575,7 +575,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 13.1 The Form of a Binary
      * @since     1.2
      */
-    public static Class<?> forName(@ClassGetNameString name, boolean initialize,@Nullable ClassLoader loader)
+    public static Class<?> forName(@ClassGetName String name, boolean initialize,@Nullable ClassLoader loader)
         throws ClassNotFoundException
     {
         return forName0(name, initialize, loader, null);
