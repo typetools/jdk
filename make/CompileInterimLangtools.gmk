@@ -113,7 +113,7 @@ define SetupInterimModule
           $($1.interim_EXTRA_FILES), \
       COPY := .gif .png .xml .css .svg .js .js.template .txt .woff .woff2 javax.tools.JavaCompilerTool, \
       BIN := $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules/$1.interim, \
-      DISABLED_WARNINGS := module options, \
+      DISABLED_WARNINGS := module options exports, \
       JAVAC_FLAGS := \
           --module-path $(BUILDTOOLS_OUTPUTDIR)/interim_langtools_modules \
           -cp $(TOPDIR)/checker-qual.jar \
