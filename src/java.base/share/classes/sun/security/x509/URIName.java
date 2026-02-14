@@ -221,6 +221,7 @@ public class URIName implements GeneralNameInterface {
      *
      * @return true iff the names are equivalent according to RFC 5280.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -283,10 +284,9 @@ public class URIName implements GeneralNameInterface {
     }
 
     /**
-     * Returns the hash code value for this object.
-     *
-     * @return a hash code value for this object.
+     * {@return the hash code value for this object}
      */
+    @Override
     public int hashCode() {
         return uri.hashCode();
     }

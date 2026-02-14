@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
-
-import static sun.reflect.misc.ReflectUtil.isPackageAccessible;
 
 @AnnotatedFor({"nullness"})
 final class MethodRef {
@@ -72,7 +70,7 @@ final class MethodRef {
             }
             this.methodRef = new SoftReference<>(method);
         }
-        return isPackageAccessible(method.getDeclaringClass()) ? method : null;
+        return method;
     }
 
     private static @Nullable Method find(@Nullable Class<?> type, String signature) {

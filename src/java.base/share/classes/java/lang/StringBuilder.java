@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -493,12 +493,12 @@ public final class StringBuilder
         return this;
     }
 
-    @SideEffectFree
     /**
      * @throws IllegalArgumentException {@inheritDoc}
      *
      * @since 21
      */
+    @SideEffectFree
     @Override
     public StringBuilder repeat(int codePoint, int count) {
         super.repeat(codePoint, count);
@@ -519,8 +519,11 @@ public final class StringBuilder
     @Override
     @IntrinsicCandidate
     public @PolyRegex String toString(@GuardSatisfied @PolyRegex StringBuilder this) {
+        if (length() == 0) {
+            return "";
+        }
         // Create a copy, don't share the array
-        return new String(this);
+        return new String(this, null);
     }
 
     /**

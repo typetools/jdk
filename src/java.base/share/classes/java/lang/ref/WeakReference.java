@@ -51,7 +51,7 @@ import org.checkerframework.framework.qual.CFComment;
  */
 
 @AnnotatedFor({"nullness"})
-public non-sealed class WeakReference<T> extends Reference<T> {
+public non-sealed class WeakReference<@jdk.internal.RequiresIdentity T> extends Reference<T> {
 
     /**
      * Creates a new weak reference that refers to the given object.  The new
@@ -59,7 +59,7 @@ public non-sealed class WeakReference<T> extends Reference<T> {
      *
      * @param referent object the new weak reference will refer to
      */
-    public WeakReference(@Nullable T referent) {
+    public WeakReference(@jdk.internal.RequiresIdentity @Nullable T referent) {
         super(referent);
     }
 
@@ -73,7 +73,7 @@ public non-sealed class WeakReference<T> extends Reference<T> {
      */
     @CFComment({"Nullness: q is @NonNull because it is sometimes required to be non-null.",
                 "To treat it as @Nullable, see https://checkerframework.org/manual/#nullness-jdk-conservative ."})
-    public WeakReference(@Nullable T referent, ReferenceQueue<? super T> q) {
+    public WeakReference(@jdk.internal.RequiresIdentity @Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
     }
 

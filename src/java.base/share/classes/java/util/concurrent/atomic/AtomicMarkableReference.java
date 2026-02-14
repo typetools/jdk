@@ -38,6 +38,8 @@ package java.util.concurrent.atomic;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.invoke.MhUtil;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
@@ -194,16 +196,8 @@ public @UsesObjectEquals class AtomicMarkableReference<V> {
     }
 
     // VarHandle mechanics
-    private static final VarHandle PAIR;
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            PAIR = l.findVarHandle(AtomicMarkableReference.class, "pair",
-                                   Pair.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle PAIR = MhUtil.findVarHandle(
+            MethodHandles.lookup(), "pair", Pair.class);
 
     private boolean casPair(Pair<V> cmp, Pair<V> val) {
         return PAIR.compareAndSet(this, cmp, val);

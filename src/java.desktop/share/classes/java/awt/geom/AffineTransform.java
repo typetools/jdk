@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2970,10 +2970,10 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * the original coordinates in that point are overwritten before
      * they can be converted.
      * @param ptSrc the array containing the source point objects
-     * @param ptDst the array into which the transform point objects are
-     * returned
      * @param srcOff the offset to the first point object to be
      * transformed in the source array
+     * @param ptDst the array into which the transform point objects are
+     * returned
      * @param dstOff the offset to the location of the first
      * transformed point object that is stored in the destination array
      * @param numPts the number of point objects to be transformed
@@ -3044,11 +3044,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source point coordinates.
      * Each point is stored as a pair of x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first point to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed point coordinates
      * are returned.  Each point is stored as a pair of x,&nbsp;y
      * coordinates.
-     * @param srcOff the offset to the first point to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed point that is stored in the destination array
      * @param numPts the number of points to be transformed
@@ -3159,11 +3159,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source point coordinates.
      * Each point is stored as a pair of x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first point to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed point
      * coordinates are returned.  Each point is stored as a pair of
      * x,&nbsp;y coordinates.
-     * @param srcOff the offset to the first point to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed point that is stored in the destination array
      * @param numPts the number of point objects to be transformed
@@ -3270,11 +3270,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source point coordinates.
      * Each point is stored as a pair of x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first point to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed point coordinates
      * are returned.  Each point is stored as a pair of x,&nbsp;y
      * coordinates.
-     * @param srcOff the offset to the first point to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed point that is stored in the destination array
      * @param numPts the number of points to be transformed
@@ -3366,11 +3366,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source point coordinates.
      * Each point is stored as a pair of x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first point to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed point
      * coordinates are returned.  Each point is stored as a pair of
      * x,&nbsp;y coordinates.
-     * @param srcOff the offset to the first point to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed point that is stored in the destination array
      * @param numPts the number of point objects to be transformed
@@ -3548,11 +3548,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source point coordinates.
      * Each point is stored as a pair of x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first point to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed point
      * coordinates are returned.  Each point is stored as a pair of
      * x,&nbsp;y coordinates.
-     * @param srcOff the offset to the first point to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed point that is stored in the destination array
      * @param numPts the number of point objects to be transformed
@@ -3761,11 +3761,11 @@ public class AffineTransform implements Cloneable, java.io.Serializable {
      * offset in the order {@code [x0, y0, x1, y1, ..., xn, yn]}.
      * @param srcPts the array containing the source distance vectors.
      * Each vector is stored as a pair of relative x,&nbsp;y coordinates.
+     * @param srcOff the offset to the first vector to be transformed
+     * in the source array
      * @param dstPts the array into which the transformed distance vectors
      * are returned.  Each vector is stored as a pair of relative
      * x,&nbsp;y coordinates.
-     * @param srcOff the offset to the first vector to be transformed
-     * in the source array
      * @param dstOff the offset to the location of the first
      * transformed vector that is stored in the destination array
      * @param numPts the number of vector coordinate pairs to be

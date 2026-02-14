@@ -38,6 +38,8 @@ package java.util.concurrent.atomic;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.invoke.MhUtil;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.function.BinaryOperator;
@@ -54,16 +56,10 @@ import java.util.function.UnaryOperator;
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializable {
     private static final long serialVersionUID = -1848883965231344442L;
-    private static final VarHandle VALUE;
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            VALUE = l.findVarHandle(AtomicReference.class, "value", Object.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle VALUE = MhUtil.findVarHandle(
+            MethodHandles.lookup(), "value", Object.class);
 
+    /** @serial */
     @SuppressWarnings("serial") // Conditionally serializable
     private volatile V value;
 
@@ -273,8 +269,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
     }
 
     /**
-     * Returns the String representation of the current value.
-     * @return the String representation of the current value
+     * {@return the String representation of the current value}
      */
     public String toString() {
         return String.valueOf(get());
@@ -289,6 +284,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V getPlain() {
         return (V)VALUE.get(this);
     }
@@ -312,6 +308,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V getOpaque() {
         return (V)VALUE.getOpaque(this);
     }
@@ -334,6 +331,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V getAcquire() {
         return (V)VALUE.getAcquire(this);
     }
@@ -361,6 +359,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V compareAndExchange(V expectedValue, V newValue) {
         return (V)VALUE.compareAndExchange(this, expectedValue, newValue);
     }
@@ -377,6 +376,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V compareAndExchangeAcquire(V expectedValue, V newValue) {
         return (V)VALUE.compareAndExchangeAcquire(this, expectedValue, newValue);
     }
@@ -393,6 +393,7 @@ public @UsesObjectEquals class AtomicReference<V> implements java.io.Serializabl
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final V compareAndExchangeRelease(V expectedValue, V newValue) {
         return (V)VALUE.compareAndExchangeRelease(this, expectedValue, newValue);
     }

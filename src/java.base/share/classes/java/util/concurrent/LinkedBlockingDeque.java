@@ -77,8 +77,8 @@ import java.util.function.Predicate;
  * blocking).  Exceptions include {@link #remove(Object) remove},
  * {@link #removeFirstOccurrence removeFirstOccurrence}, {@link
  * #removeLastOccurrence removeLastOccurrence}, {@link #contains
- * contains}, {@link #iterator iterator.remove()}, and the bulk
- * operations, all of which run in linear time.
+ * contains}, and the bulk operations, all of which run in linear
+ * time.
  *
  * <p>This class and its iterator implement all of the <em>optional</em>
  * methods of the {@link Collection} and {@link Iterator} interfaces.
@@ -169,17 +169,17 @@ public class LinkedBlockingDeque<E extends Object>
     /** Number of items in the deque */
     private transient int count;
 
-    /** Maximum number of items in the deque */
+    /** @serial Maximum number of items in the deque */
     private final int capacity;
 
-    /** Main lock guarding all access */
+    /** @serial Main lock guarding all access */
     final ReentrantLock lock = new ReentrantLock();
 
-    /** Condition for waiting takes */
+    /** @serial Condition for waiting takes */
     @SuppressWarnings("serial") // Classes implementing Condition may be serializable.
     private final Condition notEmpty = lock.newCondition();
 
-    /** Condition for waiting puts */
+    /** @serial Condition for waiting puts */
     @SuppressWarnings("serial") // Classes implementing Condition may be serializable.
     private final Condition notFull = lock.newCondition();
 
@@ -212,6 +212,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
+    @SuppressWarnings("this-escape")
     public LinkedBlockingDeque(Collection<? extends E> c) {
         this(Integer.MAX_VALUE);
         addAll(c);
@@ -648,7 +649,9 @@ public class LinkedBlockingDeque<E extends Object>
     }
 
     /**
+     * {@inheritDoc BlockingDeque}
      * @throws NullPointerException if the specified element is null
+     * @return {@inheritDoc BlockingDeque}
      */
     public boolean offer(E e) {
         return offerLast(e);
@@ -685,6 +688,10 @@ public class LinkedBlockingDeque<E extends Object>
         return removeFirst();
     }
 
+    /**
+     * {@inheritDoc BlockingDeque}
+     * @return {@inheritDoc BlockingDeque}
+     */
     public @Nullable E poll(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) {
         return pollFirst();
     }
@@ -711,6 +718,10 @@ public class LinkedBlockingDeque<E extends Object>
         return getFirst();
     }
 
+    /**
+     * {@inheritDoc BlockingDeque}
+     * @return {@inheritDoc BlockingDeque}
+     */
     @Pure
     public @Nullable E peek() {
         return peekFirst();
@@ -923,7 +934,6 @@ public class LinkedBlockingDeque<E extends Object>
      *
      * @return an array containing all of the elements in this deque
      */
-    @SuppressWarnings("unchecked")
     public @PolyNull @PolySigned Object[] toArray(LinkedBlockingDeque<@PolyNull @PolySigned E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();

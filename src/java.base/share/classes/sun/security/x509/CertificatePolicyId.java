@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -98,20 +98,18 @@ public class CertificatePolicyId implements DerEncoder {
      *
      * @return true iff the ids are identical.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object other) {
-        if (other instanceof CertificatePolicyId)
-            return id.equals(((CertificatePolicyId) other).getIdentifier());
-        else
-            return false;
+    public boolean equals(@Nullable Object obj) {
+        return obj instanceof CertificatePolicyId other
+                && id.equals(other.getIdentifier());
     }
 
     /**
-     * Returns a hash code value for this object.
-     *
-     * @return a hash code value
+     * {@return a hash code value for this object}
      */
+    @Override
     public int hashCode() {
       return id.hashCode();
     }

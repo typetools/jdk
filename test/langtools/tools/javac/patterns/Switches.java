@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,7 @@ import java.util.function.Function;
 
 /*
  * @test
- * @bug 8262891 8268333 8268896 8269802 8269808 8270151 8269113 8277864 8290709
+ * @bug 8262891 8268333 8268896 8269802 8269808 8270151 8269113 8277864 8290709 8339296
  * @summary Check behavior of pattern switches.
  */
 public class Switches {
@@ -105,6 +105,21 @@ public class Switches {
         emptyFallThrough(1.0);
         testSimpleSwitch();
         testSimpleSwitchExpression();
+        assertEquals(0, constantAndPatternGuardInteger(0, true));
+        assertEquals(0, constantAndPatternGuardInteger(1, true));
+        assertEquals(1, constantAndPatternGuardInteger(1, false));
+        assertEquals(2, constantAndPatternGuardInteger(0, false));
+        assertEquals(0, constantAndPatternGuardString("", true));
+        assertEquals(0, constantAndPatternGuardString("a", true));
+        assertEquals(1, constantAndPatternGuardString("a", false));
+        assertEquals(2, constantAndPatternGuardString("", false));
+        assertEquals(0, constantAndPatternGuardEnum(E.A, true));
+        assertEquals(0, constantAndPatternGuardEnum(E.B, true));
+        assertEquals(1, constantAndPatternGuardEnum(E.B, false));
+        assertEquals(2, constantAndPatternGuardEnum(E.A, false));
+        assertEquals(0, nestedSwitchesInArgumentPosition(1));
+        assertEquals(1, nestedSwitchesInArgumentPosition(new R(1)));
+        assertEquals(5, nestedSwitchesInArgumentPosition(new R(new R("hello"))));
     }
 
     void run(Function<Object, Integer> mapper) {
@@ -711,6 +726,48 @@ public class Switches {
             default -> 1;
         };
         assertEquals(1, res);
+    }
+
+    int constantAndPatternGuardInteger(Integer i, boolean g) {
+        return switch (i) {
+            case Integer j when g -> 0;
+            case 1 -> 1;
+            case Integer j -> 2;
+        };
+    }
+
+    int constantAndPatternGuardString(String s, boolean g) {
+        return switch (s) {
+            case String t when g -> 0;
+            case "a" -> 1;
+            case String t -> 2;
+        };
+    }
+
+    int constantAndPatternGuardEnum(E e, boolean g) {
+        return switch (e) {
+            case E f when g -> 0;
+            case E.B -> 1;
+            case E f -> 2;
+        };
+    }
+
+    int nestedSwitchesInArgumentPosition(Object o1) {
+        return id(switch (o1) {
+            case R(var o2) -> switch (o2) {
+                case R(String s) -> s;
+                default -> "n";
+            };
+            default -> "";
+        });
+    }
+
+    int id(String s) {
+        return s.length();
+    }
+
+    int id(int i) {
+        return i;
     }
 
     //verify that for cases like:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -125,7 +125,7 @@ public @UsesObjectEquals class StreamTokenizer {
      *     has been reached.
      * </ul>
      * <p>
-     * The initial value of this field is -4.
+     * The initial value of this field is {@value TT_NOTHING}.
      *
      * @see     java.io.StreamTokenizer#eolIsSignificant(boolean)
      * @see     java.io.StreamTokenizer#nextToken()
@@ -238,6 +238,7 @@ public @UsesObjectEquals class StreamTokenizer {
      * @see        java.io.StreamTokenizer#StreamTokenizer(java.io.Reader)
      */
     @Deprecated
+    @SuppressWarnings("this-escape")
     public StreamTokenizer(InputStream is) {
         this();
         if (is == null) {
@@ -252,6 +253,7 @@ public @UsesObjectEquals class StreamTokenizer {
      * @param r  a Reader object providing the input stream.
      * @since   1.1
      */
+    @SuppressWarnings("this-escape")
     public StreamTokenizer(Reader r) {
         this();
         if (r == null) {
@@ -354,7 +356,7 @@ public @UsesObjectEquals class StreamTokenizer {
     }
 
     /**
-     * Specified that the character argument starts a single-line
+     * Specifies that the character argument starts a single-line
      * comment. All characters from the comment character to the end of
      * the line are ignored by this stream tokenizer.
      *
@@ -488,7 +490,7 @@ public @UsesObjectEquals class StreamTokenizer {
      * If the flag argument is {@code true}, then the value in the
      * {@code sval} field is lowercased whenever a word token is
      * returned (the {@code ttype} field has the
-     * value {@code TT_WORD} by the {@code nextToken} method
+     * value {@code TT_WORD}) by the {@code nextToken} method
      * of this tokenizer.
      * <p>
      * If the flag argument is {@code false}, then the
@@ -765,7 +767,7 @@ public @UsesObjectEquals class StreamTokenizer {
     }
 
     /**
-     * Return the current line number.
+     * Returns the current line number.
      *
      * @return  the current line number of this stream tokenizer.
      */

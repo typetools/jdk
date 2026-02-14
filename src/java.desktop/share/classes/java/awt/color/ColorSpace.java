@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -104,12 +104,12 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
     private static final long serialVersionUID = -409452704308689724L;
 
     /**
-     * One of the {@code ColorSpace} type constants.
+     * @serial One of the {@code ColorSpace} type constants.
      */
     private final int type;
 
     /**
-     * The number of components in the color space.
+     * @serial The number of components in the color space.
      */
     private final int numComponents;
 
@@ -309,6 +309,8 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
      *         class constants (e.g. {@code CS_sRGB}, {@code CS_LINEAR_RGB},
      *         {@code CS_CIEXYZ}, {@code CS_GRAY}, or {@code CS_PYCC})
      * @return the requested {@code ColorSpace} object
+     * @throws IllegalArgumentException if {@code cspace} is not one of the
+     *         predefined color space types
      */
     // NOTE: This method may be called by privileged threads.
     //       DO NOT INVOKE CLIENT CODE ON THIS THREAD!
@@ -354,6 +356,7 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
      * @return a float array of length 3
      * @throws ArrayIndexOutOfBoundsException if array length is not at least
      *         the number of components in this {@code ColorSpace}
+     * @throws NullPointerException if {@code colorvalue} is {@code null}
      */
     public abstract float[] toRGB(float[] colorvalue);
 
@@ -375,6 +378,7 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
      * @return a float array with length equal to the number of components in
      *         this {@code ColorSpace}
      * @throws ArrayIndexOutOfBoundsException if array length is not at least 3
+     * @throws NullPointerException if {@code rgbvalue} is {@code null}
      */
     public abstract float[] fromRGB(float[] rgbvalue);
 
@@ -399,7 +403,8 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
      *         components in this {@code ColorSpace}
      * @return a float array of length 3
      * @throws ArrayIndexOutOfBoundsException if array length is not at least
-     *         the number of components in this {@code ColorSpace}.
+     *         the number of components in this {@code ColorSpace}
+     * @throws NullPointerException if {@code colorvalue} is {@code null}
      */
     public abstract float[] toCIEXYZ(float[] colorvalue);
 
@@ -425,6 +430,7 @@ public abstract @UsesObjectEquals class ColorSpace implements Serializable {
      * @return a float array with length equal to the number of components in
      *         this {@code ColorSpace}
      * @throws ArrayIndexOutOfBoundsException if array length is not at least 3
+     * @throws NullPointerException if {@code colorvalue} is {@code null}
      */
     public abstract float[] fromCIEXYZ(float[] colorvalue);
 

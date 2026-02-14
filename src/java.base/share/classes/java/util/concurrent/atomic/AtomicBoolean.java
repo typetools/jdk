@@ -38,6 +38,8 @@ package java.util.concurrent.atomic;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.invoke.MhUtil;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
@@ -54,16 +56,10 @@ import java.lang.invoke.VarHandle;
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class AtomicBoolean implements java.io.Serializable {
     private static final long serialVersionUID = 4654671469794556979L;
-    private static final VarHandle VALUE;
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            VALUE = l.findVarHandle(AtomicBoolean.class, "value", int.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private static final VarHandle VALUE = MhUtil.findVarHandle(
+            MethodHandles.lookup(), "value", int.class);
 
+    /** @serial */
     private volatile int value;
 
     /**
@@ -180,8 +176,7 @@ public @UsesObjectEquals class AtomicBoolean implements java.io.Serializable {
     }
 
     /**
-     * Returns the String representation of the current value.
-     * @return the String representation of the current value
+     * {@return the String representation of the current value}
      */
     public String toString() {
         return Boolean.toString(get());

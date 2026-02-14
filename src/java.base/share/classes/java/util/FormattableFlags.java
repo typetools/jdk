@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @since  1.5
  */
 @AnnotatedFor({"interning", "lock", "nullness"})
-public @UsesObjectEquals class FormattableFlags {
+public final @UsesObjectEquals class FormattableFlags {
 
     // Explicit instantiation of this class is prohibited.
     private FormattableFlags() {}

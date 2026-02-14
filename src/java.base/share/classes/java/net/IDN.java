@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,8 +30,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
 import java.io.IOException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 import jdk.internal.icu.impl.Punycode;
 import jdk.internal.icu.text.StringPrep;
@@ -71,6 +69,9 @@ import jdk.internal.icu.text.UCharacterIterator;
  * discusses security issues of IDN support as well as possible solutions.
  * Applications are responsible for taking adequate security measures when using
  * international domain names.
+ *
+ * <p>Unless otherwise specified, passing a {@code null} argument to any method
+ * in this class will cause a {@link NullPointerException} to be thrown.
  *
  * @spec https://www.rfc-editor.org/info/rfc1122
  *      RFC 1122: Requirements for Internet Hosts - Communication Layers
@@ -247,25 +248,20 @@ public final @UsesObjectEquals class IDN {
     private static final int MAX_LABEL_LENGTH   = 63;
 
     // single instance of nameprep
-    private static StringPrep namePrep = null;
+    private static final StringPrep namePrep;
 
     static {
+        StringPrep stringPrep = null;
         try {
             final String IDN_PROFILE = "/sun/net/idn/uidna.spp";
-            @SuppressWarnings("removal")
-            InputStream stream = System.getSecurityManager() != null
-                    ? AccessController.doPrivileged(new PrivilegedAction<>() {
-                            public InputStream run() {
-                                return StringPrep.class.getResourceAsStream(IDN_PROFILE);
-                            }})
-                    : StringPrep.class.getResourceAsStream(IDN_PROFILE);
-
-            namePrep = new StringPrep(stream);
+            InputStream stream = StringPrep.class.getResourceAsStream(IDN_PROFILE);
+            stringPrep = new StringPrep(stream);
             stream.close();
         } catch (IOException e) {
             // should never reach here
             assert false;
         }
+        namePrep = stringPrep;
     }
 
 

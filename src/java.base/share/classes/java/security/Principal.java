@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,6 +56,7 @@ public interface Principal {
      * @return {@code true} if the {@code Principal} passed in is the same as
      * that encapsulated by this {@code Principal}, and {@code false} otherwise.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     boolean equals(Object another);
@@ -68,10 +69,9 @@ public interface Principal {
     String toString();
 
     /**
-     * Returns a hashcode for this {@code Principal}.
-     *
-     * @return a hashcode for this {@code Principal}.
+     * {@return a hashcode for this {@code Principal}}
      */
+    @Override
     int hashCode();
 
     /**

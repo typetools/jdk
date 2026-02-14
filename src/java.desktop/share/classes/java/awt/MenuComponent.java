@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,8 +33,6 @@ import java.awt.peer.MenuComponentPeer;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serial;
-import java.security.AccessControlContext;
-import java.security.AccessController;
 
 import javax.accessibility.Accessible;
 import javax.accessibility.AccessibleComponent;
@@ -62,14 +60,6 @@ import sun.awt.ComponentFactory;
  */
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class MenuComponent implements java.io.Serializable {
-
-    static {
-        /* ensure that the necessary native libraries are loaded */
-        Toolkit.loadLibraries();
-        if (!GraphicsEnvironment.isHeadless()) {
-            initIDs();
-        }
-    }
 
     transient volatile MenuComponentPeer peer;
     transient volatile MenuContainer parent;
@@ -114,25 +104,6 @@ public abstract @UsesObjectEquals class MenuComponent implements java.io.Seriali
      * @see #dispatchEvent(AWTEvent)
      */
     volatile boolean newEventsOnly;
-
-    /*
-     * The menu's AccessControlContext.
-     */
-    @SuppressWarnings("removal")
-    private transient volatile AccessControlContext acc =
-            AccessController.getContext();
-
-    /*
-     * Returns the acc this menu component was constructed with.
-     */
-    @SuppressWarnings("removal")
-    final AccessControlContext getAccessControlContext() {
-        if (acc == null) {
-            throw new SecurityException(
-                    "MenuComponent is missing AccessControlContext");
-        }
-        return acc;
-    }
 
     /*
      * Internal constants for serialization.
@@ -454,31 +425,22 @@ public abstract @UsesObjectEquals class MenuComponent implements java.io.Seriali
      *
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
-    @SuppressWarnings("removal")
     @Serial
     private void readObject(ObjectInputStream s)
         throws ClassNotFoundException, IOException, HeadlessException
     {
         GraphicsEnvironment.checkHeadless();
 
-        acc = AccessController.getContext();
-
         s.defaultReadObject();
 
         appContext = AppContext.getAppContext();
     }
 
-    /**
-     * Initialize JNI field and method IDs.
-     */
-    private static native void initIDs();
-
-
     /*
      * --- Accessibility Support ---
      */
     /**
-     * MenuComponent will contain all of the methods in interface Accessible,
+     * @serial MenuComponent will contain all of the methods in interface Accessible,
      * though it won't actually implement the interface - that will be up
      * to the individual objects which extend MenuComponent.
      */

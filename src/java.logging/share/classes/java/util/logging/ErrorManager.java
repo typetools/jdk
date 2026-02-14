@@ -37,6 +37,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * then rather than throwing an Exception back to the issuer of
  * the logging call (who is unlikely to be interested) the Handler
  * should call its associated ErrorManager.
+ *
+ * @since 1.4
  */
 
 @AnnotatedFor({"interning"})

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -117,7 +117,7 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
     }
 
     /**
-     * Creates a ThreadGroup without any permission or other checks.
+     * Creates a ThreadGroup.
      */
     ThreadGroup(ThreadGroup parent, String name, int maxPriority, boolean daemon) {
         this.parent = parent;
@@ -135,26 +135,11 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
         }
     }
 
-    private ThreadGroup(Void unused, ThreadGroup parent, String name) {
-        this(parent, name, parent.maxPriority, parent.daemon);
-    }
-
-    private static Void checkParentAccess(ThreadGroup parent) {
-        parent.checkAccess();
-        return null;
-    }
-
     /**
      * Constructs a new thread group. The parent of this new group is
      * the thread group of the currently running thread.
-     * <p>
-     * The {@code checkAccess} method of the parent thread group is
-     * called with no arguments; this may result in a security exception.
      *
      * @param   name   the name of the new thread group, can be {@code null}
-     * @throws  SecurityException  if the current thread cannot create a
-     *               thread in the specified thread group.
-     * @see     java.lang.ThreadGroup#checkAccess()
      */
     public ThreadGroup(@Nullable String name) {
         this(Thread.currentThread().getThreadGroup(), name);
@@ -163,18 +148,13 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
     /**
      * Creates a new thread group. The parent of this new group is the
      * specified thread group.
-     * <p>
-     * The {@code checkAccess} method of the parent thread group is
-     * called with no arguments; this may result in a security exception.
      *
      * @param     parent   the parent thread group.
      * @param     name     the name of the new thread group, can be {@code null}
-     * @throws    SecurityException  if the current thread cannot create a
-     *               thread in the specified thread group.
-     * @see     java.lang.ThreadGroup#checkAccess()
      */
+    @SuppressWarnings("this-escape")
     public ThreadGroup(ThreadGroup parent, @Nullable String name) {
-        this(checkParentAccess(parent), parent, name);
+        this(parent, name, parent.maxPriority, parent.daemon);
     }
 
     /**
@@ -188,22 +168,11 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
 
     /**
      * Returns the parent of this thread group.
-     * <p>
-     * First, if the parent is not {@code null}, the
-     * {@code checkAccess} method of the parent thread group is
-     * called with no arguments; this may result in a security exception.
      *
      * @return  the parent of this thread group. The top-level thread group
      *          is the only thread group whose parent is {@code null}.
-     * @throws  SecurityException  if the current thread cannot modify
-     *               this thread group.
-     * @see        java.lang.ThreadGroup#checkAccess()
-     * @see        java.lang.SecurityException
-     * @see        java.lang.RuntimePermission
      */
     public final @Nullable ThreadGroup getParent() {
-        if (parent != null)
-            parent.checkAccess();
         return parent;
     }
 
@@ -257,15 +226,8 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
     /**
      * Sets the daemon status of this thread group.
      * The daemon status is not used for anything.
-     * <p>
-     * First, the {@code checkAccess} method of this thread group is
-     * called with no arguments; this may result in a security exception.
      *
      * @param      daemon the daemon status
-     * @throws     SecurityException  if the current thread cannot modify
-     *               this thread group.
-     * @see        java.lang.SecurityException
-     * @see        java.lang.ThreadGroup#checkAccess()
      *
      * @deprecated This method originally configured whether the thread group is
      *             a <i>daemon thread group</i> that is automatically destroyed
@@ -276,7 +238,6 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      */
     @Deprecated(since="16", forRemoval=true)
     public final void setDaemon(boolean daemon) {
-        checkAccess();
         this.daemon = daemon;
     }
 
@@ -286,9 +247,6 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      * threads</em></a> is not changed by this method (the new priority is ignored).
      * Threads in the thread group (or subgroups) that already have a higher
      * priority are not affected by this method.
-     * <p>
-     * First, the {@code checkAccess} method of this thread group is
-     * called with no arguments; this may result in a security exception.
      * <p>
      * If the {@code pri} argument is less than
      * {@link Thread#MIN_PRIORITY} or greater than
@@ -304,15 +262,10 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      * every thread group that belongs to this thread group.
      *
      * @param      pri   the new priority of the thread group.
-     * @throws     SecurityException  if the current thread cannot modify
-     *               this thread group.
      * @see        #getMaxPriority
-     * @see        java.lang.SecurityException
-     * @see        java.lang.ThreadGroup#checkAccess()
      */
     @SuppressWarnings("index:array.access.unsafe.high")
     public final void setMaxPriority(int pri) {
-        checkAccess();
         if (pri >= Thread.MIN_PRIORITY && pri <= Thread.MAX_PRIORITY) {
             synchronized (this) {
                 if (parent == null) {
@@ -344,31 +297,16 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
     }
 
     /**
-     * Determines if the currently running thread has permission to
-     * modify this thread group.
-     * <p>
-     * If there is a security manager, its {@code checkAccess} method
-     * is called with this thread group as its argument. This may result
-     * in throwing a {@code SecurityException}.
+     * Does nothing.
      *
-     * @throws     SecurityException  if the current thread is not allowed to
-     *               access this thread group.
-     * @see        java.lang.SecurityManager#checkAccess(java.lang.ThreadGroup)
-     * @deprecated This method is only useful in conjunction with
-     *       {@linkplain SecurityManager the Security Manager}, which is
-     *       deprecated and subject to removal in a future release.
-     *       Consequently, this method is also deprecated and subject to
-     *       removal. There is no replacement for the Security Manager or this
-     *       method.
+     * @deprecated This method originally determined if the currently running
+     * thread had permission to modify this thread group. This method was only
+     * useful in conjunction with {@linkplain SecurityManager the Security Manager},
+     * which is no longer supported. There is no replacement for the Security
+     * Manager or this method.
      */
     @Deprecated(since="17", forRemoval=true)
-    public final void checkAccess() {
-        @SuppressWarnings("removal")
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkAccess(this);
-        }
-    }
+    public final void checkAccess() { }
 
     /**
      * Returns an estimate of the number of {@linkplain Thread#isAlive() live}
@@ -414,10 +352,6 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *         an array into which to put the list of threads
      *
      * @return  the number of threads put into the array
-     *
-     * @throws  SecurityException
-     *          if {@linkplain #checkAccess checkAccess} determines that
-     *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(Thread[] list) {
         return enumerate(list, true);
@@ -449,14 +383,9 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *         thread group
      *
      * @return  the number of threads put into the array
-     *
-     * @throws  SecurityException
-     *          if {@linkplain #checkAccess checkAccess} determines that
-     *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(Thread[] list, boolean recurse) {
         Objects.requireNonNull(list);
-        checkAccess();
         int n = 0;
         if (list.length > 0) {
             for (Thread thread : Thread.getAllThreads()) {
@@ -509,10 +438,6 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *         an array into which to put the list of thread groups
      *
      * @return  the number of thread groups put into the array
-     *
-     * @throws  SecurityException
-     *          if {@linkplain #checkAccess checkAccess} determines that
-     *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(ThreadGroup[] list) {
         return enumerate(list, true);
@@ -543,14 +468,9 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
      *         if {@code true}, recursively enumerate all subgroups
      *
      * @return  the number of thread groups put into the array
-     *
-     * @throws  SecurityException
-     *          if {@linkplain #checkAccess checkAccess} determines that
-     *          the current thread cannot access this thread group
      */
     public @NonNegative int enumerate(ThreadGroup[] list, boolean recurse) {
         Objects.requireNonNull(list);
-        checkAccess();
         return enumerate(list, 0, recurse);
     }
 
@@ -571,60 +491,20 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
     }
 
     /**
-     * Throws {@code UnsupportedOperationException}.
-     *
-     * @deprecated This method was originally specified to stop all threads in
-     *             the thread group. It was inherently unsafe.
-     */
-    @Deprecated(since="1.2", forRemoval=true)
-    public final void stop() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Interrupts all {@linkplain Thread#isAlive() live} platform threads in
      * this thread group and its subgroups.
      *
-     * @throws     SecurityException  if the current thread is not allowed
-     *               to access this thread group or any of the threads in
-     *               the thread group.
      * @see        java.lang.Thread#interrupt()
-     * @see        java.lang.SecurityException
-     * @see        java.lang.ThreadGroup#checkAccess()
      * @since      1.2
      */
     @SuppressWarnings("index:array.access.unsafe.high")
     public final void interrupt() {
-        checkAccess();
         for (Thread thread : Thread.getAllThreads()) {
             ThreadGroup g = thread.getThreadGroup();
             if (parentOf(g)) {
                 thread.interrupt();
             }
         }
-    }
-
-    /**
-     * Throws {@code UnsupportedOperationException}.
-     *
-     * @deprecated This method was originally specified to suspend all threads
-     *             in the thread group.
-     */
-    @Deprecated(since="1.2", forRemoval=true)
-    public final void suspend() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Throws {@code UnsupportedOperationException}.
-     *
-     * @deprecated This method was originally specified to resume all threads
-     *             in the thread group.
-     */
-    @Deprecated(since="1.2", forRemoval=true)
-    @SuppressWarnings({"removal", "index:array.access.unsafe.high"})
-    public final void resume() {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -798,10 +678,17 @@ public @UsesObjectEquals class ThreadGroup implements Thread.UncaughtExceptionHa
 
     /**
      * Returns a snapshot of the subgroups as an array, used by JVMTI.
+     * WARNING: Make sure this method does not trigger any class loading,
+     * because a ClassPrepare event can deadlock the debugger and debug agent.
      */
     private ThreadGroup[] subgroupsAsArray() {
         List<ThreadGroup> groups = synchronizedSubgroups();
-        return groups.toArray(new ThreadGroup[0]);
+        int count = groups.size();
+        var array = new ThreadGroup[count];
+        for (int i = 0; i < count; i++) {
+            array[i] = groups.get(i);
+        }
+        return array;
     }
 
     /**

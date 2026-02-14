@@ -34,8 +34,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *
  * @see ObjectInputValidation
  * @since 1.1
- *
- * @since   1.1
  */
 @AnnotatedFor({"nullness"})
 public class InvalidObjectException extends ObjectStreamException {

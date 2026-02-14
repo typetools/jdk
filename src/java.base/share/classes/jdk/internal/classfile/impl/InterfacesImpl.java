@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,17 +24,16 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import jdk.internal.classfile.constantpool.ClassEntry;
-import jdk.internal.classfile.Interfaces;
+import java.lang.classfile.Interfaces;
+import java.lang.classfile.constantpool.ClassEntry;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public final class InterfacesImpl
         extends AbstractElement

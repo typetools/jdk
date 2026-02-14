@@ -36,7 +36,7 @@ import java.util.Objects;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class AttributeClass {
+public final class AttributeClass {
     private String myName;
     private int myType;
     private int nameLen;
@@ -274,6 +274,7 @@ public class AttributeClass {
         return Objects.hash(myType, myName, myValue);
     }
 
+    @Override
     public String toString() {
         return myName;
     }

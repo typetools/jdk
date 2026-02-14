@@ -215,6 +215,7 @@ public final class XAtom {
     void register() {
         register(this);
     }
+    @Override
     public String toString() {
         if (name != null) {
             return name + ":" + atom;
@@ -775,6 +776,7 @@ public final class XAtom {
         }
     }
 
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
@@ -784,6 +786,7 @@ public final class XAtom {
         XAtom ot = (XAtom)o;
         return (atom == ot.atom && display == ot.display);
     }
+    @Override
     public int hashCode() {
         return (int)((atom ^ display)& 0xFFFFL);
     }

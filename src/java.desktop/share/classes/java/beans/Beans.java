@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -107,8 +107,10 @@ public @UsesObjectEquals class Beans {
      *              object could not be found.
      * @throws IOException if an I/O error occurs.
      * @since 1.2
+     * @deprecated this method will be removed when java.beans.beancontext is removed
      */
-    @SuppressWarnings("deprecation")
+    @Deprecated(since = "23", forRemoval = true)
+    @SuppressWarnings("removal")
     public static Object instantiate(@Nullable ClassLoader cls, String beanName,
                                      @Nullable BeanContext beanContext)
             throws IOException, ClassNotFoundException {
@@ -192,12 +194,7 @@ public @UsesObjectEquals class Beans {
         // Note that calls on the system class loader will
         // look in the bootstrap class loader first.
         if (cls == null) {
-            try {
-                cls = ClassLoader.getSystemClassLoader();
-            } catch (SecurityException ex) {
-                // We're not allowed to access the system class loader.
-                // Drop through.
-            }
+            cls = ClassLoader.getSystemClassLoader();
         }
 
         // Try to find a serialized object with this name
@@ -273,7 +270,7 @@ public @UsesObjectEquals class Beans {
                     // massaging the URL.
 
                     // First find the "resource name" corresponding to the bean
-                    // itself.  So a serialzied bean "a.b.c" would imply a
+                    // itself.  So a serialized bean "a.b.c" would imply a
                     // resource name of "a/b/c.ser" and a classname of "x.y"
                     // would imply a resource name of "x/y.class".
 
@@ -357,7 +354,8 @@ public @UsesObjectEquals class Beans {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
+    @Deprecated(since = "23", forRemoval = true)
+    @SuppressWarnings({ "unchecked", "removal" })
     private static void unsafeBeanContextAdd(BeanContext beanContext, Object res) {
         beanContext.add(res);
     }
@@ -436,26 +434,10 @@ public @UsesObjectEquals class Beans {
      * Used to indicate whether of not we are running in an application
      * builder environment.
      *
-     * <p>Note that this method is security checked
-     * and is not available to (for example) untrusted applets.
-     * More specifically, if there is a security manager,
-     * its {@code checkPropertiesAccess}
-     * method is called. This could result in a SecurityException.
-     *
      * @param isDesignTime  True if we're in an application builder tool.
-     * @throws  SecurityException  if a security manager exists and its
-     *             {@code checkPropertiesAccess} method doesn't allow setting
-     *              of system properties.
-     * @see SecurityManager#checkPropertiesAccess
      */
 
-    public static void setDesignTime(boolean isDesignTime)
-                        throws SecurityException {
-        @SuppressWarnings("removal")
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPropertiesAccess();
-        }
+    public static void setDesignTime(boolean isDesignTime) {
         ThreadGroupContext.getContext().setDesignTime(isDesignTime);
     }
 
@@ -463,26 +445,10 @@ public @UsesObjectEquals class Beans {
      * Used to indicate whether of not we are running in an environment
      * where GUI interaction is available.
      *
-     * <p>Note that this method is security checked
-     * and is not available to (for example) untrusted applets.
-     * More specifically, if there is a security manager,
-     * its {@code checkPropertiesAccess}
-     * method is called. This could result in a SecurityException.
-     *
      * @param isGuiAvailable  True if GUI interaction is available.
-     * @throws  SecurityException  if a security manager exists and its
-     *             {@code checkPropertiesAccess} method doesn't allow setting
-     *              of system properties.
-     * @see SecurityManager#checkPropertiesAccess
      */
 
-    public static void setGuiAvailable(boolean isGuiAvailable)
-                        throws SecurityException {
-        @SuppressWarnings("removal")
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPropertiesAccess();
-        }
+    public static void setGuiAvailable(boolean isGuiAvailable) {
         ThreadGroupContext.getContext().setGuiAvailable(isGuiAvailable);
     }
 }

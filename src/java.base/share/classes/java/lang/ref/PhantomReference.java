@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,7 +57,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  */
 
 @AnnotatedFor({"lock", "nullness"})
-public non-sealed class PhantomReference<T> extends Reference<T> {
+public non-sealed class PhantomReference<@jdk.internal.RequiresIdentity T> extends Reference<T> {
 
     /**
      * Returns this reference object's referent.  Because the referent of a
@@ -84,6 +84,19 @@ public non-sealed class PhantomReference<T> extends Reference<T> {
     @IntrinsicCandidate
     private native boolean refersTo0(Object o);
 
+    /* Override the implementation of Reference.clear.
+     * Phantom references are weaker than finalization, so the referent
+     * access needs to be handled differently for garbage collectors that
+     * do reference processing concurrently.
+     */
+    @Override
+    void clearImpl() {
+        clear0();
+    }
+
+    @IntrinsicCandidate
+    private native void clear0();
+
     /**
      * Creates a new phantom reference that refers to the given object and
      * is registered with the given queue.
@@ -95,7 +108,7 @@ public non-sealed class PhantomReference<T> extends Reference<T> {
      * @param q the queue with which the reference is to be registered,
      *          or {@code null} if registration is not required
      */
-    public PhantomReference(@Nullable T referent, ReferenceQueue<? super T> q) {
+    public PhantomReference(@jdk.internal.RequiresIdentity @Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
     }
 

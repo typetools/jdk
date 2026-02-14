@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2025, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2009 Google Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -314,7 +314,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
      * @return  the length of the run beginning at the specified position in
      *          the specified array
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     private static int countRunAndMakeAscending(Object[] a, int lo, int hi) {
         assert lo < hi;
         int runHi = lo + 1;
@@ -653,7 +653,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
      *        (must be aBase + aLen)
      * @param len2  length of second run to be merged (must be > 0)
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     private void mergeLo(int base1, int len1, int base2, int len2) {
         assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
@@ -770,7 +770,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
      *        (must be aBase + aLen)
      * @param len2  length of second run to be merged (must be > 0)
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     private void mergeHi(int base1, int len1, int base2, int len2) {
         assert len1 > 0 && len2 > 0 && base1 + len1 == base2;
 
@@ -900,7 +900,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
             else
                 newSize = Math.min(newSize, a.length >>> 1);
 
-            @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
+            @SuppressWarnings("UnnecessaryLocalVariable")
             Object[] newArray = new Object[newSize];
             tmp = newArray;
             tmpLen = newSize;

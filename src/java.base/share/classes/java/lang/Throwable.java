@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,8 +35,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.*;
 import java.util.*;
-import jdk.internal.access.SharedSecrets;
-import jdk.internal.misc.InternalLock;
+import jdk.internal.event.ThrowableTracer;
 
 /**
  * The {@code Throwable} class is the superclass of all errors and
@@ -126,6 +125,12 @@ public @UsesObjectEquals class Throwable implements Serializable {
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     @java.io.Serial
     private static final long serialVersionUID = -3042686055658047285L;
+
+    /**
+     * Flag set by jdk.internal.event.JFRTracing to indicate if
+     * exceptions should be traced by JFR.
+     */
+    static boolean jfrTracing;
 
     /**
      * The JVM saves some indication of the stack backtrace in this slot.
@@ -263,9 +268,13 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * <p>The {@link #fillInStackTrace()} method is called to initialize
      * the stack trace data in the newly created throwable.
      */
+    @SuppressWarnings("this-escape")
     @SideEffectFree
     public Throwable() {
         fillInStackTrace();
+        if (jfrTracing) {
+            ThrowableTracer.traceThrowable(getClass(), null);
+        }
     }
 
     /**
@@ -280,9 +289,13 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *          later retrieval by the {@link #getMessage()} method.
      */
     @SideEffectFree
+    @SuppressWarnings("this-escape")
     public Throwable(@Nullable String message) {
         fillInStackTrace();
         detailMessage = message;
+        if (jfrTracing) {
+            ThrowableTracer.traceThrowable(getClass(), message);
+        }
     }
 
     /**
@@ -303,10 +316,14 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * @since  1.4
      */
     @SideEffectFree
+    @SuppressWarnings("this-escape")
     public Throwable(@Nullable String message, @Nullable Throwable cause) {
         fillInStackTrace();
         detailMessage = message;
         this.cause = cause;
+        if (jfrTracing) {
+            ThrowableTracer.traceThrowable(getClass(), message);
+        }
     }
 
     /**
@@ -326,11 +343,14 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *         unknown.)
      * @since  1.4
      */
-    @SideEffectFree
+    @SuppressWarnings("this-escape")
     public Throwable(@Nullable Throwable cause) {
         fillInStackTrace();
         detailMessage = (cause==null ? null : cause.toString());
         this.cause = cause;
+        if (jfrTracing) {
+            ThrowableTracer.traceThrowable(getClass(), null);
+        }
     }
 
     /**
@@ -373,6 +393,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * @see ArithmeticException
      * @since 1.7
      */
+    @SuppressWarnings("this-escape")
     @SideEffectFree
     protected Throwable(@Nullable String message, @Nullable Throwable cause,
                         boolean enableSuppression,
@@ -384,8 +405,12 @@ public @UsesObjectEquals class Throwable implements Serializable {
         }
         detailMessage = message;
         this.cause = cause;
-        if (!enableSuppression)
+        if (!enableSuppression) {
             suppressedExceptions = null;
+        }
+        if (jfrTracing) {
+            ThrowableTracer.traceThrowable(getClass(), message);
+        }
     }
 
     /**
@@ -679,39 +704,27 @@ public @UsesObjectEquals class Throwable implements Serializable {
     }
 
     private void printStackTrace(PrintStreamOrWriter s) {
-        Object lock = s.lock();
-        if (lock instanceof InternalLock locker) {
-            locker.lock();
-            try {
-                lockedPrintStackTrace(s);
-            } finally {
-                locker.unlock();
-            }
-        } else synchronized (lock) {
-            lockedPrintStackTrace(s);
-        }
-    }
-
-    private void lockedPrintStackTrace(PrintStreamOrWriter s) {
         // Guard against malicious overrides of Throwable.equals by
         // using a Set with identity equality semantics.
         Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
         dejaVu.add(this);
 
-        // Print our stack trace
-        s.println(this);
-        StackTraceElement[] trace = getOurStackTrace();
-        for (StackTraceElement traceElement : trace)
-            s.println("\tat " + traceElement);
+        synchronized(s.lock()) {
+            // Print our stack trace
+            s.println(this);
+            StackTraceElement[] trace = getOurStackTrace();
+            for (StackTraceElement traceElement : trace)
+                s.println("\tat " + traceElement);
 
-        // Print suppressed exceptions, if any
-        for (Throwable se : getSuppressed())
-            se.printEnclosedStackTrace(s, trace, SUPPRESSED_CAPTION, "\t", dejaVu);
+            // Print suppressed exceptions, if any
+            for (Throwable se : getSuppressed())
+                se.printEnclosedStackTrace(s, trace, SUPPRESSED_CAPTION, "\t", dejaVu);
 
-        // Print cause, if any
-        Throwable ourCause = getCause();
-        if (ourCause != null)
-            ourCause.printEnclosedStackTrace(s, trace, CAUSE_CAPTION, "", dejaVu);
+            // Print cause, if any
+            Throwable ourCause = getCause();
+            if (ourCause != null)
+                ourCause.printEnclosedStackTrace(s, trace, CAUSE_CAPTION, "", dejaVu);
+        }
     }
 
     /**
@@ -723,7 +736,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
                                          String caption,
                                          String prefix,
                                          Set<Throwable> dejaVu) {
-        assert s.isLockedByCurrentThread();
+        assert Thread.holdsLock(s.lock());
         if (dejaVu.contains(this)) {
             s.println(prefix + caption + "[CIRCULAR REFERENCE: " + this + "]");
         } else {
@@ -775,15 +788,6 @@ public @UsesObjectEquals class Throwable implements Serializable {
         /** Returns the object to be locked when using this StreamOrWriter */
         abstract Object lock();
 
-        boolean isLockedByCurrentThread() {
-            Object lock = lock();
-            if (lock instanceof InternalLock locker) {
-                return locker.isHeldByCurrentThread();
-            } else {
-                return Thread.holdsLock(lock);
-            }
-        }
-
         /** Prints the specified string as a line on this StreamOrWriter */
         abstract void println(Object o);
     }
@@ -796,7 +800,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
         }
 
         Object lock() {
-            return SharedSecrets.getJavaIOPrintStreamAccess().lock(printStream);
+            return printStream;
         }
 
         void println(Object o) {
@@ -812,7 +816,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
         }
 
         Object lock() {
-            return SharedSecrets.getJavaIOPrintWriterAccess().lock(printWriter);
+            return printWriter;
         }
 
         void println(Object o) {

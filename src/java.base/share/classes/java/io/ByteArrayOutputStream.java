@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -227,8 +227,8 @@ public class ByteArrayOutputStream extends OutputStream {
      * @return String decoded from the buffer's contents.
      * @since  1.1
      */
-    @SideEffectFree
     @Override
+    @SideEffectFree
     public synchronized String toString(@GuardSatisfied ByteArrayOutputStream this) {
         return new String(buf, 0, count);
     }

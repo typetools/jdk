@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,8 +36,6 @@ import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +43,6 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jdk.internal.misc.InnocuousThread;
-import sun.security.action.GetIntegerAction;
 import sun.net.www.protocol.http.HttpURLConnection;
 import sun.util.logging.PlatformLogger;
 
@@ -75,10 +72,8 @@ public class KeepAliveCache
 
     static final PlatformLogger logger = HttpURLConnection.getHttpLogger();
 
-    @SuppressWarnings("removal")
     static int getUserKeepAliveSeconds(String type) {
-        int v = AccessController.doPrivileged(
-            new GetIntegerAction(keepAliveProp+type, -1)).intValue();
+        int v = Integer.getInteger(keepAliveProp+type, -1);
         return v < -1 ? -1 : v;
     }
 
@@ -95,12 +90,9 @@ public class KeepAliveCache
      */
     static final int MAX_CONNECTIONS = 5;
     static int result = -1;
-    @SuppressWarnings("removal")
     static int getMaxConnections() {
         if (result == -1) {
-            result = AccessController.doPrivileged(
-                new GetIntegerAction("http.maxConnections", MAX_CONNECTIONS))
-                .intValue();
+            result = Integer.getInteger("http.maxConnections", MAX_CONNECTIONS);
             if (result <= 0) {
                 result = MAX_CONNECTIONS;
             }
@@ -125,7 +117,6 @@ public class KeepAliveCache
      * @param url  The URL contains info about the host and port
      * @param http The HttpClient to be cached
      */
-    @SuppressWarnings("removal")
     public void put(final URL url, Object obj, HttpClient http) {
         // this method may need to close an HttpClient, either because
         // it is not cacheable, or because the cache is at its capacity.
@@ -150,15 +141,10 @@ public class KeepAliveCache
                  * The robustness to get around this is in HttpClient.parseHTTP()
                  */
                 final KeepAliveCache cache = this;
-                AccessController.doPrivileged(new PrivilegedAction<>() {
-                    public Void run() {
-                        keepAliveTimer = InnocuousThread.newSystemThread("Keep-Alive-Timer", cache);
-                        keepAliveTimer.setDaemon(true);
-                        keepAliveTimer.setPriority(Thread.MAX_PRIORITY - 2);
-                        keepAliveTimer.start();
-                        return null;
-                    }
-                });
+                keepAliveTimer = InnocuousThread.newSystemThread("Keep-Alive-Timer", cache);
+                keepAliveTimer.setDaemon(true);
+                keepAliveTimer.setPriority(Thread.MAX_PRIORITY - 2);
+                keepAliveTimer.start();
             }
 
             KeepAliveKey key = new KeepAliveKey(url, obj);
@@ -397,9 +383,9 @@ class KeepAliveKey {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj instanceof KeepAliveKey) == false)
+        if (!(obj instanceof KeepAliveKey kae))
             return false;
-        KeepAliveKey kae = (KeepAliveKey)obj;
+
         return host.equals(kae.host)
             && (port == kae.port)
             && protocol.equals(kae.protocol)
@@ -413,7 +399,7 @@ class KeepAliveKey {
     @Override
     public int hashCode() {
         String str = protocol+host+port;
-        return this.obj == null? str.hashCode() :
+        return this.obj == null ? str.hashCode() :
             str.hashCode() + this.obj.hashCode();
     }
 }

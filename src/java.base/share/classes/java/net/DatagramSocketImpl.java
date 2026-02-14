@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -177,7 +177,7 @@ public abstract @UsesObjectEquals class DatagramSocketImpl implements SocketOpti
      * the time-to-live option.
      * @see #getTTL()
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "1.2")
     protected abstract void setTTL(byte ttl) throws IOException;
 
     /**
@@ -189,7 +189,7 @@ public abstract @UsesObjectEquals class DatagramSocketImpl implements SocketOpti
      * @return a byte representing the TTL value
      * @see #setTTL(byte)
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "1.2")
     protected abstract byte getTTL() throws IOException;
 
     /**

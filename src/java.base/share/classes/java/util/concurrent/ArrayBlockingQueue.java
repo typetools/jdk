@@ -51,6 +51,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.AbstractQueue;
 import java.util.Arrays;
@@ -116,17 +117,17 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      */
     private static final long serialVersionUID = -817911632652898426L;
 
-    /** The queued items */
+    /** @serial The queued items */
     @SuppressWarnings("serial") // Conditionally serializable
     final Object[] items;
 
-    /** items index for next take, poll, peek or remove */
+    /** @serial items index for next take, poll, peek or remove */
     int takeIndex;
 
-    /** items index for next put, offer, or add */
+    /** @serial items index for next put, offer, or add */
     int putIndex;
 
-    /** Number of elements in the queue */
+    /** @serial Number of elements in the queue */
     int count;
 
     /*
@@ -134,14 +135,14 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * found in any textbook.
      */
 
-    /** Main lock guarding all access */
+    /** @serial Main lock guarding all access */
     final ReentrantLock lock;
 
-    /** Condition for waiting takes */
+    /** @serial Condition for waiting takes */
     @SuppressWarnings("serial")  // Classes implementing Condition may be serializable.
     private final Condition notEmpty;
 
-    /** Condition for waiting puts */
+    /** @serial Condition for waiting puts */
     @SuppressWarnings("serial")  // Classes implementing Condition may be serializable.
     private final Condition notFull;
 
@@ -1640,6 +1641,23 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
             && (count == 0 || items[takeIndex] != null)
             && (count == capacity || items[putIndex] == null)
             && (count == 0 || items[dec(putIndex, capacity)] != null);
+    }
+
+    /**
+     * Writes the queue to the stream whilst holding the locks to prevent
+     * broken invariants.
+     *
+     * @param s the stream
+     * @throws java.io.IOException if an I/O error occurs
+     */
+    private void writeObject(java.io.ObjectOutputStream s) throws IOException {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            s.defaultWriteObject();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

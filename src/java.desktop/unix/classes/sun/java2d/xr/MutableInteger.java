@@ -37,17 +37,19 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * @author Clemens Eisserer
  */
 
-public class MutableInteger {
+public final class MutableInteger {
     private int value;
 
     public MutableInteger(int value) {
         this.setValue(value);
     }
 
+    @Override
     public int hashCode() {
         return getValue();
     }
 
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {

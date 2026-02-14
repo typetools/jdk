@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -136,16 +136,11 @@ public class CodeSource implements java.io.Serializable {
     }
 
     /**
-     * Returns the hash code value for this object.
-     *
-     * @return a hash code value for this object.
+     * {@return the hash code value for this object}
      */
     @Override
     public int hashCode() {
-        if (location != null)
-            return location.hashCode();
-        else
-            return 0;
+        return Objects.hashCode(location);
     }
 
     /**
@@ -569,7 +564,6 @@ public class CodeSource implements java.io.Serializable {
     private void readObject(java.io.ObjectInputStream ois)
         throws IOException, ClassNotFoundException
     {
-        CertificateFactory cf;
         Hashtable<String, CertificateFactory> cfs = null;
         List<java.security.cert.Certificate> certList = null;
 
@@ -590,10 +584,8 @@ public class CodeSource implements java.io.Serializable {
             // read the certificate type, and instantiate a certificate
             // factory of that type (reuse existing factory if possible)
             String certType = ois.readUTF();
-            if (cfs.containsKey(certType)) {
-                // reuse certificate factory
-                cf = cfs.get(certType);
-            } else {
+            CertificateFactory cf = cfs.get(certType);
+            if (cf == null) {
                 // create new certificate factory
                 try {
                     cf = CertificateFactory.getInstance(certType);

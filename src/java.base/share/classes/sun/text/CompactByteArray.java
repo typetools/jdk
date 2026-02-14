@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.util.Arrays;
+
 /**
  * class CompactATypeArray : use only on primitive data types
  * Provides a compact way to store information that is indexed by Unicode
@@ -82,12 +84,11 @@ public final class CompactByteArray implements Cloneable {
         values = new byte[UNICODECOUNT];
         indices = new short[INDEXCOUNT];
         hashes = new int[INDEXCOUNT];
-        for (i = 0; i < UNICODECOUNT; ++i) {
-            values[i] = defaultValue;
+        if (defaultValue != (byte)0) {
+            Arrays.fill(values, defaultValue);
         }
         for (i = 0; i < INDEXCOUNT; ++i) {
             indices[i] = (short)(i<<BLOCKSHIFT);
-            hashes[i] = 0;
         }
         isCompact = false;
     }
@@ -300,7 +301,7 @@ public final class CompactByteArray implements Cloneable {
             if (elementAt((char)i) != other.elementAt((char)i))
                 return false;
         }
-        return true; // we made it through the guantlet.
+        return true; // we made it through the gauntlet.
     }
 
     /**

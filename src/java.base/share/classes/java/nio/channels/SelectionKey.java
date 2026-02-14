@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,8 @@ package java.nio.channels;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.mustcall.qual.NotOwning;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import jdk.internal.invoke.MhUtil;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -434,15 +436,9 @@ public abstract @UsesObjectEquals class SelectionKey {
 
     // -- Attachments --
 
-    private static final VarHandle ATTACHMENT;
-    static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            ATTACHMENT = l.findVarHandle(SelectionKey.class, "attachment", Object.class);
-        } catch (Exception e) {
-            throw new InternalError(e);
-        }
-    }
+    private static final VarHandle ATTACHMENT = MhUtil.findVarHandle(
+            MethodHandles.lookup(), "attachment", Object.class);
+
     private volatile Object attachment;
 
     /**

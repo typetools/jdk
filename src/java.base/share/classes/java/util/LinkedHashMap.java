@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -345,7 +345,7 @@ public class LinkedHashMap<K,V>
     static final int PUT_NORM = 0;
     static final int PUT_FIRST = 1;
     static final int PUT_LAST = 2;
-    int putMode = PUT_NORM;
+    transient int putMode = PUT_NORM;
 
     // Called after update, but not after insertion
     void afterNodeAccess(Node<K,V> e) {
@@ -489,6 +489,7 @@ public class LinkedHashMap<K,V>
      * @param  m the map whose mappings are to be placed in this map
      * @throws NullPointerException if the specified map is null
      */
+    @SuppressWarnings("this-escape")
     public @PolyNonEmpty LinkedHashMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         super();
         accessOrder = false;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -67,8 +67,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
 
 import static java.time.LocalTime.NANOS_PER_MINUTE;
@@ -767,7 +765,7 @@ public abstract class Clock implements InstantSource {
         @Override
         public long millis() {
             long millis = baseClock.millis();
-            return millis - Math.floorMod(millis, tickNanos / 1000_000L);
+            return tickNanos < 1000_000L ? millis : millis - Math.floorMod(millis, tickNanos / 1000_000L);
         }
         @Override
         public Instant instant() {
@@ -788,7 +786,7 @@ public abstract class Clock implements InstantSource {
         }
         @Override
         public int hashCode() {
-            return baseClock.hashCode() ^ ((int) (tickNanos ^ (tickNanos >>> 32)));
+            return baseClock.hashCode() ^ Long.hashCode(tickNanos);
         }
         @Override
         public String toString() {

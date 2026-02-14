@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,8 +36,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
 import java.lang.ref.WeakReference;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Locale;
@@ -596,7 +594,7 @@ public @UsesObjectEquals class Logger {
             // should never come here
             throw new InternalError("invalid logger merge");
         }
-        checkPermission();
+        ensureManagerInitialized();
         final ConfigurationData cfg = config;
         if (cfg != system.config) {
             config = cfg.merge(system);
@@ -631,13 +629,12 @@ public @UsesObjectEquals class Logger {
         this.manager = manager;
     }
 
-    private void checkPermission() throws SecurityException {
+    private void ensureManagerInitialized() {
         if (!anonymous) {
             if (manager == null) {
                 // Complete initialization of the global Logger.
                 manager = LogManager.getLogManager();
             }
-            manager.checkPermission();
         }
     }
 
@@ -650,17 +647,8 @@ public @UsesObjectEquals class Logger {
     // These system loggers only set the resource bundle to the given
     // resource bundle name (rather than the default system resource bundle).
     private static class SystemLoggerHelper {
-        static boolean disableCallerCheck = getBooleanProperty("sun.util.logging.disableCallerCheck");
-        private static boolean getBooleanProperty(final String key) {
-            @SuppressWarnings("removal")
-            String s = AccessController.doPrivileged(new PrivilegedAction<String>() {
-                @Override
-                public String run() {
-                    return System.getProperty(key);
-                }
-            });
-            return Boolean.parseBoolean(s);
-        }
+        static boolean disableCallerCheck =
+                Boolean.getBoolean("sun.util.logging.disableCallerCheck");
     }
 
     private static Logger demandLogger(String name, @Nullable String resourceBundleName, Class<?> caller) {
@@ -842,22 +830,19 @@ public @UsesObjectEquals class Logger {
 
     /**
      * Create an anonymous Logger.  The newly created Logger is not
-     * registered in the LogManager namespace.  There will be no
-     * access checks on updates to the logger.
+     * registered in the LogManager namespace.
      * <p>
-     * This factory method is primarily intended for use from applets.
+     * This factory method was primarily intended for use from applets.
      * Because the resulting Logger is anonymous it can be kept private
-     * by the creating class.  This removes the need for normal security
-     * checks, which in turn allows untrusted applet code to update
-     * the control state of the Logger.  For example an applet can do
+     * by the creating class.  This removed the need for normal security
+     * checks, which in turn allowed untrusted applet code to update
+     * the control state of the Logger.  For example an applet could do
      * a setLevel or an addHandler on an anonymous Logger.
      * <p>
      * Even although the new logger is anonymous, it is configured
      * to have the root logger ("") as its parent.  This means that
      * by default it inherits its effective level and handlers
-     * from the root logger. Changing its parent via the
-     * {@link #setParent(java.util.logging.Logger) setParent} method
-     * will still require the security permission specified by that method.
+     * from the root logger.
      *
      * @return a newly created private Logger
      */
@@ -868,22 +853,19 @@ public @UsesObjectEquals class Logger {
 
     /**
      * Create an anonymous Logger.  The newly created Logger is not
-     * registered in the LogManager namespace.  There will be no
-     * access checks on updates to the logger.
+     * registered in the LogManager namespace.
      * <p>
-     * This factory method is primarily intended for use from applets.
+     * This factory method was primarily intended for use from applets.
      * Because the resulting Logger is anonymous it can be kept private
-     * by the creating class.  This removes the need for normal security
-     * checks, which in turn allows untrusted applet code to update
-     * the control state of the Logger.  For example an applet can do
+     * by the creating class.  This removed the need for normal security
+     * checks, which in turn allowed untrusted applet code to update
+     * the control state of the Logger.  For example an applet could do
      * a setLevel or an addHandler on an anonymous Logger.
      * <p>
      * Even although the new logger is anonymous, it is configured
      * to have the root logger ("") as its parent.  This means that
      * by default it inherits its effective level and handlers
-     * from the root logger.  Changing its parent via the
-     * {@link #setParent(java.util.logging.Logger) setParent} method
-     * will still require the security permission specified by that method.
+     * from the root logger.
      *
      * @param   resourceBundleName  name of ResourceBundle to be used for localizing
      *                          messages for this logger.
@@ -957,12 +939,9 @@ public @UsesObjectEquals class Logger {
      * be published.
      *
      * @param   newFilter  a filter object (may be null)
-     * @throws  SecurityException if a security manager exists,
-     *          this logger is not anonymous, and the caller
-     *          does not have LoggingPermission("control").
      */
-    public void setFilter(@GuardSatisfied Logger this, @Nullable Filter newFilter) throws SecurityException {
-        checkPermission();
+    public void setFilter(@GuardSatisfied Logger this, @Nullable Filter newFilter) {
+        ensureManagerInitialized();
         config.setFilter(newFilter);
     }
 
@@ -2060,12 +2039,9 @@ public @UsesObjectEquals class Logger {
      * (non-null) level value.
      *
      * @param newLevel   the new value for the log level (may be null)
-     * @throws  SecurityException if a security manager exists,
-     *          this logger is not anonymous, and the caller
-     *          does not have LoggingPermission("control").
      */
-    public void setLevel(@GuardSatisfied Logger this, @Nullable Level newLevel) throws SecurityException {
-        checkPermission();
+    public void setLevel(@GuardSatisfied Logger this, @Nullable Level newLevel) {
+        ensureManagerInitialized();
         synchronized (treeLock) {
             config.setLevelObject(newLevel);
             updateEffectiveLevel();
@@ -2122,13 +2098,10 @@ public @UsesObjectEquals class Logger {
      * that essentially act as default handlers for all loggers.
      *
      * @param   handler a logging Handler
-     * @throws  SecurityException if a security manager exists,
-     *          this logger is not anonymous, and the caller
-     *          does not have LoggingPermission("control").
      */
-    public void addHandler(@GuardSatisfied Logger this, Handler handler) throws SecurityException {
+    public void addHandler(@GuardSatisfied Logger this, Handler handler) {
         Objects.requireNonNull(handler);
-        checkPermission();
+        ensureManagerInitialized();
         config.addHandler(handler);
     }
 
@@ -2138,12 +2111,9 @@ public @UsesObjectEquals class Logger {
      * Returns silently if the given Handler is not found or is null
      *
      * @param   handler a logging Handler
-     * @throws  SecurityException if a security manager exists,
-     *          this logger is not anonymous, and the caller
-     *          does not have LoggingPermission("control").
      */
-    public void removeHandler(@GuardSatisfied Logger this, @Nullable Handler handler) throws SecurityException {
-        checkPermission();
+    public void removeHandler(@GuardSatisfied Logger this, @Nullable Handler handler) {
+        ensureManagerInitialized();
         if (handler == null) {
             return;
         }
@@ -2174,12 +2144,9 @@ public @UsesObjectEquals class Logger {
      *
      * @param useParentHandlers   true if output is to be sent to the
      *          logger's parent.
-     * @throws  SecurityException if a security manager exists,
-     *          this logger is not anonymous, and the caller
-     *          does not have LoggingPermission("control").
      */
     public void setUseParentHandlers(@GuardSatisfied Logger this, boolean useParentHandlers) {
-        checkPermission();
+        ensureManagerInitialized();
         config.setUseParentHandlers(useParentHandlers);
     }
 
@@ -2276,11 +2243,8 @@ public @UsesObjectEquals class Logger {
                     try {
                         // We are called by an unnamed module: try with the
                         // unnamed module class loader:
-                        PrivilegedAction<ClassLoader> getModuleClassLoader =
-                                () -> callerModule.getClassLoader();
-                        @SuppressWarnings("removal")
-                        ClassLoader moduleCL =
-                                AccessController.doPrivileged(getModuleClassLoader);
+                        ClassLoader moduleCL = callerModule.getClassLoader();
+
                         // moduleCL can be null if the logger is created by a class
                         // appended to the bootclasspath.
                         // If moduleCL is null we would use cl, but we already tried
@@ -2356,7 +2320,7 @@ public @UsesObjectEquals class Logger {
         setCallerModuleRef(callerModule);
 
         if (isSystemLogger && (callerModule != null && !isSystem(callerModule))) {
-            checkPermission();
+            ensureManagerInitialized();
         }
 
         if (name.equals(SYSTEM_LOGGER_RB_NAME)) {
@@ -2386,13 +2350,10 @@ public @UsesObjectEquals class Logger {
      *         {@linkplain ResourceBundle#getBaseBundleName base name},
      *         or if this logger already has a resource bundle set but
      *         the given bundle has a different base name.
-     * @throws SecurityException if a security manager exists,
-     *         this logger is not anonymous, and the caller
-     *         does not have LoggingPermission("control").
      * @since 1.8
      */
     public void setResourceBundle(ResourceBundle bundle) {
-        checkPermission();
+        ensureManagerInitialized();
 
         // Will throw NPE if bundle is null.
         final String baseName = bundle.getBaseBundleName();
@@ -2446,19 +2407,13 @@ public @UsesObjectEquals class Logger {
      * It should not be called from application code.
      *
      * @param  parent   the new parent logger
-     * @throws  SecurityException  if a security manager exists and if
-     *          the caller does not have LoggingPermission("control").
      */
     public void setParent(@GuardSatisfied Logger this, @GuardSatisfied Logger parent) {
         if (parent == null) {
             throw new NullPointerException();
         }
 
-        // check permission for all loggers, including anonymous loggers
-        if (manager == null) {
-            manager = LogManager.getLogManager();
-        }
-        manager.checkPermission();
+        ensureManagerInitialized();
 
         doSetParent(parent);
     }

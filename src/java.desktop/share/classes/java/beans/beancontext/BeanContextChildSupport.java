@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,6 +58,8 @@ import java.io.Serializable;
  */
 
 @AnnotatedFor({"interning"})
+@SuppressWarnings("removal")
+@Deprecated(since = "23", forRemoval = true)
 public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChild, BeanContextServicesListener, Serializable {
 
     /**
@@ -360,6 +362,8 @@ public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChi
     /**
      * The {@code BeanContext} in which
      * this {@code BeanContextChild} is nested.
+     *
+     * @serial
      */
     @SuppressWarnings("serial") // Not statically typed as Serializable
     public    BeanContextChild      beanContextChildPeer;
@@ -367,12 +371,16 @@ public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChi
    /**
     * The {@code PropertyChangeSupport} associated with this
     * {@code BeanContextChildSupport}.
+    *
+    * @serial
     */
     protected PropertyChangeSupport pcSupport;
 
    /**
     * The {@code VetoableChangeSupport} associated with this
     * {@code BeanContextChildSupport}.
+    *
+    * @serial
     */
     protected VetoableChangeSupport vcSupport;
 

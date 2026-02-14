@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@ package javax.net.ssl;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.security.Security;
 import java.security.*;
 import java.util.Objects;
 
@@ -52,6 +51,7 @@ import sun.security.jca.GetInstance;
  * Consult the release documentation for your implementation to see if any
  * other algorithms are supported.
  *
+ * @spec security/standard-names.html Java Security Standard Algorithm Names
  * @since 1.4
  * @see TrustManager
  */
@@ -78,11 +78,8 @@ public class TrustManagerFactory {
      * {@code ssl.TrustManagerFactory.algorithm} security property, or an
      * implementation-specific default if no such property exists.
      */
-    @SuppressWarnings("removal")
     public static final String getDefaultAlgorithm() {
-        String type;
-        type = AccessController.doPrivileged((PrivilegedAction<String>) () ->
-            Security.getProperty( "ssl.TrustManagerFactory.algorithm"));
+        String type = Security.getProperty("ssl.TrustManagerFactory.algorithm");
         if (type == null) {
             type = "SunX509";
         }
@@ -146,6 +143,7 @@ public class TrustManagerFactory {
      *          Algorithm Names Specification for information about standard
      *          algorithm names.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @return the new {@code TrustManagerFactory} object
      *
      * @throws NoSuchAlgorithmException if no {@code Provider} supports a
@@ -185,6 +183,7 @@ public class TrustManagerFactory {
      *          Algorithm Names Specification for information about standard
      *          algorithm names.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @param provider the name of the provider.
      *
      * @return the new {@code TrustManagerFactory} object
@@ -232,6 +231,7 @@ public class TrustManagerFactory {
      *
      * @param provider an instance of the provider.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @return the new {@code TrustManagerFactory} object
      *
      * @throws IllegalArgumentException if the provider is {@code null}
