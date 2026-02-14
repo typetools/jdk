@@ -86,7 +86,7 @@ public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends 
      *
      * @param referent object the new soft reference will refer to
      */
-    public SoftReference(@jdk.internal.RequiresIdentity @Nullble T referent) {
+    public SoftReference(@jdk.internal.RequiresIdentity @Nullable T referent) {
         super(referent);
         this.timestamp = clock;
     }

@@ -483,7 +483,7 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    public @Nullable V put(@@GuardSatisfied WeakHashMap<K, V> this, @jdk.internal.RequiresIdentity K key, V value) {
+    public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, @jdk.internal.RequiresIdentity K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
