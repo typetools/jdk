@@ -71,7 +71,7 @@ jobs:
         false
       fi
       df .
-      /tmp/$USER/git-scripts/git-clone-related typetools jdk25u ../jdk25u --single-branch
+      /tmp/$USER/git-scripts/git-clone-related Gaoyan1999 jdk25u ../jdk25u --single-branch
       git config --global user.email "you@example.com"
       git config --global user.name "Your Name"
       git config --global core.longpaths true
