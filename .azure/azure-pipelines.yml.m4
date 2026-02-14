@@ -20,7 +20,7 @@ jobs:
       ls -al
       env | sort
     displayName: show environment
-  - bash: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
+  - bash: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors --with-copyright-year=2026
     displayName: configure
   - bash: make jdk
     timeoutInMinutes: 90
