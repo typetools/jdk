@@ -493,12 +493,12 @@ public final class StringBuilder
         return this;
     }
 
-    @SideEffectFree
     /**
      * @throws IllegalArgumentException {@inheritDoc}
      *
      * @since 21
      */
+    @SideEffectFree
     @Override
     public StringBuilder repeat(int codePoint, int count) {
         super.repeat(codePoint, count);

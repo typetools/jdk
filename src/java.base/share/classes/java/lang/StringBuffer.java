@@ -723,12 +723,12 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
         return this;
     }
 
-    @SideEffectFree
     /**
      * @throws IllegalArgumentException {@inheritDoc}
      *
      * @since 21
      */
+    @SideEffectFree
     @Override
     public synchronized StringBuffer repeat(int codePoint, int count) {
         toStringCache = null;
