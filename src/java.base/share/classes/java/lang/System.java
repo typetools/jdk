@@ -31,6 +31,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -122,7 +123,7 @@ import sun.security.util.SecurityConstants;
  *
  * @since   1.0
  */
-@AnnotatedFor({"index", "interning", "lock", "mustcall", "nullness", "signedness"})
+@AnnotatedFor({"index", "interning", "lock", "mustcall", "nullness", "regex", "signedness"})
 public final @UsesObjectEquals class System {
     /* Register the natives via the static initializer.
      *
@@ -905,7 +906,7 @@ public final @UsesObjectEquals class System {
      * @since 1.7
      */
     @Pure
-    public static String lineSeparator() {
+    public static @Regex String lineSeparator() {
         return lineSeparator;
     }
 
