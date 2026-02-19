@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.security.Permission;
@@ -66,6 +69,8 @@ import java.util.Date;
  * @see     java.net.HttpURLConnection#disconnect()
  * @since 1.1
  */
+@AnnotatedFor("mustcall")
+@InheritableMustCall("disconnect")
 public abstract class HttpURLConnection extends URLConnection {
     /* instance variables */
 

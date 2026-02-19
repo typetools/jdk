@@ -25,6 +25,9 @@
 
 package sun.net.www.protocol.http;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.net.URL;
@@ -98,6 +101,8 @@ import sun.security.action.GetPropertyAction;
  */
 
 
+@AnnotatedFor("mustcall")
+@InheritableMustCall("disconnect")
 public class HttpURLConnection extends java.net.HttpURLConnection {
 
     static final String HTTP_CONNECT = "CONNECT";
