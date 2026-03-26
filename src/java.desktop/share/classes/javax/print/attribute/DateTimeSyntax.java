@@ -123,9 +123,8 @@ public abstract class DateTimeSyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        return (object != null &&
-                object instanceof DateTimeSyntax &&
-                value.equals(((DateTimeSyntax) object).value));
+        return object instanceof DateTimeSyntax other &&
+                value.equals(other.value);
     }
 
     /**

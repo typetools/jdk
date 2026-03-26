@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.*;
-import java.security.cert.Certificate;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.security.cert.CertPath;
-import java.security.cert.X509Extension;
+import java.security.cert.Certificate;
 import java.util.Date;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public final class Timestamp implements Serializable {
      *
      * @serial
      */
-    private CertPath signerCertPath;
+    private final CertPath signerCertPath;
 
     /*
      * Hash code for this timestamp.
@@ -73,11 +74,14 @@ public final class Timestamp implements Serializable {
     private transient int myhash = -1;
 
     /**
-     * Constructs a Timestamp.
+     * Constructs a {@code Timestamp}.
      *
-     * @param timestamp is the timestamp's date and time. It must not be null.
-     * @param signerCertPath is the TSA's certificate path. It must not be null.
-     * @throws NullPointerException if timestamp or signerCertPath is null.
+     * @param timestamp is the timestamp's date and time. It must not be
+     * {@code null}.
+     * @param signerCertPath is the TSA's certificate path. It must not be
+     * {@code null}.
+     * @throws NullPointerException if timestamp or signerCertPath is
+     * {@code null}.
      */
     public Timestamp(Date timestamp, CertPath signerCertPath) {
         if (timestamp == null || signerCertPath == null) {
@@ -88,7 +92,7 @@ public final class Timestamp implements Serializable {
     }
 
     /**
-     * Returns the date and time when the timestamp was generated.
+     * Returns the date and time when the {@code Timestamp} was generated.
      *
      * @return The timestamp's date and time.
      */
@@ -106,11 +110,11 @@ public final class Timestamp implements Serializable {
     }
 
     /**
-     * Returns the hash code value for this timestamp.
-     * The hash code is generated using the date and time of the timestamp
-     * and the TSA's certificate path.
+     * Returns the hash code value for this {@code Timestamp}.
+     * The hash code is generated using the date and time of the
+     * {@code Timestamp} and the TSA's certificate path.
      *
-     * @return a hash code value for this timestamp.
+     * @return a hash code value for this {@code Timestamp}.
      */
     public int hashCode() {
         if (myhash == -1) {
@@ -121,12 +125,13 @@ public final class Timestamp implements Serializable {
 
     /**
      * Tests for equality between the specified object and this
-     * timestamp. Two timestamps are considered equal if the date and time of
-     * their timestamp's and their signer's certificate paths are equal.
+     * {@code Timestamp}. Two timestamps are considered equal if the date and
+     * time of their timestamp's and their signer's certificate paths are equal.
      *
-     * @param obj the object to test for equality with this timestamp.
+     * @param obj the object to test for equality with this {@code Timestamp}.
      *
-     * @return true if the timestamp are considered equal, false otherwise.
+     * @return {@code true} if the timestamps are considered equal,
+     * {@code false} otherwise.
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
@@ -140,10 +145,10 @@ public final class Timestamp implements Serializable {
     }
 
     /**
-     * Returns a string describing this timestamp.
+     * Returns a string describing this {@code Timestamp}.
      *
-     * @return A string comprising the date and time of the timestamp and
-     *         its signer's certificate.
+     * @return A string comprising the date and time of the {@code Timestamp}
+     *         and its signer's certificate.
      */
     public String toString() {
         StringBuilder sb = new StringBuilder();

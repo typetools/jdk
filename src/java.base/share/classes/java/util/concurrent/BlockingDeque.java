@@ -35,8 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
-import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
@@ -359,7 +359,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the head of this deque
      * @throws InterruptedException if interrupted while waiting
      */
-    E takeFirst(@Shrinkable BlockingDeque<E> this) throws InterruptedException;
+    E takeFirst(@CanShrink BlockingDeque<E> this) throws InterruptedException;
 
     /**
      * Retrieves and removes the last element of this deque, waiting
@@ -368,7 +368,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the tail of this deque
      * @throws InterruptedException if interrupted while waiting
      */
-    E takeLast(@Shrinkable BlockingDeque<E> this) throws InterruptedException;
+    E takeLast(@CanShrink BlockingDeque<E> this) throws InterruptedException;
 
     /**
      * Retrieves and removes the first element of this deque, waiting
@@ -383,7 +383,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      *         waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    @Nullable E pollFirst(@Shrinkable BlockingDeque<E> this, long timeout, TimeUnit unit)
+    @Nullable E pollFirst(@CanShrink BlockingDeque<E> this, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -399,7 +399,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      *         waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    @Nullable E pollLast(@Shrinkable BlockingDeque<E> this, long timeout, TimeUnit unit)
+    @Nullable E pollLast(@CanShrink BlockingDeque<E> this, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -418,7 +418,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeFirstOccurrence(@Shrinkable BlockingDeque<E> this, Object o);
+    boolean removeFirstOccurrence(@CanShrink BlockingDeque<E> this, Object o);
 
     /**
      * Removes the last occurrence of the specified element from this deque.
@@ -436,7 +436,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean removeLastOccurrence(@Shrinkable BlockingDeque<E> this, Object o);
+    boolean removeLastOccurrence(@CanShrink BlockingDeque<E> this, Object o);
 
     // *** BlockingQueue methods ***
 
@@ -531,7 +531,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    E remove(@GuardSatisfied @NonEmpty @Shrinkable BlockingDeque<E> this);
+    E remove(@GuardSatisfied @NonEmpty @CanShrink BlockingDeque<E> this);
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -542,7 +542,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      *
      * @return the head of this deque, or {@code null} if this deque is empty
      */
-    @Nullable E poll(@Shrinkable BlockingDeque<E> this);
+    @Nullable E poll(@CanShrink BlockingDeque<E> this);
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -554,7 +554,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @return the head of this deque
      * @throws InterruptedException if interrupted while waiting
      */
-    E take(@Shrinkable BlockingDeque<E> this) throws InterruptedException;
+    E take(@CanShrink BlockingDeque<E> this) throws InterruptedException;
 
     /**
      * Retrieves and removes the head of the queue represented by this deque
@@ -568,7 +568,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    @Nullable E poll(@Shrinkable BlockingDeque<E> this, long timeout, TimeUnit unit)
+    @Nullable E poll(@CanShrink BlockingDeque<E> this, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -614,7 +614,7 @@ public interface BlockingDeque<E extends @NonNull Object> extends BlockingQueue<
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    boolean remove(@Shrinkable BlockingDeque<E> this, @UnknownSignedness Object o);
+    boolean remove(@CanShrink BlockingDeque<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns {@code true} if this deque contains the specified element.

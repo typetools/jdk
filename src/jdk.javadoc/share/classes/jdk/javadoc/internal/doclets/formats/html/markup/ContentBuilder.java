@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,7 +38,7 @@ import jdk.javadoc.internal.doclets.toolkit.Content;
  * A sequence of Content nodes.
  */
 public class ContentBuilder extends Content {
-    protected List<Content> contents = Collections.emptyList();
+    protected List<Content> contents = List.of();
 
     public ContentBuilder() { }
 
@@ -55,8 +54,9 @@ public class ContentBuilder extends Content {
         ensureMutableContents();
         if (content instanceof ContentBuilder cb) {
             contents.addAll(cb.contents);
-        } else
+        } else {
             contents.add(content);
+        }
         return this;
     }
 
@@ -77,9 +77,9 @@ public class ContentBuilder extends Content {
     }
 
     @Override
-    public boolean write(Writer writer, boolean atNewline) throws IOException {
+    public boolean write(Writer writer, String newline, boolean atNewline) throws IOException {
         for (Content content: contents) {
-            atNewline = content.write(writer, atNewline);
+            atNewline = content.write(writer, newline, atNewline);
         }
         return atNewline;
     }
@@ -92,23 +92,6 @@ public class ContentBuilder extends Content {
                 return false;
         }
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @implSpec
-     * A content builder is valid if any of its content is; thus, it is
-     * valid to be added to an HtmlTree, which checks the validity of
-     * each content in this builder.
-     */
-    @Override
-    public boolean isValid() {
-        for (Content content: contents) {
-            if (content.isValid())
-                return true;
-        }
-        return false;
     }
 
     @Override

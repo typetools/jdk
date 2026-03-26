@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 /**
  * An iterator for lists that allows the programmer
@@ -58,6 +59,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
  *
+ * @param <E> the type of elements returned by this list iterator
+ *
  * @author  Josh Bloch
  * @see Collection
  * @see List
@@ -79,7 +82,7 @@ public interface ListIterator<E> extends Iterator<E> {
      * @return {@code true} if the list iterator has more elements when
      *         traversing the list in the forward direction
      */
-    @Pure // @Pure is not necessary here: it's inherited from Iterator
+    @CFComment({"@Pure is not necessary here, because it's inherited from Iterator"})
     @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasNext();
 

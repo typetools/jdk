@@ -641,7 +641,7 @@ public @UsesObjectEquals class TrayIcon {
         INFO,
         /** Simple message */
         NONE
-    };
+    }
 
     /**
      * Displays a popup message near the tray icon.  The message will

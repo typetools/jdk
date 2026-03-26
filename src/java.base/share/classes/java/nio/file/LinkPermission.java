@@ -69,7 +69,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @see Files#createLink
  * @see Files#createSymbolicLink
  */
-
 @AnnotatedFor({"nullness"})
 public final class LinkPermission extends BasicPermission {
     @java.io.Serial

@@ -96,6 +96,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
      * An Iterator specialized for {@code int} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfInt extends PrimitiveIterator<Integer, IntConsumer> {
 
         /**
@@ -163,6 +164,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
      * An Iterator specialized for {@code long} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfLong extends PrimitiveIterator<Long, LongConsumer> {
 
         /**
@@ -229,6 +231,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
      * An Iterator specialized for {@code double} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfDouble extends PrimitiveIterator<Double, DoubleConsumer> {
 
         /**

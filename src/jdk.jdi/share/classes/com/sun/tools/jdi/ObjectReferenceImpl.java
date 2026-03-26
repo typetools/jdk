@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -154,8 +154,7 @@ public class ObjectReferenceImpl extends ValueImpl
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj != null) && (obj instanceof ObjectReferenceImpl)) {
-            ObjectReferenceImpl other = (ObjectReferenceImpl)obj;
+        if (obj instanceof ObjectReferenceImpl other) {
             return (ref() == other.ref()) &&
                    super.equals(obj);
         } else {
@@ -163,8 +162,9 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
+    @Override
     public int hashCode() {
-        return(int)ref();
+        return Long.hashCode(ref());
     }
 
     public Type type() {
@@ -425,7 +425,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
 
         /*
-         * There is an implict VM-wide suspend at the conclusion
+         * There is an implicit VM-wide suspend at the conclusion
          * of a normal (non-single-threaded) method invoke
          */
         if ((options & INVOKE_SINGLE_THREADED) == 0) {

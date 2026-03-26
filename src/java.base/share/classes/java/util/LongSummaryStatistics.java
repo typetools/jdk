@@ -66,6 +66,7 @@ import java.util.stream.Collector;
  * @since 1.8
  */
 @AnnotatedFor({"lock", "nullness"})
+@SuppressWarnings("overloads")
 public class LongSummaryStatistics implements LongConsumer, IntConsumer {
     private long count;
     private long sum;

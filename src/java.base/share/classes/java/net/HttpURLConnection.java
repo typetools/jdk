@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 
 package java.net;
+
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -66,6 +69,8 @@ import java.util.Date;
  * @see     java.net.HttpURLConnection#disconnect()
  * @since 1.1
  */
+@AnnotatedFor("mustcall")
+@InheritableMustCall("disconnect")
 public abstract class HttpURLConnection extends URLConnection {
     /* instance variables */
 
@@ -277,9 +282,11 @@ public abstract class HttpURLConnection extends URLConnection {
      * <p>
      * This method must be called before the URLConnection is connected.
      *
-     * @param   chunklen The number of bytes to write in each chunk.
-     *          If chunklen is less than or equal to zero, a default
-     *          value will be used.
+     * @param   chunklen The number of bytes to be written in each chunk,
+     *          including a chunk size header as a hexadecimal string
+     *          (minimum of 1 byte), two CRLF's (4 bytes) and a minimum
+     *          payload length of 1 byte. If chunklen is less than or equal
+     *          to 5, a higher default value will be used.
      *
      * @throws  IllegalStateException if URLConnection is already connected
      *          or if a different streaming mode is already enabled.
@@ -597,16 +604,18 @@ public abstract class HttpURLConnection extends URLConnection {
     }
 
     @SuppressWarnings("deprecation")
-    public long getHeaderFieldDate(String name, long Default) {
+    public long getHeaderFieldDate(String name, long defaultValue) {
         String dateString = getHeaderField(name);
-        try {
-            if (dateString.indexOf("GMT") == -1) {
-                dateString = dateString+" GMT";
+        if (dateString != null) {
+            if (!dateString.contains("GMT")) {
+                dateString = dateString + " GMT";
             }
-            return Date.parse(dateString);
-        } catch (Exception e) {
+            try {
+                return Date.parse(dateString);
+            } catch (Exception e) {
+            }
         }
-        return Default;
+        return defaultValue;
     }
 
 

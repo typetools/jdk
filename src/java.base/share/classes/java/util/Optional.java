@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -258,7 +258,7 @@ public final @NonNull class Optional<T extends @UnknownConfidential Object> {
     @OptionalPropagator
     public Optional<T> filter(Predicate<? super T> predicate) {
         Objects.requireNonNull(predicate);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return this;
         } else {
             return predicate.test(value) ? this : empty();
@@ -303,7 +303,7 @@ public final @NonNull class Optional<T extends @UnknownConfidential Object> {
     @SideEffectFree
     public <U> Optional<U> map(Function<? super T, ? extends @Nullable U> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return empty();
         } else {
             return Optional.ofNullable(mapper.apply(value));
@@ -332,7 +332,7 @@ public final @NonNull class Optional<T extends @UnknownConfidential Object> {
     @OptionalPropagator
     public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return empty();
         } else {
             @SuppressWarnings("unchecked")
@@ -383,7 +383,7 @@ public final @NonNull class Optional<T extends @UnknownConfidential Object> {
      */
     @SideEffectFree
     public Stream<T> stream() {
-        if (!isPresent()) {
+        if (isEmpty()) {
             return Stream.empty();
         } else {
             return Stream.of(value);
@@ -521,7 +521,7 @@ public final @NonNull class Optional<T extends @UnknownConfidential Object> {
     @Override
     public String toString() {
         return value != null
-            ? String.format("Optional[%s]", value)
+            ? ("Optional[" + value + "]")
             : "Optional.empty";
     }
 }

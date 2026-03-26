@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -949,13 +949,13 @@ import java.util.Arrays;
             x--; y--;
 
             diff = (a.value[x+a.offset] & LONG_MASK) -
-                   (b.value[y+b.offset] & LONG_MASK) - ((int)-(diff>>32));
+                   (b.value[y+b.offset] & LONG_MASK) + (diff >> 32);
             result[rstart--] = (int)diff;
         }
         // Subtract remainder of longer number
         while (x > 0) {
             x--;
-            diff = (a.value[x+a.offset] & LONG_MASK) - ((int)-(diff>>32));
+            diff = (a.value[x+a.offset] & LONG_MASK) + (diff >> 32);
             result[rstart--] = (int)diff;
         }
 
@@ -990,13 +990,13 @@ import java.util.Arrays;
         while (y > 0) {
             x--; y--;
             diff = (a.value[a.offset+ x] & LONG_MASK) -
-                (b.value[b.offset+ y] & LONG_MASK) - ((int)-(diff>>32));
+                (b.value[b.offset+ y] & LONG_MASK) + (diff >> 32);
             a.value[a.offset+x] = (int)diff;
         }
         // Subtract remainder of longer number
-        while (x > 0) {
+        while (diff < 0 && x > 0) {
             x--;
-            diff = (a.value[a.offset+ x] & LONG_MASK) - ((int)-(diff>>32));
+            diff = (a.value[a.offset+ x] & LONG_MASK) + (diff >> 32);
             a.value[a.offset+x] = (int)diff;
         }
 
@@ -1535,13 +1535,10 @@ import java.util.Arrays;
         quotient.intLen = limit;
         int[] q = quotient.value;
 
-
-        // Must insert leading 0 in rem if its length did not change
-        if (rem.intLen == nlen) {
-            rem.offset = 0;
-            rem.value[0] = 0;
-            rem.intLen++;
-        }
+        // Insert leading 0 in rem
+        rem.offset = 0;
+        rem.value[0] = 0;
+        rem.intLen++;
 
         int dh = divisor[0];
         long dhLong = dh & LONG_MASK;
@@ -2110,6 +2107,7 @@ import java.util.Arrays;
 
         oddPart.leftShift(powersOf2);
         oddPart.multiply(y1, result);
+        oddPart.clear();
 
         evenPart.multiply(oddMod, temp1);
         temp1.multiply(y2, temp2);

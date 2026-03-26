@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,7 +46,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import sun.security.action.GetPropertyAction;
+import jdk.internal.util.StaticProperty;
 
 /**
  * An abstract representation of file and directory pathnames.
@@ -169,7 +169,7 @@ public class File
     /**
      * The FileSystem object representing the platform's local file system.
      */
-    private static final FileSystem fs = DefaultFileSystem.getFileSystem();
+    private static final FileSystem FS = DefaultFileSystem.getFileSystem();
 
     /**
      * This abstract pathname's normalized pathname string. A normalized
@@ -192,8 +192,9 @@ public class File
 
     /**
      * Check if the file has an invalid path. Currently, the inspection of
-     * a file path is very limited, and it only covers Nul character check.
-     * Returning true means the path is definitely invalid/garbage. But
+     * a file path is very limited, and it only covers Nul character check
+     * unless further checking is explicitly enabled by a system property.
+     * Returning true means the path is definitely invalid/garbage, but
      * returning false does not guarantee that the path is valid.
      *
      * @return true if the file path is invalid.
@@ -202,8 +203,7 @@ public class File
     final boolean isInvalid() {
         PathStatus s = status;
         if (s == null) {
-            s = (this.path.indexOf('\u0000') < 0) ? PathStatus.CHECKED
-                                                  : PathStatus.INVALID;
+            s = FS.isInvalid(this) ? PathStatus.INVALID : PathStatus.CHECKED;
             status = s;
         }
         return s == PathStatus.INVALID;
@@ -232,14 +232,14 @@ public class File
      *
      * @see     java.lang.System#getProperty(java.lang.String)
      */
-    public static final char separatorChar = fs.getSeparator();
+    public static final char separatorChar = FS.getSeparator();
 
     /**
      * The system-dependent default name-separator character, represented as a
      * string for convenience.  This string contains a single character, namely
      * {@link #separatorChar}.
      */
-    public static final @Interned String separator = "" + separatorChar;
+    public static final @Interned String separator = String.valueOf(separatorChar);
 
     /**
      * The system-dependent path-separator character.  This field is
@@ -251,14 +251,14 @@ public class File
      *
      * @see     java.lang.System#getProperty(java.lang.String)
      */
-    public static final char pathSeparatorChar = fs.getPathSeparator();
+    public static final char pathSeparatorChar = FS.getPathSeparator();
 
     /**
      * The system-dependent path-separator character, represented as a string
      * for convenience.  This string contains a single character, namely
      * {@link #pathSeparatorChar}.
      */
-    public static final @Interned @Regex String pathSeparator = "" + pathSeparatorChar;
+    public static final @Interned @Regex String pathSeparator = String.valueOf(pathSeparatorChar);
 
 
     /* -- Constructors -- */
@@ -280,7 +280,7 @@ public class File
     private File(String child, File parent) {
         assert parent.path != null;
         assert (!parent.path.isEmpty());
-        this.path = fs.resolve(parent.path, child);
+        this.path = FS.resolve(parent.path, child);
         this.prefixLength = parent.prefixLength;
     }
 
@@ -298,8 +298,8 @@ public class File
         if (pathname == null) {
             throw new NullPointerException();
         }
-        this.path = fs.normalize(pathname);
-        this.prefixLength = fs.prefixLength(this.path);
+        this.path = FS.normalize(pathname);
+        this.prefixLength = FS.prefixLength(this.path);
     }
 
     /* Note: The two-argument File constructors do not interpret an empty
@@ -341,16 +341,16 @@ public class File
         }
         if (parent != null) {
             if (parent.isEmpty()) {
-                this.path = fs.resolve(fs.getDefaultParent(),
-                                       fs.normalize(child));
+                this.path = FS.resolve(FS.getDefaultParent(),
+                                       FS.normalize(child));
             } else {
-                this.path = fs.resolve(fs.normalize(parent),
-                                       fs.normalize(child));
+                this.path = FS.resolve(FS.normalize(parent),
+                                       FS.normalize(child));
             }
         } else {
-            this.path = fs.normalize(child);
+            this.path = FS.normalize(child);
         }
-        this.prefixLength = fs.prefixLength(this.path);
+        this.prefixLength = FS.prefixLength(this.path);
     }
 
     /**
@@ -385,16 +385,16 @@ public class File
         }
         if (parent != null) {
             if (parent.path.isEmpty()) {
-                this.path = fs.resolve(fs.getDefaultParent(),
-                                       fs.normalize(child));
+                this.path = FS.resolve(FS.getDefaultParent(),
+                                       FS.normalize(child));
             } else {
-                this.path = fs.resolve(parent.path,
-                                       fs.normalize(child));
+                this.path = FS.resolve(parent.path,
+                                       FS.normalize(child));
             }
         } else {
-            this.path = fs.normalize(child);
+            this.path = FS.normalize(child);
         }
-        this.prefixLength = fs.prefixLength(this.path);
+        this.prefixLength = FS.prefixLength(this.path);
     }
 
     /**
@@ -456,11 +456,11 @@ public class File
             throw new IllegalArgumentException("URI path component is empty");
 
         // Okay, now initialize
-        p = fs.fromURIPath(p);
+        p = FS.fromURIPath(p);
         if (File.separatorChar != '/')
             p = p.replace('/', File.separatorChar);
-        this.path = fs.normalize(p);
-        this.prefixLength = fs.prefixLength(this.path);
+        this.path = FS.normalize(p);
+        this.prefixLength = FS.prefixLength(this.path);
     }
 
 
@@ -476,7 +476,8 @@ public class File
      *          pathname, or the empty string if this pathname's name sequence
      *          is empty
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getName() {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) return path.substring(prefixLength);
@@ -497,7 +498,8 @@ public class File
      *          does not name a parent
      */
     @Pure
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public @Nullable String getParent(@GuardSatisfied File this) {
         int index = path.lastIndexOf(separatorChar);
         if (index < prefixLength) {
@@ -525,12 +527,13 @@ public class File
      * @since 1.2
      */
     @Pure
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public @Nullable File getParentFile(@GuardSatisfied File this) {
         String p = this.getParent();
         if (p == null) return null;
         if (getClass() != File.class) {
-            p = fs.normalize(p);
+            p = FS.normalize(p);
         }
         return new File(p, this.prefixLength);
     }
@@ -542,7 +545,8 @@ public class File
      *
      * @return  The string form of this abstract pathname
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public String getPath() {
         return path;
     }
@@ -562,7 +566,7 @@ public class File
      */
     @Pure
     public boolean isAbsolute(@GuardSatisfied File this) {
-        return fs.isAbsolute(this);
+        return FS.isAbsolute(this);
     }
 
     /**
@@ -590,7 +594,7 @@ public class File
      */
     @SideEffectFree
     public String getAbsolutePath() {
-        return fs.resolve(this);
+        return FS.resolve(this);
     }
 
     /**
@@ -605,13 +609,14 @@ public class File
      *
      * @since 1.2
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getAbsoluteFile() {
         String absPath = getAbsolutePath();
         if (getClass() != File.class) {
-            absPath = fs.normalize(absPath);
+            absPath = FS.normalize(absPath);
         }
-        return new File(absPath, fs.prefixLength(absPath));
+        return new File(absPath, FS.prefixLength(absPath));
     }
 
     /**
@@ -652,13 +657,15 @@ public class File
      * @since   1.1
      * @see     Path#toRealPath
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
-    @ReleasesNoLocks // rest of file is not annotated for the Lock Checker
+    @CFComment({"rest of file is not annotated for the Lock Checker",
+                "pure with respect to .equals but not =="})
+    @SideEffectFree
+    @ReleasesNoLocks
     public String getCanonicalPath() throws IOException {
         if (isInvalid()) {
             throw new IOException("Invalid file path");
         }
-        return fs.canonicalize(fs.resolve(this));
+        return FS.canonicalize(FS.resolve(this));
     }
 
     /**
@@ -682,16 +689,18 @@ public class File
      * @since 1.2
      * @see     Path#toRealPath
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public File getCanonicalFile() throws IOException {
         String canonPath = getCanonicalPath();
         if (getClass() != File.class) {
-            canonPath = fs.normalize(canonPath);
+            canonPath = FS.normalize(canonPath);
         }
-        return new File(canonPath, fs.prefixLength(canonPath));
+        return new File(canonPath, FS.prefixLength(canonPath));
     }
 
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     private static String slashify(String path, boolean isDirectory) {
         String p = path;
         if (File.separatorChar != '/')
@@ -726,13 +735,16 @@ public class File
      * {@link #toURI() toURI} method, and then converting the URI into a URL
      * via the {@link java.net.URI#toURL() URI.toURL} method.
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     @Deprecated
     public URL toURL() throws MalformedURLException {
         if (isInvalid()) {
             throw new MalformedURLException("Invalid file path");
         }
-        return new URL("file", "", slashify(getAbsolutePath(), isDirectory()));
+        @SuppressWarnings("deprecation")
+        var result = new URL("file", "", slashify(getAbsolutePath(), isDirectory()));
+        return result;
     }
 
     /**
@@ -776,7 +788,8 @@ public class File
      * @see java.net.URI#toURL()
      * @since 1.4
      */
-    @SideEffectFree  // pure with respect to .equals but not ==
+    @CFComment({"pure with respect to .equals but not =="})
+    @SideEffectFree
     public URI toURI() {
         try {
             File f = getAbsoluteFile();
@@ -796,7 +809,7 @@ public class File
      * Tests whether the application can read the file denoted by this
      * abstract pathname. On some platforms it may be possible to start the
      * Java virtual machine with special privileges that allow it to read
-     * files that are marked as unreadable. Consequently this method may return
+     * files that are marked as unreadable. Consequently, this method may return
      * {@code true} even though the file does not have read permissions.
      *
      * @return  {@code true} if and only if the file specified by this
@@ -818,14 +831,14 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.checkAccess(this, FileSystem.ACCESS_READ);
+        return FS.checkAccess(this, FileSystem.ACCESS_READ);
     }
 
     /**
      * Tests whether the application can modify the file denoted by this
      * abstract pathname. On some platforms it may be possible to start the
      * Java virtual machine with special privileges that allow it to modify
-     * files that are marked read-only. Consequently this method may return
+     * files that are marked read-only. Consequently, this method may return
      * {@code true} even though the file is marked read-only.
      *
      * @return  {@code true} if and only if the file system actually
@@ -848,7 +861,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.checkAccess(this, FileSystem.ACCESS_WRITE);
+        return FS.checkAccess(this, FileSystem.ACCESS_WRITE);
     }
 
     /**
@@ -873,7 +886,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.hasBooleanAttributes(this, FileSystem.BA_EXISTS);
+        return FS.hasBooleanAttributes(this, FileSystem.BA_EXISTS);
     }
 
     /**
@@ -905,7 +918,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.hasBooleanAttributes(this, FileSystem.BA_DIRECTORY);
+        return FS.hasBooleanAttributes(this, FileSystem.BA_DIRECTORY);
     }
 
     /**
@@ -939,7 +952,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.hasBooleanAttributes(this, FileSystem.BA_REGULAR);
+        return FS.hasBooleanAttributes(this, FileSystem.BA_REGULAR);
     }
 
     /**
@@ -970,7 +983,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.hasBooleanAttributes(this, FileSystem.BA_HIDDEN);
+        return FS.hasBooleanAttributes(this, FileSystem.BA_HIDDEN);
     }
 
     /**
@@ -1015,7 +1028,7 @@ public class File
         if (isInvalid()) {
             return 0L;
         }
-        return fs.getLastModifiedTime(this);
+        return FS.getLastModifiedTime(this);
     }
 
     /**
@@ -1048,7 +1061,7 @@ public class File
         if (isInvalid()) {
             return 0L;
         }
-        return fs.getLength(this);
+        return FS.getLength(this);
     }
 
 
@@ -1087,7 +1100,7 @@ public class File
         if (isInvalid()) {
             throw new IOException("Invalid file path");
         }
-        return fs.createFileExclusively(path);
+        return FS.createFileExclusively(path);
     }
 
     /**
@@ -1117,7 +1130,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.delete(this);
+        return FS.delete(this);
     }
 
     /**
@@ -1221,11 +1234,11 @@ public class File
         if (isInvalid()) {
             return null;
         }
-        String[] s = fs.list(this);
+        String[] s = FS.list(this);
         if (s != null && getClass() != File.class) {
             String[] normalized = new String[s.length];
             for (int i = 0; i < s.length; i++) {
-                normalized[i] = fs.normalize(s[i]);
+                normalized[i] = FS.normalize(s[i]);
             }
             s = normalized;
         }
@@ -1263,7 +1276,7 @@ public class File
      */
     @SideEffectFree
     public String @Nullable [] list(@Nullable FilenameFilter filter) {
-        String names[] = normalizedList();
+        String[] names = normalizedList();
         if ((names == null) || (filter == null)) {
             return names;
         }
@@ -1358,7 +1371,7 @@ public class File
      */
     @SideEffectFree
     public File @Nullable [] listFiles(@Nullable FilenameFilter filter) {
-        String ss[] = normalizedList();
+        String[] ss = normalizedList();
         if (ss == null) return null;
         ArrayList<File> files = new ArrayList<>();
         for (String s : ss)
@@ -1397,7 +1410,7 @@ public class File
      */
     @SideEffectFree
     public File @Nullable [] listFiles(@Nullable FileFilter filter) {
-        String ss[] = normalizedList();
+        String[] ss = normalizedList();
         if (ss == null) return null;
         ArrayList<File> files = new ArrayList<>();
         for (String s : ss) {
@@ -1428,7 +1441,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.createDirectory(this);
+        return FS.createDirectory(this);
     }
 
     /**
@@ -1512,7 +1525,7 @@ public class File
         if (this.isInvalid() || dest.isInvalid()) {
             return false;
         }
-        return fs.rename(this, dest);
+        return FS.rename(this, dest);
     }
 
     /**
@@ -1551,7 +1564,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.setLastModifiedTime(this, time);
+        return FS.setLastModifiedTime(this, time);
     }
 
     /**
@@ -1582,7 +1595,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.setReadOnly(this);
+        return FS.setReadOnly(this);
     }
 
     /**
@@ -1626,7 +1639,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.setPermission(this, FileSystem.ACCESS_WRITE, writable, ownerOnly);
+        return FS.setPermission(this, FileSystem.ACCESS_WRITE, writable, ownerOnly);
     }
 
     /**
@@ -1638,9 +1651,9 @@ public class File
      * <p> An invocation of this method of the form {@code file.setWritable(arg)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     file.setWritable(arg, true)
-     * }</pre>
+     * }
      *
      * @param   writable
      *          If {@code true}, sets the access permission to allow write
@@ -1705,7 +1718,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.setPermission(this, FileSystem.ACCESS_READ, readable, ownerOnly);
+        return FS.setPermission(this, FileSystem.ACCESS_READ, readable, ownerOnly);
     }
 
     /**
@@ -1717,9 +1730,9 @@ public class File
      * <p>An invocation of this method of the form {@code file.setReadable(arg)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     file.setReadable(arg, true)
-     * }</pre>
+     * }
      *
      * @param  readable
      *          If {@code true}, sets the access permission to allow read
@@ -1787,7 +1800,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.setPermission(this, FileSystem.ACCESS_EXECUTE, executable, ownerOnly);
+        return FS.setPermission(this, FileSystem.ACCESS_EXECUTE, executable, ownerOnly);
     }
 
     /**
@@ -1799,9 +1812,9 @@ public class File
      * <p>An invocation of this method of the form {@code file.setExcutable(arg)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     file.setExecutable(arg, true)
-     * }</pre>
+     * }
      *
      * @param   executable
      *          If {@code true}, sets the access permission to allow execute
@@ -1829,7 +1842,7 @@ public class File
      * Tests whether the application can execute the file denoted by this
      * abstract pathname. On some platforms it may be possible to start the
      * Java virtual machine with special privileges that allow it to execute
-     * files that are not marked executable. Consequently this method may return
+     * files that are not marked executable. Consequently, this method may return
      * {@code true} even though the file does not have execute permissions.
      *
      * @return  {@code true} if and only if the abstract pathname exists
@@ -1852,7 +1865,7 @@ public class File
         if (isInvalid()) {
             return false;
         }
-        return fs.checkAccess(this, FileSystem.ACCESS_EXECUTE);
+        return FS.checkAccess(this, FileSystem.ACCESS_EXECUTE);
     }
 
 
@@ -1864,17 +1877,26 @@ public class File
      * <p> A particular Java platform may support zero or more
      * hierarchically-organized file systems.  Each file system has a
      * {@code root} directory from which all other files in that file system
-     * can be reached.  Windows platforms, for example, have a root directory
-     * for each active drive; UNIX platforms have a single root directory,
-     * namely {@code "/"}.  The set of available filesystem roots is affected
-     * by various system-level operations such as the insertion or ejection of
-     * removable media and the disconnecting or unmounting of physical or
-     * virtual disk drives.
+     * can be reached.
      *
      * <p> This method returns an array of {@code File} objects that denote the
      * root directories of the available filesystem roots.  It is guaranteed
      * that the canonical pathname of any file physically present on the local
      * machine will begin with one of the roots returned by this method.
+     * There is no guarantee that a root directory can be accessed.
+     *
+     * <p> Unlike most methods in this class, this method does not throw
+     * security exceptions.  If a security manager exists and its {@link
+     * SecurityManager#checkRead(String)} method denies read access to a
+     * particular root directory, then that directory will not appear in the
+     * result.
+     *
+     * @implNote
+     * Windows platforms, for example, have a root directory
+     * for each active drive; UNIX platforms have a single root directory,
+     * namely {@code "/"}.  The set of filesystem roots is affected
+     * by various system-level operations such as the disconnecting or
+     * unmounting of physical or virtual disk drives.
      *
      * <p> The canonical pathname of a file that resides on some other machine
      * and is accessed via a remote-filesystem protocol such as SMB or NFS may
@@ -1886,12 +1908,6 @@ public class File
      * platform will be returned by this method, while {@code File} objects
      * containing UNC pathnames will not be returned by this method.
      *
-     * <p> Unlike most methods in this class, this method does not throw
-     * security exceptions.  If a security manager exists and its {@link
-     * SecurityManager#checkRead(String)} method denies read access to a
-     * particular root directory, then that directory will not appear in the
-     * result.
-     *
      * @return  An array of {@code File} objects denoting the available
      *          filesystem roots, or {@code null} if the set of roots could not
      *          be determined.  The array will be empty if there are no
@@ -1902,7 +1918,7 @@ public class File
      */
     @SideEffectFree
     public static File @Nullable [] listRoots() {
-        return fs.listRoots();
+        return FS.listRoots();
     }
 
 
@@ -1938,7 +1954,7 @@ public class File
         if (isInvalid()) {
             return 0L;
         }
-        long space = fs.getSpace(this, FileSystem.SPACE_TOTAL);
+        long space = FS.getSpace(this, FileSystem.SPACE_TOTAL);
         return space >= 0L ? space : Long.MAX_VALUE;
     }
 
@@ -1983,7 +1999,7 @@ public class File
         if (isInvalid()) {
             return 0L;
         }
-        long space = fs.getSpace(this, FileSystem.SPACE_FREE);
+        long space = FS.getSpace(this, FileSystem.SPACE_FREE);
         return space >= 0L ? space : Long.MAX_VALUE;
     }
 
@@ -2031,7 +2047,7 @@ public class File
         if (isInvalid()) {
             return 0L;
         }
-        long space = fs.getSpace(this, FileSystem.SPACE_USABLE);
+        long space = FS.getSpace(this, FileSystem.SPACE_USABLE);
         return space >= 0L ? space : Long.MAX_VALUE;
     }
 
@@ -2041,14 +2057,14 @@ public class File
         private TempDirectory() { }
 
         // temporary directory location
-        private static final File tmpdir = new File(
-                GetPropertyAction.privilegedGetProperty("java.io.tmpdir"));
+        private static final File TMPDIR = new File(StaticProperty.javaIoTmpDir());
+
         static File location() {
-            return tmpdir;
+            return TMPDIR;
         }
 
         // file name generation
-        private static final SecureRandom random = new SecureRandom();
+        private static final SecureRandom RANDOM = new SecureRandom();
         private static int shortenSubName(int subNameLength, int excess,
             int nameMin) {
             int newLength = Math.max(nameMin, subNameLength - excess);
@@ -2061,7 +2077,7 @@ public class File
         static File generateFile(String prefix, String suffix, File dir)
             throws IOException
         {
-            long n = random.nextLong();
+            long n = RANDOM.nextLong();
             String nus = Long.toUnsignedString(n);
 
             // Use only the file name from the supplied prefix
@@ -2069,17 +2085,17 @@ public class File
 
             int prefixLength = prefix.length();
             int nusLength = nus.length();
-            int suffixLength = suffix.length();;
+            int suffixLength = suffix.length();
 
             String name;
-            int nameMax = fs.getNameMax(dir.getPath());
+            int nameMax = FS.getNameMax(dir.getPath());
             int excess = prefixLength + nusLength + suffixLength - nameMax;
             if (excess <= 0) {
                 name = prefix + nus + suffix;
             } else {
                 // Name exceeds the maximum path component length: shorten it
 
-                // Attempt to shorten the prefix length to no less then 3
+                // Attempt to shorten the prefix length to no less than 3
                 prefixLength = shortenSubName(prefixLength, excess, 3);
                 excess = prefixLength + nusLength + suffixLength - nameMax;
 
@@ -2110,7 +2126,7 @@ public class File
             }
 
             // Normalize the path component
-            name = fs.normalize(name);
+            name = FS.normalize(name);
 
             File f = new File(dir, name);
             if (!name.equals(f.getName()) || f.isInvalid()) {
@@ -2167,6 +2183,13 @@ public class File
      * is invoked, but programmatic changes to this property are not guaranteed
      * to have any effect upon the temporary directory used by this method.
      *
+     * <p> If the {@code directory} argument is not {@code null} and its
+     * abstract pathname is valid and denotes an existing, writable directory,
+     * then the file will be created in that directory. Otherwise the file will
+     * not be created and an {@code IOException} will be thrown.  Under no
+     * circumstances will a directory be created at the location specified by
+     * the {@code directory} argument.
+     *
      * @param  prefix     The prefix string to be used in generating the file's
      *                    name; must be at least three characters long
      *
@@ -2184,7 +2207,8 @@ public class File
      *          If the {@code prefix} argument contains fewer than three
      *          characters
      *
-     * @throws  IOException  If a file could not be created
+     * @throws  IOException
+     *          If a file could not be created
      *
      * @throws  SecurityException
      *          If a security manager exists and its {@link
@@ -2206,6 +2230,7 @@ public class File
 
         File tmpdir = (directory != null) ? directory
                                           : TempDirectory.location();
+
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         File f;
@@ -2222,9 +2247,9 @@ public class File
                     throw se;
                 }
             }
-        } while (fs.hasBooleanAttributes(f, FileSystem.BA_EXISTS));
+        } while (FS.hasBooleanAttributes(f, FileSystem.BA_EXISTS));
 
-        if (!fs.createFileExclusively(f.getPath()))
+        if (!FS.createFileExclusively(f.getPath()))
             throw new IOException("Unable to create temporary file");
 
         return f;
@@ -2294,7 +2319,7 @@ public class File
      */
     @Pure
     public int compareTo(@GuardSatisfied File this, @GuardSatisfied File pathname) {
-        return fs.compare(this, pathname);
+        return FS.compare(this, pathname);
     }
 
     /**
@@ -2342,7 +2367,7 @@ public class File
      */
     @Pure
     public int hashCode(@GuardSatisfied File this) {
-        return fs.hashCode(this);
+        return FS.hashCode(this);
     }
 
     /**
@@ -2377,7 +2402,7 @@ public class File
     /**
      * readObject is called to restore this filename.
      * The original separator character is read.  If it is different
-     * than the separator character on this system, then the old separator
+     * from the separator character on this system, then the old separator
      * is replaced by the local separator.
      *
      * @param  s the {@code ObjectInputStream} from which data is read
@@ -2393,9 +2418,9 @@ public class File
         char sep = s.readChar(); // read the previous separator char
         if (sep != separatorChar)
             pathField = pathField.replace(sep, separatorChar);
-        String path = fs.normalize(pathField);
+        String path = FS.normalize(pathField);
         UNSAFE.putReference(this, PATH_OFFSET, path);
-        UNSAFE.putIntVolatile(this, PREFIX_LENGTH_OFFSET, fs.prefixLength(path));
+        UNSAFE.putIntVolatile(this, PREFIX_LENGTH_OFFSET, FS.prefixLength(path));
     }
 
     private static final jdk.internal.misc.Unsafe UNSAFE
@@ -2420,10 +2445,10 @@ public class File
      *
      * <p> The first invocation of this method works as if invoking it were
      * equivalent to evaluating the expression:
-     * <blockquote><pre>
-     * {@link java.nio.file.FileSystems#getDefault FileSystems.getDefault}().{@link
-     * java.nio.file.FileSystem#getPath getPath}(this.{@link #getPath getPath}());
-     * </pre></blockquote>
+     * {@snippet lang=java :
+     *         // @link regex="getPath(?=\(t)" target="java.nio.file.FileSystem#getPath" :
+     *         FileSystems.getDefault().getPath(this.getPath());
+     * }
      * Subsequent invocations of this method return the same {@code Path}.
      *
      * <p> If this abstract pathname is the empty abstract pathname then this

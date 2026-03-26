@@ -445,7 +445,7 @@ public class Locations {
      * @see #initHandlers
      * @see #getHandler
      */
-    protected static abstract class LocationHandler {
+    protected abstract static class LocationHandler {
 
         /**
          * @see JavaFileManager#handleOption
@@ -515,7 +515,7 @@ public class Locations {
     /**
      * A LocationHandler for a given Location, and associated set of options.
      */
-    private static abstract class BasicLocationHandler extends LocationHandler {
+    private abstract static class BasicLocationHandler extends LocationHandler {
 
         final Location location;
         final Set<Option> options;

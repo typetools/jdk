@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,8 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 
+import java.util.Objects;
+
 /**
  * A character stream that collects its output in a string buffer, which can
  * then be used to construct a string.
@@ -51,7 +53,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 @InheritableMustCall({})
 public class StringWriter extends Writer {
 
-    private StringBuffer buf;
+    private final StringBuffer buf;
 
     /**
      * Create a new string writer using the default initial string-buffer
@@ -100,11 +102,9 @@ public class StringWriter extends Writer {
      *          or {@code off + len} is negative or greater than the length
      *          of the given array
      */
-    public void write(char cbuf[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
-        if ((off < 0) || (off > cbuf.length) || (len < 0) ||
-            ((off + len) > cbuf.length) || ((off + len) < 0)) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+    public void write(char[] cbuf, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
+        Objects.checkFromIndexSize(off, len, cbuf.length);
+        if (len == 0) {
             return;
         }
         buf.append(cbuf, off, len);
@@ -139,8 +139,9 @@ public class StringWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(csq)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>
-     *     out.write(csq.toString()) </pre>
+     * {@snippet lang=java :
+     *     out.write(csq.toString())
+     * }
      *
      * <p> Depending on the specification of {@code toString} for the
      * character sequence {@code csq}, the entire sequence may not be
@@ -170,9 +171,9 @@ public class StringWriter extends Writer {
      * is not {@code null}, behaves in
      * exactly the same way as the invocation
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     out.write(csq.subSequence(start, end).toString())
-     * }</pre>
+     * }
      *
      * @param  csq
      *         The character sequence from which a subsequence will be
@@ -207,8 +208,9 @@ public class StringWriter extends Writer {
      * <p> An invocation of this method of the form {@code out.append(c)}
      * behaves in exactly the same way as the invocation
      *
-     * <pre>
-     *     out.write(c) </pre>
+     * {@snippet lang=java :
+     *     out.write(c)
+     * }
      *
      * @param  c
      *         The 16-bit character to append

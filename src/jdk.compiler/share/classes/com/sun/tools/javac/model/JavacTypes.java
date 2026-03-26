@@ -64,6 +64,7 @@ public class JavacTypes implements javax.lang.model.util.Types {
         return instance;
     }
 
+    @SuppressWarnings("this-escape")
     protected JavacTypes(Context context) {
         context.put(JavacTypes.class, this);
         syms = Symtab.instance(context);
@@ -77,6 +78,8 @@ public class JavacTypes implements javax.lang.model.util.Types {
             case INTERSECTION:
             case ERROR:
             case TYPEVAR:
+            case PACKAGE:
+            case MODULE:
                 Type type = cast(Type.class, t);
                 return type.asElement();
             default:

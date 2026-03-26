@@ -1,32 +1,10 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
+ * @test /nodynamiccopyright/
+ * @bug 8262891 8269146 8269113
+ * @summary Verify errors related to pattern switches.
+ * @compile/fail/ref=SwitchErrors.out -XDrawDiagnostics -XDshould-stop.at=FLOW SwitchErrors.java
  */
 
-/*
- * @test
- * @bug 8262891
- * @summary Verify errors related to pattern switches.
- * @compile/fail/ref=SwitchErrors.out --enable-preview -source ${jdk.version} -XDrawDiagnostics -XDshould-stop.at=FLOW SwitchErrors.java
- */
 public class SwitchErrors {
     void incompatibleSelectorObjectString(Object o) {
         switch (o) {
@@ -177,12 +155,6 @@ public class SwitchErrors {
             case String s: break;
         }
     }
-    void nullAfterTotal(Object o) {
-        switch (o) {
-            case Object obj: break;
-            case null: break;
-        }
-    }
     void sealedNonAbstract(SealedNonAbstract obj) {
         switch (obj) {//does not cover SealedNonAbstract
             case A a -> {}
@@ -190,4 +162,165 @@ public class SwitchErrors {
     }
     sealed class SealedNonAbstract permits A {}
     final class A extends SealedNonAbstract {}
+    void errorRecoveryNoPattern1(Object o) {
+        switch (o) {
+            case String: break;
+            case Object obj: break;
+        }
+    }
+    Object guardWithMatchingStatement(Object o1, Object o2) {
+        switch (o1) {
+            case String s when s.isEmpty() || o2 instanceof Number n: return n;
+            default: return null;
+        }
+    }
+    Object guardWithMatchingExpression(Object o1, Object o2) {
+        return switch (o1) {
+            case String s when s.isEmpty() || o2 instanceof Number n -> n;
+            default -> null;
+        };
+    }
+    void test8269146a1(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern and constant:
+            case 1, Integer o when o != null:
+                break;
+            default:
+                break;
+        }
+    }
+    void test8269146a2a(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern and constant:
+            case Integer o, 1:
+                break;
+            default:
+                break;
+        }
+    }
+    void test8269146b(Integer i) {
+        switch (i) {
+            //error - illegal combination of null and pattern other than type pattern:
+            case null, Integer o when o != null:
+                break;
+            default:
+                break;
+        }
+    }
+    void test8269146c(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern and default:
+            case Integer o, default:
+                break;
+        }
+    }
+    void test8269301a(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern, constant and default
+            case 1, Integer o, default:
+                break;
+        }
+    }
+    void test8269301ba(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern, constant and default
+            case Integer o, 1, default:
+                break;
+        }
+    }
+    void exhaustiveAndNull(String s) {
+        switch (s) {
+            case null: break;
+        }
+    }
+    void referenceTypeTotalForNull() {
+        switch (null) {
+            case String s: break;
+            case CharSequence cs: break;
+        }
+    }
+    void primitiveToReference(int i) {
+        switch (i) {
+            case Integer j: break;
+        }
+    }
+    void referenceToPrimitive(Integer i) {
+        switch (i) {
+            case int j: break;
+        }
+    }
+    void nullAndParenthesized1(Object o) {
+        record R(Object o) {}
+        switch (o) {
+            case null, R r: break;
+            default: break;
+        }
+    }
+    void nullAndParenthesized2(Object o) {
+        record R(Object o) {}
+        switch (o) {
+            case null, R(var v): break;
+            default: break;
+        }
+    }
+    void nullAndParenthesized3(Object o) {
+        record R(Object o) {}
+        switch (o) {
+            case R r: case null: break;
+            default: break;
+        }
+    }
+    void nullAndParenthesized4(Object o) {
+        record R(Object o) {}
+        switch (o) {
+            case R(var v): case null: break;
+            default: break;
+        }
+    }
+    void noDiamond(Object o) {
+        record R<T>(T t) {}
+        switch (o) {
+            case R<> r -> {}
+            default -> {}
+        }
+        if (o instanceof R<> r) {}
+    }
+    void noRawInferenceNonDeconstruction() {
+        record R<T>(T t) {}
+        R<String> o = null;
+        switch (o) {
+            case R r -> System.out.println(r.t().length());
+        }
+        if (o instanceof R r) System.out.println(r.t().length());
+    }
+    void cannotInfer() {
+        interface A<T> {}
+        record R<T extends Number>() implements A<T> {}
+        A<String> i = null;
+        if (i instanceof R()) {
+        }
+    }
+    void test8269146a2b(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern and constant:
+            case Integer o when o != null, 1:
+                break;
+            default:
+                break;
+        }
+    }
+    void test8269301ab(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern, constant and default
+            case 1, Integer o when o != null, default:
+                break;
+        }
+    }
+    void test8269301bb(Integer i) {
+        switch (i) {
+            //error - illegal combination of pattern, constant and default
+            case Integer o when o != null, 1, default:
+                break;
+        }
+    }
 }

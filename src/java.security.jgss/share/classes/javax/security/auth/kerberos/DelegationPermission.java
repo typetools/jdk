@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamField;
+import java.io.*;
 import java.security.BasicPermission;
 import java.security.Permission;
 import java.security.PermissionCollection;
@@ -73,6 +70,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class DelegationPermission extends BasicPermission
     implements java.io.Serializable {
 
+    @Serial
     private static final long serialVersionUID = 883133252142523922L;
 
     private transient String subordinate, service;
@@ -185,11 +183,9 @@ public final class DelegationPermission extends BasicPermission
             return true;
         }
 
-        if (!(obj instanceof DelegationPermission)) {
+        if (!(obj instanceof DelegationPermission that)) {
             return false;
         }
-
-        DelegationPermission that = (DelegationPermission) obj;
 
         return this.subordinate.equals(that.subordinate) &&
                 this.service.equals(that.service);
@@ -230,6 +226,7 @@ public final class DelegationPermission extends BasicPermission
      * @param  s the {@code ObjectOutputStream} to which data is written
      * @throws IOException if an I/O error occurs
      */
+    @Serial
     private synchronized void writeObject(java.io.ObjectOutputStream s)
         throws IOException
     {
@@ -244,6 +241,7 @@ public final class DelegationPermission extends BasicPermission
      * @throws IOException if an I/O error occurs
      * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @Serial
     private synchronized void readObject(java.io.ObjectInputStream s)
          throws IOException, ClassNotFoundException
     {
@@ -317,6 +315,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
         return perms.keys();
     }
 
+    @Serial
     private static final long serialVersionUID = -3383936936589966948L;
 
     // Need to maintain serialization interoperability with earlier releases,
@@ -326,6 +325,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
      * @serialField permissions java.util.Vector
      *     A list of DelegationPermission objects.
      */
+    @Serial
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField("permissions", Vector.class),
     };
@@ -337,6 +337,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
      * Writes the contents of the perms field out as a Vector for
      * serialization compatibility with earlier releases.
      */
+    @Serial
     private void writeObject(ObjectOutputStream out) throws IOException {
         // Don't call out.defaultWriteObject()
 
@@ -351,6 +352,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
     /*
      * Reads in a Vector of DelegationPermissions and saves them in the perms field.
      */
+    @Serial
     @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException

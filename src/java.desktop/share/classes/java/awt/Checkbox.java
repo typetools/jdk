@@ -150,7 +150,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      * Creates a check box with an empty string for its label.
      * The state of this check box is set to "off," and it is not
      * part of any check box group.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -165,7 +165,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      *
      * @param     label   a string label for this check box,
      *                        or {@code null} for no label.
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *      {@code GraphicsEnvironment.isHeadless}
      *      returns {@code true}
      * @see java.awt.GraphicsEnvironment#isHeadless
@@ -182,7 +182,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      * @param     label   a string label for this check box,
      *                        or {@code null} for no label
      * @param     state    the initial state of this check box
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *     {@code GraphicsEnvironment.isHeadless}
      *     returns {@code true}
      * @see java.awt.GraphicsEnvironment#isHeadless
@@ -200,7 +200,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      * @param     state   the initial state of this check box.
      * @param     group   a check box group for this check box,
      *                           or {@code null} for no group.
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *     {@code GraphicsEnvironment.isHeadless}
      *     returns {@code true}
      * @see java.awt.GraphicsEnvironment#isHeadless
@@ -226,7 +226,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      * @param     group   a check box group for this check box,
      *                           or {@code null} for no group.
      * @param     state   the initial state of this check box.
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *    {@code GraphicsEnvironment.isHeadless}
      *    returns {@code true}
      * @see java.awt.GraphicsEnvironment#isHeadless
@@ -512,7 +512,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      *          <code><em>Foo</em>Listener</code>s on this checkbox,
      *          or an empty array if no such
      *          listeners have been added
-     * @exception ClassCastException if {@code listenerType}
+     * @throws ClassCastException if {@code listenerType}
      *          doesn't specify a class or interface that implements
      *          {@code java.util.EventListener}
      *
@@ -664,7 +664,7 @@ public class Checkbox extends Component implements ItemSelectable, Accessible {
      * @throws IOException if an I/O error occurs
      * @throws HeadlessException if {@code GraphicsEnvironment.isHeadless()}
      *         returns {@code true}
-     * @serial
+     *
      * @see #removeItemListener(ItemListener)
      * @see #addItemListener(ItemListener)
      * @see java.awt.GraphicsEnvironment#isHeadless

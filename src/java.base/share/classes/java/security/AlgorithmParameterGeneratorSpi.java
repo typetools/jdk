@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,7 +49,8 @@ import java.security.spec.AlgorithmParameterSpec;
  * However, note that defaults may vary across different providers.
  * Additionally, the default value for a provider may change in a future
  * version. Therefore, it is recommended to explicitly initialize the
- * AlgorithmParameterGenerator instead of relying on provider-specific defaults.
+ * {@code AlgorithmParameterGenerator} instead of relying on
+ * provider-specific defaults.
  *
  * @author Jan Luehe
  *
@@ -95,7 +96,7 @@ public abstract @UsesObjectEquals class AlgorithmParameterGeneratorSpi {
     /**
      * Generates the parameters.
      *
-     * @return the new AlgorithmParameters object.
+     * @return the new {@code AlgorithmParameters} object.
      */
     protected abstract AlgorithmParameters engineGenerateParameters();
 }

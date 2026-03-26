@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,18 +61,12 @@ public final class NetworkInterface {
     private NetworkInterface parent = null;
     private boolean virtual = false;
     private static final NetworkInterface defaultInterface;
-    private static final int defaultIndex; /* index of defaultInterface */
 
     static {
         jdk.internal.loader.BootLoader.loadLibrary("net");
 
         init();
         defaultInterface = DefaultInterface.getDefault();
-        if (defaultInterface != null) {
-            defaultIndex = defaultInterface.getIndex();
-        } else {
-            defaultIndex = 0;
-        }
     }
 
     /**
@@ -414,7 +408,7 @@ public final class NetworkInterface {
     }
 
     private static <T> Enumeration<T> enumerationFromArray(T[] a) {
-        return new Enumeration<T>() {
+        return new Enumeration<>() {
             int i = 0;
 
             @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2601,10 +2601,8 @@ public abstract @UsesObjectEquals class KeyboardFocusManager
         Throwable retEx = null;
         try {
             comp.dispatchEvent(event);
-        } catch (RuntimeException re) {
-            retEx = re;
-        } catch (Error er) {
-            retEx = er;
+        } catch (RuntimeException | Error e) {
+            retEx = e;
         }
         if (retEx != null) {
             if (ex != null) {
@@ -2981,13 +2979,9 @@ public abstract @UsesObjectEquals class KeyboardFocusManager
             if (hwFocusRequest != null) {
                 heavyweightRequests.removeFirst();
                 if (hwFocusRequest.lightweightRequests != null) {
-                    for (Iterator<KeyboardFocusManager.LightweightFocusRequest> lwIter = hwFocusRequest.lightweightRequests.
-                             iterator();
-                         lwIter.hasNext(); )
-                    {
+                    for (LightweightFocusRequest lwFocusRequest : hwFocusRequest.lightweightRequests) {
                         manager.dequeueKeyEvents
-                            (-1, lwIter.next().
-                             component);
+                            (-1, lwFocusRequest.component);
                     }
                 }
             }

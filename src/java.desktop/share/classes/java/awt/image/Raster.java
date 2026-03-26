@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@
  ******************************************************************
  ******************************************************************
  ******************************************************************/
-
 
 package java.awt.image;
 
@@ -296,7 +295,7 @@ public @UsesObjectEquals class Raster {
         if (scanlineStride < 0) {
             throw new IllegalArgumentException("scanlineStride is < 0");
         }
-        int size = scanlineStride * (h - 1) + // fisrt (h - 1) scans
+        int size = scanlineStride * (h - 1) + // first (h - 1) scans
             pixelStride * w; // last scan
 
         if (location == null) {
@@ -371,11 +370,10 @@ public @UsesObjectEquals class Raster {
                                                      " be greater than 0");
         }
         int[] bankIndices = new int[bands];
-        int[] bandOffsets = new int[bands];
         for (int i = 0; i < bands; i++) {
             bankIndices[i] = i;
-            bandOffsets[i] = 0;
         }
+        int[] bandOffsets = new int[bands]; // leave default 0 values
 
         return createBandedRaster(dataType, w, h, w,
                                   bankIndices, bandOffsets,
@@ -1380,7 +1378,7 @@ public @UsesObjectEquals class Raster {
      * @param h the specified height of the new {@code WritableRaster}
      * @return a compatible {@code WritableRaster} with the specified
      *         size and a new sample model and data buffer.
-     * @exception RasterFormatException if the width or height is less than
+     * @throws RasterFormatException if the width or height is less than
      *                               or equal to zero.
      */
     public WritableRaster createCompatibleWritableRaster(int w, int h) {
@@ -1506,7 +1504,7 @@ public @UsesObjectEquals class Raster {
      *                   of the returned Raster
      * @param bandList   Array of band indices, or null to use all bands
      * @return a new {@code Raster}.
-     * @exception RasterFormatException if the specified subregion is outside
+     * @throws RasterFormatException if the specified subregion is outside
      *                               of the raster bounds.
      * @throws RasterFormatException if {@code width} or
      *         {@code height}

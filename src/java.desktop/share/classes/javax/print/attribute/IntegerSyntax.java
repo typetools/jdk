@@ -116,9 +116,8 @@ public abstract class IntegerSyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-
-        return (object != null && object instanceof IntegerSyntax &&
-                value == ((IntegerSyntax) object).value);
+        return object instanceof IntegerSyntax other &&
+                value == other.value;
     }
 
     /**

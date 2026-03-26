@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -92,7 +92,6 @@ import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
 import sun.nio.ch.FileChannelImpl;
 import sun.nio.cs.UTF_8;
-import sun.nio.fs.AbstractFileSystemProvider;
 
 /**
  * This class consists exclusively of static methods that operate on files,
@@ -194,7 +193,7 @@ public final @UsesObjectEquals class Files {
      * regular-file} to a size of {@code 0} if it exists.
      *
      * <p> <b>Usage Examples:</b>
-     * <pre>
+     * {@snippet lang=java :
      *     Path path = ...
      *
      *     // truncate and overwrite an existing file, or create the file if
@@ -209,7 +208,7 @@ public final @UsesObjectEquals class Files {
      *
      *     // always create new file, failing if it already exists
      *     out = Files.newOutputStream(path, CREATE_NEW);
-     * </pre>
+     * }
      *
      * @param   path
      *          the path to the file to open or create
@@ -336,7 +335,7 @@ public final @UsesObjectEquals class Files {
      * is a {@link java.nio.channels.FileChannel}.
      *
      * <p> <b>Usage Examples:</b>
-     * <pre>{@code
+     * {@snippet lang=java :
      *     Path path = ...
      *
      *     // open file for reading
@@ -350,7 +349,7 @@ public final @UsesObjectEquals class Files {
      *     FileAttribute<Set<PosixFilePermission>> perms = ...
      *     SeekableByteChannel sbc =
      *         Files.newByteChannel(path, EnumSet.of(CREATE_NEW,READ,WRITE), perms);
-     * }</pre>
+     * }
      *
      * @param   path
      *          the path to the file to open or create
@@ -513,12 +512,12 @@ public final @UsesObjectEquals class Files {
      *
      * <p> For example, suppose we want to iterate over the files ending with
      * ".java" in a directory:
-     * <pre>
+     * {@snippet lang=java :
      *     Path dir = ...
-     *     try (DirectoryStream&lt;Path&gt; stream = Files.newDirectoryStream(dir, "*.java")) {
+     *     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.java")) {
      *         :
      *     }
-     * </pre>
+     * }
      *
      * <p> The globbing pattern is specified by the {@link
      * FileSystem#getPathMatcher getPathMatcher} method.
@@ -599,17 +598,17 @@ public final @UsesObjectEquals class Files {
      * <p> <b>Usage Example:</b>
      * Suppose we want to iterate over the files in a directory that are
      * larger than 8K.
-     * <pre>
-     *     DirectoryStream.Filter&lt;Path&gt; filter = new DirectoryStream.Filter&lt;Path&gt;() {
+     * {@snippet lang=java :
+     *     DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>() {
      *         public boolean accept(Path file) throws IOException {
-     *             return (Files.size(file) &gt; 8192L);
+     *             return (Files.size(file) > 8192L);
      *         }
      *     };
      *     Path dir = ...
-     *     try (DirectoryStream&lt;Path&gt; stream = Files.newDirectoryStream(dir, filter)) {
+     *     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, filter)) {
      *         :
      *     }
-     * </pre>
+     * }
      *
      * @param   dir
      *          the path to the directory
@@ -784,14 +783,15 @@ public final @UsesObjectEquals class Files {
             // parent may not exist or other reason
         }
         SecurityException se = null;
+        Path absDir = dir;
         try {
-            dir = dir.toAbsolutePath();
+            absDir = dir.toAbsolutePath();
         } catch (SecurityException x) {
             // don't have permission to get absolute path
             se = x;
         }
         // find a descendant that exists
-        Path parent = dir.getParent();
+        Path parent = absDir.getParent();
         while (parent != null) {
             try {
                 provider(parent).checkAccess(parent);
@@ -804,7 +804,7 @@ public final @UsesObjectEquals class Files {
         if (parent == null) {
             // unable to find existing parent
             if (se == null) {
-                throw new FileSystemException(dir.toString(), null,
+                throw new FileSystemException(absDir.toString(), null,
                     "Unable to determine if root directory exists");
             } else {
                 throw se;
@@ -813,7 +813,7 @@ public final @UsesObjectEquals class Files {
 
         // create directories
         Path child = parent;
-        for (Path name: parent.relativize(dir)) {
+        for (Path name: parent.relativize(absDir)) {
             child = child.resolve(name);
             createAndCheckIsDirectory(child, attrs);
         }
@@ -831,7 +831,7 @@ public final @UsesObjectEquals class Files {
         try {
             createDirectory(dir, attrs);
         } catch (FileAlreadyExistsException x) {
-            if (!isDirectory(dir, LinkOption.NOFOLLOW_LINKS))
+            if (!isDirectory(dir))
                 throw x;
         }
     }
@@ -849,7 +849,7 @@ public final @UsesObjectEquals class Files {
      * java.io.File#createTempFile(String,String,File)} method.
      *
      * <p> As with the {@code File.createTempFile} methods, this method is only
-     * part of a temporary-file facility. Where used as a <em>work files</em>,
+     * part of a temporary-file facility. Where used as a <em>work file</em>,
      * the resulting file may be opened using the {@link
      * StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that the
      * file is deleted when the appropriate {@code close} method is invoked.
@@ -1236,8 +1236,8 @@ public final @UsesObjectEquals class Files {
      * which case the method completes without copying the file. File attributes
      * are not required to be copied to the target file. If symbolic links are
      * supported, and the file is a symbolic link, then the final target of the
-     * link is copied. If the file is a directory then it creates an empty
-     * directory in the target location (entries in the directory are not
+     * link is copied. If the file is a directory then an empty directory is
+     * created in the target location (entries in the directory are not
      * copied). This method can be used with the {@link #walkFileTree
      * walkFileTree} method to copy a directory and all entries in the directory,
      * or an entire <i>file-tree</i> where required.
@@ -1252,10 +1252,9 @@ public final @UsesObjectEquals class Files {
      * <tbody>
      * <tr>
      *   <th scope="row"> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </th>
-     *   <td> If the target file exists, then the target file is replaced if it
-     *     is not a non-empty directory. If the target file exists and is a
-     *     symbolic link, then the symbolic link itself, not the target of
-     *     the link, is replaced. </td>
+     *   <td> Replace an existing file. A non-empty directory cannot be
+     *     replaced. If the target file exists and is a symbolic link, then the
+     *     symbolic link itself, not the target of the link, is replaced. </td>
      * </tr>
      * <tr>
      *   <th scope="row"> {@link StandardCopyOption#COPY_ATTRIBUTES COPY_ATTRIBUTES} </th>
@@ -1292,11 +1291,11 @@ public final @UsesObjectEquals class Files {
      * <p> <b>Usage Example:</b>
      * Suppose we want to copy a file into a directory, giving it the same file
      * name as the source file:
-     * <pre>
+     * {@snippet lang=java :
      *     Path source = ...
      *     Path newdir = ...
      *     Files.copy(source, newdir.resolve(source.getFileName());
-     * </pre>
+     * }
      *
      * @param   source
      *          the path to the file to copy
@@ -1376,10 +1375,9 @@ public final @UsesObjectEquals class Files {
      * <tbody>
      * <tr>
      *   <th scope="row"> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </th>
-     *   <td> If the target file exists, then the target file is replaced if it
-     *     is not a non-empty directory. If the target file exists and is a
-     *     symbolic link, then the symbolic link itself, not the target of
-     *     the link, is replaced. </td>
+     *   <td> Replace an existing file. A non-empty directory cannot be
+     *     replaced. If the target file exists and is a symbolic link, then the
+     *     symbolic link itself, not the target of the link, is replaced. </td>
      * </tr>
      * <tr>
      *   <th scope="row"> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </th>
@@ -1412,18 +1410,18 @@ public final @UsesObjectEquals class Files {
      * <p> <b>Usage Examples:</b>
      * Suppose we want to rename a file to "newname", keeping the file in the
      * same directory:
-     * <pre>
+     * {@snippet lang=java :
      *     Path source = ...
      *     Files.move(source, source.resolveSibling("newname"));
-     * </pre>
+     * }
      * Alternatively, suppose we want to move a file to new directory, keeping
      * the same file name, and replacing any existing file of that name in the
      * directory:
-     * <pre>
+     * {@snippet lang=java :
      *     Path source = ...
      *     Path newdir = ...
      *     Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
-     * </pre>
+     * }
      *
      * @param   source
      *          the path to the file to move
@@ -1590,7 +1588,7 @@ public final @UsesObjectEquals class Files {
      * <ul>
      * <li> The two paths locate the {@linkplain #isSameFile(Path, Path) same file},
      *      even if two {@linkplain Path#equals(Object) equal} paths locate a file
-     *      does not exist, or </li>
+     *      that does not exist, or </li>
      * <li> The two files are the same size, and every byte in the first file
      *      is identical to the corresponding byte in the second file. </li>
      * </ul>
@@ -1599,7 +1597,7 @@ public final @UsesObjectEquals class Files {
      * returned by this method is:
      * <ul>
      * <li> The position of the first mismatched byte, or </li>
-     * <li> The size of the smaller file (in bytes) when the files are different
+     * <li> The size of the smaller file (in bytes) when the files are of different
      *      sizes and every byte of the smaller file is identical to the
      *      corresponding byte of the larger file. </li>
      * </ul>
@@ -1635,7 +1633,7 @@ public final @UsesObjectEquals class Files {
         byte[] buffer1 = new byte[BUFFER_SIZE];
         byte[] buffer2 = new byte[BUFFER_SIZE];
         try (InputStream in1 = Files.newInputStream(path);
-             InputStream in2 = Files.newInputStream(path2);) {
+             InputStream in2 = Files.newInputStream(path2)) {
             long totalRead = 0;
             while (true) {
                 int nRead1 = in1.readNBytes(buffer1, 0, BUFFER_SIZE);
@@ -1762,6 +1760,10 @@ public final @UsesObjectEquals class Files {
      * @throws  SecurityException
      *          If a security manager is installed and it denies an unspecified
      *          permission required by a file type detector implementation.
+     *
+     * @spec https://www.rfc-editor.org/info/rfc2045
+     *      RFC 2045: Multipurpose Internet Mail Extensions (MIME) Part One:
+     *              Format of Internet Message Bodies
      */
     @ReleasesNoLocks
     public static @Nullable String probeContentType(Path path)
@@ -1801,14 +1803,14 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want read or set a file's ACL, if supported:
-     * <pre>
+     * {@snippet lang=java :
      *     Path path = ...
      *     AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
      *     if (view != null) {
-     *         List&lt;AclEntry&gt; acl = view.getAcl();
+     *         List<AclEntry> acl = view.getAcl();
      *         :
      *     }
-     * </pre>
+     * }
      *
      * @param   <V>
      *          The {@code FileAttributeView} type
@@ -1851,16 +1853,16 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want to read a file's attributes in bulk:
-     * <pre>
-     *    Path path = ...
-     *    BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
-     * </pre>
+     * {@snippet lang=java :
+     *     Path path = ...
+     *     BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+     * }
      * Alternatively, suppose we want to read file's POSIX attributes without
      * following symbolic links:
-     * <pre>
-     *    PosixFileAttributes attrs =
-     *        Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
-     * </pre>
+     * {@snippet lang=java :
+     *     PosixFileAttributes attrs =
+     *         Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
+     * }
      *
      * @param   <A>
      *          The {@code BasicFileAttributes} type
@@ -1883,7 +1885,7 @@ public final @UsesObjectEquals class Files {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method is invoked to check read access to the file. If this
      *          method is invoked to read security sensitive attributes then the
-     *          security manager may be invoke to check for additional permissions.
+     *          security manager may be invoked to check for additional permissions.
      */
     @ReleasesNoLocks
     public static <A extends BasicFileAttributes> A readAttributes(Path path,
@@ -1920,10 +1922,10 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want to set the DOS "hidden" attribute:
-     * <pre>
-     *    Path path = ...
-     *    Files.setAttribute(path, "dos:hidden", true);
-     * </pre>
+     * {@snippet lang=java :
+     *     Path path = ...
+     *     Files.setAttribute(path, "dos:hidden", true);
+     * }
      *
      * @param   path
      *          the path to the file
@@ -1990,10 +1992,10 @@ public final @UsesObjectEquals class Files {
      * <p> <b>Usage Example:</b>
      * Suppose we require the user ID of the file owner on a system that
      * supports a "{@code unix}" view:
-     * <pre>
-     *    Path path = ...
-     *    int uid = (Integer)Files.getAttribute(path, "unix:uid");
-     * </pre>
+     * {@snippet lang=java :
+     *     Path path = ...
+     *     int uid = (Integer)Files.getAttribute(path, "unix:uid");
+     * }
      *
      * @param   path
      *          the path to the file
@@ -2120,7 +2122,7 @@ public final @UsesObjectEquals class Files {
      *          installed, its {@link SecurityManager#checkRead(String) checkRead}
      *          method denies read access to the file. If this method is invoked
      *          to read security sensitive attributes then the security manager
-     *          may be invoke to check for additional permissions.
+     *          may be invoked to check for additional permissions.
      */
     @ReleasesNoLocks
     public static Map<String,Object> readAttributes(Path path, String attributes,
@@ -2260,13 +2262,13 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want to make "joe" the owner of a file:
-     * <pre>
+     * {@snippet lang=java :
      *     Path path = ...
      *     UserPrincipalLookupService lookupService =
      *         provider(path).getUserPrincipalLookupService();
      *     UserPrincipal joe = lookupService.lookupPrincipalByName("joe");
      *     Files.setOwner(path, joe);
-     * </pre>
+     * }
      *
      * @param   path
      *          The path to the file
@@ -2364,14 +2366,10 @@ public final @UsesObjectEquals class Files {
      */
     @SideEffectFree
     public static boolean isDirectory(Path path, LinkOption... options) {
-        if (options.length == 0) {
-            FileSystemProvider provider = provider(path);
-            if (provider instanceof AbstractFileSystemProvider)
-                return ((AbstractFileSystemProvider)provider).isDirectory(path);
-        }
-
         try {
-            return readAttributes(path, BasicFileAttributes.class, options).isDirectory();
+            var attrs = provider(path)
+                    .readAttributesIfExists(path, BasicFileAttributes.class, options);
+            return (attrs != null) && attrs.isDirectory();
         } catch (IOException ioe) {
             return false;
         }
@@ -2408,14 +2406,10 @@ public final @UsesObjectEquals class Files {
      */
     @SideEffectFree
     public static boolean isRegularFile(Path path, LinkOption... options) {
-        if (options.length == 0) {
-            FileSystemProvider provider = provider(path);
-            if (provider instanceof AbstractFileSystemProvider)
-                return ((AbstractFileSystemProvider)provider).isRegularFile(path);
-        }
-
         try {
-            return readAttributes(path, BasicFileAttributes.class, options).isRegularFile();
+            var attrs = provider(path)
+                    .readAttributesIfExists(path, BasicFileAttributes.class, options);
+            return (attrs != null) && attrs.isRegularFile();
         } catch (IOException ioe) {
             return false;
         }
@@ -2467,11 +2461,11 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage Example:</b>
      * Suppose we want to set the last modified time to the current time:
-     * <pre>
-     *    Path path = ...
-     *    FileTime now = FileTime.fromMillis(System.currentTimeMillis());
-     *    Files.setLastModifiedTime(path, now);
-     * </pre>
+     * {@snippet lang=java :
+     *     Path path = ...
+     *     FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+     *     Files.setLastModifiedTime(path, now);
+     * }
      *
      * @param   path
      *          the path to the file
@@ -2560,7 +2554,7 @@ public final @UsesObjectEquals class Files {
      *          the path to the file to test
      * @param   options
      *          options indicating how symbolic links are handled
-     * .
+     *
      * @return  {@code true} if the file exists; {@code false} if the file does
      *          not exist or its existence cannot be determined.
      *
@@ -2570,30 +2564,11 @@ public final @UsesObjectEquals class Files {
      *          read access to the file.
      *
      * @see #notExists
+     * @see FileSystemProvider#checkAccess
      */
     @SideEffectFree
     public static boolean exists(Path path, LinkOption... options) {
-        if (options.length == 0) {
-            FileSystemProvider provider = provider(path);
-            if (provider instanceof AbstractFileSystemProvider)
-                return ((AbstractFileSystemProvider)provider).exists(path);
-        }
-
-        try {
-            if (followLinks(options)) {
-                provider(path).checkAccess(path);
-            } else {
-                // attempt to read attributes without following links
-                readAttributes(path, BasicFileAttributes.class,
-                               LinkOption.NOFOLLOW_LINKS);
-            }
-            // file exists
-            return true;
-        } catch (IOException x) {
-            // does not exist or unable to determine if file exists
-            return false;
-        }
-
+        return provider(path).exists(path, options);
     }
 
     /**
@@ -3033,7 +3008,12 @@ public final @UsesObjectEquals class Files {
      * a size of {@code 0} if it exists.
      *
      * <p> The {@code Writer} methods to write text throw {@code IOException}
-     * if the text cannot be encoded using the specified charset.
+     * if the text cannot be encoded using the specified charset. Due to
+     * buffering, an {@code IOException} caused by an encoding error
+     * (unmappable-character or malformed-input) may be thrown when {@linkplain
+     * BufferedWriter#write(char[],int,int) writing}, {@linkplain
+     * BufferedWriter#flush flushing}, or {@linkplain BufferedWriter#close
+     * closing} the buffered writer.
      *
      * @param   path
      *          the path to the file
@@ -3151,13 +3131,13 @@ public final @UsesObjectEquals class Files {
      *
      * <p> <b>Usage example</b>: Suppose we want to capture a web page and save
      * it to a file:
-     * <pre>
+     * {@snippet lang=java :
      *     Path path = ...
      *     URI u = URI.create("http://www.example.com/");
      *     try (InputStream in = u.toURL().openStream()) {
      *         Files.copy(in, path);
      *     }
-     * </pre>
+     * }
      *
      * @param   in
      *          the input stream to read from
@@ -3177,7 +3157,7 @@ public final @UsesObjectEquals class Files {
      * @throws  DirectoryNotEmptyException
      *          the {@code REPLACE_EXISTING} option is specified but the file
      *          cannot be replaced because it is a non-empty directory
-     *          <i>(optional specific exception)</i>     *
+     *          <i>(optional specific exception)</i>
      * @throws  UnsupportedOperationException
      *          if {@code options} contains a copy option that is not supported
      * @throws  SecurityException
@@ -3544,11 +3524,11 @@ public final @UsesObjectEquals class Files {
      * <p> <b>Usage example</b>: By default the method creates a new file or
      * overwrites an existing file. Suppose you instead want to append bytes
      * to an existing file:
-     * <pre>
+     * {@snippet lang=java :
      *     Path path = ...
      *     byte[] bytes = ...
      *     Files.write(path, bytes, StandardOpenOption.APPEND);
-     * </pre>
+     * }
      *
      * @param   path
      *          the path to the file
@@ -3732,7 +3712,7 @@ public final @UsesObjectEquals class Files {
      *          if {@code options} contains an invalid combination of options
      * @throws  IOException
      *          if an I/O error occurs writing to or creating the file, or the
-     *          text cannot be encoded using the specified charset
+     *          text cannot be encoded using UTF-8
      * @throws  UnsupportedOperationException
      *          if an unsupported option is specified
      * @throws  SecurityException
@@ -4215,7 +4195,7 @@ public final @UsesObjectEquals class Files {
         // 3) the file size is such that all bytes can be indexed by int values
         //    (this limitation is imposed by ByteBuffer)
         if (path.getFileSystem() == FileSystems.getDefault() &&
-            FileChannelLinesSpliterator.SUPPORTED_CHARSET_NAMES.contains(cs.name())) {
+            FileChannelLinesSpliterator.SUPPORTED_CHARSETS.contains(cs)) {
             FileChannel fc = FileChannel.open(path, StandardOpenOption.READ);
 
             Stream<String> fcls = createFileChannelLinesStream(fc, cs);

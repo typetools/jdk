@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,16 +46,16 @@ import sun.security.util.FilePermCompat;
 import sun.security.util.SecurityConstants;
 
 /**
- * The ProtectionDomain class encapsulates the characteristics of a domain,
- * which encloses a set of classes whose instances are granted a set
+ * The {@code ProtectionDomain} class encapsulates the characteristics of a
+ * domain, which encloses a set of classes whose instances are granted a set
  * of permissions when being executed on behalf of a given set of Principals.
  * <p>
- * A static set of permissions can be bound to a ProtectionDomain when it is
- * constructed; such permissions are granted to the domain regardless of the
- * Policy in force. However, to support dynamic security policies, a
- * ProtectionDomain can also be constructed such that it is dynamically
- * mapped to a set of permissions by the current Policy whenever a permission
- * is checked.
+ * A static set of permissions can be bound to a {@code ProtectionDomain}
+ * when it is constructed; such permissions are granted to the domain
+ * regardless of the policy in force. However, to support dynamic security
+ * policies, a {@code ProtectionDomain} can also be constructed such that it
+ * is dynamically mapped to a set of permissions by the current policy whenever
+ * a permission is checked.
  *
  * @author Li Gong
  * @author Roland Schemers
@@ -67,8 +67,9 @@ import sun.security.util.SecurityConstants;
 public @UsesObjectEquals class ProtectionDomain {
 
     /**
-     * If true, {@link #impliesWithAltFilePerm} will try to be compatible on
-     * FilePermission checking even if a 3rd-party Policy implementation is set.
+     * If {@code true}, {@link #impliesWithAltFilePerm} will try to be
+     * compatible on FilePermission checking even if a 3rd-party Policy
+     * implementation is set.
      */
     private static final boolean filePermCompatInPD =
             "true".equals(GetPropertyAction.privilegedGetProperty(
@@ -140,13 +141,13 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /* CodeSource */
-    private @Nullable CodeSource codesource ;
+    private final @Nullable CodeSource codesource ;
 
     /* ClassLoader the protection domain was consed from */
-    private @Nullable ClassLoader classloader;
+    private final @Nullable ClassLoader classloader;
 
     /* Principals running-as within this protection domain */
-    private Principal[] principals;
+    private final Principal[] principals;
 
     /* the rights this protection domain is granted */
     private @Nullable PermissionCollection permissions;
@@ -164,15 +165,16 @@ public @UsesObjectEquals class ProtectionDomain {
     final Key key = new Key();
 
     /**
-     * Creates a new ProtectionDomain with the given CodeSource and
-     * Permissions. If the permissions object is not null, then
-     *  {@code setReadOnly()} will be called on the passed in
-     * Permissions object.
+     * Creates a new {@code ProtectionDomain} with the given {@code CodeSource}
+     * and permissions. If permissions is not {@code null}, then
+     * {@code setReadOnly()} will be called on the passed in
+     * permissions.
      * <p>
      * The permissions granted to this domain are static, i.e.
-     * invoking the {@link #staticPermissionsOnly()} method returns true.
+     * invoking the {@link #staticPermissionsOnly()} method returns
+     * {@code true}.
      * They contain only the ones passed to this constructor and
-     * the current Policy will not be consulted.
+     * the current policy will not be consulted.
      *
      * @param codesource the codesource associated with this domain
      * @param permissions the permissions granted to this domain
@@ -194,30 +196,31 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Creates a new ProtectionDomain qualified by the given CodeSource,
-     * Permissions, ClassLoader and array of Principals. If the
-     * permissions object is not null, then {@code setReadOnly()}
-     * will be called on the passed in Permissions object.
+     * Creates a new {@code ProtectionDomain} qualified by the given
+     * {@code CodeSource}, permissions, {@code ClassLoader} and array
+     * of principals. If permissions is not {@code null}, then
+     * {@code setReadOnly()} will be called on the passed in permissions.
      * <p>
      * The permissions granted to this domain are dynamic, i.e.
-     * invoking the {@link #staticPermissionsOnly()} method returns false.
+     * invoking the {@link #staticPermissionsOnly()} method returns
+     * {@code false}.
      * They include both the static permissions passed to this constructor,
-     * and any permissions granted to this domain by the current Policy at the
+     * and any permissions granted to this domain by the current policy at the
      * time a permission is checked.
      * <p>
      * This constructor is typically used by
      * {@link SecureClassLoader ClassLoaders}
-     * and {@link DomainCombiner DomainCombiners} which delegate to
-     * {@code Policy} to actively associate the permissions granted to
+     * and {@link DomainCombiner DomainCombiners} which delegate to the
+     * {@code Policy} object to actively associate the permissions granted to
      * this domain. This constructor affords the
-     * Policy provider the opportunity to augment the supplied
-     * PermissionCollection to reflect policy changes.
+     * policy provider the opportunity to augment the supplied
+     * {@code PermissionCollection} to reflect policy changes.
      *
-     * @param codesource the CodeSource associated with this domain
+     * @param codesource the {@code CodeSource} associated with this domain
      * @param permissions the permissions granted to this domain
-     * @param classloader the ClassLoader associated with this domain
-     * @param principals the array of Principals associated with this
-     * domain. The contents of the array are copied to protect against
+     * @param classloader the {@code ClassLoader} associated with this domain
+     * @param principals the array of {@code Principal} objects associated
+     * with this domain. The contents of the array are copied to protect against
      * subsequent modification.
      * @see Policy#refresh
      * @see Policy#getPermissions(ProtectionDomain)
@@ -243,8 +246,8 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Returns the CodeSource of this domain.
-     * @return the CodeSource of this domain which may be null.
+     * Returns the {@code CodeSource} of this domain.
+     * @return the {@code CodeSource} of this domain which may be {@code null}.
      * @since 1.2
      */
     @Deterministic
@@ -254,8 +257,8 @@ public @UsesObjectEquals class ProtectionDomain {
 
 
     /**
-     * Returns the ClassLoader of this domain.
-     * @return the ClassLoader of this domain which may be null.
+     * Returns the {@code ClassLoader} of this domain.
+     * @return the {@code ClassLoader} of this domain which may be {@code null}.
      *
      * @since 1.4
      */
@@ -278,7 +281,8 @@ public @UsesObjectEquals class ProtectionDomain {
     /**
      * Returns the static permissions granted to this domain.
      *
-     * @return the static set of permissions for this domain which may be null.
+     * @return the static set of permissions for this domain which may be
+     * {@code null}.
      * @see Policy#refresh
      * @see Policy#getPermissions(ProtectionDomain)
      */
@@ -287,11 +291,11 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Returns true if this domain contains only static permissions
+     * Returns {@code true} if this domain contains only static permissions
      * and does not check the current {@code Policy} at the time of
      * permission checking.
      *
-     * @return true if this domain contains only static permissions.
+     * @return {@code true} if this domain contains only static permissions.
      *
      * @since 9
      */
@@ -300,24 +304,25 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Check and see if this ProtectionDomain implies the permissions
-     * expressed in the Permission object.
+     * Check and see if this {@code ProtectionDomain} implies the permissions
+     * expressed in the {@code Permission} object.
      * <p>
      * The set of permissions evaluated is a function of whether the
-     * ProtectionDomain was constructed with a static set of permissions
+     * {@code ProtectionDomain} was constructed with a static set of permissions
      * or it was bound to a dynamically mapped set of permissions.
      * <p>
      * If the {@link #staticPermissionsOnly()} method returns
-     * true, then the permission will only be checked against the
-     * PermissionCollection supplied at construction.
+     * {@code true}, then the permission will only be checked against the
+     * {@code PermissionCollection} supplied at construction.
      * <p>
      * Otherwise, the permission will be checked against the combination
-     * of the PermissionCollection supplied at construction and
-     * the current Policy binding.
+     * of the {@code PermissionCollection} supplied at construction and
+     * the current policy binding.
      *
-     * @param perm the Permission object to check.
+     * @param perm the {code Permission} object to check.
      *
-     * @return true if {@code perm} is implied by this ProtectionDomain.
+     * @return {@code true} if {@code perm} is implied by this
+     * {@code ProtectionDomain}.
      */
     @SuppressWarnings("removal")
     public boolean implies(Permission perm) {
@@ -378,7 +383,7 @@ public @UsesObjectEquals class ProtectionDomain {
             Policy policy = Policy.getPolicyNoCheck();
             if (policy instanceof PolicyFile) {
                 // The PolicyFile implementation supports compatibility
-                // inside and it also covers the static permissions.
+                // inside, and it also covers the static permissions.
                 return policy.implies(this, perm);
             } else {
                 if (policy.implies(this, perm)) {
@@ -407,7 +412,7 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Convert a ProtectionDomain to a String.
+     * Convert a {@code ProtectionDomain} to a {@code String}.
      */
     @Override public String toString() {
         String pals = "<no principals>";
@@ -448,18 +453,18 @@ public @UsesObjectEquals class ProtectionDomain {
     }
 
     /**
-     * Return true (merge policy permissions) in the following cases:
+     * Return {@code true} (merge policy permissions) in the following cases:
      *
-     * . SecurityManager is null
+     * . SecurityManager is {@code null}
      *
-     * . SecurityManager is not null,
-     *          debug is not null,
-     *          SecurityManager impelmentation is in bootclasspath,
+     * . SecurityManager is not {@code null},
+     *          debug is not {@code null},
+     *          SecurityManager implementation is in bootclasspath,
      *          Policy implementation is in bootclasspath
      *          (the bootclasspath restrictions avoid recursion)
      *
-     * . SecurityManager is not null,
-     *          debug is null,
+     * . SecurityManager is not {@code null},
+     *          debug is {@code null},
      *          caller has Policy.getPolicy permission
      */
     @SuppressWarnings("removal")
@@ -470,22 +475,18 @@ public @UsesObjectEquals class ProtectionDomain {
             return true;
         } else {
             if (DebugHolder.debug != null) {
-                if (sm.getClass().getClassLoader() == null &&
-                    Policy.getPolicyNoCheck().getClass().getClassLoader()
-                                                                == null) {
-                    return true;
-                }
+                return sm.getClass().getClassLoader() == null &&
+                        Policy.getPolicyNoCheck().getClass().getClassLoader()
+                                == null;
             } else {
                 try {
                     sm.checkPermission(SecurityConstants.GET_POLICY_PERMISSION);
                     return true;
                 } catch (SecurityException se) {
-                    // fall thru and return false
+                    return false;
                 }
             }
         }
-
-        return false;
     }
 
     private PermissionCollection mergePermissions() {
@@ -495,12 +496,8 @@ public @UsesObjectEquals class ProtectionDomain {
         @SuppressWarnings("removal")
         PermissionCollection perms =
             java.security.AccessController.doPrivileged
-            (new java.security.PrivilegedAction<>() {
-                    public PermissionCollection run() {
-                        Policy p = Policy.getPolicyNoCheck();
-                        return p.getPermissions(ProtectionDomain.this);
-                    }
-                });
+            ((PrivilegedAction<PermissionCollection>) () ->
+                Policy.getPolicyNoCheck().getPermissions(ProtectionDomain.this));
 
         Permissions mergedPerms = new Permissions();
         int swag = 32;

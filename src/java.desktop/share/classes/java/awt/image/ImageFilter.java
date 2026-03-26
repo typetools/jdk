@@ -111,7 +111,7 @@ public @UsesObjectEquals class ImageFilter implements ImageConsumer, Cloneable {
      * with the filtering operation.
      *
      * @param props the properties from the source object
-     * @exception NullPointerException if {@code props} is null
+     * @throws NullPointerException if {@code props} is null
      */
     public void setProperties(Hashtable<?,?> props) {
         @SuppressWarnings("unchecked")
@@ -249,7 +249,7 @@ public @UsesObjectEquals class ImageFilter implements ImageConsumer, Cloneable {
      * @param ip the ImageProducer that is feeding this instance of
      * the filter - also the ImageProducer that the request should be
      * forwarded to if necessary
-     * @exception NullPointerException if {@code ip} is null
+     * @throws NullPointerException if {@code ip} is null
      */
     public void resendTopDownLeftRight(ImageProducer ip) {
         ip.requestTopDownLeftRightResend(this);

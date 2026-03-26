@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -230,7 +230,7 @@ public final class Boolean implements java.io.Serializable,
     @Pure
     @StaticallyExecutable
     public static @StringVal({"true", "false"}) String toString(boolean b) {
-        return b ? "true" : "false";
+        return String.valueOf(b);
     }
 
     /**
@@ -243,8 +243,9 @@ public final class Boolean implements java.io.Serializable,
      */
     @StaticallyExecutable
     @SideEffectFree
+    @Override
     public @StringVal({"true", "false"}) String toString() {
-        return value ? "true" : "false";
+        return String.valueOf(value);
     }
 
     /**

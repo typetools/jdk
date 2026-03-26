@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,7 +49,7 @@ import sun.security.util.*;
  * @author Hemma Prafullchandra
  * @author Andreas Sterbenz
  */
-public class GeneralSubtrees implements Cloneable {
+public class GeneralSubtrees implements Cloneable, DerEncoder {
 
     private final List<GeneralSubtree> trees;
 
@@ -137,9 +137,10 @@ public class GeneralSubtrees implements Cloneable {
     /**
      * Encode the GeneralSubtrees.
      *
-     * @param out the DerOutputStrean to encode this object to.
+     * @param out the DerOutputStream to encode this object to.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) {
         DerOutputStream seq = new DerOutputStream();
 
         for (int i = 0, n = size(); i < n; i++) {
@@ -161,10 +162,9 @@ public class GeneralSubtrees implements Cloneable {
         if (this == obj) {
             return true;
         }
-        if (obj instanceof GeneralSubtrees == false) {
+        if (!(obj instanceof GeneralSubtrees other)) {
             return false;
         }
-        GeneralSubtrees other = (GeneralSubtrees)obj;
         return this.trees.equals(other.trees);
     }
 
@@ -184,8 +184,7 @@ public class GeneralSubtrees implements Cloneable {
 
     private static GeneralNameInterface getGeneralNameInterface(GeneralSubtree gs) {
         GeneralName gn = gs.getName();
-        GeneralNameInterface gni = gn.getName();
-        return gni;
+        return gn.getName();
     }
 
     /**
@@ -264,7 +263,7 @@ public class GeneralSubtrees implements Cloneable {
                 newName = new GeneralName(new DNSName(""));
                 break;
             case GeneralNameInterface.NAME_X400:
-                newName = new GeneralName(new X400Address((byte[])null));
+                newName = new GeneralName(new X400Address(null));
                 break;
             case GeneralNameInterface.NAME_DIRECTORY:
                 newName = new GeneralName(new X500Name(""));
@@ -355,7 +354,6 @@ public class GeneralSubtrees implements Cloneable {
         // same type in this.
         for (int i = 0; i < size(); i++) {
             GeneralNameInterface thisEntry = getGeneralNameInterface(i);
-            boolean removeThisEntry = false;
 
             // Step 3a: If the widest name of this type in other narrows
             // thisEntry, remove thisEntry and add widest other to newThis.
@@ -418,7 +416,7 @@ public class GeneralSubtrees implements Cloneable {
                         }
                     }
                 }
-                if (intersection == false) {
+                if (!intersection) {
                     if (newExcluded == null) {
                         newExcluded = new GeneralSubtrees();
                     }

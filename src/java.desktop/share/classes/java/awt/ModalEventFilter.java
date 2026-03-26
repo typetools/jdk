@@ -32,7 +32,7 @@ import java.awt.event.*;
 import sun.awt.AppContext;
 
 @AnnotatedFor({"interning"})
-public abstract @UsesObjectEquals class ModalEventFilter implements EventFilter {
+abstract @UsesObjectEquals class ModalEventFilter implements EventFilter {
 
     protected Dialog modalDialog;
     protected boolean disabled;

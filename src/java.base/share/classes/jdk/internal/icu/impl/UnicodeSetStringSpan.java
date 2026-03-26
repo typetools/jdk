@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -135,9 +135,15 @@ public class UnicodeSetStringSpan {
 
         int i, spanLength;
         someRelevant = false;
-        for (i = 0; i < stringsLength; ++i) {
+        for (i = 0; i < stringsLength;) {
             String string = strings.get(i);
             int length16 = string.length();
+            if (length16 == 0) {
+                // Remove the empty string.
+                strings.remove(i);
+                --stringsLength;
+                continue;
+            }
             spanLength = spanSet.span(string, SpanCondition.CONTAINED);
             if (spanLength < length16) { // Relevant string.
                 someRelevant = true;
@@ -145,6 +151,7 @@ public class UnicodeSetStringSpan {
             if (/* (0 != (which & UTF16)) && */ length16 > maxLength16) {
                 maxLength16 = length16;
             }
+            ++i;
         }
         if (!someRelevant && (which & WITH_COUNT) == 0) {
             return;

@@ -285,7 +285,7 @@ public enum Option {
         }
     },
 
-    PROC("-proc:", "opt.proc.none.only", STANDARD, BASIC,  ONEOF, "none", "only"),
+    PROC("-proc:", "opt.proc.none.only", STANDARD, BASIC, ONEOF, "none", "only", "full"),
 
     PROCESSOR("-processor", "opt.arg.class.list", "opt.processor", STANDARD, BASIC),
 
@@ -509,6 +509,11 @@ public enum Option {
         @Override
         public void process(OptionHelper helper, String option) {
             throw new AssertionError("the -J flag should be caught by the launcher.");
+        }
+
+        @Override
+        public void process(OptionHelper helper, String option, String arg) throws InvalidValueException {
+            throw helper.newInvalidValueException(Errors.InvalidFlag(option + arg));
         }
     },
 
@@ -1154,6 +1159,11 @@ public enum Option {
             }
             process(helper, option, operand);
         } else {
+            if ((this == HELP || this == X || this == HELP_LINT || this == VERSION || this == FULLVERSION)
+                    && (helper.get(this) != null)) {
+                // avoid processing the info options repeatedly
+                return;
+            }
             process(helper, arg);
         }
     }

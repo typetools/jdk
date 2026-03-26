@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,36 +38,36 @@ import sun.security.util.SecurityConstants;
 
 
 /**
- * A Policy object is responsible for determining whether code executing
+ * A {@code Policy} object is responsible for determining whether code executing
  * in the Java runtime environment has permission to perform a
  * security-sensitive operation.
  *
- * <p> There is only one Policy object installed in the runtime at any
- * given time.  A Policy object can be installed by calling the
- * {@code setPolicy} method.  The installed Policy object can be
+ * <p> There is only one {@code Policy} object installed in the runtime at any
+ * given time.  A {@code Policy} object can be installed by calling the
+ * {@code setPolicy} method.  The installed {@code Policy} object can be
  * obtained by calling the {@code getPolicy} method.
  *
- * <p> If no Policy object has been installed in the runtime, a call to
- * {@code getPolicy} installs an instance of the default Policy
+ * <p> If no {@code Policy} object has been installed in the runtime, a call to
+ * {@code getPolicy} installs an instance of the default {@code Policy}
  * implementation (a default subclass implementation of this abstract class).
- * The default Policy implementation can be changed by setting the value
+ * The default {@code Policy} implementation can be changed by setting the value
  * of the {@code policy.provider} security property to the fully qualified
- * name of the desired Policy subclass implementation. The system class loader
- * is used to load this class.
+ * name of the desired {@code Policy} subclass implementation. The system
+ * class loader is used to load this class.
  *
- * <p> Application code can directly subclass Policy to provide a custom
- * implementation.  In addition, an instance of a Policy object can be
+ * <p> Application code can directly subclass {@code Policy} to provide a custom
+ * implementation.  In addition, an instance of a {@code Policy} object can be
  * constructed by invoking one of the {@code getInstance} factory methods
  * with a standard type.  The default policy type is "JavaPolicy".
  *
- * <p> Once a Policy instance has been installed (either by default, or by
- * calling {@code setPolicy}), the Java runtime invokes its
+ * <p> Once a {@code Policy} instance has been installed (either by default,
+ * or by calling {@code setPolicy}), the Java runtime invokes its
  * {@code implies} method when it needs to
  * determine whether executing code (encapsulated in a ProtectionDomain)
- * can perform SecurityManager-protected operations.  How a Policy object
- * retrieves its policy data is up to the Policy implementation itself.
- * The policy data may be stored, for example, in a flat ASCII file,
- * in a serialized binary file of the Policy class, or in a database.
+ * can perform SecurityManager-protected operations.  How a {@code Policy}
+ * object retrieves its policy data is up to the {@code Policy} implementation
+ * itself. The policy data may be stored, for example, in a flat ASCII file,
+ * in a serialized binary file of the {@code Policy} class, or in a database.
  *
  * <p> The {@code refresh} method causes the policy object to
  * refresh/reload its data.  This operation is implementation-dependent.
@@ -75,7 +75,7 @@ import sun.security.util.SecurityConstants;
  * calling {@code refresh} will cause it to re-read the configuration
  * policy files.  If a refresh operation is not supported, this method does
  * nothing.  Note that refreshed policy may not have an effect on classes
- * in a particular ProtectionDomain. This is dependent on the Policy
+ * in a particular ProtectionDomain. This is dependent on the policy
  * provider's implementation of the {@code implies}
  * method and its PermissionCollection caching strategy.
  *
@@ -151,19 +151,19 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Returns the installed Policy object. This value should not be cached,
-     * as it may be changed by a call to {@code setPolicy}.
+     * Returns the installed {@code Policy} object. This value should not be
+     * cached, as it may be changed by a call to {@code setPolicy}.
      * This method first calls
      * {@code SecurityManager.checkPermission} with a
      * {@code SecurityPermission("getPolicy")} permission
-     * to ensure it's ok to get the Policy object.
+     * to ensure it's ok to get the {@code Policy} object.
      *
      * @return the installed Policy.
      *
      * @throws SecurityException
      *        if a security manager exists and its
      *        {@code checkPermission} method doesn't allow
-     *        getting the Policy object.
+     *        getting the {@code Policy} object.
      *
      * @see SecurityManager#checkPermission(Permission)
      * @see #setPolicy(java.security.Policy)
@@ -178,10 +178,10 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Returns the installed Policy object, skipping the security check.
+     * Returns the installed {@code Policy} object, skipping the security check.
      * Used by ProtectionDomain and getPolicy.
      *
-     * @return the installed Policy.
+     * @return the installed {@code Policy}.
      */
     static Policy getPolicyNoCheck()
     {
@@ -267,12 +267,12 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Sets the system-wide Policy object. This method first calls
+     * Sets the system-wide {@code Policy} object. This method first calls
      * {@code SecurityManager.checkPermission} with a
      * {@code SecurityPermission("setPolicy")}
      * permission to ensure it's ok to set the Policy.
      *
-     * @param p the new system Policy object.
+     * @param p the new system {@code Policy} object.
      *
      * @throws SecurityException
      *        if a security manager exists and its
@@ -369,10 +369,10 @@ public abstract @UsesObjectEquals class Policy {
      * Returns a Policy object of the specified type.
      *
      * <p> This method traverses the list of registered security providers,
-     * starting with the most preferred Provider.
-     * A new Policy object encapsulating the
-     * PolicySpi implementation from the first
-     * Provider that supports the specified type is returned.
+     * starting with the most preferred provider.
+     * A new {@code Policy} object encapsulating the
+     * {@code PolicySpi} implementation from the first
+     * provider that supports the specified type is returned.
      *
      * <p> Note that the list of registered providers may be retrieved via
      * the {@link Security#getProviders() Security.getProviders()} method.
@@ -391,7 +391,8 @@ public abstract @UsesObjectEquals class Policy {
      *    Java Security Standard Algorithm Names Specification</a>
      *    for a list of standard Policy types.
      *
-     * @param params parameters for the Policy, which may be null.
+     * @param params parameters for the {@code Policy}, which may be
+     * {@code null}.
      *
      * @return the new {@code Policy} object
      *
@@ -430,10 +431,10 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Returns a Policy object of the specified type.
+     * Returns a {@code Policy} object of the specified type.
      *
-     * <p> A new Policy object encapsulating the
-     * PolicySpi implementation from the specified provider
+     * <p> A new {@code Policy} object encapsulating the
+     * {@code PolicySpi} implementation from the specified provider
      * is returned.   The specified provider must be registered
      * in the provider list.
      *
@@ -446,7 +447,8 @@ public abstract @UsesObjectEquals class Policy {
      *    Java Security Standard Algorithm Names Specification</a>
      *    for a list of standard Policy types.
      *
-     * @param params parameters for the Policy, which may be null.
+     * @param params parameters for the {@code Policy}, which may be
+     * {@code null}.
      *
      * @param provider the provider.
      *
@@ -500,12 +502,12 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Returns a Policy object of the specified type.
+     * Returns a {@code Policy} object of the specified type.
      *
-     * <p> A new Policy object encapsulating the
-     * PolicySpi implementation from the specified Provider
-     * object is returned.  Note that the specified Provider object
-     * does not have to be registered in the provider list.
+     * <p> A new {@code Policy} object encapsulating the
+     * {@code PolicySpi} implementation from the specified provider
+     * is returned.  Note that the specified provider does not
+     * have to be registered in the provider list.
      *
      * @param type the specified Policy type.  See the Policy section in the
      *    <a href=
@@ -513,9 +515,10 @@ public abstract @UsesObjectEquals class Policy {
      *    Java Security Standard Algorithm Names Specification</a>
      *    for a list of standard Policy types.
      *
-     * @param params parameters for the Policy, which may be null.
+     * @param params parameters for the {@code Policy}, which may be
+     * {@code null}.
      *
-     * @param provider the Provider.
+     * @param provider the {@code Provider}.
      *
      * @return the new {@code Policy} object
      *
@@ -573,13 +576,13 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Return the Provider of this Policy.
+     * Return the {@code Provider} of this policy.
      *
-     * <p> This Policy instance will only have a Provider if it
+     * <p> This {@code Policy} instance will only have a provider if it
      * was obtained via a call to {@code Policy.getInstance}.
-     * Otherwise this method returns null.
+     * Otherwise this method returns {@code null}.
      *
-     * @return the Provider of this Policy, or null.
+     * @return the {@code Provider} of this policy, or {@code null}.
      *
      * @since 1.6
      */
@@ -588,13 +591,13 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Return the type of this Policy.
+     * Return the type of this {@code Policy}.
      *
-     * <p> This Policy instance will only have a type if it
+     * <p> This {@code Policy} instance will only have a type if it
      * was obtained via a call to {@code Policy.getInstance}.
-     * Otherwise this method returns null.
+     * Otherwise this method returns {@code null}.
      *
-     * @return the type of this Policy, or null.
+     * @return the type of this {@code Policy}, or {@code null}.
      *
      * @since 1.6
      */
@@ -603,13 +606,13 @@ public abstract @UsesObjectEquals class Policy {
     }
 
     /**
-     * Return Policy parameters.
+     * Return {@code Policy} parameters.
      *
-     * <p> This Policy instance will only have parameters if it
+     * <p> This {@code Policy} instance will only have parameters if it
      * was obtained via a call to {@code Policy.getInstance}.
-     * Otherwise this method returns null.
+     * Otherwise this method returns {@code null}.
      *
-     * @return Policy parameters, or null.
+     * @return {@code Policy} parameters, or {@code null}.
      *
      * @since 1.6
      */
@@ -737,7 +740,7 @@ public abstract @UsesObjectEquals class Policy {
      * @param domain the ProtectionDomain to test
      * @param permission the Permission object to be tested for implication.
      *
-     * @return true if "permission" is a proper subset of a permission
+     * @return {@code true} if "permission" is a proper subset of a permission
      * granted to this ProtectionDomain.
      *
      * @see java.security.ProtectionDomain
@@ -783,8 +786,8 @@ public abstract @UsesObjectEquals class Policy {
     public void refresh() { }
 
     /**
-     * This subclass is returned by the getInstance calls.  All Policy calls
-     * are delegated to the underlying PolicySpi.
+     * This subclass is returned by the getInstance calls.  All {@code Policy}
+     * calls are delegated to the underlying {@code PolicySpi}.
      */
     private static class PolicyDelegate extends Policy {
 
@@ -843,7 +846,7 @@ public abstract @UsesObjectEquals class Policy {
      * This class represents a read-only empty PermissionCollection object that
      * is returned from the {@code getPermissions(CodeSource)} and
      * {@code getPermissions(ProtectionDomain)}
-     * methods in the Policy class when those operations are not
+     * methods in the {@code Policy} class when those operations are not
      * supported by the Policy implementation.
      */
     private static class UnsupportedEmptyCollection
@@ -881,8 +884,8 @@ public abstract @UsesObjectEquals class Policy {
          *
          * @param permission the Permission object to compare.
          *
-         * @return true if "permission" is implied by the permissions in
-         * the collection, false if not.
+         * @return {@code true} if "permission" is implied by the permissions in
+         * the collection, {@code false} if not.
          */
         @Override public boolean implies(Permission permission) {
             return perms.implies(permission);

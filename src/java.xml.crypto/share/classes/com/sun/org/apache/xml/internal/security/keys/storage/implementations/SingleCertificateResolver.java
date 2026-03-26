@@ -76,7 +76,6 @@ public class SingleCertificateResolver extends StorageResolverSpi {
         /** {@inheritDoc} */
         @Pure
         public boolean hasNext() {
-
             return !this.alreadyReturned;
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,12 @@
 
 package java.io;
 
-import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.ArrayList;
@@ -62,7 +62,7 @@ public abstract class InputStream implements Closeable {
     // use when skipping.
     private static final int MAX_SKIP_BUFFER_SIZE = 2048;
 
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private static final int DEFAULT_BUFFER_SIZE = 16384;
 
     /**
      * Constructor for subclasses to call.
@@ -182,8 +182,6 @@ public abstract class InputStream implements Closeable {
      * blocks until input data is available, the end of the stream is detected,
      * or an exception is thrown.
      *
-     * <p> A subclass must provide an implementation of this method.
-     *
      * @return     the next byte of data, or {@code -1} if the end of the
      *             stream is reached.
      * @throws     IOException  if an I/O error occurs.
@@ -210,8 +208,12 @@ public abstract class InputStream implements Closeable {
      * leaving elements {@code b[}<i>k</i>{@code ]} through
      * {@code b[b.length-1]} unaffected.
      *
-     * <p> The {@code read(b)} method for class {@code InputStream}
-     * has the same effect as: <pre>{@code  read(b, 0, b.length) }</pre>
+     * @implSpec
+     * The {@code read(b)} method for class {@code InputStream}
+     * has the same effect as:
+     * {@snippet lang=java :
+     *     read(b, 0, b.length)
+     * }
      *
      * @param      b   the buffer into which the data is read.
      * @return     the total number of bytes read into the buffer, or
@@ -223,7 +225,7 @@ public abstract class InputStream implements Closeable {
      * @throws     NullPointerException  if {@code b} is {@code null}.
      * @see        java.io.InputStream#read(byte[], int, int)
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte b[]) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
@@ -254,7 +256,8 @@ public abstract class InputStream implements Closeable {
      * {@code b[off-1]} and elements {@code b[off+len]} through
      * {@code b[b.length-1]} are unaffected.
      *
-     * <p> The {@code read(b, off, len)} method
+     * @implSpec
+     * The {@code read(b, off, len)} method
      * for class {@code InputStream} simply calls the method
      * {@code read()} repeatedly. If the first such call results in an
      * {@code IOException}, that exception is returned from the call to
@@ -284,7 +287,7 @@ public abstract class InputStream implements Closeable {
      *             {@code b.length - off}
      * @see        java.io.InputStream#read()
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte b[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         Objects.checkFromIndexSize(off, len, b.length);
         if (len == 0) {
             return 0;
@@ -531,7 +534,8 @@ public abstract class InputStream implements Closeable {
      * returns 0, and no bytes are skipped. Subclasses may handle the negative
      * value differently.
      *
-     * <p> The {@code skip} method implementation of this class creates a
+     * @implSpec
+     * The {@code skip} method implementation of this class creates a
      * byte array and then repeatedly reads into it until {@code n} bytes
      * have been read or the end of the stream has been reached. Subclasses are
      * encouraged to provide a more efficient implementation of this method.
@@ -641,10 +645,12 @@ public abstract class InputStream implements Closeable {
      * {@link IOException} if this input stream has been closed by invoking the
      * {@link #close()} method.
      *
-     * <p> The {@code available} method of {@code InputStream} always returns
+     * @implSpec
+     * The {@code available} method of {@code InputStream} always returns
      * {@code 0}.
      *
-     * <p> This method should be overridden by subclasses.
+     * @apiNote
+     * This method should be overridden by subclasses.
      *
      * @return     an estimate of the number of bytes that can be read (or
      *             skipped over) from this input stream without blocking or
@@ -659,7 +665,8 @@ public abstract class InputStream implements Closeable {
      * Closes this input stream and releases any system resources associated
      * with the stream.
      *
-     * <p> The {@code close} method of {@code InputStream} does
+     * @implSpec
+     * The {@code close} method of {@code InputStream} does
      * nothing.
      *
      * @throws     IOException  if an I/O error occurs.
@@ -685,14 +692,14 @@ public abstract class InputStream implements Closeable {
      *
      * <p> Marking a closed stream should not have any effect on the stream.
      *
-     * <p> The {@code mark} method of {@code InputStream} does
-     * nothing.
+     * @implSpec
+     * The {@code mark} method of {@code InputStream} does nothing.
      *
      * @param   readlimit   the maximum limit of bytes that can be read before
      *                      the mark position becomes invalid.
      * @see     java.io.InputStream#reset()
      */
-    public synchronized void mark(@NonNegative int readlimit) {}
+    public void mark(@NonNegative int readlimit) {}
 
     /**
      * Repositions this stream to the position at the time the
@@ -730,7 +737,8 @@ public abstract class InputStream implements Closeable {
      *     to subsequent callers of the {@code read} method depend on the
      *     particular type of the input stream. </ul></ul>
      *
-     * <p>The method {@code reset} for class {@code InputStream}
+     * @implSpec
+     * The method {@code reset} for class {@code InputStream}
      * does nothing except throw an {@code IOException}.
      *
      * @throws  IOException  if this stream has not been marked or if the
@@ -738,7 +746,7 @@ public abstract class InputStream implements Closeable {
      * @see     java.io.InputStream#mark(int)
      * @see     java.io.IOException
      */
-    public synchronized void reset() throws IOException {
+    public void reset() throws IOException {
         throw new IOException("mark/reset not supported");
     }
 
@@ -746,7 +754,10 @@ public abstract class InputStream implements Closeable {
      * Tests if this input stream supports the {@code mark} and
      * {@code reset} methods. Whether or not {@code mark} and
      * {@code reset} are supported is an invariant property of a
-     * particular input stream instance. The {@code markSupported} method
+     * particular input stream instance.
+     *
+     * @implSpec
+     * The {@code markSupported} method
      * of {@code InputStream} returns {@code false}.
      *
      * @return  {@code true} if this stream instance supports the mark
@@ -770,6 +781,9 @@ public abstract class InputStream implements Closeable {
      * interrupted during the transfer, is highly input and output stream
      * specific, and therefore not specified.
      * <p>
+     * If the total number of bytes transferred is greater than {@linkplain
+     * Long#MAX_VALUE}, then {@code Long.MAX_VALUE} will be returned.
+     * <p>
      * If an I/O error occurs reading from the input stream or writing to the
      * output stream, then it may do so after some bytes have been read or
      * written. Consequently the input stream may not be at end of stream and
@@ -790,7 +804,13 @@ public abstract class InputStream implements Closeable {
         int read;
         while ((read = this.read(buffer, 0, DEFAULT_BUFFER_SIZE)) >= 0) {
             out.write(buffer, 0, read);
-            transferred += read;
+            if (transferred < Long.MAX_VALUE) {
+                try {
+                    transferred = Math.addExact(transferred, read);
+                } catch (ArithmeticException ignore) {
+                    transferred = Long.MAX_VALUE;
+                }
+            }
         }
         return transferred;
     }

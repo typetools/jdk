@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -112,7 +112,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      */
     @SideEffectFree
     public static @ArrayLen({1,2,3,4}) String toString(byte b) {
-        return Integer.toString((int)b, 10);
+        return Integer.toString(b);
     }
 
     /**
@@ -261,7 +261,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      * equal to the value of:
      *
      * <blockquote>
-     * {@code new Byte(Byte.parseByte(s, radix))}
+     * {@code Byte.valueOf(Byte.parseByte(s, radix))}
      * </blockquote>
      *
      * @param s         the string to be parsed
@@ -292,7 +292,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      * equal to the value of:
      *
      * <blockquote>
-     * {@code new Byte(Byte.parseByte(s))}
+     * {@code Byte.valueOf(Byte.parseByte(s))}
      * </blockquote>
      *
      * @param s         the string to be parsed
@@ -485,8 +485,9 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      *          base&nbsp;10.
      */
     @SideEffectFree
+    @Override
     public @ArrayLen({1,2,3,4}) String toString() {
-        return Integer.toString((int)value);
+        return Integer.toString(value);
     }
 
     /**

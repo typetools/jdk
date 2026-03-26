@@ -34,6 +34,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Objects;
 
 /**
  * Implements an output stream filter for uncompressing data stored in the
@@ -230,9 +231,9 @@ public class InflaterOutputStream extends FilterOutputStream {
         ensureOpen();
         if (b == null) {
             throw new NullPointerException("Null buffer for read");
-        } else if (off < 0 || len < 0 || len > b.length - off) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+        }
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
             return;
         }
 

@@ -388,7 +388,7 @@ public @UsesObjectEquals class Exchanger<V> {
                         else if (spins > 0) {
                             h ^= h << 1; h ^= h >>> 3; h ^= h << 10; // xorshift
                             if (h == 0)                // initialize hash
-                                h = SPINS | (int)t.getId();
+                                h = SPINS | (int)t.threadId();
                             else if (h < 0 &&          // approx 50% true
                                      (--spins & ((SPINS >>> 1) - 1)) == 0)
                                 Thread.yield();        // two yields per wait
@@ -493,7 +493,7 @@ public @UsesObjectEquals class Exchanger<V> {
             if (spins > 0) {
                 h ^= h << 1; h ^= h >>> 3; h ^= h << 10;
                 if (h == 0)
-                    h = SPINS | (int)t.getId();
+                    h = SPINS | (int)t.threadId();
                 else if (h < 0 && (--spins & ((SPINS >>> 1) - 1)) == 0)
                     Thread.yield();
             }

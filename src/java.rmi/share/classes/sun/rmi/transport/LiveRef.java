@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -186,8 +186,7 @@ public class LiveRef implements Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (obj != null && obj instanceof LiveRef) {
-            LiveRef ref = (LiveRef) obj;
+        if (obj instanceof LiveRef ref) {
 
             return (ep.equals(ref.ep) && id.equals(ref.id) &&
                     isLocal == ref.isLocal);
@@ -197,8 +196,7 @@ public class LiveRef implements Cloneable {
     }
 
     public boolean remoteEquals(Object obj) {
-        if (obj != null && obj instanceof LiveRef) {
-            LiveRef ref = (LiveRef) obj;
+        if (obj instanceof LiveRef ref) {
 
             TCPEndpoint thisEp = ((TCPEndpoint) ep);
             TCPEndpoint refEp = ((TCPEndpoint) ref.ep);

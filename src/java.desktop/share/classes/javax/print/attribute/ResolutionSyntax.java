@@ -275,13 +275,9 @@ public abstract class ResolutionSyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-
-        return(object != null &&
-               object instanceof ResolutionSyntax &&
-               this.crossFeedResolution ==
-               ((ResolutionSyntax) object).crossFeedResolution &&
-               this.feedResolution ==
-               ((ResolutionSyntax) object).feedResolution);
+        return object instanceof ResolutionSyntax other &&
+                this.crossFeedResolution == other.crossFeedResolution &&
+                this.feedResolution == other.feedResolution;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,7 +42,7 @@ import sun.awt.AppContext;
  * the call to the UIManager.
  * <p>
  * <b>WARNING:</b> While this class is public, it should not be treated as
- * public API and its API may change in incompatable ways between dot dot
+ * public API and its API may change in incompatible ways between dot dot
  * releases and even patch releases. You should not rely on this class even
  * existing.
  *
@@ -138,10 +138,10 @@ public class DefaultLookup {
                              int defaultValue) {
         Object iValue = get(c, ui, key);
 
-        if (iValue == null || !(iValue instanceof Number)) {
-            return defaultValue;
+        if (iValue instanceof Number number) {
+            return number.intValue();
         }
-        return ((Number)iValue).intValue();
+        return defaultValue;
     }
 
     public static int getInt(JComponent c, ComponentUI ui, String key) {
@@ -152,10 +152,10 @@ public class DefaultLookup {
                                    @PolyNull Insets defaultValue) {
         Object iValue = get(c, ui, key);
 
-        if (iValue == null || !(iValue instanceof Insets)) {
-            return defaultValue;
+        if (iValue instanceof Insets insets) {
+            return insets;
         }
-        return (Insets)iValue;
+        return defaultValue;
     }
 
     public static @Nullable Insets getInsets(JComponent c, ComponentUI ui, String key) {
@@ -166,10 +166,10 @@ public class DefaultLookup {
                                      boolean defaultValue) {
         Object iValue = get(c, ui, key);
 
-        if (iValue == null || !(iValue instanceof Boolean)) {
-            return defaultValue;
+        if (iValue instanceof Boolean b) {
+            return b;
         }
-        return ((Boolean)iValue).booleanValue();
+        return defaultValue;
     }
 
     public static boolean getBoolean(JComponent c, ComponentUI ui, String key) {
@@ -180,10 +180,10 @@ public class DefaultLookup {
                                  @PolyNull Color defaultValue) {
         Object iValue = get(c, ui, key);
 
-        if (iValue == null || !(iValue instanceof Color)) {
-            return defaultValue;
+        if (iValue instanceof Color color) {
+            return color;
         }
-        return (Color)iValue;
+        return defaultValue;
     }
 
     public static @Nullable Color getColor(JComponent c, ComponentUI ui, String key) {
@@ -193,10 +193,10 @@ public class DefaultLookup {
     public static @PolyNull Icon getIcon(JComponent c, ComponentUI ui, String key,
             @PolyNull Icon defaultValue) {
         Object iValue = get(c, ui, key);
-        if (iValue == null || !(iValue instanceof Icon)) {
-            return defaultValue;
+        if (iValue instanceof Icon icon) {
+            return icon;
         }
-        return (Icon)iValue;
+        return defaultValue;
     }
 
     public static @Nullable Icon getIcon(JComponent c, ComponentUI ui, String key) {
@@ -206,10 +206,10 @@ public class DefaultLookup {
     public static @PolyNull Border getBorder(JComponent c, ComponentUI ui, String key,
             @PolyNull Border defaultValue) {
         Object iValue = get(c, ui, key);
-        if (iValue == null || !(iValue instanceof Border)) {
-            return defaultValue;
+        if (iValue instanceof Border border) {
+            return border;
         }
-        return (Border)iValue;
+        return defaultValue;
     }
 
     public static @Nullable Border getBorder(JComponent c, ComponentUI ui, String key) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,12 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
-import org.checkerframework.checker.index.qual.Shrinkable;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
@@ -50,10 +50,9 @@ import org.checkerframework.framework.qual.CFComment;
 import java.util.function.UnaryOperator;
 
 /**
- * An ordered collection (also known as a <i>sequence</i>).  The user of this
- * interface has precise control over where in the list each element is
- * inserted.  The user can access elements by their integer index (position in
- * the list), and search for elements in the list.<p>
+ * An ordered collection, where the user has precise control over where in the
+ * list each element is inserted.  The user can access elements by their integer
+ * index (position in the list), and search for elements in the list.<p>
  *
  * Unlike sets, lists typically allow duplicate elements.  More formally,
  * lists typically allow pairs of elements {@code e1} and {@code e2}
@@ -163,7 +162,7 @@ import java.util.function.UnaryOperator;
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness", "index"})
-public interface List<E> extends Collection<E> {
+public interface List<E> extends SequencedCollection<E> {
     // Query Operations
 
     /**
@@ -325,7 +324,7 @@ public interface List<E> extends Collection<E> {
      *         is not supported by this list
      */
     @SideEffectsOnly("this")
-    boolean remove(@GuardSatisfied @Shrinkable List<E> this, @UnknownSignedness Object o);
+    boolean remove(@GuardSatisfied @CanShrink List<E> this, @UnknownSignedness Object o);
 
 
     // Bulk Modification Operations
@@ -425,7 +424,7 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied @Shrinkable List<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean removeAll(@GuardSatisfied @CanShrink List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Retains only the elements in this list that are contained in the
@@ -447,7 +446,7 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@GuardSatisfied @Shrinkable List<E> this, Collection<? extends @UnknownSignedness Object> c);
+    boolean retainAll(@GuardSatisfied @CanShrink List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Replaces each element of this list with the result of applying the
@@ -563,7 +562,7 @@ public interface List<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    void clear(@GuardSatisfied @Shrinkable List<E> this);
+    void clear(@GuardSatisfied @CanShrink List<E> this);
 
 
     // Comparison and hashing
@@ -676,7 +675,7 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index >= size()})
      */
     @ReleasesNoLocks
-    E remove(@GuardSatisfied @Shrinkable List<E> this, @IndexFor({"this"}) int index);
+    E remove(@GuardSatisfied @CanShrink List<E> this, @IndexFor({"this"}) int index);
 
 
     // Search Operations
@@ -831,6 +830,126 @@ public interface List<E> extends Collection<E> {
             return Spliterators.spliterator(this, Spliterator.ORDERED);
         }
     }
+
+    // ========== SequencedCollection ==========
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls {@code add(0, e)}.
+     *
+     * @throws NullPointerException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    default void addFirst(E e) {
+        this.add(0, e);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls {@code add(e)}.
+     *
+     * @throws NullPointerException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    default void addLast(E e) {
+        this.add(e);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code get(0)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    default E getFirst() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.get(0);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code get(size() - 1)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    default E getLast() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.get(this.size() - 1);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code remove(0)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    default E removeFirst() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.remove(0);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code remove(size() - 1)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    default E removeLast() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.remove(this.size() - 1);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns an instance of a reverse-ordered
+     * List that delegates its operations to this List.
+     *
+     * @return a reverse-ordered view of this collection, as a {@code List}
+     * @since 21
+     */
+    default List<E> reversed() {
+        return ReverseOrderListView.of(this, true); // we must assume it's modifiable
+    }
+
+    // ========== static methods ==========
 
     /**
      * Returns an unmodifiable list containing zero elements.

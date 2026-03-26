@@ -108,9 +108,8 @@ public abstract class URISyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        return(object != null &&
-               object instanceof URISyntax &&
-               this.uri.equals (((URISyntax) object).uri));
+        return object instanceof URISyntax other &&
+                this.uri.equals(other.uri);
     }
 
     /**

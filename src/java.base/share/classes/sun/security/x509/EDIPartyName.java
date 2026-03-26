@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
+import java.util.Objects;
+
 import sun.security.util.*;
 
 /**
@@ -67,7 +69,7 @@ public class EDIPartyName implements GeneralNameInterface {
      */
     public EDIPartyName(String assignerName, String partyName) {
         this.assigner = assignerName;
-        this.party = partyName;
+        this.party = Objects.requireNonNull(partyName);
     }
 
     /**
@@ -76,7 +78,7 @@ public class EDIPartyName implements GeneralNameInterface {
      * @param partyName the name of the EDI party.
      */
     public EDIPartyName(String partyName) {
-        this.party = partyName;
+        this(null, partyName);
     }
 
     /**
@@ -112,6 +114,9 @@ public class EDIPartyName implements GeneralNameInterface {
                 party = opt.getAsString();
             }
         }
+        if (party == null) {
+            throw new IOException("party cannot be missing");
+        }
     }
 
     /**
@@ -125,9 +130,9 @@ public class EDIPartyName implements GeneralNameInterface {
      * Encode the EDI party name into the DerOutputStream.
      *
      * @param out the DER stream to encode the EDIPartyName to.
-     * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) {
         DerOutputStream tagged = new DerOutputStream();
         DerOutputStream tmp = new DerOutputStream();
 
@@ -138,9 +143,6 @@ public class EDIPartyName implements GeneralNameInterface {
             tagged.write(DerValue.createTag(DerValue.TAG_CONTEXT,
                                  false, TAG_ASSIGNER), tmp2);
         }
-        if (party == null)
-            throw  new IOException("Cannot have null partyName");
-
         // XXX - shd check is chars fit into PrintableString
         tmp.putPrintableString(party);
         tagged.write(DerValue.createTag(DerValue.TAG_CONTEXT,
@@ -189,13 +191,10 @@ public class EDIPartyName implements GeneralNameInterface {
         }
         String otherParty = ((EDIPartyName)other).party;
         if (this.party == null) {
-            if (otherParty != null)
-                return false;
+            return otherParty == null;
         } else {
-            if (!(this.party.equals(otherParty)))
-                return false;
+            return this.party.equals(otherParty);
         }
-        return true;
     }
 
     /**
