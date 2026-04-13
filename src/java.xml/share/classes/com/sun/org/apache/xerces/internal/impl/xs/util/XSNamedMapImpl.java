@@ -21,7 +21,6 @@
 package com.sun.org.apache.xerces.internal.impl.xs.util;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import com.sun.org.apache.xerces.internal.util.SymbolHash;
 import com.sun.org.apache.xerces.internal.xs.XSNamedMap;
 import com.sun.org.apache.xerces.internal.xs.XSObject;
@@ -242,7 +241,6 @@ public class XSNamedMapImpl extends AbstractMap<QName, XSObject> implements XSNa
                         public boolean hasNext() {
                             return (index < length);
                         }
-                        @SideEffectsOnly("this")
                         public Map.Entry<QName,XSObject> next() {
                             if (index < length) {
                                 return entries[index++];

@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Spliterator;

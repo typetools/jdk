@@ -27,7 +27,6 @@ package java.sql;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -332,7 +331,6 @@ public class SQLException extends java.lang.Exception
                return false;
            }
 
-           @SideEffectsOnly("this")
            public Throwable next() {
                Throwable throwable = null;
                if(firstException != null){
