@@ -208,6 +208,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      *
      * @since 11
      */
+    @SideEffectFree
     @Override
     public synchronized int compareTo(StringBuffer another) {
         return super.compareTo(another);
@@ -219,6 +220,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
         return count;
     }
 
+    @Pure
     @Override
     public synchronized @NonNegative int capacity() {
         return super.capacity();
@@ -252,6 +254,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see        #length()
      */
+    @Pure
     @Override
     public synchronized char charAt(int index) {
         return super.charAt(index);
@@ -261,6 +264,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @since      1.5
      */
+    @Pure
     @Override
     public synchronized int codePointAt(int index) {
         return super.codePointAt(index);
@@ -270,6 +274,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @since     1.5
      */
+    @Pure
     @Override
     public synchronized int codePointBefore(int index) {
         return super.codePointBefore(index);
@@ -279,6 +284,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @since     1.5
      */
+    @Pure
     @Override
     public synchronized int codePointCount(int beginIndex, int endIndex) {
         return super.codePointCount(beginIndex, endIndex);
@@ -288,6 +294,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @since     1.5
      */
+    @Pure
     @Override
     public synchronized int offsetByCodePoints(int index, int codePointOffset) {
         return super.offsetByCodePoints(index, codePointOffset);
@@ -296,6 +303,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
     /**
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @SideEffectFree
     @Override
     public synchronized void getChars(int srcBegin, int srcEnd, char[] dst,
                                       @IndexOrHigh({"#3"}) int dstBegin)
@@ -516,6 +524,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      * @since      1.2
      */
+    @SideEffectFree
     @Override
     public synchronized String substring(int start) {
         return substring(start, count);
@@ -525,6 +534,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @since      1.4
      */
+    @SideEffectFree
     @Override
     public synchronized CharSequence subSequence(int start, int end) {
         return super.substring(start, end);
@@ -534,6 +544,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      * @since      1.2
      */
+    @SideEffectFree
     @Override
     public synchronized String substring(int start, int end) {
         return super.substring(start, end);
@@ -726,7 +737,6 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
         return this;
     }
 
-    @SideEffectFree
     /**
      * @throws IllegalArgumentException {@inheritDoc}
      *
@@ -749,6 +759,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
         return this;
     }
 
+    @SideEffectFree
     @Override
     @IntrinsicCandidate
     public synchronized String toString(@GuardSatisfied StringBuffer this) {
