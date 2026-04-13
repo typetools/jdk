@@ -37,6 +37,8 @@
 
 package jdk.internal.icu.text;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * <code>Replaceable</code> is an interface representing a
  * string of characters that supports the replacement of a range of

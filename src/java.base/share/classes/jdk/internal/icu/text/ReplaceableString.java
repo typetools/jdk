@@ -32,6 +32,8 @@
 
 package jdk.internal.icu.text;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * <code>ReplaceableString</code> is an adapter class that implements the
  * <code>Replaceable</code> API around an ordinary <code>StringBuffer</code>.
