@@ -3478,7 +3478,8 @@ public final class String
         return split(regex, limit, true);
     }
 
-    private String[] split(String regex, int limit, boolean withDelimiters) {        /* fastpath if the regex is a
+    private String[] split(String regex, int limit, boolean withDelimiters) {
+        /* fastpath if the regex is a
          * (1) one-char String and this character is not one of the
          *     RegEx's meta characters ".$|()[{^?*+\\", or
          * (2) two-char String and the first char is the backslash and
