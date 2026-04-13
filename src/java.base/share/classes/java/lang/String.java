@@ -1787,6 +1787,7 @@ public final class String
      *            <li>{@code dstBegin+(srcEnd-srcBegin)} is larger than
      *                {@code dst.length}</ul>
      */
+    @SideEffectsOnly("#3")
     public void getChars(@IndexOrHigh({"this"}) int srcBegin, @IndexOrHigh({"this"}) int srcEnd, char @GuardSatisfied [] dst, @IndexOrHigh({"#3"}) int dstBegin) {
         checkBoundsBeginEnd(srcBegin, srcEnd, length());
         checkBoundsOffCount(dstBegin, srcEnd - srcBegin, dst.length);
