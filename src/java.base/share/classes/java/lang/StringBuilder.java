@@ -501,6 +501,7 @@ public final class StringBuilder
      */
     @SideEffectsOnly("this")
     @Override
+    @SideEffectFree
     public StringBuilder repeat(int codePoint, int count) {
         super.repeat(codePoint, count);
         return this;
