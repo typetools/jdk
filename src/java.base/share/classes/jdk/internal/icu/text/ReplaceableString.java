@@ -33,6 +33,7 @@
 package jdk.internal.icu.text;
 
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 /**
  * <code>ReplaceableString</code> is an adapter class that implements the
