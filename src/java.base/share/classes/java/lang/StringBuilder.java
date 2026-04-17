@@ -176,6 +176,7 @@ public final class StringBuilder
      *
      * @since 11
      */
+    @SideEffectFree
     @Override
     public int compareTo(StringBuilder another) {
         return super.compareTo(another);
@@ -493,13 +494,14 @@ public final class StringBuilder
         return this;
     }
 
-    @SideEffectFree
     /**
      * @throws IllegalArgumentException {@inheritDoc}
      *
      * @since 21
      */
+    @SideEffectsOnly("this")
     @Override
+    @SideEffectFree
     public StringBuilder repeat(int codePoint, int count) {
         super.repeat(codePoint, count);
         return this;
@@ -510,12 +512,14 @@ public final class StringBuilder
      *
      * @since 21
      */
+    @SideEffectsOnly("this")
     @Override
     public StringBuilder repeat(CharSequence cs, int count) {
         super.repeat(cs, count);
         return this;
     }
 
+    @SideEffectFree
     @Override
     @IntrinsicCandidate
     public @PolyRegex String toString(@GuardSatisfied @PolyRegex StringBuilder this) {

@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Spliterator;
@@ -79,6 +81,7 @@ final class StringLatin1 {
         return ret;
     }
 
+    @SideEffectsOnly("#3")
     public static void getChars(byte[] value, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
         inflate(value, srcBegin, dst, dstBegin, srcEnd - srcBegin);
     }

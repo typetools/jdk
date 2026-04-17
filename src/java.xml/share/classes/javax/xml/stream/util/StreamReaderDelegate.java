@@ -26,7 +26,6 @@
 package javax.xml.stream.util;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import javax.xml.namespace.QName;
 import javax.xml.namespace.NamespaceContext;

@@ -159,6 +159,7 @@ merge conflicts.)
 ```sh
 cd jdk21u
 git pull && \
+git pull ../jdk && \
 git pull https://github.com/openjdk/jdk21u.git && \
 git pull https://github.com/typetools/jdk.git
 ```

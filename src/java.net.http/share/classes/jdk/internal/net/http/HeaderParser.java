@@ -26,7 +26,6 @@
 package jdk.internal.net.http;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Iterator;
 import java.util.Locale;
@@ -208,7 +207,6 @@ class HeaderParser {
             return index<nkeys;
         }
         @Override
-        @SideEffectsOnly("this")
         public String next () {
             if (index >= nkeys) {
                 throw new NoSuchElementException();

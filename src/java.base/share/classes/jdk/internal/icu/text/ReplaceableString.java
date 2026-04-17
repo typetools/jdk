@@ -32,6 +32,9 @@
 
 package jdk.internal.icu.text;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 /**
  * <code>ReplaceableString</code> is an adapter class that implements the
  * <code>Replaceable</code> API around an ordinary <code>StringBuffer</code>.
@@ -110,6 +113,7 @@ public class ReplaceableString implements Replaceable {
      * @param dstStart the start offset in the destination array.
      * @stable ICU 2.0
      */
+    @SideEffectsOnly("#3")
     public void getChars(int srcStart, int srcLimit, char dst[], int dstStart) {
         if (srcStart != srcLimit) {
             buf.getChars(srcStart, srcLimit, dst, dstStart);
