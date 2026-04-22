@@ -680,6 +680,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
         printStackTrace(new WrappedPrintStream(s));
     }
 
+    @SideEffectFree
     private void printStackTrace(PrintStreamOrWriter s) {
         Object lock = s.lock();
         if (lock instanceof InternalLock locker) {
