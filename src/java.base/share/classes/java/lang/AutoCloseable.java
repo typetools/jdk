@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -104,5 +105,6 @@ public interface AutoCloseable {
      *
      * @throws Exception if this resource cannot be closed
      */
+    @SideEffectFree
     void close(@GuardSatisfied AutoCloseable this) throws Exception;
 }
