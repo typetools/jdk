@@ -59,6 +59,6 @@ public interface Closeable extends AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     @CFComment({"lock: Note that the @GuardSatisfied is for locks that are external to the implementation of close(). The close() method itself could release locks if it wanted to."})
-    @DoesNotUnrefineReceiver
+    @DoesNotUnrefineReceiver("resourceleak")
     public void close(@GuardSatisfied Closeable this) throws IOException;
 }

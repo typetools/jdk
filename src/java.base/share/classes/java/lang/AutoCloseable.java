@@ -106,6 +106,6 @@ public interface AutoCloseable {
      *
      * @throws Exception if this resource cannot be closed
      */
-    @DoesNotUnrefineReceiver
+    @DoesNotUnrefineReceiver("resourceleak")
     void close(@GuardSatisfied AutoCloseable this) throws Exception;
 }
