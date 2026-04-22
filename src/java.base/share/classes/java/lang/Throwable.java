@@ -765,6 +765,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * @param s {@code PrintWriter} to use for output
      * @since   1.1
      */
+    @SideEffectFree
     public void printStackTrace(PrintWriter s) {
         printStackTrace(new WrappedPrintWriter(s));
     }
