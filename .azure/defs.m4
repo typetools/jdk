@@ -42,7 +42,7 @@ ifelse($1,canary_version,,[      - junit_jdk[]canary_version
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ./checker/bin-devel/test-cftests-junit.sh
+      - bash: ./checker/bin-devel/test-cftests-junit.sh
         displayName: test-cftests-junit.sh])dnl
 dnl
 define([nonjunit_job], [dnl
