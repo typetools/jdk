@@ -25,7 +25,7 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: show environment
         run: |
           whoami
@@ -44,7 +44,7 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: show environment
         run: |
           whoami
