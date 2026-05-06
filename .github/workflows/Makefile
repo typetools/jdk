@@ -1,3 +1,6 @@
+.DELETE_ON_ERROR:
+.PHONY: all default clean
+
 all default: ci.yml
 
 %: %.m4 defs.m4

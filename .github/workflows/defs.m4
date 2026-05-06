@@ -49,7 +49,7 @@ define([plume_lib_job], [dnl
     needs:
       - canary_jobs
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk$1:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
