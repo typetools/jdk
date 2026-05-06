@@ -16,7 +16,17 @@ defaults:
     shell: bash --noprofile --norc {0}
 
 jobs:
+  check_generated_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Check generated ci.yml
+        run: make -B -C .github/workflows && git diff --exit-code -- .github/workflows/ci.yml
+
   build_jdk:
+    needs:
+      - check_generated_ci
     runs-on: ubuntu-latest
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
@@ -36,6 +46,8 @@ jobs:
         run: make jdk
 
   build_jdk21u:
+    needs:
+      - check_generated_ci
     runs-on: ubuntu-latest
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
