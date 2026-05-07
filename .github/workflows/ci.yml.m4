@@ -39,7 +39,7 @@ jobs:
       - name: show environment
         run: |
           whoami
-          git config --get remote.origin.url
+          git config --get remote.origin.url || true
           pwd
           ls -al
           env | sort
@@ -60,7 +60,7 @@ jobs:
       - name: show environment
         run: |
           whoami
-          git config --get remote.origin.url
+          git config --get remote.origin.url || true
           pwd
           ls -al
           env | sort
