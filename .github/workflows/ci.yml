@@ -38,7 +38,10 @@ jobs:
           git config --get remote.origin.url || true
           pwd
           ls -al
-          env | sort
+          printf 'HOME=%s\n' "${HOME}"
+          printf 'USER=%s\n' "${USER}"
+          printf 'SHELL=%s\n' "${SHELL}"
+          printf 'GITHUB_WORKSPACE=%s\n' "${GITHUB_WORKSPACE}"
       - name: configure
         run: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
       - name: make jdk
@@ -59,7 +62,10 @@ jobs:
           git config --get remote.origin.url || true
           pwd
           ls -al
-          env | sort
+          printf 'HOME=%s\n' "${HOME}"
+          printf 'USER=%s\n' "${USER}"
+          printf 'SHELL=%s\n' "${SHELL}"
+          printf 'GITHUB_WORKSPACE=%s\n' "${GITHUB_WORKSPACE}"
       - name: git-scripts
         run: |
           set -ex
@@ -105,7 +111,7 @@ jobs:
           eval $(/tmp/$USER/plume-scripts/ci-info typetools)
           printf 'CI_ORGANIZATION=%s\n' "${CI_ORGANIZATION}"
           printf 'CI_BRANCH_NAME=%s\n' "${CI_BRANCH_NAME}"
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk \"${CI_BRANCH_NAME}\""
       - name: git merge
         run: |
           set -ex
@@ -113,8 +119,8 @@ jobs:
           eval $(/tmp/$USER/plume-scripts/ci-info typetools)
           printf 'CI_ORGANIZATION=%s\n' "${CI_ORGANIZATION}"
           printf 'CI_BRANCH_NAME=%s\n' "${CI_BRANCH_NAME}"
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
-          cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
+          echo "About to run: git pull --no-edit \"https://github.com/${CI_ORGANIZATION}/jdk\" \"${CI_BRANCH_NAME}\""
+          cd ../jdk21u && git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}" || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
       - name: configure
         run: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
       - name: make jdk
