@@ -122,6 +122,7 @@ jobs:
       - name: configure
         run: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
       - name: make jdk
+        timeout-minutes: 90
         run: cd ../jdk21u && make jdk
 
   canary_jobs:
