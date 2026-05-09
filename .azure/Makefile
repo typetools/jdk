@@ -1,15 +1,14 @@
+PLUME_SCRIPTS ?= .plume-scripts
+ifeq (,$(wildcard ${PLUME_SCRIPTS}))
+dummy := $(shell git clone --depth=1 -q https://github.com/plume-lib/plume-scripts.git ${PLUME_SCRIPTS})
+endif
+
 all default: azure-pipelines.yml
 
 %: %.m4 defs.m4
 	@chmod -f +w $@ || true
 	m4 $< > $@
-# Squeeze multiple blank lines into one.
-	cat -s $@ > $@.tmp
-# Remove leading blank lines.
-	sed '/[^[:blank:]]/,$$!d' $@.tmp > $@
-# Remove trailing blank lines.
-	sed -e :a -e '/^\s*$$/{$$d;N;ba' -e '}' $@ > $@.tmp
-	mv -f $@.tmp $@
+	${PLUME_SCRIPTS}/squeeze-blank-lines $@
 	@chmod -w $@
 
 clean:
