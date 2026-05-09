@@ -5,14 +5,17 @@ define([canary_os], [ubuntu])dnl
 define([canary_version], [25])dnl
 define([latest_version], [25])dnl
 define([canary_test], [canary_os[]canary_version])dnl
-
+define([docker_testing], [])dnl
+ifelse([uncomment the next line to use the "testing" Docker images])dnl
+ifelse([define([docker_testing], [-testing])])dnl
+dnl
 define([cftests_job], [dnl
   cftests_$1_jdk$3:
     needs:
       - canary_jobs
     timeout-minutes: 120
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk$3:latest
+    container: mdernst/cf-ubuntu-jdk$3[]docker_testing:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -31,7 +34,7 @@ define([daikon_job], [dnl
       - canary_jobs
     timeout-minutes: 70
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk$2[]docker_testing:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -49,7 +52,7 @@ define([plume_lib_job], [dnl
     needs:
       - canary_jobs
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk$1:latest
+    container: mdernst/cf-ubuntu-jdk$1[]docker_testing:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

@@ -411,7 +411,7 @@ jobs:
       - canary_jobs
     timeout-minutes: 70
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk25:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -428,7 +428,7 @@ jobs:
       - canary_jobs
     timeout-minutes: 70
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk25:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -445,7 +445,7 @@ jobs:
       - canary_jobs
     timeout-minutes: 70
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk25:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
