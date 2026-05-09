@@ -126,23 +126,7 @@ jobs:
       - bash: true
         displayName: canary_jobs
 
-cftests_job(junit, cftests-junit, 17)
-cftests_job(nonjunit, cftests-nonjunit, 17)
-cftests_job(typecheck, typecheck, 17)
-cftests_job(junit, cftests-junit, 21)
-cftests_job(nonjunit, cftests-nonjunit, 21)
-cftests_job(inference, cftests-inference, 21)
-cftests_job(typecheck, typecheck, 21)
-cftests_job(junit, cftests-junit, 25)
-cftests_job(nonjunit, cftests-nonjunit, 25)
-cftests_job(inference, cftests-inference, 25)
-cftests_job(typecheck, typecheck, 25)
-
-daikon_job(1)
-daikon_job(2)
-daikon_job(3)
-
-plume_lib_job(canary_version)
+include([jobs.m4])dnl
 
 ifelse([
 Local Variables:
