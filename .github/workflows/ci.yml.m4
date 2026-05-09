@@ -4,7 +4,7 @@ changequote
 changequote(`[',`]')dnl
 include([defs.m4])dnl
 
-name: CI
+name: CF CI
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
       - name: Check generated ci.yml
         run: make -B -C .github/workflows && git diff --exit-code -- .github/workflows/ci.yml
 
@@ -35,19 +35,21 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
       - name: show environment
         run: |
           whoami
           git config --get remote.origin.url || true
           pwd
           ls -al
-          printf 'HOME=%s\n' "${HOME}"
-          printf 'USER=%s\n' "${USER}"
-          printf 'SHELL=%s\n' "${SHELL}"
-          printf 'GITHUB_WORKSPACE=%s\n' "${GITHUB_WORKSPACE}"
+          echo "HOME=${HOME}"
+          echo "USER=${USER}"
+          echo "SHELL=${SHELL}"
+          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}"
       - name: configure
-        run: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
+        run: |
+          pwd
+          bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
       - name: make jdk
         timeout-minutes: 90
         run: make jdk
@@ -59,25 +61,25 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
       - name: show environment
         run: |
           whoami
           git config --get remote.origin.url || true
           pwd
           ls -al
-          printf 'HOME=%s\n' "${HOME}"
-          printf 'USER=%s\n' "${USER}"
-          printf 'SHELL=%s\n' "${SHELL}"
-          printf 'GITHUB_WORKSPACE=%s\n' "${GITHUB_WORKSPACE}"
-      - name: git-scripts
+          echo "HOME=${HOME}"
+          echo "USER=${USER}"
+          echo "SHELL=${SHELL}"
+          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}"
+      - name: clone git-scripts
         run: |
           set -ex
           if test -d /tmp/$USER/git-scripts ; \
             then git -C /tmp/$USER/git-scripts pull -q > /dev/null 2>&1 ; \
             else mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git ; \
           fi
-      - name: plume-scripts
+      - name: clone plume-scripts
         run: |
           set -ex
           if test -d /tmp/$USER/plume-scripts ; \
@@ -109,27 +111,22 @@ jobs:
           cd ../jdk21u
           git diff --exit-code
           echo $?
-      - name: git merge plan
-        run: |
-          cd ../jdk21u && git status
-          eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-          printf 'CI_ORGANIZATION=%s\n' "${CI_ORGANIZATION}"
-          printf 'CI_BRANCH_NAME=%s\n' "${CI_BRANCH_NAME}"
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk \"${CI_BRANCH_NAME}\""
       - name: git merge
         run: |
           set -ex
-          cd ../jdk21u && git status
+          cd ../jdk21u
+          git status
           eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-          printf 'CI_ORGANIZATION=%s\n' "${CI_ORGANIZATION}"
-          printf 'CI_BRANCH_NAME=%s\n' "${CI_BRANCH_NAME}"
-          echo "About to run: git pull --no-edit \"https://github.com/${CI_ORGANIZATION}/jdk\" \"${CI_BRANCH_NAME}\""
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
           cd ../jdk21u && git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}" || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
       - name: configure
-        run: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
+        run: |
+          cd ../jdk21u
+          export JT_HOME=/usr/share/jtreg
+          bash ./configure --with-jtreg --disable-warnings-as-errors
       - name: make jdk
         timeout-minutes: 90
-        run: cd ../jdk21u && make jdk
+        run: make -C ../jdk21u jdk
 
   canary_jobs:
     needs:

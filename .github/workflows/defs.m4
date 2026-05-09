@@ -15,7 +15,7 @@ define([cftests_job], [dnl
     container: mdernst/cf-ubuntu-jdk$3:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 25
       - name: clone git-scripts
@@ -34,7 +34,7 @@ define([daikon_job], [dnl
     container: mdernst/cf-ubuntu-jdk17:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 25
       - name: clone git-scripts
@@ -52,7 +52,7 @@ define([plume_lib_job], [dnl
     container: mdernst/cf-ubuntu-jdk$1:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 25
       - name: clone git-scripts
