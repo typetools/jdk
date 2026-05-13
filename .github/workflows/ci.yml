@@ -109,15 +109,19 @@ jobs:
           /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
           cd ../jdk21u
           git diff --exit-code
-          echo $?
       - name: git merge
         run: |
           set -ex
-          cd ../jdk21u
           git status
           eval $(/tmp/$USER/plume-scripts/ci-info typetools)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
-          cd ../jdk21u && git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}" || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
+          if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}"; then
+            git --version
+            git show | head -100
+            git status && git diff | head -1000
+            echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md"
+            false
+          fi
       - name: configure
         run: |
           cd ../jdk21u
