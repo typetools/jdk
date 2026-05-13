@@ -98,6 +98,8 @@ jobs:
         # Run `git-clone-related` without a limit on depth, because if the depth is
         # too small, the merge will fail.  Don't use "--filter=blob:none" because that
         # leads to "fatal: remote error:  filter 'combine' not supported".
+      - name: ci-info
+        run: /tmp/$USER/plume-scripts/ci-info --debug
       - name: clone-related-jdk21u
         run: |
           set -ex
