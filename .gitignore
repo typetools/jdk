@@ -23,4 +23,4 @@ NashornProfile.txt
 /.cproject
 /compile_commands.json
 /.cache
-.plume-scripts/
+.plume-scripts
