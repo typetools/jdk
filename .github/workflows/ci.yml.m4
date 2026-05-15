@@ -113,7 +113,6 @@ jobs:
           /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
           cd ../jdk21u
           git diff --exit-code
-          echo $?
       - name: git merge
         run: |
           set -ex
