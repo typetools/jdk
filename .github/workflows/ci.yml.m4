@@ -116,6 +116,7 @@ jobs:
       - name: git merge
         run: |
           set -ex
+          cd ../jdk21u
           git status
           eval $(/tmp/$USER/plume-scripts/ci-info typetools)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
