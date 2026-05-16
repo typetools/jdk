@@ -94,6 +94,7 @@ jobs:
           git config --global pull.rebase false
           git config --global core.longpaths true
           git config --global core.protectNTFS false
+          git config --global --add safe.directory /__w/jdk/jdk
         # This creates ../jdk21u .
         # Run `git-clone-related` without a limit on depth, because if the depth is
         # too small, the merge will fail.  Don't use "--filter=blob:none" because that
