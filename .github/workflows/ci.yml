@@ -122,6 +122,7 @@ jobs:
             echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md"
             false
           fi
+        shell: bash --noprofile --norc -e {0}
       - name: configure
         run: |
           cd ../jdk21u
