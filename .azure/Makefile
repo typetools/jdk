@@ -7,7 +7,7 @@ endif
 
 all default: azure-pipelines.yml
 
-%: %.m4 defs.m4
+%: %.m4 defs.m4 jobs.m4
 	@chmod -f +w $@ || true
 	m4 $< > $@
 	${PLUME_SCRIPTS}/squeeze-blank-lines $@
