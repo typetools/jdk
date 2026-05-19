@@ -25,7 +25,7 @@
 
 package java.util;
 
-import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A collection that has a well-defined encounter order, that supports operations at both ends,

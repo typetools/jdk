@@ -25,7 +25,7 @@
 
 package java.util;
 
-import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import jdk.internal.util.NullableKeyValueHolder;
 
