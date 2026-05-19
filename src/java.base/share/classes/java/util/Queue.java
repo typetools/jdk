@@ -167,7 +167,7 @@ public interface Queue<E> extends Collection<E> {
      *         prevents it from being added to this queue
      */
     @EnsuresNonEmpty("this")
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Queue<E> this, E e);
 
@@ -188,7 +188,7 @@ public interface Queue<E> extends Collection<E> {
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean offer(E e);
 
@@ -200,7 +200,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E remove(@GuardSatisfied @NonEmpty @CanShrink Queue<E> this);
 
@@ -210,7 +210,7 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable E poll(@GuardSatisfied @CanShrink Queue<E> this);
 
@@ -230,7 +230,7 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable E peek();
 }

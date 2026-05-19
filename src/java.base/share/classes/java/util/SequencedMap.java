@@ -136,7 +136,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *
      * @return a reverse-ordered view of this map
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     SequencedMap<K, V> reversed();
 
@@ -188,7 +188,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @throws UnsupportedOperationException if this collection implementation does not
      *         support this operation
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default Map.Entry<K,V> pollFirstEntry() {
         var it = entrySet().iterator();
@@ -215,7 +215,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @throws UnsupportedOperationException if this collection implementation does not
      *         support this operation
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default Map.Entry<K,V> pollLastEntry() {
         var it = reversed().entrySet().iterator();
@@ -243,7 +243,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @throws UnsupportedOperationException if this collection implementation does not
      *         support this operation
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
@@ -264,7 +264,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @throws UnsupportedOperationException if this collection implementation does not
      *         support this operation
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default V putLast(K k, V v) {
         throw new UnsupportedOperationException();
@@ -284,7 +284,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *
      * @return a {@code SequencedSet} view of this map's {@code keySet}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default SequencedSet<K> sequencedKeySet() {
         class SeqKeySet extends AbstractMap.ViewCollection<K> implements SequencedSet<K> {
@@ -319,7 +319,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *
      * @return a {@code SequencedCollection} view of this map's {@code values} collection
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default SequencedCollection<V> sequencedValues() {
         class SeqValues extends AbstractMap.ViewCollection<V> implements SequencedCollection<V> {
@@ -347,7 +347,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *
      * @return a {@code SequencedSet} view of this map's {@code entrySet}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default SequencedSet<Map.Entry<K, V>> sequencedEntrySet() {
         class SeqEntrySet extends AbstractMap.ViewCollection<Map.Entry<K, V>>

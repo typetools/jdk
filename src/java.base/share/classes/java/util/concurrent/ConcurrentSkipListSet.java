@@ -262,7 +262,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @EnsuresNonEmpty("this")
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         return m.putIfAbsent(e, Boolean.TRUE) == null;
@@ -282,7 +282,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @UnknownSignedness Object o) {
         return m.remove(o, Boolean.TRUE);
@@ -291,7 +291,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
     /**
      * Removes all of the elements from this set.
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         m.clear();
@@ -361,7 +361,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
         // Override AbstractSet version to avoid unnecessary call to size()
@@ -406,14 +406,14 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
         return m.higherKey(e);
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable E pollFirst() {
         Map.Entry<E,Object> e = m.pollFirstEntry();
         return (e == null) ? null : e.getKey();
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable E pollLast() {
         Map.Entry<E,Object> e = m.pollLastEntry();

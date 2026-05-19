@@ -36,7 +36,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -523,7 +523,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public T nextElement(@NonEmpty ZipEntryIterator<T> this) {
             return next();
@@ -531,7 +531,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
 
         @Override
         @SuppressWarnings("unchecked")
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public T next(@NonEmpty ZipEntryIterator<T> this) {
             synchronized (ZipFile.this) {

@@ -48,7 +48,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.invoke.MethodHandles;
@@ -924,7 +924,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             return nextNode != null;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final E next(@NonEmpty Itr this) {
             final Node p;
@@ -943,7 +943,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                 lastRet = q;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final void remove() {
             final Node lastRet = this.lastRet;
@@ -1206,7 +1206,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void put(E e) {
         xfer(e, true, ASYNC, 0L);
@@ -1221,7 +1221,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *  {@link BlockingQueue#offer(Object,long,TimeUnit) BlockingQueue.offer})
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean offer(E e, long timeout, TimeUnit unit) {
         xfer(e, true, ASYNC, 0L);
@@ -1235,7 +1235,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Queue#offer})
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean offer(E e) {
         xfer(e, true, ASYNC, 0L);
@@ -1251,7 +1251,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if the specified element is null
      */
     @EnsuresNonEmpty("this")
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         xfer(e, true, ASYNC, 0L);
@@ -1268,7 +1268,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean tryTransfer(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, E e) {
         return xfer(e, true, NOW, 0L) == null;
@@ -1285,7 +1285,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void transfer(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, E e) throws InterruptedException {
         if (xfer(e, true, SYNC, 0L) != null) {
@@ -1308,7 +1308,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean tryTransfer(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, E e, long timeout, TimeUnit unit)
         throws InterruptedException {
@@ -1319,7 +1319,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         throw new InterruptedException();
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E take(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this) throws InterruptedException {
         E e = xfer(null, false, SYNC, 0L);
@@ -1329,7 +1329,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         throw new InterruptedException();
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         E e = xfer(null, false, TIMED, unit.toNanos(timeout));
@@ -1338,7 +1338,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         throw new InterruptedException();
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this) {
         return xfer(null, false, NOW, 0L);
@@ -1348,7 +1348,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException     {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public int drainTo(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, Collection<? super E> c) {
         Objects.requireNonNull(c);
@@ -1364,7 +1364,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException     {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public int drainTo(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
@@ -1469,7 +1469,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@CanShrink LinkedTransferQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
@@ -1591,7 +1591,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeIf(@CanShrink LinkedTransferQueue<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
@@ -1601,7 +1601,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(@CanShrink LinkedTransferQueue<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
@@ -1611,14 +1611,14 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean retainAll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
 
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this) {
         bulkRemove(e -> true);

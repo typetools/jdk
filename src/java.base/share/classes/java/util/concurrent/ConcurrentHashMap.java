@@ -50,7 +50,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
@@ -665,7 +665,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         public final String toString() {
             return Helpers.mapEntryToString(key, val);
         }
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final V setValue(V value) {
             throw new UnsupportedOperationException();
@@ -1032,7 +1032,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified key or value is null
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(K key, V value) {
         return putVal(key, value, false);
@@ -1115,7 +1115,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @param m mappings to be stored in this map
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void putAll(Map<? extends K, ? extends V> m) {
         tryPresize(m.size());
@@ -1132,7 +1132,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *         {@code null} if there was no mapping for {@code key}
      * @throws NullPointerException if the specified key is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied @UnknownSignedness Object key) {
         return replaceNode(key, null, null);
@@ -1219,7 +1219,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     /**
      * Removes all of the mappings from this map.
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         long delta = 0L; // negative number of deletions
@@ -1581,7 +1581,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws NullPointerException if the specified key or value is null
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V putIfAbsent(K key, V value) {
         return putVal(key, value, true);
@@ -1592,7 +1592,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @throws NullPointerException if the specified key is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         if (key == null)
@@ -1605,7 +1605,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @throws NullPointerException if any of the arguments are null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean replace(K key, V oldValue, V newValue) {
         if (key == null || oldValue == null || newValue == null)
@@ -1620,7 +1620,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *         or {@code null} if there was no mapping for the key
      * @throws NullPointerException if the specified key or value is null
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V replace(K key, V value) {
         if (key == null || value == null)
@@ -3503,7 +3503,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         @Pure
         public final boolean hasMoreElements() { return next != null; }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final void remove() {
             Node<K,V> p;
@@ -3521,7 +3521,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final K next(@NonEmpty KeyIterator<K,V> this) {
             Node<K,V> p;
@@ -3533,7 +3533,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return k;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final K nextElement(@NonEmpty KeyIterator<K,V> this) { return next(); }
     }
@@ -3545,7 +3545,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final V next(@NonEmpty ValueIterator<K,V> this) {
             Node<K,V> p;
@@ -3557,7 +3557,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return v;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final V nextElement(@NonEmpty ValueIterator<K,V> this) { return next(); }
     }
@@ -3569,7 +3569,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final Map.Entry<K,V> next(@NonEmpty EntryIterator<K,V> this) {
             Node<K,V> p;
@@ -3619,7 +3619,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * could even have been removed, in which case the put will
          * re-establish). We do not and cannot guarantee more.
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public V setValue(V value) {
             if (value == null) throw new NullPointerException();
@@ -4512,7 +4512,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * Removes all of the elements from this view, by removing all
          * the mappings from the map backing this view.
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final void clear()      { map.clear(); }
         @Pure
@@ -4536,7 +4536,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public abstract boolean contains(@UnknownSignedness Object o);
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public abstract boolean remove(@UnknownSignedness Object o);
 
@@ -4634,7 +4634,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return true;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
@@ -4658,7 +4658,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return modified;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             if (c == null) throw new NullPointerException();
@@ -4724,7 +4724,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @return {@code true} if the backing map contained the specified key
          * @throws NullPointerException if the specified key is null
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) { return map.remove(o) != null; }
 
@@ -4750,7 +4750,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * for additions was provided
          */
         @EnsuresNonEmpty("this")
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean add(K e) {
             V v;
@@ -4770,7 +4770,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @throws UnsupportedOperationException if no default mapped value
          * for additions was provided
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends K> c) {
             boolean added = false;
@@ -4833,7 +4833,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return map.containsValue(o);
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final boolean remove(@UnknownSignedness Object o) {
             if (o != null) {
@@ -4856,12 +4856,12 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         }
 
         @EnsuresNonEmpty("this")
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final boolean add(V e) {
             throw new UnsupportedOperationException();
         }
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public final boolean addAll(Collection<? extends V> c) {
             throw new UnsupportedOperationException();
@@ -4879,7 +4879,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return modified;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super V> filter) {
             return map.removeValueIf(filter);
@@ -4926,7 +4926,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
                     (v == r || v.equals(r)));
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             Object k, v; Map.Entry<?,?> e;
@@ -4948,13 +4948,13 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         }
 
         @EnsuresNonEmpty("this")
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean add(Entry<K,V> e) {
             return map.putVal(e.getKey(), e.getValue(), false) == null;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends Entry<K,V>> c) {
             boolean added = false;
@@ -4965,7 +4965,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return added;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super Entry<K,V>> filter) {
             return map.removeEntryIf(filter);

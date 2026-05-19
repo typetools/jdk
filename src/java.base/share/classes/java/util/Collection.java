@@ -489,7 +489,7 @@ public interface Collection<E> extends Iterable<E> {
      *         time due to insertion restrictions
      */
     @EnsuresNonEmpty("this")
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Collection<E> this, E e);
 
@@ -513,7 +513,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this collection
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@GuardSatisfied @CanShrink Collection<E> this, @UnknownSignedness Object o);
 
@@ -567,7 +567,7 @@ public interface Collection<E> extends Iterable<E> {
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean addAll(@GuardSatisfied Collection<E> this, Collection<? extends E> c);
 
@@ -594,7 +594,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean removeAll(@GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
@@ -620,7 +620,7 @@ public interface Collection<E> extends Iterable<E> {
      *         supported.
      * @since 1.8
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default boolean removeIf(@CanShrink Collection<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
@@ -657,7 +657,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean retainAll(@GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
@@ -668,7 +668,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void clear(@GuardSatisfied @CanShrink Collection<E> this);
 

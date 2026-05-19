@@ -167,7 +167,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      *         or value prevents it from being stored in this map
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable V putIfAbsent(K key, V value);
 
@@ -200,7 +200,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      *         and this map does not permit null keys or values
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value);
 
@@ -234,7 +234,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws IllegalArgumentException if some property of a specified key
      *         or value prevents it from being stored in this map
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean replace(K key, V oldValue, V newValue);
 
@@ -268,7 +268,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable V replace(K key, V value);
 

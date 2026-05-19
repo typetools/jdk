@@ -38,7 +38,7 @@
 package jdk.internal.icu.text;
 
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 /**
  * <code>Replaceable</code> is an interface representing a

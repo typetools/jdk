@@ -76,7 +76,7 @@ public class Stack<E> extends Vector<E> {
      * @return  the {@code item} argument.
      * @see     java.util.Vector#addElement
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E push(@GuardSatisfied Stack<E> this, E item) {
         addElement(item);
@@ -92,7 +92,7 @@ public class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized E pop(@GuardSatisfied @NonEmpty @CanShrink Stack<E> this) {
         E       obj;

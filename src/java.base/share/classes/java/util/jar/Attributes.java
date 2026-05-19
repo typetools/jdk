@@ -175,7 +175,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public Object put(Object name, Object value) {
         return map.put((Attributes.Name)name, (String)value);
@@ -208,7 +208,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
@@ -245,7 +245,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the Attributes to be stored in this map
      * @throws    ClassCastException if attr is not an Attributes
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
@@ -258,7 +258,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Removes all attributes from this Map.
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         map.clear();

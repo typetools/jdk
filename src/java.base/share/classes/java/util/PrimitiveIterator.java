@@ -107,7 +107,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code int} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         int nextInt(@NonEmpty OfInt this);
 
@@ -134,7 +134,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextInt()}, and returns that boxed result.
          */
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         default Integer next(PrimitiveIterator.@GuardSatisfied OfInt this) {
             if (Tripwire.ENABLED)
@@ -181,7 +181,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code long} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         long nextLong(@NonEmpty OfLong this);
 
@@ -208,7 +208,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextLong()}, and returns that boxed result.
          */
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         default Long next(PrimitiveIterator.@GuardSatisfied OfLong this) {
             if (Tripwire.ENABLED)
@@ -254,7 +254,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code double} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         double nextDouble(@NonEmpty OfDouble this);
 
@@ -281,7 +281,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextDouble()}, and returns that boxed result.
          */
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         default Double next(PrimitiveIterator.@GuardSatisfied OfDouble this) {
             if (Tripwire.ENABLED)

@@ -32,7 +32,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
@@ -979,7 +979,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public Provider<T> next(@NonEmpty LayerLookupIterator<T> this) {
             if (!hasNext())
@@ -1301,7 +1301,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @SuppressWarnings("removal")
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
             if (acc == null) {
@@ -1333,7 +1333,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
                     return (first.hasNext() || second.hasNext());
                 }
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public Provider<S> next(/*@NonEmpty Iterator<Provider<S>> this*/) {
                     if (first.hasNext()) {
@@ -1423,7 +1423,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public S next(/*@NonEmpty Iterator<S> this*/) {
                 checkReloadCount();
