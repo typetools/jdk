@@ -37,6 +37,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
@@ -1356,6 +1357,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
 
             @Override
             @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public MatchResult next(@NonEmpty MatchResultIterator this) {
                 if (expectedCount >= 0 && expectedCount != modCount)
                     throw new ConcurrentModificationException();

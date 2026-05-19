@@ -38,6 +38,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
@@ -6086,6 +6087,7 @@ NEXT:       while (i <= last) {
             private int emptyElementCount;
 
             @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public String next(@NonEmpty MatcherIterator this) {
                 if (!hasNext())
                     throw new NoSuchElementException();

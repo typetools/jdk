@@ -118,6 +118,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K,V> entry : entrySet()) {
@@ -166,6 +167,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      *         or value prevents it from being stored in this map
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable V putIfAbsent(K key, V value);
 
     /**
@@ -197,6 +199,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      *         and this map does not permit null keys or values
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value);
 
     /**
@@ -229,6 +232,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws IllegalArgumentException if some property of a specified key
      *         or value prevents it from being stored in this map
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean replace(K key, V oldValue, V newValue);
 
     /**
@@ -261,6 +265,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
      */
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable V replace(K key, V value);
 
     /**
@@ -294,6 +299,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         forEach((k,v) -> {
@@ -334,6 +340,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V computeIfAbsent(K key,
             Function<? super K, ? extends @PolyNull V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
@@ -376,6 +383,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V computeIfPresent(K key,
             BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
@@ -424,6 +432,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V compute(K key,
                       BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         retry: for (;;) {
@@ -484,6 +493,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V merge(K key, @NonNull V value,
             BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);

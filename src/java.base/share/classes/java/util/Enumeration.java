@@ -31,6 +31,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * An object that implements the Enumeration interface generates a
@@ -134,6 +135,7 @@ public interface Enumeration<E> {
                 return hasMoreElements();
             }
             @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             @Override public E next(/*@NonEmpty Iterator<E> this*/) {
                 return nextElement();
             }

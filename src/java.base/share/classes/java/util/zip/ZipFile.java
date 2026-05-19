@@ -39,6 +39,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -523,6 +524,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
 
         @Override
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public T nextElement(@NonEmpty ZipEntryIterator<T> this) {
             return next();
         }
@@ -530,6 +532,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
         @Override
         @SuppressWarnings("unchecked")
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public T next(@NonEmpty ZipEntryIterator<T> this) {
             synchronized (ZipFile.this) {
                 ensureOpen();

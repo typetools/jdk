@@ -32,6 +32,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.File;
 import java.io.IOException;
@@ -963,6 +964,7 @@ public interface Path
 
             @Override
             @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public Path next(/*@NonEmpty Iterator<Path> this*/) {
                 if (i < getNameCount()) {
                     Path result = getName(i);
