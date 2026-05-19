@@ -43,6 +43,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -208,6 +209,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      *         element prevents it from being added to this queue
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     boolean add(E e);
 
     /**
@@ -227,6 +229,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean offer(E e);
 
     /**
@@ -241,6 +244,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
+    @DoesNotUnrefineReceiver("modifiability")
     void put(E e) throws InterruptedException;
 
     /**
@@ -261,6 +265,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean offer(E e, long timeout, TimeUnit unit)
         throws InterruptedException;
 
@@ -271,6 +276,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @return the head of this queue
      * @throws InterruptedException if interrupted while waiting
      */
+    @DoesNotUnrefineReceiver("modifiability")
     E take() throws InterruptedException;
 
     /**
@@ -285,6 +291,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable E poll(long timeout, TimeUnit unit)
         throws InterruptedException;
 
@@ -319,6 +326,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      * @throws NullPointerException if the specified element is null
      * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@CanShrink BlockingQueue<E> this, @UnknownSignedness Object o);
 
     /**
@@ -361,6 +369,7 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
+    @DoesNotUnrefineReceiver("modifiability")
     int drainTo(@GuardSatisfied @CanShrink BlockingQueue<E> this, Collection<? super E> c);
 
     /**
@@ -386,5 +395,6 @@ public interface BlockingQueue<E extends @NonNull Object> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
+    @DoesNotUnrefineReceiver("modifiability")
     int drainTo(@GuardSatisfied @CanShrink BlockingQueue<E> this, Collection<? super E> c, int maxElements);
 }
