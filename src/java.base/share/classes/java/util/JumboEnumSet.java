@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -71,6 +72,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         elements = new long[(universe.length + 63) >>> 6];
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void addRange(E from, E to) {
         int fromIndex = from.ordinal() >>> 6;
         int toIndex = to.ordinal() >>> 6;
@@ -87,6 +89,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         size = to.ordinal() - from.ordinal() + 1;
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void addAll() {
         for (int i = 0; i < elements.length; i++)
             elements[i] = -1;
@@ -94,6 +97,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         size = universe.length;
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void complement() {
         for (int i = 0; i < elements.length; i++)
             elements[i] = ~elements[i];

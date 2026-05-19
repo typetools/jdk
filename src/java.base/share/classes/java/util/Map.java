@@ -40,6 +40,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.aliasing.qual.NonLeaked;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -302,6 +303,7 @@ public interface Map<K, V> {
     @ReleasesNoLocks
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable V put(@GuardSatisfied Map<K, V> this, K key, V value);
 
     /**
@@ -333,6 +335,7 @@ public interface Map<K, V> {
      *         map does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      */
     @CFComment("nullness: key is not @Nullable because this map might not permit null values")
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable V remove(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
 
@@ -359,6 +362,7 @@ public interface Map<K, V> {
      * @throws IllegalArgumentException if some property of a key or value in
      *         the specified map prevents it from being stored in this map
      */
+    @DoesNotUnrefineReceiver("modifiability")
     void putAll(@GuardSatisfied Map<K, V> this, Map<? extends K, ? extends V> m);
 
     /**
@@ -368,6 +372,7 @@ public interface Map<K, V> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this map
      */
+    @DoesNotUnrefineReceiver("modifiability")
     void clear(@GuardSatisfied Map<K, V> this);
 
 
@@ -532,6 +537,7 @@ public interface Map<K, V> {
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
          */
+        @DoesNotUnrefineReceiver("modifiability")
         V setValue(Map.@GuardSatisfied Entry<K, V> this, V value);
 
         /**
@@ -768,6 +774,7 @@ public interface Map<K, V> {
      * removed during iteration
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default void forEach(@NonLeaked BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K, V> entry : entrySet()) {
@@ -818,6 +825,7 @@ public interface Map<K, V> {
      *         removed during iteration
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         for (Map.Entry<K, V> entry : entrySet()) {
@@ -885,6 +893,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V putIfAbsent(K key, V value) {
         V v = get(key);
         if (v == null) {
@@ -929,6 +938,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
+    @DoesNotUnrefineReceiver("modifiability")
     default boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         Object curValue = get(key);
         if (!Objects.equals(curValue, value) ||
@@ -979,6 +989,7 @@ public interface Map<K, V> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default boolean replace(K key, V oldValue, V newValue) {
         Object curValue = get(key);
         if (!Objects.equals(curValue, oldValue) ||
@@ -1027,6 +1038,7 @@ public interface Map<K, V> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V replace(K key, V value) {
         V curValue;
         if (((curValue = get(key)) != null) || containsKey(key)) {
@@ -1109,6 +1121,7 @@ public interface Map<K, V> {
      *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V computeIfAbsent(K key,
             Function<? super K, ? extends @PolyNull V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
@@ -1186,6 +1199,7 @@ public interface Map<K, V> {
      *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V computeIfPresent(K key,
             BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
@@ -1272,6 +1286,7 @@ public interface Map<K, V> {
      *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V compute(K key,
             BiFunction<? super K, ? super @Nullable V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
@@ -1370,6 +1385,7 @@ public interface Map<K, V> {
      *         null
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V merge(K key, @NonNull V value,
             BiFunction<? super V, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);

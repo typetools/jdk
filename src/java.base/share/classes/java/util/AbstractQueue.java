@@ -39,6 +39,7 @@ import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -99,6 +100,7 @@ public abstract class AbstractQueue<E>
      *         prevents it from being added to this queue
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(@GuardSatisfied AbstractQueue<E> this, E e) {
         if (offer(e))
             return true;
@@ -117,6 +119,7 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public E remove(@GuardSatisfied @NonEmpty @CanShrink AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
@@ -151,6 +154,7 @@ public abstract class AbstractQueue<E>
      * <p>This implementation repeatedly invokes {@link #poll poll} until it
      * returns {@code null}.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied @CanShrink AbstractQueue<E> this) {
         while (poll() != null)
             ;
@@ -185,6 +189,7 @@ public abstract class AbstractQueue<E>
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(@GuardSatisfied AbstractQueue<E> this, Collection<? extends E> c) {
         if (c == null)
             throw new NullPointerException();

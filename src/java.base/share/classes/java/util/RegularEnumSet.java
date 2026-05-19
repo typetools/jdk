@@ -36,6 +36,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -63,15 +64,18 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
         super(elementType, universe);
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void addRange(E from, E to) {
         elements = (-1L >>>  (from.ordinal() - to.ordinal() - 1)) << from.ordinal();
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void addAll() {
         if (universe.length != 0)
             elements = -1L >>> -universe.length;
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     void complement() {
         if (universe.length != 0) {
             elements = ~elements;
@@ -89,6 +93,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return an iterator over the elements contained in this set
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty RegularEnumSet<E> this) {
         return new EnumSetIterator<>();
     }
@@ -126,6 +131,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
             return (E) universe[Long.numberOfTrailingZeros(lastReturned)];
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == 0)
                 throw new IllegalStateException();
@@ -184,6 +190,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if {@code e} is null
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         typeCheck(e);
 
@@ -198,6 +205,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
@@ -240,6 +248,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if the specified collection or any
      *     of its elements are null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(Collection<? extends E> c) {
         if (!(c instanceof RegularEnumSet<?> es))
             return super.addAll(c);
@@ -265,6 +274,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof RegularEnumSet<?> es))
             return super.removeAll(c);
@@ -285,6 +295,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof RegularEnumSet<?> es))
             return super.retainAll(c);
@@ -303,6 +314,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
     /**
      * Removes all of the elements from this set.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         elements = 0;
     }

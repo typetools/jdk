@@ -43,6 +43,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -1124,10 +1125,12 @@ public class Collections {
                 public boolean hasNext() {return i.hasNext();}
                 @SideEffectsOnly("this")
                 public E next(/*@NonEmpty Iterator<E> this*/)          {return i.next();}
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
                 @Override
+                @DoesNotUnrefineReceiver("modifiability")
                 public void forEachRemaining(Consumer<? super E> action) {
                     // Use backing collection version
                     i.forEachRemaining(action);
@@ -1135,10 +1138,12 @@ public class Collections {
             };
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresNonEmpty("this")
         public boolean add(E e) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             throw new UnsupportedOperationException();
         }
@@ -1147,25 +1152,31 @@ public class Collections {
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             throw new UnsupportedOperationException();
         }
 
         // Override default methods in Collection
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void forEach(Consumer<? super E> action) {
             c.forEach(action);
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
@@ -1177,11 +1188,13 @@ public class Collections {
         }
         @SuppressWarnings("unchecked")
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public Stream<E> stream() {
             return (Stream<E>)c.stream();
         }
         @SuppressWarnings("unchecked")
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public Stream<E> parallelStream() {
             return (Stream<E>)c.parallelStream();
         }
@@ -1239,14 +1252,17 @@ public class Collections {
         // Even though this wrapper class is serializable, the reversed view is effectively
         // not serializable because it points to the reversed collection view, which usually isn't
         // serializable.
+        @DoesNotUnrefineReceiver("modifiability")
         public SequencedCollection<E> reversed() {
             return new UnmodifiableSequencedCollection<>(sc().reversed());
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void addFirst(E e) {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void addLast(E e) {
             throw new UnsupportedOperationException();
         }
@@ -1259,10 +1275,12 @@ public class Collections {
             return sc().getLast();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public E removeFirst() {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public E removeLast() {
             throw new UnsupportedOperationException();
         }
@@ -1350,6 +1368,7 @@ public class Collections {
         // Even though this wrapper class is serializable, the reversed view is effectively
         // not serializable because it points to the reversed set view, which usually isn't
         // serializable.
+        @DoesNotUnrefineReceiver("modifiability")
         public SequencedSet<E> reversed() {
             return new UnmodifiableSequencedSet<>(ss().reversed());
         }
@@ -1395,12 +1414,15 @@ public class Collections {
 
         public Comparator<? super E> comparator() {return ss.comparator();}
 
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> subSet(E fromElement, E toElement) {
             return new UnmodifiableSortedSet<>(ss.subSet(fromElement,toElement));
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> headSet(E toElement) {
             return new UnmodifiableSortedSet<>(ss.headSet(toElement));
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> tailSet(E fromElement) {
             return new UnmodifiableSortedSet<>(ss.tailSet(fromElement));
         }
@@ -1482,23 +1504,30 @@ public class Collections {
         public E floor(E e)                             { return ns.floor(e); }
         public E ceiling(E e)                         { return ns.ceiling(e); }
         public E higher(E e)                           { return ns.higher(e); }
+        @DoesNotUnrefineReceiver("modifiability")
         public E pollFirst()     { throw new UnsupportedOperationException(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public E pollLast()      { throw new UnsupportedOperationException(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> descendingSet()
                  { return new UnmodifiableNavigableSet<>(ns.descendingSet()); }
+        @DoesNotUnrefineReceiver("modifiability")
         public Iterator<E> descendingIterator()
                                          { return descendingSet().iterator(); }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> subSet(E fromElement, boolean fromInclusive, E toElement, boolean toInclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.subSet(fromElement, fromInclusive, toElement, toInclusive));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> headSet(E toElement, boolean inclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.headSet(toElement, inclusive));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> tailSet(E fromElement, boolean inclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.tailSet(fromElement, inclusive));
@@ -1552,32 +1581,39 @@ public class Collections {
         public int hashCode()           {return list.hashCode();}
 
         public E get(int index) {return list.get(index);}
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             throw new UnsupportedOperationException();
         }
         public int indexOf(Object o)            {return list.indexOf(o);}
         public int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             throw new UnsupportedOperationException();
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             throw new UnsupportedOperationException();
         }
 
         public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty UnmodifiableList<E> this)   {return listIterator(0);}
 
+        @DoesNotUnrefineReceiver("modifiability")
         public ListIterator<E> listIterator(final int index) {
             return new ListIterator<>() {
                 private final ListIterator<? extends E> i

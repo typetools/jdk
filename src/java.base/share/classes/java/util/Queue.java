@@ -41,6 +41,7 @@ import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
@@ -166,6 +167,7 @@ public interface Queue<E> extends Collection<E> {
      *         prevents it from being added to this queue
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Queue<E> this, E e);
 
     /**
@@ -185,6 +187,7 @@ public interface Queue<E> extends Collection<E> {
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean offer(E e);
 
     /**
@@ -195,6 +198,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
+    @DoesNotUnrefineReceiver("modifiability")
     E remove(@GuardSatisfied @NonEmpty @CanShrink Queue<E> this);
 
     /**
@@ -203,6 +207,7 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable E poll(@GuardSatisfied @CanShrink Queue<E> this);
 
     /**
@@ -221,5 +226,6 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable E peek();
 }

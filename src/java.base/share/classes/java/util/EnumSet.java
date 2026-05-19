@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.access.SharedSecrets;
@@ -144,6 +145,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * Adds all of the elements from the appropriate enum type to this enum
      * set, which is empty prior to the call.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     abstract void addAll();
 
     /**
@@ -375,6 +377,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * Adds the specified range to this enum set, which is empty prior
      * to the call.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     abstract void addRange(E from, E to);
 
     /**
@@ -383,6 +386,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return a copy of this set
      */
     @SuppressWarnings("unchecked")
+    @DoesNotUnrefineReceiver("modifiability")
     public EnumSet<E> clone() {
         try {
             return (EnumSet<E>) super.clone();
@@ -394,6 +398,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     /**
      * Complements the contents of this enum set.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     abstract void complement();
 
     /**

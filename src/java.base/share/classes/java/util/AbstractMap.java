@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -237,6 +238,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      */
     @ReleasesNoLocks
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied AbstractMap<K, V> this, K key, V value) {
         throw new UnsupportedOperationException();
     }
@@ -263,6 +265,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws ClassCastException            {@inheritDoc}
      * @throws NullPointerException          {@inheritDoc}
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
         Entry<K,V> correctEntry = null;
@@ -308,6 +311,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied AbstractMap<K, V> this, Map<? extends K, ? extends V> m) {
         for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
             put(e.getKey(), e.getValue());
@@ -325,6 +329,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @throws UnsupportedOperationException {@inheritDoc}
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied AbstractMap<K, V> this) {
         entrySet().clear();
     }
@@ -395,6 +400,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                             return i.next().getKey();
                         }
 
+                        @DoesNotUnrefineReceiver("modifiability")
                         public void remove() {
                             i.remove();
                         }
@@ -412,6 +418,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return AbstractMap.this.isEmpty();
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void clear() {
                     AbstractMap.this.clear();
                 }
@@ -462,6 +469,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                             return i.next().getValue();
                         }
 
+                        @DoesNotUnrefineReceiver("modifiability")
                         public void remove() {
                             i.remove();
                         }
@@ -479,6 +487,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return AbstractMap.this.isEmpty();
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void clear() {
                     AbstractMap.this.clear();
                 }
@@ -718,6 +727,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          * @param value new value to be stored in this entry
          * @return the old value corresponding to the entry
          */
+        @DoesNotUnrefineReceiver("modifiability")
         public V setValue(AbstractMap.@GuardSatisfied SimpleEntry<K, V> this, V value) {
             V oldValue = this.value;
             this.value = value;
@@ -963,6 +973,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
 
         public boolean add(E t) { throw uoe(); }
         public boolean addAll(Collection<? extends E> c) { throw uoe(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() { view().clear(); }
         public boolean contains(Object o) { return view().contains(o); }
         public boolean containsAll(Collection<?> c) { return view().containsAll(c); }
@@ -970,9 +981,13 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         public boolean isEmpty() { return view().isEmpty(); }
         public Iterator<E> iterator() { return view().iterator(); }
         public Stream<E> parallelStream() { return view().parallelStream(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(Object o) { return view().remove(o); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<?> c) { return view().removeAll(c); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) { return view().removeIf(filter); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<?> c) { return view().retainAll(c); }
         public int size() { return view().size(); }
         public Spliterator<E> spliterator() { return view().spliterator(); }

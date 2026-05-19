@@ -36,6 +36,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -309,6 +310,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V get(@GuardSatisfied TreeMap<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Entry<K,V> p = getEntry(key);
         return (p==null ? null : p.value);
@@ -341,6 +343,7 @@ public class TreeMap<K,V>
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @DoesNotUnrefineReceiver("modifiability")
      public V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
     }
@@ -353,6 +356,7 @@ public class TreeMap<K,V>
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public V putLast(K k, V v) {
         throw new UnsupportedOperationException();
     }
@@ -369,6 +373,7 @@ public class TreeMap<K,V>
      *         the specified map contains a null key and this map does not
      *         permit null keys
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied TreeMap<K, V> this, Map<? extends K, ? extends V> map) {
         int mapSize = map.size();
         if (size==0 && mapSize!=0 && map instanceof SortedMap) {
@@ -590,11 +595,13 @@ public class TreeMap<K,V>
      *         does not permit null keys
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied TreeMap<K, V> this, K key, V value) {
         return put(key, value, true);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V putIfAbsent(K key, V value) {
         return put(key, value, false);
     }
@@ -610,6 +617,7 @@ public class TreeMap<K,V>
      * mapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
         V newValue;
@@ -680,6 +688,7 @@ public class TreeMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Entry<K,V> oldEntry = getEntry(key);
@@ -701,6 +710,7 @@ public class TreeMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V newValue;
@@ -763,6 +773,7 @@ public class TreeMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
@@ -937,6 +948,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied TreeMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Entry<K,V> p = getEntry(key);
         if (p == null)
@@ -951,6 +963,7 @@ public class TreeMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied TreeMap<K, V> this) {
         modCount++;
         size = 0;
@@ -963,6 +976,7 @@ public class TreeMap<K,V>
      *
      * @return a shallow copy of this map
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Object clone(@GuardSatisfied TreeMap<K, V> this) {
         TreeMap<?,?> clone;
         try {
@@ -1007,6 +1021,7 @@ public class TreeMap<K,V>
     /**
      * @since 1.6
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Map.@Nullable Entry<K,V> pollFirstEntry(@GuardSatisfied TreeMap<K, V> this) {
         Entry<K,V> p = getFirstEntry();
         Map.Entry<K,V> result = exportEntry(p);
@@ -1018,6 +1033,7 @@ public class TreeMap<K,V>
     /**
      * @since 1.6
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Map.@Nullable Entry<K,V> pollLastEntry(@GuardSatisfied TreeMap<K, V> this) {
         Entry<K,V> p = getLastEntry();
         Map.Entry<K,V> result = exportEntry(p);
@@ -1150,6 +1166,7 @@ public class TreeMap<K,V>
      * operations.  It does not support the {@code add} or {@code addAll}
      * operations.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied TreeMap<K, V> this) {
         return navigableKeySet();
     }

@@ -36,6 +36,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -482,6 +483,7 @@ public class WeakHashMap<K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
@@ -574,6 +576,7 @@ public class WeakHashMap<K,V>
      * @param m mappings to be stored in this map.
      * @throws  NullPointerException if the specified map is null.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied WeakHashMap<K, V> this, Map<? extends K, ? extends V> m) {
         int numKeysToBeAdded = m.size();
         if (numKeysToBeAdded == 0)
@@ -623,6 +626,7 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
@@ -682,6 +686,7 @@ public class WeakHashMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied WeakHashMap<K, V> this) {
         // clear out ref queue. We don't need to expunge entries
         // since table is getting cleared.
@@ -762,6 +767,7 @@ public class WeakHashMap<K,V>
             return value;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
@@ -853,6 +859,7 @@ public class WeakHashMap<K,V>
             return lastReturned;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -929,6 +936,7 @@ public class WeakHashMap<K,V>
             return containsKey(o);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
@@ -938,6 +946,7 @@ public class WeakHashMap<K,V>
                 return false;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -988,6 +997,7 @@ public class WeakHashMap<K,V>
             return containsValue(o);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -1032,6 +1042,7 @@ public class WeakHashMap<K,V>
                     && getEntry(e.getKey()).equals(e);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
@@ -1041,6 +1052,7 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -1070,6 +1082,7 @@ public class WeakHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         int expectedModCount = modCount;
@@ -1092,6 +1105,7 @@ public class WeakHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;

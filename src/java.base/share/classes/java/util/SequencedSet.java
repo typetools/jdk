@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
+
 /**
  * A collection that is both a {@link SequencedCollection} and a {@link Set}. As such,
  * it can be thought of either as a {@code Set} that also has a well-defined
@@ -54,5 +56,6 @@ public interface SequencedSet<E> extends SequencedCollection<E>, Set<E> {
      *
      * @return a reverse-ordered view of this collection, as a {@code SequencedSet}
      */
+    @DoesNotUnrefineReceiver("modifiability")
     SequencedSet<E> reversed();
 }

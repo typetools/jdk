@@ -37,6 +37,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -488,6 +489,7 @@ public interface Collection<E> extends Iterable<E> {
      *         time due to insertion restrictions
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Collection<E> this, E e);
 
     /**
@@ -510,6 +512,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this collection
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@GuardSatisfied @CanShrink Collection<E> this, @UnknownSignedness Object o);
 
 
@@ -562,6 +565,7 @@ public interface Collection<E> extends Iterable<E> {
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean addAll(@GuardSatisfied Collection<E> this, Collection<? extends E> c);
 
     /**
@@ -587,6 +591,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean removeAll(@GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
@@ -611,6 +616,7 @@ public interface Collection<E> extends Iterable<E> {
      *         supported.
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default boolean removeIf(@CanShrink Collection<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         boolean removed = false;
@@ -646,6 +652,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
+    @DoesNotUnrefineReceiver("modifiability")
     boolean retainAll(@GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
@@ -655,6 +662,7 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
+    @DoesNotUnrefineReceiver("modifiability")
     void clear(@GuardSatisfied @CanShrink Collection<E> this);
 
 
@@ -785,6 +793,7 @@ public interface Collection<E> extends Iterable<E> {
      * @return a sequential {@code Stream} over the elements in this collection
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default @PolyNonEmpty Stream<E> stream(@PolyNonEmpty Collection<E> this) {
         return StreamSupport.stream(spliterator(), false);
     }
@@ -806,6 +815,7 @@ public interface Collection<E> extends Iterable<E> {
      * collection
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default Stream<E> parallelStream() {
         return StreamSupport.stream(spliterator(), true);
     }
