@@ -113,7 +113,7 @@ public class ReplaceableString implements Replaceable {
      * @param dstStart the start offset in the destination array.
      * @stable ICU 2.0
      */
-    @SideEffectsOnly("#3")
+    // @SideEffectsOnly("#3")
     public void getChars(int srcStart, int srcLimit, char dst[], int dstStart) {
         if (srcStart != srcLimit) {
             buf.getChars(srcStart, srcLimit, dst, dstStart);

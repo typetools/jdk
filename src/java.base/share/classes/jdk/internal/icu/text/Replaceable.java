@@ -120,6 +120,6 @@ public interface Replaceable {
      * @param dstStart the start offset in the destination array.
      * @stable ICU 2.0
      */
-    @SideEffectsOnly("#3")
+    // @SideEffectsOnly("#3")
     void getChars(int srcStart, int srcLimit, char dst[], int dstStart);
 }

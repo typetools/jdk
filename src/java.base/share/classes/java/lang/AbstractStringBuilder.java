@@ -522,7 +522,7 @@ abstract sealed @UsesObjectEquals class AbstractStringBuilder implements Appenda
      *             {@code dst.length}
      *             </ul>
      */
-    @SideEffectsOnly("#3")
+    // @SideEffectsOnly("#3")
     public void getChars(@NonNegative int srcBegin, @NonNegative int srcEnd, char[] dst, @IndexOrHigh({"#3"}) int dstBegin)
     {
         Preconditions.checkFromToIndex(srcBegin, srcEnd, count, Preconditions.SIOOBE_FORMATTER);  // compatible to old version

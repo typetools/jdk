@@ -304,7 +304,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
     /**
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    @SideEffectsOnly("#3")
+    // @SideEffectsOnly("#3")
     @Override
     public synchronized void getChars(int srcBegin, int srcEnd, char[] dst,
                                       @IndexOrHigh({"#3"}) int dstBegin)
