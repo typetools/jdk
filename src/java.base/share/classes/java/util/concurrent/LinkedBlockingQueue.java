@@ -820,6 +820,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             Node<E> p;
             if ((p = next) == null)

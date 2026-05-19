@@ -433,11 +433,13 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             int oldSize = size;
             EnumMap.this.remove(o);
             return size != oldSize;
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             EnumMap.this.clear();
         }
@@ -476,6 +478,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             o = maskNull(o);
 
@@ -488,6 +491,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             }
             return false;
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             EnumMap.this.clear();
         }
@@ -523,6 +527,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return o instanceof Map.Entry<?, ?> entry
                     && containsMapping(entry.getKey(), entry.getValue());
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> entry
                     && removeMapping(entry.getKey(), entry.getValue());
@@ -531,6 +536,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         public @NonNegative int size() {
             return size;
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             EnumMap.this.clear();
         }
@@ -583,6 +589,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return index != vals.length;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             checkLastReturnedIndex();
 
@@ -600,6 +607,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     }
 
     private class KeyIterator extends EnumMapIterator<K> {
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -612,6 +620,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         @CFComment({"nullness: Value returned by unmaskNull",
                     "will be of type V (not @Nullable V) for mapped value"})
         @SuppressWarnings({"nullness:return"})
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -623,6 +632,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     private class EntryIterator extends EnumMapIterator<Map.Entry<K,V>> {
         private Entry lastReturnedEntry;
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -630,6 +640,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return lastReturnedEntry;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             lastReturnedIndex =
                 ((null == lastReturnedEntry) ? -1 : lastReturnedEntry.index);

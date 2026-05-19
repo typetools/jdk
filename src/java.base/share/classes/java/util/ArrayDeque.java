@@ -743,6 +743,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty DeqIterator this) {
             if (remaining <= 0)
                 throw new NoSuchElementException();
@@ -792,6 +793,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     private class DescendingIterator extends DeqIterator {
         DescendingIterator() { cursor = dec(tail, elements.length); }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final E next(@NonEmpty DescendingIterator this) {
             if (remaining <= 0)
                 throw new NoSuchElementException();

@@ -34,6 +34,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -174,6 +175,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Object put(Object name, Object value) {
         return map.put((Attributes.Name)name, (String)value);
     }
@@ -205,6 +207,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
@@ -240,6 +243,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the Attributes to be stored in this map
      * @throws    ClassCastException if attr is not an Attributes
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
         if (!Attributes.class.isInstance(attr))
@@ -251,6 +255,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Removes all attributes from this Map.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         map.clear();
     }

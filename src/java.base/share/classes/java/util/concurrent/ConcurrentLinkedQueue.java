@@ -809,6 +809,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             final Node<E> pred = nextNode;
             if (pred == null) throw new NoSuchElementException();

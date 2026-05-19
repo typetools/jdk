@@ -2192,6 +2192,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     }
 
     final class ValueIterator extends Iter<V> {
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             V v;
             if ((v = nextValue) == null)
@@ -2202,6 +2203,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     }
 
     final class KeyIterator extends Iter<K> {
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             Node<K,V> n;
             if ((n = next) == null)
@@ -2213,6 +2215,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     }
 
     final class EntryIterator extends Iter<Map.Entry<K,V>> {
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             Node<K,V> n;
             if ((n = next) == null)
@@ -3106,6 +3109,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         final class SubMapValueIterator extends SubMapIter<V> {
+            @DoesNotUnrefineReceiver("modifiability")
             public V next(@NonEmpty SubMapValueIterator this) {
                 V v = nextValue;
                 advance();
@@ -3117,6 +3121,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         final class SubMapKeyIterator extends SubMapIter<K> {
+            @DoesNotUnrefineReceiver("modifiability")
             public K next(@NonEmpty SubMapKeyIterator this) {
                 Node<K,V> n = next;
                 advance();
@@ -3132,6 +3137,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         final class SubMapEntryIterator extends SubMapIter<Map.Entry<K,V>> {
+            @DoesNotUnrefineReceiver("modifiability")
             public Map.Entry<K,V> next(@NonEmpty SubMapEntryIterator this) {
                 Node<K,V> n = next;
                 V v = nextValue;

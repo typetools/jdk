@@ -402,6 +402,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             checkForComodification();
             try {
@@ -416,6 +417,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             }
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastRet < 0)
                 throw new IllegalStateException();
@@ -468,6 +470,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return cursor-1;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) {
             if (lastRet < 0)
                 throw new IllegalStateException();
@@ -481,6 +484,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             }
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
             checkForComodification();
 
@@ -816,6 +820,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             this.modCount = root.modCount;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -834,6 +839,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return size;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             rangeCheckForAdd(index);
             checkForComodification();
@@ -841,6 +847,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             updateSizeAndModCount(1);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -855,10 +862,12 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             updateSizeAndModCount(fromIndex - toIndex);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) {
             return addAll(size, c);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             rangeCheckForAdd(index);
             int cSize = c.size();
@@ -889,6 +898,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                 }
 
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty ListIterator<E> this*/) {
                     if (hasNext())
                         return i.next();
@@ -919,15 +929,18 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                     return i.previousIndex() - offset;
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     i.remove();
                     updateSizeAndModCount(-1);
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     i.set(e);
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     i.add(e);
                     updateSizeAndModCount(1);

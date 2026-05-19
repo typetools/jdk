@@ -250,6 +250,7 @@ public class HashSet<E>
      */
     @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(@GuardSatisfied HashSet<E> this, E e) {
         return map.put(e, PRESENT)==null;
     }
@@ -267,6 +268,7 @@ public class HashSet<E>
      * @return {@code true} if the set contained the specified element
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.remove(o)==PRESENT;
     }
@@ -276,6 +278,7 @@ public class HashSet<E>
      * The set will be empty after this call returns.
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied HashSet<E> this) {
         map.clear();
     }

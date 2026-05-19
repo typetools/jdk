@@ -41,6 +41,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.*;
 import java.math.*;
@@ -1491,6 +1492,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @see java.util.Iterator
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this) {
         ensureOpen();
         clearCaches();
@@ -1516,6 +1518,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws UnsupportedOperationException if this method is invoked.
      * @see java.util.Iterator
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void remove(@GuardSatisfied Scanner this) {
         throw new UnsupportedOperationException();
     }
@@ -1554,6 +1557,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this, String pattern)  {
         return next(patternCache.forName(pattern));
     }
@@ -1605,6 +1609,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public String next(@GuardSatisfied @NonEmpty Scanner this, Pattern pattern) {
         ensureOpen();
         if (pattern == null)

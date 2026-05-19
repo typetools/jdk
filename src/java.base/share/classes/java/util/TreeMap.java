@@ -1341,6 +1341,7 @@ public class TreeMap<K,V>
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean replace(K key, V oldValue, V newValue) {
         Entry<K,V> p = getEntry(key);
         if (p!=null && Objects.equals(oldValue, p.value)) {
@@ -1351,6 +1352,7 @@ public class TreeMap<K,V>
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public V replace(K key, V value) {
         Entry<K,V> p = getEntry(key);
         if (p!=null) {
@@ -1375,6 +1377,7 @@ public class TreeMap<K,V>
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;
@@ -1407,6 +1410,7 @@ public class TreeMap<K,V>
             return TreeMap.this.containsValue(o);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e)) {
                 if (valEquals(e.getValue(), o)) {
@@ -1417,6 +1421,7 @@ public class TreeMap<K,V>
             return false;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             TreeMap.this.clear();
         }
@@ -1443,6 +1448,7 @@ public class TreeMap<K,V>
             return p != null && valEquals(p.getValue(), value);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             if (!(o instanceof Map.Entry<?, ?> entry))
                 return false;
@@ -1460,6 +1466,7 @@ public class TreeMap<K,V>
             return TreeMap.this.size();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             TreeMap.this.clear();
         }
@@ -1513,6 +1520,7 @@ public class TreeMap<K,V>
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() { m.clear(); }
         public E lower(E e) { return m.lowerKey(e); }
         public E floor(E e) { return m.floorKey(e); }
@@ -1529,6 +1537,7 @@ public class TreeMap<K,V>
             Map.Entry<E,?> e = m.pollLastEntry();
             return (e == null) ? null : e.getKey();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             int oldSize = size();
             m.remove(o);
@@ -1608,6 +1617,7 @@ public class TreeMap<K,V>
             return e;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -1626,6 +1636,7 @@ public class TreeMap<K,V>
         EntryIterator(Entry<K,V> first) {
             super(first);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             return nextEntry();
         }
@@ -1635,6 +1646,7 @@ public class TreeMap<K,V>
         ValueIterator(Entry<K,V> first) {
             super(first);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return nextEntry().value;
         }
@@ -1644,6 +1656,7 @@ public class TreeMap<K,V>
         KeyIterator(Entry<K,V> first) {
             super(first);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return nextEntry().key;
         }
@@ -1653,9 +1666,11 @@ public class TreeMap<K,V>
         DescendingKeyIterator(Entry<K,V> first) {
             super(first);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty DescendingKeyIterator this) {
             return prevEntry().key;
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -1904,24 +1919,28 @@ public class TreeMap<K,V>
         }
 
         @EnsuresKeyFor(value={"#1"}, map={"this"})
+        @DoesNotUnrefineReceiver("modifiability")
         public final V put(K key, V value) {
             if (!inRange(key))
                 throw new IllegalArgumentException("key out of range");
             return m.put(key, value);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V putIfAbsent(K key, V value) {
             if (!inRange(key))
                 throw new IllegalArgumentException("key out of range");
             return m.putIfAbsent(key, value);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             if (!inRange(key))
                 throw new IllegalArgumentException("key out of range");
             return m.merge(key, value, remappingFunction);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
             if (!inRange(key)) {
                 // Do not throw if mapping function returns null
@@ -1932,6 +1951,7 @@ public class TreeMap<K,V>
             return m.computeIfAbsent(key, mappingFunction);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             if (!inRange(key)) {
                 // Do not throw if remapping function returns null
@@ -1942,6 +1962,7 @@ public class TreeMap<K,V>
             return m.compute(key, remappingFunction);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
             return !inRange(key) ? null : m.computeIfPresent(key, remappingFunction);
         }
@@ -1950,6 +1971,7 @@ public class TreeMap<K,V>
             return !inRange(key) ? null :  m.get(key);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final V remove(Object key) {
             return !inRange(key) ? null : m.remove(key);
         }
@@ -2095,6 +2117,7 @@ public class TreeMap<K,V>
                     valEquals(node.getValue(), entry.getValue());
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean remove(@UnknownSignedness Object o) {
                 if (!(o instanceof Entry<?, ?> entry))
                     return false;
@@ -2188,9 +2211,11 @@ public class TreeMap<K,V>
                                 TreeMap.Entry<K,V> fence) {
                 super(first, fence);
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public Map.Entry<K,V> next(@NonEmpty SubMapEntryIterator this) {
                 return nextEntry();
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 removeAscending();
             }
@@ -2202,9 +2227,11 @@ public class TreeMap<K,V>
                 super(last, fence);
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public Map.Entry<K,V> next(@NonEmpty DescendingSubMapEntryIterator this) {
                 return prevEntry();
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 removeDescending();
             }
@@ -2217,9 +2244,11 @@ public class TreeMap<K,V>
                               TreeMap.Entry<K,V> fence) {
                 super(first, fence);
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public K next(@NonEmpty SubMapKeyIterator this) {
                 return nextEntry().key;
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 removeAscending();
             }
@@ -2255,9 +2284,11 @@ public class TreeMap<K,V>
                                         TreeMap.Entry<K,V> fence) {
                 super(last, fence);
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public K next(@NonEmpty DescendingSubMapKeyIterator this) {
                 return prevEntry().key;
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 removeDescending();
             }

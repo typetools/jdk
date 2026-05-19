@@ -396,6 +396,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                         }
 
                         @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public K next(/*@NonEmpty Iterator<K> this*/) {
                             return i.next().getKey();
                         }
@@ -465,6 +466,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                         }
 
                         @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public V next(/*@NonEmpty Iterator<V> this*/) {
                             return i.next().getValue();
                         }
@@ -971,7 +973,9 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         UnsupportedOperationException uoe() { return new UnsupportedOperationException(); }
         abstract Collection<E> view();
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean add(E t) { throw uoe(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) { throw uoe(); }
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() { view().clear(); }

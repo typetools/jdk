@@ -1246,6 +1246,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             final E e = nextItem;
             if (e == null)

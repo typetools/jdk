@@ -157,6 +157,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         @Override
         @SuppressWarnings("unchecked")
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty EnumSetIterator<E> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -168,6 +169,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == 0)
                 throw new IllegalStateException();
@@ -231,6 +233,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if {@code e} is null
      */
     @EnsuresNonEmpty("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         typeCheck(e);
 
@@ -251,6 +254,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
             return false;
@@ -301,6 +305,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if the specified collection or any of
      *     its elements are null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(Collection<? extends E> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.addAll(c);
@@ -326,6 +331,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.removeAll(c);
@@ -346,6 +352,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
             return super.retainAll(c);
@@ -364,6 +371,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
     /**
      * Removes all of the elements from this set.
      */
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         Arrays.fill(elements, 0);
         size = 0;

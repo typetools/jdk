@@ -1466,6 +1466,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty AbstractItr this) {
             E item = nextItem;
             if (item == null) throw new NoSuchElementException();

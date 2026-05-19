@@ -3511,6 +3511,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final K next(@NonEmpty KeyIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
@@ -3521,6 +3522,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return k;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final K nextElement(@NonEmpty KeyIterator<K,V> this) { return next(); }
     }
 
@@ -3531,6 +3533,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final V next(@NonEmpty ValueIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
@@ -3541,6 +3544,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return v;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final V nextElement(@NonEmpty ValueIterator<K,V> this) { return next(); }
     }
 
@@ -3551,6 +3555,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(tab, size, index, limit, map);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final Map.Entry<K,V> next(@NonEmpty EntryIterator<K,V> this) {
             Node<K,V> p;
             if ((p = next) == null)
@@ -4894,6 +4899,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
                     (v == r || v.equals(r)));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             Object k, v; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&

@@ -956,6 +956,7 @@ public class LinkedList<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty ListItr this) {
             checkForComodification();
             if (!hasNext())
@@ -1073,6 +1074,7 @@ public class LinkedList<E>
             return itr.hasPrevious();
         }
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty DescendingIterator this) {
             return itr.previous();
         }

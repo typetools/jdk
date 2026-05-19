@@ -1545,6 +1545,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         @SuppressWarnings("unchecked")
+        @DoesNotUnrefineReceiver("modifiability")
         public T nextElement(@NonEmpty Enumerator<T> this) {
             Entry<?,?> et = entry;
             int i = index;
@@ -1571,6 +1572,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public T next(@NonEmpty Enumerator<T> this) {
             if (Hashtable.this.modCount != expectedModCount)
                 throw new ConcurrentModificationException();

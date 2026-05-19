@@ -1309,6 +1309,7 @@ public class Vector<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             synchronized (Vector.this) {
                 checkForComodification();

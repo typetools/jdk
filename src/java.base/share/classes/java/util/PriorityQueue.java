@@ -551,6 +551,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             if (expectedModCount != modCount)
                 throw new ConcurrentModificationException();
@@ -565,6 +566,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
             throw new NoSuchElementException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (expectedModCount != modCount)
                 throw new ConcurrentModificationException();

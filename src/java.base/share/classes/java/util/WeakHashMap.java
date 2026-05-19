@@ -875,18 +875,21 @@ public class WeakHashMap<K,V>
     }
 
     private class ValueIterator extends HashIterator<V> {
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return nextEntry().value;
         }
     }
 
     private class KeyIterator extends HashIterator<K> {
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return nextEntry().getKey();
         }
     }
 
     private class EntryIterator extends HashIterator<Map.Entry<K,V>> {
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             return nextEntry();
         }

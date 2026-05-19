@@ -925,6 +925,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final E next(@NonEmpty Itr this) {
             final Node p;
             if ((p = nextNode) == null) throw new NoSuchElementException();

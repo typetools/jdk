@@ -122,6 +122,7 @@ final class RegularEnumSet<E extends Enum<E>> extends EnumSet<E> {
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @SuppressWarnings("unchecked")
         public E next(@NonEmpty EnumSetIterator<E> this) {
             if (unseen == 0)

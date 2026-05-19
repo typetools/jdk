@@ -1124,6 +1124,7 @@ public class Collections {
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {return i.hasNext();}
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty Iterator<E> this*/)          {return i.next();}
                 @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
@@ -1623,6 +1624,7 @@ public class Collections {
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     {return i.hasNext();}
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty ListIterator<E> this*/)              {return i.next();}
                 @Pure
                 public boolean hasPrevious() {return i.hasPrevious();}
@@ -1631,12 +1633,15 @@ public class Collections {
                 public int nextIndex()       {return i.nextIndex();}
                 public int previousIndex()   {return i.previousIndex();}
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
+                @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     throw new UnsupportedOperationException();
                 }
+                @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     throw new UnsupportedOperationException();
                 }
@@ -1755,16 +1760,20 @@ public class Collections {
         public boolean containsValue(@UnknownSignedness Object val) {return m.containsValue(val);}
         public V get(Object key)                 {return m.get(key);}
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         public V put(K key, V value) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public V remove(Object key) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void putAll(Map<? extends K, ? extends V> m) {
             throw new UnsupportedOperationException();
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             throw new UnsupportedOperationException();
         }
@@ -1811,10 +1820,12 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
         public V putIfAbsent(K key, V value) {
@@ -1822,38 +1833,45 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
@@ -1967,9 +1985,11 @@ public class Collections {
                         return i.hasNext();
                     }
                     @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
                     public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return new UnmodifiableEntry<>(i.next());
                     }
+                    @DoesNotUnrefineReceiver("modifiability")
                     public void remove() {
                         throw new UnsupportedOperationException();
                     }
@@ -2123,18 +2143,22 @@ public class Collections {
             return new UnmodifiableSequencedMap<>(sm().reversed());
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollFirstEntry() {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollLastEntry() {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V putFirst(K k, V v) {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public V putLast(K k, V v) {
             throw new UnsupportedOperationException();
         }
@@ -2323,8 +2347,10 @@ public class Collections {
                 : null;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollFirstEntry()
                                  { throw new UnsupportedOperationException(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollLastEntry()
                                  { throw new UnsupportedOperationException(); }
         @SideEffectFree
@@ -2447,10 +2473,12 @@ public class Collections {
             return c.iterator(); // Must be manually synched by user!
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresNonEmpty("this")
         public boolean add(E e) {
             synchronized (mutex) {return c.add(e);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o) {
             synchronized (mutex) {return c.remove(o);}
         }
@@ -2459,15 +2487,19 @@ public class Collections {
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.containsAll(coll);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             synchronized (mutex) {return c.addAll(coll);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.removeAll(coll);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.retainAll(coll);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             synchronized (mutex) {c.clear();}
         }
@@ -2480,6 +2512,7 @@ public class Collections {
             synchronized (mutex) {c.forEach(consumer);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             synchronized (mutex) {return c.removeIf(filter);}
         }
@@ -2728,7 +2761,9 @@ public class Collections {
         public E floor(E e)      { synchronized (mutex) {return ns.floor(e);} }
         public E ceiling(E e)  { synchronized (mutex) {return ns.ceiling(e);} }
         public E higher(E e)    { synchronized (mutex) {return ns.higher(e);} }
+        @DoesNotUnrefineReceiver("modifiability")
         public E pollFirst()  { synchronized (mutex) {return ns.pollFirst();} }
+        @DoesNotUnrefineReceiver("modifiability")
         public E pollLast()    { synchronized (mutex) {return ns.pollLast();} }
 
         public NavigableSet<E> descendingSet() {
@@ -2847,12 +2882,15 @@ public class Collections {
         public E get(int index) {
             synchronized (mutex) {return list.get(index);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             synchronized (mutex) {return list.set(index, element);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             synchronized (mutex) {list.add(index, element);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             synchronized (mutex) {return list.remove(index);}
         }
@@ -2864,6 +2902,7 @@ public class Collections {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             synchronized (mutex) {return list.addAll(index, c);}
         }
@@ -2884,10 +2923,12 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             synchronized (mutex) {list.replaceAll(operator);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             synchronized (mutex) {list.sort(c);}
         }
@@ -3028,16 +3069,20 @@ public class Collections {
             synchronized (mutex) {return m.get(key);}
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         public V put(K key, V value) {
             synchronized (mutex) {return m.put(key, value);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public V remove(Object key) {
             synchronized (mutex) {return m.remove(key);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void putAll(Map<? extends K, ? extends V> map) {
             synchronized (mutex) {m.putAll(map);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             synchronized (mutex) {m.clear();}
         }
@@ -3094,42 +3139,51 @@ public class Collections {
             synchronized (mutex) {m.forEach(action);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             synchronized (mutex) {m.replaceAll(function);}
         }
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
         public V putIfAbsent(K key, V value) {
             synchronized (mutex) {return m.putIfAbsent(key, value);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             synchronized (mutex) {return m.remove(key, value);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             synchronized (mutex) {return m.replace(key, oldValue, newValue);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public V replace(K key, V value) {
             synchronized (mutex) {return m.replace(key, value);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             synchronized (mutex) {return m.computeIfAbsent(key, mappingFunction);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.computeIfPresent(key, remappingFunction);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.compute(key, remappingFunction);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.merge(key, value, remappingFunction);}
@@ -3339,8 +3393,10 @@ public class Collections {
                            { synchronized (mutex) { return nm.firstEntry(); } }
         public Entry<K, V> lastEntry()
                             { synchronized (mutex) { return nm.lastEntry(); } }
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollFirstEntry()
                        { synchronized (mutex) { return nm.pollFirstEntry(); } }
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollLastEntry()
                         { synchronized (mutex) { return nm.pollLastEntry(); } }
 
@@ -3532,16 +3588,20 @@ public class Collections {
         public <T> @Nullable T[] toArray(@PolyNull T[] a)              { return c.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f) { return c.toArray(f); }
         public String toString()                   { return c.toString(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o)            { return c.remove(o); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear()                        {        c.clear(); }
 
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.removeAll(coll);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.retainAll(coll);
         }
@@ -3556,7 +3616,9 @@ public class Collections {
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() { return it.hasNext(); }
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty Iterator<E> this*/)          { return it.next(); }
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove()     {        it.remove(); }
                 public void forEachRemaining(Consumer<? super E> action) {
                     it.forEachRemaining(action);
@@ -3564,6 +3626,7 @@ public class Collections {
             };
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresNonEmpty("this")
         public boolean add(E e)          { return c.add(typeCheck(e)); }
 
@@ -3598,6 +3661,7 @@ public class Collections {
             return (Collection<E>) Arrays.asList(a);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             // Doing things this way insulates us from concurrent changes
             // in the contents of coll and provides all-or-nothing
@@ -3610,6 +3674,7 @@ public class Collections {
         @Override
         public void forEach(Consumer<? super E> action) {c.forEach(action);}
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             return c.removeIf(filter);
         }
@@ -3677,8 +3742,11 @@ public class Collections {
         public int hashCode()           {return c.hashCode();}
         @Pure
         public E peek()                 {return queue.peek();}
+        @DoesNotUnrefineReceiver("modifiability")
         public E poll()                 {return queue.poll();}
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove()               {return queue.remove();}
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean offer(E e)       {return queue.offer(typeCheck(e));}
     }
 
@@ -3930,18 +3998,22 @@ public class Collections {
         public boolean equals(Object o)  { return o == this || list.equals(o); }
         public int hashCode()            { return list.hashCode(); }
         public E get(int index)          { return list.get(index); }
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index)       { return list.remove(index); }
         public int indexOf(Object o)     { return list.indexOf(o); }
         public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             return list.set(index, typeCheck(element));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             list.add(index, typeCheck(element));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             return list.addAll(index, checkedCopyOf(c));
         }
@@ -3955,17 +4027,21 @@ public class Collections {
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     { return i.hasNext(); }
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty ListIterator<E> this*/)              { return i.next(); }
                 public boolean hasPrevious() { return i.hasPrevious(); }
                 public E previous()          { return i.previous(); }
                 public int nextIndex()       { return i.nextIndex(); }
                 public int previousIndex()   { return i.previousIndex(); }
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove()         {        i.remove(); }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     i.set(typeCheck(e));
                 }
 
+                @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     i.add(typeCheck(e));
                 }
@@ -3990,12 +4066,14 @@ public class Collections {
          *         already been replaced.
          */
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             Objects.requireNonNull(operator);
             list.replaceAll(e -> typeCheck(operator.apply(e)));
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             list.sort(c);
         }
@@ -4124,7 +4202,9 @@ public class Collections {
         @Pure
         public boolean containsValue(@UnknownSignedness Object v) { return m.containsValue(v); }
         public V get(Object key)               { return m.get(key); }
+        @DoesNotUnrefineReceiver("modifiability")
         public V remove(Object key)            { return m.remove(key); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear()                    { m.clear(); }
         public Set<K> keySet()                 { return m.keySet(); }
         public Collection<V> values()          { return m.values(); }
@@ -4132,12 +4212,14 @@ public class Collections {
         public int hashCode()                  { return m.hashCode(); }
         public String toString()               { return m.toString(); }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         public V put(K key, V value) {
             typeCheck(key, value);
             return m.put(key, value);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @SuppressWarnings("unchecked")
         public void putAll(Map<? extends K, ? extends V> t) {
             // Satisfy the following goals:
@@ -4175,10 +4257,12 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             m.replaceAll(typeCheck(function));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
         public V putIfAbsent(K key, V value) {
@@ -4187,23 +4271,27 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             return m.remove(key, value);
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             typeCheck(key, newValue);
             return m.replace(key, oldValue, newValue);
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public V replace(K key, V value) {
             typeCheck(key, value);
             return m.replace(key, value);
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             Objects.requireNonNull(mappingFunction);
@@ -4215,18 +4303,21 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             return m.computeIfPresent(key, typeCheck(remappingFunction));
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             return m.compute(key, typeCheck(remappingFunction));
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             Objects.requireNonNull(remappingFunction);
@@ -4261,12 +4352,15 @@ public class Collections {
             public boolean isEmpty() { return s.isEmpty(); }
             public String toString() { return s.toString(); }
             public int hashCode()    { return s.hashCode(); }
+            @DoesNotUnrefineReceiver("modifiability")
             public void clear()      {        s.clear(); }
 
+            @DoesNotUnrefineReceiver("modifiability")
             @EnsuresNonEmpty("this")
             public boolean add(Map.Entry<K, V> e) {
                 throw new UnsupportedOperationException();
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean addAll(Collection<? extends Map.Entry<K, V>> coll) {
                 throw new UnsupportedOperationException();
             }
@@ -4279,8 +4373,10 @@ public class Collections {
                     @EnsuresNonEmptyIf(result = true, expression = "this")
                     public boolean hasNext() { return i.hasNext(); }
                     @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
                     public void remove()     { i.remove(); }
 
+                    @DoesNotUnrefineReceiver("modifiability")
                     public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return checkedEntry(i.next(), valueType);
                     }
@@ -4356,6 +4452,7 @@ public class Collections {
                 return true;
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean remove(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
@@ -4363,9 +4460,11 @@ public class Collections {
                                 <>((Map.Entry<?,?>)o));
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
                 return batchRemove(c, false);
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
                 return batchRemove(c, true);
             }
@@ -4632,6 +4731,7 @@ public class Collections {
                 : null;
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollFirstEntry() {
             Entry<K,V> entry = nm.pollFirstEntry();
             return (null == entry)
@@ -4639,6 +4739,7 @@ public class Collections {
                 : new CheckedMap.CheckedEntrySet.CheckedEntry<>(entry, valueType);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Entry<K, V> pollLastEntry() {
             Entry<K,V> entry = nm.pollLastEntry();
             return (null == entry)
@@ -4735,7 +4836,9 @@ public class Collections {
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() { return false; }
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty EmptyIterator<E> this) { throw new NoSuchElementException(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove(@NonEmpty EmptyIterator<E> this) { throw new IllegalStateException(); }
         @Override
         public void forEachRemaining(Consumer<? super E> action) {
@@ -4786,7 +4889,9 @@ public class Collections {
         public E previous() { throw new NoSuchElementException(); }
         public int nextIndex()     { return 0; }
         public int previousIndex() { return -1; }
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) { throw new IllegalStateException(); }
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) { throw new UnsupportedOperationException(); }
     }
 
@@ -5203,6 +5308,7 @@ public class Collections {
             Objects.requireNonNull(function);
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
         public V putIfAbsent(K key, V value) {
@@ -5210,39 +5316,46 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
@@ -5278,6 +5391,7 @@ public class Collections {
                 return hasNext;
             }
             @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public E next(/*@NonEmpty Iterator<E> this*/) {
                 if (hasNext) {
                     hasNext = false;
@@ -5285,6 +5399,7 @@ public class Collections {
                 }
                 throw new NoSuchElementException();
             }
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -5383,6 +5498,7 @@ public class Collections {
             return singletonSpliterator(element);
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
@@ -5446,10 +5562,12 @@ public class Collections {
             action.accept(element);
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             throw new UnsupportedOperationException();
         }
@@ -5551,10 +5669,12 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             throw new UnsupportedOperationException();
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
         public V putIfAbsent(K key, V value) {
@@ -5562,39 +5682,46 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfPresent(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
                 BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();

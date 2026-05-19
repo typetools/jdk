@@ -1228,6 +1228,7 @@ public class CopyOnWriteArrayList<E>
 
         @SuppressWarnings("unchecked")
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty COWIterator<E> this) {
             if (! hasNext())
                 throw new NoSuchElementException();
@@ -1757,6 +1758,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty COWSubListIterator<E> this) {
             if (hasNext())
                 return it.next();
@@ -1839,6 +1841,7 @@ public class CopyOnWriteArrayList<E>
                 }
             }
             public boolean hasNext() { return it.hasPrevious(); }
+            @DoesNotUnrefineReceiver("modifiability")
             public E next() { return it.previous(); }
             @DoesNotUnrefineReceiver("modifiability")
             public void remove() { it.remove(); }
@@ -1861,6 +1864,7 @@ public class CopyOnWriteArrayList<E>
                 return it.hasPrevious();
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public E next() {
                 return it.previous();
             }
@@ -1881,14 +1885,17 @@ public class CopyOnWriteArrayList<E>
                 return nextIndex() - 1;
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 throw new UnsupportedOperationException();
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public void set(E e) {
                 throw new UnsupportedOperationException();
             }
 
+            @DoesNotUnrefineReceiver("modifiability")
             public void add(E e) {
                 throw new UnsupportedOperationException();
             }

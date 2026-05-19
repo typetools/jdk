@@ -1144,6 +1144,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
 
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty AbstractItr this) {
             Node<E> p;
             if ((p = next) == null)

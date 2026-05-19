@@ -597,6 +597,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
 
         @SuppressWarnings("unchecked")
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             if (cursor >= array.length)
                 throw new NoSuchElementException();

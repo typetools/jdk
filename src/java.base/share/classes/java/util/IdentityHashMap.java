@@ -881,6 +881,7 @@ public class IdentityHashMap<K,V>
 
     private class KeyIterator extends IdentityHashMapIterator<K> {
         @SuppressWarnings("unchecked")
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return (K) unmaskNull(traversalTable[nextIndex()]);
         }
@@ -888,6 +889,7 @@ public class IdentityHashMap<K,V>
 
     private class ValueIterator extends IdentityHashMapIterator<V> {
         @SuppressWarnings("unchecked")
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return (V) traversalTable[nextIndex() + 1];
         }
@@ -898,6 +900,7 @@ public class IdentityHashMap<K,V>
     {
         private Entry lastReturnedEntry;
 
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             lastReturnedEntry = new Entry(nextIndex());
             return lastReturnedEntry;
@@ -1455,6 +1458,7 @@ public class IdentityHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;
@@ -1482,6 +1486,7 @@ public class IdentityHashMap<K,V>
      * {@code false}.
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(Object key, Object value) {
         return removeMapping(key, value);
     }
@@ -1496,6 +1501,7 @@ public class IdentityHashMap<K,V>
      * otherwise it returns {@code false}.
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean replace(K key, V oldValue, V newValue) {
         Object k = maskNull(key);
         Object[] tab = table;

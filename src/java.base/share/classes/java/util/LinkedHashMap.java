@@ -837,6 +837,7 @@ public class LinkedHashMap<K,V>
         LinkedValues(boolean reversed)          { this.reversed = reversed; }
         @Pure
         public final int size()                 { return size; }
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { LinkedHashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<V> iterator() {
@@ -952,6 +953,7 @@ public class LinkedHashMap<K,V>
         LinkedEntrySet(boolean reversed)        { this.reversed = reversed; }
         @Pure
         public final int size()                 { return size; }
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { LinkedHashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<Map.Entry<K,V>> iterator() {
@@ -1100,18 +1102,21 @@ public class LinkedHashMap<K,V>
     final class LinkedKeyIterator extends LinkedHashIterator
         implements Iterator<K> {
         LinkedKeyIterator(boolean reversed) { super(reversed); }
+        @DoesNotUnrefineReceiver("modifiability")
         public final K next(@NonEmpty LinkedKeyIterator this) { return nextNode().getKey(); }
     }
 
     final class LinkedValueIterator extends LinkedHashIterator
         implements Iterator<V> {
         LinkedValueIterator(boolean reversed) { super(reversed); }
+        @DoesNotUnrefineReceiver("modifiability")
         public final V next(@NonEmpty LinkedValueIterator this) { return nextNode().value; }
     }
 
     final class LinkedEntryIterator extends LinkedHashIterator
         implements Iterator<Map.Entry<K,V>> {
         LinkedEntryIterator(boolean reversed) { super(reversed); }
+        @DoesNotUnrefineReceiver("modifiability")
         public final Map.Entry<K,V> next(@NonEmpty LinkedEntryIterator this) { return nextNode(); }
     }
 
