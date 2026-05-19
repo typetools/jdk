@@ -39,7 +39,7 @@ import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.*;
@@ -1490,7 +1490,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @see java.util.Iterator
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public String next(@GuardSatisfied @NonEmpty Scanner this) {
         ensureOpen();
         clearCaches();
@@ -1553,7 +1553,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no such tokens are available
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public String next(@GuardSatisfied @NonEmpty Scanner this, String pattern)  {
         return next(patternCache.forName(pattern));
     }
@@ -1604,7 +1604,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no more tokens are available
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public String next(@GuardSatisfied @NonEmpty Scanner this, Pattern pattern) {
         ensureOpen();
         if (pattern == null)
@@ -1678,7 +1678,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if no line was found
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public String nextLine(@GuardSatisfied @NonEmpty Scanner this) {
         modCount++;
         if (hasNextPattern == linePattern())
@@ -1928,7 +1928,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public boolean nextBoolean(@GuardSatisfied @NonEmpty Scanner this)  {
         clearCaches();
         return Boolean.parseBoolean(next(boolPattern()));
@@ -1995,7 +1995,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned byte nextByte(@GuardSatisfied @NonEmpty Scanner this) {
          return nextByte(defaultRadix);
     }
@@ -2031,7 +2031,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned byte nextByte(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Byte)
@@ -2115,7 +2115,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned short nextShort(@GuardSatisfied @NonEmpty Scanner this) {
         return nextShort(defaultRadix);
     }
@@ -2151,7 +2151,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned short nextShort(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Short)
@@ -2259,7 +2259,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned int nextInt(@GuardSatisfied @NonEmpty Scanner this) {
         return nextInt(defaultRadix);
     }
@@ -2295,7 +2295,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned int nextInt(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Integer)
@@ -2379,7 +2379,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned long nextLong(@GuardSatisfied @NonEmpty Scanner this) {
         return nextLong(defaultRadix);
     }
@@ -2415,7 +2415,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public @PolySigned long nextLong(@GuardSatisfied @NonEmpty Scanner this, @Positive @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Long)
@@ -2541,7 +2541,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public float nextFloat(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Float)) {
@@ -2610,7 +2610,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public double nextDouble(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof Double)) {
@@ -2695,7 +2695,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigInteger nextBigInteger(@GuardSatisfied @NonEmpty Scanner this) {
         return nextBigInteger(defaultRadix);
     }
@@ -2726,7 +2726,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if the radix is out of range
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigInteger nextBigInteger(@GuardSatisfied @NonEmpty Scanner this, @IntRange(from = 2, to = 36) int radix) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof BigInteger val)
@@ -2793,7 +2793,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * @throws NoSuchElementException if the input is exhausted
      * @throws IllegalStateException if this scanner is closed
      */
-    @SideEffectsOnly("this")
+    // @SideEffectsOnly("this")
     public BigDecimal nextBigDecimal(@GuardSatisfied @NonEmpty Scanner this) {
         // Check cached result
         if ((typeCache != null) && (typeCache instanceof BigDecimal val)) {

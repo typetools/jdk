@@ -32,7 +32,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.BufferedReader;
@@ -978,7 +978,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         public Provider<T> next(@NonEmpty LayerLookupIterator<T> this) {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -1299,7 +1299,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @SuppressWarnings("removal")
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
             if (acc == null) {
                 return nextService();
@@ -1330,7 +1330,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
                     return (first.hasNext() || second.hasNext());
                 }
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 public Provider<S> next(/*@NonEmpty Iterator<Provider<S>> this*/) {
                     if (first.hasNext()) {
                         return first.next();
@@ -1419,7 +1419,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
             public S next(/*@NonEmpty Iterator<S> this*/) {
                 checkReloadCount();
                 S next;

@@ -28,7 +28,7 @@ package java.nio.charset;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import jdk.internal.misc.ThreadTracker;
 import jdk.internal.misc.VM;
@@ -370,7 +370,7 @@ public abstract class Charset
                     return getNext();
                 }
 
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 public CharsetProvider next(/*@NonEmpty Iterator<CharsetProvider> this*/) {
                     if (!getNext())
                         throw new NoSuchElementException();

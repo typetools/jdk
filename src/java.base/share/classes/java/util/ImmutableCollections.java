@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -389,7 +389,7 @@ class ImmutableCollections {
             return cursor != size;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         public E next(@NonEmpty ListItr<E> this) {
             try {
                 int i = cursor;
@@ -863,7 +863,7 @@ class ImmutableCollections {
                 }
 
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 @SuppressWarnings("unchecked")
                 public E next(/*@NonEmpty Iterator<E> this*/) {
                     if (idx == 1) {
@@ -1001,7 +1001,7 @@ class ImmutableCollections {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
             public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
                     E element;
@@ -1323,7 +1323,7 @@ class ImmutableCollections {
                 return remaining > 0;
             }
 
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {

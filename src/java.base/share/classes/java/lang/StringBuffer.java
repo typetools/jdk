@@ -35,7 +35,7 @@ import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.common.aliasing.qual.Unique;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
@@ -304,7 +304,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
     /**
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    @SideEffectsOnly("#3")
+    // @SideEffectsOnly("#3")
     @Override
     public synchronized void getChars(int srcBegin, int srcEnd, char[] dst,
                                       @IndexOrHigh({"#3"}) int dstBegin)
