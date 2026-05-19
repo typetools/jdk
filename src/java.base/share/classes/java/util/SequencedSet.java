@@ -56,6 +56,7 @@ public interface SequencedSet<E> extends SequencedCollection<E>, Set<E> {
      *
      * @return a reverse-ordered view of this collection, as a {@code SequencedSet}
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     SequencedSet<E> reversed();
 }

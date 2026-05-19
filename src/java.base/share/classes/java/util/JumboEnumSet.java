@@ -35,10 +35,10 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.dataflow.qual.Pure;
@@ -72,6 +72,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         elements = new long[(universe.length + 63) >>> 6];
     }
 
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void addRange(E from, E to) {
         int fromIndex = from.ordinal() >>> 6;
@@ -89,6 +90,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         size = to.ordinal() - from.ordinal() + 1;
     }
 
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void addAll() {
         for (int i = 0; i < elements.length; i++)
@@ -97,6 +99,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         size = universe.length;
     }
 
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void complement() {
         for (int i = 0; i < elements.length; i++)
@@ -169,6 +172,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         }
 
         @Override
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == 0)
@@ -233,6 +237,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if {@code e} is null
      */
     @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         typeCheck(e);
@@ -254,6 +259,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @param e element to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object e) {
         if (e == null)
@@ -305,6 +311,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @throws NullPointerException if the specified collection or any of
      *     its elements are null
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(Collection<? extends E> c) {
         if (!(c instanceof JumboEnumSet<?> es))
@@ -331,6 +338,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
@@ -352,6 +360,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      * @return {@code true} if this set changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
         if (!(c instanceof JumboEnumSet<?> es))
@@ -371,6 +380,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
     /**
      * Removes all of the elements from this set.
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         Arrays.fill(elements, 0);

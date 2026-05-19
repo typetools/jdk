@@ -32,10 +32,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.propkey.qual.PropertyKey;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -239,6 +239,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @see #getProperty
      * @since    1.2
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @Nullable Object setProperty(@GuardSatisfied Properties this, @PropertyKey String key, String value) {
         return put(key, value);
@@ -1365,24 +1366,28 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object put(Object key, Object value) {
         return map.put(key, value);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized void putAll(Map<?, ?> t) {
         map.putAll(t);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized void clear() {
         map.clear();
@@ -1430,8 +1435,10 @@ public class Properties extends Hashtable<Object,Object> {
         @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @Override public void clear() { entrySet.clear(); }
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 
@@ -1467,12 +1474,14 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
@@ -1513,30 +1522,35 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object putIfAbsent(Object key, Object value) {
         return map.putIfAbsent(key, value);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean replace(Object key, Object oldValue, Object newValue) {
         return map.replace(key, oldValue, newValue);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object replace(Object key, Object value) {
         return map.replace(key, value);
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfAbsent(Object key,
             Function<? super Object, ? extends @PolyNull Object> mappingFunction) {
@@ -1544,6 +1558,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfPresent(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
@@ -1551,6 +1566,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object compute(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {

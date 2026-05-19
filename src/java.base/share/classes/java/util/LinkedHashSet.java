@@ -26,10 +26,10 @@
 package java.util;
 
 import org.checkerframework.dataflow.qual.Deterministic;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * <p>Hash table and linked list implementation of the {@code Set} interface,
@@ -210,6 +210,7 @@ public class LinkedHashSet<E>
      * @since 1.8
      */
     @Override
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);
@@ -248,6 +249,7 @@ public class LinkedHashSet<E>
      *
      * @since 21
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
         map().putFirst(e, PRESENT);
@@ -261,6 +263,7 @@ public class LinkedHashSet<E>
      *
      * @since 21
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {
         map().putLast(e, PRESENT);
@@ -294,6 +297,7 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeFirst() {
         return map().sequencedKeySet().removeFirst();
@@ -305,6 +309,7 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeLast() {
         return map().sequencedKeySet().removeLast();
@@ -319,6 +324,7 @@ public class LinkedHashSet<E>
      * @return {@inheritDoc}
      * @since 21
      */
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public SequencedSet<E> reversed() {
         class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
