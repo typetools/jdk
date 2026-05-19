@@ -26,6 +26,7 @@
 package java.util;
 
 import java.util.Objects;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -374,6 +375,7 @@ class ReverseOrderListView<E> implements List<E> {
         return base.removeIf(filter);
     }
 
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(UnaryOperator<E> operator) {
         checkModifiable();
         base.replaceAll(operator);
