@@ -1550,7 +1550,6 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfAbsent(Object key,
             Function<? super Object, ? extends @PolyNull Object> mappingFunction) {
@@ -1558,7 +1557,6 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfPresent(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
@@ -1566,7 +1564,6 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object compute(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
