@@ -763,10 +763,12 @@ public class WeakHashMap<K,V>
         }
 
         @SuppressWarnings("unchecked")
+        @Pure
         public K getKey() {
             return (K) WeakHashMap.unmaskNull(get());
         }
 
+        @Pure
         public V getValue() {
             return value;
         }
@@ -779,6 +781,7 @@ public class WeakHashMap<K,V>
             return oldValue;
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
@@ -793,6 +796,7 @@ public class WeakHashMap<K,V>
             return false;
         }
 
+        @Pure
         public int hashCode() {
             K k = getKey();
             V v = getValue();

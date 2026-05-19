@@ -261,6 +261,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
+    @Pure
     public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
@@ -281,6 +282,7 @@ public class CopyOnWriteArrayList<E>
      *         {@code -1} if the element is not found.
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
+    @Pure
     public int indexOf(E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
@@ -289,6 +291,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * {@inheritDoc}
      */
+    @Pure
     public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
@@ -310,6 +313,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is greater
      *         than or equal to the current size of this list
      */
+    @Pure
     public int lastIndexOf(E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
@@ -422,6 +426,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @Pure
     public E get(int index) {
         return elementAt(getArray(), index);
     }
@@ -432,6 +437,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     public E getFirst() {
         Object[] es = getArray();
         if (es.length == 0)
@@ -446,6 +452,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     public E getLast() {
         Object[] es = getArray();
         if (es.length == 0)
@@ -1153,6 +1160,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return the hash code value for this list
      */
+    @Pure
     public int hashCode() {
         Object[] es = getArray();
         return hashCodeOfRange(es, 0, es.length);
@@ -1415,6 +1423,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public int indexOf(Object o) {
             final Object[] es;
             final int offset;
@@ -1428,6 +1437,7 @@ public class CopyOnWriteArrayList<E>
             return (i == -1) ? -1 : i - offset;
         }
 
+        @Pure
         public int lastIndexOf(Object o) {
             final Object[] es;
             final int offset;
@@ -1473,6 +1483,7 @@ public class CopyOnWriteArrayList<E>
             return Arrays.toString(toArray());
         }
 
+        @Pure
         public int hashCode() {
             final Object[] es;
             final int offset;
@@ -1485,6 +1496,7 @@ public class CopyOnWriteArrayList<E>
             return hashCodeOfRange(es, offset, offset + size);
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -1519,6 +1531,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public E get(int index) {
             synchronized (lock) {
                 rangeCheck(index);
@@ -1537,6 +1550,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public E getLast() {
             synchronized (lock) {
                 if (size == 0)
@@ -1546,6 +1560,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public int size() {
             synchronized (lock) {
                 checkForComodification();
@@ -1803,6 +1818,7 @@ public class CopyOnWriteArrayList<E>
                 throw new NoSuchElementException();
         }
 
+        @Pure
         public boolean hasPrevious() {
             return previousIndex() >= 0;
         }
@@ -1814,10 +1830,12 @@ public class CopyOnWriteArrayList<E>
                 throw new NoSuchElementException();
         }
 
+        @Pure
         public int nextIndex() {
             return it.nextIndex() - offset;
         }
 
+        @Pure
         public int previousIndex() {
             return it.previousIndex() - offset;
         }
@@ -1877,6 +1895,7 @@ public class CopyOnWriteArrayList<E>
                     it = base.listIterator(base.size());
                 }
             }
+            @Pure
             public boolean hasNext() { return it.hasPrevious(); }
             // @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
@@ -1899,6 +1918,7 @@ public class CopyOnWriteArrayList<E>
                 }
             }
 
+            @Pure
             public boolean hasNext() {
                 return it.hasPrevious();
             }
@@ -1909,6 +1929,7 @@ public class CopyOnWriteArrayList<E>
                 return it.previous();
             }
 
+            @Pure
             public boolean hasPrevious() {
                 return it.hasNext();
             }
@@ -1917,10 +1938,12 @@ public class CopyOnWriteArrayList<E>
                 return it.next();
             }
 
+            @Pure
             public int nextIndex() {
                 return size - it.nextIndex();
             }
 
+            @Pure
             public int previousIndex() {
                 return nextIndex() - 1;
             }
@@ -1989,15 +2012,18 @@ public class CopyOnWriteArrayList<E>
             base.clear();
         }
 
+        @Pure
         public boolean contains(Object o) {
             return base.contains(o);
         }
 
+        @Pure
         public boolean containsAll(Collection<?> c) {
             return base.containsAll(c);
         }
 
         // copied from AbstractList
+        @Pure
         public boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -2016,6 +2042,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         // copied from AbstractList
+        @Pure
         public int hashCode() {
             int hashCode = 1;
             for (E e : this)
@@ -2023,6 +2050,7 @@ public class CopyOnWriteArrayList<E>
             return hashCode;
         }
 
+        @Pure
         public boolean isEmpty() {
             return base.isEmpty();
         }
@@ -2055,6 +2083,7 @@ public class CopyOnWriteArrayList<E>
             return base.retainAll(c);
         }
 
+        @Pure
         public int size() {
             return base.size();
         }
@@ -2132,12 +2161,14 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public E get(int i) {
             synchronized (lock) {
                 return base.get(base.size() - i - 1);
             }
         }
 
+        @Pure
         public E getFirst() {
             synchronized (lock) {
                 int size = base.size();
@@ -2148,6 +2179,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public E getLast() {
             synchronized (lock) {
                 if (base.size() == 0)
@@ -2157,6 +2189,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public int indexOf(Object o) {
             synchronized (lock) {
                 int i = base.lastIndexOf(o);
@@ -2164,6 +2197,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @Pure
         public int lastIndexOf(Object o) {
             synchronized (lock) {
                 int i = base.indexOf(o);

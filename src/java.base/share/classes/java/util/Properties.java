@@ -1361,6 +1361,7 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @Pure
     public @Nullable Object get(Object key) {
         return map.get(key);
     }
@@ -1426,6 +1427,7 @@ public class Properties extends Hashtable<Object,Object> {
             this.entrySet = entrySet;
         }
 
+        @Pure
         @Pure @Override public int size() { return entrySet.size(); }
         @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
@@ -1459,11 +1461,13 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             return o == this || entrySet.equals(o);
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return entrySet.hashCode();
         }
@@ -1494,11 +1498,13 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @Pure
     public synchronized boolean equals(Object o) {
         return map.equals(o);
     }
 
     @Override
+    @Pure
     public synchronized int hashCode() {
         return map.hashCode();
     }

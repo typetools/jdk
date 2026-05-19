@@ -435,6 +435,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getFirst(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         E e = elementAt(elements, head);
         if (e == null)
@@ -445,6 +446,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getLast(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         final Object[] es = elements;
         E e = elementAt(es, dec(tail, es.length));
@@ -601,6 +603,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E element(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         return getFirst();
     }

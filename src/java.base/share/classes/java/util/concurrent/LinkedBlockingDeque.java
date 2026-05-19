@@ -591,6 +591,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getFirst(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekFirst();
         if (x == null) throw new NoSuchElementException();
@@ -600,6 +601,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getLast(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekLast();
         if (x == null) throw new NoSuchElementException();
@@ -760,6 +762,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
+    @Pure
     public E element(@NonEmpty LinkedBlockingDeque<E> this) {
         return getFirst();
     }

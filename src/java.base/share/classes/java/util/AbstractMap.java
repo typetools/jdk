@@ -431,6 +431,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                 }
 
                 @EnsuresNonEmptyIf(result = true, expression = "this")
+                @Pure
                 public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
                 }
@@ -503,6 +504,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                 }
 
                 @EnsuresNonEmptyIf(result = true, expression = "this")
+                @Pure
                 public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
                 }
@@ -991,9 +993,12 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() { view().clear(); }
+        @Pure
         public boolean contains(Object o) { return view().contains(o); }
+        @Pure
         public boolean containsAll(Collection<?> c) { return view().containsAll(c); }
         public void forEach(Consumer<? super E> c) { view().forEach(c); }
+        @Pure
         public boolean isEmpty() { return view().isEmpty(); }
         public Iterator<E> iterator() { return view().iterator(); }
         public Stream<E> parallelStream() { return view().parallelStream(); }
@@ -1009,6 +1014,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<?> c) { return view().retainAll(c); }
+        @Pure
         public int size() { return view().size(); }
         public Spliterator<E> spliterator() { return view().spliterator(); }
         public Stream<E> stream() { return view().stream(); }

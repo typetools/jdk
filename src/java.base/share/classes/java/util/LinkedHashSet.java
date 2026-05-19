@@ -328,16 +328,20 @@ public class LinkedHashSet<E>
     @DoesNotUnrefineReceiver("modifiability")
     public SequencedSet<E> reversed() {
         class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
+            @Pure
             public int size()                  { return LinkedHashSet.this.size(); }
             public Iterator<E> iterator()      { return map().sequencedKeySet().reversed().iterator(); }
             public boolean add(E e)            { return LinkedHashSet.this.add(e); }
             public void addFirst(E e)          { LinkedHashSet.this.addLast(e); }
             public void addLast(E e)           { LinkedHashSet.this.addFirst(e); }
+            @Pure
             public E getFirst()                { return LinkedHashSet.this.getLast(); }
+            @Pure
             public E getLast()                 { return LinkedHashSet.this.getFirst(); }
             public E removeFirst()             { return LinkedHashSet.this.removeLast(); }
             public E removeLast()              { return LinkedHashSet.this.removeFirst(); }
             public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
+            @Pure
             public Object[] toArray() { return map().keysToArray(new Object[map.size()], true); }
             public <T> T[] toArray(T[] a) { return map().keysToArray(map.prepareArray(a), true); }
         }

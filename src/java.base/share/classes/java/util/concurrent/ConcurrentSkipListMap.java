@@ -1323,6 +1323,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *         with the keys currently in the map
      * @throws NullPointerException if the specified key is null
      */
+    @Pure
     public V get(Object key) {
         return doGet(key);
     }
@@ -1890,6 +1891,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
     /* ------ SortedMap API methods ------ */
 
+    @Pure
     public Comparator<? super K> comparator() {
         return comparator;
     }
@@ -2280,6 +2282,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public K floor(K e) { return m.floorKey(e); }
         public K ceiling(K e) { return m.ceilingKey(e); }
         public K higher(K e) { return m.higherKey(e); }
+        @Pure
         public Comparator<? super K> comparator() { return m.comparator(); }
         public K first() { return m.firstKey(); }
         public K last() { return m.lastKey(); }
@@ -2300,6 +2303,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
                 ? ((ConcurrentSkipListMap<K,V>)m).new KeyIterator()
                 : ((SubMap<K,V>)m).new SubMapKeyIterator();
         }
+        @Pure
         public boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -2443,6 +2447,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public void clear() {
             m.clear();
         }
+        @Pure
         public boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -2746,6 +2751,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return inBounds(key, m.comparator) && m.containsKey(key);
         }
 
+        @Pure
         public V get(Object key) {
             if (key == null) throw new NullPointerException();
             return (!inBounds(key, m.comparator)) ? null : m.get(key);
@@ -2842,6 +2848,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         /* ----------------  SortedMap API methods -------------- */
 
+        @Pure
         public Comparator<? super K> comparator() {
             Comparator<? super K> cmp = m.comparator();
             if (isDescending)

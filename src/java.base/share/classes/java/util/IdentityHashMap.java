@@ -792,6 +792,7 @@ public class IdentityHashMap<K,V>
         }
 
         // @SideEffectsOnly("this")
+        @Pure
         protected int nextIndex(@NonEmpty IdentityHashMapIterator<T> this) {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
@@ -932,12 +933,14 @@ public class IdentityHashMap<K,V>
             }
 
             @SuppressWarnings("unchecked")
+            @Pure
             public K getKey() {
                 checkIndexForEntryUse();
                 return (K) unmaskNull(traversalTable[index]);
             }
 
             @SuppressWarnings("unchecked")
+            @Pure
             public V getValue() {
                 checkIndexForEntryUse();
                 return (V) traversalTable[index+1];
@@ -956,6 +959,7 @@ public class IdentityHashMap<K,V>
                 return oldValue;
             }
 
+            @Pure
             public boolean equals(@Nullable Object o) {
                 if (index < 0)
                     return super.equals(o);
@@ -965,6 +969,7 @@ public class IdentityHashMap<K,V>
                         && e.getValue() == traversalTable[index+1];
             }
 
+            @Pure
             public int hashCode() {
                 if (lastReturnedIndex < 0)
                     return super.hashCode();
@@ -1089,6 +1094,7 @@ public class IdentityHashMap<K,V>
         public void clear() {
             IdentityHashMap.this.clear();
         }
+        @Pure
         public int hashCode() {
             int result = 0;
             for (K key : this)

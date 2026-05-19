@@ -659,8 +659,11 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             this.next = next;
         }
 
+        @Pure
         public final K getKey()     { return key; }
+        @Pure
         public final V getValue()   { return val; }
+        @Pure
         public final int hashCode() { return key.hashCode() ^ val.hashCode(); }
         public final String toString() {
             return Helpers.mapEntryToString(key, val);
@@ -671,6 +674,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             throw new UnsupportedOperationException();
         }
 
+        @Pure
         public final boolean equals(Object o) {
             Object k, v, u; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
@@ -845,6 +849,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     /* ---------------- Public operations -------------- */
 
     /**
+     @Pure
      * Creates a new, empty map with the default initial table size (16).
      */
     public ConcurrentHashMap() {
@@ -1334,6 +1339,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @return the hash code value for this map
      */
+    @Pure
     public int hashCode() {
         int h = 0;
         Node<K,V>[] t;
@@ -3595,13 +3601,17 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             this.val = val;
             this.map = map;
         }
+        @Pure
         public K getKey()        { return key; }
+        @Pure
         public V getValue()      { return val; }
+        @Pure
         public int hashCode()    { return key.hashCode() ^ val.hashCode(); }
         public String toString() {
             return Helpers.mapEntryToString(key, val);
         }
 
+        @Pure
         public boolean equals(Object o) {
             Object k, v; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
@@ -4784,6 +4794,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return added;
         }
 
+        @Pure
         public int hashCode() {
             int h = 0;
             for (K e : this)
@@ -4791,6 +4802,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return h;
         }
 
+        @Pure
         public boolean equals(Object o) {
             Set<?> c;
             return ((o instanceof Set) &&
@@ -4971,6 +4983,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return map.removeEntryIf(filter);
         }
 
+        @Pure
         public final int hashCode() {
             int h = 0;
             Node<K,V>[] t;
@@ -4983,6 +4996,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return h;
         }
 
+        @Pure
         public final boolean equals(Object o) {
             Set<?> c;
             return ((o instanceof Set) &&
@@ -5365,6 +5379,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
+        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<? super K, ? extends U> searchFunction;
@@ -5409,6 +5424,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
+        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<? super V, ? extends U> searchFunction;
@@ -5453,6 +5469,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
+        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<Entry<K,V>, ? extends U> searchFunction;
@@ -5497,6 +5514,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
+        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final BiFunction<? super K, ? super V, ? extends U> searchFunction;

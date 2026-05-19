@@ -357,6 +357,7 @@ public class Vector<E>
             int count = 0;
 
             @EnsuresNonEmptyIf(result = true, expression = "this")
+            @Pure
             public boolean hasMoreElements() {
                 return count < elementCount;
             }
@@ -493,6 +494,7 @@ public class Vector<E>
      * @throws ArrayIndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index >= size()})
      */
+    @Pure
     public synchronized E elementAt(@NonNegative int index) {
         if (index >= elementCount) {
             throw new ArrayIndexOutOfBoundsException(index + " >= " + elementCount);
@@ -1389,14 +1391,17 @@ public class Vector<E>
             cursor = index;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return cursor != 0;
         }
 
+        @Pure
         public int nextIndex() {
             return cursor;
         }
 
+        @Pure
         public int previousIndex() {
             return cursor - 1;
         }

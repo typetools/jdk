@@ -128,6 +128,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * Distinguished non-null value for representing null values.
      */
     private static final Object NULL = new Object() {
+        @Pure
         public int hashCode() {
             return 0;
         }
@@ -265,6 +266,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * The {@link #containsKey containsKey} operation may be used to
      * distinguish these two cases.
      */
+    @Pure
     public @Nullable V get(@UnknownSignedness @Nullable Object key) {
         return (isValidKey(key) ?
                 unmaskNull(vals[((Enum<?>)key).ordinal()]) : null);
@@ -671,6 +673,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
                 this.index = index;
             }
 
+            @Pure
             public K getKey() {
                 checkIndexForEntryUse();
                 return keyUniverse[index];
@@ -679,6 +682,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             @CFComment({"nullness: Value returned by unmaskNull",
                         "will be of type V (not @Nullable V) for mapped value"})
             @SuppressWarnings("nullness:return")
+            @Pure
             public V getValue() {
                 checkIndexForEntryUse();
                 return unmaskNull(vals[index]);
@@ -694,6 +698,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
                 return oldValue;
             }
 
+            @Pure
             public boolean equals(Object o) {
                 if (index < 0)
                     return o == this;
@@ -708,6 +713,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
                          (ourValue != null && ourValue.equals(hisValue))));
             }
 
+            @Pure
             public int hashCode() {
                 if (index < 0)
                     return super.hashCode();
@@ -741,6 +747,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @param o the object to be compared for equality with this map
      * @return {@code true} if the specified object is equal to this map
      */
+    @Pure
     public boolean equals(@Nullable Object o) {
         if (this == o)
             return true;
@@ -769,6 +776,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         return true;
     }
 
+    @Pure
     private boolean equals(EnumMap<?,?> em) {
         if (em.size != size)
             return false;
@@ -791,6 +799,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * Returns the hash code value for this map.  The hash code of a map is
      * defined to be the sum of the hash codes of each entry in the map.
      */
+    @Pure
     public int hashCode() {
         int h = 0;
 

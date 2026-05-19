@@ -124,6 +124,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the value of the specified attribute name, or null if
      *         not found.
      */
+    @Pure
     public Object get(Object name) {
         return map.get(name);
     }
@@ -143,6 +144,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      * @throws IllegalArgumentException if the attribute name is invalid
      */
+    @Pure
     public String getValue(String name) {
         return (String)get(Name.of(name));
     }
@@ -160,6 +162,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the String value of the specified Attribute.Name, or null if
      *         not found.
      */
+    @Pure
     public String getValue(Name name) {
         return (String)get(name);
     }
@@ -322,6 +325,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns the hash code value for this Map.
      */
+    @Pure
     public int hashCode() {
         return map.hashCode();
     }
@@ -549,6 +553,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @return true if this attribute name is equal to the
          *         specified attribute object
          */
+        @Pure
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
@@ -560,6 +565,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Computes the hash value for this attribute name.
          */
+        @Pure
         public int hashCode() {
             return hashCode;
         }

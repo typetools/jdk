@@ -606,6 +606,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      *         or {@code null} if this queue uses the natural
      *         ordering of its elements
      */
+    @Pure
     public Comparator<? super E> comparator() {
         return comparator;
     }
@@ -630,6 +631,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
         return Integer.MAX_VALUE;
     }
 
+    @Pure
     private int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o != null) {
             final Object[] es = queue;

@@ -1472,10 +1472,12 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
 
         // Map.Entry Ops
 
+        @Pure
         public K getKey() {
             return key;
         }
 
+        @Pure
         public V getValue() {
             return value;
         }
@@ -1491,6 +1493,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return oldValue;
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
@@ -1499,6 +1502,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
                (value==null ? e.getValue()==null : value.equals(e.getValue()));
         }
 
+        @Pure
         public int hashCode() {
             return hash ^ Objects.hashCode(value);
         }
@@ -1546,6 +1550,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         @EnsuresNonEmptyIf(result = true, expression = "this")
+        @Pure
         public boolean hasMoreElements() {
             Entry<?,?> e = entry;
             int i = index;

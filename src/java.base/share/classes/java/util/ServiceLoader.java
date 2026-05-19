@@ -734,6 +734,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
+        @Pure
         public S get() {
             if (factoryMethod != null) {
                 return invokeFactoryMethod();
@@ -833,11 +834,13 @@ public final @UsesObjectEquals class ServiceLoader<S>
         // when running with a security manager.
 
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hash(service, type, acc);
         }
 
         @Override
+        @Pure
         public boolean equals(Object ob) {
             return ob instanceof @SuppressWarnings("unchecked")ProviderImpl<?> that
                     && this.service == that.service

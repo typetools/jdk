@@ -452,6 +452,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             cursor = index;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return cursor != 0;
         }
@@ -469,10 +470,12 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             }
         }
 
+        @Pure
         public int nextIndex() {
             return cursor;
         }
 
+        @Pure
         public int previousIndex() {
             return cursor-1;
         }
@@ -786,6 +789,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
         }
 
+        @Pure
         private static <E> E get(List<E> list, int i) {
             try {
                 return list.get(i);
@@ -838,6 +842,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return root.set(offset + index, element);
         }
 
+        @Pure
         public E get(int index) {
             Objects.checkIndex(index, size);
             checkForComodification();

@@ -472,6 +472,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     public E getFirst() {
         if (size == 0) {
             throw new NoSuchElementException();
@@ -486,6 +487,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     public E getLast() {
         int last = size - 1;
         if (last < 0) {
@@ -718,6 +720,7 @@ public class ArrayList<E> extends AbstractList<E>
     /**
      * {@inheritDoc}
      */
+    @Pure
     public int hashCode() {
         int expectedModCount = modCount;
         int hash = hashCodeRange(0, size);
@@ -1184,18 +1187,21 @@ public class ArrayList<E> extends AbstractList<E>
             cursor = index;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return cursor != 0;
         }
 
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
+        @Pure
         public int nextIndex() {
             return cursor;
         }
 
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
+        @Pure
         public int previousIndex() {
             return cursor - 1;
         }
@@ -1320,6 +1326,7 @@ public class ArrayList<E> extends AbstractList<E>
             return oldValue;
         }
 
+        @Pure
         public E get(@NonNegative int index) {
             Objects.checkIndex(index, size);
             checkForComodification();
@@ -1433,6 +1440,7 @@ public class ArrayList<E> extends AbstractList<E>
             return a;
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
@@ -1447,18 +1455,21 @@ public class ArrayList<E> extends AbstractList<E>
             return equal;
         }
 
+        @Pure
         public int hashCode() {
             int hash = root.hashCodeRange(offset, offset + size);
             checkForComodification();
             return hash;
         }
 
+        @Pure
         public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.indexOfRange(o, offset, offset + size);
             checkForComodification();
             return index >= 0 ? index - offset : -1;
         }
 
+        @Pure
         public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
             int index = root.lastIndexOfRange(o, offset, offset + size);
             checkForComodification();
@@ -1466,6 +1477,7 @@ public class ArrayList<E> extends AbstractList<E>
         }
 
         @EnsuresNonEmptyIf(result = true, expression = "this")
+        @Pure
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
@@ -1504,6 +1516,7 @@ public class ArrayList<E> extends AbstractList<E>
                     return (E) elementData[offset + (lastRet = i)];
                 }
 
+                @Pure
                 public boolean hasPrevious() {
                     return cursor != 0;
                 }
@@ -1538,10 +1551,12 @@ public class ArrayList<E> extends AbstractList<E>
                     }
                 }
 
+                @Pure
                 public int nextIndex() {
                     return cursor;
                 }
 
+                @Pure
                 public int previousIndex() {
                     return cursor - 1;
                 }

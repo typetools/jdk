@@ -929,6 +929,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getFirst(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(peekFirst());
     }
@@ -936,6 +937,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E getLast(@NonEmpty ConcurrentLinkedDeque<E> this) {
         return screenNullResult(peekLast());
     }
@@ -1057,6 +1059,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public E element(@NonEmpty ConcurrentLinkedDeque<E> this)        { return getFirst(); }
 
     /**

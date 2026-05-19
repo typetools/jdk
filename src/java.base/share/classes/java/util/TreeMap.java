@@ -312,6 +312,7 @@ public class TreeMap<K,V>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     public @Nullable V get(@GuardSatisfied TreeMap<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Entry<K,V> p = getEntry(key);
         return (p==null ? null : p.value);
@@ -1547,6 +1548,7 @@ public class TreeMap<K,V>
         public E higher(E e) { return m.higherKey(e); }
         public E first() { return m.firstKey(); }
         public E last() { return m.lastKey(); }
+        @Pure
         public Comparator<? super E> comparator() { return m.comparator(); }
         public E pollFirst() {
             Map.Entry<E,?> e = m.pollFirstEntry();
@@ -1995,6 +1997,7 @@ public class TreeMap<K,V>
             return !inRange(key) ? null : m.computeIfPresent(key, remappingFunction);
         }
 
+        @Pure
         public final V get(Object key) {
             return !inRange(key) ? null :  m.get(key);
         }
@@ -2366,6 +2369,7 @@ public class TreeMap<K,V>
             super(m, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
         }
 
+        @Pure
         public Comparator<? super K> comparator() {
             return m.comparator();
         }
@@ -2458,6 +2462,7 @@ public class TreeMap<K,V>
         private final Comparator<? super K> reverseComparator =
             Collections.reverseOrder(m.comparator);
 
+        @Pure
         public Comparator<? super K> comparator() {
             return reverseComparator;
         }
@@ -2568,6 +2573,7 @@ public class TreeMap<K,V>
         public SortedMap<K,V> headMap(K toKey) { throw new InternalError(); }
         @SideEffectFree
         public SortedMap<K,V> tailMap(K fromKey) { throw new InternalError(); }
+        @Pure
         public Comparator<? super K> comparator() { throw new InternalError(); }
     }
 
@@ -2605,6 +2611,7 @@ public class TreeMap<K,V>
          *
          * @return the key
          */
+        @Pure
         public K getKey() {
             return key;
         }
@@ -2614,6 +2621,7 @@ public class TreeMap<K,V>
          *
          * @return the value associated with the key
          */
+        @Pure
         public V getValue() {
             return value;
         }
@@ -2631,12 +2639,14 @@ public class TreeMap<K,V>
             return oldValue;
         }
 
+        @Pure
         public boolean equals(Object o) {
             return o instanceof Map.Entry<?, ?> e
                     && valEquals(key,e.getKey())
                     && valEquals(value,e.getValue());
         }
 
+        @Pure
         public int hashCode() {
             int keyHash = (key==null ? 0 : key.hashCode());
             int valueHash = (value==null ? 0 : value.hashCode());

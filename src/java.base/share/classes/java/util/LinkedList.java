@@ -272,6 +272,7 @@ public class LinkedList<E>
      * @return the first element in this list
      * @throws NoSuchElementException if this list is empty
      */
+    @Pure
     public E getFirst(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> f = first;
         if (f == null)
@@ -285,6 +286,7 @@ public class LinkedList<E>
      * @return the last element in this list
      * @throws NoSuchElementException if this list is empty
      */
+    @Pure
     public E getLast(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> l = last;
         if (l == null)
@@ -727,6 +729,7 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
      */
+    @Pure
     public E element(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         return getFirst();
     }
@@ -991,6 +994,7 @@ public class LinkedList<E>
             return lastReturned.item;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return nextIndex > 0;
         }
@@ -1007,10 +1011,12 @@ public class LinkedList<E>
             return lastReturned.item;
         }
 
+        @Pure
         public int nextIndex() {
             return nextIndex;
         }
 
+        @Pure
         public int previousIndex() {
             return nextIndex - 1;
         }
@@ -1094,6 +1100,7 @@ public class LinkedList<E>
      * Adapter to provide descending iterators via ListItr.previous
      */
     private class DescendingIterator implements Iterator<E> {
+        @Pure
         private final ListItr itr = new ListItr(size());
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
@@ -1419,10 +1426,12 @@ public class LinkedList<E>
             return rlist.removeAll(c);
         }
 
+        @Pure
         public boolean containsAll(Collection<?> c) {
             return rlist.containsAll(c);
         }
 
+        @Pure
         public boolean isEmpty() {
             return rlist.isEmpty();
         }
@@ -1453,10 +1462,12 @@ public class LinkedList<E>
             return rlist.iterator();
         }
 
+        @Pure
         public int hashCode() {
             return rlist.hashCode();
         }
 
+        @Pure
         public boolean equals(Object o) {
             return rlist.equals(o);
         }
@@ -1540,10 +1551,12 @@ public class LinkedList<E>
             return rdeque.pollFirst();
         }
 
+        @Pure
         public E peekLast() {
             return rdeque.peekLast();
         }
 
+        @Pure
         public E peekFirst() {
             return rdeque.peekFirst();
         }
@@ -1578,18 +1591,22 @@ public class LinkedList<E>
             return rdeque.poll();
         }
 
+        @Pure
         public E element() {
             return rdeque.element();
         }
 
+        @Pure
         public E peek() {
             return rdeque.peek();
         }
 
+        @Pure
         public int lastIndexOf(Object o) {
             return rlist.lastIndexOf(o);
         }
 
+        @Pure
         public int indexOf(Object o) {
             return rlist.indexOf(o);
         }
@@ -1612,6 +1629,7 @@ public class LinkedList<E>
             return rlist.set(index, element);
         }
 
+        @Pure
         public E get(int index) {
             return rlist.get(index);
         }
@@ -1646,10 +1664,12 @@ public class LinkedList<E>
             return rlist.add(e);
         }
 
+        @Pure
         public int size() {
             return rlist.size();
         }
 
+        @Pure
         public boolean contains(Object o) {
             return rlist.contains(o);
         }
@@ -1678,10 +1698,12 @@ public class LinkedList<E>
             return rdeque.removeFirst();
         }
 
+        @Pure
         public E getLast() {
             return rdeque.getLast();
         }
 
+        @Pure
         public E getFirst() {
             return rdeque.getFirst();
         }

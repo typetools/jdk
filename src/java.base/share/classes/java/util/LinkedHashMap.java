@@ -769,7 +769,9 @@ public class LinkedHashMap<K,V>
         }
         public final void addFirst(K k) { throw new UnsupportedOperationException(); }
         public final void addLast(K k) { throw new UnsupportedOperationException(); }
+        @Pure
         public final K getFirst() { return nsee(reversed ? tail : head).key; }
+        @Pure
         public final K getLast() { return nsee(reversed ? head : tail).key; }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -885,7 +887,9 @@ public class LinkedHashMap<K,V>
         }
         public final void addFirst(V v) { throw new UnsupportedOperationException(); }
         public final void addLast(V v) { throw new UnsupportedOperationException(); }
+        @Pure
         public final V getFirst() { return nsee(reversed ? tail : head).value; }
+        @Pure
         public final V getLast() { return nsee(reversed ? head : tail).value; }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -1018,7 +1022,9 @@ public class LinkedHashMap<K,V>
         }
         public final void addFirst(Map.Entry<K,V> e) { throw new UnsupportedOperationException(); }
         public final void addLast(Map.Entry<K,V> e) { throw new UnsupportedOperationException(); }
+        @Pure
         public final Map.Entry<K,V> getFirst() { return nsee(reversed ? tail : head); }
+        @Pure
         public final Map.Entry<K,V> getLast() { return nsee(reversed ? head : tail); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -1119,6 +1125,7 @@ public class LinkedHashMap<K,V>
         LinkedKeyIterator(boolean reversed) { super(reversed); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
+        @Pure
         public final K next(@NonEmpty LinkedKeyIterator this) { return nextNode().getKey(); }
     }
 
@@ -1185,32 +1192,39 @@ public class LinkedHashMap<K,V>
         // Object
         // inherit toString() from AbstractMap; it depends on entrySet()
 
+        @Pure
         public boolean equals(Object o) {
             return base.equals(o);
         }
 
+        @Pure
         public int hashCode() {
             return base.hashCode();
         }
 
         // Map
 
+        @Pure
         public int size() {
             return base.size();
         }
 
+        @Pure
         public boolean isEmpty() {
             return base.isEmpty();
         }
 
+        @Pure
         public boolean containsKey(Object key) {
             return base.containsKey(key);
         }
 
+        @Pure
         public boolean containsValue(Object value) {
             return base.containsValue(value);
         }
 
+        @Pure
         public V get(Object key) {
             return base.get(key);
         }
@@ -1251,6 +1265,7 @@ public class LinkedHashMap<K,V>
             return base.sequencedEntrySet().reversed();
         }
 
+        @Pure
         public V getOrDefault(Object key, V defaultValue) {
             return base.getOrDefault(key, defaultValue);
         }

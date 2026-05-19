@@ -1024,6 +1024,7 @@ public class ScheduledThreadPoolExecutor
         /**
          * Finds index of given object, or -1 if absent.
          */
+        @Pure
         private int indexOf(Object x) {
             if (x != null) {
                 if (x instanceof ScheduledFutureTask) {

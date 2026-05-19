@@ -326,6 +326,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     default E getFirst() {
         return this.first();
     }
@@ -339,6 +340,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @Pure
     default E getLast() {
         return this.last();
     }

@@ -291,6 +291,7 @@ public class Collections {
      * Gets the ith element from the given list by repositioning the specified
      * list listIterator.
      */
+    @Pure
     private static <T> T get(ListIterator<? extends T> i, int index) {
         T obj;
         int pos = i.nextIndex();
@@ -1281,10 +1282,12 @@ public class Collections {
             throw new UnsupportedOperationException();
         }
 
+        @Pure
         public E getFirst() {
             return sc().getFirst();
         }
 
+        @Pure
         public E getLast() {
             return sc().getLast();
         }
@@ -1335,7 +1338,9 @@ public class Collections {
         private static final long serialVersionUID = -9215047833775013803L;
 
         UnmodifiableSet(Set<? extends E> s)     {super(s);}
+        @Pure
         public boolean equals(Object o) {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()           {return c.hashCode();}
     }
 
@@ -1373,7 +1378,9 @@ public class Collections {
         private static final long serialVersionUID = -2153469532349793522L;
 
         UnmodifiableSequencedSet(SequencedSet<? extends E> s)    {super(s);}
+        @Pure
         public boolean equals(Object o)                          {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()                                    {return c.hashCode();}
 
         @SuppressWarnings("unchecked")
@@ -1429,6 +1436,7 @@ public class Collections {
 
         UnmodifiableSortedSet(SortedSet<E> s) {super(s); ss = s;}
 
+        @Pure
         public Comparator<? super E> comparator() {return ss.comparator();}
 
         // @SideEffectsOnly("this")
@@ -1604,9 +1612,12 @@ public class Collections {
             this.list = list;
         }
 
+        @Pure
         public boolean equals(Object o) {return o == this || list.equals(o);}
+        @Pure
         public int hashCode()           {return list.hashCode();}
 
+        @Pure
         public E get(int index) {return list.get(index);}
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -1623,7 +1634,9 @@ public class Collections {
         public E remove(int index) {
             throw new UnsupportedOperationException();
         }
+        @Pure
         public int indexOf(Object o)            {return list.indexOf(o);}
+        @Pure
         public int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -1840,7 +1853,9 @@ public class Collections {
             return values;
         }
 
+        @Pure
         public boolean equals(Object o) {return o == this || m.equals(o);}
+        @Pure
         public int hashCode()           {return m.hashCode();}
         public String toString()        {return m.toString();}
 
@@ -2078,6 +2093,7 @@ public class Collections {
              * setValue method.
              */
             @EnsuresNonEmptyIf(result = true, expression = "this")
+            @Pure
             public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
@@ -2098,6 +2114,7 @@ public class Collections {
                 }
                 return true;
             }
+            @Pure
             public boolean equals(Object o) {
                 if (o == this)
                     return true;
@@ -2120,12 +2137,16 @@ public class Collections {
                 UnmodifiableEntry(Map.Entry<? extends K, ? extends V> e)
                         {this.e = Objects.requireNonNull(e);}
 
+                @Pure
                 public K getKey()        {return e.getKey();}
+                @Pure
                 public V getValue()      {return e.getValue();}
                 public V setValue(V value) {
                     throw new UnsupportedOperationException();
                 }
+                @Pure
                 public int hashCode()    {return e.hashCode();}
+                @Pure
                 public boolean equals(Object o) {
                     if (this == o)
                         return true;
@@ -2252,6 +2273,7 @@ public class Collections {
         private final SortedMap<K, ? extends V> sm;
 
         UnmodifiableSortedMap(SortedMap<K, ? extends V> m) {super(m); sm = m; }
+        @Pure
         public Comparator<? super K> comparator()   { return sm.comparator(); }
         @SideEffectFree
         public SortedMap<K,V> subMap(K fromKey, K toKey)
@@ -2643,11 +2665,13 @@ public class Collections {
             super(s, mutex);
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return c.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return c.hashCode();}
         }
@@ -2718,6 +2742,7 @@ public class Collections {
             ss = s;
         }
 
+        @Pure
         public Comparator<? super E> comparator() {
             synchronized (mutex) {return ss.comparator();}
         }
@@ -2929,15 +2954,18 @@ public class Collections {
             this.list = list;
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return list.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return list.hashCode();}
         }
 
+        @Pure
         public E get(int index) {
             synchronized (mutex) {return list.get(index);}
         }
@@ -2957,9 +2985,11 @@ public class Collections {
             synchronized (mutex) {return list.remove(index);}
         }
 
+        @Pure
         public int indexOf(Object o) {
             synchronized (mutex) {return list.indexOf(o);}
         }
+        @Pure
         public int lastIndexOf(Object o) {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
@@ -3184,11 +3214,13 @@ public class Collections {
             }
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return m.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return m.hashCode();}
         }
@@ -3338,6 +3370,7 @@ public class Collections {
             sm = m;
         }
 
+        @Pure
         public Comparator<? super K> comparator() {
             synchronized (mutex) {return sm.comparator();}
         }
@@ -3817,6 +3850,7 @@ public class Collections {
             this.queue = queue;
         }
 
+        @Pure
         public E element()              {return queue.element();}
         @Pure
         public boolean equals(Object o) {return o == this || c.equals(o);}
@@ -3877,7 +3911,9 @@ public class Collections {
 
         CheckedSet(Set<E> s, Class<E> elementType) { super(s, elementType); }
 
+        @Pure
         public boolean equals(Object o) { return o == this || c.equals(o); }
+        @Pure
         public int hashCode()           { return c.hashCode(); }
     }
 
@@ -3931,6 +3967,7 @@ public class Collections {
             ss = s;
         }
 
+        @Pure
         public Comparator<? super E> comparator() { return ss.comparator(); }
         public E first()                   { return ss.first(); }
         public E last()                    { return ss.last(); }
@@ -4080,13 +4117,18 @@ public class Collections {
             this.list = list;
         }
 
+        @Pure
         public boolean equals(Object o)  { return o == this || list.equals(o); }
+        @Pure
         public int hashCode()            { return list.hashCode(); }
+        @Pure
         public E get(int index)          { return list.get(index); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index)       { return list.remove(index); }
+        @Pure
         public int indexOf(Object o)     { return list.indexOf(o); }
+        @Pure
         public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
         // @SideEffectsOnly("this")
@@ -4118,9 +4160,12 @@ public class Collections {
                 // @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty ListIterator<E> this*/)              { return i.next(); }
+                @Pure
                 public boolean hasPrevious() { return i.hasPrevious(); }
                 public E previous()          { return i.previous(); }
+                @Pure
                 public int nextIndex()       { return i.nextIndex(); }
+                @Pure
                 public int previousIndex()   { return i.previousIndex(); }
                 // @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
@@ -4303,7 +4348,9 @@ public class Collections {
         public void clear()                    { m.clear(); }
         public Set<K> keySet()                 { return m.keySet(); }
         public Collection<V> values()          { return m.values(); }
+        @Pure
         public boolean equals(Object o)        { return o == this || m.equals(o); }
+        @Pure
         public int hashCode()                  { return m.hashCode(); }
         public String toString()               { return m.toString(); }
 
@@ -4588,6 +4635,7 @@ public class Collections {
                 return modified;
             }
 
+            @Pure
             public boolean equals(Object o) {
                 if (o == this)
                     return true;
@@ -4617,8 +4665,11 @@ public class Collections {
                     this.valueType = Objects.requireNonNull(valueType);
                 }
 
+                @Pure
                 public K getKey()        { return e.getKey(); }
+                @Pure
                 public V getValue()      { return e.getValue(); }
+                @Pure
                 public int hashCode()    { return e.hashCode(); }
                 public String toString() { return e.toString(); }
 
@@ -4633,6 +4684,7 @@ public class Collections {
                         " value into map with value type " + valueType;
                 }
 
+                @Pure
                 public boolean equals(Object o) {
                     if (o == this)
                         return true;
@@ -4705,6 +4757,7 @@ public class Collections {
             sm = m;
         }
 
+        @Pure
         public Comparator<? super K> comparator() { return sm.comparator(); }
         public K firstKey()                       { return sm.firstKey(); }
         public K lastKey()                        { return sm.lastKey(); }
@@ -4784,6 +4837,7 @@ public class Collections {
             nm = m;
         }
 
+        @Pure
         public Comparator<? super K> comparator()   { return nm.comparator(); }
         public K firstKey()                           { return nm.firstKey(); }
         public K lastKey()                             { return nm.lastKey(); }
@@ -4995,9 +5049,12 @@ public class Collections {
         static final EmptyListIterator<Object> EMPTY_ITERATOR
             = new EmptyListIterator<>();
 
+        @Pure
         public boolean hasPrevious() { return false; }
         public E previous() { throw new NoSuchElementException(); }
+        @Pure
         public int nextIndex()     { return 0; }
+        @Pure
         public int previousIndex() { return -1; }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -5035,6 +5092,7 @@ public class Collections {
             = new EmptyEnumeration<>();
 
         @EnsuresNonEmptyIf(result = true, expression = "this")
+        @Pure
         public boolean hasMoreElements() { return false; }
         public E nextElement(@NonEmpty EmptyEnumeration<E> this) { throw new NoSuchElementException(); }
         public Iterator<E> asIterator() { return emptyIterator(); }
@@ -5130,6 +5188,7 @@ public class Collections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return 0;
         }
@@ -5253,14 +5312,17 @@ public class Collections {
             return a;
         }
 
+        @Pure
         public E get(int index) {
             throw new IndexOutOfBoundsException("Index: "+index);
         }
 
+        @Pure
         public boolean equals(Object o) {
             return (o instanceof List) && ((List<?>)o).isEmpty();
         }
 
+        @Pure
         public int hashCode() { return 1; }
 
         @Override
@@ -5397,10 +5459,12 @@ public class Collections {
         @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet()      {return emptySet();}
 
+        @Pure
         public boolean equals(Object o) {
             return (o instanceof Map) && ((Map<?,?>)o).isEmpty();
         }
 
+        @Pure
         public int hashCode()                      {return 0;}
 
         // Override default methods in Map
@@ -5621,6 +5685,7 @@ public class Collections {
             throw new UnsupportedOperationException();
         }
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(element);
         }
@@ -5699,6 +5764,7 @@ public class Collections {
             return singletonSpliterator(element);
         }
         @Override
+        @Pure
         public int hashCode() {
             return 31 + Objects.hashCode(element);
         }
@@ -5851,6 +5917,7 @@ public class Collections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(k) ^ Objects.hashCode(v);
         }
@@ -5912,14 +5979,17 @@ public class Collections {
             return n != 0 && eq(obj, element);
         }
 
+        @Pure
         public int indexOf(Object o) {
             return contains(o) ? 0 : -1;
         }
 
+        @Pure
         public int lastIndexOf(Object o) {
             return contains(o) ? n - 1 : -1;
         }
 
+        @Pure
         public E get(int index) {
             Objects.checkIndex(index, n);
             return element;
@@ -5972,6 +6042,7 @@ public class Collections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             if (n == 0) return 1;
             // hashCode of n repeating elements is 31^n + elementHash * Sum(31^k, k = 0..n-1)
@@ -5991,6 +6062,7 @@ public class Collections {
         }
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -6167,12 +6239,14 @@ public class Collections {
             return cmp.compare(t2, t1);
         }
 
+        @Pure
         public boolean equals(Object o) {
             return (o == this) ||
                 (o instanceof ReverseComparator2<?> that &&
                  cmp.equals(that.cmp));
         }
 
+        @Pure
         public int hashCode() {
             return cmp.hashCode() ^ Integer.MIN_VALUE;
         }
@@ -6203,6 +6277,7 @@ public class Collections {
             private final Iterator<T> i = c.iterator();
 
             @EnsuresNonEmptyIf(result = true, expression = "this")
+            @Pure
             public boolean hasMoreElements() {
                 return i.hasNext();
             }
@@ -6468,7 +6543,9 @@ public class Collections {
         @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)     { return s.toArray(a); }
         public String toString()          { return s.toString(); }
+        @Pure
         public int hashCode()             { return s.hashCode(); }
+        @Pure
         public boolean equals(Object o)   { return o == this || s.equals(o); }
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {return s.containsAll(c);}
@@ -6582,7 +6659,9 @@ public class Collections {
 
         public void addFirst(E e) { map().putFirst(e, Boolean.TRUE); }
         public void addLast(E e)  { map().putLast(e, Boolean.TRUE); }
+        @Pure
         public E getFirst()       { return nsee(map().firstEntry()); }
+        @Pure
         public E getLast()        { return nsee(map().lastEntry()); }
         public E removeFirst()    { return nsee(map().pollFirstEntry()); }
         public E removeLast()     { return nsee(map().pollLastEntry()); }
