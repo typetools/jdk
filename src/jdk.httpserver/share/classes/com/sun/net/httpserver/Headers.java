@@ -26,6 +26,7 @@
 package com.sun.net.httpserver;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -263,6 +264,7 @@ public class Headers implements Map<String,List<String>> {
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super String, ? super List<String>, ? extends List<String>> function) {
         var f = function.andThen(values -> {
             Objects.requireNonNull(values);
