@@ -683,6 +683,7 @@ public interface Map<K, V> {
          * @since 17
          */
         @SuppressWarnings("unchecked")
+        @SideEffectFree
         public static <K extends @NonNull Object, V extends @NonNull Object> Map.Entry<K, V> copyOf(Map.Entry<? extends K, ? extends V> e) {
             Objects.requireNonNull(e);
             if (e instanceof KeyValueHolder) {
@@ -1423,6 +1424,7 @@ public interface Map<K, V> {
      * @since 9
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     static <K, V> Map<K, V> of() {
         return (Map<K,V>) ImmutableCollections.EMPTY_MAP;
     }
@@ -1440,6 +1442,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @NonEmpty Map<K, V> of(K k1, V v1) {
         return new ImmutableCollections.Map1<>(k1, v1);
     }
@@ -1460,6 +1463,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2);
     }
@@ -1482,6 +1486,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3);
     }
@@ -1506,6 +1511,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4);
     }
@@ -1532,6 +1538,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5);
     }
@@ -1818,6 +1825,7 @@ public interface Map<K, V> {
      * @since 10
      */
     @SuppressWarnings({"rawtypes","unchecked"})
+    @SideEffectFree
     static <K extends @NonNull Object, V extends @NonNull Object> @PolyNonEmpty Map<K, V> copyOf(@PolyNonEmpty Map<? extends K, ? extends V> map) {
         if (map instanceof ImmutableCollections.AbstractImmutableMap) {
             return (Map<K,V>)map;

@@ -117,6 +117,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
      *
      * @return an iterator over the elements contained in this set
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty JumboEnumSet<E> this) {
         return new EnumSetIterator<>();
     }
@@ -420,6 +421,7 @@ final class JumboEnumSet<E extends Enum<E>> extends EnumSet<E> {
         return size != oldSize;
     }
 
+    @SideEffectFree
     public EnumSet<E> clone() {
         JumboEnumSet<E> result = (JumboEnumSet<E>) super.clone();
         result.elements = result.elements.clone();

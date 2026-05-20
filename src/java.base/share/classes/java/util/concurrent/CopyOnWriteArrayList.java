@@ -325,6 +325,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return a clone of this list
      */
+    @SideEffectFree
     public Object clone() {
         try {
             @SuppressWarnings("unchecked")
@@ -354,6 +355,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return an array containing all the elements in this list
      */
+    @SideEffectFree
     public @PolyNull @PolySigned Object[] toArray(CopyOnWriteArrayList<@PolyNull @PolySigned E> this) {
         return getArray().clone();
     }
@@ -1110,6 +1112,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return a string representation of this list
      */
+    @SideEffectFree
     public String toString() {
         return Arrays.toString(getArray());
     }
@@ -1177,6 +1180,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @return an iterator over the elements in this list in proper sequence
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return new COWIterator<E>(getArray(), 0);
     }
@@ -1226,6 +1230,7 @@ public class CopyOnWriteArrayList<E>
      * @return a {@code Spliterator} over the elements in this list
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator
             (getArray(), Spliterator.IMMUTABLE | Spliterator.ORDERED);
@@ -1339,6 +1344,7 @@ public class CopyOnWriteArrayList<E>
      * @return a view of the specified range within this list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @SideEffectFree
     public @PolyGrowShrink List<E> subList(@PolyGrowShrink CopyOnWriteArrayList<E> this, int fromIndex, int toIndex) {
         synchronized (lock) {
             Object[] es = getArray();
@@ -1391,6 +1397,7 @@ public class CopyOnWriteArrayList<E>
                 throw new IndexOutOfBoundsException(outOfBounds(index, size));
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             final Object[] es;
             final int offset;
@@ -1480,6 +1487,7 @@ public class CopyOnWriteArrayList<E>
             return size() == 0;
         }
 
+        @SideEffectFree
         public String toString() {
             return Arrays.toString(toArray());
         }
@@ -1692,6 +1700,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public Iterator<E> iterator() {
             return listIterator(0);
         }
@@ -1709,6 +1718,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             synchronized (lock) {
                 checkForComodification();
@@ -1780,6 +1790,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public Spliterator<E> spliterator() {
             synchronized (lock) {
                 return Spliterators.spliterator(
@@ -1975,10 +1986,12 @@ public class CopyOnWriteArrayList<E>
                 action.accept(e);
         }
 
+        @SideEffectFree
         public Iterator<E> iterator() {
             return new DescendingIterator();
         }
 
+        @SideEffectFree
         public Spliterator<E> spliterator() {
             // TODO can probably improve this
             return Spliterators.spliteratorUnknownSize(new DescendingIterator(), 0);
@@ -2093,6 +2106,7 @@ public class CopyOnWriteArrayList<E>
             return StreamSupport.stream(spliterator(), false);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return ArraysSupport.reverse(base.toArray());
         }
@@ -2108,6 +2122,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         // copied from AbstractCollection
+        @SideEffectFree
         public String toString() {
             Iterator<E> it = iterator();
             if (! it.hasNext())
@@ -2270,6 +2285,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             synchronized (lock) {
                 int size = base.size();

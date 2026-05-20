@@ -411,7 +411,6 @@ public interface Collection<E> extends Iterable<E> {
      *         runtime component type} of the specified array
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     <T extends @UnknownSignedness Object> @Nullable T [] toArray(@PolyNull T[] a);
 
     /**

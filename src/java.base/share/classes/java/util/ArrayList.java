@@ -1284,6 +1284,7 @@ public class ArrayList<E> extends AbstractList<E>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink ArrayList<E> this, @NonNegative int fromIndex, @NonNegative int toIndex) {
         subListRangeCheck(fromIndex, toIndex, size);
         return new SubList<>(this, fromIndex, toIndex);
@@ -1424,6 +1425,7 @@ public class ArrayList<E> extends AbstractList<E>
             return modified;
         }
 
+        @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(SubList<@PolyNull @PolySigned E> this) {
             checkForComodification();
             return Arrays.copyOfRange(root.elementData, offset, offset + size);
@@ -1610,6 +1612,7 @@ public class ArrayList<E> extends AbstractList<E>
             };
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList<>(this, fromIndex, toIndex);

@@ -294,6 +294,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @see     #keySet()
      * @see     Map
      */
+    @SideEffectFree
     public synchronized Enumeration<@KeyFor({"this"}) K> keys() {
         return this.<K>getEnumeration(KEYS);
     }
@@ -310,6 +311,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @see     #values()
      * @see     Map
      */
+    @SideEffectFree
     public synchronized Enumeration<V> elements() {
         return this.<V>getEnumeration(VALUES);
     }
@@ -632,6 +634,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *
      * @return  a string representation of this hashtable
      */
+    @SideEffectFree
     public synchronized String toString(@GuardSatisfied Hashtable<K, V> this) {
         int max = size() - 1;
         if (max == -1)
@@ -1507,6 +1510,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             return hash ^ Objects.hashCode(value);
         }
 
+        @SideEffectFree
         public String toString() {
             return key.toString()+"="+value.toString();
         }

@@ -744,6 +744,7 @@ public class LinkedHashMap<K,V>
                                             Spliterator.DISTINCT);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return keysToArray(new Object[size], reversed);
         }
@@ -815,6 +816,7 @@ public class LinkedHashMap<K,V>
      *
      * @return a view of the values contained in this map
      */
+    @SideEffectFree
     public Collection<V> values() {
         return sequencedValues();
     }
@@ -862,6 +864,7 @@ public class LinkedHashMap<K,V>
                                             Spliterator.ORDERED);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return valuesToArray(new Object[size], reversed);
         }
@@ -1253,14 +1256,17 @@ public class LinkedHashMap<K,V>
             base.clear();
         }
 
+        @SideEffectFree
         public Set<K> keySet() {
             return base.sequencedKeySet().reversed();
         }
 
+        @SideEffectFree
         public Collection<V> values() {
             return base.sequencedValues().reversed();
         }
 
+        @SideEffectFree
         public Set<Entry<K, V>> entrySet() {
             return base.sequencedEntrySet().reversed();
         }

@@ -637,6 +637,7 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return TreeMap.keySpliteratorFor(m);
     }

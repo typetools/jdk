@@ -899,6 +899,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return true;
         }
 
+        @SideEffectFree
         public Iterator<E> iterator() {
             return listIterator();
         }
@@ -971,6 +972,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             };
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList<>(this, fromIndex, toIndex);
@@ -1020,6 +1022,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             super(parent, fromIndex, toIndex);
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             subListRangeCheck(fromIndex, toIndex, size);
             return new RandomAccessSubList<>(this, fromIndex, toIndex);

@@ -638,6 +638,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
         }
     }
 
+    @SideEffectFree
     public String toString() {
         String[] a = null;
         restartFromHead: for (;;) {
@@ -747,7 +748,6 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      *         this queue
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     @SuppressWarnings("unchecked")
     public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         Objects.requireNonNull(a);

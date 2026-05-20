@@ -133,6 +133,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             return 0;
         }
 
+        @SideEffectFree
         public String toString() {
             return "java.util.EnumMap.NULL";
         }
@@ -416,6 +417,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      *
      * @return a set view of the keys contained in this enum map
      */
+    @SideEffectFree
     public Set<K> keySet() {
         Set<K> ks = keySet;
         if (ks == null) {
@@ -463,6 +465,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      *
      * @return a collection view of the values contained in this map
      */
+    @SideEffectFree
     public Collection<V> values() {
         Collection<V> vs = values;
         if (vs == null) {
@@ -721,6 +724,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
                 return entryHashCode(index);
             }
 
+            @SideEffectFree
             public String toString() {
                 if (index < 0)
                     return super.toString();
@@ -825,6 +829,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @return a shallow copy of this enum map
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public EnumMap<K, V> clone() {
         EnumMap<K, V> result = null;
         try {

@@ -868,6 +868,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @return a {@code Spliterator} over the elements in this deque
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new DeqSpliterator();
     }

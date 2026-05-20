@@ -212,6 +212,7 @@ public class LinkedHashSet<E>
     @Override
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);
     }
@@ -330,6 +331,7 @@ public class LinkedHashSet<E>
         class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
             @Pure
             public int size()                  { return LinkedHashSet.this.size(); }
+            @SideEffectFree
             public Iterator<E> iterator()      { return map().sequencedKeySet().reversed().iterator(); }
             public boolean add(E e)            { return LinkedHashSet.this.add(e); }
             public void addFirst(E e)          { LinkedHashSet.this.addLast(e); }
@@ -342,6 +344,7 @@ public class LinkedHashSet<E>
             public E removeLast()              { return LinkedHashSet.this.removeFirst(); }
             public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
             @Pure
+            @SideEffectFree
             public Object[] toArray() { return map().keysToArray(new Object[map.size()], true); }
             public <T> T[] toArray(T[] a) { return map().keysToArray(map.prepareArray(a), true); }
         }

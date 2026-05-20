@@ -665,6 +665,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         public final V getValue()   { return val; }
         @Pure
         public final int hashCode() { return key.hashCode() ^ val.hashCode(); }
+        @SideEffectFree
         public final String toString() {
             return Helpers.mapEntryToString(key, val);
         }
@@ -1361,6 +1362,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *
      * @return a string representation of this map
      */
+    @SideEffectFree
     public String toString() {
         Node<K,V>[] t;
         int f = (t = table) == null ? 0 : t.length;
@@ -2285,6 +2287,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @return the set view
      * @throws NullPointerException if the mappedValue is null
      */
+    @SideEffectFree
     public KeySetView<K,V> keySet(V mappedValue) {
         if (mappedValue == null)
             throw new NullPointerException();
@@ -3606,6 +3609,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         public V getValue()      { return val; }
         @Pure
         public int hashCode()    { return key.hashCode() ^ val.hashCode(); }
+        @SideEffectFree
         public String toString() {
             return Helpers.mapEntryToString(key, val);
         }
@@ -4616,6 +4620,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          *
          * @return a string representation of this collection
          */
+        @SideEffectFree
         public final String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append('[');

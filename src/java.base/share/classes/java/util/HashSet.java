@@ -401,11 +401,13 @@ public class HashSet<E>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new HashMap.KeySpliterator<>(map, 0, -1, 0, 0);
     }
 
     @Override
+    @SideEffectFree
     public Object[] toArray() {
         return map.keysToArray(new Object[map.size()]);
     }

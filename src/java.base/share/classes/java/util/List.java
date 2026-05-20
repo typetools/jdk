@@ -270,7 +270,6 @@ public interface List<E> extends SequencedCollection<E> {
      *         this list
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     <T extends @UnknownSignedness Object> @Nullable T[] toArray(@PolyNull T[] a);
 
 

@@ -621,6 +621,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
+    @SideEffectFree
     public @PolyNull @PolySigned Object[] toArray(LinkedBlockingQueue<@PolyNull @PolySigned E> this) {
         fullyLock();
         try {
@@ -690,6 +691,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
+    @SideEffectFree
     public String toString() {
         return Helpers.collectionToString(this);
     }
@@ -796,6 +798,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue in proper sequence
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty LinkedBlockingQueue<E> this) {
         return new Itr();
     }
@@ -1016,6 +1019,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new LBQSpliterator();
     }

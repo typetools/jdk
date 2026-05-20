@@ -389,6 +389,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         Set<K> ks = keySet;
         if (ks == null) {
             ks = new AbstractSet<K>() {
+                @SideEffectFree
                 public Iterator<K> iterator() {
                     return new Iterator<K>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
@@ -462,6 +463,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         Collection<V> vals = values;
         if (vals == null) {
             vals = new AbstractCollection<V>() {
+                @SideEffectFree
                 public Iterator<V> iterator() {
                     return new Iterator<V>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
@@ -636,6 +638,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @return a shallow copy of this map
      */
+    @SideEffectFree
     protected Object clone() throws CloneNotSupportedException {
         AbstractMap<?,?> result = (AbstractMap<?,?>)super.clone();
         result.keySet = null;
@@ -1000,6 +1003,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         public void forEach(Consumer<? super E> c) { view().forEach(c); }
         @Pure
         public boolean isEmpty() { return view().isEmpty(); }
+        @SideEffectFree
         public Iterator<E> iterator() { return view().iterator(); }
         public Stream<E> parallelStream() { return view().parallelStream(); }
         // @SideEffectsOnly("this")
@@ -1016,11 +1020,14 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         public boolean retainAll(Collection<?> c) { return view().retainAll(c); }
         @Pure
         public int size() { return view().size(); }
+        @SideEffectFree
         public Spliterator<E> spliterator() { return view().spliterator(); }
         public Stream<E> stream() { return view().stream(); }
+        @SideEffectFree
         public Object[] toArray() { return view().toArray(); }
         public <T> T[] toArray(IntFunction<T[]> generator) { return view().toArray(generator); }
         public <T> T[] toArray(T[] a) { return view().toArray(a); }
+        @SideEffectFree
         public String toString() { return view().toString(); }
     }
 }

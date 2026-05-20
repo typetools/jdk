@@ -752,6 +752,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
     }
 
+    @SideEffectFree
     public String toString() {
         String[] a = null;
         restartFromHead: for (;;) {
@@ -827,6 +828,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
+    @SideEffectFree
     public @PolyNull @PolySigned Object[] toArray(LinkedTransferQueue<@PolyNull @PolySigned E> this) {
         return toArrayInternal(null);
     }
@@ -1100,6 +1102,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new LTQSpliterator();
     }
@@ -1385,6 +1388,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue in proper sequence
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty LinkedTransferQueue<E> this) {
         return new Itr();
     }

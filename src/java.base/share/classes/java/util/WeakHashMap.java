@@ -803,6 +803,7 @@ public class WeakHashMap<K,V>
             return Objects.hashCode(k) ^ Objects.hashCode(v);
         }
 
+        @SideEffectFree
         public String toString() {
             return getKey() + "=" + getValue();
         }
@@ -1090,7 +1091,6 @@ public class WeakHashMap<K,V>
             return deepCopy().toArray();
         }
 
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             return deepCopy().toArray(a);
         }

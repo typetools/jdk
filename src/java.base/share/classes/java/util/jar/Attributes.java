@@ -287,6 +287,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Set view of the attribute names (keys) contained in this Map.
      */
+    @SideEffectFree
     public Set<Object> keySet() {
         return map.keySet();
     }
@@ -294,6 +295,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Collection view of the attribute values contained in this Map.
      */
+    @SideEffectFree
     public Collection<Object> values() {
         return map.values();
     }
@@ -339,6 +341,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * the Attributes returned can be safely modified without affecting
      * the original.
      */
+    @SideEffectFree
     public Object clone() {
         return new Attributes(this);
     }
@@ -501,6 +504,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          */
         private static @Stable Map<String, Name> KNOWN_NAMES;
 
+        @SideEffectFree
         static final Name of(String name) {
             Name n = KNOWN_NAMES.get(name);
             if (n != null) {
@@ -573,6 +577,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Returns the attribute name as a String.
          */
+        @SideEffectFree
         public String toString() {
             return name;
         }

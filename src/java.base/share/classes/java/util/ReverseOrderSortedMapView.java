@@ -41,6 +41,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         cmp = Collections.reverseOrder(map.comparator());
     }
 
+    @SideEffectFree
     public static <K, V> SortedMap<K, V> of(SortedMap<K, V> map) {
         if (map instanceof ReverseOrderSortedMapView<K, V> rosmv) {
             return rosmv.base;
@@ -55,6 +56,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
 
     // hashCode: inherited from AbstractMap
 
+    @SideEffectFree
     public String toString() {
         return toString(this, descendingEntryIterator(base));
     }
@@ -102,9 +104,11 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base.size();
     }
 
+    @SideEffectFree
     public Set<K> keySet() {
         return new AbstractSet<>() {
             // inherit add(), which throws UOE
+            @SideEffectFree
             public Iterator<K> iterator() { return descendingKeyIterator(base); }
             @Pure
             public int size() { return base.size(); }
@@ -115,9 +119,11 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         };
     }
 
+    @SideEffectFree
     public Collection<V> values() {
         return new AbstractCollection<>() {
             // inherit add(), which throws UOE
+            @SideEffectFree
             public Iterator<V> iterator() { return descendingValueIterator(base); }
             @Pure
             public int size() { return base.size(); }
@@ -128,9 +134,11 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         };
     }
 
+    @SideEffectFree
     public Set<Entry<K, V>> entrySet() {
         return new AbstractSet<>() {
             // inherit add(), which throws UOE
+            @SideEffectFree
             public Iterator<Entry<K, V>> iterator() { return descendingEntryIterator(base); }
             @Pure
             public int size() { return base.size(); }
@@ -186,6 +194,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return cmp;
     }
 
+    @SideEffectFree
     public SortedMap<K, V> subMap(K fromKey, K toKey) {
         if (cmp.compare(fromKey, toKey) <= 0) {
             return new Submap(fromKey, toKey);
@@ -194,10 +203,12 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         }
     }
 
+    @SideEffectFree
     public SortedMap<K, V> headMap(K toKey) {
         return new Submap(null, toKey);
     }
 
+    @SideEffectFree
     public SortedMap<K, V> tailMap(K fromKey) {
         return new Submap(fromKey, null);
     }
@@ -302,12 +313,14 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             return Objects.hashCode(key) ^ Objects.hashCode(value);
         }
 
+        @SideEffectFree
         public String toString() {
             return key + "=" + value;
         }
     }
 
     // copied and modified from AbstractMap
+    @SideEffectFree
     static <K, V> String toString(Map<K, V> thisMap, Iterator<Entry<K,V>> i) {
         if (! i.hasNext())
             return "{}";
@@ -409,12 +422,15 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
 
         // hashCode: inherited from AbstractMap
 
+        @SideEffectFree
         public String toString() {
             return ReverseOrderSortedMapView.toString(this, entryIterator());
         }
 
+        @SideEffectFree
         public Set<Entry<K, V>> entrySet() {
             return new AbstractSet<>() {
+                @SideEffectFree
                 public Iterator<Entry<K, V>> iterator() {
                     return entryIterator();
                 }
@@ -471,6 +487,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             return last.getKey();
         }
 
+        @SideEffectFree
         public SortedMap<K, V> subMap(K from, K to) {
             if (aboveHead(from) && belowTail(from) &&
                 aboveHead(to) && belowTail(to) &&
@@ -481,6 +498,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             }
         }
 
+        @SideEffectFree
         public SortedMap<K, V> headMap(K to) {
             if (aboveHead(to) && belowTail(to))
                 return new Submap(head, to);
@@ -488,6 +506,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
                 throw new IllegalArgumentException();
         }
 
+        @SideEffectFree
         public SortedMap<K, V> tailMap(K from) {
             if (aboveHead(from) && belowTail(from))
                 return new Submap(from, tail);

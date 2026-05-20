@@ -1100,7 +1100,6 @@ public class LinkedList<E>
      * Adapter to provide descending iterators via ListItr.previous
      */
     private class DescendingIterator implements Iterator<E> {
-        @Pure
         private final ListItr itr = new ListItr(size());
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
@@ -1410,6 +1409,7 @@ public class LinkedList<E>
             this.rdeque = rdeque;
         }
 
+        @SideEffectFree
         public String toString() {
             return rlist.toString();
         }
@@ -1458,6 +1458,7 @@ public class LinkedList<E>
             rlist.forEach(action);
         }
 
+        @SideEffectFree
         public Iterator<E> iterator() {
             return rlist.iterator();
         }
@@ -1472,6 +1473,7 @@ public class LinkedList<E>
             return rlist.equals(o);
         }
 
+        @SideEffectFree
         public List<E> subList(int fromIndex, int toIndex) {
             return rlist.subList(fromIndex, toIndex);
         }
@@ -1495,6 +1497,7 @@ public class LinkedList<E>
             return list;
         }
 
+        @SideEffectFree
         public Spliterator<E> spliterator() {
             return rlist.spliterator();
         }
@@ -1503,6 +1506,7 @@ public class LinkedList<E>
             return rlist.toArray(a);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return rlist.toArray();
         }

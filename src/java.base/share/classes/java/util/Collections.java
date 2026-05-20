@@ -291,8 +291,7 @@ public class Collections {
      * Gets the ith element from the given list by repositioning the specified
      * list listIterator.
      */
-    @Pure
-    @SideEffectsOnly("#1")
+    // @SideEffectsOnly("#1")
     private static <T> T get(ListIterator<? extends T> i, int index) {
         T obj;
         int pos = i.nextIndex();
@@ -1112,7 +1111,6 @@ public class Collections {
         public boolean contains(@UnknownSignedness Object o)          {return c.contains(o);}
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.UnmodifiableCollection<@PolyNull @PolySigned E> this)                  {return c.toArray();}
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)              {return c.toArray(a);}
         public <T> T[] toArray(IntFunction<T[]> f) {return c.toArray(f);}
         public String toString()                   {return c.toString();}
@@ -2536,7 +2534,6 @@ public class Collections {
         public @PolyNull @PolySigned Object[] toArray(Collections.SynchronizedCollection<@PolyNull @PolySigned E> this) {
             synchronized (mutex) {return c.toArray();}
         }
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             synchronized (mutex) {return c.toArray(a);}
         }
@@ -3696,7 +3693,6 @@ public class Collections {
         public boolean contains(@UnknownSignedness Object o)          { return c.contains(o); }
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.CheckedCollection<@PolyNull @PolySigned E> this)                  { return c.toArray(); }
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)              { return c.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f) { return c.toArray(f); }
         public String toString()                   { return c.toString(); }
@@ -5168,7 +5164,6 @@ public class Collections {
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.EmptySet<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
@@ -5313,7 +5308,6 @@ public class Collections {
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.EmptyList<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
@@ -6551,7 +6545,6 @@ public class Collections {
         public Iterator<E> iterator()     { return s.iterator(); }
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.SetFromMap<@PolyNull @PolySigned E> this)         { return s.toArray(); }
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)     { return s.toArray(a); }
         public String toString()          { return s.toString(); }
         @Pure
@@ -6741,7 +6734,6 @@ public class Collections {
         public Iterator<E> iterator()               { return q.iterator(); }
         @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(Collections.AsLIFOQueue<@PolyNull @PolySigned E> this)                   { return q.toArray(); }
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a)               { return q.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f)  { return q.toArray(f); }
         public String toString()                    { return q.toString(); }

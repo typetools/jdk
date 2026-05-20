@@ -157,6 +157,7 @@ public interface ConcurrentNavigableMap<K,V>
      *
      * @return a navigable set view of the keys in this map
      */
+    @SideEffectFree
     NavigableSet<K> keySet();
 
     /**

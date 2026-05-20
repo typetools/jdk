@@ -315,6 +315,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final K getKey()        { return key; }
         @Pure
         public final V getValue()      { return value; }
+        @SideEffectFree
         public final String toString() { return key + "=" + value; }
 
         @Pure
@@ -1050,6 +1051,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new KeySpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return keysToArray(new Object[size]);
         }
@@ -1116,6 +1118,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new ValueSpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return valuesToArray(new Object[size]);
         }

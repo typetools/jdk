@@ -922,7 +922,6 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         stream is not assignable to the {@linkplain Class#getComponentType
      *         runtime component type} of the generated array
      */
-    @SideEffectFree
     <A> A[] toArray(IntFunction<A[]> generator);
 
     /**

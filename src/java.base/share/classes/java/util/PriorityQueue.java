@@ -482,7 +482,6 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      *         this queue
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final int size = this.size;
         if (a.length < size)
@@ -864,6 +863,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
+    @SideEffectFree
     public final Spliterator<E> spliterator() {
         return new PriorityQueueSpliterator(0, -1, 0);
     }

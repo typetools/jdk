@@ -1330,12 +1330,14 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectFree
     public Enumeration<Object> keys() {
         // CHM.keys() returns Iterator w/ remove() - instead wrap keySet()
         return Collections.enumeration(map.keySet());
     }
 
     @Override
+    @SideEffectFree
     public Enumeration<Object> elements() {
         // CHM.elements() returns Iterator w/ remove() - instead wrap values()
         return Collections.enumeration(map.values());
@@ -1395,16 +1397,19 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectFree
     public synchronized String toString() {
         return map.toString();
     }
 
     @Override
+    @SideEffectFree
     public Set<@KeyFor("this") Object> keySet() {
         return Collections.synchronizedSet(map.keySet(), this);
     }
 
     @Override
+    @SideEffectFree
     public Collection<Object> values() {
         return Collections.synchronizedCollection(map.values(), this);
     }
@@ -1428,13 +1433,14 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Pure
-        @Pure @Override public int size() { return entrySet.size(); }
+        @Override public int size() { return entrySet.size(); }
         @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         @Override public boolean isEmpty() { return entrySet.isEmpty(); }
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
+        @SideEffectFree
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
         // @SideEffectsOnly("this")
@@ -1473,6 +1479,7 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @SideEffectFree
         public String toString() {
             return entrySet.toString();
         }
@@ -1492,6 +1499,7 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @SideEffectFree
         public Iterator<Map.Entry<Object, Object>> iterator() {
             return entrySet.iterator();
         }
@@ -1590,6 +1598,7 @@ public class Properties extends Hashtable<Object,Object> {
     protected void rehash() { /* no-op */ }
 
     @Override
+    @SideEffectFree
     public synchronized Object clone() {
         Properties clone = (Properties) cloneHashtable();
         clone.map = new ConcurrentHashMap<>(map);

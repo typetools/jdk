@@ -1135,6 +1135,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *
      * @return a shallow copy of this map
      */
+    @SideEffectFree
     public ConcurrentSkipListMap<K,V> clone() {
         try {
             @SuppressWarnings("unchecked")
@@ -1641,6 +1642,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *
      * @return a navigable set view of the keys in this map
      */
+    @SideEffectFree
     public NavigableSet<K> keySet() {
         KeySet<K,V> ks;
         if ((ks = keySet) != null) return ks;
@@ -1673,6 +1675,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * <p>The view's iterators and spliterators are
      * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
      */
+    @SideEffectFree
     public Collection<V> values() {
         Values<K,V> vs;
         if ((vs = values) != null) return vs;
@@ -2284,7 +2287,9 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         public K higher(K e) { return m.higherKey(e); }
         @Pure
         public Comparator<? super K> comparator() { return m.comparator(); }
+        @SideEffectFree
         public K first() { return m.firstKey(); }
+        @SideEffectFree
         public K last() { return m.lastKey(); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -2298,6 +2303,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             Map.Entry<K,V> e = m.pollLastEntry();
             return (e == null) ? null : e.getKey();
         }
+        @SideEffectFree
         public Iterator<K> iterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).new KeyIterator()
@@ -2316,6 +2322,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
                 return false;
             }
         }
+        @SideEffectFree
         public @PolyNull @PolySigned Object[] toArray(KeySet<@PolyNull @PolySigned K,V> this)     { return toList(this).toArray();  }
         public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
         public Iterator<K> descendingIterator() {
@@ -2328,18 +2335,23 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return new KeySet<>(m.subMap(fromElement, fromInclusive,
                                          toElement,   toInclusive));
         }
+        @SideEffectFree
         public NavigableSet<K> headSet(K toElement, boolean inclusive) {
             return new KeySet<>(m.headMap(toElement, inclusive));
         }
+        @SideEffectFree
         public NavigableSet<K> tailSet(K fromElement, boolean inclusive) {
             return new KeySet<>(m.tailMap(fromElement, inclusive));
         }
+        @SideEffectFree
         public NavigableSet<K> subSet(K fromElement, K toElement) {
             return subSet(fromElement, true, toElement, false);
         }
+        @SideEffectFree
         public NavigableSet<K> headSet(K toElement) {
             return headSet(toElement, false);
         }
+        @SideEffectFree
         public NavigableSet<K> tailSet(K fromElement) {
             return tailSet(fromElement, true);
         }
@@ -2347,6 +2359,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return new KeySet<>(m.descendingMap());
         }
 
+        @SideEffectFree
         public Spliterator<K> spliterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).keySpliterator()
@@ -2359,6 +2372,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         Values(ConcurrentNavigableMap<K,V> map) {
             m = map;
         }
+        @SideEffectFree
         public Iterator<V> iterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).new ValueIterator()
@@ -2375,9 +2389,11 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() { m.clear(); }
+        @SideEffectFree
         public Object[] toArray()     { return toList(this).toArray();  }
         public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
 
+        @SideEffectFree
         public Spliterator<V> spliterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).valueSpliterator()
@@ -2409,6 +2425,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         EntrySet(ConcurrentNavigableMap<K,V> map) {
             m = map;
         }
+        @SideEffectFree
         public Iterator<Map.Entry<K,V>> iterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).new EntryIterator()
@@ -2460,9 +2477,11 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
                 return false;
             }
         }
+        @SideEffectFree
         public Object[] toArray()     { return toList(this).toArray();  }
         public <T> @Nullable T[] toArray(@PolyNull T[] a) { return toList(this).toArray(a); }
 
+        @SideEffectFree
         public Spliterator<Map.Entry<K,V>> spliterator() {
             return (m instanceof ConcurrentSkipListMap)
                 ? ((ConcurrentSkipListMap<K,V>)m).entrySpliterator()
@@ -3005,6 +3024,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         /* ---------------- Submap Views -------------- */
 
+        @SideEffectFree
         public NavigableSet<K> keySet() {
             KeySet<K,V> ks;
             if ((ks = keySetView) != null) return ks;
@@ -3018,6 +3038,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             return keySetView = new KeySet<>(this);
         }
 
+        @SideEffectFree
         public Collection<V> values() {
             Values<K,V> vs;
             if ((vs = valuesView) != null) return vs;

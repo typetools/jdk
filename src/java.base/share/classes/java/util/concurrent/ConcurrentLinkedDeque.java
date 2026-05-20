@@ -1284,6 +1284,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
             ;
     }
 
+    @SideEffectFree
     public String toString() {
         String[] a = null;
         restart: for (;;) {
@@ -1395,7 +1396,6 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
      *         this deque
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     @SuppressWarnings("unchecked")
     public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a == null) throw new NullPointerException();
@@ -1510,6 +1510,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /** Forward iterator */
     private class Itr extends AbstractItr {
         Itr() {}                        // prevent access constructor creation
+        @SideEffectFree
         Node<E> startNode() { return first(); }
         Node<E> nextNode(Node<E> p) { return succ(p); }
     }
@@ -1517,6 +1518,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     /** Descending iterator */
     private class DescendingItr extends AbstractItr {
         DescendingItr() {}              // prevent access constructor creation
+        @SideEffectFree
         Node<E> startNode() { return last(); }
         Node<E> nextNode(Node<E> p) { return pred(p); }
     }

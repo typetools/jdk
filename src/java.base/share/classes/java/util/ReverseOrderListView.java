@@ -44,6 +44,7 @@ class ReverseOrderListView<E> implements List<E> {
     final List<E> base;
     final boolean modifiable;
 
+    @SideEffectFree
     public static <T> List<T> of(List<T> list, boolean modifiable) {
         if (list instanceof ReverseOrderListView<T> rolv) {
             return rolv.base;
@@ -153,10 +154,12 @@ class ReverseOrderListView<E> implements List<E> {
             action.accept(e);
     }
 
+    @SideEffectFree
     public Iterator<E> iterator() {
         return new DescendingIterator();
     }
 
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         // TODO can probably improve this
         return Spliterators.spliteratorUnknownSize(new DescendingIterator(), 0);
@@ -296,6 +299,7 @@ class ReverseOrderListView<E> implements List<E> {
         return StreamSupport.stream(spliterator(), false);
     }
 
+    @SideEffectFree
     public Object[] toArray() {
         return ArraysSupport.reverse(base.toArray());
     }
@@ -310,6 +314,7 @@ class ReverseOrderListView<E> implements List<E> {
     }
 
     // copied from AbstractCollection
+    @SideEffectFree
     public String toString() {
         Iterator<E> it = iterator();
         if (! it.hasNext())
@@ -408,6 +413,7 @@ class ReverseOrderListView<E> implements List<E> {
         return base.set(size - index - 1, element);
     }
 
+    @SideEffectFree
     public List<E> subList(int fromIndex, int toIndex) {
         int size = base.size();
         Objects.checkFromToIndex(fromIndex, toIndex, size);

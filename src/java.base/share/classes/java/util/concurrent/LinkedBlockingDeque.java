@@ -992,6 +992,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return an array containing all of the elements in this deque
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public @PolyNull @PolySigned Object[] toArray(LinkedBlockingDeque<@PolyNull @PolySigned E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -1061,6 +1062,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
     }
 
+    @SideEffectFree
     public String toString() {
         return Helpers.collectionToString(this);
     }
@@ -1111,6 +1113,7 @@ public class LinkedBlockingDeque<E extends Object>
      *
      * @return an iterator over the elements in this deque in proper sequence
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty LinkedBlockingDeque<E> this) {
         return new Itr();
     }
@@ -1381,6 +1384,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @return a {@code Spliterator} over the elements in this deque
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new LBDSpliterator();
     }

@@ -1103,7 +1103,6 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return the specified array
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length > 0)
             a[0] = null;
@@ -1114,6 +1113,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * Always returns {@code "[]"}.
      * @return {@code "[]"}
      */
+    @SideEffectFree
     public String toString() {
         return "[]";
     }

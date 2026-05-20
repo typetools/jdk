@@ -987,6 +987,7 @@ public class TreeMap<K,V>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public Object clone(@GuardSatisfied TreeMap<K, V> this) {
         TreeMap<?,?> clone;
         try {
@@ -1180,6 +1181,7 @@ public class TreeMap<K,V>
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied TreeMap<K, V> this) {
         return navigableKeySet();
     }
@@ -1222,6 +1224,7 @@ public class TreeMap<K,V>
      * {@code retainAll} and {@code clear} operations.  It does not
      * support the {@code add} or {@code addAll} operations.
      */
+    @SideEffectFree
     public Collection<V> values(@GuardSatisfied TreeMap<K, V> this) {
         Collection<V> vs = values;
         if (vs == null) {
@@ -1546,7 +1549,9 @@ public class TreeMap<K,V>
         public E floor(E e) { return m.floorKey(e); }
         public E ceiling(E e) { return m.ceilingKey(e); }
         public E higher(E e) { return m.higherKey(e); }
+        @SideEffectFree
         public E first() { return m.firstKey(); }
+        @SideEffectFree
         public E last() { return m.lastKey(); }
         @Pure
         public Comparator<? super E> comparator() { return m.comparator(); }
@@ -1570,18 +1575,23 @@ public class TreeMap<K,V>
             return new KeySet<>(m.subMap(fromElement, fromInclusive,
                                           toElement,   toInclusive));
         }
+        @SideEffectFree
         public NavigableSet<E> headSet(E toElement, boolean inclusive) {
             return new KeySet<>(m.headMap(toElement, inclusive));
         }
+        @SideEffectFree
         public NavigableSet<E> tailSet(E fromElement, boolean inclusive) {
             return new KeySet<>(m.tailMap(fromElement, inclusive));
         }
+        @SideEffectFree
         public SortedSet<E> subSet(E fromElement, E toElement) {
             return subSet(fromElement, true, toElement, false);
         }
+        @SideEffectFree
         public SortedSet<E> headSet(E toElement) {
             return headSet(toElement, false);
         }
+        @SideEffectFree
         public SortedSet<E> tailSet(E fromElement) {
             return tailSet(fromElement, true);
         }
@@ -2084,6 +2094,7 @@ public class TreeMap<K,V>
                 (navigableKeySetView = new TreeMap.KeySet<>(this));
         }
 
+        @SideEffectFree
         public final Set<K> keySet() {
             return navigableKeySet();
         }
@@ -2427,6 +2438,7 @@ public class TreeMap<K,V>
         }
 
         final class AscendingEntrySetView extends EntrySetView {
+            @SideEffectFree
             public Iterator<Map.Entry<K,V>> iterator() {
                 return new SubMapEntryIterator(absLowest(), absHighFence());
             }
@@ -2520,6 +2532,7 @@ public class TreeMap<K,V>
         }
 
         final class DescendingEntrySetView extends EntrySetView {
+            @SideEffectFree
             public Iterator<Map.Entry<K,V>> iterator() {
                 return new DescendingSubMapEntryIterator(absHighest(), absLowFence());
             }
@@ -2653,6 +2666,7 @@ public class TreeMap<K,V>
             return keyHash ^ valueHash;
         }
 
+        @SideEffectFree
         public String toString() {
             return key + "=" + value;
         }

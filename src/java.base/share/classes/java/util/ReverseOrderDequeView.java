@@ -42,6 +42,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         base = deque;
     }
 
+    @SideEffectFree
     public static <T> Deque<T> of(Deque<T> deque) {
         if (deque instanceof ReverseOrderDequeView<T> rodv) {
             return rodv.base;
@@ -57,10 +58,12 @@ class ReverseOrderDequeView<E> implements Deque<E> {
             action.accept(e);
     }
 
+    @SideEffectFree
     public Iterator<E> iterator() {
         return base.descendingIterator();
     }
 
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliteratorUnknownSize(base.descendingIterator(), 0);
     }
@@ -162,6 +165,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return StreamSupport.stream(spliterator(), false);
     }
 
+    @SideEffectFree
     public Object[] toArray() {
         return ArraysSupport.reverse(base.toArray());
     }
@@ -175,6 +179,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return ArraysSupport.reverse(base.toArray(generator));
     }
 
+    @SideEffectFree
     // copied from AbstractCollection
     public String toString() {
         Iterator<E> it = iterator();

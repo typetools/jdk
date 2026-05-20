@@ -352,6 +352,7 @@ public class Vector<E>
      * @return  an enumeration of the components of this vector
      * @see     Iterator
      */
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Enumeration<E> elements(@PolyGrowShrink @PolyNonEmpty Vector<E> this) {
         return new Enumeration<E>() {
             int count = 0;

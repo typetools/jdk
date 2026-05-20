@@ -158,6 +158,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return A copy of the specified enum set.
      * @throws NullPointerException if {@code s} is null
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> copyOf(EnumSet<E> s) {
         return s.clone();
     }
@@ -176,6 +177,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      *     {@code EnumSet} instance and contains no elements
      * @throws NullPointerException if {@code c} is null
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> copyOf(Collection<E> c) {
         if (c instanceof EnumSet) {
             return ((EnumSet<E>)c).clone();
@@ -221,6 +223,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if {@code e} is null
      * @return an enum set initially containing the specified element
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> of(E e) {
         EnumSet<E> result = noneOf(e.getDeclaringClass());
         result.add(e);
@@ -242,6 +245,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
@@ -265,6 +269,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2, E e3) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
@@ -290,6 +295,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2, E e3, E e4) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
@@ -344,6 +350,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return an enum set initially containing the specified elements
      */
     @SafeVarargs
+    @SideEffectFree
     public static <E extends Enum<E>> EnumSet<E> of(E first, E... rest) {
         EnumSet<E> result = noneOf(first.getDeclaringClass());
         result.add(first);
@@ -390,6 +397,7 @@ public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     @SuppressWarnings("unchecked")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public EnumSet<E> clone() {
         try {
             return (EnumSet<E>) super.clone();

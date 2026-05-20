@@ -978,6 +978,7 @@ public class IdentityHashMap<K,V>
                        System.identityHashCode(traversalTable[index+1]));
             }
 
+            @SideEffectFree
             public String toString() {
                 if (index < 0)
                     return super.toString();
@@ -1106,7 +1107,6 @@ public class IdentityHashMap<K,V>
             return toArray(new Object[0]);
         }
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
@@ -1206,7 +1206,6 @@ public class IdentityHashMap<K,V>
             return toArray(new Object[0]);
         }
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
@@ -1340,7 +1339,6 @@ public class IdentityHashMap<K,V>
         }
 
         @SuppressWarnings("unchecked")
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             int expectedModCount = modCount;
             int size = size();
