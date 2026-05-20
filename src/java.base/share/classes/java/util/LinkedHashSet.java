@@ -211,8 +211,6 @@ public class LinkedHashSet<E>
      * @since 1.8
      */
     @Override
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);

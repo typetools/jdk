@@ -87,7 +87,11 @@ class ReverseOrderListView<E> implements List<E> {
         final ListIterator<E> it = base.listIterator(base.size());
         @Pure
         public boolean hasNext() { return it.hasPrevious(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next() { return it.previous(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             checkModifiable();
             it.remove();

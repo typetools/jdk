@@ -210,8 +210,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set in descending order
      * @since 1.6
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
+    @SideEffectFree
     public @PolyGrowShrink @PolyNonEmpty Iterator<E> descendingIterator(@PolyGrowShrink @PolyNonEmpty TreeSet<E> this) {
         return m.descendingKeySet().iterator();
     }
@@ -635,8 +634,6 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @SideEffectFree
     public Spliterator<E> spliterator() {
         return TreeMap.keySpliteratorFor(m);

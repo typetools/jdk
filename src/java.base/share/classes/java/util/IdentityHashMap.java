@@ -792,7 +792,6 @@ public class IdentityHashMap<K,V>
         }
 
         // @SideEffectsOnly("this")
-        @Pure
         protected int nextIndex(@NonEmpty IdentityHashMapIterator<T> this) {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();

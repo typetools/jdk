@@ -269,8 +269,6 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @since 1.8
      */
     @Override
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @SideEffectFree
     default Spliterator<E> spliterator() {
         return new Spliterators.IteratorSpliterator<E>(

@@ -5383,7 +5383,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
-        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<? super K, ? extends U> searchFunction;
@@ -5428,7 +5427,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
-        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<? super V, ? extends U> searchFunction;
@@ -5473,7 +5471,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
-        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final Function<Entry<K,V>, ? extends U> searchFunction;
@@ -5518,7 +5515,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             super(p, b, i, f, t);
             this.searchFunction = searchFunction; this.result = result;
         }
-        @Pure
         public final U getRawResult() { return result.get(); }
         public final void compute() {
             final BiFunction<? super K, ? super V, ? extends U> searchFunction;

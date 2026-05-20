@@ -1541,8 +1541,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> descendingSet()
                  { return new UnmodifiableNavigableSet<>(ns.descendingSet()); }
-        // @SideEffectsOnly("this")
-        @DoesNotUnrefineReceiver("modifiability")
+        @SideEffectFree
         public Iterator<E> descendingIterator()
                                          { return descendingSet().iterator(); }
 

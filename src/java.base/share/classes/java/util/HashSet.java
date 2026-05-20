@@ -399,8 +399,6 @@ public class HashSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @SideEffectFree
     public Spliterator<E> spliterator() {
         return new HashMap.KeySpliterator<>(map, 0, -1, 0, 0);

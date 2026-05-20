@@ -1358,7 +1358,6 @@ class ImmutableCollections {
 
             // @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
-            @Pure
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {

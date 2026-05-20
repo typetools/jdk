@@ -38,6 +38,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 // import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
@@ -552,6 +553,7 @@ public class LinkedHashMap<K,V>
      * The {@link #containsKey containsKey} operation may be used to
      * distinguish these two cases.
      */
+    @CFComment("`get()` is not strictly pure: if `accessOrder==true`, it changes the access order")
     @Pure
     public @Nullable V get(@GuardSatisfied LinkedHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Node<K,V> e;
@@ -565,6 +567,7 @@ public class LinkedHashMap<K,V>
     /**
      * {@inheritDoc}
      */
+    @CFComment("`getOrDefault()` is not strictly pure: if `accessOrder==true`, it changes the access order")
     @Pure
     public V getOrDefault(@Nullable Object key, V defaultValue) {
        Node<K,V> e;
@@ -1128,7 +1131,6 @@ public class LinkedHashMap<K,V>
         LinkedKeyIterator(boolean reversed) { super(reversed); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        @Pure
         public final K next(@NonEmpty LinkedKeyIterator this) { return nextNode().getKey(); }
     }
 
@@ -1227,6 +1229,7 @@ public class LinkedHashMap<K,V>
             return base.containsValue(value);
         }
 
+        @CFComment("`get()` is not strictly pure: if `accessOrder==true`, it changes the access order")
         @Pure
         public V get(Object key) {
             return base.get(key);
@@ -1271,6 +1274,7 @@ public class LinkedHashMap<K,V>
             return base.sequencedEntrySet().reversed();
         }
 
+        @CFComment("`getOrDefault()` is not strictly pure: if `accessOrder==true`, it changes the access order")
         @Pure
         public V getOrDefault(Object key, V defaultValue) {
             return base.getOrDefault(key, defaultValue);
