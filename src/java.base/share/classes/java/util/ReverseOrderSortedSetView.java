@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;

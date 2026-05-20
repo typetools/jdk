@@ -24,6 +24,8 @@
  */
 package java.util.stream;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
