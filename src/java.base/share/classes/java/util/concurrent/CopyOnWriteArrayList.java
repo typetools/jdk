@@ -413,6 +413,7 @@ public class CopyOnWriteArrayList<E>
     // Positional Access Operations
 
     @SuppressWarnings("unchecked")
+    @Pure
     static <E> E elementAt(Object[] a, int index) {
         return (E) a[index];
     }

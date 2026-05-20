@@ -292,6 +292,7 @@ public class Collections {
      * list listIterator.
      */
     @Pure
+    @SideEffectsOnly("#1")
     private static <T> T get(ListIterator<? extends T> i, int index) {
         T obj;
         int pos = i.nextIndex();
@@ -1675,7 +1676,9 @@ public class Collections {
                 public boolean hasPrevious() {return i.hasPrevious();}
                 // @SideEffectsOnly("this")
                 public E previous()          {return i.previous();}
+                @Pure
                 public int nextIndex()       {return i.nextIndex();}
+                @Pure
                 public int previousIndex()   {return i.previousIndex();}
 
                 // @SideEffectsOnly("this")
@@ -1806,6 +1809,7 @@ public class Collections {
         public boolean containsKey(@UnknownSignedness Object key)   {return m.containsKey(key);}
         @Pure
         public boolean containsValue(@UnknownSignedness Object val) {return m.containsValue(val);}
+        @Pure
         public V get(Object key)                 {return m.get(key);}
 
         // @SideEffectsOnly("this")
@@ -2092,8 +2096,8 @@ public class Collections {
              * that the equality-candidate is Map.Entry and calls its
              * setValue method.
              */
-            @EnsuresNonEmptyIf(result = true, expression = "this")
             @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
@@ -3159,6 +3163,7 @@ public class Collections {
         public boolean containsValue(@UnknownSignedness Object value) {
             synchronized (mutex) {return m.containsValue(value);}
         }
+        @Pure
         public V get(Object key) {
             synchronized (mutex) {return m.get(key);}
         }
@@ -4339,6 +4344,7 @@ public class Collections {
         public boolean containsKey(@UnknownSignedness Object key) { return m.containsKey(key); }
         @Pure
         public boolean containsValue(@UnknownSignedness Object v) { return m.containsValue(v); }
+        @Pure
         public V get(Object key)               { return m.get(key); }
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -4497,7 +4503,9 @@ public class Collections {
             @Pure
             @EnsuresNonEmptyIf(result = false, expression = "this")
             public boolean isEmpty() { return s.isEmpty(); }
+            @SideEffectFree
             public String toString() { return s.toString(); }
+            @Pure
             public int hashCode()    { return s.hashCode(); }
             // @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
@@ -5091,8 +5099,8 @@ public class Collections {
         static final EmptyEnumeration<Object> EMPTY_ENUMERATION
             = new EmptyEnumeration<>();
 
-        @EnsuresNonEmptyIf(result = true, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() { return false; }
         public E nextElement(@NonEmpty EmptyEnumeration<E> this) { throw new NoSuchElementException(); }
         public Iterator<E> asIterator() { return emptyIterator(); }
@@ -5453,6 +5461,7 @@ public class Collections {
         public boolean containsKey(@UnknownSignedness Object key)     {return false;}
         @Pure
         public boolean containsValue(@UnknownSignedness Object value) {return false;}
+        @Pure
         public V get(Object key)                   {return null;}
         public Set<K> keySet()                     {return emptySet();}
         public Collection<V> values()              {return emptySet();}
@@ -5733,6 +5742,7 @@ public class Collections {
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object obj) {return eq(obj, element);}
 
+        @Pure
         public E get(int index) {
             if (index != 0)
               throw new IndexOutOfBoundsException("Index: "+index+", Size: 1");
@@ -5815,6 +5825,7 @@ public class Collections {
         public boolean containsKey(@UnknownSignedness Object key)             {return eq(key, k);}
         @Pure
         public boolean containsValue(@UnknownSignedness Object value)       {return eq(value, v);}
+        @Pure
         public V get(Object key)              {return (eq(key, k) ? v : null);}
 
         private transient Set<K> keySet;
@@ -6276,8 +6287,8 @@ public class Collections {
         return new Enumeration<>() {
             private final Iterator<T> i = c.iterator();
 
-            @EnsuresNonEmptyIf(result = true, expression = "this")
             @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return i.hasNext();
             }
@@ -6714,6 +6725,7 @@ public class Collections {
         public E remove()                           { return q.removeFirst(); }
         @Pure
         public E peek()                             { return q.peekFirst(); }
+        @Pure
         public E element()                          { return q.getFirst(); }
         public void clear()                         {        q.clear(); }
         @Pure

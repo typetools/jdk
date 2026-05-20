@@ -30,6 +30,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Provides a reversed-ordered view of a SortedSet. Not serializable.
@@ -54,6 +55,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
     // ========== Object ==========
 
     // copied from AbstractSet
+    @Pure
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -71,6 +73,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
     }
 
     // copied from AbstractSet
+    @Pure
     public int hashCode() {
         int h = 0;
         Iterator<E> i = iterator();
@@ -129,14 +132,17 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
         base.clear();
     }
 
+    @Pure
     public boolean contains(Object o) {
         return base.contains(o);
     }
 
+    @Pure
     public boolean containsAll(Collection<?> c) {
         return base.containsAll(c);
     }
 
+    @Pure
     public boolean isEmpty() {
         return base.isEmpty();
     }
@@ -158,6 +164,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
         return base.retainAll(c);
     }
 
+    @Pure
     public int size() {
         return base.size();
     }
@@ -181,6 +188,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
 
     // ========== SortedSet ==========
 
+    @Pure
     public Comparator<? super E> comparator() {
         return comp;
     }
@@ -209,6 +217,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
             SortedSet<T> view = set;
             T prev = null;
 
+            @Pure
             public boolean hasNext() {
                 return ! view.isEmpty();
             }
@@ -267,6 +276,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
                 boolean dead = false;
                 Iterator<E> it = descendingIterator(base);
 
+                @Pure
                 public boolean hasNext() {
                     if (dead)
                         return false;
@@ -320,6 +330,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
                 return false;
         }
 
+        @Pure
         public int size() {
             int sz = 0;
             for (E e : this)
@@ -327,6 +338,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
             return sz;
         }
 
+        @Pure
         public Comparator<? super E> comparator() {
             return ReverseOrderSortedSetView.this.comparator();
         }

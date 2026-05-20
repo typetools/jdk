@@ -223,8 +223,8 @@ public interface Map<K, V> {
      */
     @CFComment("nullness: key is not @Nullable because this map might not permit null values")
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-    @EnsuresNonEmptyIf(result=true, expression={"this"})
     @Pure
+    @EnsuresNonEmptyIf(result=true, expression={"this"})
     boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
     /**
@@ -243,8 +243,8 @@ public interface Map<K, V> {
      * @throws NullPointerException if the specified value is null and this
      *         map does not permit null values ({@linkplain Collection##optional-restrictions optional})
      */
-    @EnsuresNonEmptyIf(result=true, expression={"this"})
     @Pure
+    @EnsuresNonEmptyIf(result=true, expression={"this"})
     boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
 
     /**
@@ -707,6 +707,7 @@ public interface Map<K, V> {
      * @param o object to be compared for equality with this map
      * @return {@code true} if the specified object is equal to this map
      */
+    @Pure
     boolean equals(@GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object o);
 
     /**
@@ -722,6 +723,7 @@ public interface Map<K, V> {
      * @see Object#equals(Object)
      * @see #equals(Object)
      */
+    @Pure
     int hashCode(@GuardSatisfied Map<K, V> this);
 
     // Defaultable methods

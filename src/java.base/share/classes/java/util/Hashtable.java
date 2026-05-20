@@ -375,8 +375,8 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws  NullPointerException  if the key is {@code null}
      * @see     #contains(Object)
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public synchronized boolean containsKey(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
@@ -404,8 +404,8 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws NullPointerException if the specified key is null
      * @see     #put(Object, Object)
      */
-    @Pure
     @SuppressWarnings("unchecked")
+    @Pure
     public synchronized @Nullable V get(@GuardSatisfied Hashtable<K, V> this, @UnknownSignedness @GuardSatisfied Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
@@ -1549,8 +1549,8 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
             this.iterator = iterator;
         }
 
-        @EnsuresNonEmptyIf(result = true, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() {
             Entry<?,?> e = entry;
             int i = index;

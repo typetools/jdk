@@ -449,8 +449,8 @@ public class WeakHashMap<K,V>
      * @return {@code true} if there is a mapping for {@code key};
      *         {@code false} otherwise
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }

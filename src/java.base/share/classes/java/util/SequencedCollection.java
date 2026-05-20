@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
@@ -145,6 +146,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      * @return the retrieved element
      * @throws NoSuchElementException if this collection is empty
      */
+    @Pure
     default E getFirst() {
         return this.iterator().next();
     }
@@ -161,6 +163,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      * @return the retrieved element
      * @throws NoSuchElementException if this collection is empty
      */
+    @Pure
     default E getLast() {
         return this.reversed().iterator().next();
     }

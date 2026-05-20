@@ -30,6 +30,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Provides a reverse-ordered view of any Deque. Not serializable.
@@ -84,14 +85,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         base.clear();
     }
 
+    @Pure
     public boolean contains(Object o) {
         return base.contains(o);
     }
 
+    @Pure
     public boolean containsAll(Collection<?> c) {
         return base.containsAll(c);
     }
 
+    @Pure
     public boolean isEmpty() {
         return base.isEmpty();
     }
@@ -149,6 +153,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return modified;
     }
 
+    @Pure
     public int size() {
         return base.size();
     }
@@ -201,14 +206,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return base.iterator();
     }
 
+    @Pure
     public E element() {
         return base.getLast();
     }
 
+    @Pure
     public E getFirst() {
         return base.getLast();
     }
 
+    @Pure
     public E getLast() {
         return base.getFirst();
     }
@@ -225,14 +233,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return base.offerFirst(e);
     }
 
+    @Pure
     public E peek() {
         return base.peekLast();
     }
 
+    @Pure
     public E peekFirst() {
         return base.peekLast();
     }
 
+    @Pure
     public E peekLast() {
         return base.peekFirst();
     }

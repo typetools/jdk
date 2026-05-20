@@ -511,8 +511,8 @@ public class BufferedReader extends Reader {
      *
      * @throws     IOException  If an I/O error occurs
      */
-    @EnsuresNonNullIf(expression={"readLine()"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"readLine()"}, result=true)
     public boolean ready(@GuardSatisfied BufferedReader this) throws IOException {
         Object lock = this.lock;
         if (lock instanceof InternalLock locker) {

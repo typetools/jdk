@@ -365,6 +365,7 @@ public class PriorityQueue<E extends @NonNull Object> extends AbstractQueue<E>
         return (E) queue[0];
     }
 
+    @Pure
     private int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o != null) {
             final Object[] es = queue;

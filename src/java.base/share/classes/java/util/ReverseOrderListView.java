@@ -33,6 +33,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Provides a reverse-ordered view of a List. Not serializable.
@@ -80,6 +81,7 @@ class ReverseOrderListView<E> implements List<E> {
 
     class DescendingIterator implements Iterator<E> {
         final ListIterator<E> it = base.listIterator(base.size());
+        @Pure
         public boolean hasNext() { return it.hasPrevious(); }
         public E next() { return it.previous(); }
         public void remove() {
@@ -98,6 +100,7 @@ class ReverseOrderListView<E> implements List<E> {
             it = base.listIterator(size - pos);
         }
 
+        @Pure
         public boolean hasNext() {
             return it.hasPrevious();
         }
@@ -106,6 +109,7 @@ class ReverseOrderListView<E> implements List<E> {
             return it.previous();
         }
 
+        @Pure
         public boolean hasPrevious() {
             return it.hasNext();
         }
@@ -114,10 +118,12 @@ class ReverseOrderListView<E> implements List<E> {
             return it.next();
         }
 
+        @Pure
         public int nextIndex() {
             return base.size() - it.nextIndex();
         }
 
+        @Pure
         public int previousIndex() {
             return nextIndex() - 1;
         }
@@ -181,15 +187,18 @@ class ReverseOrderListView<E> implements List<E> {
         base.clear();
     }
 
+    @Pure
     public boolean contains(Object o) {
         return base.contains(o);
     }
 
+    @Pure
     public boolean containsAll(Collection<?> c) {
         return base.containsAll(c);
     }
 
     // copied from AbstractList
+    @Pure
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -208,6 +217,7 @@ class ReverseOrderListView<E> implements List<E> {
     }
 
     // copied from AbstractList
+    @Pure
     public int hashCode() {
         int hashCode = 1;
         for (E e : this)
@@ -215,6 +225,7 @@ class ReverseOrderListView<E> implements List<E> {
         return hashCode;
     }
 
+    @Pure
     public boolean isEmpty() {
         return base.isEmpty();
     }
@@ -275,6 +286,7 @@ class ReverseOrderListView<E> implements List<E> {
         return modified;
     }
 
+    @Pure
     public int size() {
         return base.size();
     }
@@ -336,17 +348,20 @@ class ReverseOrderListView<E> implements List<E> {
         }
     }
 
+    @Pure
     public E get(int i) {
         int size = base.size();
         Objects.checkIndex(i, size);
         return base.get(size - i - 1);
     }
 
+    @Pure
     public int indexOf(Object o) {
         int i = base.lastIndexOf(o);
         return i == -1 ? -1 : base.size() - i - 1;
     }
 
+    @Pure
     public int lastIndexOf(Object o) {
         int i = base.indexOf(o);
         return i == -1 ? -1 : base.size() - i - 1;

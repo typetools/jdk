@@ -354,8 +354,8 @@ public class IdentityHashMap<K,V>
      *
      * @see #put(Object, Object)
      */
-    @Pure
     @SuppressWarnings("unchecked")
+    @Pure
     public @Nullable V get(@GuardSatisfied IdentityHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         Object[] tab = table;
@@ -381,8 +381,8 @@ public class IdentityHashMap<K,V>
      *          in this map
      * @see     #containsValue(Object)
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied IdentityHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         Object[] tab = table;

@@ -449,6 +449,7 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     @SuppressWarnings("unchecked")
+    @Pure
     static <E> E elementAt(Object[] es, int index) {
         return (E) es[index];
     }
@@ -1476,8 +1477,8 @@ public class ArrayList<E> extends AbstractList<E>
             return index >= 0 ? index - offset : -1;
         }
 
-        @EnsuresNonEmptyIf(result = true, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@Nullable @UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }

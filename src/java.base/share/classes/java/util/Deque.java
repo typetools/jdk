@@ -359,6 +359,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the head of this deque
      * @throws NoSuchElementException if this deque is empty
      */
+    @Pure
     @EnsuresNonEmpty("this")
     E getFirst(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -370,6 +371,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the tail of this deque
      * @throws NoSuchElementException if this deque is empty
      */
+    @Pure
     @EnsuresNonEmpty("this")
     E getLast(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -381,6 +383,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     @Nullable E peekFirst();
 
     /**
@@ -391,6 +394,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     @Nullable E peekLast();
 
     /**
@@ -531,6 +535,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     E element(@GuardSatisfied @NonEmpty Deque<E> this);
 
     /**
@@ -545,6 +550,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     @Nullable E peek();
 
     /**

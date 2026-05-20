@@ -356,8 +356,8 @@ public class Vector<E>
         return new Enumeration<E>() {
             int count = 0;
 
-            @EnsuresNonEmptyIf(result = true, expression = "this")
             @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return count < elementCount;
             }
@@ -781,6 +781,7 @@ public class Vector<E>
     }
 
     @SuppressWarnings("unchecked")
+    @Pure
     static <E> E elementAt(Object[] es, int index) {
         return (E) es[index];
     }

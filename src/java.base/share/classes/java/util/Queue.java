@@ -222,6 +222,7 @@ public interface Queue<E> extends Collection<E> {
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
+    @Pure
     E element(@GuardSatisfied @NonEmpty Queue<E> this);
 
     /**
@@ -232,5 +233,6 @@ public interface Queue<E> extends Collection<E> {
      */
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
+    @Pure
     @Nullable E peek();
 }

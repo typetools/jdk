@@ -510,8 +510,8 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = true, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() {
             return hasNext();
         }

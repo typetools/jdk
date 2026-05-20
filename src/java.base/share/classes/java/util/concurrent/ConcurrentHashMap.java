@@ -849,7 +849,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     /* ---------------- Public operations -------------- */
 
     /**
-     @Pure
      * Creates a new, empty map with the default initial table size (16).
      */
     public ConcurrentHashMap() {
@@ -991,8 +990,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *         {@code equals} method; {@code false} otherwise
      * @throws NullPointerException if the specified key is null
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied @UnknownSignedness Object key) {
         return get(key) != null;
     }

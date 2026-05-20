@@ -607,8 +607,8 @@ class ImmutableCollections {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -852,8 +852,8 @@ class ImmutableCollections {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -989,8 +989,8 @@ class ImmutableCollections {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }
@@ -1207,8 +1207,8 @@ class ImmutableCollections {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
         }
@@ -1330,8 +1330,8 @@ class ImmutableCollections {
         }
 
         @Override
-        @EnsuresNonEmptyIf(result = false, expression = "this")
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
         }

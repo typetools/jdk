@@ -628,8 +628,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @return {@code true} if this map contains a mapping for the specified
      * key.
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getNode(key) != null;
     }

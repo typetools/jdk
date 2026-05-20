@@ -37,6 +37,7 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.LongConsumer;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * An ordered collection of elements.  Elements can be added, but not removed.
@@ -157,6 +158,7 @@ class SpinedBuffer<E>
     /**
      * Retrieve the element at the specified index.
      */
+    @Pure
     public E get(long index) {
         // @@@ can further optimize by caching last seen spineIndex,
         // which is going to be right most of the time
@@ -770,6 +772,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public int get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine
@@ -885,6 +888,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public long get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine
@@ -1002,6 +1006,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public double get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine

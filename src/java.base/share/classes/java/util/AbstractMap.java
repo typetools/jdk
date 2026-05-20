@@ -168,8 +168,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws ClassCastException   {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Map.Entry<K,V>> i = entrySet().iterator();
         if (key==null) {
@@ -430,8 +430,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                @EnsuresNonEmptyIf(result = true, expression = "this")
                 @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
                 }
@@ -503,8 +503,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     AbstractMap.this.clear();
                 }
 
-                @EnsuresNonEmptyIf(result = true, expression = "this")
                 @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
                 }

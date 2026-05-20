@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import jdk.internal.util.NullableKeyValueHolder;
@@ -294,9 +295,11 @@ public interface SequencedMap<K, V> extends Map<K, V> {
             public SequencedSet<K> reversed() {
                 return SequencedMap.this.reversed().sequencedKeySet();
             }
+            @Pure
             public boolean equals(Object other) {
                 return view().equals(other);
             }
+            @Pure
             public int hashCode() {
                 return view().hashCode();
             }
@@ -358,9 +361,11 @@ public interface SequencedMap<K, V> extends Map<K, V> {
             public SequencedSet<Map.Entry<K, V>> reversed() {
                 return SequencedMap.this.reversed().sequencedEntrySet();
             }
+            @Pure
             public boolean equals(Object other) {
                 return view().equals(other);
             }
+            @Pure
             public int hashCode() {
                 return view().hashCode();
             }
