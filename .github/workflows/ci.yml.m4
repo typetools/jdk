@@ -55,6 +55,7 @@ jobs:
         run: make jdk
 
   build_jdk21u:
+    if: endsWith(github.repository, '/jdk')
     needs:
       - check_generated_ci
     runs-on: ubuntu-latest
