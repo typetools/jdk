@@ -96,6 +96,7 @@ jobs:
           git config --global core.longpaths true
           git config --global core.protectNTFS false
           git config --global --add safe.directory /__w/jdk/jdk
+          git config --global merge.conflictstyle diff3
         # This creates ../jdk21u .
         # Run `git-clone-related` without a limit on depth, because if the depth is
         # too small, the merge will fail.  Don't use "--filter=blob:none" because that
@@ -111,7 +112,6 @@ jobs:
             false
           fi
           df .
-          git config --global --add safe.directory /__w/jdk/jdk
           /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
           cd ../jdk21u
           git diff --exit-code
@@ -123,7 +123,6 @@ jobs:
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
           if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}"; then
-            git config --global merge.conflictstyle diff3
             git --version
             git show | head -100
             git status && git diff | head -1000
