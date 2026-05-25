@@ -123,6 +123,7 @@ jobs:
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
           if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}"; then
+            git config --global merge.conflictstyle diff3
             git --version
             git show | head -100
             git status && git diff | head -1000
