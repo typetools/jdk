@@ -82,7 +82,7 @@ jobs:
       - bash: |
           git config --global --add safe.directory $(cd ../jdk21u && pwd)
           cd ../jdk21u && git status
-          eval $(/tmp/$USER/plume-scripts/ci-info typetools)
+          eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
           set
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
         displayName: git merge plan
@@ -95,7 +95,7 @@ jobs:
           git config --global core.longpaths true
           git config --global core.protectNTFS false
           cd ../jdk21u && git status
-          eval $(/tmp/$USER/plume-scripts/ci-info typetools)
+          eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
           set
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
           cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
