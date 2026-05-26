@@ -182,7 +182,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
-    // @SideEffectsOnly("#1")
+    // @SideEffectsOnly("#2")
     static void sort(Sorter sorter, int[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;

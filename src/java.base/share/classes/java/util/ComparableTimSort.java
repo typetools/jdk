@@ -44,7 +44,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Josh Bloch
  */
 @AnnotatedFor({"index", "interning"})
-@UsesObjectEquals class ComparableTimSort {
+@UsesObjectEquals
 class ComparableTimSort {
     /**
      * This is the minimum sized sequence that will be merged.  Shorter
