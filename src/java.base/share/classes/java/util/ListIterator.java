@@ -219,7 +219,7 @@ public interface ListIterator<E> extends Iterator<E> {
      * @throws IllegalArgumentException if some aspect of this element
      *         prevents it from being added to this list
      */
-    @CFComment("Not @EnsuresNonEmpty(this) because this adds *before* the cursor."
+    @CFComment("Not @EnsuresNonEmpty(this) because this adds *before* the cursor.")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void add(@GuardSatisfied ListIterator<E> this, E e);
