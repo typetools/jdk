@@ -35,9 +35,10 @@ import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
@@ -6085,7 +6086,8 @@ NEXT:       while (i <= last) {
             // > 0 if there are N next empty elements
             private int emptyElementCount;
 
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public String next(@NonEmpty MatcherIterator this) {
                 if (!hasNext())
                     throw new NoSuchElementException();

@@ -668,6 +668,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *                 ... 2 more
      * </pre>
      */
+    @SideEffectFree
     public void printStackTrace() {
         printStackTrace(System.err);
     }
@@ -677,10 +678,12 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *
      * @param s {@code PrintStream} to use for output
      */
+    @SideEffectFree
     public void printStackTrace(PrintStream s) {
         printStackTrace(new WrappedPrintStream(s));
     }
 
+    @SideEffectFree
     private void printStackTrace(PrintStreamOrWriter s) {
         Object lock = s.lock();
         if (lock instanceof InternalLock locker) {
@@ -766,6 +769,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * @param s {@code PrintWriter} to use for output
      * @since   1.1
      */
+    @SideEffectFree
     public void printStackTrace(PrintWriter s) {
         printStackTrace(new WrappedPrintWriter(s));
     }

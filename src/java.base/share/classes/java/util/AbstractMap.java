@@ -37,9 +37,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.stream.Stream;
 import java.util.function.Consumer;
@@ -167,8 +168,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws ClassCastException   {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Map.Entry<K,V>> i = entrySet().iterator();
         if (key==null) {
@@ -237,6 +238,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      */
     @ReleasesNoLocks
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied AbstractMap<K, V> this, K key, V value) {
         throw new UnsupportedOperationException();
     }
@@ -263,6 +266,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws ClassCastException            {@inheritDoc}
      * @throws NullPointerException          {@inheritDoc}
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied AbstractMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Iterator<Entry<K,V>> i = entrySet().iterator();
         Entry<K,V> correctEntry = null;
@@ -308,6 +313,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied AbstractMap<K, V> this, Map<? extends K, ? extends V> m) {
         for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
             put(e.getKey(), e.getValue());
@@ -325,6 +332,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @throws UnsupportedOperationException {@inheritDoc}
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied AbstractMap<K, V> this) {
         entrySet().clear();
     }
@@ -380,6 +389,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         Set<K> ks = keySet;
         if (ks == null) {
             ks = new AbstractSet<K>() {
+                @SideEffectFree
                 public Iterator<K> iterator() {
                     return new Iterator<K>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
@@ -390,11 +400,14 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                             return i.hasNext();
                         }
 
-                        @SideEffectsOnly("this")
+                        // @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public K next(/*@NonEmpty Iterator<K> this*/) {
                             return i.next().getKey();
                         }
 
+                        // @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public void remove() {
                             i.remove();
                         }
@@ -412,10 +425,13 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return AbstractMap.this.isEmpty();
                 }
 
+                // @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void clear() {
                     AbstractMap.this.clear();
                 }
 
+                @Pure
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object k) {
                     return AbstractMap.this.containsKey(k);
@@ -447,6 +463,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         Collection<V> vals = values;
         if (vals == null) {
             vals = new AbstractCollection<V>() {
+                @SideEffectFree
                 public Iterator<V> iterator() {
                     return new Iterator<V>() {
                         private Iterator<Entry<K,V>> i = entrySet().iterator();
@@ -457,11 +474,14 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                             return i.hasNext();
                         }
 
-                        @SideEffectsOnly("this")
+                        // @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public V next(/*@NonEmpty Iterator<V> this*/) {
                             return i.next().getValue();
                         }
 
+                        // @SideEffectsOnly("this")
+                        @DoesNotUnrefineReceiver("modifiability")
                         public void remove() {
                             i.remove();
                         }
@@ -479,10 +499,13 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
                     return AbstractMap.this.isEmpty();
                 }
 
+                // @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void clear() {
                     AbstractMap.this.clear();
                 }
 
+                @Pure
                 @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean contains(@UnknownSignedness Object v) {
                     return AbstractMap.this.containsValue(v);
@@ -615,6 +638,7 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      *
      * @return a shallow copy of this map
      */
+    @SideEffectFree
     protected Object clone() throws CloneNotSupportedException {
         AbstractMap<?,?> result = (AbstractMap<?,?>)super.clone();
         result.keySet = null;
@@ -718,6 +742,8 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
          * @param value new value to be stored in this entry
          * @return the old value corresponding to the entry
          */
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public V setValue(AbstractMap.@GuardSatisfied SimpleEntry<K, V> this, V value) {
             V oldValue = this.value;
             this.value = value;
@@ -961,25 +987,47 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         UnsupportedOperationException uoe() { return new UnsupportedOperationException(); }
         abstract Collection<E> view();
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean add(E t) { throw uoe(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) { throw uoe(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() { view().clear(); }
+        @Pure
         public boolean contains(Object o) { return view().contains(o); }
+        @Pure
         public boolean containsAll(Collection<?> c) { return view().containsAll(c); }
         public void forEach(Consumer<? super E> c) { view().forEach(c); }
+        @Pure
         public boolean isEmpty() { return view().isEmpty(); }
+        @SideEffectFree
         public Iterator<E> iterator() { return view().iterator(); }
         public Stream<E> parallelStream() { return view().parallelStream(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(Object o) { return view().remove(o); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<?> c) { return view().removeAll(c); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) { return view().removeIf(filter); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<?> c) { return view().retainAll(c); }
+        @Pure
         public int size() { return view().size(); }
+        @SideEffectFree
         public Spliterator<E> spliterator() { return view().spliterator(); }
         public Stream<E> stream() { return view().stream(); }
+        @SideEffectFree
         public Object[] toArray() { return view().toArray(); }
         public <T> T[] toArray(IntFunction<T[]> generator) { return view().toArray(generator); }
         public <T> T[] toArray(T[] a) { return view().toArray(a); }
+        @SideEffectFree
         public String toString() { return view().toString(); }
     }
 }

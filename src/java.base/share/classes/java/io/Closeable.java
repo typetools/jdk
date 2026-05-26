@@ -27,8 +27,10 @@ package java.io;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 
@@ -57,5 +59,6 @@ public interface Closeable extends AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     @CFComment({"lock: Note that the @GuardSatisfied is for locks that are external to the implementation of close(). The close() method itself could release locks if it wanted to."})
+    @DoesNotUnrefineReceiver("resourceleak")
     public void close(@GuardSatisfied Closeable this) throws IOException;
 }

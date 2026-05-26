@@ -39,9 +39,10 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -310,20 +311,27 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             this.next = next;
         }
 
+        @Pure
         public final K getKey()        { return key; }
+        @Pure
         public final V getValue()      { return value; }
+        @SideEffectFree
         public final String toString() { return key + "=" + value; }
 
+        @Pure
         public final int hashCode() {
             return Objects.hashCode(key) ^ Objects.hashCode(value);
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
             return oldValue;
         }
 
+        @Pure
         public final boolean equals(Object o) {
             if (o == this)
                 return true;
@@ -621,8 +629,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @return {@code true} if this map contains a mapping for the specified
      * key.
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getNode(key) != null;
     }
@@ -640,6 +648,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied HashMap<K, V> this, K key, V value) {
         return putVal(hash(key), key, value, false, true);
     }
@@ -814,6 +824,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param m mappings to be stored in this map
      * @throws NullPointerException if the specified map is null
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied HashMap<K, V> this, Map<? extends K, ? extends V> m) {
         putMapEntries(m, true);
     }
@@ -827,6 +839,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         (A {@code null} return can also indicate that the map
      *         previously associated {@code null} with {@code key}.)
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied HashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Node<K,V> e;
         return (e = removeNode(hash(key), key, null, false, true)) == null ?
@@ -888,6 +902,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied HashMap<K, V> this) {
         Node<K,V>[] tab;
         modCount++;
@@ -1017,12 +1033,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final class KeySet extends AbstractSet<K> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean contains(@Nullable @UnknownSignedness Object o) { return containsKey(o); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final boolean remove(@Nullable @UnknownSignedness Object key) {
             return removeNode(hash(key), key, null, false, true) != null;
         }
@@ -1031,6 +1051,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new KeySpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return keysToArray(new Object[size]);
         }
@@ -1039,6 +1060,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return keysToArray(prepareArray(a));
         }
 
+        @DoesNotUnrefineReceiver("modifiability")
         public final void forEach(Consumer<? super K> action) {
             Node<K,V>[] tab;
             if (action == null)
@@ -1083,6 +1105,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final class Values extends AbstractCollection<V> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<V> iterator()     { return new ValueIterator(); }
@@ -1094,6 +1118,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return new ValueSpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
 
+        @SideEffectFree
         public Object[] toArray() {
             return valuesToArray(new Object[size]);
         }
@@ -1143,6 +1168,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
         @Pure
         public final @NonNegative int size()                 { return size; }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void clear()               { HashMap.this.clear(); }
         @SideEffectFree
         public final Iterator<Map.Entry<K,V>> iterator() {
@@ -1157,6 +1184,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             Node<K,V> candidate = getNode(key);
             return candidate != null && candidate.equals(e);
         }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final boolean remove(@Nullable @UnknownSignedness Object o) {
             if (o instanceof Map.Entry<?, ?> e) {
                 Object key = e.getKey();
@@ -1169,6 +1198,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final Spliterator<Map.Entry<K,V>> spliterator() {
             return new EntrySpliterator<>(HashMap.this, 0, -1, 0, 0);
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public final void forEach(Consumer<? super Map.Entry<K,V>> action) {
             Node<K,V>[] tab;
             if (action == null)
@@ -1196,16 +1226,22 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V putIfAbsent(K key, V value) {
         return putVal(hash(key), key, value, true, true);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return removeNode(hash(key), key, value, true, true) != null;
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean replace(K key, V oldValue, V newValue) {
         Node<K,V> e; V v;
         if ((e = getNode(key)) != null &&
@@ -1218,6 +1254,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V replace(K key, V value) {
         Node<K,V> e;
         if ((e = getNode(key)) != null) {
@@ -1240,6 +1278,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * mapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V computeIfAbsent(K key,
                              Function<? super K, ? extends @PolyNull V> mappingFunction) {
         if (mappingFunction == null)
@@ -1306,6 +1345,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V computeIfPresent(K key,
                               BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (remappingFunction == null)
@@ -1340,6 +1380,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V compute(K key,
                      BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (remappingFunction == null)
@@ -1405,6 +1446,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * remapping function modified this map
      */
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public @PolyNull V merge(K key, @NonNull V value,
                    BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (value == null || remappingFunction == null)
@@ -1466,6 +1508,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(BiConsumer<? super K, ? super V> action) {
         Node<K,V>[] tab;
         if (action == null)
@@ -1482,6 +1525,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Node<K,V>[] tab;
         if (function == null)
@@ -1649,7 +1693,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return next != null;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         final Node<K,V> nextNode(@NonEmpty HashIterator this) {
             Node<K,V>[] t;
             Node<K,V> e = next;
@@ -1663,6 +1707,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return e;
         }
 
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void remove() {
             Node<K,V> p = current;
             if (p == null)
@@ -1677,16 +1723,22 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     final class KeyIterator extends HashIterator
         implements Iterator<K> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final K next(@NonEmpty KeyIterator this) { return nextNode().key; }
     }
 
     final class ValueIterator extends HashIterator
         implements Iterator<V> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final V next(@NonEmpty ValueIterator this) { return nextNode().value; }
     }
 
     final class EntryIterator extends HashIterator
         implements Iterator<Map.Entry<K,V>> {
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final Map.Entry<K,V> next(@NonEmpty EntryIterator this) { return nextNode(); }
     }
 

@@ -57,6 +57,7 @@ import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -1788,6 +1789,7 @@ public final class String
      *            <li>{@code dstBegin+(srcEnd-srcBegin)} is larger than
      *                {@code dst.length}</ul>
      */
+    // @SideEffectsOnly("#3")
     public void getChars(@IndexOrHigh({"this"}) int srcBegin, @IndexOrHigh({"this"}) int srcEnd, char @GuardSatisfied [] dst, @IndexOrHigh({"#3"}) int dstBegin) {
         checkBoundsBeginEnd(srcBegin, srcEnd, length());
         checkBoundsOffCount(dstBegin, srcEnd - srcBegin, dst.length);
@@ -1944,8 +1946,8 @@ public final class String
      * @see  #compareTo(String)
      * @see  #equalsIgnoreCase(String)
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @StaticallyExecutable
     public boolean equals(@PolyConfidential String this, @GuardSatisfied @Nullable @PolyConfidential Object anObject) {
         if (this == anObject) {
@@ -2083,8 +2085,8 @@ public final class String
      * @see  #equals(Object)
      * @see  #codePoints()
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @StaticallyExecutable
     public boolean equalsIgnoreCase(@Nullable String anotherString) {
         return (this == anotherString) ? true
@@ -2175,6 +2177,7 @@ public final class String
         @java.io.Serial
         private static final long serialVersionUID = 8575799808933029326L;
 
+        @Pure
         public int compare(String s1, String s2) {
             byte[] v1 = s1.value;
             byte[] v2 = s2.value;
@@ -2618,6 +2621,7 @@ public final class String
      *          {@code endIndex}.
      * @since   21
      */
+    @Pure
     public int indexOf(int ch, int beginIndex, int endIndex) {
         checkBoundsBeginEnd(beginIndex, endIndex, length());
         return isLatin1() ? StringLatin1.indexOf(value, ch, beginIndex, endIndex)
@@ -2782,6 +2786,7 @@ public final class String
      *          {@code endIndex}.
      * @since   21
      */
+    @Pure
     public int indexOf(String str, int beginIndex, int endIndex) {
         if (str.length() == 1) {
             /* Simple optimization, can be omitted without behavioral impact */
@@ -3475,11 +3480,13 @@ public final class String
      *
      * @since   21
      */
+    @SideEffectFree
     public String[] splitWithDelimiters(String regex, int limit) {
         return split(regex, limit, true);
     }
 
-    private String[] split(String regex, int limit, boolean withDelimiters) {        /* fastpath if the regex is a
+    private String[] split(String regex, int limit, boolean withDelimiters) {
+        /* fastpath if the regex is a
          * (1) one-char String and this character is not one of the
          *     RegEx's meta characters ".$|()[{^?*+\\", or
          * (2) two-char String and the first char is the backslash and
@@ -4094,6 +4101,7 @@ public final class String
      *
      * @since 11
      */
+    @SideEffectFree
     public Stream<String> lines() {
         return isLatin1() ? StringLatin1.lines(value) : StringUTF16.lines(value);
     }
@@ -4491,6 +4499,7 @@ public final class String
      * @return an IntStream of char values from this sequence
      * @since 9
      */
+    @SideEffectFree
     @Override
     public IntStream chars() {
         return StreamSupport.intStream(
@@ -4511,6 +4520,7 @@ public final class String
      * @return an IntStream of Unicode code points from this sequence
      * @since 9
      */
+    @SideEffectFree
     @Override
     public IntStream codePoints() {
         return StreamSupport.intStream(
@@ -5113,6 +5123,7 @@ public final class String
      * @return an {@link Optional} describing the {@linkplain String} instance
      * @since 12
      */
+    @SideEffectFree
     @Override
     public Optional<String> describeConstable() {
         return Optional.of(this);
@@ -5126,6 +5137,7 @@ public final class String
      * @return the {@linkplain String} instance
      * @since 12
      */
+    @Pure
     @Override
     public String resolveConstantDesc(MethodHandles.Lookup lookup) {
         return this;

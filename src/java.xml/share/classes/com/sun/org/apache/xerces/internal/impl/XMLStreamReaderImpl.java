@@ -26,7 +26,6 @@
 package com.sun.org.apache.xerces.internal.impl;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import com.sun.org.apache.xerces.internal.util.NamespaceContextWrapper;
 import com.sun.org.apache.xerces.internal.util.NamespaceSupport;

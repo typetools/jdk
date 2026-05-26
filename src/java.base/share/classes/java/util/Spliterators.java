@@ -28,7 +28,8 @@ import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
@@ -696,7 +697,8 @@ public final class Spliterators {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public T next(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
@@ -758,7 +760,8 @@ public final class Spliterators {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public int nextInt(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
@@ -816,7 +819,8 @@ public final class Spliterators {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public long nextLong(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();
@@ -874,7 +878,8 @@ public final class Spliterators {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public double nextDouble(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
                     throw new NoSuchElementException();

@@ -33,8 +33,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.File;
 import java.io.IOException;
@@ -1512,7 +1513,8 @@ public final class URL implements java.io.Serializable {
                 return getNext();
             }
 
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public URLStreamHandlerProvider next(/*@NonEmpty Iterator<URLStreamHandlerProvider> this*/) {
                 if (!getNext())
                     throw new NoSuchElementException();

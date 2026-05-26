@@ -66,7 +66,7 @@ in openjdk:jdk21u):
 The typetools:jdk fork is an ancestor of JDK release forks such as
 typetools:jdk21u.  The typetools:jdk fork may not compile, because the commit of
 openjdk:jdk on which it is based may not compile, due to changes to tools such
-as compilers.  Repositories such as jdk11u, jdk17u, and jdk21u have been updated
+as compilers.  Repositories such as jdk17u, jdk21u, and jdk25u have been updated
 and do compile.
 
 This fork's annotations are pulled into those repositories, in order to build an
@@ -127,7 +127,7 @@ To update that copy, run the command below from this directory:
 rm -f checker-qual.jar && \
 cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual.jar && \
 (cd src/java.base/share/classes && rm -rf org/checkerframework && \
-  unzip ../../../../checker-qual.jar -x 'META-INF*' && \
+  unzip ../../../../checker-qual.jar -x 'META-INF*' -x module-info.java && \
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
 jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
@@ -159,6 +159,7 @@ merge conflicts.)
 ```sh
 cd jdk21u
 git pull && \
+git pull ../jdk && \
 git pull https://github.com/openjdk/jdk21u.git && \
 git pull https://github.com/typetools/jdk.git
 ```

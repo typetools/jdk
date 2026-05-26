@@ -38,8 +38,9 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -510,8 +511,8 @@ public class BufferedReader extends Reader {
      *
      * @throws     IOException  If an I/O error occurs
      */
-    @EnsuresNonNullIf(expression={"readLine()"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"readLine()"}, result=true)
     public boolean ready(@GuardSatisfied BufferedReader this) throws IOException {
         Object lock = this.lock;
         if (lock instanceof InternalLock locker) {
@@ -708,7 +709,8 @@ public class BufferedReader extends Reader {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public String next(/*@NonEmpty Iterator<String> this*/) {
                 if (nextLine != null || hasNext()) {
                     String line = nextLine;

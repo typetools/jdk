@@ -34,6 +34,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -123,6 +124,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the value of the specified attribute name, or null if
      *         not found.
      */
+    @Pure
     public Object get(Object name) {
         return map.get(name);
     }
@@ -142,6 +144,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      * @throws IllegalArgumentException if the attribute name is invalid
      */
+    @Pure
     public String getValue(String name) {
         return (String)get(Name.of(name));
     }
@@ -159,6 +162,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the String value of the specified Attribute.Name, or null if
      *         not found.
      */
+    @Pure
     public String getValue(Name name) {
         return (String)get(name);
     }
@@ -174,6 +178,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public Object put(Object name, Object value) {
         return map.put((Attributes.Name)name, (String)value);
     }
@@ -205,6 +211,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
@@ -240,6 +248,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the Attributes to be stored in this map
      * @throws    ClassCastException if attr is not an Attributes
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
         if (!Attributes.class.isInstance(attr))
@@ -251,6 +261,8 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Removes all attributes from this Map.
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear() {
         map.clear();
     }
@@ -275,6 +287,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Set view of the attribute names (keys) contained in this Map.
      */
+    @SideEffectFree
     public Set<Object> keySet() {
         return map.keySet();
     }
@@ -282,6 +295,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Collection view of the attribute values contained in this Map.
      */
+    @SideEffectFree
     public Collection<Object> values() {
         return map.values();
     }
@@ -313,6 +327,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns the hash code value for this Map.
      */
+    @Pure
     public int hashCode() {
         return map.hashCode();
     }
@@ -326,6 +341,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * the Attributes returned can be safely modified without affecting
      * the original.
      */
+    @SideEffectFree
     public Object clone() {
         return new Attributes(this);
     }
@@ -488,6 +504,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          */
         private static @Stable Map<String, Name> KNOWN_NAMES;
 
+        @SideEffectFree
         static final Name of(String name) {
             Name n = KNOWN_NAMES.get(name);
             if (n != null) {
@@ -540,6 +557,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @return true if this attribute name is equal to the
          *         specified attribute object
          */
+        @Pure
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
@@ -551,6 +569,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Computes the hash value for this attribute name.
          */
+        @Pure
         public int hashCode() {
             return hashCode;
         }
@@ -558,6 +577,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Returns the attribute name as a String.
          */
+        @SideEffectFree
         public String toString() {
             return name;
         }

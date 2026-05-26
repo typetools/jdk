@@ -34,7 +34,8 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -312,6 +313,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             if (o == this) {
                 return true;
@@ -331,6 +333,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int hash = 1;
             for (int i = 0, s = size(); i < s; i++) {
@@ -389,7 +392,8 @@ class ImmutableCollections {
             return cursor != size;
         }
 
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty ListItr<E> this) {
             try {
                 int i = cursor;
@@ -405,6 +409,7 @@ class ImmutableCollections {
             throw uoe();
         }
 
+        @Pure
         public boolean hasPrevious() {
             if (!isListIterator) {
                 throw uoe();
@@ -426,6 +431,7 @@ class ImmutableCollections {
             }
         }
 
+        @Pure
         public int nextIndex() {
             if (!isListIterator) {
                 throw uoe();
@@ -433,6 +439,7 @@ class ImmutableCollections {
             return cursor;
         }
 
+        @Pure
         public int previousIndex() {
             if (!isListIterator) {
                 throw uoe();
@@ -483,6 +490,7 @@ class ImmutableCollections {
             return new SubList<>(list, fromIndex, toIndex - fromIndex);
         }
 
+        @Pure
         public E get(int index) {
             Objects.checkIndex(index, size);
             return root.get(offset + index);
@@ -518,6 +526,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -531,6 +540,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -597,6 +607,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -604,6 +615,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public E get(int index) {
             if (index == 0) {
                 return e0;
@@ -614,6 +626,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             Objects.requireNonNull(o);
             if (o.equals(e0)) {
@@ -626,6 +639,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             Objects.requireNonNull(o);
             if (e1 != EMPTY && o.equals(e1)) {
@@ -707,6 +721,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public E get(int index) {
             return elements[index];
         }
@@ -742,6 +757,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int indexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -756,6 +772,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int lastIndexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -777,6 +794,7 @@ class ImmutableCollections {
             implements Set<E> {
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             if (o == this) {
                 return true;
@@ -797,6 +815,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public abstract int hashCode();
     }
 
@@ -833,6 +852,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -846,6 +866,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return e0.hashCode() + (e1 == EMPTY ? 0 : e1.hashCode());
         }
@@ -863,7 +884,8 @@ class ImmutableCollections {
                 }
 
                 @Override
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 @SuppressWarnings("unchecked")
                 public E next(/*@NonEmpty Iterator<E> this*/) {
                     if (idx == 1) {
@@ -967,6 +989,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
@@ -1001,7 +1024,8 @@ class ImmutableCollections {
             }
 
             @Override
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
                     E element;
@@ -1034,6 +1058,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int h = 0;
             for (E e : elements) {
@@ -1130,6 +1155,7 @@ class ImmutableCollections {
          * value should be returned.
          */
         @Override
+        @Pure
         public V getOrDefault(Object key, V defaultValue) {
             V v;
             return ((v = get(key)) != null)
@@ -1157,6 +1183,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public V get(Object o) {
             return o.equals(k0) ? v0 : null; // implicit nullcheck of o
         }
@@ -1174,11 +1201,13 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int size() {
             return 1;
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return false;
@@ -1195,6 +1224,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return k0.hashCode() ^ v0.hashCode();
         }
@@ -1265,6 +1295,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         public int hashCode() {
             int hash = 0;
             for (int i = 0; i < table.length; i += 2) {
@@ -1278,6 +1309,7 @@ class ImmutableCollections {
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public V get(Object o) {
             if (size == 0) {
                 Objects.requireNonNull(o);
@@ -1298,6 +1330,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size == 0;
@@ -1323,7 +1356,8 @@ class ImmutableCollections {
                 return remaining > 0;
             }
 
-            @SideEffectsOnly("this")
+            // @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             private int nextIndex() {
                 int idx = this.idx;
                 if (REVERSE) {

@@ -42,6 +42,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link SortedSet} extended with navigation methods reporting
@@ -160,6 +161,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *
      * @return the first element, or {@code null} if this set is empty
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable E pollFirst(@GuardSatisfied NavigableSet<E> this);
 
     /**
@@ -168,6 +171,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *
      * @return the last element, or {@code null} if this set is empty
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     @Nullable E pollLast(@GuardSatisfied NavigableSet<E> this);
 
     /**
@@ -193,6 +198,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *
      * @return a reverse order view of this set
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     NavigableSet<E> descendingSet();
 
     /**
@@ -201,6 +208,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *
      * @return an iterator over the elements in this set, in descending order
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     Iterator<E> descendingIterator();
 
     /**
@@ -349,6 +358,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default E removeFirst() {
         if (this.isEmpty()) {
             throw new NoSuchElementException();
@@ -368,6 +379,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default E removeLast() {
         if (this.isEmpty()) {
             throw new NoSuchElementException();
@@ -388,6 +401,8 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @return a reverse-ordered view of this collection, as a {@code NavigableSet}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default NavigableSet<E> reversed() {
         return this.descendingSet();
     }

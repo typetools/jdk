@@ -25,11 +25,14 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Provides a reverse-ordered view of any Deque. Not serializable.
@@ -41,6 +44,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         base = deque;
     }
 
+    @SideEffectFree
     public static <T> Deque<T> of(Deque<T> deque) {
         if (deque instanceof ReverseOrderDequeView<T> rodv) {
             return rodv.base;
@@ -56,10 +60,12 @@ class ReverseOrderDequeView<E> implements Deque<E> {
             action.accept(e);
     }
 
+    @SideEffectFree
     public Iterator<E> iterator() {
         return base.descendingIterator();
     }
 
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliteratorUnknownSize(base.descendingIterator(), 0);
     }
@@ -84,14 +90,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         base.clear();
     }
 
+    @Pure
     public boolean contains(Object o) {
         return base.contains(o);
     }
 
+    @Pure
     public boolean containsAll(Collection<?> c) {
         return base.containsAll(c);
     }
 
+    @Pure
     public boolean isEmpty() {
         return base.isEmpty();
     }
@@ -149,6 +158,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return modified;
     }
 
+    @Pure
     public int size() {
         return base.size();
     }
@@ -157,6 +167,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return StreamSupport.stream(spliterator(), false);
     }
 
+    @SideEffectFree
     public Object[] toArray() {
         return ArraysSupport.reverse(base.toArray());
     }
@@ -170,6 +181,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return ArraysSupport.reverse(base.toArray(generator));
     }
 
+    @SideEffectFree
     // copied from AbstractCollection
     public String toString() {
         Iterator<E> it = iterator();
@@ -201,14 +213,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return base.iterator();
     }
 
+    @Pure
     public E element() {
         return base.getLast();
     }
 
+    @Pure
     public E getFirst() {
         return base.getLast();
     }
 
+    @Pure
     public E getLast() {
         return base.getFirst();
     }
@@ -225,14 +240,17 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return base.offerFirst(e);
     }
 
+    @Pure
     public E peek() {
         return base.peekLast();
     }
 
+    @Pure
     public E peekFirst() {
         return base.peekLast();
     }
 
+    @Pure
     public E peekLast() {
         return base.peekFirst();
     }

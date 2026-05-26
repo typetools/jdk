@@ -26,7 +26,6 @@
 package com.sun.xml.internal.stream;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import com.sun.xml.internal.stream.events.XMLEventAllocatorImpl;
 import java.util.NoSuchElementException;
@@ -75,7 +74,6 @@ public class XMLEventReaderImpl implements javax.xml.stream.XMLEventReader{
     }
 
 
-    @SideEffectsOnly("this")
     public XMLEvent nextEvent() throws XMLStreamException {
         //if application peeked return the peeked event
         if(fPeekedEvent != null){
