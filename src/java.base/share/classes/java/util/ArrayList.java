@@ -473,6 +473,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getFirst() {
         if (size == 0) {
@@ -488,6 +489,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getLast() {
         int last = size - 1;
@@ -507,6 +509,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E set(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
@@ -521,6 +524,7 @@ public class ArrayList<E> extends AbstractList<E>
      * bytecode size under 35 (the -XX:MaxInlineSize default value),
      * which helps when add(E) is called in a C1-compiled loop.
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     private void add(E e, Object[] elementData, int s) {
         if (s == elementData.length)
@@ -535,7 +539,6 @@ public class ArrayList<E> extends AbstractList<E>
      * @param e element to be appended to this list
      * @return {@code true} (as specified by {@link Collection#add})
      */
-    // @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
@@ -554,6 +557,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied ArrayList<E> this, @NonNegative int index, E element) {
@@ -575,6 +579,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E element) {
@@ -586,6 +591,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E element) {
@@ -1236,6 +1242,7 @@ public class ArrayList<E> extends AbstractList<E>
             }
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
@@ -1318,6 +1325,7 @@ public class ArrayList<E> extends AbstractList<E>
             this.modCount = parent.modCount;
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(@NonNegative int index, E element) {
@@ -1341,6 +1349,7 @@ public class ArrayList<E> extends AbstractList<E>
             return size;
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(@NonNegative int index, E element) {

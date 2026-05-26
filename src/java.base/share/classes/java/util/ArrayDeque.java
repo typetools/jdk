@@ -302,6 +302,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param e the element to add
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(@GuardSatisfied ArrayDeque<E> this, E e) {
@@ -321,6 +322,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
      * @param e the element to add
      * @throws NullPointerException if the specified element is null
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(@GuardSatisfied ArrayDeque<E> this, E e) {
@@ -435,6 +437,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getFirst(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         E e = elementAt(elements, head);
@@ -446,6 +449,7 @@ public class ArrayDeque<E extends @NonNull Object> extends AbstractCollection<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getLast(@GuardSatisfied @NonEmpty ArrayDeque<E> this) {
         final Object[] es = elements;

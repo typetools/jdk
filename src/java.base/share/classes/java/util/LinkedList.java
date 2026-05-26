@@ -272,6 +272,7 @@ public class LinkedList<E>
      * @return the first element in this list
      * @throws NoSuchElementException if this list is empty
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getFirst(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> f = first;
@@ -286,6 +287,7 @@ public class LinkedList<E>
      * @return the last element in this list
      * @throws NoSuchElementException if this list is empty
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getLast(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> l = last;
@@ -329,6 +331,7 @@ public class LinkedList<E>
      *
      * @param e the element to add
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(@GuardSatisfied LinkedList<E> this, E e) {
@@ -342,6 +345,7 @@ public class LinkedList<E>
      *
      * @param e the element to add
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(@GuardSatisfied LinkedList<E> this, E e) {
@@ -547,6 +551,7 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E set(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
@@ -566,6 +571,7 @@ public class LinkedList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
@@ -1627,6 +1633,7 @@ public class LinkedList<E>
             rlist.add(index, element);
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {

@@ -248,7 +248,6 @@ public class HashSet<E>
      * @return {@code true} if this set did not already contain the specified
      * element
      */
-    // @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")

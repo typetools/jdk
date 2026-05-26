@@ -160,6 +160,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E set(@GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index, E element) {
@@ -179,6 +180,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, E element) {
@@ -495,6 +497,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             }
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
@@ -834,6 +837,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             this.modCount = root.modCount;
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
@@ -855,6 +859,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return size;
         }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
@@ -963,6 +968,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                     i.set(e);
                 }
 
+                @EnsuresNonEmpty("this")
                 // @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {

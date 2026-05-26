@@ -333,6 +333,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @throws IllegalStateException if this deque is full
      * @throws NullPointerException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
@@ -344,6 +345,7 @@ public class LinkedBlockingDeque<E extends Object>
      * @throws IllegalStateException if this deque is full
      * @throws NullPointerException  {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {
@@ -592,6 +594,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getFirst(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekFirst();
@@ -602,6 +605,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @EnsuresNonEmpty("this")
     @Pure
     public E getLast(@NonEmpty LinkedBlockingDeque<E> this) {
         E x = peekLast();

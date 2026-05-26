@@ -457,6 +457,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E lower(E e) {
         return m.lowerKey(e);
     }
@@ -468,6 +469,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E floor(E e) {
         return m.floorKey(e);
     }
@@ -479,6 +481,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E ceiling(E e) {
         return m.ceilingKey(e);
     }
@@ -490,6 +493,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E higher(E e) {
         return m.higherKey(e);
     }
@@ -522,6 +526,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
@@ -536,6 +541,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {

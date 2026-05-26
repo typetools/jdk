@@ -45,6 +45,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 @AnnotatedFor({"index", "interning"})
 @UsesObjectEquals class ComparableTimSort {
+class ComparableTimSort {
     /**
      * This is the minimum sized sequence that will be merged.  Shorter
      * sequences will be lengthened by calling binarySort.  If the entire
@@ -181,6 +182,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
      * @param workLen usable size of work array
      * @since 1.8
      */
+    // @SideEffectsOnly("#1")
     static void sort(Object[] a, @IndexOrHigh({"#1"}) int lo, @IndexOrHigh({"#1"}) int hi, Object[] work, int workBase, int workLen) {
         assert a != null && lo >= 0 && lo <= hi && hi <= a.length;
 

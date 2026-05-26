@@ -45,10 +45,10 @@ import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -167,6 +167,7 @@ public class Collections {
      *         found to violate the {@link Comparable} contract
      * @see List#sort(Comparator)
      */
+    // @SideEffectsOnly("#1")
     public static <T extends Comparable<? super T>> void sort(List<T> list) {
         list.sort(null);
     }
@@ -201,6 +202,7 @@ public class Collections {
      * @see List#sort(Comparator)
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
+    // @SideEffectsOnly("#1")
     public static <T> void sort(List<T> list, @Nullable Comparator<? super T> c) {
         list.sort(c);
     }
@@ -899,6 +901,8 @@ public class Collections {
      *         its list-iterator does not support the {@code set} operation.
      * @since  1.4
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public static <T> boolean replaceAll(List<T> list, @Nullable T oldVal, T newVal) {
         boolean result = false;
         int size = list.size();
@@ -1281,11 +1285,13 @@ public class Collections {
             throw new UnsupportedOperationException();
         }
 
+        @EnsuresNonEmpty("this")
         @Pure
         public E getFirst() {
             return sc().getFirst();
         }
 
+        @EnsuresNonEmpty("this")
         @Pure
         public E getLast() {
             return sc().getLast();
@@ -1617,6 +1623,7 @@ public class Collections {
 
         @Pure
         public E get(int index) {return list.get(index);}
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
@@ -2969,6 +2976,7 @@ public class Collections {
         public E get(int index) {
             synchronized (mutex) {return list.get(index);}
         }
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
@@ -4131,6 +4139,7 @@ public class Collections {
         @Pure
         public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
+        @EnsuresNonEmpty("this")
         // @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
@@ -6468,6 +6477,7 @@ public class Collections {
      * @since 1.5
      */
     @SafeVarargs
+    // @SideEffectsOnly("#1")
     public static <T> boolean addAll(@GuardSatisfied Collection<? super T> c, T... elements) {
         boolean result = false;
         for (T element : elements)
@@ -6537,6 +6547,8 @@ public class Collections {
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o)   { return m.remove(o) != null; }
         @EnsuresNonEmpty("this")
         public boolean add(E e) { return m.put(e, Boolean.TRUE) == null; }
@@ -6552,7 +6564,11 @@ public class Collections {
         public boolean equals(Object o)   { return o == this || s.equals(o); }
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {return s.containsAll(c);}
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   {return s.removeAll(c);}
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   {return s.retainAll(c);}
         // addAll is the only inherited implementation
 
@@ -6662,9 +6678,7 @@ public class Collections {
 
         public void addFirst(E e) { map().putFirst(e, Boolean.TRUE); }
         public void addLast(E e)  { map().putLast(e, Boolean.TRUE); }
-        @Pure
         public E getFirst()       { return nsee(map().firstEntry()); }
-        @Pure
         public E getLast()        { return nsee(map().lastEntry()); }
         public E removeFirst()    { return nsee(map().pollFirstEntry()); }
         public E removeLast()     { return nsee(map().pollLastEntry()); }
@@ -6728,6 +6742,8 @@ public class Collections {
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean contains(@UnknownSignedness Object o)           { return q.contains(o); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@UnknownSignedness Object o)             { return q.remove(o); }
         @SideEffectFree
         public Iterator<E> iterator()               { return q.iterator(); }
@@ -6738,7 +6754,11 @@ public class Collections {
         public String toString()                    { return q.toString(); }
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return q.containsAll(c); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   { return q.removeAll(c); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   { return q.retainAll(c); }
         // We use inherited addAll; forwarding addAll would be wrong
 

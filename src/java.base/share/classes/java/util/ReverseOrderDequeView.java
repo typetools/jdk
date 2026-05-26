@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.util.function.Consumer;
@@ -72,11 +74,16 @@ class ReverseOrderDequeView<E> implements Deque<E> {
 
     // ========== Collection ==========
 
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         base.addFirst(e);
         return true;
     }
 
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(Collection<? extends E> c) {
         boolean modified = false;
         for (E e : c) {
@@ -218,11 +225,13 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return base.getLast();
     }
 
+    @EnsuresNonEmpty("this")
     @Pure
     public E getFirst() {
         return base.getLast();
     }
 
+    @EnsuresNonEmpty("this")
     @Pure
     public E getLast() {
         return base.getFirst();

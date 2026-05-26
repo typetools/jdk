@@ -298,9 +298,9 @@ public interface List<E> extends SequencedCollection<E> {
      *         prevents it from being added to this list
      */
     @ReleasesNoLocks
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    @EnsuresNonEmpty("this")
     boolean add(@GuardSatisfied List<E> this, E e);
 
     /**
@@ -649,6 +649,7 @@ public interface List<E> extends SequencedCollection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index >= size()})
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E set(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index, E element);
@@ -673,6 +674,7 @@ public interface List<E> extends SequencedCollection<E> {
      *         ({@code index < 0 || index > size()})
      */
     @ReleasesNoLocks
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
@@ -861,6 +863,7 @@ public interface List<E> extends SequencedCollection<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addFirst(E e) {
@@ -877,6 +880,7 @@ public interface List<E> extends SequencedCollection<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addLast(E e) {
@@ -893,6 +897,7 @@ public interface List<E> extends SequencedCollection<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     default E getFirst() {
         if (this.isEmpty()) {
@@ -912,6 +917,7 @@ public interface List<E> extends SequencedCollection<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     default E getLast() {
         if (this.isEmpty()) {
