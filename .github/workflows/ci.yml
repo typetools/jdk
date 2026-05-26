@@ -111,14 +111,22 @@ jobs:
           /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
           cd ../jdk21u
           git diff --exit-code
-      - name: git merge
+      - name: git merge plan
         run: |
           set -ex
           cd ../jdk21u
           git status
+          /tmp/$USER/plume-scripts/ci-org-and-branch typetools --debug
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
-          if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH_NAME}"; then
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+        shell: bash --noprofile --norc -e {0}
+      - name: git merge
+        run: |
+          set -ex
+          cd ../jdk21u
+          eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+          if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH}"; then
             git --version
             git show | head -100
             git status && git diff | head -1000
