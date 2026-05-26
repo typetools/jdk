@@ -26,8 +26,8 @@
 package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
-import org.checkerframework.dataflow.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
 import java.util.function.IntFunction;

@@ -1692,7 +1692,6 @@ public final @UsesObjectEquals class StrictMath {
      * @since 15
      */
     @Pure
-    @Pure
     @StaticallyExecutable
     public static int absExact(int a) {
         return Math.absExact(a);
