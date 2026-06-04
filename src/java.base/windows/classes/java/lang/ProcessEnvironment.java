@@ -64,7 +64,7 @@
 package java.lang;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.*;
 
@@ -145,7 +145,7 @@ final class ProcessEnvironment extends HashMap<String,String>
                 Iterator<Map.Entry<String,String>> i = s.iterator();
                 @Pure
                 public boolean hasNext() { return i.hasNext();}
-                @SideEffectsOnly("this")
+                // @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new CheckedEntry(i.next());
                 }

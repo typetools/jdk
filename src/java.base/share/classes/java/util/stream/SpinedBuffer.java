@@ -24,6 +24,8 @@
  */
 package java.util.stream;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -37,6 +39,7 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.LongConsumer;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * An ordered collection of elements.  Elements can be added, but not removed.
@@ -157,6 +160,7 @@ class SpinedBuffer<E>
     /**
      * Retrieve the element at the specified index.
      */
+    @Pure
     public E get(long index) {
         // @@@ can further optimize by caching last seen spineIndex,
         // which is going to be right most of the time
@@ -234,6 +238,7 @@ class SpinedBuffer<E>
     }
 
     @Override
+    @SideEffectFree
     public Iterator<E> iterator() {
         return Spliterators.iterator(spliterator());
     }
@@ -264,6 +269,7 @@ class SpinedBuffer<E>
     }
 
     @Override
+    @SideEffectFree
     public String toString() {
         List<E> list = new ArrayList<>();
         forEach(list::add);
@@ -276,6 +282,7 @@ class SpinedBuffer<E>
     /**
      * Return a {@link Spliterator} describing the contents of the buffer.
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         class Splitr implements Spliterator<E> {
             // The current spine index
@@ -462,6 +469,7 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public abstract Iterator<E> iterator();
 
         @Override
@@ -770,6 +778,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public int get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine
@@ -781,10 +790,12 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public PrimitiveIterator.OfInt iterator() {
             return Spliterators.iterator(spliterator());
         }
 
+        @SideEffectFree
         public Spliterator.OfInt spliterator() {
             @SuppressWarnings("overloads")
             class Splitr extends BaseSpliterator<Spliterator.OfInt>
@@ -816,6 +827,7 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public String toString() {
             int[] array = asPrimitiveArray();
             if (array.length < 200) {
@@ -885,6 +897,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public long get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine
@@ -896,11 +909,12 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public PrimitiveIterator.OfLong iterator() {
             return Spliterators.iterator(spliterator());
         }
 
-
+        @SideEffectFree
         public Spliterator.OfLong spliterator() {
             @SuppressWarnings("overloads")
             class Splitr extends BaseSpliterator<Spliterator.OfLong>
@@ -932,6 +946,7 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public String toString() {
             long[] array = asPrimitiveArray();
             if (array.length < 200) {
@@ -1002,6 +1017,7 @@ class SpinedBuffer<E>
             curChunk[elementIndex++] = i;
         }
 
+        @Pure
         public double get(long index) {
             // Casts to int are safe since the spine array index is the index minus
             // the prior element count from the current spine
@@ -1013,10 +1029,12 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public PrimitiveIterator.OfDouble iterator() {
             return Spliterators.iterator(spliterator());
         }
 
+        @SideEffectFree
         public Spliterator.OfDouble spliterator() {
             @SuppressWarnings("overloads")
             class Splitr extends BaseSpliterator<Spliterator.OfDouble>
@@ -1048,6 +1066,7 @@ class SpinedBuffer<E>
         }
 
         @Override
+        @SideEffectFree
         public String toString() {
             double[] array = asPrimitiveArray();
             if (array.length < 200) {

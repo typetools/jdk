@@ -26,12 +26,14 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link Set} that further provides a <i>total ordering</i> on its elements.
@@ -268,6 +270,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     default Spliterator<E> spliterator() {
         return new Spliterators.IteratorSpliterator<E>(
                 this, Spliterator.DISTINCT | Spliterator.SORTED | Spliterator.ORDERED) {
@@ -291,6 +294,9 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default void addFirst(E e) {
         throw new UnsupportedOperationException();
     }
@@ -306,6 +312,9 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default void addLast(E e) {
         throw new UnsupportedOperationException();
     }
@@ -319,6 +328,8 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @Pure
     default E getFirst() {
         return this.first();
     }
@@ -332,6 +343,8 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @Pure
     default E getLast() {
         return this.last();
     }
@@ -348,6 +361,8 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default E removeFirst() {
         E e = this.first();
         this.remove(e);
@@ -366,6 +381,8 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException {@inheritDoc}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default E removeLast() {
         E e = this.last();
         this.remove(e);
@@ -382,6 +399,8 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @return a reverse-ordered view of this collection, as a {@code SortedSet}
      * @since 21
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     default SortedSet<E> reversed() {
         return ReverseOrderSortedSetView.of(this);
     }

@@ -301,8 +301,8 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=false)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=false)
     public static boolean isNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj == null;
     }
@@ -321,8 +321,8 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"#1"}, result=true)
     public static boolean nonNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj != null;
     }
@@ -385,8 +385,8 @@ public final @UsesObjectEquals class Objects {
      * @throws NullPointerException if {@code obj} is {@code null}
      * @since 1.8
      */
-    @EnsuresNonNull("#1")
     @Pure
+    @EnsuresNonNull("#1")
     public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @GuardSatisfied Supplier<String> messageSupplier) {
         if (obj == null)
             throw new NullPointerException(messageSupplier == null ?

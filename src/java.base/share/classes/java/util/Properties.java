@@ -35,6 +35,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -238,6 +239,8 @@ public class Properties extends Hashtable<Object,Object> {
      * @see #getProperty
      * @since    1.2
      */
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized @Nullable Object setProperty(@GuardSatisfied Properties this, @PropertyKey String key, String value) {
         return put(key, value);
     }
@@ -1327,12 +1330,14 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @SideEffectFree
     public Enumeration<Object> keys() {
         // CHM.keys() returns Iterator w/ remove() - instead wrap keySet()
         return Collections.enumeration(map.keySet());
     }
 
     @Override
+    @SideEffectFree
     public Enumeration<Object> elements() {
         // CHM.elements() returns Iterator w/ remove() - instead wrap values()
         return Collections.enumeration(map.values());
@@ -1358,41 +1363,53 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @Pure
     public @Nullable Object get(Object key) {
         return map.get(key);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object put(Object key, Object value) {
         return map.put(key, value);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized void putAll(Map<?, ?> t) {
         map.putAll(t);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized void clear() {
         map.clear();
     }
 
     @Override
+    @SideEffectFree
     public synchronized String toString() {
         return map.toString();
     }
 
     @Override
+    @SideEffectFree
     public Set<@KeyFor("this") Object> keySet() {
         return Collections.synchronizedSet(map.keySet(), this);
     }
 
     @Override
+    @SideEffectFree
     public Collection<Object> values() {
         return Collections.synchronizedCollection(map.values(), this);
     }
@@ -1415,16 +1432,22 @@ public class Properties extends Hashtable<Object,Object> {
             this.entrySet = entrySet;
         }
 
-        @Pure @Override public int size() { return entrySet.size(); }
+        @Pure
+        @Override public int size() { return entrySet.size(); }
         @Pure
         @EnsuresNonEmptyIf(result = false, expression = "this")
         @Override public boolean isEmpty() { return entrySet.isEmpty(); }
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         @Override public boolean contains(@UnknownSignedness Object o) { return entrySet.contains(o); }
+        @SideEffectFree
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @Override public void clear() { entrySet.clear(); }
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 
         @Override
@@ -1444,42 +1467,52 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
+        @Pure
         public boolean equals(Object o) {
             return o == this || entrySet.equals(o);
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return entrySet.hashCode();
         }
 
         @Override
+        @SideEffectFree
         public String toString() {
             return entrySet.toString();
         }
 
         @Override
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
+        // @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
         }
 
         @Override
+        @SideEffectFree
         public Iterator<Map.Entry<Object, Object>> iterator() {
             return entrySet.iterator();
         }
     }
 
     @Override
+    @Pure
     public synchronized boolean equals(Object o) {
         return map.equals(o);
     }
 
     @Override
+    @Pure
     public synchronized int hashCode() {
         return map.hashCode();
     }
@@ -1491,54 +1524,68 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized void forEach(BiConsumer<? super Object, ? super Object> action) {
         map.forEach(action);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized void replaceAll(BiFunction<? super Object, ? super Object, ?> function) {
         map.replaceAll(function);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object putIfAbsent(Object key, Object value) {
         return map.putIfAbsent(key, value);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean replace(Object key, Object oldValue, Object newValue) {
         return map.replace(key, oldValue, newValue);
     }
 
     @Override
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object replace(Object key, Object value) {
         return map.replace(key, value);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfAbsent(Object key,
             Function<? super Object, ? extends @PolyNull Object> mappingFunction) {
         return map.computeIfAbsent(key, mappingFunction);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object computeIfPresent(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
         return map.computeIfPresent(key, remappingFunction);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object compute(Object key,
             BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
         return map.compute(key, remappingFunction);
     }
 
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public synchronized @Nullable Object merge(Object key, Object value,
             BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return map.merge(key, value, remappingFunction);
@@ -1551,6 +1598,7 @@ public class Properties extends Hashtable<Object,Object> {
     protected void rehash() { /* no-op */ }
 
     @Override
+    @SideEffectFree
     public synchronized Object clone() {
         Properties clone = (Properties) cloneHashtable();
         clone.map = new ConcurrentHashMap<>(map);

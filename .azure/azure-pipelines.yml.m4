@@ -78,13 +78,13 @@ jobs:
           git config --global core.protectNTFS false
           cd ../jdk21u
           git diff --exit-code
-          echo $?
         displayName: clone-related-jdk21u
       - bash: |
+          git config --global --add safe.directory $(cd ../jdk21u && pwd)
           cd ../jdk21u && git status
-          eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-          set
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
+          /tmp/$USER/plume-scripts/ci-org-and-branch typetools --debug
+          eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
         displayName: git merge plan
       - bash: |
           set -ex
@@ -94,11 +94,11 @@ jobs:
           git config --global pull.rebase false
           git config --global core.longpaths true
           git config --global core.protectNTFS false
+          git config --global merge.conflictstyle diff3
           cd ../jdk21u && git status
-          eval $(/tmp/$USER/plume-scripts/ci-info typetools)
-          set
-          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME}"
-          cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH_NAME} || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
+          eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
+          echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
+          cd ../jdk21u && git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH} || (git --version && git show | head -100 && git status && git diff | head -1000 && echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md " && false)
         displayName: git merge
       - bash: cd ../jdk21u && export JT_HOME=/usr/share/jtreg && bash ./configure --with-jtreg --disable-warnings-as-errors
         displayName: configure
@@ -126,23 +126,7 @@ jobs:
       - bash: true
         displayName: canary_jobs
 
-cftests_job(junit, cftests-junit, 17)
-cftests_job(nonjunit, cftests-nonjunit, 17)
-cftests_job(typecheck, typecheck, 17)
-cftests_job(junit, cftests-junit, 21)
-cftests_job(nonjunit, cftests-nonjunit, 21)
-cftests_job(inference, cftests-inference, 21)
-cftests_job(typecheck, typecheck, 21)
-cftests_job(junit, cftests-junit, 25)
-cftests_job(nonjunit, cftests-nonjunit, 25)
-cftests_job(inference, cftests-inference, 25)
-cftests_job(typecheck, typecheck, 25)
-
-daikon_job(1)
-daikon_job(2)
-daikon_job(3)
-
-plume_lib_job(canary_version)
+include([jobs.m4])dnl
 
 ifelse([
 Local Variables:

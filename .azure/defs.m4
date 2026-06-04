@@ -5,7 +5,7 @@ changequote(`[',`]')dnl
 ifelse([The built-in "dnl" m4 macro means "discard to next line",])dnl
 define([canary_os], [ubuntu])dnl
 define([canary_version], [25])dnl
-define([latest_version], [25])dnl
+define([latest_version], [26])dnl
 define([canary_test], [canary_os[]canary_version])dnl
 define([docker_testing], [])dnl
 ifelse([uncomment the next line to use the "testing" Docker images])dnl
@@ -42,7 +42,7 @@ ifelse($1,canary_version,,[      - junit_jdk[]canary_version
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-cftests-junit.sh
+      - bash: ./checker/bin-devel/test-cftests-junit.sh
         displayName: test-cftests-junit.sh])dnl
 dnl
 define([nonjunit_job], [dnl
@@ -57,7 +57,7 @@ ifelse($1,canary_version,,[      - nonjunit_jdk[]canary_version
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-cftests-nonjunit.sh
+      - bash: ./checker/bin-devel/test-cftests-nonjunit.sh
         displayName: test-cftests-nonjunit.sh])dnl
 dnl
 define([inference_job], [dnl
@@ -73,7 +73,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-cftests-inference-part1.sh
+      - bash: ./checker/bin-devel/test-cftests-inference-part1.sh
         displayName: test-cftests-inference-part1.sh
   - job: inference_part2_jdk$1
     dependsOn:
@@ -85,7 +85,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-cftests-inference-part2.sh
+      - bash: ./checker/bin-devel/test-cftests-inference-part2.sh
         displayName: test-cftests-inference-part2.sh
 ],[dnl
   - job: inference_jdk$1
@@ -100,7 +100,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-cftests-inference.sh
+      - bash: ./checker/bin-devel/test-cftests-inference.sh
         displayName: test-cftests-inference.sh
 ])dnl
 ])dnl
@@ -118,7 +118,7 @@ ifelse($1,canary_version,,$1,latest_version,,[      - misc_jdk[]canary_version
       - checkout: self
         # Unlimited fetchDepth (0) for misc jobs, because of need to make contributors.tex.
         fetchDepth: 0
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-misc.sh
+      - bash: ./checker/bin-devel/test-misc.sh
         displayName: test-misc.sh])dnl
 dnl
 define([typecheck_job], [dnl
@@ -132,7 +132,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 1000
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-typecheck-part1.sh
+      - bash: ./checker/bin-devel/test-typecheck-part1.sh
         displayName: test-typecheck-part1.sh
   - job: typecheck_part2_jdk$1
     dependsOn:
@@ -143,7 +143,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 1000
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-typecheck-part2.sh
+      - bash: ./checker/bin-devel/test-typecheck-part2.sh
         displayName: test-typecheck-part2.sh], [dnl
   - job: typecheck_jdk$1
     dependsOn:
@@ -156,7 +156,7 @@ ifelse($1,canary_version,[dnl
     steps:
       - checkout: self
         fetchDepth: 1000
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-typecheck.sh
+      - bash: ./checker/bin-devel/test-typecheck.sh
         displayName: test-typecheck.sh])])dnl
 dnl
 define([daikon_job], [dnl
@@ -165,7 +165,7 @@ define([daikon_job], [dnl
       - canary_jobs
     pool:
       vmImage: 'ubuntu-latest'
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk$2[]docker_testing:latest
     timeoutInMinutes: 70
     steps:
       - checkout: self
@@ -183,7 +183,7 @@ define([plume_lib_job], [dnl
       - canary_jobs
     pool:
       vmImage: 'ubuntu-latest'
-    container: mdernst/cf-ubuntu-jdk17:latest
+    container: mdernst/cf-ubuntu-jdk$1[]docker_testing:latest
     steps:
       - checkout: self
         fetchDepth: 25

@@ -26,7 +26,7 @@
 package sun.nio.fs;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.nio.ByteBuffer;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -259,7 +259,7 @@ abstract class UnixFileSystem
         }
 
         @Override
-        @SideEffectsOnly("this")
+        // @SideEffectsOnly("this")
         public synchronized FileStore next() {
             if (next == null)
                 next = readNext();
