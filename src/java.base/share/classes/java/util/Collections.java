@@ -1239,6 +1239,7 @@ public class Collections {
      * @since 21
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> SequencedCollection<T> unmodifiableSequencedCollection(SequencedCollection<? extends T> c) {
         if (c.getClass() == UnmodifiableSequencedCollection.class) {
             return (SequencedCollection<T>) c;
@@ -1366,6 +1367,7 @@ public class Collections {
      * @since 21
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> SequencedSet<T> unmodifiableSequencedSet(SequencedSet<? extends T> s) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (s.getClass() == UnmodifiableSequencedSet.class) {
@@ -1420,6 +1422,7 @@ public class Collections {
      *        returned.
      * @return an unmodifiable view of the specified sorted set.
      */
+    @SideEffectFree
     public static <T> @PolyNonEmpty SortedSet<T> unmodifiableSortedSet(@PolyNonEmpty SortedSet<T> s) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (s.getClass() == UnmodifiableSortedSet.class) {
@@ -1482,6 +1485,7 @@ public class Collections {
      * @return an unmodifiable view of the specified navigable set
      * @since 1.8
      */
+    @SideEffectFree
     public static <T> @PolyNonEmpty NavigableSet<T> unmodifiableNavigableSet(@PolyNonEmpty NavigableSet<T> s) {
         if (s.getClass() == UnmodifiableNavigableSet.class) {
             return s;
@@ -1590,6 +1594,7 @@ public class Collections {
      * @return an unmodifiable view of the specified list.
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> @PolyGrowShrink @PolyNonEmpty List<T> unmodifiableList(@PolyGrowShrink @PolyNonEmpty List<? extends T> list) {
         if (list.getClass() == UnmodifiableList.class || list.getClass() == UnmodifiableRandomAccessList.class) {
            return (List<T>) list;
@@ -1779,6 +1784,7 @@ public class Collections {
      * @return an unmodifiable view of the specified map.
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <K,V> @PolyNonEmpty Map<K,V> unmodifiableMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (m.getClass() == UnmodifiableMap.class) {
@@ -2185,6 +2191,7 @@ public class Collections {
      * @since 21
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <K,V> SequencedMap<K,V> unmodifiableSequencedMap(SequencedMap<? extends K, ? extends V> m) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (m.getClass() == UnmodifiableSequencedMap.class) {
@@ -2260,6 +2267,7 @@ public class Collections {
      * @return an unmodifiable view of the specified sorted map.
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <K,V> @PolyNonEmpty SortedMap<K,V> unmodifiableSortedMap(@PolyNonEmpty SortedMap<K, ? extends V> m) {
         // Not checking for subclasses because of heap pollution and information leakage.
         if (m.getClass() == UnmodifiableSortedMap.class) {
@@ -2316,6 +2324,7 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <K,V> @PolyNonEmpty NavigableMap<K,V> unmodifiableNavigableMap(@PolyNonEmpty NavigableMap<K, ? extends V> m) {
         if (m.getClass() == UnmodifiableNavigableMap.class) {
             return (NavigableMap<K,V>) m;
