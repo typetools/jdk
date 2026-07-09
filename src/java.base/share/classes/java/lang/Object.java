@@ -286,7 +286,7 @@ public class Object {
     "that differs according to ==, and @Deterministic requires that the results of",
     "two calls of the method are ==."})
     @SideEffectFree
-    public @Confidential String toString(@PolyConfidential @GuardSatisfied Object this) {
+    public @PolyConfidential String toString(@PolyConfidential @GuardSatisfied Object this) {
         return getClass().getName() + "@" + Integer.toHexString(hashCode());
     }
 
