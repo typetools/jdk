@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -173,6 +174,9 @@ class ReverseOrderListView<E> implements List<E> {
 
     // ========== Collection ==========
 
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         checkModifiable();
         base.add(0, e);

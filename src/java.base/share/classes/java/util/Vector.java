@@ -40,10 +40,10 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -815,6 +815,7 @@ public class Vector<E>
      *         ({@code index < 0 || index >= size()})
      * @since 1.2
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized E set(@GuardSatisfied Vector<E> this, @NonNegative int index, E element) {
@@ -845,7 +846,6 @@ public class Vector<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @since 1.2
      */
-    // @SideEffectsOnly("this")
     @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
@@ -883,6 +883,7 @@ public class Vector<E>
      *         ({@code index < 0 || index > size()})
      * @since 1.2
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied Vector<E> this, @NonNegative int index, E element) {

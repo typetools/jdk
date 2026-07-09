@@ -34,8 +34,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 

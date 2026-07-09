@@ -25,7 +25,9 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -125,6 +127,9 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
 
     // ========== Collection ==========
 
+    @EnsuresNonEmpty("this")
+    // @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         base.add(e);
         return true;

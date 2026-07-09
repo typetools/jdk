@@ -157,7 +157,7 @@ To update jdk21u from its upstreams:
 merge conflicts.)
 
 ```sh
-cd jdk21u
+cd jdk21u && \
 git pull && \
 git pull ../jdk && \
 git pull https://github.com/openjdk/jdk21u.git && \

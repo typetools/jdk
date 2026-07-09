@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -293,6 +294,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addFirst(E e) {
@@ -310,6 +312,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     // @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addLast(E e) {
@@ -325,6 +328,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     default E getFirst() {
         return this.first();
@@ -339,6 +343,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
     @Pure
     default E getLast() {
         return this.last();
