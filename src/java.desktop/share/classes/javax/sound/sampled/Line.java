@@ -25,6 +25,9 @@
 
 package javax.sound.sampled;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The {@code Line} interface represents a mono or multi-channel audio feed. A
  * line is an element of the digital audio "pipeline," such as a mixer, an input
@@ -66,6 +69,8 @@ package javax.sound.sampled;
  * @see LineEvent
  * @since 1.3
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface Line extends AutoCloseable {
 
     /**
