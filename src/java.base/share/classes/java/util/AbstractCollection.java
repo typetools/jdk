@@ -205,7 +205,6 @@ public abstract class AbstractCollection<E> implements Collection<E> {
      * @throws ArrayStoreException  {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    @SideEffectFree
     @SuppressWarnings("unchecked")
     public <T> @Nullable T [] toArray(@PolyNull T [] a) {
         // Estimate size of array; be prepared to see more or fewer elements

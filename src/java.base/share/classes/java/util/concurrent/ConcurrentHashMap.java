@@ -4578,7 +4578,6 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             return (i == n) ? r : Arrays.copyOf(r, i);
         }
 
-        @SideEffectFree
         @SuppressWarnings("unchecked")
         public final <T> @Nullable T[] toArray(@PolyNull T[] a) {
             long sz = map.mappingCount();
