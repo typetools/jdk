@@ -760,7 +760,6 @@ public class Vector<E>
      * @throws NullPointerException if the given array is null
      * @since 1.2
      */
-    @SideEffectFree
     @SuppressWarnings("unchecked")
     public synchronized <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length < elementCount)

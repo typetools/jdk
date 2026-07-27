@@ -562,7 +562,6 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @CFComment({"nullness: 'a' is known to be of array class type",
         "Annotation for toArray are technically incorrect. Refer to note on toArray in Collection.java"})
-        @SideEffectFree
         @SuppressWarnings({
             "unchecked",
             "nullness:argument",
