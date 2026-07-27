@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Check generated ci.yml
         run: make -B -C .github/workflows && git diff --exit-code -- .github/workflows/ci.yml
 
@@ -31,7 +31,7 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: show environment
         run: |
           whoami
@@ -58,7 +58,7 @@ jobs:
     container: mdernst/cf-ubuntu-jdk21-plus:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: show environment
         run: |
           whoami
