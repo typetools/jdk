@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import org.checkerframework.checker.confidential.qual.UnknownConfidential;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -85,10 +86,10 @@ import java.util.stream.Stream;
 "meaning, but are unrelated by the Java type hierarchy.",
 "@Covariant makes Optional<@NonNull String> a subtype of Optional<@Nullable String>."
 })
-@AnnotatedFor({"lock", "nullness", "optional"})
+@AnnotatedFor({"lock", "nullness", "optional", "confidential"})
 @Covariant(0)
 @jdk.internal.ValueBased
-public final @NonNull class Optional<T> {
+public final @NonNull class Optional<T extends @UnknownConfidential Object> {
     /**
      * Common instance for {@code empty()}.
      */
