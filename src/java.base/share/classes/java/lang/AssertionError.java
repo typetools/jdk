@@ -53,7 +53,6 @@ public class AssertionError extends Error {
      * Constructs an AssertionError with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public AssertionError() {
     }
 
@@ -80,7 +79,6 @@ public class AssertionError extends Error {
      * @see   Throwable#getCause()
      */
     @SideEffectFree
-    @SideEffectFree
     public AssertionError(@Nullable Object detailMessage) {
         this(String.valueOf(detailMessage));
         if (detailMessage instanceof Throwable)
@@ -96,7 +94,6 @@ public class AssertionError extends Error {
      * @param detailMessage value to be used in constructing detail message
      */
     @SideEffectFree
-    @SideEffectFree
     public AssertionError(boolean detailMessage) {
         this(String.valueOf(detailMessage));
     }
@@ -109,7 +106,6 @@ public class AssertionError extends Error {
      *
      * @param detailMessage value to be used in constructing detail message
      */
-    @SideEffectFree
     @SideEffectFree
     public AssertionError(char detailMessage) {
         this(String.valueOf(detailMessage));
@@ -124,7 +120,6 @@ public class AssertionError extends Error {
      * @param detailMessage value to be used in constructing detail message
      */
     @SideEffectFree
-    @SideEffectFree
     public AssertionError(int detailMessage) {
         this(String.valueOf(detailMessage));
     }
@@ -137,7 +132,6 @@ public class AssertionError extends Error {
      *
      * @param detailMessage value to be used in constructing detail message
      */
-    @SideEffectFree
     @SideEffectFree
     public AssertionError(long detailMessage) {
         this(String.valueOf(detailMessage));
@@ -152,7 +146,6 @@ public class AssertionError extends Error {
      * @param detailMessage value to be used in constructing detail message
      */
     @SideEffectFree
-    @SideEffectFree
     public AssertionError(float detailMessage) {
         this(String.valueOf(detailMessage));
     }
@@ -165,7 +158,6 @@ public class AssertionError extends Error {
      *
      * @param detailMessage value to be used in constructing detail message
      */
-    @SideEffectFree
     @SideEffectFree
     public AssertionError(double detailMessage) {
         this(String.valueOf(detailMessage));
@@ -184,7 +176,6 @@ public class AssertionError extends Error {
      *
      * @since 1.7
      */
-    @SideEffectFree
     @SideEffectFree
     public AssertionError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);

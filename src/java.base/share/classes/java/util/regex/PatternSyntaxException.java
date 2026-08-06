@@ -62,7 +62,6 @@ public class PatternSyntaxException
      *         or {@code -1} if the index is not known
      */
     @SideEffectFree
-    @SideEffectFree
     public PatternSyntaxException(String desc, String regex, int index) {
         this.desc = desc;
         this.pattern = regex;

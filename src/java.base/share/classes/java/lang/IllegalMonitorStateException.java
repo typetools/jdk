@@ -51,7 +51,6 @@ public class IllegalMonitorStateException extends RuntimeException {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalMonitorStateException() {
         super();
     }
@@ -62,7 +61,6 @@ public class IllegalMonitorStateException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalMonitorStateException(@Nullable String s) {
         super(s);

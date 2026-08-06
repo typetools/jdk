@@ -48,7 +48,6 @@ public class IllegalAccessError extends IncompatibleClassChangeError {
      * Constructs an {@code IllegalAccessError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalAccessError() {
         super();
     }
@@ -59,7 +58,6 @@ public class IllegalAccessError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalAccessError(@Nullable String s) {
         super(s);

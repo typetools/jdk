@@ -48,7 +48,6 @@ public class NoSuchFieldError extends IncompatibleClassChangeError {
      * Constructs a {@code NoSuchFieldError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public NoSuchFieldError() {
         super();
     }
@@ -59,7 +58,6 @@ public class NoSuchFieldError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public NoSuchFieldError(@Nullable String s) {
         super(s);

@@ -54,7 +54,6 @@ public class CloneNotSupportedException extends Exception {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public CloneNotSupportedException() {
         super();
     }
@@ -65,7 +64,6 @@ public class CloneNotSupportedException extends Exception {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public CloneNotSupportedException(@Nullable String s) {
         super(s);

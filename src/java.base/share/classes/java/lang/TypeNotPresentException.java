@@ -67,7 +67,6 @@ public class TypeNotPresentException extends RuntimeException {
      *    load the named type, or {@code null} if unavailable or inapplicable
      */
     @SideEffectFree
-    @SideEffectFree
     public TypeNotPresentException(@FullyQualifiedName String typeName, @Nullable Throwable cause) {
         super("Type " + typeName + " not present", cause);
         this.typeName = typeName;

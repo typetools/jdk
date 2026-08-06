@@ -57,7 +57,6 @@ public class IncompatibleClassChangeError extends LinkageError {
      * @param   s   the detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IncompatibleClassChangeError(@Nullable String s) {
         super(s);
     }

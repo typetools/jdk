@@ -48,7 +48,6 @@ public class StringIndexOutOfBoundsException extends IndexOutOfBoundsException {
      * message.
      */
     @SideEffectFree
-    @SideEffectFree
     public StringIndexOutOfBoundsException() {
         super();
     }
@@ -59,7 +58,6 @@ public class StringIndexOutOfBoundsException extends IndexOutOfBoundsException {
      *
      * @param s the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public StringIndexOutOfBoundsException(@Nullable String s) {
         super(s);
@@ -74,7 +72,6 @@ public class StringIndexOutOfBoundsException extends IndexOutOfBoundsException {
      *
      * @param index the illegal index.
      */
-    @SideEffectFree
     @SideEffectFree
     public StringIndexOutOfBoundsException(int index) {
         super("String index out of range: " + index);

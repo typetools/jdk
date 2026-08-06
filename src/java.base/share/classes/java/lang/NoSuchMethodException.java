@@ -43,7 +43,6 @@ public class NoSuchMethodException extends ReflectiveOperationException {
      * Constructs a {@code NoSuchMethodException} without a detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public NoSuchMethodException() {
         super();
     }
@@ -53,7 +52,6 @@ public class NoSuchMethodException extends ReflectiveOperationException {
      *
      * @param      s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public NoSuchMethodException(@Nullable String s) {
         super(s);

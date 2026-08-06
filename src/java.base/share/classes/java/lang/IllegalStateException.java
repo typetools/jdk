@@ -45,7 +45,6 @@ public class IllegalStateException extends RuntimeException {
      * A detail message is a String that describes this particular exception.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalStateException() {
         super();
     }
@@ -57,7 +56,6 @@ public class IllegalStateException extends RuntimeException {
      *
      * @param s the String that contains a detailed message
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalStateException(@Nullable String s) {
         super(s);
@@ -80,7 +78,6 @@ public class IllegalStateException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalStateException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -99,7 +96,6 @@ public class IllegalStateException extends RuntimeException {
      *         unknown.)
      * @since  1.5
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalStateException(@Nullable Throwable cause) {
         super(cause);

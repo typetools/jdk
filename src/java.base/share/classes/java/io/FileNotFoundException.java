@@ -79,6 +79,7 @@ public class FileNotFoundException extends IOException {
      *
      * @since 1.2
      */
+    @SideEffectFree
     private FileNotFoundException(String path, @Nullable String reason) {
         super(path + ((reason == null)
                       ? ""

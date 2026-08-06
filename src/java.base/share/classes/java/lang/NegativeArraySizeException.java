@@ -44,7 +44,6 @@ public class NegativeArraySizeException extends RuntimeException {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public NegativeArraySizeException() {
         super();
     }
@@ -55,7 +54,6 @@ public class NegativeArraySizeException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public NegativeArraySizeException(@Nullable String s) {
         super(s);

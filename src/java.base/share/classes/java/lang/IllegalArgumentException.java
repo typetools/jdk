@@ -42,7 +42,6 @@ public class IllegalArgumentException extends RuntimeException {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalArgumentException() {
         super();
     }
@@ -53,7 +52,6 @@ public class IllegalArgumentException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalArgumentException(@Nullable String s) {
         super(s);
@@ -76,7 +74,6 @@ public class IllegalArgumentException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalArgumentException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -95,7 +92,6 @@ public class IllegalArgumentException extends RuntimeException {
      *         unknown.)
      * @since  1.5
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalArgumentException(@Nullable Throwable cause) {
         super(cause);

@@ -49,7 +49,6 @@ public class NoSuchMethodError extends IncompatibleClassChangeError {
      * Constructs a {@code NoSuchMethodError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public NoSuchMethodError() {
         super();
     }
@@ -60,7 +59,6 @@ public class NoSuchMethodError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public NoSuchMethodError(@Nullable String s) {
         super(s);

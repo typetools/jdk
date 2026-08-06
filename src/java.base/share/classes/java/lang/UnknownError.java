@@ -44,7 +44,6 @@ public class UnknownError extends VirtualMachineError {
      * Constructs an {@code UnknownError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public UnknownError() {
         super();
     }
@@ -55,7 +54,6 @@ public class UnknownError extends VirtualMachineError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public UnknownError(@Nullable String s) {
         super(s);

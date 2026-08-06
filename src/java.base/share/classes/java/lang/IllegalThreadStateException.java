@@ -46,7 +46,6 @@ public class IllegalThreadStateException extends IllegalArgumentException {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalThreadStateException() {
         super();
     }
@@ -57,7 +56,6 @@ public class IllegalThreadStateException extends IllegalArgumentException {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalThreadStateException(@Nullable String s) {
         super(s);

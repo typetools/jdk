@@ -54,7 +54,6 @@ public class RuntimeException extends Exception {
      * initialized by a call to {@link #initCause}.
      */
     @SideEffectFree
-    @SideEffectFree
     public RuntimeException() {
         super();
     }
@@ -66,7 +65,6 @@ public class RuntimeException extends Exception {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    @SideEffectFree
     @SideEffectFree
     public RuntimeException(@Nullable String message) {
         super(message);
@@ -87,7 +85,6 @@ public class RuntimeException extends Exception {
      * @since  1.4
      */
     @SideEffectFree
-    @SideEffectFree
     public RuntimeException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -104,7 +101,6 @@ public class RuntimeException extends Exception {
      *         unknown.)
      * @since  1.4
      */
-    @SideEffectFree
     @SideEffectFree
     public RuntimeException(@Nullable Throwable cause) {
         super(cause);
@@ -125,6 +121,7 @@ public class RuntimeException extends Exception {
      *
      * @since 1.7
      */
+    @SideEffectFree
     protected RuntimeException(@Nullable String message, @Nullable Throwable cause,
                                boolean enableSuppression,
                                boolean writableStackTrace) {

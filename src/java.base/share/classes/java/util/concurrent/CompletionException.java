@@ -55,6 +55,7 @@ public class CompletionException extends RuntimeException {
      * The cause is not initialized, and may subsequently be
      * initialized by a call to {@link #initCause(Throwable) initCause}.
      */
+    @SideEffectFree
     protected CompletionException() { }
 
     /**
@@ -64,6 +65,7 @@ public class CompletionException extends RuntimeException {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     protected CompletionException(@Nullable String message) {
         super(message);
     }

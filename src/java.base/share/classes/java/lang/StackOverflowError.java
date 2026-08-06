@@ -44,7 +44,6 @@ public class StackOverflowError extends VirtualMachineError {
      * Constructs a {@code StackOverflowError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public StackOverflowError() {
         super();
     }
@@ -55,7 +54,6 @@ public class StackOverflowError extends VirtualMachineError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public StackOverflowError(@Nullable String s) {
         super(s);

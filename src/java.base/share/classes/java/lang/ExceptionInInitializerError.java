@@ -58,7 +58,6 @@ public class ExceptionInInitializerError extends LinkageError {
      * A detail message is a String that describes this particular exception.
      */
     @SideEffectFree
-    @SideEffectFree
     public ExceptionInInitializerError() {
         initCause(null); // Disallow subsequent initCause
     }
@@ -71,7 +70,6 @@ public class ExceptionInInitializerError extends LinkageError {
      *
      * @param thrown The exception thrown
      */
-    @SideEffectFree
     @SideEffectFree
     public ExceptionInInitializerError(@Nullable Throwable thrown) {
         super(null, thrown); // Disallow subsequent initCause
@@ -86,7 +84,6 @@ public class ExceptionInInitializerError extends LinkageError {
      *
      * @param s the detail message
      */
-    @SideEffectFree
     @SideEffectFree
     public ExceptionInInitializerError(@Nullable String s) {
         super(s, null);  // Disallow subsequent initCause

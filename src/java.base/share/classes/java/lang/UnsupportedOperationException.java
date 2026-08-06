@@ -45,7 +45,6 @@ public class UnsupportedOperationException extends RuntimeException {
      * Constructs an UnsupportedOperationException with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public UnsupportedOperationException() {
     }
 
@@ -55,7 +54,6 @@ public class UnsupportedOperationException extends RuntimeException {
      *
      * @param message the detail message
      */
-    @SideEffectFree
     @SideEffectFree
     public UnsupportedOperationException(@Nullable String message) {
         super(message);
@@ -78,7 +76,6 @@ public class UnsupportedOperationException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
-    @SideEffectFree
     public UnsupportedOperationException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -97,7 +94,6 @@ public class UnsupportedOperationException extends RuntimeException {
      *         unknown.)
      * @since  1.5
      */
-    @SideEffectFree
     @SideEffectFree
     public UnsupportedOperationException(@Nullable Throwable cause) {
         super(cause);

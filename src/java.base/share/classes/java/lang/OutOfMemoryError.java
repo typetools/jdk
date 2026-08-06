@@ -50,7 +50,6 @@ public class OutOfMemoryError extends VirtualMachineError {
      * Constructs an {@code OutOfMemoryError} with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public OutOfMemoryError() {
         super();
     }
@@ -61,7 +60,6 @@ public class OutOfMemoryError extends VirtualMachineError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public OutOfMemoryError(@Nullable String s) {
         super(s);

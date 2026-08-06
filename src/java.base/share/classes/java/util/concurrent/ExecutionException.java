@@ -81,7 +81,6 @@ public class ExecutionException extends Exception {
      *         {@link #getCause()} method)
      */
     @SideEffectFree
-    @SideEffectFree
     public ExecutionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -95,7 +94,6 @@ public class ExecutionException extends Exception {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
-    @SideEffectFree
     @SideEffectFree
     public ExecutionException(@Nullable Throwable cause) {
         super(cause);

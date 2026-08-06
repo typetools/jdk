@@ -68,7 +68,6 @@ public class IllegalAccessException extends ReflectiveOperationException {
      * detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public IllegalAccessException() {
         super();
     }
@@ -78,7 +77,6 @@ public class IllegalAccessException extends ReflectiveOperationException {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public IllegalAccessException(@Nullable String s) {
         super(s);

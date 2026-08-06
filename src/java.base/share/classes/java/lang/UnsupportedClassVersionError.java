@@ -46,7 +46,6 @@ public class UnsupportedClassVersionError extends ClassFormatError {
      * with no detail message.
      */
     @SideEffectFree
-    @SideEffectFree
     public UnsupportedClassVersionError() {
         super();
     }
@@ -57,7 +56,6 @@ public class UnsupportedClassVersionError extends ClassFormatError {
      *
      * @param   s   the detail message.
      */
-    @SideEffectFree
     @SideEffectFree
     public UnsupportedClassVersionError(@Nullable String s) {
         super(s);
