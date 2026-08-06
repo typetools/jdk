@@ -25,7 +25,6 @@
 
 package java.nio.file;
 
-import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.io.IOException;
@@ -33,6 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.InvalidObjectException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**

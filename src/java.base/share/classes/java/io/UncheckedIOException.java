@@ -24,10 +24,10 @@
  */
 package java.io;
 
-import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.Objects;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**

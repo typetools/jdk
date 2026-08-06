@@ -180,6 +180,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * @since 1.7
      */
     @SideEffectFree
+    @SuppressWarnings("purity.not.sideeffectfree.call") // getCertificates() has no side effect
     public CertPathValidatorException(String msg, Throwable cause,
             CertPath certPath, int index, Reason reason) {
         super(msg, cause);

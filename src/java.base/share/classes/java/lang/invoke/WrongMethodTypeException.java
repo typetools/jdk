@@ -74,6 +74,7 @@ public class WrongMethodTypeException extends RuntimeException {
      */
     //FIXME: make this public in MR1
     /*non-public*/
+    @SideEffectFree
     WrongMethodTypeException(String s, Throwable cause) {
         super(s, cause);
     }
@@ -86,6 +87,7 @@ public class WrongMethodTypeException extends RuntimeException {
      */
     //FIXME: make this public in MR1
     /*non-public*/
+    @SideEffectFree
     WrongMethodTypeException(Throwable cause) {
         super(cause);
     }

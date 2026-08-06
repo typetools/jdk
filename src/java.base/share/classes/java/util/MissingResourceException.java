@@ -83,6 +83,7 @@ public class MissingResourceException extends RuntimeException {
      *        permitted, and indicates that the cause is nonexistent
      *        or unknown.)
      */
+    @SideEffectFree
     MissingResourceException(String message, String className, String key, Throwable cause) {
         super(message, cause);
         this.className = className;
