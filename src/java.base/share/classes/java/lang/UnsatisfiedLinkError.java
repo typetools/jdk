@@ -45,6 +45,7 @@ public class UnsatisfiedLinkError extends LinkageError {
      * Constructs an {@code UnsatisfiedLinkError} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public UnsatisfiedLinkError() {
         super();
     }
@@ -55,6 +56,7 @@ public class UnsatisfiedLinkError extends LinkageError {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public UnsatisfiedLinkError(@Nullable String s) {
         super(s);

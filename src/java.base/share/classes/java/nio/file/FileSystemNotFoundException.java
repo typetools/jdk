@@ -27,6 +27,7 @@ package java.nio.file;
 
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 /**
  * Runtime exception thrown when a file system cannot be found.
@@ -44,6 +45,7 @@ public class FileSystemNotFoundException
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public FileSystemNotFoundException() {
     }
 
@@ -53,6 +55,7 @@ public class FileSystemNotFoundException
      * @param   msg
      *          the detail message
      */
+    @SideEffectFree
     public FileSystemNotFoundException(@Nullable String msg) {
         super(msg);
     }

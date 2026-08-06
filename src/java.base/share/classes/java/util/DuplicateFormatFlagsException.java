@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when duplicate flags are provided in the format
  * specifier.
@@ -48,6 +50,7 @@ public non-sealed class DuplicateFormatFlagsException extends IllegalFormatExcep
      * @param  f
      *         The set of format flags which contain a duplicate flag.
      */
+    @SideEffectFree
     public DuplicateFormatFlagsException(String f) {
         if (f == null)
             throw new NullPointerException();

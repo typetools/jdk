@@ -49,6 +49,7 @@ public class ClassCastException extends RuntimeException {
      * Constructs a {@code ClassCastException} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public ClassCastException() {
         super();
     }
@@ -59,6 +60,7 @@ public class ClassCastException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public ClassCastException(@Nullable String s) {
         super(s);

@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an unknown conversion is given.
  *
@@ -47,6 +49,7 @@ public non-sealed class UnknownFormatConversionException extends IllegalFormatEx
      * @param  s
      *         Unknown conversion
      */
+    @SideEffectFree
     public UnknownFormatConversionException(String s) {
         if (s == null)
             throw new NullPointerException();

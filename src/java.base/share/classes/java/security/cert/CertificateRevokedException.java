@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -90,6 +91,7 @@ public class CertificateRevokedException extends CertificateException {
      * @throws ClassCastException if {@code extensions} contains an incorrectly
      *    typed key or value
      */
+    @SideEffectFree
     public CertificateRevokedException(Date revocationDate, CRLReason reason,
         X500Principal authority, Map<String, Extension> extensions) {
         if (revocationDate == null || reason == null || authority == null ||

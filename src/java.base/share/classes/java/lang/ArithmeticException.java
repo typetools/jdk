@@ -51,6 +51,7 @@ public class ArithmeticException extends RuntimeException {
      * message.
      */
     @SideEffectFree
+    @SideEffectFree
     public ArithmeticException() {
         super();
     }
@@ -61,6 +62,7 @@ public class ArithmeticException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public ArithmeticException(@Nullable String s) {
         super(s);

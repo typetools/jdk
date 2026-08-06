@@ -45,6 +45,7 @@ public class VerifyError extends LinkageError {
      * Constructs an {@code VerifyError} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public VerifyError() {
         super();
     }
@@ -54,6 +55,7 @@ public class VerifyError extends LinkageError {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public VerifyError(@Nullable String s) {
         super(s);

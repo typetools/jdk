@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Error thrown when the {@link CharsetDecoder#decodeLoop decodeLoop} method of
@@ -48,6 +49,7 @@ public class CoderMalfunctionError
      * @param  cause
      *         The unexpected exception that was thrown
      */
+    @SideEffectFree
     public CoderMalfunctionError(Exception cause) {
         super(cause);
     }

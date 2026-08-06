@@ -25,6 +25,8 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the basic login exception.
  *
@@ -41,6 +43,7 @@ public class LoginException extends java.security.GeneralSecurityException {
      * Constructs a LoginException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public LoginException() {
         super();
     }
@@ -52,6 +55,7 @@ public class LoginException extends java.security.GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public LoginException(String msg) {
         super(msg);
     }

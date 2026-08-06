@@ -50,6 +50,7 @@ public class InstantiationError extends IncompatibleClassChangeError {
      * Constructs an {@code InstantiationError} with no detail  message.
      */
     @SideEffectFree
+    @SideEffectFree
     public InstantiationError() {
         super();
     }
@@ -60,6 +61,7 @@ public class InstantiationError extends IncompatibleClassChangeError {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public InstantiationError(@Nullable String s) {
         super(s);

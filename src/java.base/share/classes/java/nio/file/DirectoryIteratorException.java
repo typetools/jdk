@@ -25,6 +25,7 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.io.IOException;
@@ -60,6 +61,7 @@ public final class DirectoryIteratorException
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public DirectoryIteratorException(IOException cause) {
         super(Objects.requireNonNull(cause));
     }

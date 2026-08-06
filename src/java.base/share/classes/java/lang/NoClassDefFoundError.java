@@ -50,6 +50,7 @@ public class NoClassDefFoundError extends LinkageError {
      * Constructs a {@code NoClassDefFoundError} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public NoClassDefFoundError() {
         super();
     }
@@ -60,6 +61,7 @@ public class NoClassDefFoundError extends LinkageError {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public NoClassDefFoundError(@Nullable String s) {
         super(s);

@@ -25,6 +25,7 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -44,6 +45,7 @@ public class ReadOnlyFileSystemException
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ReadOnlyFileSystemException() {
     }
 }

@@ -54,6 +54,7 @@ public class InstantiationException extends ReflectiveOperationException {
      * Constructs an {@code InstantiationException} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public InstantiationException() {
         super();
     }
@@ -64,6 +65,7 @@ public class InstantiationException extends ReflectiveOperationException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public InstantiationException(@Nullable String s) {
         super(s);

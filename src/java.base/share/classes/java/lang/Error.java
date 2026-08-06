@@ -58,6 +58,7 @@ public class Error extends Throwable {
      * call to {@link #initCause}.
      */
     @SideEffectFree
+    @SideEffectFree
     public Error() {
         super();
     }
@@ -70,6 +71,7 @@ public class Error extends Throwable {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
+    @SideEffectFree
     @SideEffectFree
     public Error(@Nullable String message) {
         super(message);
@@ -90,6 +92,7 @@ public class Error extends Throwable {
      * @since  1.4
      */
     @SideEffectFree
+    @SideEffectFree
     public Error(@Nullable String message, @GuardSatisfied @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -107,6 +110,7 @@ public class Error extends Throwable {
      *         unknown.)
      * @since  1.4
      */
+    @SideEffectFree
     @SideEffectFree
     public Error(@Nullable Throwable cause) {
         super(cause);

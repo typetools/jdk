@@ -25,6 +25,8 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an attempt is made to invoke an operation on
  * a watch service that is closed.
@@ -41,6 +43,7 @@ public class ClosedWatchServiceException
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ClosedWatchServiceException() {
     }
 }

@@ -41,6 +41,8 @@ package javax.security.cert;
  * @deprecated Use the classes in {@code java.security.cert} instead.
  */
 @Deprecated(since="9", forRemoval=true)
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 public class CertificateException extends Exception {
 
     @java.io.Serial
@@ -49,6 +51,7 @@ public class CertificateException extends Exception {
      * Constructs a certificate exception with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CertificateException() {
         super();
     }
@@ -60,6 +63,7 @@ public class CertificateException extends Exception {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public CertificateException(String msg) {
         super(msg);
     }

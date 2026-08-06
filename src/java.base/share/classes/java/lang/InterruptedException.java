@@ -59,6 +59,7 @@ public class InterruptedException extends Exception {
      * Constructs an {@code InterruptedException} with no detail  message.
      */
     @SideEffectFree
+    @SideEffectFree
     public InterruptedException() {
         super();
     }
@@ -69,6 +70,7 @@ public class InterruptedException extends Exception {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public InterruptedException(@Nullable String s) {
         super(s);

@@ -70,6 +70,7 @@ public class InvocationTargetException extends ReflectiveOperationException {
      * @param target the target exception
      */
     @SideEffectFree
+    @SideEffectFree
     public InvocationTargetException(@Nullable Throwable target) {
         super((Throwable)null);  // Disallow initCause
         this.target = target;
@@ -82,6 +83,7 @@ public class InvocationTargetException extends ReflectiveOperationException {
      * @param target the target exception
      * @param s      the detail message
      */
+    @SideEffectFree
     @SideEffectFree
     public InvocationTargetException(@Nullable Throwable target, @Nullable String s) {
         super(s, null);  // Disallow initCause

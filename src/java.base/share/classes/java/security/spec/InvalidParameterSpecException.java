@@ -25,6 +25,7 @@
 
 package java.security.spec;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -50,6 +51,7 @@ public class InvalidParameterSpecException extends GeneralSecurityException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidParameterSpecException() {
         super();
     }
@@ -61,6 +63,7 @@ public class InvalidParameterSpecException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public InvalidParameterSpecException(String msg) {
         super(msg);
     }

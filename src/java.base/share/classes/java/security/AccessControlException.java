@@ -47,6 +47,8 @@ package java.security;
  */
 
 @Deprecated(since="17", forRemoval=true)
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 public class AccessControlException extends SecurityException {
 
     @java.io.Serial
@@ -63,6 +65,7 @@ public class AccessControlException extends SecurityException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     public AccessControlException(String s) {
         super(s);
     }
@@ -75,6 +78,7 @@ public class AccessControlException extends SecurityException {
      * @param   s   the detail message.
      * @param   p   the permission that caused the exception.
      */
+    @SideEffectFree
     public AccessControlException(String s, Permission p) {
         super(s);
         perm = p;

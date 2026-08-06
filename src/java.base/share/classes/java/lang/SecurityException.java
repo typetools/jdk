@@ -44,6 +44,7 @@ public class SecurityException extends RuntimeException {
      * Constructs a {@code SecurityException} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public SecurityException() {
         super();
     }
@@ -54,6 +55,7 @@ public class SecurityException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public SecurityException(@Nullable String s) {
         super(s);
@@ -71,6 +73,7 @@ public class SecurityException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
+    @SideEffectFree
     public SecurityException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -86,6 +89,7 @@ public class SecurityException extends RuntimeException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     @SideEffectFree
     public SecurityException(@Nullable Throwable cause) {
         super(cause);

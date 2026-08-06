@@ -43,6 +43,7 @@ public class InternalError extends VirtualMachineError {
      * Constructs an {@code InternalError} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public InternalError() {
         super();
     }
@@ -53,6 +54,7 @@ public class InternalError extends VirtualMachineError {
      *
      * @param   message   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public InternalError(@Nullable String message) {
         super(message);
@@ -74,6 +76,7 @@ public class InternalError extends VirtualMachineError {
      * @since  1.8
      */
     @SideEffectFree
+    @SideEffectFree
     public InternalError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -90,6 +93,7 @@ public class InternalError extends VirtualMachineError {
      *         unknown.)
      * @since  1.8
      */
+    @SideEffectFree
     @SideEffectFree
     public InternalError(@Nullable Throwable cause) {
         super(cause);

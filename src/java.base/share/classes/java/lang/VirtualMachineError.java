@@ -46,6 +46,7 @@ public abstract class VirtualMachineError extends Error {
      * Constructs a {@code VirtualMachineError} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public VirtualMachineError() {
         super();
     }
@@ -56,6 +57,7 @@ public abstract class VirtualMachineError extends Error {
      *
      * @param   message   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public VirtualMachineError(@Nullable String message) {
         super(message);
@@ -76,6 +78,7 @@ public abstract class VirtualMachineError extends Error {
      * @since  1.8
      */
     @SideEffectFree
+    @SideEffectFree
     public VirtualMachineError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -92,6 +95,7 @@ public abstract class VirtualMachineError extends Error {
      *         unknown.)
      * @since  1.8
      */
+    @SideEffectFree
     @SideEffectFree
     public VirtualMachineError(@Nullable Throwable cause) {
         super(cause);

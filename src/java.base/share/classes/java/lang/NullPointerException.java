@@ -61,6 +61,7 @@ public class NullPointerException extends RuntimeException {
      * Constructs a {@code NullPointerException} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public NullPointerException() {
         super();
     }
@@ -71,6 +72,7 @@ public class NullPointerException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public NullPointerException(@Nullable String s) {
         super(s);

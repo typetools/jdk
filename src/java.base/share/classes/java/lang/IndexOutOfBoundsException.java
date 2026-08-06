@@ -47,6 +47,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * Constructs an {@code IndexOutOfBoundsException} with no detail message.
      */
     @SideEffectFree
+    @SideEffectFree
     public IndexOutOfBoundsException() {
         super();
     }
@@ -57,6 +58,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      *
      * @param s the detail message
      */
+    @SideEffectFree
     @SideEffectFree
     public IndexOutOfBoundsException(@Nullable String s) {
         super(s);
@@ -72,6 +74,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @param index the illegal index.
      * @since 9
      */
+    @SideEffectFree
     public IndexOutOfBoundsException(int index) {
         super("Index out of range: " + index);
     }
@@ -86,6 +89,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @param index the illegal index.
      * @since 16
      */
+    @SideEffectFree
     public IndexOutOfBoundsException(long index) {
         super("Index out of range: " + index);
     }

@@ -63,6 +63,7 @@ public class EnumConstantNotPresentException extends RuntimeException {
      * @param constantName the name of the missing enum constant
      */
     @SideEffectFree
+    @SideEffectFree
     public EnumConstantNotPresentException(Class<? extends Enum> enumType,
                                            String constantName) {
         super(enumType.getName() + "." + constantName);

@@ -25,6 +25,8 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * LambdaConversionException
  *
@@ -37,6 +39,7 @@ public class LambdaConversionException extends Exception {
     /**
      * Constructs a {@code LambdaConversionException}.
      */
+    @SideEffectFree
     public LambdaConversionException() {
     }
 
@@ -44,6 +47,7 @@ public class LambdaConversionException extends Exception {
      * Constructs a {@code LambdaConversionException} with a message.
      * @param message the detail message
      */
+    @SideEffectFree
     public LambdaConversionException(String message) {
         super(message);
     }
@@ -53,6 +57,7 @@ public class LambdaConversionException extends Exception {
      * @param message the detail message
      * @param cause the cause
      */
+    @SideEffectFree
     public LambdaConversionException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -61,6 +66,7 @@ public class LambdaConversionException extends Exception {
      * Constructs a {@code LambdaConversionException} with a cause.
      * @param cause the cause
      */
+    @SideEffectFree
     public LambdaConversionException(Throwable cause) {
         super(cause);
     }
@@ -73,6 +79,7 @@ public class LambdaConversionException extends Exception {
      * @param enableSuppression whether or not suppressed exceptions are enabled
      * @param writableStackTrace whether or not the stack trace is writable
      */
+    @SideEffectFree
     public LambdaConversionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }

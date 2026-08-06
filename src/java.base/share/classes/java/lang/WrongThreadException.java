@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that a method has been called on the wrong thread.
  *
@@ -37,6 +39,7 @@ public final class WrongThreadException extends RuntimeException {
     /**
      * Constructs a WrongThreadException with no detail message.
      */
+    @SideEffectFree
     public WrongThreadException() {
         super();
     }
@@ -46,6 +49,7 @@ public final class WrongThreadException extends RuntimeException {
      *
      * @param s the String that contains a detailed message, can be null
      */
+    @SideEffectFree
     public WrongThreadException(String s) {
         super(s);
     }
@@ -56,6 +60,7 @@ public final class WrongThreadException extends RuntimeException {
      * @param  message the detail message, can be null
      * @param  cause the cause, can be null
      */
+    @SideEffectFree
     public WrongThreadException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -67,6 +72,7 @@ public final class WrongThreadException extends RuntimeException {
      *
      * @param  cause the cause, can be null
      */
+    @SideEffectFree
     public WrongThreadException(Throwable cause) {
         super(cause);
     }

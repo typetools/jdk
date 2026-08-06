@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when a conversion and flag are incompatible.
  *
@@ -54,6 +56,7 @@ public non-sealed class FormatFlagsConversionMismatchException
      * @param  c
      *         The conversion
      */
+    @SideEffectFree
     public FormatFlagsConversionMismatchException(String f, char c) {
         if (f == null)
             throw new NullPointerException();

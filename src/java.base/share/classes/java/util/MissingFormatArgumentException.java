@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when there is a format specifier which does not
  * have a corresponding argument or if an argument index refers to an argument
@@ -50,6 +52,7 @@ public non-sealed class MissingFormatArgumentException extends IllegalFormatExce
      * @param  s
      *         Format specifier which does not have a corresponding argument
      */
+    @SideEffectFree
     public MissingFormatArgumentException(String s) {
         if (s == null)
             throw new NullPointerException();

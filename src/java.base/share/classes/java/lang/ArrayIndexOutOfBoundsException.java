@@ -45,6 +45,7 @@ public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException {
      * message.
      */
     @SideEffectFree
+    @SideEffectFree
     public ArrayIndexOutOfBoundsException() {
         super();
     }
@@ -55,6 +56,7 @@ public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException {
      *
      * @param s the detail message.
      */
+    @SideEffectFree
     @SideEffectFree
     public ArrayIndexOutOfBoundsException(@Nullable String s) {
         super(s);
@@ -69,6 +71,7 @@ public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException {
      *
      * @param index the illegal index.
      */
+    @SideEffectFree
     @SideEffectFree
     public ArrayIndexOutOfBoundsException(int index) {
         super("Array index out of range: " + index);

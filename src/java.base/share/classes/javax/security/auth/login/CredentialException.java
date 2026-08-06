@@ -25,6 +25,8 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * A generic credential exception.
  *
@@ -39,6 +41,7 @@ public class CredentialException extends LoginException {
      * Constructs a CredentialException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CredentialException() {
         super();
     }
@@ -50,6 +53,7 @@ public class CredentialException extends LoginException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public CredentialException(String msg) {
         super(msg);
     }

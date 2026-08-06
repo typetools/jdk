@@ -40,6 +40,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a resource is missing.
  * @see java.lang.Exception
@@ -56,6 +58,7 @@ public class MissingResourceException extends RuntimeException {
      * @param className the name of the resource class
      * @param key the key for the missing resource.
      */
+    @SideEffectFree
     public MissingResourceException(String s, String className, String key) {
         super(s);
         this.className = className;

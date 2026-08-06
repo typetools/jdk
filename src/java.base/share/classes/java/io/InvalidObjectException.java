@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -49,6 +50,7 @@ public class InvalidObjectException extends ObjectStreamException {
      *
      * @see ObjectInputValidation
      */
+    @SideEffectFree
     public InvalidObjectException(@Nullable String reason) {
         super(reason);
     }
@@ -63,6 +65,7 @@ public class InvalidObjectException extends ObjectStreamException {
      * @see ObjectInputValidation
      * @since 19
      */
+    @SideEffectFree
     public InvalidObjectException(String reason, Throwable cause) {
         super(reason, cause);
     }

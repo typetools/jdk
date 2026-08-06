@@ -24,6 +24,7 @@
  */
 package java.io;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.Objects;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -50,6 +51,7 @@ public class UncheckedIOException extends RuntimeException {
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public UncheckedIOException(@Nullable String message, IOException cause) {
         super(message, Objects.requireNonNull(cause));
     }
@@ -63,6 +65,7 @@ public class UncheckedIOException extends RuntimeException {
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public UncheckedIOException(IOException cause) {
         super(Objects.requireNonNull(cause));
     }
