@@ -46,9 +46,9 @@ package java.security;
  *       the Security Manager or this class.
  */
 
-@Deprecated(since="17", forRemoval=true)
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+@Deprecated(since="17", forRemoval=true)
 public class AccessControlException extends SecurityException {
 
     @java.io.Serial

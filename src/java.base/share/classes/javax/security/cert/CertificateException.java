@@ -26,6 +26,8 @@
 
 package javax.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception indicates one of a variety of certificate problems.
  *
@@ -41,8 +43,6 @@ package javax.security.cert;
  * @deprecated Use the classes in {@code java.security.cert} instead.
  */
 @Deprecated(since="9", forRemoval=true)
-import org.checkerframework.dataflow.qual.SideEffectFree;
-
 public class CertificateException extends Exception {
 
     @java.io.Serial
