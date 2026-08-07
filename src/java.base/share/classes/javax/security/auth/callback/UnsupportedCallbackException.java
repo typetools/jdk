@@ -25,6 +25,8 @@
 
 package javax.security.auth.callback;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code CallbackHandler} does not
  * recognize a particular {@code Callback}.
@@ -48,6 +50,7 @@ public class UnsupportedCallbackException extends Exception {
      *
      * @param callback the unrecognized {@code Callback}.
      */
+    @SideEffectFree
     public UnsupportedCallbackException(Callback callback) {
         super();
         this.callback = callback;
@@ -62,6 +65,7 @@ public class UnsupportedCallbackException extends Exception {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public UnsupportedCallbackException(Callback callback, String msg) {
         super(msg);
         this.callback = callback;

@@ -25,6 +25,8 @@
 
 package java.lang.module;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown by a {@link ModuleFinder ModuleFinder} when an error occurs finding
  * a module. Also thrown by {@link
@@ -42,6 +44,7 @@ public class FindException extends RuntimeException {
     /**
      * Constructs a {@code FindException} with no detail message.
      */
+    @SideEffectFree
     public FindException() {
     }
 
@@ -52,6 +55,7 @@ public class FindException extends RuntimeException {
      * @param msg
      *        The detail message; can be {@code null}
      */
+    @SideEffectFree
     public FindException(String msg) {
         super(msg);
     }
@@ -62,6 +66,7 @@ public class FindException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
+    @SideEffectFree
     public FindException(Throwable cause) {
         super(cause);
     }
@@ -75,6 +80,7 @@ public class FindException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
+    @SideEffectFree
     public FindException(String msg, Throwable cause) {
         super(msg, cause);
     }

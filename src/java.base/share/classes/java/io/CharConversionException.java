@@ -24,6 +24,8 @@
  */
 package java.io;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Base class for character conversion exceptions.
  *
@@ -39,6 +41,7 @@ public class CharConversionException
     /**
      * This provides no detailed message.
      */
+    @SideEffectFree
     public CharConversionException() {
     }
     /**
@@ -46,6 +49,7 @@ public class CharConversionException
      *
      * @param s the detailed message associated with the exception.
      */
+    @SideEffectFree
     public CharConversionException(String s) {
         super(s);
     }

@@ -26,6 +26,7 @@
 package java.net;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -47,6 +48,7 @@ public class NoRouteToHostException extends SocketException {
      * description of this error.
      * @param msg the detail message
      */
+    @SideEffectFree
     public NoRouteToHostException(@Nullable String msg) {
         super(msg);
     }
@@ -54,5 +56,6 @@ public class NoRouteToHostException extends SocketException {
     /**
      * Construct a new NoRouteToHostException with no detailed message.
      */
+    @SideEffectFree
     public NoRouteToHostException() {}
 }

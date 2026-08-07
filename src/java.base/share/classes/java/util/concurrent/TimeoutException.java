@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -57,6 +58,7 @@ public class TimeoutException extends Exception {
      * Constructs a {@code TimeoutException} with no specified detail
      * message.
      */
+    @SideEffectFree
     public TimeoutException() {}
 
     /**
@@ -65,6 +67,7 @@ public class TimeoutException extends Exception {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     public TimeoutException(@Nullable String message) {
         super(message);
     }

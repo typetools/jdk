@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an unknown flag is given.
  *
@@ -47,6 +49,7 @@ public non-sealed class UnknownFormatFlagsException extends IllegalFormatExcepti
      * @param  f
      *         The set of format flags which contain an unknown flag
      */
+    @SideEffectFree
     public UnknownFormatFlagsException(String f) {
         if (f == null)
             throw new NullPointerException();

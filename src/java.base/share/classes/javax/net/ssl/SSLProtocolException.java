@@ -26,6 +26,8 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Reports an error in the operation of the SSL protocol.  Normally
  * this indicates a flaw in one of the protocol implementations.
@@ -43,6 +45,7 @@ public class SSLProtocolException extends SSLException {
      *
      * @param reason describes the problem.
      */
+    @SideEffectFree
     public SSLProtocolException(String reason) {
         super(reason);
     }
@@ -59,6 +62,7 @@ public class SSLProtocolException extends SSLException {
      *        unknown.)
      * @since 19
      */
+    @SideEffectFree
     public SSLProtocolException(String message, Throwable cause) {
         super(message, cause);
     }

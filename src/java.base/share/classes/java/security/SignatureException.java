@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the generic Signature exception.
  *
@@ -42,6 +44,7 @@ public class SignatureException extends GeneralSecurityException {
      * detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public SignatureException() {
         super();
     }
@@ -53,6 +56,7 @@ public class SignatureException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public SignatureException(String msg) {
         super(msg);
     }
@@ -68,6 +72,7 @@ public class SignatureException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public SignatureException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -83,6 +88,7 @@ public class SignatureException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public SignatureException(Throwable cause) {
         super(cause);
     }

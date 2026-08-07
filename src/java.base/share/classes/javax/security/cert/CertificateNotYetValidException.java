@@ -26,6 +26,8 @@
 
 package javax.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate is not yet valid exception. This is thrown whenever
  * the current {@code Date} or the specified {@code Date}
@@ -53,6 +55,7 @@ public class CertificateNotYetValidException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateNotYetValidException() {
         super();
     }
@@ -64,6 +67,7 @@ public class CertificateNotYetValidException extends CertificateException {
      *
      * @param message the detail message.
      */
+    @SideEffectFree
     public CertificateNotYetValidException(String message) {
         super(message);
     }

@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -63,6 +64,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      * @param   undeclaredThrowable the undeclared checked exception
      *          that was thrown
      */
+    @SideEffectFree
     public UndeclaredThrowableException(Throwable undeclaredThrowable) {
         super(null, undeclaredThrowable);  // Disallow initCause
     }
@@ -75,6 +77,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      *          that was thrown
      * @param   s the detail message
      */
+    @SideEffectFree
     public UndeclaredThrowableException(Throwable undeclaredThrowable,
                                         String s)
     {

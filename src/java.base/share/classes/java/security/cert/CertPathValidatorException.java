@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.InvalidObjectException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -85,6 +86,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * Creates a {@code CertPathValidatorException} with
      * no detail message.
      */
+    @SideEffectFree
     public CertPathValidatorException() {
         this(null, null);
     }
@@ -96,6 +98,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      *
      * @param msg the detail message
      */
+    @SideEffectFree
     public CertPathValidatorException(String msg) {
         this(msg, null);
     }
@@ -113,6 +116,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * {@link #getCause getCause()} method). (A {@code null} value is
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public CertPathValidatorException(Throwable cause) {
         this((cause == null ? null : cause.toString()), cause);
     }
@@ -126,6 +130,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * {@link #getCause getCause()} method). (A {@code null} value is
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public CertPathValidatorException(String msg, Throwable cause) {
         this(msg, cause, null, -1);
     }
@@ -147,6 +152,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * @throws IllegalArgumentException if {@code certPath} is
      * {@code null} and {@code index} is not -1
      */
+    @SideEffectFree
     public CertPathValidatorException(String msg, Throwable cause,
             CertPath certPath, int index) {
         this(msg, cause, certPath, index, BasicReason.UNSPECIFIED);
@@ -173,6 +179,8 @@ public class CertPathValidatorException extends GeneralSecurityException {
      *
      * @since 1.7
      */
+    @SideEffectFree
+    @SuppressWarnings("purity.not.sideeffectfree.call") // getCertificates() has no side effect
     public CertPathValidatorException(String msg, Throwable cause,
             CertPath certPath, int index, Reason reason) {
         super(msg, cause);

@@ -26,6 +26,7 @@
 package java.net;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -43,6 +44,7 @@ public class SocketTimeoutException extends java.io.InterruptedIOException {
      * message.
      * @param msg the detail message
      */
+    @SideEffectFree
     public SocketTimeoutException(@Nullable String msg) {
         super(msg);
     }
@@ -50,5 +52,6 @@ public class SocketTimeoutException extends java.io.InterruptedIOException {
     /**
      * Construct a new SocketTimeoutException with no detailed message.
      */
+    @SideEffectFree
     public SocketTimeoutException() {}
 }

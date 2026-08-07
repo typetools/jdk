@@ -59,6 +59,7 @@ public class InvocationTargetException extends ReflectiveOperationException {
      * Constructs an {@code InvocationTargetException} with
      * {@code null} as the target exception.
      */
+    @SideEffectFree
     protected InvocationTargetException() {
         super((Throwable)null);  // Disallow initCause
         this.target = null;

@@ -25,6 +25,8 @@
 
 package java.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate Encoding Exception. This is thrown whenever an error
  * occurs while attempting to encode a certificate.
@@ -42,6 +44,7 @@ public class CertificateEncodingException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateEncodingException() {
         super();
     }
@@ -53,6 +56,7 @@ public class CertificateEncodingException extends CertificateException {
      *
      * @param message the detail message.
      */
+    @SideEffectFree
     public CertificateEncodingException(String message) {
         super(message);
     }
@@ -68,6 +72,7 @@ public class CertificateEncodingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public CertificateEncodingException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -84,6 +89,7 @@ public class CertificateEncodingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public CertificateEncodingException(Throwable cause) {
         super(cause);
     }
