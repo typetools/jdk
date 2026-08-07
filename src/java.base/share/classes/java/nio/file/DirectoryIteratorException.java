@@ -32,6 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.InvalidObjectException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -60,6 +61,7 @@ public final class DirectoryIteratorException
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public DirectoryIteratorException(IOException cause) {
         super(Objects.requireNonNull(cause));
     }

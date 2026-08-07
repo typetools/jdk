@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -45,6 +46,7 @@ public class FileSystemAlreadyExistsException
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public FileSystemAlreadyExistsException() {
     }
 
@@ -54,6 +56,7 @@ public class FileSystemAlreadyExistsException
      * @param   msg
      *          the detail message
      */
+    @SideEffectFree
     public FileSystemAlreadyExistsException(@Nullable String msg) {
         super(msg);
     }

@@ -24,6 +24,7 @@
  */
 package java.util.concurrent;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -41,6 +42,7 @@ public final class StructureViolationException extends RuntimeException {
     /**
      * Constructs a {@code StructureViolationException} with no detail message.
      */
+    @SideEffectFree
     public StructureViolationException() {
         super();
     }
@@ -51,6 +53,7 @@ public final class StructureViolationException extends RuntimeException {
      *
      * @param  message the detail message, can be null
      */
+    @SideEffectFree
     public StructureViolationException(String message) {
         super(message);
     }

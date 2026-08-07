@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -47,6 +48,7 @@ public class SyncFailedException extends IOException {
      *
      * @param desc  a String describing the exception.
      */
+    @SideEffectFree
     public SyncFailedException(@Nullable String desc) {
         super(desc);
     }

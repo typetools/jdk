@@ -25,6 +25,7 @@
 
 package java.nio.file.attribute;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -51,6 +52,7 @@ public class UserPrincipalNotFoundException
      * @param   name
      *          the principal name; may be {@code null}
      */
+    @SideEffectFree
     public UserPrincipalNotFoundException(String name) {
         super();
         this.name = name;

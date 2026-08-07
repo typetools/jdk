@@ -25,6 +25,8 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that user authentication failed.
  *
@@ -43,6 +45,7 @@ public class FailedLoginException extends LoginException {
      * Constructs a FailedLoginException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public FailedLoginException() {
         super();
     }
@@ -54,6 +57,7 @@ public class FailedLoginException extends LoginException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public FailedLoginException(String msg) {
         super(msg);
     }

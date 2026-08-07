@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the argument corresponding to the format
  * specifier is of an incompatible type.
@@ -53,6 +55,7 @@ public non-sealed class IllegalFormatConversionException extends IllegalFormatEx
      * @param  arg
      *         Class of the mismatched argument
      */
+    @SideEffectFree
     public IllegalFormatConversionException(char c, Class<?> arg) {
         if (arg == null)
             throw new NullPointerException();

@@ -121,6 +121,7 @@ public class RuntimeException extends Exception {
      *
      * @since 1.7
      */
+    @SideEffectFree
     protected RuntimeException(@Nullable String message, @Nullable Throwable cause,
                                boolean enableSuppression,
                                boolean writableStackTrace) {

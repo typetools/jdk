@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -46,6 +47,7 @@ public class NoSuchPaddingException extends GeneralSecurityException {
      * message. A detail message is a {@code String} that describes this
      * particular exception.
      */
+    @SideEffectFree
     public NoSuchPaddingException() {
         super();
     }
@@ -56,6 +58,7 @@ public class NoSuchPaddingException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public NoSuchPaddingException(String msg) {
         super(msg);
     }

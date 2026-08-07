@@ -24,6 +24,7 @@
  */
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -45,6 +46,7 @@ public class DecapsulateException extends GeneralSecurityException {
      * @param message the detail message (which is saved for later retrieval
      *        by the {@link #getMessage()} method).
      */
+    @SideEffectFree
     public DecapsulateException(String message) {
         super(message);
     }
@@ -59,6 +61,7 @@ public class DecapsulateException extends GeneralSecurityException {
      *        {@link #getCause()} method).  (A {@code null} value is permitted,
      *        and indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public DecapsulateException(String message, Throwable cause) {
         super(message, cause);
     }

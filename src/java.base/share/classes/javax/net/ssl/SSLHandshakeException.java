@@ -25,6 +25,8 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Indicates that the client and server could not negotiate the
  * desired level of security.  The connection is no longer usable.
@@ -42,6 +44,7 @@ public class SSLHandshakeException extends SSLException {
      *
      * @param reason describes the problem.
      */
+    @SideEffectFree
     public SSLHandshakeException(String reason) {
         super(reason);
     }
@@ -58,6 +61,7 @@ public class SSLHandshakeException extends SSLException {
      *        unknown.)
      * @since 19
      */
+    @SideEffectFree
     public SSLHandshakeException(String message, Throwable cause) {
         super(message, cause);
     }

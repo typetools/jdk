@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.NotSerializableException;
 import java.io.IOException;
 
@@ -55,6 +56,8 @@ public class InvalidPropertiesFormatException extends IOException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link Throwable#getCause()} method).
      */
+    @SideEffectFree
+    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
     public InvalidPropertiesFormatException(Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.initCause(cause);
@@ -67,6 +70,7 @@ public class InvalidPropertiesFormatException extends IOException {
     * @param   message   the detail message. The detail message is saved for
     *          later retrieval by the {@link Throwable#getMessage()} method.
     */
+    @SideEffectFree
     public InvalidPropertiesFormatException(String message) {
         super(message);
     }

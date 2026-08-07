@@ -25,6 +25,8 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code Credential} has expired.
  *
@@ -48,6 +50,7 @@ public class CredentialExpiredException extends CredentialException {
      * Constructs a CredentialExpiredException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CredentialExpiredException() {
         super();
     }
@@ -59,6 +62,7 @@ public class CredentialExpiredException extends CredentialException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public CredentialExpiredException(String msg) {
         super(msg);
     }
