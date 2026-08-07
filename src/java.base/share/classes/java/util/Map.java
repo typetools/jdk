@@ -42,6 +42,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
@@ -303,7 +304,7 @@ public interface Map<K, V> {
     @ReleasesNoLocks
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable V put(@GuardSatisfied Map<K, V> this, K key, V value);
 
@@ -336,7 +337,7 @@ public interface Map<K, V> {
      *         map does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      */
     @CFComment("nullness: key is not @Nullable because this map might not permit null values")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable V remove(@GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
@@ -364,7 +365,7 @@ public interface Map<K, V> {
      * @throws IllegalArgumentException if some property of a key or value in
      *         the specified map prevents it from being stored in this map
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void putAll(@GuardSatisfied Map<K, V> this, Map<? extends K, ? extends V> m);
 
@@ -375,7 +376,7 @@ public interface Map<K, V> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this map
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void clear(@GuardSatisfied Map<K, V> this);
 
@@ -541,7 +542,7 @@ public interface Map<K, V> {
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
          */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         V setValue(Map.@GuardSatisfied Entry<K, V> this, V value);
 
@@ -901,7 +902,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V putIfAbsent(K key, V value) {
         V v = get(key);
@@ -947,7 +948,7 @@ public interface Map<K, V> {
      * @since 1.8
      */
     @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         Object curValue = get(key);
@@ -999,7 +1000,7 @@ public interface Map<K, V> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default boolean replace(K key, V oldValue, V newValue) {
         Object curValue = get(key);
@@ -1049,7 +1050,7 @@ public interface Map<K, V> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default @Nullable V replace(K key, V value) {
         V curValue;

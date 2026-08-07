@@ -58,7 +58,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
@@ -1788,7 +1788,7 @@ public final class String
      *            <li>{@code dstBegin+(srcEnd-srcBegin)} is larger than
      *                {@code dst.length}</ul>
      */
-    // @SideEffectsOnly("#3")
+    @SideEffectsOnly("#3")
     public void getChars(@IndexOrHigh({"this"}) int srcBegin, @IndexOrHigh({"this"}) int srcEnd, char @GuardSatisfied [] dst, @IndexOrHigh({"#3"}) int dstBegin) {
         checkBoundsBeginEnd(srcBegin, srcEnd, length());
         checkBoundsOffCount(dstBegin, srcEnd - srcBegin, dst.length);

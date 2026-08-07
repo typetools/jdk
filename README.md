@@ -13,7 +13,7 @@ them cause build failures, especially in the interim builds):
 
 Annotations for classes that exist in JDK version X but were removed later
 appear in jdkX.astub files, such as jdk11.astub, in repository
-<https://github.com/typetools/checker-framework/> .
+<https://github.com/typetools/checker-framework/>.
 
 ## Building
 
@@ -53,7 +53,7 @@ Thanks in advance for your contributions!
 
 When adding annotations, please annotate an entire file at a time, and add an
 `@AnnotatedFor` annotation on the class declaration.  The rationale is explained
-at <https://checkerframework.org/manual/#library-tips-fully-annotate> .
+at <https://checkerframework.org/manual/#library-tips-fully-annotate>.
 
 ## Relationship to other repositories
 

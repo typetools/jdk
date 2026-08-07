@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
@@ -56,7 +58,7 @@ public interface SequencedSet<E> extends SequencedCollection<E>, Set<E> {
      *
      * @return a reverse-ordered view of this collection, as a {@code SequencedSet}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     SequencedSet<E> reversed();
 }

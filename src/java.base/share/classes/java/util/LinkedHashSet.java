@@ -29,6 +29,7 @@ import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -251,7 +252,7 @@ public class LinkedHashSet<E>
      * @since 21
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
         map().putFirst(e, PRESENT);
@@ -266,7 +267,7 @@ public class LinkedHashSet<E>
      * @since 21
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {
         map().putLast(e, PRESENT);
@@ -302,7 +303,7 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeFirst() {
         return map().sequencedKeySet().removeFirst();
@@ -314,7 +315,7 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeLast() {
         return map().sequencedKeySet().removeLast();
@@ -329,7 +330,7 @@ public class LinkedHashSet<E>
      * @return {@inheritDoc}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     public SequencedSet<E> reversed() {
         class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
@@ -346,6 +347,7 @@ public class LinkedHashSet<E>
             public E getLast()                 { return LinkedHashSet.this.getFirst(); }
             public E removeFirst()             { return LinkedHashSet.this.removeLast(); }
             public E removeLast()              { return LinkedHashSet.this.removeFirst(); }
+            @SideEffectFree
             public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
             @Pure
             @SideEffectFree

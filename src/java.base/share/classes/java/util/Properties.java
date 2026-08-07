@@ -34,6 +34,7 @@ import org.checkerframework.checker.propkey.qual.PropertyKey;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
@@ -239,7 +240,7 @@ public class Properties extends Hashtable<Object,Object> {
      * @see #getProperty
      * @since    1.2
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @Nullable Object setProperty(@GuardSatisfied Properties this, @PropertyKey String key, String value) {
         return put(key, value);
@@ -1369,28 +1370,28 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object put(Object key, Object value) {
         return map.put(key, value);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return map.remove(key);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized void putAll(Map<?, ?> t) {
         map.putAll(t);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized void clear() {
         map.clear();
@@ -1443,10 +1444,10 @@ public class Properties extends Hashtable<Object,Object> {
         @SideEffectFree
         @Override public Object[] toArray() { return entrySet.toArray(); }
         @Override public <T> @Nullable T[] toArray(@PolyNull T[] a) { return entrySet.toArray(a); }
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @Override public void clear() { entrySet.clear(); }
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @Override public boolean remove(@UnknownSignedness Object o) { return entrySet.remove(o); }
 
@@ -1485,14 +1486,14 @@ public class Properties extends Hashtable<Object,Object> {
         }
 
         @Override
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.removeAll(c);
         }
 
         @Override
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
             return entrySet.retainAll(c);
@@ -1536,28 +1537,28 @@ public class Properties extends Hashtable<Object,Object> {
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object putIfAbsent(Object key, Object value) {
         return map.putIfAbsent(key, value);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object key, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         return map.remove(key, value);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized boolean replace(Object key, Object oldValue, Object newValue) {
         return map.replace(key, oldValue, newValue);
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized Object replace(Object key, Object value) {
         return map.replace(key, value);

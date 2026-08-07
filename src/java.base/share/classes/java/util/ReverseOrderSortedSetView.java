@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
@@ -128,7 +129,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
     // ========== Collection ==========
 
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         base.add(e);
@@ -226,6 +227,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
 
     // ========== Infrastructure ==========
 
+    @SideEffectFree
     static <T> Iterator<T> descendingIterator(SortedSet<T> set) {
         return new Iterator<>() {
             SortedSet<T> root = set;
