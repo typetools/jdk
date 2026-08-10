@@ -197,7 +197,7 @@ git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 Resolve the merge conflicts.  The commands in `README-merging.el` automate a
 great deal of work (requires using Emacs).
 
-Replace uses of the old JDK version (such as 17) with the new one (such as 21).
+Replace uses of the old JDK version (such as 21) with the new one (such as 25).
 
 * In this file
 * In .azure/azure-pipelines.yml.m4
@@ -221,15 +221,16 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 Push and wait for CI to pass.
 
 Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
-in Javadoc.  For example, the regex "@since[ \t](18|19|20|21)".  For each
-relevant `@since`, add annotations for all the type systems in `@AnnotatedFor`.
-Note: I have not yet done this for JDK 18-21.
+in Javadoc.  For example, when upgrading from Java 17 to Java 21, the regex
+"@since[ \t](18|19|20|21)".  For each relevant `@since`, add annotations for all
+the type systems in `@AnnotatedFor`.  Note: I have not yet done this for JDK
+18-21.
 
 DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
 need to be merged, retaining history.
 
 For Michael Ernst only:  update `~/bin/src/mdedots/share/mdevcupdate`
-to refer to jdk21u, not jdk17u.
+to refer to jdk25u, not jdk21u.
 
 ## Design
 
