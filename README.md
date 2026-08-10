@@ -59,25 +59,27 @@ at <https://checkerframework.org/manual/#library-tips-fully-annotate> .
 
 The typetools:jdk fork is not up to date with respect to `openjdk:jdk` (the
 current OpenJDK version).  The typetools:jdk fork contains all commits through
-the release of JDK 21 (that is, the last commit that is in both openjdk:jdk and
-in openjdk:jdk21u):
-<https://github.com/typetools/jdk/commit/d562d3fcbe22a0443037c5b447e1a41401275814>
+the release of JDK 25 (that is, the last commit that is in both openjdk:jdk and
+in openjdk:jdk25u):
+<https://github.com/typetools/jdk/commit/c59e44a7aa2aeff0823830b698d524523b996650>
 
 The typetools:jdk fork is an ancestor of JDK release forks such as
-typetools:jdk21u.  The typetools:jdk fork may not compile, because the commit of
+typetools:jdk25u.  The typetools:jdk fork may not compile, because the commit of
 openjdk:jdk on which it is based may not compile, due to changes to tools such
-as compilers.  Repositories such as jdk17u, jdk21u, and jdk25u have been updated
-and do compile.
+as compilers.  Repositories such as jdk25u have been updated and do compile.
 
 This fork's annotations are pulled into those repositories, in order to build an
-annotated JDK.  We do not write annotations in (say) typetools:jdk21u, because
-it would be painful to get them into typetools:jdk21u due to subsequent commits.
+annotated JDK.  We do not write annotations in (say) typetools:jdk25u, because
+it would be painful to get them into typetools:jdk25u due to subsequent commits.
+
+Upon upgrade, typetools:jdkNNu is no longer maintained for earlier NN.
+That is, only one typetools:jdkNNu is maintained at any moment.
 
 ## Pull request merge conflicts
 
-If a pull request is failing with a merge conflict in `jdk21u`, first
-update jdk21u from its upstreams, using the directions in section
-"The typetools/jdk21u repository" below.
+If a pull request is failing with a merge conflict in `jdk25u`, first
+update jdk25u from its upstreams, using the directions in section
+"The typetools/jdk25u repository" below.
 
 If that does not resolve the issue, then do the following in a clone of the
 branch of `jdk` whose pull request is failing.
@@ -89,18 +91,18 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 URL=`git config --get remote.origin.url`
 SLUG=${URL#*:}
 ORG=${SLUG%/*}
-JDK21DIR=../jdk21u-fork-$ORG-branch-$BRANCH
-JDK21URL=`echo "$URL" | sed 's/jdk/jdk21u/'`
+JDK25DIR=../jdk25u-fork-$ORG-branch-$BRANCH
+JDK25URL=`echo "$URL" | sed 's/jdk/jdk25u/'`
 echo BRANCH=$BRANCH
 echo URL=$URL
-echo JDK21DIR=$JDK21DIR
-echo JDK21URL=$JDK21URL
-if [ -d $JDK21DIR ] ; then
-  (cd $JDK21DIR && git pull)
+echo JDK25DIR=$JDK25DIR
+echo JDK25URL=$JDK25URL
+if [ -d $JDK25DIR ] ; then
+  (cd $JDK25DIR && git pull)
 else
-  git clone $JDK21URL $JDK21DIR && (cd $JDK21DIR && (git checkout $BRANCH || git checkout -b $BRANCH))
+  git clone $JDK25URL $JDK25DIR && (cd $JDK25DIR && (git checkout $BRANCH || git checkout -b $BRANCH))
 fi
-cd $JDK21DIR
+cd $JDK25DIR
 git pull $URL $BRANCH
 ```
 
@@ -113,9 +115,9 @@ git push --set-upstream origin $BRANCH
 Manual step: restart the pull request CI job.
 
 After the pull request is merged to <https://github.com/typetools/jdk>,
-follow the instructions at <https://github.com/typetools/jdk21u> to update
-jdk21u, taking guidance from the merge done in the fork of jdk21u to
-resolve conflicts.  Then, discard the branch in the fork of jdk21u.
+follow the instructions at <https://github.com/typetools/jdk25u> to update
+jdk25u, taking guidance from the merge done in the fork of jdk25u to
+resolve conflicts.  Then, discard the branch in the fork of jdk25u.
 
 ## Qualifier definitions
 
@@ -142,25 +144,25 @@ in the `module-info.java` file.
 Commit the changes, including the new `checker.jar` file and any new `.java`
 files in a `qual/` directory.  (Both are used, by different parts of the build.)
 
-## The typetools/jdk21u repository
+## The typetools/jdk25u repository
 
-The typetools/jdk21u repository is a merge of `openjdk/jdk21u` and `typetools/jdk`.
-That is, it is a fork of `openjdk/jdk21u`, with Checker Framework type annotations.
+The typetools/jdk25u repository is a merge of `openjdk/jdk25u` and `typetools/jdk`.
+That is, it is a fork of `openjdk/jdk25u`, with Checker Framework type annotations.
 
-**Do not edit the `typetools/jdk21u` repository.**
+**Do not edit the `typetools/jdk25u` repository.**
 Make changes in the `typetools/jdk` repository.
 (Note that this README file appears in both the `typetools/jdk`
-and `typetools/jdk21u` repositories!)
+and `typetools/jdk25u` repositories!)
 
-To update jdk21u from its upstreams:
-(These are the only edits to jdk21u allowed, plus changes needed to resolve
+To update jdk25u from its upstreams:
+(These are the only edits to jdk25u allowed, plus changes needed to resolve
 merge conflicts.)
 
 ```sh
-cd jdk21u && \
+cd jdk25u && \
 git pull && \
 git pull ../jdk && \
-git pull https://github.com/openjdk/jdk21u.git && \
+git pull https://github.com/openjdk/jdk25u.git && \
 git pull https://github.com/typetools/jdk.git
 ```
 
@@ -174,17 +176,26 @@ Fork into typetools:  <https://github.com/openjdk/jdk${VER}u>
 
 Clone jdk${VER}u repositories into, say, $t/libraries/ .
 
-Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:  run
+Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u.  That
+commit carries two tags: the last mainline build of JDK ${VER} (for example,
+`jdk25+26`) and build 0 of the following JDK (for example, `jdk26+0`).  In a
+clone of openjdk:jdk, run
+
+```sh
+git merge-base jdk${VER}-ga master
+```
+
+Alternately, run
 
 ```sh
 git log --graph | tac > git-log-reversed.txt
 ```
 
-on both and find the common prefix.
+on both openjdk:jdk and openjdk:jdk${VER}u, and find the common prefix.
 
 ```sh
-VER=21
-last_common_commit=bb377b26730f3d9da7c76e0d171517e811cef3ce
+VER=25
+last_common_commit=c59e44a7aa2aeff0823830b698d524523b996650
 cd $t/libraries
 git clone -- git@github.com:openjdk/jdk.git jdk-fork-openjdk-commit-${last_common_commit}
 cd jdk-fork-openjdk-commit-${last_common_commit}
@@ -197,36 +208,54 @@ git pull ../jdk-fork-openjdk-commit-${last_common_commit}
 Resolve the merge conflicts.  The commands in `README-merging.el` automate a
 great deal of work (requires using Emacs).
 
-Replace uses of the old JDK version (such as 21) with the new one (such as 25).
+Replace uses of the old JDK version (such as 21) with the new one (such as 25)
+in this file.
 
-* In this file
+Replace "jdk21u" by "jdk25u":
+
 * In .azure/azure-pipelines.yml.m4
+* In .github/workflows/ci.yml.m4
 
-Make a fork of jdk21u.  Follow the instructions in "The typetools/jdk21u
+Do not change `canary_version` or `latest_version` in `.azure/defs.m4` and
+`.github/workflows/defs.m4`.  Those are the JDK versions that run the Checker
+Framework, not the JDK version that is annotated.
+
+Regenerate some files:
+
+```sh
+make -B -C .azure
+make -B -C .github/workflows
+```
+
+Make a fork of jdk25u.  Follow the instructions in "The typetools/jdk25u
 repository" above, except replace
 `git pull https://github.com/typetools/jdk.git` 
 by the JDK you are currently working on.
 
-Build JDK 21u (not the main JDK!).
+Build JDK 25u (not the main JDK!).
 
-Diff JDK 21 with the upstream commit of OpenJDK, to detect unintentional edits.
+Diff JDK 25 with the upstream commit of OpenJDK, to detect unintentional edits.
 The commands in `README-diffing.el` automate a great deal of work (requires
 using Emacs).
 
 ```sh
-cd jdk21u-fork-typetools
-git pull ../jdk-fork-${USER}-branch-jdk21
+cd jdk25u-fork-typetools
+git pull ../jdk-fork-${USER}-branch-jdk25
 ```
 
 Push and wait for CI to pass.
 
 Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
-in Javadoc.  For example, when upgrading from Java 17 to Java 21, the regex
-"@since[ \t](18|19|20|21)".  For each relevant `@since`, add annotations for all
-the type systems in `@AnnotatedFor`.  Note: I have not yet done this for JDK
-18-21.
+in Javadoc.  For example, when upgrading from Java 21 to Java 25, the regex
+"@since[ \t](22|23|24|25)".  The `@since` may be on the class declaration or on
+an individual method, constructor, or field, so examine every occurrence in the
+file rather than only the first.  For each relevant `@since`, add annotations
+for all the type systems in `@AnnotatedFor`.  Also annotate classes that are
+entirely new in the JDK versions being added; those have no `@AnnotatedFor` yet,
+so the above search does not find them.
+Note: I have not yet done this for JDK 18-25.
 
-DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
+DO NOT squash-and-merge the pull request.  Both the jdk and jdk25u repositories
 need to be merged, retaining history.
 
 For Michael Ernst only:  update `~/bin/src/mdedots/share/mdevcupdate`
