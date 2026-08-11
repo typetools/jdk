@@ -41,7 +41,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.lang.ref.WeakReference;
 import java.lang.ref.ReferenceQueue;
@@ -483,7 +483,7 @@ public class WeakHashMap<K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, K key, V value) {
         Object k = maskNull(key);
@@ -577,7 +577,7 @@ public class WeakHashMap<K,V>
      * @param m mappings to be stored in this map.
      * @throws  NullPointerException if the specified map is null.
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied WeakHashMap<K, V> this, Map<? extends K, ? extends V> m) {
         int numKeysToBeAdded = m.size();
@@ -628,7 +628,7 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
@@ -689,7 +689,7 @@ public class WeakHashMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied WeakHashMap<K, V> this) {
         // clear out ref queue. We don't need to expunge entries
@@ -773,7 +773,7 @@ public class WeakHashMap<K,V>
             return value;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public V setValue(V newValue) {
             V oldValue = value;
@@ -855,7 +855,7 @@ public class WeakHashMap<K,V>
         }
 
         /** The common parts of next() across different types of iterators */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         protected Entry<K,V> nextEntry() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
@@ -869,7 +869,7 @@ public class WeakHashMap<K,V>
             return lastReturned;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
@@ -886,7 +886,7 @@ public class WeakHashMap<K,V>
     }
 
     private class ValueIterator extends HashIterator<V> {
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return nextEntry().value;
@@ -894,7 +894,7 @@ public class WeakHashMap<K,V>
     }
 
     private class KeyIterator extends HashIterator<K> {
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return nextEntry().getKey();
@@ -902,7 +902,7 @@ public class WeakHashMap<K,V>
     }
 
     private class EntryIterator extends HashIterator<Map.Entry<K,V>> {
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             return nextEntry();
@@ -953,7 +953,7 @@ public class WeakHashMap<K,V>
             return containsKey(o);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
@@ -964,7 +964,7 @@ public class WeakHashMap<K,V>
                 return false;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
@@ -1016,7 +1016,7 @@ public class WeakHashMap<K,V>
             return containsValue(o);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
@@ -1062,7 +1062,7 @@ public class WeakHashMap<K,V>
                     && getEntry(e.getKey()).equals(e);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
@@ -1073,7 +1073,7 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();

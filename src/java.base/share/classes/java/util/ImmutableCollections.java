@@ -34,8 +34,8 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -350,6 +350,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public List<E> reversed() {
             return ReverseOrderListView.of(this, false);
         }
@@ -392,7 +393,7 @@ class ImmutableCollections {
             return cursor != size;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty ListItr<E> this) {
             try {
@@ -884,7 +885,7 @@ class ImmutableCollections {
                 }
 
                 @Override
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 @SuppressWarnings("unchecked")
                 public E next(/*@NonEmpty Iterator<E> this*/) {
@@ -1024,7 +1025,7 @@ class ImmutableCollections {
             }
 
             @Override
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public E next(@NonEmpty SetNIterator this) {
                 if (remaining > 0) {
@@ -1356,7 +1357,7 @@ class ImmutableCollections {
                 return remaining > 0;
             }
 
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             private int nextIndex() {
                 int idx = this.idx;

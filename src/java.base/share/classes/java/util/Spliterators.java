@@ -29,7 +29,7 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
@@ -698,7 +698,7 @@ public final class Spliterators {
             }
 
             @Override
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public T next(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
@@ -761,7 +761,7 @@ public final class Spliterators {
             }
 
             @Override
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public int nextInt(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
@@ -820,7 +820,7 @@ public final class Spliterators {
             }
 
             @Override
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public long nextLong(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())
@@ -879,7 +879,7 @@ public final class Spliterators {
             }
 
             @Override
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public double nextDouble(@NonEmpty Adapter this) {
                 if (!valueReady && !hasNext())

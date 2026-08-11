@@ -31,7 +31,7 @@
 package sun.util.locale;
 
 import org.checkerframework.dataflow.qual.Pure;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 public class StringTokenIterator {
     private String text;
@@ -74,7 +74,7 @@ public class StringTokenIterator {
         return done;
     }
 
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     public String next() {
         if (hasNext()) {
             start = end + 1;

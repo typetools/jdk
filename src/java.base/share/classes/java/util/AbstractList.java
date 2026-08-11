@@ -42,7 +42,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.function.Consumer;
 
@@ -132,7 +132,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      *         prevents it from being added to this list
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(@GuardSatisfied AbstractList<E> this, E e) {
         add(size(), e);
@@ -161,7 +161,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E set(@GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index, E element) {
         throw new UnsupportedOperationException();
@@ -181,7 +181,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(@GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         throw new UnsupportedOperationException();
@@ -197,7 +197,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws UnsupportedOperationException {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E remove(@GuardSatisfied @CanShrink AbstractList<E> this, @IndexFor({"this"}) int index) {
         throw new UnsupportedOperationException();
@@ -277,7 +277,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied @CanShrink AbstractList<E> this) {
         removeRange(0, size());
@@ -303,7 +303,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IllegalArgumentException      {@inheritDoc}
      * @throws IndexOutOfBoundsException     {@inheritDoc}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(@GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         rangeCheckForAdd(index);
@@ -409,7 +409,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return cursor != size();
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty Itr this) {
             checkForComodification();
@@ -425,7 +425,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastRet < 0)
@@ -482,7 +482,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return cursor-1;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) {
             if (lastRet < 0)
@@ -498,7 +498,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
             checkForComodification();
@@ -651,7 +651,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @param fromIndex index of first element to be removed
      * @param toIndex index after last element to be removed
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     protected void removeRange(@GuardSatisfied @CanShrink AbstractList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
         ListIterator<E> it = listIterator(fromIndex);
@@ -838,7 +838,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             Objects.checkIndex(index, size);
@@ -860,7 +860,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             rangeCheckForAdd(index);
@@ -869,7 +869,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             updateSizeAndModCount(1);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             Objects.checkIndex(index, size);
@@ -885,13 +885,13 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             updateSizeAndModCount(fromIndex - toIndex);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) {
             return addAll(size, c);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             rangeCheckForAdd(index);
@@ -923,7 +923,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                     return nextIndex() < size;
                 }
 
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public E next(/*@NonEmpty ListIterator<E> this*/) {
                     if (hasNext())
@@ -937,7 +937,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                     return previousIndex() >= 0;
                 }
 
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 public E previous() {
                     if (hasPrevious())
                         return i.previous();
@@ -955,21 +955,21 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
                     return i.previousIndex() - offset;
                 }
 
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     i.remove();
                     updateSizeAndModCount(-1);
                 }
 
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     i.set(e);
                 }
 
                 @EnsuresNonEmpty("this")
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     i.add(e);

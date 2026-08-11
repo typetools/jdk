@@ -47,6 +47,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -238,7 +239,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         element prevents it from being added to this deque
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void addFirst(@GuardSatisfied Deque<E> this, E e);
 
@@ -262,7 +263,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         element prevents it from being added to this deque
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void addLast(@GuardSatisfied Deque<E> this, E e);
 
@@ -282,7 +283,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this deque
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean offerFirst(E e);
 
@@ -302,7 +303,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this deque
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean offerLast(E e);
 
@@ -314,7 +315,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the head of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E removeFirst(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -326,7 +327,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the tail of this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E removeLast(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -336,7 +337,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *
      * @return the head of this deque, or {@code null} if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable E pollFirst(@GuardSatisfied @CanShrink Deque<E> this);
 
@@ -346,7 +347,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *
      * @return the tail of this deque, or {@code null} if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable E pollLast(@GuardSatisfied @CanShrink Deque<E> this);
 
@@ -381,8 +382,6 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *
      * @return the head of this deque, or {@code null} if this deque is empty
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @Pure
     @Nullable E peekFirst();
 
@@ -392,8 +391,6 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *
      * @return the tail of this deque, or {@code null} if this deque is empty
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @Pure
     @Nullable E peekLast();
 
@@ -414,7 +411,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         deque does not permit null elements
      *         ({@linkplain Collection##optional-restrictions optional})
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean removeFirstOccurrence(@GuardSatisfied @CanShrink Deque<E> this, Object o);
 
@@ -435,7 +432,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         deque does not permit null elements
      *         ({@linkplain Collection##optional-restrictions optional})
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean removeLastOccurrence(@GuardSatisfied @CanShrink Deque<E> this, Object o);
 
@@ -464,7 +461,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         element prevents it from being added to this deque
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Deque<E> this, E e);
 
@@ -489,7 +486,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this deque
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean offer(E e);
 
@@ -504,7 +501,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E remove(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -518,7 +515,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the first element of this deque, or {@code null} if
      *         this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     @Nullable E poll(@GuardSatisfied @CanShrink Deque<E> this);
 
@@ -533,8 +530,6 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException if this deque is empty
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @Pure
     E element(@GuardSatisfied @NonEmpty Deque<E> this);
 
@@ -548,8 +543,6 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return the head of the queue represented by this deque, or
      *         {@code null} if this deque is empty
      */
-    // @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     @Pure
     @Nullable E peek();
 
@@ -577,7 +570,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @throws IllegalArgumentException if some property of an element of the
      *         specified collection prevents it from being added to this deque
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean addAll(Collection<? extends E> c);
 
@@ -601,7 +594,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this deque
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void push(@GuardSatisfied Deque<E> this, E e);
 
@@ -615,7 +608,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         of the stack represented by this deque)
      * @throws NoSuchElementException if this deque is empty
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     E pop(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
@@ -641,7 +634,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      *         deque does not permit null elements
      *         ({@linkplain Collection##optional-restrictions optional})
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@GuardSatisfied @CanShrink Deque<E> this, @UnknownSignedness Object o);
 
@@ -688,7 +681,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return an iterator over the elements in this deque in reverse
      * sequence
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     Iterator<E> descendingIterator();
 
@@ -702,7 +695,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      * @return a reverse-ordered view of this collection, as a {@code Deque}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     default Deque<E> reversed() {
         return ReverseOrderDequeView.of(this);
