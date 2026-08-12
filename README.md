@@ -204,7 +204,7 @@ Replace uses of the old JDK version (such as 17) with the new one (such as 21).
 
 Make a fork of jdk21u.  Follow the instructions in "The typetools/jdk21u
 repository" above, except replace
-`git pull https://github.com/typetools/jdk.git` 
+`git pull https://github.com/typetools/jdk.git`
 by the JDK you are currently working on.
 
 Build JDK 21u (not the main JDK!).
@@ -221,7 +221,7 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 Push and wait for CI to pass.
 
 Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
-in Javadoc.  For example, the regex "@since[ \t](18|19|20|21)".  For each
+in Javadoc.  For example, the regex `@since[ \t](18|19|20|21)`.  For each
 relevant `@since`, add annotations for all the type systems in `@AnnotatedFor`.
 Note: I have not yet done this for JDK 18-21.
 
@@ -243,7 +243,9 @@ but I wasn't able to make that work for JDK 17.
 
 The remainder of this file is the `README.md` from `openjdk/jdk`.
 
+<!-- markdownlint-disable single-title -->
 # Welcome to the JDK
+<!-- markdownlint-enable single-title -->
 
 For build instructions please see the
 [online documentation](https://openjdk.org/groups/build/doc/building.html),
