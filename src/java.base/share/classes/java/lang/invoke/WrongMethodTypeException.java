@@ -25,6 +25,8 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that code has attempted to call a method handle
  * via the wrong method type.  As with the bytecode representation of
@@ -47,6 +49,7 @@ public class WrongMethodTypeException extends RuntimeException {
     /**
      * Constructs a {@code WrongMethodTypeException} with no detail message.
      */
+    @SideEffectFree
     public WrongMethodTypeException() {
         super();
     }
@@ -57,6 +60,7 @@ public class WrongMethodTypeException extends RuntimeException {
      *
      * @param s the detail message.
      */
+    @SideEffectFree
     public WrongMethodTypeException(String s) {
         super(s);
     }
@@ -70,6 +74,7 @@ public class WrongMethodTypeException extends RuntimeException {
      */
     //FIXME: make this public in MR1
     /*non-public*/
+    @SideEffectFree
     WrongMethodTypeException(String s, Throwable cause) {
         super(s, cause);
     }
@@ -82,6 +87,7 @@ public class WrongMethodTypeException extends RuntimeException {
      */
     //FIXME: make this public in MR1
     /*non-public*/
+    @SideEffectFree
     WrongMethodTypeException(Throwable cause) {
         super(cause);
     }

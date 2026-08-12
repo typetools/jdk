@@ -39,8 +39,10 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link SortedMap} extended with navigation methods returning the
@@ -255,6 +257,8 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      * @throws UnsupportedOperationException if the {@code pollFirstEntry}
      *         operation is not supported by this map
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     Map.@Nullable Entry<K,V> pollFirstEntry(@GuardSatisfied NavigableMap<K, V> this);
 
     /**
@@ -268,6 +272,8 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      * @throws UnsupportedOperationException if the {@code pollLastEntry}
      *         operation is not supported by this map
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     Map.@Nullable Entry<K,V> pollLastEntry(@GuardSatisfied NavigableMap<K, V> this);
 
     /**
@@ -468,6 +474,7 @@ public interface NavigableMap<K,V> extends SortedMap<K,V> {
      * @return a reverse-ordered view of this map, as a {@code NavigableMap}
      * @since 21
      */
+    @SideEffectFree
     default NavigableMap<K, V> reversed() {
         return this.descendingMap();
     }

@@ -23,7 +23,6 @@
 package com.sun.org.apache.xml.internal.security.keys.storage;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -153,7 +152,6 @@ public class StorageResolver {
 
         /** {@inheritDoc} */
         @Override
-        @SideEffectsOnly("this")
         public Certificate next() {
             if (hasNext()) {
                 return currentResolver.next();

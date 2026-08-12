@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
@@ -63,6 +64,7 @@ public class FileSystemException
      * @param   file
      *          a string identifying the file or {@code null} if not known.
      */
+    @SideEffectFree
     public FileSystemException(@Nullable String file) {
         super((String)null);
         this.file = file;
@@ -82,6 +84,7 @@ public class FileSystemException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
+    @SideEffectFree
     public FileSystemException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(reason);
         this.file = file;

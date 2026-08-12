@@ -25,8 +25,14 @@
 
 package java.util;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.dataflow.qual.Deterministic;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * <p>Hash table and linked list implementation of the {@code Set} interface,
@@ -168,6 +174,7 @@ public class LinkedHashSet<E>
      * Constructs a new, empty linked hash set with the default initial
      * capacity (16) and load factor (0.75).
      */
+    @SideEffectFree
     public LinkedHashSet() {
         super(16, .75f, true);
     }
@@ -208,6 +215,7 @@ public class LinkedHashSet<E>
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);
     }
@@ -231,6 +239,7 @@ public class LinkedHashSet<E>
         return new LinkedHashSet<>(HashMap.calculateHashMapCapacity(numElements));
     }
 
+    @Deterministic
     LinkedHashMap<E, Object> map() {
         return (LinkedHashMap<E, Object>) map;
     }
@@ -243,6 +252,9 @@ public class LinkedHashSet<E>
      *
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
         map().putFirst(e, PRESENT);
     }
@@ -255,6 +267,9 @@ public class LinkedHashSet<E>
      *
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {
         map().putLast(e, PRESENT);
     }
@@ -265,6 +280,8 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @Pure
     public E getFirst() {
         return map().sequencedKeySet().getFirst();
     }
@@ -275,6 +292,8 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @EnsuresNonEmpty("this")
+    @Pure
     public E getLast() {
         return map().sequencedKeySet().getLast();
     }
@@ -285,6 +304,8 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public E removeFirst() {
         return map().sequencedKeySet().removeFirst();
     }
@@ -295,6 +316,8 @@ public class LinkedHashSet<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public E removeLast() {
         return map().sequencedKeySet().removeLast();
     }
@@ -308,18 +331,27 @@ public class LinkedHashSet<E>
      * @return {@inheritDoc}
      * @since 21
      */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     public SequencedSet<E> reversed() {
         class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
+            @Pure
             public int size()                  { return LinkedHashSet.this.size(); }
+            @SideEffectFree
             public Iterator<E> iterator()      { return map().sequencedKeySet().reversed().iterator(); }
             public boolean add(E e)            { return LinkedHashSet.this.add(e); }
             public void addFirst(E e)          { LinkedHashSet.this.addLast(e); }
             public void addLast(E e)           { LinkedHashSet.this.addFirst(e); }
+            @Pure
             public E getFirst()                { return LinkedHashSet.this.getLast(); }
+            @Pure
             public E getLast()                 { return LinkedHashSet.this.getFirst(); }
             public E removeFirst()             { return LinkedHashSet.this.removeLast(); }
             public E removeLast()              { return LinkedHashSet.this.removeFirst(); }
+            @SideEffectFree
             public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
+            @Pure
+            @SideEffectFree
             public Object[] toArray() { return map().keysToArray(new Object[map.size()], true); }
             public <T> T[] toArray(T[] a) { return map().keysToArray(map.prepareArray(a), true); }
         }

@@ -194,6 +194,7 @@ public final @UsesObjectEquals class Math {
      * @return  the sine of the argument.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double sin(double a) {
         return StrictMath.sin(a); // default impl. delegates to StrictMath
@@ -213,6 +214,7 @@ public final @UsesObjectEquals class Math {
      * @return  the cosine of the argument.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double cos(double a) {
         return StrictMath.cos(a); // default impl. delegates to StrictMath
@@ -232,6 +234,7 @@ public final @UsesObjectEquals class Math {
      * @return  the tangent of the argument.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double tan(double a) {
         return StrictMath.tan(a); // default impl. delegates to StrictMath
@@ -252,6 +255,7 @@ public final @UsesObjectEquals class Math {
      * @return  the arc sine of the argument.
      */
     @Pure
+    @StaticallyExecutable
     public static double asin(double a) {
         return StrictMath.asin(a); // default impl. delegates to StrictMath
     }
@@ -271,6 +275,7 @@ public final @UsesObjectEquals class Math {
      * @return  the arc cosine of the argument.
      */
     @Pure
+    @StaticallyExecutable
     public static double acos(double a) {
         return StrictMath.acos(a); // default impl. delegates to StrictMath
     }
@@ -293,6 +298,7 @@ public final @UsesObjectEquals class Math {
      * @return  the arc tangent of the argument.
      */
     @Pure
+    @StaticallyExecutable
     public static double atan(double a) {
         return StrictMath.atan(a); // default impl. delegates to StrictMath
     }
@@ -308,6 +314,7 @@ public final @UsesObjectEquals class Math {
      * @since   1.2
      */
     @Pure
+    @StaticallyExecutable
     public static double toRadians(double angdeg) {
         return angdeg * DEGREES_TO_RADIANS;
     }
@@ -325,6 +332,7 @@ public final @UsesObjectEquals class Math {
      * @since   1.2
      */
     @Pure
+    @StaticallyExecutable
     public static double toDegrees(double angrad) {
         return angrad * RADIANS_TO_DEGREES;
     }
@@ -348,6 +356,7 @@ public final @UsesObjectEquals class Math {
      *          where <i>e</i> is the base of the natural logarithms.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double exp(double a) {
         return StrictMath.exp(a); // default impl. delegates to StrictMath
@@ -374,6 +383,7 @@ public final @UsesObjectEquals class Math {
      *          {@code a}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double log(double a) {
         return StrictMath.log(a); // default impl. delegates to StrictMath
@@ -403,6 +413,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double log10(double a) {
         return StrictMath.log10(a); // default impl. delegates to StrictMath
@@ -430,6 +441,7 @@ public final @UsesObjectEquals class Math {
      *          If the argument is NaN or less than zero, the result is NaN.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double sqrt(double a) {
         return StrictMath.sqrt(a); // default impl. delegates to StrictMath
@@ -467,6 +479,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double cbrt(double a) {
         return StrictMath.cbrt(a);
@@ -495,6 +508,7 @@ public final @UsesObjectEquals class Math {
      *          {@code f2}.
      */
     @Pure
+    @StaticallyExecutable
     public static double IEEEremainder(double f1, double f2) {
         return StrictMath.IEEEremainder(f1, f2); // delegate to StrictMath
     }
@@ -522,6 +536,7 @@ public final @UsesObjectEquals class Math {
      *          the argument and is equal to a mathematical integer.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double ceil(double a) {
         return StrictMath.ceil(a); // default impl. delegates to StrictMath
@@ -547,6 +562,7 @@ public final @UsesObjectEquals class Math {
      *          and is equal to a mathematical integer.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double floor(double a) {
         return StrictMath.floor(a); // default impl. delegates to StrictMath
@@ -572,6 +588,7 @@ public final @UsesObjectEquals class Math {
      *          equal to a mathematical integer.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double rint(double a) {
         return StrictMath.rint(a); // default impl. delegates to StrictMath
@@ -639,6 +656,7 @@ public final @UsesObjectEquals class Math {
      *          (<i>x</i>,&nbsp;<i>y</i>) in Cartesian coordinates.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double atan2(double y, double x) {
         return StrictMath.atan2(y, x); // default impl. delegates to StrictMath
@@ -778,6 +796,7 @@ public final @UsesObjectEquals class Math {
      * @return  the value {@code a}<sup>{@code b}</sup>.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double pow(double a, double b) {
         return StrictMath.pow(a, b); // default impl. delegates to StrictMath
@@ -804,6 +823,7 @@ public final @UsesObjectEquals class Math {
      * @see     java.lang.Integer#MIN_VALUE
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int round(float a) {
         int intBits = Float.floatToRawIntBits(a);
@@ -855,6 +875,7 @@ public final @UsesObjectEquals class Math {
      * @see     java.lang.Long#MIN_VALUE
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static long round(double a) {
         long longBits = Double.doubleToRawLongBits(a);
@@ -923,7 +944,6 @@ public final @UsesObjectEquals class Math {
      * @see #nextDown(double)
      * @see Random#nextDouble()
      */
-    @Pure
     public static double random() {
         return RandomNumberGeneratorHolder.randomNumberGenerator.nextDouble();
     }
@@ -938,6 +958,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows an int
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int addExact(int x, int y) {
         int r = x + y;
@@ -958,6 +980,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows a long
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static long addExact(long x, long y) {
         long r = x + y;
@@ -978,6 +1002,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows an int
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int subtractExact(int x, int y) {
         int r = x - y;
@@ -999,6 +1025,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows a long
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static long subtractExact(long x, long y) {
         long r = x - y;
@@ -1020,6 +1048,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows an int
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int multiplyExact(int x, int y) {
         long r = (long)x * (long)y;
@@ -1039,6 +1069,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows a long
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyExact(long x, int y) {
         return multiplyExact(x, (long)y);
     }
@@ -1053,6 +1085,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the result overflows a long
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static long multiplyExact(long x, long y) {
         long r = x * y;
@@ -1092,6 +1126,8 @@ public final @UsesObjectEquals class Math {
      * @jls 15.17.2 Division Operator /
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int divideExact(int x, int y) {
         int q = x / y;
         if ((x & y & q) >= 0) {
@@ -1122,6 +1158,8 @@ public final @UsesObjectEquals class Math {
      * @jls 15.17.2 Division Operator /
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long divideExact(long x, long y) {
         long q = x / y;
         if ((x & y & q) >= 0) {
@@ -1155,6 +1193,8 @@ public final @UsesObjectEquals class Math {
      * @see #floorDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorDivExact(int x, int y) {
         final int q = x / y;
         if ((x & y & q) >= 0) {
@@ -1192,6 +1232,8 @@ public final @UsesObjectEquals class Math {
      * @see #floorDiv(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDivExact(long x, long y) {
         final long q = x / y;
         if ((x & y & q) >= 0) {
@@ -1229,6 +1271,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceilDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilDivExact(int x, int y) {
         final int q = x / y;
         if ((x & y & q) >= 0) {
@@ -1266,6 +1310,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceilDiv(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDivExact(long x, long y) {
         final long q = x / y;
         if ((x & y & q) >= 0) {
@@ -1289,6 +1335,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static int incrementExact(int a) {
         if (a == Integer.MAX_VALUE) {
             throw new ArithmeticException("integer overflow");
@@ -1308,6 +1356,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static long incrementExact(long a) {
         if (a == Long.MAX_VALUE) {
             throw new ArithmeticException("long overflow");
@@ -1327,6 +1377,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static int decrementExact(int a) {
         if (a == Integer.MIN_VALUE) {
             throw new ArithmeticException("integer overflow");
@@ -1346,6 +1398,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static long decrementExact(long a) {
         if (a == Long.MIN_VALUE) {
             throw new ArithmeticException("long overflow");
@@ -1365,6 +1419,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static int negateExact(int a) {
         if (a == Integer.MIN_VALUE) {
             throw new ArithmeticException("integer overflow");
@@ -1384,6 +1440,8 @@ public final @UsesObjectEquals class Math {
      * @since 1.8
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static long negateExact(long a) {
         if (a == Long.MIN_VALUE) {
             throw new ArithmeticException("long overflow");
@@ -1401,6 +1459,8 @@ public final @UsesObjectEquals class Math {
      * @throws ArithmeticException if the {@code argument} overflows an int
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int toIntExact(long value) {
         if ((int)value != value) {
             throw new ArithmeticException("integer overflow");
@@ -1416,6 +1476,8 @@ public final @UsesObjectEquals class Math {
      * @return the result
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyFull(int x, int y) {
         return (long)x * (long)y;
     }
@@ -1431,6 +1493,8 @@ public final @UsesObjectEquals class Math {
      * @since 9
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static long multiplyHigh(long x, long y) {
         // Use technique from section 8-2 of Henry S. Warren, Jr.,
         // Hacker's Delight (2nd ed.) (Addison Wesley, 2013), 173-174.
@@ -1459,6 +1523,8 @@ public final @UsesObjectEquals class Math {
      * @since 18
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static long unsignedMultiplyHigh(long x, long y) {
         // Compute via multiplyHigh() to leverage the intrinsic
         long result = Math.multiplyHigh(x, y);
@@ -1503,6 +1569,8 @@ public final @UsesObjectEquals class Math {
      * @see #floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorDiv(int x, int y) {
         final int q = x / y;
         // if the signs are different and modulo not zero, round down
@@ -1537,6 +1605,8 @@ public final @UsesObjectEquals class Math {
      * @see #floor(double)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, int y) {
         return floorDiv(x, (long)y);
     }
@@ -1566,6 +1636,8 @@ public final @UsesObjectEquals class Math {
      * @see #floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, long y) {
         final long q = x / y;
         // if the signs are different and modulo not zero, round down
@@ -1614,6 +1686,8 @@ public final @UsesObjectEquals class Math {
      * @see #floorDiv(int, int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(int x, int y) {
         final int r = x % y;
         // if the signs are different and modulo not zero, adjust result
@@ -1645,6 +1719,8 @@ public final @UsesObjectEquals class Math {
      * @see #floorDiv(long, int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(long x, int y) {
         // Result cannot overflow the range of int.
         return (int)floorMod(x, (long)y);
@@ -1672,6 +1748,8 @@ public final @UsesObjectEquals class Math {
      * @see #floorDiv(long, long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorMod(long x, long y) {
         final long r = x % y;
         // if the signs are different and modulo not zero, adjust result
@@ -1717,6 +1795,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilDiv(int x, int y) {
         final int q = x / y;
         // if the signs are the same and modulo not zero, round up
@@ -1751,6 +1831,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDiv(long x, int y) {
         return ceilDiv(x, (long)y);
     }
@@ -1780,6 +1862,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDiv(long x, long y) {
         final long q = x / y;
         // if the signs are the same and modulo not zero, round up
@@ -1828,6 +1912,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceilDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilMod(int x, int y) {
         final int r = x % y;
         // if the signs are the same and modulo not zero, adjust result
@@ -1859,6 +1945,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceilDiv(long, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilMod(long x, int y) {
         // Result cannot overflow the range of int.
         return (int)ceilMod(x, (long)y);
@@ -1886,6 +1974,8 @@ public final @UsesObjectEquals class Math {
      * @see #ceilDiv(long, long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilMod(long x, long y) {
         final long r = x % y;
         // if the signs are the same and modulo not zero, adjust result
@@ -1911,6 +2001,7 @@ public final @UsesObjectEquals class Math {
      * @see Math#absExact(int)
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static @NonNegative int abs(int a) {
         return (a < 0) ? -a : a;
@@ -1935,6 +2026,7 @@ public final @UsesObjectEquals class Math {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static int absExact(int a) {
         if (a == Integer.MIN_VALUE)
             throw new ArithmeticException(
@@ -1959,6 +2051,7 @@ public final @UsesObjectEquals class Math {
      * @see Math#absExact(long)
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static @NonNegative long abs(long a) {
         return (a < 0) ? -a : a;
@@ -1983,6 +2076,7 @@ public final @UsesObjectEquals class Math {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static long absExact(long a) {
         if (a == Long.MIN_VALUE)
             throw new ArithmeticException(
@@ -2012,6 +2106,7 @@ public final @UsesObjectEquals class Math {
      * @return  the absolute value of the argument.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float abs(float a) {
         // Convert to bit field form, zero the sign bit, and convert back
@@ -2039,6 +2134,7 @@ public final @UsesObjectEquals class Math {
      * @return  the absolute value of the argument.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double abs(double a) {
         // Convert to bit field form, zero the sign bit, and convert back
@@ -2161,6 +2257,7 @@ public final @UsesObjectEquals class Math {
      * @return  the smaller of {@code a} and {@code b}.
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static @PolyLowerBound int min(@PolyLowerBound int a, @PolyLowerBound int b) {
         return (a <= b) ? a : b;
@@ -2268,6 +2365,8 @@ public final @UsesObjectEquals class Math {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static int clamp(long value, int min, int max) {
         if (min > max) {
             throw new IllegalArgumentException(min + " > " + max);
@@ -2289,6 +2388,8 @@ public final @UsesObjectEquals class Math {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static long clamp(long value, long min, long max) {
         if (min > max) {
             throw new IllegalArgumentException(min + " > " + max);
@@ -2316,6 +2417,8 @@ public final @UsesObjectEquals class Math {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static double clamp(double value, double min, double max) {
         // This unusual condition allows keeping only one branch
         // on common path when min < max and neither of them is NaN.
@@ -2357,6 +2460,8 @@ public final @UsesObjectEquals class Math {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static float clamp(float value, float min, float max) {
         // This unusual condition allows keeping only one branch
         // on common path when min < max and neither of them is NaN.
@@ -2429,6 +2534,8 @@ public final @UsesObjectEquals class Math {
      * @since 9
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static double fma(double a, double b, double c) {
         /*
          * Infinity and NaN arithmetic is not quite the same with two
@@ -2543,6 +2650,8 @@ public final @UsesObjectEquals class Math {
      * @since 9
      */
     @IntrinsicCandidate
+    @Pure
+    @StaticallyExecutable
     public static float fma(float a, float b, float c) {
         if (Float.isFinite(a) && Float.isFinite(b) && Float.isFinite(c)) {
             if (a == 0.0 || b == 0.0) {
@@ -2585,6 +2694,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double ulp(double d) {
         int exp = getExponent(d);
 
@@ -2633,6 +2743,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static float ulp(float f) {
         int exp = getExponent(f);
 
@@ -2675,6 +2786,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double signum(double d) {
         return (d == 0.0 || Double.isNaN(d))?d:copySign(1.0, d);
@@ -2698,6 +2810,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float signum(float f) {
         return (f == 0.0f || Float.isNaN(f))?f:copySign(1.0f, f);
@@ -2729,6 +2842,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double sinh(double x) {
         return StrictMath.sinh(x);
     }
@@ -2758,6 +2872,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double cosh(double x) {
         return StrictMath.cosh(x);
     }
@@ -2799,6 +2914,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double tanh(double x) {
         return StrictMath.tanh(x);
@@ -2831,6 +2947,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double hypot(double x, double y) {
         return StrictMath.hypot(x, y);
     }
@@ -2870,6 +2987,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double expm1(double x) {
         return StrictMath.expm1(x);
     }
@@ -2908,6 +3026,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.5
      */
     @Pure
+    @StaticallyExecutable
     public static double log1p(double x) {
         return StrictMath.log1p(x);
     }
@@ -2932,6 +3051,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double copySign(double magnitude, double sign) {
         return Double.longBitsToDouble((Double.doubleToRawLongBits(sign) &
@@ -2961,6 +3081,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static float copySign(float magnitude, float sign) {
         return Float.intBitsToFloat((Float.floatToRawIntBits(sign) &
@@ -2989,6 +3110,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static int getExponent(float f) {
         /*
          * Bitwise convert f to integer, mask out exponent bits, shift
@@ -3018,6 +3140,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static int getExponent(double d) {
         /*
          * Bitwise convert d to long, mask out exponent bits, shift
@@ -3069,6 +3192,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static double nextAfter(double start, double direction) {
         /*
          * The cases:
@@ -3154,6 +3278,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static float nextAfter(float start, double direction) {
         /*
          * The cases:
@@ -3228,6 +3353,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static double nextUp(double d) {
         // Use a single conditional and handle the likely cases first.
         if (d < Double.POSITIVE_INFINITY) {
@@ -3268,6 +3394,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static float nextUp(float f) {
         // Use a single conditional and handle the likely cases first.
         if (f < Float.POSITIVE_INFINITY) {
@@ -3307,6 +3434,8 @@ public final @UsesObjectEquals class Math {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextDown(double d) {
         if (Double.isNaN(d) || d == Double.NEGATIVE_INFINITY)
             return d;
@@ -3347,6 +3476,8 @@ public final @UsesObjectEquals class Math {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextDown(float f) {
         if (Float.isNaN(f) || f == Float.NEGATIVE_INFINITY)
             return f;
@@ -3393,6 +3524,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static double scalb(double d, int scaleFactor) {
         if (scaleFactor > -DoubleConsts.EXP_BIAS) {
             if (scaleFactor <= DoubleConsts.EXP_BIAS) {
@@ -3446,6 +3578,7 @@ public final @UsesObjectEquals class Math {
      * @since 1.6
      */
     @Pure
+    @StaticallyExecutable
     public static float scalb(float f, int scaleFactor) {
         // magnitude of a power of two so large that scaling a finite
         // nonzero value by it would be guaranteed to over or

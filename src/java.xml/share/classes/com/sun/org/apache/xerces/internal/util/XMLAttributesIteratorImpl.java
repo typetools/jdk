@@ -26,7 +26,6 @@
 package com.sun.org.apache.xerces.internal.util;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -63,7 +62,6 @@ public class XMLAttributesIteratorImpl extends XMLAttributesImpl implements
         return fCurrent < getLength() ? true : false ;
     }//hasNext()
 
-    @SideEffectsOnly("this")
     public XMLAttributesImpl.Attribute next() {
         if(hasNext()){
             // should this be of type javax.xml.stream.Attribute ?

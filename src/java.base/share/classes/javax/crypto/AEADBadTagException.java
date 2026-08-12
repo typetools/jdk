@@ -25,6 +25,8 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception is thrown when a {@link Cipher} operating in
  * an AEAD mode (such as GCM/CCM) is unable to verify the supplied
@@ -40,6 +42,7 @@ public class AEADBadTagException extends BadPaddingException {
     /**
      * Constructs an {@code AEADBadTagException} with no detail message.
      */
+    @SideEffectFree
     public AEADBadTagException() {
         super();
     }
@@ -50,6 +53,7 @@ public class AEADBadTagException extends BadPaddingException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public AEADBadTagException(String msg) {
         super(msg);
     }

@@ -41,6 +41,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.ref.WeakReference;
 import java.lang.ref.ReferenceQueue;
@@ -449,8 +450,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      * @return {@code true} if there is a mapping for {@code key};
      *         {@code false} otherwise
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }
@@ -483,6 +484,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, @jdk.internal.RequiresIdentity K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
@@ -575,6 +578,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      * @param m mappings to be stored in this map.
      * @throws  NullPointerException if the specified map is null.
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void putAll(@GuardSatisfied WeakHashMap<K, V> this, Map<? extends K, ? extends V> m) {
         int numKeysToBeAdded = m.size();
         if (numKeysToBeAdded == 0)
@@ -624,6 +629,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
@@ -683,6 +690,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied WeakHashMap<K, V> this) {
         // clear out ref queue. We don't need to expunge entries
         // since table is getting cleared.
@@ -755,20 +764,25 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
         }
 
         @SuppressWarnings("unchecked")
+        @Pure
         public K getKey() {
             return (K) WeakHashMap.unmaskNull(get());
         }
 
+        @Pure
         public V getValue() {
             return value;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
             return oldValue;
         }
 
+        @Pure
         public boolean equals(Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
@@ -783,12 +797,14 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return false;
         }
 
+        @Pure
         public int hashCode() {
             K k = getKey();
             V v = getValue();
             return Objects.hashCode(k) ^ Objects.hashCode(v);
         }
 
+        @SideEffectFree
         public String toString() {
             return getKey() + "=" + getValue();
         }
@@ -854,6 +870,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return lastReturned;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -869,18 +887,24 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
     }
 
     private class ValueIterator extends HashIterator<V> {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public V next(@NonEmpty ValueIterator this) {
             return nextEntry().value;
         }
     }
 
     private class KeyIterator extends HashIterator<K> {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public K next(@NonEmpty KeyIterator this) {
             return nextEntry().getKey();
         }
     }
 
     private class EntryIterator extends HashIterator<Map.Entry<K,V>> {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             return nextEntry();
         }
@@ -930,6 +954,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return containsKey(o);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
@@ -939,6 +965,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
                 return false;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -989,6 +1017,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return containsValue(o);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -1033,6 +1063,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
                     && getEntry(e.getKey()).equals(e);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
@@ -1042,6 +1074,8 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return WeakHashMap.this.size();
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -1058,7 +1092,6 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
             return deepCopy().toArray();
         }
 
-        @SideEffectFree
         public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             return deepCopy().toArray(a);
         }
@@ -1071,6 +1104,7 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         int expectedModCount = modCount;
@@ -1093,6 +1127,7 @@ public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;

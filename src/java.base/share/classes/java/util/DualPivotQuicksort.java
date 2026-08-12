@@ -28,6 +28,7 @@ package java.util;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.concurrent.CountedCompleter;
@@ -233,6 +234,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(int[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
@@ -256,6 +258,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#2")
     static void sort(Sorter sorter, int[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -1035,6 +1038,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(long[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         int size = high - low;
 
@@ -1058,6 +1062,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#2")
     static void sort(Sorter sorter, long[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -1830,6 +1835,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(byte[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_BYTE_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -1918,6 +1924,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(char[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -1936,6 +1943,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(char[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -2237,6 +2245,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(short[] a, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         if (high - low > MIN_SHORT_OR_CHAR_COUNTING_SORT_SIZE) {
             countingSort(a, low, high);
@@ -2255,6 +2264,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(short[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -2572,6 +2582,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(float[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0f,
@@ -2647,6 +2658,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#2")
     static void sort(Sorter sorter, float[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;
@@ -3425,6 +3437,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#1")
     static void sort(double[] a, int parallelism, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         /*
          * Phase 1. Count the number of negative zero -0.0d,
@@ -3500,6 +3513,7 @@ final @UsesObjectEquals class DualPivotQuicksort {
      * @param low the index of the first element, inclusive, to be sorted
      * @param high the index of the last element, exclusive, to be sorted
      */
+    @SideEffectsOnly("#2")
     static void sort(Sorter sorter, double[] a, int bits, @IndexOrHigh({"#1"}) int low, @IndexOrHigh({"#1"}) int high) {
         while (true) {
             int end = high - 1, size = high - low;

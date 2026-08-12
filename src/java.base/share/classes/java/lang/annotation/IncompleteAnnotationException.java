@@ -25,6 +25,8 @@
 
 package java.lang.annotation;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that a program has attempted to access an element of
  * an annotation interface that was added to the annotation interface definition
@@ -59,6 +61,7 @@ public class IncompleteAnnotationException extends RuntimeException {
      * @param elementName the name of the missing element
      * @throws NullPointerException if either parameter is {@code null}
      */
+    @SideEffectFree
     public IncompleteAnnotationException(
             Class<? extends Annotation> annotationType,
             String elementName) {

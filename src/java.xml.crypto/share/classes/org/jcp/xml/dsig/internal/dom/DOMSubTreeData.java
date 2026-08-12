@@ -95,7 +95,6 @@ public class DOMSubTreeData implements NodeSetData<Node> {
         }
 
         @Override
-        @SideEffectsOnly("this")
         public Node next() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);

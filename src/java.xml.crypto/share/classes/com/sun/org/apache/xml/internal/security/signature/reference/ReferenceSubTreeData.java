@@ -94,7 +94,6 @@ public class ReferenceSubTreeData implements ReferenceNodeSetData {
         }
 
         @Override
-        @SideEffectsOnly("this")
         public Node next() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);

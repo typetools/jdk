@@ -376,10 +376,11 @@ AC_DEFUN_ONCE([BASIC_SETUP_COMPLEX_TOOLS],
   fi
   AC_SUBST(IS_GNU_TIME)
 
-  # Check if it's a GNU date compatible version
+  # Check if it's a GNU date compatible version, by testing the GNU-style
+  # invocation that the build relies on rather than the --version banner.
   AC_MSG_CHECKING([if date is a GNU compatible version])
-  check_date=`$DATE --version 2>&1 | $GREP "GNU\|BusyBox"`
-  if test "x$check_date" != x; then
+  check_date=`"$DATE" --utc --date=@0 +"%s" 2> /dev/null`
+  if test "x$check_date" = x0; then
     AC_MSG_RESULT([yes])
     IS_GNU_DATE=yes
   else

@@ -26,8 +26,6 @@
 package sun.nio.cs.ext;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
-
 
 import java.lang.ref.SoftReference;
 import java.nio.charset.Charset;
@@ -179,7 +177,6 @@ public class AbstractCharsetProvider
                     return i.hasNext();
                 }
 
-                @SideEffectsOnly("this")
                 public Charset next() {
                     String csn = i.next();
                     synchronized (AbstractCharsetProvider.this) {

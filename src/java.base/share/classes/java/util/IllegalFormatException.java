@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when a format string contains an illegal syntax
  * or a format specifier that is incompatible with the given arguments.  Only
@@ -52,5 +54,6 @@ public sealed class IllegalFormatException extends IllegalArgumentException
     private static final long serialVersionUID = 18830826L;
 
     // package-private to prevent explicit instantiation
+    @SideEffectFree
     IllegalFormatException() { }
 }

@@ -29,6 +29,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -196,6 +197,7 @@ public interface Comparator<T> {
      *         comparator.
      * @since 1.8
      */
+    @SideEffectFree
     default Comparator<T> reversed() {
         return Collections.reverseOrder(this);
     }

@@ -25,6 +25,9 @@
 
 package sun.net.www.protocol.http;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.Arrays;
 import java.net.URL;
 import java.net.URLConnection;
@@ -90,6 +93,8 @@ import static sun.net.www.protocol.http.AuthScheme.UNKNOWN;
  */
 
 
+@AnnotatedFor("mustcall")
+@InheritableMustCall("disconnect")
 public class HttpURLConnection extends java.net.HttpURLConnection {
 
     static final String HTTP_CONNECT = "CONNECT";

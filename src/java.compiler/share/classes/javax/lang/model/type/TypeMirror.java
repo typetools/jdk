@@ -25,6 +25,8 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.checker.signature.qual.FullyQualifiedName;
+
 import java.lang.annotation.Annotation;
 import java.util.List;
 
@@ -140,7 +142,7 @@ public interface TypeMirror extends AnnotatedConstruct {
      *
      * @return a string representation of this type
      */
-    String toString();
+    @FullyQualifiedName String toString();
 
     /**
      * {@inheritDoc AnnotatedConstruct}

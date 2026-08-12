@@ -30,7 +30,6 @@ package com.sun.xml.internal.stream.util;
  */
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Iterator;
 
@@ -54,7 +53,6 @@ public class ReadOnlyIterator<T> implements Iterator<T> {
     }
 
     @Override
-    @SideEffectsOnly("this")
     public T next() {
         if(iterator  != null)
             return iterator.next();

@@ -35,6 +35,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.math.DoubleToDecimal;
@@ -573,6 +574,7 @@ abstract sealed @UsesObjectEquals class AbstractStringBuilder implements Appenda
     /**
      * {@inheritDoc CharSequence}
      */
+    @SideEffectsOnly("#3")
     @Override
     public void getChars(@NonNegative int srcBegin, @NonNegative int srcEnd, char[] dst, @IndexOrHigh({"#3"}) int dstBegin)
     {

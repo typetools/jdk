@@ -153,6 +153,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the sine of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double sin(double a) {
         return FdLibm.Sin.compute(a);
     }
@@ -167,6 +169,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the cosine of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double cos(double a) {
         return FdLibm.Cos.compute(a);
     }
@@ -181,6 +185,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   an angle, in radians.
      * @return  the tangent of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double tan(double a) {
         return FdLibm.Tan.compute(a);
     }
@@ -196,6 +202,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc sine is to be returned.
      * @return  the arc sine of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double asin(double a) {
         return FdLibm.Asin.compute(a);
     }
@@ -211,6 +219,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc cosine is to be returned.
      * @return  the arc cosine of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double acos(double a) {
         return FdLibm.Acos.compute(a);
     }
@@ -229,6 +239,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the value whose arc tangent is to be returned.
      * @return  the arc tangent of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double atan(double a) {
         return FdLibm.Atan.compute(a);
     }
@@ -242,6 +254,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the measurement of the angle {@code angdeg}
      *          in radians.
      */
+    @Pure
+    @StaticallyExecutable
     public static double toRadians(double angdeg) {
         return Math.toRadians(angdeg);
     }
@@ -257,6 +271,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the measurement of the angle {@code angrad}
      *          in degrees.
      */
+    @Pure
+    @StaticallyExecutable
     public static double toDegrees(double angrad) {
         return Math.toDegrees(angrad);
     }
@@ -276,6 +292,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value <i>e</i><sup>{@code a}</sup>,
      *          where <i>e</i> is the base of the natural logarithms.
      */
+    @Pure
+    @StaticallyExecutable
     public static double exp(double a) {
         return FdLibm.Exp.compute(a);
     }
@@ -297,6 +315,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value ln&nbsp;{@code a}, the natural logarithm of
      *          {@code a}.
      */
+    @Pure
+    @StaticallyExecutable
     public static double log(double a) {
         return FdLibm.Log.compute(a);
     }
@@ -321,6 +341,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the base 10 logarithm of  {@code a}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double log10(double a) {
         return FdLibm.Log10.compute(a);
     }
@@ -341,6 +363,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   a value.
      * @return  the positive square root of {@code a}.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static double sqrt(double a) {
         return FdLibm.Sqrt.compute(a);
@@ -369,6 +393,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the cube root of {@code a}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double cbrt(double a) {
         return FdLibm.Cbrt.compute(a);
     }
@@ -395,6 +421,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the remainder when {@code f1} is divided by
      *          {@code f2}.
      */
+    @Pure
+    @StaticallyExecutable
     public static double IEEEremainder(double f1, double f2) {
         return FdLibm.IEEEremainder.compute(f1, f2);
     }
@@ -417,6 +445,8 @@ public final @UsesObjectEquals class StrictMath {
      *          floating-point value that is greater than or equal to
      *          the argument and is equal to a mathematical integer.
      */
+    @Pure
+    @StaticallyExecutable
     public static double ceil(double a) {
         return floorOrCeil(a, -0.0, 1.0, 1.0);
     }
@@ -436,6 +466,8 @@ public final @UsesObjectEquals class StrictMath {
      *          floating-point value that less than or equal to the argument
      *          and is equal to a mathematical integer.
      */
+    @Pure
+    @StaticallyExecutable
     public static double floor(double a) {
         return floorOrCeil(a, -1.0, 0.0, -1.0);
     }
@@ -448,6 +480,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param positiveBoundary result for values in (0, 1)
      * @param sign the sign of the result
      */
+    @Pure
+    @StaticallyExecutable
     private static double floorOrCeil(double a,
                                       double negativeBoundary,
                                       double positiveBoundary,
@@ -501,6 +535,8 @@ public final @UsesObjectEquals class StrictMath {
      *          equal to a mathematical integer.
      * @author Joseph D. Darcy
      */
+    @Pure
+    @StaticallyExecutable
     public static double rint(double a) {
         /*
          * If the absolute value of a is not less than 2^52, it
@@ -583,6 +619,8 @@ public final @UsesObjectEquals class StrictMath {
      *          in polar coordinates that corresponds to the point
      *          (<i>x</i>,&nbsp;<i>y</i>) in Cartesian coordinates.
      */
+    @Pure
+    @StaticallyExecutable
     public static double atan2(double y, double x) {
         return FdLibm.Atan2.compute(y, x);
     }
@@ -717,6 +755,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   b   the exponent.
      * @return  the value {@code a}<sup>{@code b}</sup>.
      */
+    @Pure
+    @StaticallyExecutable
     public static double pow(double a, double b) {
         return FdLibm.Pow.compute(a, b);
     }
@@ -740,6 +780,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see     java.lang.Integer#MAX_VALUE
      * @see     java.lang.Integer#MIN_VALUE
      */
+    @Pure
+    @StaticallyExecutable
     public static int round(float a) {
         return Math.round(a);
     }
@@ -764,6 +806,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see     java.lang.Long#MAX_VALUE
      * @see     java.lang.Long#MIN_VALUE
      */
+    @Pure
+    @StaticallyExecutable
     public static long round(double a) {
         return Math.round(a);
     }
@@ -810,6 +854,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#addExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int addExact(int x, int y) {
         return Math.addExact(x, y);
     }
@@ -825,6 +871,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#addExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long addExact(long x, long y) {
         return Math.addExact(x, y);
     }
@@ -840,6 +888,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#subtractExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int subtractExact(int x, int y) {
         return Math.subtractExact(x, y);
     }
@@ -855,6 +905,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#subtractExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long subtractExact(long x, long y) {
         return Math.subtractExact(x, y);
     }
@@ -870,6 +922,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(int,int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int multiplyExact(int x, int y) {
         return Math.multiplyExact(x, y);
     }
@@ -885,6 +939,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(long,int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyExact(long x, int y) {
         return Math.multiplyExact(x, y);
     }
@@ -900,6 +956,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyExact(long,long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyExact(long x, long y) {
         return Math.multiplyExact(x, y);
     }
@@ -927,6 +985,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#divideExact(int,int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int divideExact(int x, int y) {
         return Math.divideExact(x, y);
     }
@@ -954,6 +1014,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#divideExact(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long divideExact(long x, long y) {
         return Math.divideExact(x, y);
     }
@@ -984,6 +1046,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floorDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorDivExact(int x, int y) {
         return Math.floorDivExact(x, y);
     }
@@ -1014,6 +1078,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floorDiv(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDivExact(long x, long y) {
         return Math.floorDivExact(x, y);
     }
@@ -1044,6 +1110,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#ceilDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilDivExact(int x, int y) {
         return Math.ceilDivExact(x, y);
     }
@@ -1074,6 +1142,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#ceilDiv(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDivExact(long x, long y) {
         return Math.ceilDivExact(x, y);
     }
@@ -1090,6 +1160,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int incrementExact(int a) {
         return Math.incrementExact(a);
     }
@@ -1106,6 +1177,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long incrementExact(long a) {
         return Math.incrementExact(a);
     }
@@ -1122,6 +1194,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int decrementExact(int a) {
         return Math.decrementExact(a);
     }
@@ -1138,6 +1211,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long decrementExact(long a) {
         return Math.decrementExact(a);
     }
@@ -1154,6 +1228,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static int negateExact(int a) {
         return Math.negateExact(a);
     }
@@ -1170,6 +1245,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 14
      */
     @Pure
+    @StaticallyExecutable
     public static long negateExact(long a) {
         return Math.negateExact(a);
     }
@@ -1184,6 +1260,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#toIntExact(long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int toIntExact(long value) {
         return Math.toIntExact(value);
     }
@@ -1197,6 +1275,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyFull(int,int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyFull(int x, int y) {
         return Math.multiplyFull(x, y);
     }
@@ -1212,6 +1292,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#multiplyHigh(long,long)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long multiplyHigh(long x, long y) {
         return Math.multiplyHigh(x, y);
     }
@@ -1227,6 +1309,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#unsignedMultiplyHigh(long,long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long unsignedMultiplyHigh(long x, long y) {
         return Math.unsignedMultiplyHigh(x, y);
     }
@@ -1251,6 +1335,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorDiv(int x, int y) {
         return Math.floorDiv(x, y);
     }
@@ -1275,6 +1361,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floor(double)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, int y) {
         return Math.floorDiv(x, y);
     }
@@ -1299,6 +1387,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#floor(double)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorDiv(long x, long y) {
         return Math.floorDiv(x, y);
     }
@@ -1327,6 +1417,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(int, int)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(int x, int y) {
         return Math.floorMod(x , y);
     }
@@ -1355,6 +1447,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(long, int)
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static int floorMod(long x, int y) {
         return Math.floorMod(x , y);
     }
@@ -1383,6 +1477,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#floorDiv(long, long)
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static long floorMod(long x, long y) {
         return Math.floorMod(x, y);
     }
@@ -1407,6 +1503,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilDiv(int x, int y) {
         return Math.ceilDiv(x, y);
     }
@@ -1431,6 +1529,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDiv(long x, int y) {
         return Math.ceilDiv(x, y);
     }
@@ -1455,6 +1555,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see Math#ceil(double)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilDiv(long x, long y) {
         return Math.ceilDiv(x, y);
     }
@@ -1483,6 +1585,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#ceilDiv(int, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilMod(int x, int y) {
         return Math.ceilMod(x , y);
     }
@@ -1511,6 +1615,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#ceilDiv(long, int)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static int ceilMod(long x, int y) {
         return Math.ceilMod(x , y);
     }
@@ -1539,6 +1645,8 @@ public final @UsesObjectEquals class StrictMath {
      * @see StrictMath#ceilDiv(long, long)
      * @since 18
      */
+    @Pure
+    @StaticallyExecutable
     public static long ceilMod(long x, long y) {
         return Math.ceilMod(x, y);
     }
@@ -1558,6 +1666,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the absolute value of the argument.
      * @see Math#absExact(int)
      */
+    @Pure
+    @StaticallyExecutable
     public static int abs(int a) {
         return Math.abs(a);
     }
@@ -1582,6 +1692,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static int absExact(int a) {
         return Math.absExact(a);
     }
@@ -1601,6 +1712,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the absolute value of the argument.
      * @see Math#absExact(long)
      */
+    @Pure
+    @StaticallyExecutable
     public static long abs(long a) {
         return Math.abs(a);
     }
@@ -1625,6 +1738,7 @@ public final @UsesObjectEquals class StrictMath {
      * @since 15
      */
     @Pure
+    @StaticallyExecutable
     public static long absExact(long a) {
         return Math.absExact(a);
     }
@@ -1649,6 +1763,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the argument whose absolute value is to be determined
      * @return  the absolute value of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static float abs(float a) {
         return Math.abs(a);
     }
@@ -1673,6 +1789,8 @@ public final @UsesObjectEquals class StrictMath {
      * @param   a   the argument whose absolute value is to be determined
      * @return  the absolute value of the argument.
      */
+    @Pure
+    @StaticallyExecutable
     public static double abs(double a) {
         return Math.abs(a);
     }
@@ -1846,6 +1964,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static int clamp(long value, int min, int max) {
         return Math.clamp(value, min, max);
     }
@@ -1864,6 +1984,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static long clamp(long value, long min, long max) {
         return Math.clamp(value, min, max);
     }
@@ -1888,6 +2010,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static double clamp(double value, double min, double max) {
         return Math.clamp(value, min, max);
     }
@@ -1912,6 +2036,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 21
      */
+    @Pure
+    @StaticallyExecutable
     public static float clamp(float value, float min, float max) {
         return Math.clamp(value, min, max);
     }
@@ -1966,6 +2092,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static double fma(double a, double b, double c) {
         return Math.fma(a, b, c);
     }
@@ -2020,6 +2148,8 @@ public final @UsesObjectEquals class StrictMath {
      *
      * @since 9
      */
+    @Pure
+    @StaticallyExecutable
     public static float fma(float a, float b, float c) {
         return Math.fma(a, b, c);
     }
@@ -2047,6 +2177,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double ulp(double d) {
         return Math.ulp(d);
     }
@@ -2074,6 +2206,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static float ulp(float f) {
         return Math.ulp(f);
     }
@@ -2095,6 +2229,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double signum(double d) {
         return Math.signum(d);
     }
@@ -2116,6 +2252,8 @@ public final @UsesObjectEquals class StrictMath {
      * @author Joseph D. Darcy
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static float signum(float f) {
         return Math.signum(f);
     }
@@ -2143,6 +2281,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic sine of {@code x}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double sinh(double x) {
         return FdLibm.Sinh.compute(x);
     }
@@ -2169,6 +2309,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic cosine of {@code x}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double cosh(double x) {
         return FdLibm.Cosh.compute(x);
     }
@@ -2202,6 +2344,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  The hyperbolic tangent of {@code x}.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double tanh(double x) {
         return FdLibm.Tanh.compute(x);
     }
@@ -2228,6 +2372,8 @@ public final @UsesObjectEquals class StrictMath {
      * without intermediate overflow or underflow
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double hypot(double x, double y) {
         return FdLibm.Hypot.compute(x, y);
     }
@@ -2258,6 +2404,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return  the value <i>e</i><sup>{@code x}</sup>&nbsp;-&nbsp;1.
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double expm1(double x) {
         return FdLibm.Expm1.compute(x);
     }
@@ -2291,6 +2439,8 @@ public final @UsesObjectEquals class StrictMath {
      * log of {@code x}&nbsp;+&nbsp;1
      * @since 1.5
      */
+    @Pure
+    @StaticallyExecutable
     public static double log1p(double x) {
         return FdLibm.Log1p.compute(x);
     }
@@ -2307,6 +2457,8 @@ public final @UsesObjectEquals class StrictMath {
      * and the sign of {@code sign}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double copySign(double magnitude, double sign) {
         return Math.copySign(magnitude, (Double.isNaN(sign)?1.0d:sign));
     }
@@ -2323,6 +2475,8 @@ public final @UsesObjectEquals class StrictMath {
      * and the sign of {@code sign}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float copySign(float magnitude, float sign) {
         return Math.copySign(magnitude, (Float.isNaN(sign)?1.0f:sign));
     }
@@ -2340,6 +2494,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return the unbiased exponent of the argument
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static int getExponent(float f) {
         return Math.getExponent(f);
     }
@@ -2358,6 +2514,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return the unbiased exponent of the argument
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static int getExponent(double d) {
         return Math.getExponent(d);
     }
@@ -2401,6 +2559,8 @@ public final @UsesObjectEquals class StrictMath {
      * direction of {@code direction}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextAfter(double start, double direction) {
         return Math.nextAfter(start, direction);
     }
@@ -2443,6 +2603,8 @@ public final @UsesObjectEquals class StrictMath {
      * direction of {@code direction}.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextAfter(float start, double direction) {
         return Math.nextAfter(start, direction);
     }
@@ -2472,6 +2634,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextUp(double d) {
         return Math.nextUp(d);
     }
@@ -2501,6 +2665,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextUp(float f) {
         return Math.nextUp(f);
     }
@@ -2530,6 +2696,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static double nextDown(double d) {
         return Math.nextDown(d);
     }
@@ -2559,6 +2727,8 @@ public final @UsesObjectEquals class StrictMath {
      * infinity.
      * @since 1.8
      */
+    @Pure
+    @StaticallyExecutable
     public static float nextDown(float f) {
         return Math.nextDown(f);
     }
@@ -2590,6 +2760,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return {@code d} &times; 2<sup>{@code scaleFactor}</sup>
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static double scalb(double d, int scaleFactor) {
         return Math.scalb(d, scaleFactor);
     }
@@ -2621,6 +2793,8 @@ public final @UsesObjectEquals class StrictMath {
      * @return {@code f} &times; 2<sup>{@code scaleFactor}</sup>
      * @since 1.6
      */
+    @Pure
+    @StaticallyExecutable
     public static float scalb(float f, int scaleFactor) {
         return Math.scalb(f, scaleFactor);
     }

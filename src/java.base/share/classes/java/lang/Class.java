@@ -842,8 +842,8 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      *          {@code false} otherwise.
      * @since   1.1
      */
-    @EnsuresNonNullIf(expression={"getComponentType()"}, result=true)
     @Pure
+    @EnsuresNonNullIf(expression={"getComponentType()"}, result=true)
     public boolean isArray(@GuardSatisfied Class<T> this) {
         return componentType != null;
     }

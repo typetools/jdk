@@ -26,6 +26,8 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Reports a bad SSL key.  Normally, this indicates misconfiguration
  * of the server or client SSL certificate and private key.
@@ -43,6 +45,7 @@ public class SSLKeyException extends SSLException {
      *
      * @param reason describes the problem.
      */
+    @SideEffectFree
     public SSLKeyException(String reason) {
         super(reason);
     }
@@ -59,6 +62,7 @@ public class SSLKeyException extends SSLException {
      *        unknown.)
      * @since 19
      */
+    @SideEffectFree
     public SSLKeyException(String message, Throwable cause) {
         super(message, cause);
     }

@@ -26,8 +26,6 @@
 package sun.management.counter.perf;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
-
 
 import sun.management.counter.*;
 import java.nio.*;
@@ -85,7 +83,6 @@ public class PerfInstrumentation {
         return (nextEntry < prologue.getUsed());
     }
 
-    @SideEffectsOnly("this")
     Counter getNextCounter() {
         if (! hasNext()) {
             return null;

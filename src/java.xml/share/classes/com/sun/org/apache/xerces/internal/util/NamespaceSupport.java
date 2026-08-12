@@ -21,7 +21,7 @@
 package com.sun.org.apache.xerces.internal.util;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import com.sun.org.apache.xerces.internal.xni.NamespaceContext;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -380,7 +380,6 @@ public class NamespaceSupport implements NamespaceContext {
         /**
          * @see java.util.Enumeration#nextElement()
          */
-        @SideEffectsOnly("this")
         public String next() {
             if (counter< size){
                 return fPrefixes[counter++];

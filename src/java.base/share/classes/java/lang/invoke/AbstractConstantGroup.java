@@ -28,6 +28,7 @@ package java.lang.invoke;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.*;
@@ -101,6 +102,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
 
         @Override
         @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public Object next(@NonEmpty AsIterator this) {
             int i = bumpIndex();
             if (resolving)

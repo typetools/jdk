@@ -26,6 +26,8 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the exception for invalid Keys (invalid encoding, wrong
  * length, uninitialized, etc.).
@@ -44,6 +46,7 @@ public class InvalidKeyException extends KeyException {
      * detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidKeyException() {
         super();
     }
@@ -55,6 +58,7 @@ public class InvalidKeyException extends KeyException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public InvalidKeyException(String msg) {
         super(msg);
     }
@@ -70,6 +74,7 @@ public class InvalidKeyException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public InvalidKeyException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -85,6 +90,7 @@ public class InvalidKeyException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public InvalidKeyException(Throwable cause) {
         super(cause);
     }

@@ -28,12 +28,14 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 /**
  * An iterator for lists that allows the programmer
@@ -97,6 +99,7 @@ public interface ListIterator<E> extends Iterator<E> {
      * @throws NoSuchElementException if the iteration has no next element
      */
     @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     E next(@GuardSatisfied @NonEmpty ListIterator<E> this);
 
     /**
@@ -123,6 +126,8 @@ public interface ListIterator<E> extends Iterator<E> {
      * @throws NoSuchElementException if the iteration has no previous
      *         element
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     E previous(@GuardSatisfied ListIterator<E> this);
 
     /**
@@ -166,6 +171,8 @@ public interface ListIterator<E> extends Iterator<E> {
      *         {@code add} have been called after the last call to
      *         {@code next} or {@code previous}
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     void remove(@GuardSatisfied ListIterator<E> this);
 
     /**
@@ -188,6 +195,8 @@ public interface ListIterator<E> extends Iterator<E> {
      *         {@code add} have been called after the last call to
      *         {@code next} or {@code previous}
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     void set(@GuardSatisfied ListIterator<E> this, E e);
 
     /**
@@ -210,5 +219,8 @@ public interface ListIterator<E> extends Iterator<E> {
      * @throws IllegalArgumentException if some aspect of this element
      *         prevents it from being added to this list
      */
+    @CFComment("Not @EnsuresNonEmpty(this) because this adds *before* the cursor.")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     void add(@GuardSatisfied ListIterator<E> this, E e);
 }

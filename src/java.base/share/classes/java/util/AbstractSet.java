@@ -29,8 +29,10 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * This class provides a skeletal implementation of the {@code Set}
@@ -174,6 +176,8 @@ public abstract class AbstractSet<E> extends AbstractCollection<E> implements Se
      * @see #remove(Object)
      * @see #contains(Object)
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(@GuardSatisfied AbstractSet<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;

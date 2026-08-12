@@ -28,6 +28,7 @@ package java.nio.charset;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import jdk.internal.misc.ThreadTracker;
@@ -374,6 +375,7 @@ public abstract class Charset
                 }
 
                 @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public CharsetProvider next(/*@NonEmpty Iterator<CharsetProvider> this*/) {
                     if (!getNext())
                         throw new NoSuchElementException();

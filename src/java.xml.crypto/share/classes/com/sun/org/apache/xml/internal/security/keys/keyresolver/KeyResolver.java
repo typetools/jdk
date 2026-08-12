@@ -22,6 +22,9 @@
  */
 package com.sun.org.apache.xml.internal.security.keys.keyresolver;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.lang.reflect.InvocationTargetException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -30,9 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.DEREncodedKeyValueResolver;
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.DSAKeyValueResolver;
@@ -304,7 +306,6 @@ public class KeyResolver {
         }
 
         @Override
-        @SideEffectsOnly("this")
         public KeyResolverSpi next() {
             KeyResolverSpi resolver = it.next();
             if (resolver == null) {

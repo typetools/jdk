@@ -21,7 +21,6 @@
 package com.sun.org.apache.xerces.internal.impl.xs;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.xs.util.StringListImpl;
@@ -819,7 +818,6 @@ public final class XSModelImpl extends AbstractList<XSNamespaceItem> implements 
         public boolean hasNext() {
             return (index < fGrammarCount);
         }
-        @SideEffectsOnly("this")
         public XSNamespaceItem next() {
             if (index < fGrammarCount) {
                 return fGrammarList[index++];

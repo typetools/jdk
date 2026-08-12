@@ -39,6 +39,7 @@
 package java.text;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**

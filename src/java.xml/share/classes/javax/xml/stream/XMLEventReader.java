@@ -26,7 +26,6 @@
 package javax.xml.stream;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import javax.xml.stream.events.XMLEvent;
 
@@ -54,7 +53,6 @@ public interface XMLEventReader extends Iterator<Object> {
    * @throws XMLStreamException if there is an error with the underlying XML.
    * @throws java.util.NoSuchElementException iteration has no more elements.
    */
-  @SideEffectsOnly("this")
   public XMLEvent nextEvent() throws XMLStreamException;
 
   /**
