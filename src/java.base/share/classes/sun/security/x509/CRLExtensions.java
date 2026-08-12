@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -224,6 +224,7 @@ public class CRLExtensions {
      * @return true iff all the entries match that of the Other,
      * false otherwise.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object other) {
@@ -250,10 +251,9 @@ public class CRLExtensions {
     }
 
     /**
-     * Returns a hashcode value for this CRLExtensions.
-     *
-     * @return the hashcode value.
+     * {@return a hashcode value for this CRLExtensions}
      */
+    @Override
     public int hashCode() {
         return map.hashCode();
     }

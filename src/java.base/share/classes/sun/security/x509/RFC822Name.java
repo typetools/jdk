@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,6 +56,7 @@ public class RFC822Name implements GeneralNameInterface
      * @param derValue the encoded DER RFC822Name.
      * @exception IOException on error.
      */
+    @SuppressWarnings("this-escape")
     public RFC822Name(DerValue derValue) throws IOException {
         name = derValue.getIA5String();
         parseName(name);
@@ -67,6 +68,7 @@ public class RFC822Name implements GeneralNameInterface
      * @param name the RFC822Name.
      * @throws IOException on invalid input name
      */
+    @SuppressWarnings("this-escape")
     public RFC822Name(String name) throws IOException {
         parseName(name);
         this.name = name;
@@ -139,6 +141,7 @@ public class RFC822Name implements GeneralNameInterface
      * @return true iff the names are equivalent
      * according to RFC 5280.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -154,10 +157,9 @@ public class RFC822Name implements GeneralNameInterface
     }
 
     /**
-     * Returns the hash code value for this object.
-     *
-     * @return a hash code value for this object.
+     * {@return the hash code value for this object}
      */
+    @Override
     public int hashCode() {
         return name.toUpperCase(Locale.ENGLISH).hashCode();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -284,6 +284,7 @@ public class RuleBasedCollator extends Collator{
      * example, build rule "a &lt; ? &lt; d" will cause the constructor to
      * throw the ParseException because the '?' is not quoted.
      */
+    @SuppressWarnings("this-escape")
     public RuleBasedCollator(String rules) throws ParseException {
         this(rules, Collator.CANONICAL_DECOMPOSITION);
     }
@@ -596,7 +597,7 @@ public class RuleBasedCollator extends Collator{
         // Here's a hypothetical example, with the collation element represented as
         // a three-digit number, one digit for primary, one for secondary, etc.
         //
-        // String:              A     a     B   \u00e9 <--(e-acute)
+        // String:              A     a     B   é (U+00E9, e-acute)
         // Collation Elements: 101   100   201  510
         //
         // Collation Key:      1125<null>0001<null>1010
@@ -735,11 +736,11 @@ public class RuleBasedCollator extends Collator{
      * @return true if the current table-based collation object is the same
      * as the table-based collation object obj; false otherwise.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (obj == null) return false;
-        if (!super.equals(obj)) return false;  // super does class check
+        if (!super.equals(obj)) return false;  // super does null and class checks
         RuleBasedCollator other = (RuleBasedCollator) obj;
         // all other non-transient information is also contained in rules.
         return (getRules().equals(other.getRules()));
@@ -748,6 +749,7 @@ public class RuleBasedCollator extends Collator{
     /**
      * Generates the hash code for the table-based collation object
      */
+    @Override
     public int hashCode() {
         return getRules().hashCode();
     }

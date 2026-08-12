@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,6 @@ package java.lang.ref;
 
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.security.PrivilegedAction;
-import java.security.AccessController;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.VM;
@@ -39,7 +37,7 @@ final class Finalizer extends FinalReference<Object> { /* Package-private; must 
                                                           same package as the Reference
                                                           class */
 
-    private static ReferenceQueue<Object> queue = new NativeReferenceQueue<>();
+    private static ReferenceQueue<Object> queue = new ReferenceQueue<>();
 
     /** Head of doubly linked list of Finalizers awaiting finalization. */
     private static Finalizer unfinalized = null;
@@ -121,24 +119,18 @@ final class Finalizer extends FinalReference<Object> { /* Package-private; must 
      * The advantage of creating a fresh thread, however, is that it insulates
      * invokers of that method from a stalled or deadlocked finalizer thread.
      */
-    @SuppressWarnings("removal")
     private static void forkSecondaryFinalizer(final Runnable proc) {
-        AccessController.doPrivileged(
-            new PrivilegedAction<>() {
-                public Void run() {
-                    ThreadGroup tg = Thread.currentThread().getThreadGroup();
-                    for (ThreadGroup tgn = tg;
-                         tgn != null;
-                         tg = tgn, tgn = tg.getParent());
-                    Thread sft = new Thread(tg, proc, "Secondary finalizer", 0, false);
-                    sft.start();
-                    try {
-                        sft.join();
-                    } catch (InterruptedException x) {
-                        Thread.currentThread().interrupt();
-                    }
-                    return null;
-                }});
+        ThreadGroup tg = Thread.currentThread().getThreadGroup();
+        for (ThreadGroup tgn = tg;
+             tgn != null;
+             tg = tgn, tgn = tg.getParent());
+        Thread sft = new Thread(tg, proc, "Secondary finalizer", 0, false);
+        sft.start();
+        try {
+            sft.join();
+        } catch (InterruptedException x) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /* Called by Runtime.runFinalization() */

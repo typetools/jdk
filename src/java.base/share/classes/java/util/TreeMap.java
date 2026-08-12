@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -213,6 +213,7 @@ public class TreeMap<K,V>
      *         or are not mutually comparable
      * @throws NullPointerException if the specified map is null
      */
+    @SuppressWarnings("this-escape")
     public @PolyNonEmpty TreeMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         comparator = null;
         putAll(m);
@@ -452,10 +453,9 @@ public class TreeMap<K,V>
     }
 
     /**
-     * Gets the entry corresponding to the specified key; if no such entry
-     * exists, returns the entry for the least key greater than the specified
-     * key; if no such entry exists (i.e., the greatest key in the Tree is less
-     * than the specified key), returns {@code null}.
+     * Returns the entry for the least key greater than or equal to the specified key;
+     * if no such entry exists (i.e. the specified key is greater than any key in the tree,
+     * or the tree is empty), returns {@code null}.
      */
     final Entry<K,V> getCeilingEntry(K key) {
         Entry<K,V> p = root;
@@ -485,10 +485,9 @@ public class TreeMap<K,V>
     }
 
     /**
-     * Gets the entry corresponding to the specified key; if no such entry
-     * exists, returns the entry for the greatest key less than the specified
-     * key; if no such entry exists (i.e., the least key in the Tree is greater
-     * than the specified key), returns {@code null}.
+     * Returns the entry for the greatest key less than or equal to the specified key;
+     * if no such entry exists (i.e. the specified key is less than any key in the tree,
+     * or the tree is empty), returns {@code null}.
      */
     final Entry<K,V> getFloorEntry(K key) {
         Entry<K,V> p = root;
@@ -1252,6 +1251,8 @@ public class TreeMap<K,V>
      * {@code Set.remove}, {@code removeAll}, {@code retainAll} and
      * {@code clear} operations.  It does not support the
      * {@code add} or {@code addAll} operations.
+     *
+     * @return {@inheritDoc SortedMap}
      */
     @SideEffectFree
     public Set<Map.Entry<@KeyFor({"this"}) K,V>> entrySet(@GuardSatisfied TreeMap<K, V> this) {
@@ -1779,12 +1780,12 @@ public class TreeMap<K,V>
         @java.io.Serial
         private static final long serialVersionUID = -2102997345730753016L;
         /**
-         * The backing map.
+         * @serial The backing map.
          */
         final TreeMap<K,V> m;
 
         /**
-         * Endpoints are represented as triples (fromStart, lo,
+         * @serial Endpoints are represented as triples (fromStart, lo,
          * loInclusive) and (toEnd, hi, hiInclusive). If fromStart is
          * true, then the low (absolute) bound is the start of the
          * backing map, and the other values are ignored. Otherwise,
@@ -1793,9 +1794,12 @@ public class TreeMap<K,V>
          */
         @SuppressWarnings("serial") // Conditionally serializable
         final K lo;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final K hi;
+        /** @serial */
         final boolean fromStart, toEnd;
+        /** @serial */
         final boolean loInclusive, hiInclusive;
 
         NavigableSubMap(TreeMap<K,V> m,
@@ -2468,6 +2472,7 @@ public class TreeMap<K,V>
             super(m, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
         }
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final Comparator<? super K> reverseComparator =
             Collections.reverseOrder(m.comparator);
@@ -2563,9 +2568,12 @@ public class TreeMap<K,V>
         implements SortedMap<K,V>, java.io.Serializable {
         @java.io.Serial
         private static final long serialVersionUID = -6520786458950516097L;
+        /** @serial */
         private boolean fromStart = false, toEnd = false;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private K fromKey;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private K toKey;
         @java.io.Serial
@@ -3172,7 +3180,7 @@ public class TreeMap<K,V>
             return t.keySpliterator();
         }
         if (m instanceof DescendingSubMap) {
-            @SuppressWarnings("unchecked") DescendingSubMap<K,?> dm =
+            DescendingSubMap<K,?> dm =
                 (DescendingSubMap<K,?>) m;
             TreeMap<K,?> tm = dm.m;
             if (dm == tm.descendingMap) {
@@ -3181,7 +3189,7 @@ public class TreeMap<K,V>
                 return t.descendingKeySpliterator();
             }
         }
-        @SuppressWarnings("unchecked") NavigableSubMap<K,?> sm =
+        NavigableSubMap<K,?> sm =
             (NavigableSubMap<K,?>) m;
         return sm.keySpliterator();
     }

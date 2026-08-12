@@ -133,6 +133,7 @@ public class XMLX509Certificate extends SignatureElementProxy implements XMLX509
     }
 
     /** {@inheritDoc} */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -147,12 +148,13 @@ public class XMLX509Certificate extends SignatureElementProxy implements XMLX509
         }
     }
 
+    @Override
     public int hashCode() {
         int result = 17;
         try {
             byte[] bytes = getCertificateBytes();
-            for (int i = 0; i < bytes.length; i++) {
-                result = 31 * result + bytes[i];
+            for (byte element : bytes) {
+                result = 31 * result + element;
             }
         } catch (XMLSecurityException e) {
             LOG.debug(e.getMessage(), e);
@@ -161,6 +163,7 @@ public class XMLX509Certificate extends SignatureElementProxy implements XMLX509
     }
 
     /** {@inheritDoc} */
+    @Override
     public String getBaseLocalName() {
         return Constants._TAG_X509CERTIFICATE;
     }

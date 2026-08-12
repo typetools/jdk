@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -87,17 +87,6 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  *                      GSSName.NT_EXPORT_NAME);
  *
  * </pre>
- * If a security manager is installed, in order to create a {@code GSSName}
- * that contains a Kerberos name element without providing its realm,
- * a {@link javax.security.auth.kerberos.ServicePermission ServicePermission}
- * must be granted and the service principal of the permission must minimally
- * be inside the Kerberos name element's realm. For example, if the result of
- * {@link GSSManager#createName(String, Oid) createName("user", NT_USER_NAME)}
- * contains a Kerberos name element {@code user@EXAMPLE.COM}, then
- * a {@code ServicePermission} with service principal
- * {@code host/www.example.com@EXAMPLE.COM} (and any action) must be granted.
- * Otherwise, the creation will throw a {@link GSSException} containing the
- * {@code GSSException.FAILURE} error code.
  *
  * @see #export()
  * @see #equals(GSSName)
@@ -204,15 +193,15 @@ public interface GSSName {
      * @param another the object to compare this name to
      * @see #equals(GSSName)
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     boolean equals(@Nullable Object another);
 
     /**
-     * Returns a hashcode value for this GSSName.
-     *
-     * @return a hashCode value
+     * {@return a hashcode value for this GSSName}
      */
+    @Override
     int hashCode();
 
     /**

@@ -38,6 +38,8 @@ package java.util.concurrent;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.invoke.MhUtil;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1141,15 +1143,9 @@ public @UsesObjectEquals class Phaser {
     }
 
     // VarHandle mechanics
-    private static final VarHandle STATE;
+    private static final VarHandle STATE = MhUtil.findVarHandle(
+            MethodHandles.lookup(), "state", long.class);
     static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            STATE = l.findVarHandle(Phaser.class, "state", long.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-
         // Reduce the risk of rare disastrous classloading in first call to
         // LockSupport.park: https://bugs.openjdk.org/browse/JDK-8074773
         Class<?> ensureLoaded = LockSupport.class;

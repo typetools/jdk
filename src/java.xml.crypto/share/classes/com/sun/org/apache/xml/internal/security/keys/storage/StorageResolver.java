@@ -135,6 +135,7 @@ public class StorageResolver {
         }
 
         /** {@inheritDoc} */
+        @Override
         @Pure
         public boolean hasNext() {
             if (currentResolver == null) {
@@ -150,6 +151,7 @@ public class StorageResolver {
         }
 
         /** {@inheritDoc} */
+        @Override
         public Certificate next() {
             if (hasNext()) {
                 return currentResolver.next();
@@ -161,6 +163,7 @@ public class StorageResolver {
         /**
          * Method remove
          */
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Can't remove keys from KeyStore");
         }

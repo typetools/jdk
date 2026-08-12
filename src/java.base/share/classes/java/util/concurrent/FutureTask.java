@@ -38,6 +38,8 @@ package java.util.concurrent;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.invoke.MhUtil;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.locks.LockSupport;
@@ -209,6 +211,9 @@ public @UsesObjectEquals class FutureTask<V> implements RunnableFuture<V> {
         return report(s);
     }
 
+    /**
+     * @since 19
+     */
     @Override
     public V resultNow() {
         switch (state()) {    // Future.State
@@ -225,6 +230,9 @@ public @UsesObjectEquals class FutureTask<V> implements RunnableFuture<V> {
         }
     }
 
+    /**
+     * @since 19
+     */
     @Override
     public Throwable exceptionNow() {
         switch (state()) {    // Future.State
@@ -240,6 +248,9 @@ public @UsesObjectEquals class FutureTask<V> implements RunnableFuture<V> {
         }
     }
 
+    /**
+     * @since 19
+     */
     @Override
     public State state() {
         int s = state;
@@ -577,14 +588,10 @@ public @UsesObjectEquals class FutureTask<V> implements RunnableFuture<V> {
     private static final VarHandle RUNNER;
     private static final VarHandle WAITERS;
     static {
-        try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            STATE = l.findVarHandle(FutureTask.class, "state", int.class);
-            RUNNER = l.findVarHandle(FutureTask.class, "runner", Thread.class);
-            WAITERS = l.findVarHandle(FutureTask.class, "waiters", WaitNode.class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
+        MethodHandles.Lookup l = MethodHandles.lookup();
+        STATE = MhUtil.findVarHandle(l, "state", int.class);
+        RUNNER = MhUtil.findVarHandle(l, "runner", Thread.class);
+        WAITERS = MhUtil.findVarHandle(l, "waiters", WaitNode.class);
 
         // Reduce the risk of rare disastrous classloading in first call to
         // LockSupport.park: https://bugs.openjdk.org/browse/JDK-8074773

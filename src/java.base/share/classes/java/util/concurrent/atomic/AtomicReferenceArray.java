@@ -38,10 +38,11 @@ package java.util.concurrent.atomic;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.misc.Unsafe;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.function.BinaryOperator;
 import java.util.function.UnaryOperator;
@@ -59,6 +60,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
     private static final long serialVersionUID = -6209656149925076980L;
     private static final VarHandle AA
         = MethodHandles.arrayElementVarHandle(Object[].class);
+    /** @serial */
     @SuppressWarnings("serial") // Conditionally serializable
     private final Object[] array; // must have exact type Object[]
 
@@ -301,8 +303,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
     }
 
     /**
-     * Returns the String representation of the current values of array.
-     * @return the String representation of the current values of array
+     * {@return the String representation of the current values of array}
      */
     public String toString() {
         int iMax = array.length - 1;
@@ -334,22 +335,13 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
             throw new java.io.InvalidObjectException("Not array type");
         if (a.getClass() != Object[].class)
             a = Arrays.copyOf((Object[])a, Array.getLength(a), Object[].class);
-        @SuppressWarnings("removal")
-        Field arrayField = java.security.AccessController.doPrivileged(
-            (java.security.PrivilegedAction<Field>) () -> {
-                try {
-                    Field f = AtomicReferenceArray.class
-                        .getDeclaredField("array");
-                    f.setAccessible(true);
-                    return f;
-                } catch (ReflectiveOperationException e) {
-                    throw new Error(e);
-                }});
-        try {
-            arrayField.set(this, a);
-        } catch (IllegalAccessException e) {
-            throw new Error(e);
-        }
+
+        final Unsafe U = Unsafe.getUnsafe();
+        U.putReference(
+            this,
+            U.objectFieldOffset(AtomicReferenceArray.class, "array"),
+            a
+        );
     }
 
     // jdk9
@@ -363,6 +355,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E getPlain(int i) {
         return (E)AA.get(array, i);
     }
@@ -388,6 +381,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E getOpaque(int i) {
         return (E)AA.getOpaque(array, i);
     }
@@ -412,6 +406,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * @return the value
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E getAcquire(int i) {
         return (E)AA.getAcquire(array, i);
     }
@@ -442,6 +437,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E compareAndExchange(int i, E expectedValue, E newValue) {
         return (E)AA.compareAndExchange(array, i, expectedValue, newValue);
     }
@@ -460,6 +456,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E compareAndExchangeAcquire(int i, E expectedValue, E newValue) {
         return (E)AA.compareAndExchangeAcquire(array, i, expectedValue, newValue);
     }
@@ -478,6 +475,7 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
      * expected value if successful
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public final E compareAndExchangeRelease(int i, E expectedValue, E newValue) {
         return (E)AA.compareAndExchangeRelease(array, i, expectedValue, newValue);
     }
@@ -529,5 +527,4 @@ public @UsesObjectEquals class AtomicReferenceArray<E> implements java.io.Serial
     public final boolean weakCompareAndSetRelease(int i, E expectedValue, E newValue) {
         return AA.weakCompareAndSetRelease(array, i, expectedValue, newValue);
     }
-
 }

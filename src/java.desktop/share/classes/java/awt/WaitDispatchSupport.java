@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,9 +31,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import java.security.PrivilegedAction;
-import java.security.AccessController;
 
 import sun.awt.PeerEvent;
 
@@ -168,7 +165,6 @@ import sun.util.logging.PlatformLogger;
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("removal")
     @Override
     public boolean enter() {
         if (log.isLoggable(PlatformLogger.Level.FINE)) {
@@ -234,13 +230,7 @@ import sun.util.logging.PlatformLogger;
                 // The event will be handled after the new event pump
                 // starts. Thus, the enter() method will not hang.
                 //
-                // Event pump should be privileged. See 6300270.
-                AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                    public Void run() {
-                        run.run();
-                        return null;
-                    }
-                });
+                run.run();
             } else {
                 if (log.isLoggable(PlatformLogger.Level.FINEST)) {
                     log.finest("On non-dispatch thread: " + currentThread);

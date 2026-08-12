@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,7 +54,6 @@ import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import sun.datatransfer.DataFlavorUtil;
-import sun.reflect.misc.ReflectUtil;
 
 /**
  * A {@code DataFlavor} provides meta information about data. {@code DataFlavor}
@@ -141,32 +140,22 @@ public class DataFlavor implements Externalizable, Cloneable {
                                                    ClassLoader fallback)
         throws ClassNotFoundException
     {
-        ReflectUtil.checkPackageAccess(className);
+        ClassLoader loader = ClassLoader.getSystemClassLoader();
         try {
-            @SuppressWarnings("removal")
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                sm.checkPermission(new RuntimePermission("getClassLoader"));
-            }
-            ClassLoader loader = ClassLoader.getSystemClassLoader();
-            try {
-                // bootstrap class loader and system class loader if present
-                return Class.forName(className, true, loader);
-            }
-            catch (ClassNotFoundException exception) {
-                // thread context class loader if and only if present
-                loader = Thread.currentThread().getContextClassLoader();
-                if (loader != null) {
-                    try {
-                        return Class.forName(className, true, loader);
-                    }
-                    catch (ClassNotFoundException e) {
-                        // fallback to user's class loader
-                    }
+            // bootstrap class loader and system class loader if present
+            return Class.forName(className, true, loader);
+        }
+        catch (ClassNotFoundException exception) {
+            // thread context class loader if and only if present
+            loader = Thread.currentThread().getContextClassLoader();
+            if (loader != null) {
+                try {
+                    return Class.forName(className, true, loader);
+                }
+                catch (ClassNotFoundException e) {
+                    // fallback to user's class loader
                 }
             }
-        } catch (SecurityException exception) {
-            // ignore secured class loaders
         }
         return Class.forName(className, true, fallback);
     }
@@ -1309,6 +1298,9 @@ public class DataFlavor implements Externalizable, Cloneable {
 
     /**
      * Serializes this {@code DataFlavor}.
+     *
+     * @serialData The {@code mimeType} field with the {@code humanPresentableName} parameter set,
+     * followed by the {@code representationClass} field
      */
    public synchronized void writeExternal(ObjectOutput os) throws IOException {
        if (mimeType != null) {

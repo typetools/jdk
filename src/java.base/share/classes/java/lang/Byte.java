@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.misc.CDS;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
+import jdk.internal.vm.annotation.Stable;
 
 import java.lang.constant.Constable;
 import java.lang.constant.DynamicConstantDesc;
@@ -58,10 +59,10 @@ import static java.lang.constant.ConstantDescs.CD_int;
 import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 
 /**
- *
- * The {@code Byte} class wraps a value of primitive type {@code byte}
- * in an object.  An object of type {@code Byte} contains a single
- * field whose type is {@code byte}.
+ * The {@code Byte} class is the {@linkplain
+ * java.lang##wrapperClass wrapper class} for values of the primitive
+ * type {@code byte}. An object of type {@code Byte} contains a
+ * single field whose type is {@code byte}.
  *
  * <p>In addition, this class provides several methods for converting
  * a {@code byte} to a {@code String} and a {@code String} to a {@code
@@ -99,8 +100,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      * The {@code Class} instance representing the primitive type
      * {@code byte}.
      */
-    @SuppressWarnings("unchecked")
-    public static final Class<Byte>     TYPE = (Class<Byte>) Class.getPrimitiveClass("byte");
+    public static final Class<Byte> TYPE = Class.getPrimitiveClass("byte");
 
     /**
      * Returns a new {@code String} object representing the
@@ -127,9 +127,10 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
         return Optional.of(DynamicConstantDesc.ofNamed(BSM_EXPLICIT_CAST, DEFAULT_NAME, CD_byte, intValue()));
     }
 
-    private static class ByteCache {
+    private static final class ByteCache {
         private ByteCache() {}
 
+        @Stable
         static final Byte[] cache;
         static Byte[] archivedCache;
 
@@ -138,7 +139,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
 
             // Load and use the archived cache if it exists
             CDS.initializeFromArchive(ByteCache.class);
-            if (archivedCache == null || archivedCache.length != size) {
+            if (archivedCache == null) {
                 Byte[] c = new Byte[size];
                 byte value = (byte)-128;
                 for(int i = 0; i < size; i++) {
@@ -147,6 +148,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
                 archivedCache = c;
             }
             cache = archivedCache;
+            assert cache.length == size;
         }
     }
 
@@ -379,7 +381,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      * likely to yield significantly better space and time performance.
      */
     @StaticallyExecutable
-    @Deprecated(since="9", forRemoval = true)
+    @Deprecated(since="9")
     public @PolyIndex @PolySigned @PolyValue Byte(@PolyIndex @PolySigned @PolyValue byte value) {
         this.value = value;
     }
@@ -403,7 +405,7 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
      * to convert a string to a {@code Byte} object.
      */
     @StaticallyExecutable
-    @Deprecated(since="9", forRemoval = true)
+    @Deprecated(since="9")
     public Byte(String s) throws NumberFormatException {
         this.value = parseByte(s, 10);
     }
@@ -530,8 +532,8 @@ public final class Byte extends Number implements Comparable<Byte>, Constable {
     @Pure
     @StaticallyExecutable
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof Byte) {
-            return value == ((Byte)obj).byteValue();
+        if (obj instanceof Byte b) {
+            return value == b.byteValue();
         }
         return false;
     }

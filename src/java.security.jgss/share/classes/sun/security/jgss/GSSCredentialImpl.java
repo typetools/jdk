@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -96,7 +96,7 @@ public class GSSCredentialImpl implements GSSCredential {
             } catch (GSSException e) {
                 if (defaultList) {
                     // Try the next mechanism
-                    if (GSSUtil.DEBUG) {
+                    if (GSSUtil.DEBUG != null) {
                         GSSUtil.debug("Ignore " + e + " while acquiring cred for "
                                 + mechs[i]);
                         // e.printStackTrace();
@@ -482,6 +482,7 @@ public class GSSCredentialImpl implements GSSCredential {
         }
     }
 
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object another) {
@@ -520,10 +521,9 @@ public class GSSCredentialImpl implements GSSCredential {
     }
 
     /**
-     * Returns a hashcode value for this GSSCredential.
-     *
-     * @return a hashCode value
+     * {@return a hashcode value for this GSSCredential}
      */
+    @Override
     public int hashCode() {
 
         if (destroyed) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * This immutable class defines an elliptic curve (EC)
@@ -221,6 +222,7 @@ public class ECFieldF2m implements ECField {
      * of ECFieldF2m and both {@code m} and the reduction
      * polynomial match, false otherwise.
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -234,15 +236,12 @@ public class ECFieldF2m implements ECField {
     }
 
     /**
-     * Returns a hash code value for this characteristic 2
-     * finite field.
-     * @return a hash code value.
+     * {@return the hash code value for this characteristic 2 finite field}
      */
+    @Override
     public int hashCode() {
-        int value = m << 5;
-        value += (rp==null? 0:rp.hashCode());
         // no need to involve ks here since ks and rp
         // should be equivalent.
-        return value;
+        return m << 5 + Objects.hashCode(rp);
     }
 }

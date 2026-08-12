@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,12 +114,9 @@ abstract class P11Key implements Key, Length {
      *
      */
     static {
-        PrivilegedAction<String> getKeyExtractionProp =
-                () -> System.getProperty(
-                        "sun.security.pkcs11.disableKeyExtraction", "false");
-        @SuppressWarnings("removal")
         String disableKeyExtraction =
-                AccessController.doPrivileged(getKeyExtractionProp);
+                System.getProperty(
+                        "sun.security.pkcs11.disableKeyExtraction", "false");
         DISABLE_NATIVE_KEYS_EXTRACTION =
                 "true".equalsIgnoreCase(disableKeyExtraction);
     }
@@ -188,6 +185,7 @@ abstract class P11Key implements Key, Length {
 
     abstract byte[] getEncodedInternal();
 
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -220,20 +218,13 @@ abstract class P11Key implements Key, Length {
         return MessageDigest.isEqual(thisEnc, otherEnc);
     }
 
+    @Override
     public int hashCode() {
         // hashCode() should never throw exceptions
         if (!token.isValid()) {
             return 0;
         }
-        byte[] b1 = getEncodedInternal();
-        if (b1 == null) {
-            return 0;
-        }
-        int r = b1.length;
-        for (int i = 0; i < b1.length; i++) {
-            r += (b1[i] & 0xff) * 37;
-        }
-        return r;
+        return Arrays.hashCode(getEncodedInternal());
     }
 
     protected Object writeReplace() throws ObjectStreamException {
@@ -252,6 +243,19 @@ abstract class P11Key implements Key, Length {
                     ", and NSS token keys" : "keys"));
         }
         return new KeyRep(type, getAlgorithm(), format, getEncodedInternal());
+    }
+
+    /**
+     * Restores the state of this object from the stream.
+     *
+     * @param  stream the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
+     */
+    @java.io.Serial
+    private void readObject(ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+        throw new InvalidObjectException("P11Key not directly deserializable");
     }
 
     public String toString() {
@@ -360,7 +364,9 @@ abstract class P11Key implements Key, Length {
         return new P11SecretKey(session, keyID, algorithm, keyLength, attrs);
     }
 
-    static SecretKey pbeKey(Session session, long keyID, String algorithm,
+    // for PBKDF2 and the deprecated PBE-based key derivation method defined
+    // in RFC 7292 PKCS#12 B.2
+    static SecretKey pbkdfKey(Session session, long keyID, String algorithm,
             int keyLength, CK_ATTRIBUTE[] attrs, char[] password, byte[] salt,
             int iterationCount) {
         attrs = getAttributes(session, keyID, attrs, new CK_ATTRIBUTE[] {
@@ -368,7 +374,7 @@ abstract class P11Key implements Key, Length {
             new CK_ATTRIBUTE(CKA_SENSITIVE),
             new CK_ATTRIBUTE(CKA_EXTRACTABLE),
         });
-        return new P11PBEKey(session, keyID, algorithm, keyLength,
+        return new P11PBKDFKey(session, keyID, algorithm, keyLength,
                 attrs, password, salt, iterationCount);
     }
 
@@ -409,8 +415,9 @@ abstract class P11Key implements Key, Length {
                     new CK_ATTRIBUTE(CKA_EXTRACTABLE),
         });
 
-        boolean keySensitive = (attrs[0].getBoolean() ||
-                attrs[1].getBoolean() || !attrs[2].getBoolean());
+        boolean keySensitive =
+                (attrs[0].getBoolean() && P11Util.isNSS(session.token)) ||
+                attrs[1].getBoolean() || !attrs[2].getBoolean();
 
         return switch (algorithm) {
             case "RSA" -> P11RSAPrivateKeyInternal.of(session, keyID, algorithm,
@@ -427,7 +434,7 @@ abstract class P11Key implements Key, Length {
     }
 
     // base class for all PKCS11 private keys
-    private static abstract class P11PrivateKey extends P11Key implements
+    private abstract static class P11PrivateKey extends P11Key implements
             PrivateKey {
         @Serial
         private static final long serialVersionUID = -2138581185214187615L;
@@ -449,7 +456,7 @@ abstract class P11Key implements Key, Length {
         }
     }
 
-    private static class P11SecretKey extends P11Key implements SecretKey {
+    static class P11SecretKey extends P11Key implements SecretKey {
         @Serial
         private static final long serialVersionUID = -7828241727014329084L;
 
@@ -492,7 +499,7 @@ abstract class P11Key implements Key, Length {
     }
 
     // base class for all PKCS11 public keys
-    private static abstract class P11PublicKey extends P11Key implements
+    private abstract static class P11PublicKey extends P11Key implements
             PublicKey {
         @Serial
         private static final long serialVersionUID = 1L;
@@ -505,16 +512,16 @@ abstract class P11Key implements Key, Length {
         }
     }
 
-    static final class P11PBEKey extends P11SecretKey
+    static final class P11PBKDFKey extends P11SecretKey
             implements PBEKey {
         private static final long serialVersionUID = 6847576994253634876L;
         private char[] password;
         private final byte[] salt;
         private final int iterationCount;
-        P11PBEKey(Session session, long keyID, String algorithm,
+        P11PBKDFKey(Session session, long keyID, String keyAlgo,
                 int keyLength, CK_ATTRIBUTE[] attributes,
                 char[] password, byte[] salt, int iterationCount) {
-            super(session, keyID, algorithm, keyLength, attributes);
+            super(session, keyID, keyAlgo, keyLength, attributes);
             this.password = password.clone();
             this.salt = salt.clone();
             this.iterationCount = iterationCount;
@@ -574,47 +581,73 @@ abstract class P11Key implements Key, Length {
         static P11RSAPrivateKeyInternal of(Session session, long keyID,
                 String algorithm, int keyLength, CK_ATTRIBUTE[] attrs,
                 boolean keySensitive) {
-            if (keySensitive) {
-                return new P11RSAPrivateKeyInternal(session, keyID, algorithm,
-                        keyLength, attrs);
-            } else {
-                CK_ATTRIBUTE[] rsaAttrs = new CK_ATTRIBUTE[] {
-                        new CK_ATTRIBUTE(CKA_MODULUS),
-                        new CK_ATTRIBUTE(CKA_PRIVATE_EXPONENT),
-                        new CK_ATTRIBUTE(CKA_PUBLIC_EXPONENT),
-                        new CK_ATTRIBUTE(CKA_PRIME_1),
-                        new CK_ATTRIBUTE(CKA_PRIME_2),
-                        new CK_ATTRIBUTE(CKA_EXPONENT_1),
-                        new CK_ATTRIBUTE(CKA_EXPONENT_2),
-                        new CK_ATTRIBUTE(CKA_COEFFICIENT),
-                };
-                boolean isCRT = true;
-                Session tempSession = null;
-                try {
-                    tempSession = session.token.getOpSession();
-                    session.token.p11.C_GetAttributeValue(tempSession.id(),
-                            keyID, rsaAttrs);
-                    for (CK_ATTRIBUTE attr : rsaAttrs) {
-                        isCRT &= (attr.pValue instanceof byte[]);
-                        if (!isCRT) break;
-                    }
-                } catch (PKCS11Exception e) {
-                    // ignore, assume not available
-                    isCRT = false;
-                } finally {
-                    session.token.releaseSession(tempSession);
-                }
-                BigInteger n = rsaAttrs[0].getBigInteger();
-                BigInteger d = rsaAttrs[1].getBigInteger();
-                if (isCRT) {
-                    return new P11RSAPrivateKey(session, keyID, algorithm,
-                           keyLength, attrs, n, d,
-                           Arrays.copyOfRange(rsaAttrs, 2, rsaAttrs.length));
-                } else {
-                    return new P11RSAPrivateNonCRTKey(session, keyID,
-                           algorithm, keyLength, attrs, n, d);
+            P11RSAPrivateKeyInternal p11Key = null;
+            if (!keySensitive) {
+                // Key is not sensitive: try to interpret as CRT or non-CRT.
+                p11Key = asCRT(session, keyID, algorithm, keyLength, attrs);
+                if (p11Key == null) {
+                    p11Key = asNonCRT(session, keyID, algorithm, keyLength,
+                            attrs);
                 }
             }
+            if (p11Key == null) {
+                // Key is sensitive or there was a failure while querying its
+                // attributes: handle as opaque.
+                p11Key = new P11RSAPrivateKeyInternal(session, keyID, algorithm,
+                        keyLength, attrs);
+            }
+            return p11Key;
+        }
+
+        private static CK_ATTRIBUTE[] tryFetchAttributes(Session session,
+                long keyID, long... attrTypes) {
+            int i = 0;
+            CK_ATTRIBUTE[] attrs = new CK_ATTRIBUTE[attrTypes.length];
+            for (long attrType : attrTypes) {
+                attrs[i++] = new CK_ATTRIBUTE(attrType);
+            }
+            try {
+                session.token.p11.C_GetAttributeValue(session.id(), keyID,
+                        attrs);
+                for (CK_ATTRIBUTE attr : attrs) {
+                    if (!(attr.pValue instanceof byte[])) {
+                        return null;
+                    }
+                }
+                return attrs;
+            } catch (PKCS11Exception ignored) {
+                // ignore, assume not available
+                return null;
+            }
+        }
+
+        private static P11RSAPrivateKeyInternal asCRT(Session session,
+                long keyID, String algorithm, int keyLength,
+                CK_ATTRIBUTE[] attrs) {
+            CK_ATTRIBUTE[] rsaCRTAttrs = tryFetchAttributes(session, keyID,
+                    CKA_MODULUS, CKA_PRIVATE_EXPONENT, CKA_PUBLIC_EXPONENT,
+                    CKA_PRIME_1, CKA_PRIME_2, CKA_EXPONENT_1, CKA_EXPONENT_2,
+                    CKA_COEFFICIENT);
+            if (rsaCRTAttrs == null) {
+                return null;
+            }
+            return new P11RSAPrivateKey(session, keyID, algorithm, keyLength,
+                    attrs, rsaCRTAttrs[0].getBigInteger(),
+                    rsaCRTAttrs[1].getBigInteger(),
+                    Arrays.copyOfRange(rsaCRTAttrs, 2, rsaCRTAttrs.length));
+        }
+
+        private static P11RSAPrivateKeyInternal asNonCRT(Session session,
+                long keyID, String algorithm, int keyLength,
+                CK_ATTRIBUTE[] attrs) {
+            CK_ATTRIBUTE[] rsaNonCRTAttrs = tryFetchAttributes(session, keyID,
+                    CKA_MODULUS, CKA_PRIVATE_EXPONENT);
+            if (rsaNonCRTAttrs == null) {
+                return null;
+            }
+            return new P11RSAPrivateNonCRTKey(session, keyID, algorithm,
+                    keyLength, attrs, rsaNonCRTAttrs[0].getBigInteger(),
+                    rsaNonCRTAttrs[1].getBigInteger());
         }
 
         protected transient BigInteger n;
@@ -913,7 +946,8 @@ abstract class P11Key implements Key, Length {
             params = new DSAParameterSpec(res[0], res[1], res[2]);
         }
 
-        protected DSAParams getParams() {
+        @Override
+        public DSAParams getParams() {
             fetchValues();
             return params;
         }
@@ -1216,7 +1250,8 @@ abstract class P11Key implements Key, Length {
             }
         }
 
-        protected ECParameterSpec getParams() {
+        @Override
+        public ECParameterSpec getParams() {
             fetchValues();
             return params;
         }
@@ -1543,7 +1578,12 @@ final class NativeKeyHolder {
 
                     // destroy
                     this.keyID = 0;
-                    this.ref.removeNativeKey();
+                    try {
+                        this.ref.removeNativeKey();
+                    } finally {
+                        // prevent enqueuing SessionKeyRef until removeNativeKey is done
+                        Reference.reachabilityFence(this);
+                    }
                 } else {
                     if (cnt < 0) {
                         // should never happen as we start count at 1 and pair get/release calls

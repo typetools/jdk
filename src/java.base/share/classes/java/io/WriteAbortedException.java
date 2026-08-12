@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,6 +63,7 @@ public class WriteAbortedException extends ObjectStreamException {
      * @param ex  Exception causing the abort.
      */
     @SideEffectFree
+    @SuppressWarnings("this-escape")
     @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
     public WriteAbortedException(@Nullable String s, @Nullable Exception ex) {
         super(s);

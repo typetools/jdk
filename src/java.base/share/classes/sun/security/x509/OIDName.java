@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -117,23 +117,21 @@ public class OIDName implements GeneralNameInterface {
      *
      * @return true iff the names are identical
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
         if (this == obj)
             return true;
 
-        if (!(obj instanceof OIDName other))
-            return false;
-
-        return oid.equals(other.oid);
+        return obj instanceof OIDName other
+                && oid.equals(other.oid);
     }
 
     /**
-     * Returns the hash code value for this object.
-     *
-     * @return a hash code value for this object.
+     * {@return the hash code value for this object}
      */
+    @Override
     public int hashCode() {
         return oid.hashCode();
     }

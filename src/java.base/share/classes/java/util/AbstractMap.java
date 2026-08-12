@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -388,30 +388,10 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
     public Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied AbstractMap<K, V> this) {
         Set<K> ks = keySet;
         if (ks == null) {
-            ks = new AbstractSet<K>() {
+            ks = new AbstractSet<>() {
                 @SideEffectFree
                 public Iterator<K> iterator() {
-                    return new Iterator<K>() {
-                        private Iterator<Entry<K,V>> i = entrySet().iterator();
-
-                        @Pure
-                        @EnsuresNonEmptyIf(result = true, expression = "this")
-                        public boolean hasNext() {
-                            return i.hasNext();
-                        }
-
-                        @SideEffectsOnly("this")
-                        @DoesNotUnrefineReceiver("modifiability")
-                        public K next(/*@NonEmpty Iterator<K> this*/) {
-                            return i.next().getKey();
-                        }
-
-                        @SideEffectsOnly("this")
-                        @DoesNotUnrefineReceiver("modifiability")
-                        public void remove() {
-                            i.remove();
-                        }
-                    };
+                    return new KeyIterator();
                 }
 
                 @Pure
@@ -462,30 +442,10 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
     public Collection<V> values(@GuardSatisfied AbstractMap<K, V> this) {
         Collection<V> vals = values;
         if (vals == null) {
-            vals = new AbstractCollection<V>() {
+            vals = new AbstractCollection<>() {
                 @SideEffectFree
                 public Iterator<V> iterator() {
-                    return new Iterator<V>() {
-                        private Iterator<Entry<K,V>> i = entrySet().iterator();
-
-                        @Pure
-                        @EnsuresNonEmptyIf(result = true, expression = "this")
-                        public boolean hasNext() {
-                            return i.hasNext();
-                        }
-
-                        @SideEffectsOnly("this")
-                        @DoesNotUnrefineReceiver("modifiability")
-                        public V next(/*@NonEmpty Iterator<V> this*/) {
-                            return i.next().getValue();
-                        }
-
-                        @SideEffectsOnly("this")
-                        @DoesNotUnrefineReceiver("modifiability")
-                        public void remove() {
-                            i.remove();
-                        }
-                    };
+                    return new ValueIterator();
                 }
 
                 @Pure
@@ -687,8 +647,10 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         @java.io.Serial
         private static final long serialVersionUID = -8499721149061103585L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final K key;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private V value;
 
@@ -840,8 +802,10 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         @java.io.Serial
         private static final long serialVersionUID = 7138329143949025153L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Not statically typed as Serializable
         private final K key;
+        /** @serial */
         @SuppressWarnings("serial") // Not statically typed as Serializable
         private final V value;
 
@@ -985,6 +949,14 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
      */
     /* non-public */ abstract static class ViewCollection<E> implements Collection<E> {
         UnsupportedOperationException uoe() { return new UnsupportedOperationException(); }
+        // convert null entry return values into NSEE
+        static <T extends Map.Entry<?,?>> T nsee(T entry) {
+            if (entry == null) {
+                throw new NoSuchElementException();
+            } else {
+                return entry;
+            }
+        }
         abstract Collection<E> view();
 
         @SideEffectsOnly("this")
@@ -1029,5 +1001,21 @@ public abstract class AbstractMap<K,V> implements Map<K,V> {
         public <T> T[] toArray(T[] a) { return view().toArray(a); }
         @SideEffectFree
         public String toString() { return view().toString(); }
+    }
+
+    // Iterator implementations.
+
+    final class KeyIterator implements Iterator<K> {
+        private final Iterator<Entry<K,V>> i = entrySet().iterator();
+        public boolean hasNext() { return i.hasNext(); }
+        public void remove() { i.remove(); }
+        public K next() { return i.next().getKey(); }
+    }
+
+    final class ValueIterator implements Iterator<V> {
+        private final Iterator<Entry<K,V>> i = entrySet().iterator();
+        public boolean hasNext() { return i.hasNext(); }
+        public void remove() { i.remove(); }
+        public V next() { return i.next().getValue(); }
     }
 }

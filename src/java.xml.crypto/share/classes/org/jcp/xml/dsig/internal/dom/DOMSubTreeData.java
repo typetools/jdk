@@ -27,12 +27,14 @@ package org.jcp.xml.dsig.internal.dom;
 
 import org.checkerframework.dataflow.qual.Pure;
 
-import javax.xml.crypto.NodeSetData;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+
+import javax.xml.crypto.NodeSetData;
+
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
@@ -81,6 +83,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             this.withComments = !excludeComments;
         }
 
+        @Override
         @Pure
         public boolean hasNext() {
             if (nodeSet == null) {
@@ -90,6 +93,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             return li.hasNext();
         }
 
+        @Override
         public Node next() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);
@@ -102,6 +106,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             }
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }

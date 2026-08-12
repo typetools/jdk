@@ -451,7 +451,7 @@ public final @NonNull class Optional<T> {
      * @return the value, if present
      * @throws X if no value is present
      * @throws NullPointerException if no value is present and the exception
-     *          supplying function is {@code null}
+     *         supplying function is {@code null} or produces a {@code null} result
      */
     @CFComment({"optional: orElseThrow(Supplier) does not throw NoSuchElementException, so its receiver is @MaybePresent.",
                 "Contrast with orElseThrow(), defined just above, whose receiver is @Present."})

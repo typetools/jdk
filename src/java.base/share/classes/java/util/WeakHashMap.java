@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -152,7 +152,7 @@ import java.util.function.Consumer;
  */
 @CFComment({"lock: permits null keys and values"})
 @AnnotatedFor({"lock", "index", "nullness"})
-public class WeakHashMap<K,V>
+public class WeakHashMap<@jdk.internal.RequiresIdentity K,V>
     extends AbstractMap<K,V>
     implements Map<K,V> {
 
@@ -276,6 +276,7 @@ public class WeakHashMap<K,V>
      * @throws  NullPointerException if the specified map is null
      * @since   1.3
      */
+    @SuppressWarnings("this-escape")
     public @PolyNonEmpty WeakHashMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
         this(Math.max((int) Math.ceil(m.size() / (double)DEFAULT_LOAD_FACTOR),
                 DEFAULT_INITIAL_CAPACITY),
@@ -485,7 +486,7 @@ public class WeakHashMap<K,V>
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, K key, V value) {
+    public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, @jdk.internal.RequiresIdentity K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -79,6 +79,7 @@ public class AssertionError extends Error {
      * @see   Throwable#getCause()
      */
     @SideEffectFree
+    @SuppressWarnings("this-escape")
     public AssertionError(@Nullable Object detailMessage) {
         this(String.valueOf(detailMessage));
         if (detailMessage instanceof Throwable)

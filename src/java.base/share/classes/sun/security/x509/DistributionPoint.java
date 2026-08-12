@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -331,6 +331,7 @@ public class DistributionPoint implements DerEncoder {
      * @param obj Object to be compared to this
      * @return true if objects match; false otherwise
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -347,26 +348,14 @@ public class DistributionPoint implements DerEncoder {
                      && Arrays.equals(this.reasonFlags, other.reasonFlags);
     }
 
+    @Override
     public int hashCode() {
         int hash = hashCode;
         if (hash == 0) {
-            hash = 1;
-            if (fullName != null) {
-                hash += fullName.hashCode();
-            }
-            if (relativeName != null) {
-                hash += relativeName.hashCode();
-            }
-            if (crlIssuer != null) {
-                hash += crlIssuer.hashCode();
-            }
-            if (reasonFlags != null) {
-                for (int i = 0; i < reasonFlags.length; i++) {
-                    if (reasonFlags[i]) {
-                        hash += i;
-                    }
-                }
-            }
+            hash = 1 + Objects.hashCode(fullName)
+                    + Objects.hashCode(relativeName)
+                    + Objects.hash(crlIssuer)
+                    + Arrays.hashCode(reasonFlags);
             hashCode = hash;
         }
         return hash;

@@ -77,8 +77,9 @@ import jdk.internal.vm.annotation.ReservedStackAccess;
  * is available even if other threads are waiting.
  *
  * <p>It is recommended practice to <em>always</em> immediately
- * follow a call to {@code lock} with a {@code try} block, most
- * typically in a before/after construction such as:
+ * follow a call to {@code lock} with a {@code try} block, and
+ * to <em>always</em> immediately call {@code unlock} as the
+ * first statement in the finally block, as follows:
  *
  * <pre> {@code
  * class X {
@@ -86,11 +87,11 @@ import jdk.internal.vm.annotation.ReservedStackAccess;
  *   // ...
  *
  *   public void m() {
- *     lock.lock();  // block until condition holds
+ *     lock.lock();  // lock() as the last statement before the try block
  *     try {
  *       // ... method body
  *     } finally {
- *       lock.unlock();
+ *       lock.unlock(); // unlock() as the first statement in the finally block
  *     }
  *   }
  * }}</pre>
@@ -114,7 +115,7 @@ import jdk.internal.vm.annotation.ReservedStackAccess;
 @AnnotatedFor("lock")
 public class ReentrantLock implements Lock, java.io.Serializable {
     private static final long serialVersionUID = 7373984872572414699L;
-    /** Synchronizer providing all implementation mechanics */
+    /** @serial Synchronizer providing all implementation mechanics */
     private final Sync sync;
 
     /**

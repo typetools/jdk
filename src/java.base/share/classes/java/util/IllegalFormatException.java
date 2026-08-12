@@ -33,6 +33,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * explicit subtypes of this exception which correspond to specific errors
  * should be instantiated.
  *
+ * @sealedGraph
  * @since 1.5
  */
 public sealed class IllegalFormatException extends IllegalArgumentException
