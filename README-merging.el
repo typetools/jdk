@@ -1,1 +1,1 @@
-;; See file diff-resolve.el
+;; See file conflict-resolve.el

@@ -229,7 +229,7 @@ make -B -C .github/workflows
 
 Make a fork of jdk25u.  Follow the instructions in "The typetools/jdk25u
 repository" above, except replace
-`git pull https://github.com/typetools/jdk.git` 
+`git pull https://github.com/typetools/jdk.git`
 by the JDK you are currently working on.
 
 Build JDK 25u (not the main JDK!).
@@ -247,7 +247,7 @@ Push and wait for CI to pass.
 
 Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
 in Javadoc.  For example, when upgrading from Java 21 to Java 25, the regex
-"@since[ \t](22|23|24|25)".  The `@since` may be on the class declaration or on
+`@since[ \t](22|23|24|25)`.  The `@since` may be on the class declaration or on
 an individual method, constructor, or field, so examine every occurrence in the
 file rather than only the first.  For each relevant `@since`, add annotations
 for all the type systems in `@AnnotatedFor`.  Also annotate classes that are
@@ -273,7 +273,9 @@ but I wasn't able to make that work for JDK 17.
 
 The remainder of this file is the `README.md` from `openjdk/jdk`.
 
+<!-- markdownlint-disable single-title -->
 # Welcome to the JDK
+<!-- markdownlint-enable single-title -->
 
 For build instructions please see the
 [online documentation](https://openjdk.org/groups/build/doc/building.html),
