@@ -38,6 +38,7 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -279,7 +280,7 @@ public interface Set<E> extends Collection<E> {
      *         prevents it from being added to this set
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean add(@GuardSatisfied Set<E> this, E e);
 
@@ -305,7 +306,7 @@ public interface Set<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this set
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean remove(@GuardSatisfied Set<E> this, @UnknownSignedness Object o);
 
@@ -357,7 +358,7 @@ public interface Set<E> extends Collection<E> {
      * @see #add(Object)
      */
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean addAll(@GuardSatisfied Set<E> this, Collection<? extends E> c);
 
@@ -382,7 +383,7 @@ public interface Set<E> extends Collection<E> {
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean retainAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
@@ -407,7 +408,7 @@ public interface Set<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     boolean removeAll(@GuardSatisfied Set<E> this, Collection<? extends @UnknownSignedness Object> c);
 
@@ -418,7 +419,7 @@ public interface Set<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code clear} method
      *         is not supported by this set
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     void clear(@GuardSatisfied Set<E> this);
 

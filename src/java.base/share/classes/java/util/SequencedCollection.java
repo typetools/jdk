@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
@@ -91,7 +93,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      *
      * @return a reverse-ordered view of this collection
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     SequencedCollection<E> reversed();
 
@@ -110,7 +112,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      *         does not support this operation
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addFirst(E e) {
         throw new UnsupportedOperationException();
@@ -131,7 +133,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      *         does not support this operation
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default void addLast(E e) {
         throw new UnsupportedOperationException();
@@ -188,7 +190,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      * @throws UnsupportedOperationException if this collection implementation
      *         does not support this operation
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default E removeFirst() {
         var it = this.iterator();
@@ -212,7 +214,7 @@ public interface SequencedCollection<E> extends Collection<E> {
      * @throws UnsupportedOperationException if this collection implementation
      *         does not support this operation
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default E removeLast() {
         var it = this.reversed().iterator();

@@ -13,7 +13,7 @@ them cause build failures, especially in the interim builds):
 
 Annotations for classes that exist in JDK version X but were removed later
 appear in jdkX.astub files, such as jdk11.astub, in repository
-<https://github.com/typetools/checker-framework/> .
+<https://github.com/typetools/checker-framework/>.
 
 ## Building
 
@@ -53,7 +53,7 @@ Thanks in advance for your contributions!
 
 When adding annotations, please annotate an entire file at a time, and add an
 `@AnnotatedFor` annotation on the class declaration.  The rationale is explained
-at <https://checkerframework.org/manual/#library-tips-fully-annotate> .
+at <https://checkerframework.org/manual/#library-tips-fully-annotate>.
 
 ## Relationship to other repositories
 
@@ -129,10 +129,10 @@ To update that copy, run the command below from this directory:
 rm -f checker-qual.jar && \
 cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual.jar && \
 (cd src/java.base/share/classes && rm -rf org/checkerframework && \
-  unzip ../../../../checker-qual.jar -x 'META-INF*' -x module-info.java && \
+  unzip ../../../../checker-qual.jar -x module-info.java -x 'META-INF*' && \
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
-jar tf checker-qual.jar | grep '\.java$' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
+jar tf checker-qual.jar | grep '\.java$' | grep -v 'module-info.java' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
 ```
 
 The result of the command will be a list of export lines.
