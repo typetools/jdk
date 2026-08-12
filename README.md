@@ -211,14 +211,14 @@ great deal of work (requires using Emacs).
 Replace uses of the old JDK version (such as 21) with the new one (such as 25)
 in this file.
 
-Replace "jdk21u" by "jdk25u":
+Change `jdk_version` in `.azure/defs.m4` and `.github/workflows/defs.m4`.  That
+one macro supplies both the "jdk25u" repository name (via `jdku_version`) and
+the `mdernst/cf-ubuntu-jdk25-plus` boot-JDK container, throughout
+`.azure/azure-pipelines.yml.m4` and `.github/workflows/ci.yml.m4`.
 
-* In .azure/azure-pipelines.yml.m4
-* In .github/workflows/ci.yml.m4
-
-Do not change `canary_version` or `latest_version` in `.azure/defs.m4` and
-`.github/workflows/defs.m4`.  Those are the JDK versions that run the Checker
-Framework, not the JDK version that is annotated.
+Do not change `canary_version` or `latest_version` in those same files, and do
+not change the version numbers in `.azure/jobs.m4`.  Those are the JDK versions
+that run the Checker Framework, not the JDK version that is annotated.
 
 Regenerate some files:
 
