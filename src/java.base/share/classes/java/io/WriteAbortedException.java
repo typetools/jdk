@@ -63,8 +63,7 @@ public class WriteAbortedException extends ObjectStreamException {
      * @param ex  Exception causing the abort.
      */
     @SideEffectFree
-    @SuppressWarnings("this-escape")
-    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
+    @SuppressWarnings({"this-escape", "purity.not.sideeffectfree.call"}) // initCause affects only the new object
     public WriteAbortedException(@Nullable String s, @Nullable Exception ex) {
         super(s);
         initCause(null);  // Disallow subsequent initCause

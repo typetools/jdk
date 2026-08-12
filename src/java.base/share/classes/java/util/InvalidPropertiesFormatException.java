@@ -57,8 +57,7 @@ public class InvalidPropertiesFormatException extends IOException {
      *         {@link Throwable#getCause()} method).
      */
     @SideEffectFree
-    @SuppressWarnings("this-escape")
-    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
+    @SuppressWarnings({"this-escape", "purity.not.sideeffectfree.call"}) // initCause affects only the new object
     public InvalidPropertiesFormatException(Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.initCause(cause);
