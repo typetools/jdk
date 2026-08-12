@@ -24,7 +24,7 @@ jobs:
     needs:
       - check_generated_ci
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk21-plus:latest
+    container: mdernst/cf-ubuntu-jdk25-plus:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -46,12 +46,12 @@ jobs:
         timeout-minutes: 90
         run: make jdk
 
-  build_jdk21u:
+  build_jdk25u:
     if: endsWith(github.repository, '/jdk')
     needs:
       - check_generated_ci
     runs-on: ubuntu-latest
-    container: mdernst/cf-ubuntu-jdk21-plus:latest
+    container: mdernst/cf-ubuntu-jdk25-plus:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -89,28 +89,28 @@ jobs:
           git config --global core.protectNTFS false
           git config --global --add safe.directory /__w/jdk/jdk
           git config --global merge.conflictstyle diff3
-        # This creates ../jdk21u .
+        # This creates ../jdk[]jdku_version .
         # Run `git-clone-related` without a limit on depth, because if the depth is
         # too small, the merge will fail.  Don't use "--filter=blob:none" because that
         # leads to "fatal: remote error:  filter 'combine' not supported".
       - name: ci-org-and-branch
         run: /tmp/$USER/plume-scripts/ci-org-and-branch --debug
-      - name: clone-related-jdk21u
+      - name: clone-related-jdk25u
         run: |
           set -ex
           echo "pwd = $(pwd)"
-          if test -d ../jdk21u; then
-            echo "../jdk21u should not exist yet"
+          if test -d ../jdk25u; then
+            echo "../jdk25u should not exist yet"
             false
           fi
           df .
-          /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
-          cd ../jdk21u
+          /tmp/$USER/git-scripts/git-clone-related typetools jdk25u ../jdk25u --single-branch
+          cd ../jdk25u
           git diff --exit-code
       - name: git merge plan
         run: |
           set -ex
-          cd ../jdk21u
+          cd ../jdk25u
           git status
           /tmp/$USER/plume-scripts/ci-org-and-branch typetools --debug
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
@@ -119,7 +119,7 @@ jobs:
       - name: git merge
         run: |
           set -ex
-          cd ../jdk21u
+          cd ../jdk25u
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
           if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH}"; then
@@ -132,17 +132,17 @@ jobs:
         shell: bash --noprofile --norc -e {0}
       - name: configure
         run: |
-          cd ../jdk21u
+          cd ../jdk25u
           export JT_HOME=/usr/share/jtreg
           bash ./configure --with-jtreg --disable-warnings-as-errors
       - name: make jdk
         timeout-minutes: 90
-        run: make -C ../jdk21u jdk
+        run: make -C ../jdk25u jdk
 
   canary_jobs:
     needs:
       - build_jdk
-      - build_jdk21u
+      - build_jdk25u
     runs-on: ubuntu-latest
     steps:
       - name: canary_jobs

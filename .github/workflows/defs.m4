@@ -3,6 +3,14 @@ define(`LBRACKET',`[')dnl
 define(`RBRACKET',`]')dnl
 changequote(`[',`]')dnl
 ifelse([The built-in "dnl" m4 macro means "discard to next line",])dnl
+ifelse([The version of the JDK that this repository annotates.  Changing]
+[jdk_version is the only edit needed to retarget a new Java release.])dnl
+define([jdk_version], [25])dnl
+define([jdku_version], [jdk_version[]u])dnl
+dnl
+ifelse([canary_version and latest_version are the JDKs that RUN the Checker]
+[Framework.  They are unrelated to which JDK is annotated; do not change them]
+[as part of a JDK upgrade.])dnl
 define([canary_os], [ubuntu])dnl
 define([canary_version], [25])dnl
 define([latest_version], [26])dnl
