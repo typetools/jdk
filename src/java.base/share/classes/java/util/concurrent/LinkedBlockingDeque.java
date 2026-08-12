@@ -742,12 +742,12 @@ public class LinkedBlockingDeque<E extends Object>
         return removeFirst();
     }
 
-    @SideEffectsOnly("this")
-    @DoesNotUnrefineReceiver("modifiability")
     /**
      * {@inheritDoc BlockingDeque}
      * @return {@inheritDoc BlockingDeque}
      */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
     public @Nullable E poll(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) {
         return pollFirst();
     }
@@ -779,11 +779,11 @@ public class LinkedBlockingDeque<E extends Object>
         return getFirst();
     }
 
-    @Pure
     /**
      * {@inheritDoc BlockingDeque}
      * @return {@inheritDoc BlockingDeque}
      */
+    @Pure
     public @Nullable E peek() {
         return peekFirst();
     }

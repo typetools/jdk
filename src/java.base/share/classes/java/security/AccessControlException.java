@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception was originally thrown by the {@link AccessController} to
  * indicate that a requested access was denied.
@@ -37,9 +39,6 @@ package java.security;
  *       longer supported. There is no replacement for the Security Manager
  *       or this class.
  */
-
-import org.checkerframework.dataflow.qual.SideEffectFree;
-
 @Deprecated(since="17", forRemoval=true)
 public class AccessControlException extends SecurityException {
 
