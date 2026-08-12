@@ -46,6 +46,17 @@ You might need to change `--with-jtreg` to one of these:
   --with-jtreg=$HOME/bin/install/jtreg
 ```
 
+`--with-jtreg` is needed only to run the JDK's own tests.  If `configure`
+rejects the installed jtreg as too old, omit `--with-jtreg`; `make jdk` does not
+use jtreg.
+
+Building JDK *N* requires a boot JDK of version *N* or *N*-1.  If the default
+`java` on your path is older, pass the boot JDK explicitly:
+
+```sh
+  --with-boot-jdk=/usr/lib/jvm/java-25-openjdk-amd64
+```
+
 ## Contributing
 
 We welcome pull requests that add new annotations or correct existing ones.
@@ -232,7 +243,20 @@ repository" above, except replace
 `git pull https://github.com/typetools/jdk.git`
 by the JDK you are currently working on.
 
-Build JDK 25u (not the main JDK!).
+Build JDK 25u.  CI also builds the main JDK, so build that too, but expect
+JDK 25u to be the one that must work.
+
+The build is the only step that detects a malformed annotation, so do not skip
+the build.  Watch for two mistakes that the diffing step below cannot find,
+because diffing removes annotations before comparing:
+
+* Two `@SuppressWarnings` annotations on one declaration, which is an error
+  because `@SuppressWarnings` is not repeatable.  Merge conflicts produce this
+  when upstream adds a suppression to a declaration that already carries one.
+  Combine the keys into a single `@SuppressWarnings`.
+* An annotation or an `import` placed above a Javadoc comment, which detaches
+  the Javadoc comment from the declaration that the Javadoc comment documents.
+  javac reports this as `[dangling-doc-comments]`.
 
 Diff JDK 25 with the upstream commit of OpenJDK, to detect unintentional edits.
 The commands in `README-diffing.el` automate a great deal of work (requires
@@ -268,6 +292,14 @@ JDK source code.  In order to compile, it is necessary that definitions of
 those annotations are available -- in a module such as java.base, or on the
 classpath.  Putting them in `java.base` worked for JDK 11,
 but I wasn't able to make that work for JDK 17.
+
+The annotations provoke javac warnings, such as `[exports]` warnings about
+Checker Framework classes that a module does not export.  Those warnings must
+not fail the build, so this fork changes the default of the
+`java-warnings-as-errors` configure option to false, in
+`make/autoconf/jdk-options.m4`.  Upgrading to a new version of Java may move
+this setting, because upstream changes how javac warnings are controlled; look
+for whatever now guards javac's `-Werror`.
 
 ## Upstream README follows
 
