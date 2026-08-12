@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,7 +75,10 @@ import sun.security.jca.GetInstance.Instance;
  * <ul>
  * <li>{@code DiffieHellman}</li>
  * <li>{@code DSA}</li>
+ * <li>{@code EC}</li>
  * <li>{@code RSA}</li>
+ * <li>{@code RSASSA-PSS}</li>
+ * <li>{@code X25519}</li>
  * </ul>
  * These algorithms are described in the <a href=
  * "{@docRoot}/../specs/security/standard-names.html#keyfactory-algorithms">
@@ -84,6 +87,7 @@ import sun.security.jca.GetInstance.Instance;
  * Consult the release documentation for your implementation to see if any
  * other algorithms are supported.
  *
+ * @spec security/standard-names.html Java Security Standard Algorithm Names
  * @author Jan Luehe
  *
  * @see Key
@@ -135,8 +139,7 @@ public @UsesObjectEquals class KeyFactory {
 
     private KeyFactory(String algorithm) throws NoSuchAlgorithmException {
         this.algorithm = algorithm;
-        List<Service> list = GetInstance.getServices("KeyFactory", algorithm);
-        serviceIterator = list.iterator();
+        serviceIterator = GetInstance.getServices("KeyFactory", algorithm);
         // fetch and instantiate initial spi
         if (nextSpi(null) == null) {
             throw new NoSuchAlgorithmException
@@ -171,6 +174,7 @@ public @UsesObjectEquals class KeyFactory {
      * Java Security Standard Algorithm Names Specification</a>
      * for information about standard algorithm names.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @return the new {@code KeyFactory} object
      *
      * @throws NoSuchAlgorithmException if no {@code Provider} supports a
@@ -207,6 +211,7 @@ public @UsesObjectEquals class KeyFactory {
      *
      * @param provider the name of the provider.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @return the new {@code KeyFactory} object
      *
      * @throws IllegalArgumentException if the provider name is {@code null}
@@ -249,6 +254,7 @@ public @UsesObjectEquals class KeyFactory {
      *
      * @param provider the provider.
      *
+     * @spec security/standard-names.html Java Security Standard Algorithm Names
      * @return the new {@code KeyFactory} object
      *
      * @throws IllegalArgumentException if the specified provider is

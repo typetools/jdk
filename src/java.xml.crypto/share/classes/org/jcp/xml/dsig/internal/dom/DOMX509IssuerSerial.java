@@ -31,14 +31,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.math.BigInteger;
+
+import javax.security.auth.x500.X500Principal;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dom.DOMCryptoContext;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.keyinfo.X509IssuerSerial;
 
-import java.math.BigInteger;
-
-import javax.security.auth.x500.X500Principal;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -94,10 +94,12 @@ public final class DOMX509IssuerSerial extends DOMStructure
         serialNumber = new BigInteger(sNElem.getFirstChild().getNodeValue());
     }
 
+    @Override
     public String getIssuerName() {
         return issuerName;
     }
 
+    @Override
     public BigInteger getSerialNumber() {
         return serialNumber;
     }

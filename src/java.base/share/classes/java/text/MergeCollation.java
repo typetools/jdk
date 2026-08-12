@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,8 +72,6 @@ final @UsesObjectEquals class MergeCollation {
      */
     public MergeCollation(String pattern) throws ParseException
     {
-        for (int i = 0; i < statusArray.length; i++)
-            statusArray[i] = 0;
         setPattern(pattern);
     }
 
@@ -226,9 +224,9 @@ final @UsesObjectEquals class MergeCollation {
     // Using BitSet would make this easier, but it's significantly slower.
     //
     private transient byte[] statusArray = new byte[8192];
-    private final byte BITARRAYMASK = (byte)0x1;
-    private final int  BYTEPOWER = 3;
-    private final int  BYTEMASK = (1 << BYTEPOWER) - 1;
+    private static final byte BITARRAYMASK = (byte)0x1;
+    private static final int BYTEPOWER = 3;
+    private static final int BYTEMASK = (1 << BYTEPOWER) - 1;
 
     /*
       If the strength is RESET, then just change the lastEntry to

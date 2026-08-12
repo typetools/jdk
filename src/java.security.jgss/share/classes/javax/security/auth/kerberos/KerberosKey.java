@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.Serial;
 import java.util.Arrays;
+import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
 
@@ -65,15 +66,6 @@ import javax.security.auth.DestroyFailedException;
  *
  * A Kerberos service using a keytab to read secret keys should use
  * the {@link KeyTab} class, where latest keys can be read when needed.<p>
- *
- * It might be necessary for the application to be granted a
- * {@link javax.security.auth.PrivateCredentialPermission
- * PrivateCredentialPermission} if it needs to access the {@code KerberosKey}
- * instance from a Subject. This permission is not needed when the
- * application depends on the default JGSS Kerberos mechanism to access the
- * {@code KerberosKey}. In that case, however, the application will need an
- * appropriate
- * {@link javax.security.auth.kerberos.ServicePermission ServicePermission}.<p>
  *
  * When creating a {@code KerberosKey} using the
  * {@link #KerberosKey(KerberosPrincipal, char[], String)} constructor,
@@ -278,17 +270,16 @@ public class KerberosKey implements SecretKey {
         if (destroyed) {
             return "Destroyed KerberosKey";
         }
-        return "Kerberos Principal " + principal +
-                "Key Version " + versionNum +
-                "key "  + key.toString();
+        return "KerberosKey: principal " + principal +
+                ", version " + versionNum +
+                ", key "  + key.toString();
     }
 
     /**
-     * Returns a hash code for this {@code KerberosKey}.
-     *
-     * @return a hash code for this {@code KerberosKey}.
+     * {@return a hash code for this {@code KerberosKey}}
      * @since 1.6
      */
+    @Override
     public int hashCode() {
         int result = 17;
         if (isDestroyed()) {
@@ -314,6 +305,7 @@ public class KerberosKey implements SecretKey {
      * false otherwise.
      * @since 1.6
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object other) {
@@ -336,10 +328,6 @@ public class KerberosKey implements SecretKey {
             return false;
         }
 
-        if (principal == null) {
-            return otherKey.getPrincipal() == null;
-        } else {
-            return principal.equals(otherKey.getPrincipal());
-        }
+        return Objects.equals(principal, otherKey.getPrincipal());
     }
 }

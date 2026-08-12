@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -82,6 +82,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * {@code SecureRandom} will call the applicable engine methods
  * without any synchronization.
  *
+ * @spec security/standard-names.html Java Security Standard Algorithm Names
  * @since 1.2
  */
 

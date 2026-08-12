@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -108,7 +108,7 @@ import jdk.internal.access.SharedSecrets;
  */
 
 @AnnotatedFor({"lock", "index", "nonempty", "nullness"})
-public class Collections {
+public final class Collections {
     // Suppresses default constructor, ensuring non-instantiability.
     private Collections() {
     }
@@ -854,15 +854,16 @@ public class Collections {
         if (distance == 0)
             return;
 
-        for (int cycleStart = 0, nMoved = 0; nMoved != size; cycleStart++) {
+        int bound = size - distance;
+        for (int cycleStart = 0, nMoved = 0; nMoved < size; cycleStart++) {
             T displaced = list.get(cycleStart);
             int i = cycleStart;
             do {
-                i += distance;
-                if (i >= size)
+                if (i >= bound)
                     i -= size;
+                i += distance;
                 displaced = list.set(i, displaced);
-                nMoved ++;
+                nMoved++;
             } while (i != cycleStart);
         }
     }
@@ -1096,6 +1097,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 1820017752578914078L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Collection<? extends E> c;
 
@@ -1439,6 +1441,7 @@ public class Collections {
                              implements SortedSet<E>, Serializable {
         @java.io.Serial
         private static final long serialVersionUID = -4929149591599911165L;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
@@ -1530,7 +1533,7 @@ public class Collections {
                 new EmptyNavigableSet<>();
 
         /**
-         * The instance we are protecting.
+         * @serial The instance we are protecting.
          */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
@@ -1613,6 +1616,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -283967356065247728L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final List<? extends E> list;
 
@@ -1800,6 +1804,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -1034234728574286014L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Map<? extends K, ? extends V> m;
 
@@ -2286,6 +2291,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -8806743815996713206L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K, ? extends V> sm;
 
@@ -2373,7 +2379,7 @@ public class Collections {
             new EmptyNavigableMap<>();
 
         /**
-         * The instance we wrap and protect.
+         * @serial The instance we wrap and protect.
          */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K, ? extends V> nm;
@@ -2517,8 +2523,10 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 3053995032091335093L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Collection<E> c;  // Backing Collection
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Object mutex;     // Object on which to synchronize
 
@@ -2747,6 +2755,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 8695801310862127406L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
@@ -2844,6 +2853,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -5505529816273629798L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
 
@@ -2946,6 +2956,7 @@ public class Collections {
                 new SynchronizedList<>(list));
     }
 
+    // used by java.util.Vector
     static <T> @PolyGrowShrink @PolyNonEmpty List<T> synchronizedList(@PolyGrowShrink @PolyNonEmpty List<T> list, Object mutex) {
         return (list instanceof RandomAccess ?
                 new SynchronizedRandomAccessList<>(list, mutex) :
@@ -2961,16 +2972,32 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -7754090372962971524L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final List<E> list;
+        transient SynchronizedList<E> reversedView = null;
+        transient final boolean isReversed;
 
+        // constructs a forward view, using 'this' as the mutex
         SynchronizedList(List<E> list) {
             super(list);
             this.list = list;
+            this.isReversed = false;
         }
+
+        // constructs a forward view, using 'mutex' as the mutex
         SynchronizedList(List<E> list, Object mutex) {
             super(list, mutex);
             this.list = list;
+            this.isReversed = false;
+        }
+
+        // constructs the reversed view; first arg should be reversed view of backing list
+        SynchronizedList(List<E> revList, Object mutex, SynchronizedList<E> forward) {
+            super(revList, mutex);
+            this.list = revList;
+            this.reversedView = forward;
+            this.isReversed = true;
         }
 
         @Pure
@@ -2983,7 +3010,6 @@ public class Collections {
         public int hashCode() {
             synchronized (mutex) {return list.hashCode();}
         }
-
         @Pure
         public E get(int index) {
             synchronized (mutex) {return list.get(index);}
@@ -3004,7 +3030,6 @@ public class Collections {
         public E remove(int index) {
             synchronized (mutex) {return list.remove(index);}
         }
-
         @Pure
         public int indexOf(Object o) {
             synchronized (mutex) {return list.indexOf(o);}
@@ -3013,38 +3038,95 @@ public class Collections {
         public int lastIndexOf(Object o) {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
-
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             synchronized (mutex) {return list.addAll(index, c);}
         }
-
         public ListIterator<E> listIterator() {
             return list.listIterator(); // Must be manually synched by user
         }
-
         public ListIterator<E> listIterator(int index) {
             return list.listIterator(index); // Must be manually synched by user
         }
-
         public List<E> subList(int fromIndex, int toIndex) {
             synchronized (mutex) {
                 return new SynchronizedList<>(list.subList(fromIndex, toIndex),
                                             mutex);
             }
         }
-
-        @Override
         @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             synchronized (mutex) {list.replaceAll(operator);}
         }
-        @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             synchronized (mutex) {list.sort(c);}
+        }
+        public void addFirst(E element) {
+            synchronized (mutex) {list.addFirst(element);}
+        }
+        public void addLast(E element) {
+            synchronized (mutex) {list.addLast(element);}
+        }
+        public E getFirst() {
+            synchronized (mutex) {return list.getFirst();}
+        }
+        public E getLast() {
+            synchronized (mutex) {return list.getLast();}
+        }
+        public E removeFirst() {
+            synchronized (mutex) {return list.removeFirst();}
+        }
+        public E removeLast() {
+            synchronized (mutex) {return list.removeLast();}
+        }
+
+        /**
+         * Reversed view handling. The reversedView field is transient
+         * and is initialized to null upon construction of the wrapper
+         * and upon deserialization. Reversed views are not serializable.
+         * The reversed view is created on first call to the reversed()
+         * method.
+         *
+         * There are four objects at play here:
+         *
+         * L = original list
+         * Lr = reversed view of original list
+         * S = synchronized forward wrapper: its backing list is L
+         * Sr = synchronized reversed wrapper: its backing list is Lr
+         *
+         * The reversedView field of S points to Sr and vice versa.
+         * This enables the reversed() method always to return the same
+         * object, and for S.reversed().reversed() to return S. This isn't
+         * strictly necessary, because all internal locking is done on S
+         * (which is passed around as mutex). But in the case where the
+         * client does external locking, it's good to minimize the number
+         * of different instances. Note however that external locking on
+         * the reversed wrapper Sr can't be made to work properly with
+         * internal or external locking on the forward wrapper S. (Sublists
+         * of a synchronized wrapper, reversed or not, have the same issue.)
+         *
+         * An alternative would be to have a ReversedSynchronizedList view class. However,
+         * that would require two extra classes (one RandomAccess and one not) and it would
+         * complicate the serialization story.
+         */
+        public List<E> reversed() {
+            synchronized (mutex) {
+                if (reversedView == null) {
+                    reversedView = new SynchronizedList<>(list.reversed(), mutex, this);
+                }
+                return reversedView;
+            }
+        }
+
+        @java.io.Serial
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            if (isReversed) {
+                throw new java.io.NotSerializableException();
+            }
+            out.defaultWriteObject();
         }
 
         /**
@@ -3080,6 +3162,19 @@ public class Collections {
 
         SynchronizedRandomAccessList(List<E> list, Object mutex) {
             super(list, mutex);
+        }
+
+        SynchronizedRandomAccessList(List<E> list, Object mutex, SynchronizedList<E> forward) {
+            super(list, mutex, forward);
+        }
+
+        public List<E> reversed() {
+            synchronized (mutex) {
+                if (reversedView == null) {
+                    reversedView = new SynchronizedRandomAccessList<>(list.reversed(), mutex, this);
+                }
+                return reversedView;
+            }
         }
 
         public List<E> subList(int fromIndex, int toIndex) {
@@ -3146,8 +3241,10 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 1978198479659022715L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final Map<K,V> m;     // Backing Map
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Object      mutex;        // Object on which to synchronize
 
@@ -3379,6 +3476,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -8798146769416483793L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K,V> sm;
 
@@ -3487,6 +3585,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 699392247599746807L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K,V> nm;
 
@@ -3680,9 +3779,10 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 1578914078182001775L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Collection<E> c;
-        @SuppressWarnings("serial") // Conditionally serializable
+        /** @serial */
         final Class<E> type;
 
         @SuppressWarnings("unchecked")
@@ -3763,6 +3863,7 @@ public class Collections {
         @EnsuresNonEmpty("this")
         public boolean add(E e)          { return c.add(typeCheck(e)); }
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private E[] zeroLengthElementArray; // Lazily initialized
 
@@ -3862,6 +3963,7 @@ public class Collections {
     {
         @java.io.Serial
         private static final long serialVersionUID = 1433151992604707767L;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Queue<E> queue;
 
@@ -3979,6 +4081,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 1599911165492914959L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
@@ -4045,6 +4148,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -5429120189805438922L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
 
@@ -4131,6 +4235,7 @@ public class Collections {
     {
         @java.io.Serial
         private static final long serialVersionUID = 65247728283967356L;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final List<E> list;
 
@@ -4311,11 +4416,12 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 5742860141034234728L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final Map<K, V> m;
-        @SuppressWarnings("serial") // Conditionally serializable
+        /** @serial */
         final Class<K> keyType;
-        @SuppressWarnings("serial") // Conditionally serializable
+        /** @serial */
         final Class<V> valueType;
 
         private void typeCheck(Object key, Object value) {
@@ -4492,6 +4598,7 @@ public class Collections {
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             Objects.requireNonNull(remappingFunction);
+            typeCheck(key, value);
             return m.merge(key, value, (v1, v2) -> {
                 V newValue = remappingFunction.apply(v1, v2);
                 typeCheck(null, newValue);
@@ -4774,6 +4881,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 1599671320688067438L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K, V> sm;
 
@@ -4854,6 +4962,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -4852462692372534096L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K, V> nm;
 
@@ -5674,6 +5783,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 3193687207550431679L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final E element;
 
@@ -5737,6 +5847,7 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 3093736618740652951L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final E element;
 
@@ -5819,8 +5930,10 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = -6979724477215052911L;
 
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final K k;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final V v;
 
@@ -5983,7 +6096,9 @@ public class Collections {
         @java.io.Serial
         private static final long serialVersionUID = 2739099268398711800L;
 
+        /** @serial */
         final int n;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final E element;
 
@@ -6542,6 +6657,7 @@ public class Collections {
     private static class SetFromMap<E> extends AbstractSet<E>
         implements Set<E>, Serializable
     {
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         final Map<E, Boolean> m;          // The backing map
         private transient Set<E> s;       // Its keySet
@@ -6735,6 +6851,7 @@ public class Collections {
         implements Queue<E>, Serializable {
         @java.io.Serial
         private static final long serialVersionUID = 1802017725587941708L;
+        /** @serial */
         @SuppressWarnings("serial") // Conditionally serializable
         private final Deque<E> q;
         AsLIFOQueue(Deque<E> q)                     { this.q = q; }

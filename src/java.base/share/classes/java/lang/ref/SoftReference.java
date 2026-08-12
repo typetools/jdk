@@ -65,9 +65,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author   Mark Reinhold
  * @since    1.2
  */
-
 @AnnotatedFor({"lock", "nullness"})
-public non-sealed class SoftReference<T> extends Reference<T> {
+public non-sealed class SoftReference<@jdk.internal.RequiresIdentity T> extends Reference<T> {
 
     /**
      * Timestamp clock, updated by the garbage collector
@@ -87,7 +86,7 @@ public non-sealed class SoftReference<T> extends Reference<T> {
      *
      * @param referent object the new soft reference will refer to
      */
-    public SoftReference(@Nullable T referent) {
+    public SoftReference(@jdk.internal.RequiresIdentity @Nullable T referent) {
         super(referent);
         this.timestamp = clock;
     }
@@ -101,7 +100,7 @@ public non-sealed class SoftReference<T> extends Reference<T> {
      *          or {@code null} if registration is not required
      *
      */
-    public SoftReference(@Nullable T referent, ReferenceQueue<? super T> q) {
+    public SoftReference(@jdk.internal.RequiresIdentity @Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
         this.timestamp = clock;
     }

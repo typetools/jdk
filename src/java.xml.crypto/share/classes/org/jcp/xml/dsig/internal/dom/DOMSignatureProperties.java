@@ -31,11 +31,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import javax.xml.crypto.*;
-import javax.xml.crypto.dom.DOMCryptoContext;
-import javax.xml.crypto.dsig.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import java.util.*;
+import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.dom.DOMCryptoContext;
+import javax.xml.crypto.dsig.SignatureProperties;
+import javax.xml.crypto.dsig.SignatureProperty;
+import javax.xml.crypto.dsig.XMLSignature;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -123,10 +127,12 @@ public final class DOMSignatureProperties extends DOMStructure
         }
     }
 
+    @Override
     public List<SignatureProperty> getProperties() {
         return properties;
     }
 
+    @Override
     public String getId() {
         return id;
     }

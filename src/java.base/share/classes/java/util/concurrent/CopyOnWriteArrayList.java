@@ -53,7 +53,6 @@ import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.invoke.VarHandle;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -75,6 +74,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.misc.Unsafe;
 import jdk.internal.util.ArraysSupport;
 
 /**
@@ -118,6 +118,8 @@ public class CopyOnWriteArrayList<E>
     implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
     private static final long serialVersionUID = 8673264195747942595L;
 
+    private static final Object[] EMPTY_ELEMENTDATA = {};
+
     /**
      * The lock protecting all mutators.  (We have a mild preference
      * for builtin monitors over ReentrantLock when either will do.)
@@ -146,7 +148,7 @@ public class CopyOnWriteArrayList<E>
      * Creates an empty list.
      */
     public CopyOnWriteArrayList() {
-        setArray(new Object[0]);
+        setArray(EMPTY_ELEMENTDATA);
     }
 
     /**
@@ -161,6 +163,8 @@ public class CopyOnWriteArrayList<E>
         Object[] es;
         if (c.getClass() == CopyOnWriteArrayList.class)
             es = ((CopyOnWriteArrayList<?>)c).getArray();
+        else if (c.isEmpty())
+            es = EMPTY_ELEMENTDATA;
         else {
             es = c.toArray();
             if (c.getClass() != java.util.ArrayList.class)
@@ -177,7 +181,10 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified array is null
      */
     public CopyOnWriteArrayList(E[] toCopyIn) {
-        setArray(Arrays.copyOf(toCopyIn, toCopyIn.length, Object[].class));
+        if (toCopyIn.length == 0)
+            setArray(EMPTY_ELEMENTDATA);
+        else
+            setArray(Arrays.copyOf(toCopyIn, toCopyIn.length, Object[].class));
     }
 
     /**
@@ -585,6 +592,8 @@ public class CopyOnWriteArrayList<E>
             Object[] newElements;
             if (numMoved == 0)
                 newElements = Arrays.copyOf(es, len - 1);
+            else if (len == 1)
+                newElements = EMPTY_ELEMENTDATA;
             else {
                 newElements = new Object[len - 1];
                 System.arraycopy(es, 0, newElements, 0, index);
@@ -675,6 +684,11 @@ public class CopyOnWriteArrayList<E>
                 index = indexOfRange(o, current, index, len);
                 if (index < 0)
                     return false;
+            }
+            if (len == 1) {
+                // one element exists and that element should be removed
+                setArray(EMPTY_ELEMENTDATA);
+                return true;
             }
             Object[] newElements = new Object[len - 1];
             System.arraycopy(current, 0, newElements, 0, index);
@@ -873,7 +887,7 @@ public class CopyOnWriteArrayList<E>
     @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
-            setArray(new Object[0]);
+            setArray(EMPTY_ELEMENTDATA);
         }
     }
 
@@ -1100,7 +1114,7 @@ public class CopyOnWriteArrayList<E>
         // Read in array length and allocate array
         int len = s.readInt();
         SharedSecrets.getJavaObjectInputStreamAccess().checkArray(s, Object[].class, len);
-        Object[] es = new Object[len];
+        Object[] es = (len == 0 ? EMPTY_ELEMENTDATA : new Object[len]);
 
         // Read in all elements in the proper order.
         for (int i = 0; i < len; i++)
@@ -1875,7 +1889,6 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
             while (hasNext()) {
@@ -2004,8 +2017,7 @@ public class CopyOnWriteArrayList<E>
 
         @SideEffectFree
         public Spliterator<E> spliterator() {
-            // TODO can probably improve this
-            return Spliterators.spliteratorUnknownSize(new DescendingIterator(), 0);
+            return Spliterators.spliterator(this, Spliterator.ORDERED);
         }
 
         // ========== Collection ==========
@@ -2316,21 +2328,11 @@ public class CopyOnWriteArrayList<E>
 
     /** Initializes the lock; for use when deserializing or cloning. */
     private void resetLock() {
-        @SuppressWarnings("removal")
-        Field lockField = java.security.AccessController.doPrivileged(
-            (java.security.PrivilegedAction<Field>) () -> {
-                try {
-                    Field f = CopyOnWriteArrayList.class
-                        .getDeclaredField("lock");
-                    f.setAccessible(true);
-                    return f;
-                } catch (ReflectiveOperationException e) {
-                    throw new Error(e);
-                }});
-        try {
-            lockField.set(this, new Object());
-        } catch (IllegalAccessException e) {
-            throw new Error(e);
-        }
+        final Unsafe U = Unsafe.getUnsafe();
+        U.putReference(
+            this,
+            U.objectFieldOffset(CopyOnWriteArrayList.class, "lock"),
+            new Object()
+        );
     }
 }

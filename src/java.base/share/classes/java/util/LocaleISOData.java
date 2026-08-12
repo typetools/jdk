@@ -149,7 +149,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
         + "mt" + "mlt"  // Maltese
         + "my" + "mya"  // Burmese
         + "na" + "nau"  // Nauru
-        + "nb" + "nob"  // Norwegian Bokm\u00e5l
+        + "nb" + "nob"  // Norwegian Bokmål
         + "nd" + "nde"  // North Ndebele
         + "ne" + "nep"  // Nepali
         + "ng" + "ndo"  // Ndonga
@@ -213,7 +213,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
         + "uz" + "uzb"  // Uzbek
         + "ve" + "ven"  // Venda
         + "vi" + "vie"  // Vietnamese
-        + "vo" + "vol"  // Volap\u00fck
+        + "vo" + "vol"  // Volapük
         + "wa" + "wln"  // Walloon
         + "wo" + "wol"  // Wolof
         + "xh" + "xho"  // Xhosa
@@ -243,7 +243,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
         + "AT" + "AUT"  // Austria, Republic of
         + "AU" + "AUS"  // Australia, Commonwealth of
         + "AW" + "ABW"  // Aruba
-        + "AX" + "ALA"  // \u00c5land Islands
+        + "AX" + "ALA"  // Åland Islands
         + "AZ" + "AZE"  // Azerbaijan, Republic of
         + "BA" + "BIH"  // Bosnia and Herzegovina
         + "BB" + "BRB"  // Barbados
@@ -254,7 +254,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
         + "BH" + "BHR"  // Bahrain, Kingdom of
         + "BI" + "BDI"  // Burundi, Republic of
         + "BJ" + "BEN"  // Benin, People's Republic of
-        + "BL" + "BLM"  // Saint Barth\u00e9lemy
+        + "BL" + "BLM"  // Saint Barthélemy
         + "BM" + "BMU"  // Bermuda
         + "BN" + "BRN"  // Brunei Darussalam
         + "BO" + "BOL"  // Bolivia, Plurinational State of
@@ -282,7 +282,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 //      + "CS" + "SCG"  // Serbia and Montenegro
         + "CU" + "CUB"  // Cuba, Republic of
         + "CV" + "CPV"  // Cape Verde, Republic of
-        + "CW" + "CUW"  // Cura\u00e7ao
+        + "CW" + "CUW"  // Curaçao
         + "CX" + "CXR"  // Christmas Island
         + "CY" + "CYP"  // Cyprus, Republic of
         + "CZ" + "CZE"  // Czech Republic

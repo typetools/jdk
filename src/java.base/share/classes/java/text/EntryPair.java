@@ -48,7 +48,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * order.
  */
 @AnnotatedFor({"interning"})
-public final @UsesObjectEquals class EntryPair
+final @UsesObjectEquals class EntryPair
 {
     public String entryName;
     public int value;

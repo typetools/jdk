@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,11 +50,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * newDirectoryStream} method will be a {@code SecureDirectoryStream} and must
  * be cast to that type in order to invoke the methods defined by this interface.
  *
- * <p> In the case of the default {@link java.nio.file.spi.FileSystemProvider
- * provider}, and a security manager is set, then the permission checks are
- * performed using the path obtained by resolving the given relative path
- * against the <i>original path</i> of the directory (irrespective of if the
- * directory is moved since it was opened).
  * @param <T> The type of element returned by the iterator
  *
  * @since   1.7
@@ -94,10 +89,6 @@ public interface SecureDirectoryStream<T>
      *          a directory <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-     *          method is invoked to check read access to the directory.
      */
     SecureDirectoryStream<T> newDirectoryStream(T path, LinkOption... options)
         throws IOException;
@@ -142,13 +133,6 @@ public interface SecureDirectoryStream<T>
      *          <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-     *          method is invoked to check read access to the path if the file
-     *          is opened for reading. The {@link SecurityManager#checkWrite(String)
-     *          checkWrite} method is invoked to check write access to the path
-     *          if the file is opened for writing.
      */
     SeekableByteChannel newByteChannel(T path,
                                        Set<? extends OpenOption> options,
@@ -175,10 +159,6 @@ public interface SecureDirectoryStream<T>
      *          if the file does not exist <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkDelete(String) checkDelete}
-     *          method is invoked to check delete access to the file
      */
     void deleteFile(T path) throws IOException;
 
@@ -203,10 +183,6 @@ public interface SecureDirectoryStream<T>
      *          not empty <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkDelete(String) checkDelete}
-     *          method is invoked to check delete access to the directory
      */
     void deleteDirectory(T path) throws IOException;
 
@@ -242,11 +218,6 @@ public interface SecureDirectoryStream<T>
      *          if the file cannot be moved as an atomic file system operation
      * @throws  IOException
      *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked to check write access to both the source and
-     *          target file.
      */
     void move(T srcpath, SecureDirectoryStream<T> targetdir, T targetpath)
         throws IOException;

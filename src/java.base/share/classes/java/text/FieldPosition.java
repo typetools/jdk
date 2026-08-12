@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,6 +43,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import java.util.Objects;
 
 /**
  * {@code FieldPosition} is a simple class used by {@code Format}
@@ -224,30 +226,24 @@ public class FieldPosition {
     /**
      * Overrides equals
      */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj)
     {
-        if (obj == null) return false;
         if (!(obj instanceof FieldPosition other))
             return false;
-        if (attribute == null) {
-            if (other.attribute != null) {
-                return false;
-            }
-        }
-        else if (!attribute.equals(other.attribute)) {
+        if (!Objects.equals(attribute, other.attribute))
             return false;
-        }
         return (beginIndex == other.beginIndex
             && endIndex == other.endIndex
             && field == other.field);
     }
 
     /**
-     * Returns a hash code for this FieldPosition.
-     * @return a hash code value for this object
+     * {@return a hash code for this FieldPosition}
      */
+    @Override
     public int hashCode() {
         return (field << 24) | (beginIndex << 16) | endIndex;
     }
@@ -278,7 +274,7 @@ public class FieldPosition {
     /**
      * Return true if the receiver wants a {@code Format.Field} value and
      * {@code attribute} is equal to it, or true if the receiver
-     * represents an inteter constant and {@code field} equals it.
+     * represents an integer constant and {@code field} equals it.
      */
     private boolean matchesField(Format.Field attribute, int field) {
         if (this.attribute != null) {
@@ -302,7 +298,7 @@ public class FieldPosition {
         private boolean encounteredField;
 
         public void formatted(Format.Field attr, Object value, int start,
-                              int end, StringBuffer buffer) {
+                              int end, Format.StringBuf buffer) {
             if (!encounteredField && matchesField(attr)) {
                 setBeginIndex(start);
                 setEndIndex(end);
@@ -311,7 +307,7 @@ public class FieldPosition {
         }
 
         public void formatted(int fieldID, Format.Field attr, Object value,
-                              int start, int end, StringBuffer buffer) {
+                              int start, int end, Format.StringBuf buffer) {
             if (!encounteredField && matchesField(attr, fieldID)) {
                 setBeginIndex(start);
                 setEndIndex(end);

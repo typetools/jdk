@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.Cloneable;
-import java.util.Locale;
 import java.util.TimeZone;
 
 /**
@@ -66,7 +65,8 @@ import java.util.TimeZone;
  * @author Masayoshi Okutsu
  * @since 1.5
  */
-public abstract class CalendarDate implements Cloneable {
+public abstract sealed class CalendarDate implements Cloneable
+        permits BaseCalendar.Date {
     public static final int FIELD_UNDEFINED = Integer.MIN_VALUE;
     public static final long TIME_UNDEFINED = Long.MIN_VALUE;
 
@@ -88,9 +88,6 @@ public abstract class CalendarDate implements Cloneable {
     private TimeZone zoneinfo;
     private int zoneOffset;
     private int daylightSaving;
-    private boolean forceStandardTime;
-
-    private Locale locale;
 
     protected CalendarDate() {
         this(TimeZone.getDefault());
@@ -299,20 +296,8 @@ public abstract class CalendarDate implements Cloneable {
         return normalized;
     }
 
-
-    public boolean isStandardTime() {
-        return forceStandardTime;
-    }
-
     public boolean isDaylightTime() {
-        if (isStandardTime()) {
-            return false;
-        }
         return daylightSaving != 0;
-    }
-
-    protected void setLocale(Locale loc) {
-        locale = loc;
     }
 
     public TimeZone getZone() {
@@ -364,6 +349,7 @@ public abstract class CalendarDate implements Cloneable {
                 && zoneOffset == that.zoneOffset);
     }
 
+    @Override
     public int hashCode() {
         // a pseudo (local standard) time stamp value in milliseconds
         // from the Epoch, assuming Gregorian calendar fields.
@@ -386,6 +372,7 @@ public abstract class CalendarDate implements Cloneable {
      *
      * @return a copy of this <code>CalendarDate</code>
      */
+    @Override
     public Object clone() {
         try {
             return super.clone();
@@ -404,6 +391,7 @@ public abstract class CalendarDate implements Cloneable {
      *
      * @see java.text.SimpleDateFormat
      */
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         CalendarUtils.sprintf0d(sb, year, 4).append('-');

@@ -138,6 +138,7 @@ public class XMLX509IssuerSerial extends SignatureElementProxy implements XMLX50
     }
 
     /** {@inheritDoc} */
+    @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
@@ -151,6 +152,7 @@ public class XMLX509IssuerSerial extends SignatureElementProxy implements XMLX50
             && this.getIssuerName().equals(other.getIssuerName());
     }
 
+    @Override
     public int hashCode() {
         int result = 17;
         result = 31 * result + getSerialNumber().hashCode();
@@ -159,6 +161,7 @@ public class XMLX509IssuerSerial extends SignatureElementProxy implements XMLX50
     }
 
     /** {@inheritDoc} */
+    @Override
     public String getBaseLocalName() {
         return Constants._TAG_X509ISSUERSERIAL;
     }

@@ -203,8 +203,8 @@ class UnixDirectoryStream
             return nextEntry != null;
         }
 
+        @SideEffectsOnly("this")
         @Override
-        // @SideEffectsOnly("this")
         public synchronized Path next() {
             Path result;
             if (nextEntry == null && !atEof) {

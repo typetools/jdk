@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Arrays;
-import jdk.internal.misc.InternalLock;
 import jdk.internal.misc.VM;
 
 /**
@@ -43,6 +42,11 @@ import jdk.internal.misc.VM;
  * output stream without necessarily causing a call to the underlying
  * system for each byte written.
  *
+ * @apiNote
+ * Once wrapped in a {@code BufferedOutputStream}, the underlying
+ * {@code OutputStream} should not be used directly nor wrapped with
+ * another stream.
+ *
  * @author  Arthur van Hoff
  * @since   1.0
  */
@@ -50,9 +54,6 @@ import jdk.internal.misc.VM;
 public class BufferedOutputStream extends FilterOutputStream {
     private static final int DEFAULT_INITIAL_BUFFER_SIZE = 512;
     private static final int DEFAULT_MAX_BUFFER_SIZE = 8192;
-
-    // initialized to null when BufferedOutputStream is sub-classed
-    private final InternalLock lock;
 
     /**
      * The internal buffer where data is stored.
@@ -94,12 +95,9 @@ public class BufferedOutputStream extends FilterOutputStream {
         }
 
         if (getClass() == BufferedOutputStream.class) {
-            // use InternalLock and resizable buffer when not sub-classed
-            this.lock = InternalLock.newLockOrNull();
-            this.buf = new byte[initialSize];    // resizable
+            // resizable when not sub-classed
+            this.buf = new byte[initialSize];
         } else {
-            // use monitors and no resizing when sub-classed
-            this.lock = null;
             this.buf = new byte[maxSize];
         }
         this.maxBufSize = maxSize;
@@ -140,8 +138,6 @@ public class BufferedOutputStream extends FilterOutputStream {
      * Grow buf to fit an additional len bytes if needed.
      * If possible, it grows by len+1 to avoid flushing when len bytes
      * are added. A no-op if the buffer is not resizable.
-     *
-     * This method should only be called while holding the lock.
      */
     private void growIfNeeded(int len) {
         int neededSize = count + len + 1;
@@ -161,22 +157,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      * @throws     IOException  if an I/O error occurs.
      */
     @Override
-    public void write(@PolySigned int b) throws IOException {
-        if (lock != null) {
-            lock.lock();
-            try {
-                implWrite(b);
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            synchronized (this) {
-                implWrite(b);
-            }
-        }
-    }
-
-    private void implWrite(int b) throws IOException {
+    public synchronized void write(@PolySigned int b) throws IOException {
         growIfNeeded(1);
         if (count >= buf.length) {
             flushBuffer();
@@ -202,22 +183,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      * @throws     IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
-        if (lock != null) {
-            lock.lock();
-            try {
-                implWrite(b, off, len);
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            synchronized (this) {
-                implWrite(b, off, len);
-            }
-        }
-    }
-
-    private void implWrite(byte[] b, int off, int len) throws IOException {
+    public synchronized void write(@PolySigned byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         if (len >= maxBufSize) {
             /* If the request length exceeds the max size of the output buffer,
                flush the output buffer and then write the data directly.
@@ -242,22 +208,7 @@ public class BufferedOutputStream extends FilterOutputStream {
      * @see        java.io.FilterOutputStream#out
      */
     @Override
-    public void flush() throws IOException {
-        if (lock != null) {
-            lock.lock();
-            try {
-                implFlush();
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            synchronized (this) {
-                implFlush();
-            }
-        }
-    }
-
-    private void implFlush() throws IOException {
+    public synchronized void flush() throws IOException {
         flushBuffer();
         out.flush();
     }

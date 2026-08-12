@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,7 +43,6 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
-import jdk.internal.misc.Blocker;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
@@ -91,7 +90,7 @@ public class Object {
     public final native Class<? extends @MustCall() Object> getClass(@PolyUI @GuardSatisfied @UnknownInitialization @UnknownSignedness Object this);
 
     /**
-     * Returns a hash code value for the object. This method is
+     * {@return a hash code value for this object} This method is
      * supported for the benefit of hash tables such as those provided by
      * {@link java.util.HashMap}.
      * <p>
@@ -119,7 +118,11 @@ public class Object {
      * As far as is reasonably practical, the {@code hashCode} method defined
      * by class {@code Object} returns distinct integers for distinct objects.
      *
-     * @return  a hash code value for this object.
+     * @apiNote
+     * The {@link java.util.Objects#hash(Object...) hash} and {@link
+     * java.util.Objects#hashCode(Object) hashCode} methods of {@link
+     * java.util.Objects} can be used to help construct simple hash codes.
+     *
      * @see     java.lang.Object#equals(java.lang.Object)
      * @see     java.lang.System#identityHashCode
      */
@@ -130,7 +133,7 @@ public class Object {
     /**
      * Indicates whether some other object is "equal to" this one.
      * <p>
-     * The {@code equals} method implements an equivalence relation
+     * The {@code equals} method implements an <dfn>{@index "equivalence relation"}</dfn>
      * on non-null object references:
      * <ul>
      * <li>It is <i>reflexive</i>: for any non-null reference value
@@ -178,6 +181,9 @@ public class Object {
      * method whenever this method is overridden, so as to maintain the
      * general contract for the {@code hashCode} method, which states
      * that equal objects must have equal hash codes.
+     * <p>The two-argument {@link java.util.Objects#equals(Object,
+     * Object) Objects.equals} method implements an equivalence relation
+     * on two possibly-null object references.
      *
      * @param   obj   the reference object with which to compare.
      * @return  {@code true} if this object is the same as the obj
@@ -257,7 +263,11 @@ public class Object {
     protected native Object clone(@GuardSatisfied Object this) throws CloneNotSupportedException;
 
     /**
-     * Returns a string representation of the object.
+     * {@return a string representation of the object}
+     *
+     * Satisfying this method's contract implies a non-{@code null}
+     * result must be returned.
+     *
      * @apiNote
      * In general, the
      * {@code toString} method returns a string that
@@ -274,12 +284,14 @@ public class Object {
      * the unsigned hexadecimal representation of the hash code of the
      * object. In other words, this method returns a string equal to the
      * value of:
-     * <blockquote>
-     * <pre>
+     * {@snippet lang=java :
      * getClass().getName() + '@' + Integer.toHexString(hashCode())
-     * </pre></blockquote>
-     *
-     * @return  a string representation of the object.
+     * }
+     * The {@link java.util.Objects#toIdentityString(Object)
+     * Objects.toIdentityString} method returns the string for an
+     * object equal to the string that would be returned if neither
+     * the {@code toString} nor {@code hashCode} methods were
+     * overridden by the object's class.
      */
     @CFComment({"nullness: toString() is @SideEffectFree rather than @Pure because it returns a string",
     "that differs according to ==, and @Deterministic requires that the results of",
@@ -393,16 +405,20 @@ public class Object {
      * @see    #wait(long, int)
      */
     public final void wait(@UnknownInitialization Object this, @NonNegative long timeoutMillis) throws InterruptedException {
-        long comp = Blocker.begin();
-        try {
+        if (timeoutMillis < 0) {
+            throw new IllegalArgumentException("timeout value is negative");
+        }
+
+        if (Thread.currentThread() instanceof VirtualThread vthread) {
+            try {
+                wait0(timeoutMillis);
+            } catch (InterruptedException e) {
+                // virtual thread's interrupt status needs to be cleared
+                vthread.getAndClearInterrupt();
+                throw e;
+            }
+        } else {
             wait0(timeoutMillis);
-        } catch (InterruptedException e) {
-            Thread thread = Thread.currentThread();
-            if (thread.isVirtual())
-                thread.getAndClearInterrupt();
-            throw e;
-        } finally {
-            Blocker.end(comp);
         }
     }
 
@@ -478,16 +494,16 @@ public class Object {
      * below. Among other things, this approach avoids problems that can be caused
      * by spurious wakeups.
      *
-     * <pre>{@code
+     * {@snippet lang=java :
      *     synchronized (obj) {
-     *         while (<condition does not hold> and <timeout not exceeded>) {
+     *         while ( <condition does not hold and timeout not exceeded> ) {
      *             long timeoutMillis = ... ; // recompute timeout values
      *             int nanos = ... ;
      *             obj.wait(timeoutMillis, nanos);
      *         }
      *         ... // Perform action appropriate to condition or timeout
      *     }
-     * }</pre>
+     * }
      *
      * @param  timeoutMillis the maximum time to wait, in milliseconds
      * @param  nanos   additional time, in nanoseconds, in the range 0-999999 inclusive
@@ -587,7 +603,8 @@ public class Object {
      * To guard against exceptions prematurely terminating the finalize chain,
      * the subclass should use a {@code try-finally} block to ensure
      * {@code super.finalize()} is always invoked. For example,
-     * <pre>{@code      @Override
+     * {@snippet lang="java":
+     *     @Override
      *     protected void finalize() throws Throwable {
      *         try {
      *             ... // cleanup subclass state
@@ -595,7 +612,7 @@ public class Object {
      *             super.finalize();
      *         }
      *     }
-     * }</pre>
+     * }
      *
      * @deprecated Finalization is deprecated and subject to removal in a future
      * release. The use of finalization can lead to problems with security,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,7 +57,9 @@ public class InvalidPropertiesFormatException extends IOException {
      *         {@link Throwable#getCause()} method).
      */
     @SideEffectFree
-    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
+    @SuppressWarnings({"this-escape",
+           "purity.not.sideeffectfree.call"} // initCause affects only the new object
+    )
     public InvalidPropertiesFormatException(Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.initCause(cause);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,7 +83,9 @@ public class BootstrapMethodError extends LinkageError {
      * @param cause the cause, may be {@code null}.
      */
     @SideEffectFree
-    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
+    @SuppressWarnings({"this-escape",
+                    "purity.not.sideeffectfree.call" // initCause affects only the new object
+                    })
     public BootstrapMethodError(Throwable cause) {
         // cf. Throwable(Throwable cause) constructor.
         super(cause == null ? null : cause.toString());

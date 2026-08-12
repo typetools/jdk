@@ -23,6 +23,7 @@
 package com.sun.org.apache.xml.internal.security.keys.keyresolver;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.lang.reflect.InvocationTargetException;
 import java.security.PublicKey;
@@ -48,6 +49,8 @@ import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations
 import com.sun.org.apache.xml.internal.security.keys.keyresolver.implementations.X509SubjectNameResolver;
 import com.sun.org.apache.xml.internal.security.keys.storage.StorageResolver;
 import com.sun.org.apache.xml.internal.security.utils.JavaUtils;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 /**
  * KeyResolver is factory class for subclass of KeyResolverSpi that
@@ -296,11 +299,13 @@ public class KeyResolver {
             it = res.iterator();
         }
 
+        @Override
         @Pure
         public boolean hasNext() {
             return it.hasNext();
         }
 
+        @Override
         public KeyResolverSpi next() {
             KeyResolverSpi resolver = it.next();
             if (resolver == null) {
@@ -310,6 +315,7 @@ public class KeyResolver {
             return resolver;
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Can't remove resolvers using the iterator");
         }

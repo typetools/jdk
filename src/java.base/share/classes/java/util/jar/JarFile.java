@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,8 +35,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.JavaUtilZipFileAccess;
 import jdk.internal.misc.ThreadTracker;
-import sun.security.action.GetPropertyAction;
 import sun.security.util.ManifestEntryVerifier;
+import sun.security.util.SignatureFileVerifier;
 
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
@@ -46,6 +46,7 @@ import java.io.InputStream;
 import java.lang.ref.SoftReference;
 import java.security.CodeSigner;
 import java.security.cert.Certificate;
+import java.util.BitSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
@@ -96,10 +97,10 @@ import java.util.zip.ZipFile;
  * <p> If the {@code verify} flag is on when opening a signed jar file, the content
  * of the jar entry is verified against the signature embedded inside the manifest
  * that is associated with its {@link JarEntry#getRealName() path name}. For a
- * multi-release jar file, the content of a versioned entry is verfieid against
+ * multi-release jar file, the content of a versioned entry is verified against
  * its own signature and {@link JarEntry#getCodeSigners()} returns its own signers.
  *
- * Please note that the verification process does not include validating the
+ * <p>Please note that the verification process does not include validating the
  * signer's certificate. A caller should inspect the return value of
  * {@link JarEntry#getCodeSigners()} to further determine if the signature
  * can be trusted.
@@ -152,8 +153,6 @@ public class JarFile extends ZipFile {
     private static final Runtime.Version RUNTIME_VERSION;
     private static final boolean MULTI_RELEASE_ENABLED;
     private static final boolean MULTI_RELEASE_FORCED;
-    // The maximum size of array to allocate. Some VMs reserve some header words in an array.
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     private SoftReference<Manifest> manRef;
     private JarEntry manEntry;
@@ -179,7 +178,7 @@ public class JarFile extends ZipFile {
         // multi-release jar file versions >= 9
         BASE_VERSION = Runtime.Version.parse(Integer.toString(8));
         BASE_VERSION_FEATURE = BASE_VERSION.feature();
-        String jarVersion = GetPropertyAction.privilegedGetProperty("jdk.util.jar.version");
+        String jarVersion = System.getProperty("jdk.util.jar.version");
         int runtimeVersion = Runtime.version().feature();
         if (jarVersion != null) {
             int jarVer = Integer.parseInt(jarVersion);
@@ -188,8 +187,8 @@ public class JarFile extends ZipFile {
                     : Math.max(jarVer, BASE_VERSION_FEATURE);
         }
         RUNTIME_VERSION = Runtime.Version.parse(Integer.toString(runtimeVersion));
-        String enableMultiRelease = GetPropertyAction
-                .privilegedGetProperty("jdk.util.jar.enableMultiRelease", "true");
+        String enableMultiRelease = System.
+                getProperty("jdk.util.jar.enableMultiRelease", "true");
         switch (enableMultiRelease) {
             case "false" -> {
                 MULTI_RELEASE_ENABLED = false;
@@ -257,8 +256,6 @@ public class JarFile extends ZipFile {
      * it is signed.
      * @param name the name of the jar file to be opened for reading
      * @throws IOException if an I/O error has occurred
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager
      */
     public JarFile(String name) throws IOException {
         this(new File(name), true, ZipFile.OPEN_READ);
@@ -271,8 +268,6 @@ public class JarFile extends ZipFile {
      * @param verify whether or not to verify the jar file if
      * it is signed.
      * @throws IOException if an I/O error has occurred
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager
      */
     public JarFile(String name, boolean verify) throws IOException {
         this(new File(name), verify, ZipFile.OPEN_READ);
@@ -284,8 +279,6 @@ public class JarFile extends ZipFile {
      * it is signed.
      * @param file the jar file to be opened for reading
      * @throws IOException if an I/O error has occurred
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager
      */
     public JarFile(File file) throws IOException {
         this(file, true, ZipFile.OPEN_READ);
@@ -298,8 +291,6 @@ public class JarFile extends ZipFile {
      * @param verify whether or not to verify the jar file if
      * it is signed.
      * @throws IOException if an I/O error has occurred
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager.
      */
     public JarFile(File file, boolean verify) throws IOException {
         this(file, verify, ZipFile.OPEN_READ);
@@ -317,8 +308,6 @@ public class JarFile extends ZipFile {
      * @throws IOException if an I/O error has occurred
      * @throws IllegalArgumentException
      *         if the {@code mode} argument is invalid
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager
      * @since 1.3
      */
     public JarFile(File file, boolean verify, int mode) throws IOException {
@@ -345,8 +334,6 @@ public class JarFile extends ZipFile {
      * @throws IOException if an I/O error has occurred
      * @throws IllegalArgumentException
      *         if the {@code mode} argument is invalid
-     * @throws SecurityException if access to the file is denied
-     *         by the SecurityManager
      * @throws NullPointerException if {@code version} is {@code null}
      * @since 9
      */
@@ -430,7 +417,8 @@ public class JarFile extends ZipFile {
                             jv = new JarVerifier(manEntry.getName(), b);
                         } else {
                             if (JarVerifier.debug != null) {
-                                JarVerifier.debug.println("Multiple MANIFEST.MF found. Treat JAR file as unsigned");
+                                JarVerifier.debug.println(
+                                        JarVerifier.MULTIPLE_MANIFEST_WARNING);
                             }
                         }
                     }
@@ -606,26 +594,16 @@ public class JarFile extends ZipFile {
     }
 
     private JarEntry getVersionedEntry(String name, JarEntry defaultEntry) {
-        if (!name.startsWith(META_INF)) {
-            int[] versions = JUZFA.getMetaInfVersions(this);
-            if (BASE_VERSION_FEATURE < versionFeature && versions.length > 0) {
-                // search for versioned entry
-                for (int i = versions.length - 1; i >= 0; i--) {
-                    int version = versions[i];
-                    // skip versions above versionFeature
-                    if (version > versionFeature) {
-                        continue;
-                    }
-                    // skip versions below base version
-                    if (version < BASE_VERSION_FEATURE) {
-                        break;
-                    }
-                    JarFileEntry vje = (JarFileEntry)super.getEntry(
-                            META_INF_VERSIONS + version + "/" + name);
-                    if (vje != null) {
-                        return vje.withBasename(name);
-                    }
+        if (BASE_VERSION_FEATURE < versionFeature && !name.startsWith(META_INF)) {
+            BitSet versions = JUZFA.getMetaInfVersions(this, name);
+            int version = versions.previousSetBit(versionFeature);
+            while (version >= BASE_VERSION_FEATURE) {
+                JarFileEntry vje = (JarFileEntry)super.getEntry(
+                        META_INF_VERSIONS + version + "/" + name);
+                if (vje != null) {
+                    return vje.withBasename(name);
                 }
+                version = versions.previousSetBit(version - 1);
             }
         }
         return defaultEntry;
@@ -807,8 +785,13 @@ public class JarFile extends ZipFile {
     private byte[] getBytes(ZipEntry ze) throws IOException {
         try (InputStream is = super.getInputStream(ze)) {
             long uncompressedSize = ze.getSize();
-            if (uncompressedSize > MAX_ARRAY_SIZE) {
-                throw new IOException("Unsupported size: " + uncompressedSize);
+            if (uncompressedSize > SignatureFileVerifier.MAX_SIG_FILE_SIZE) {
+                throw new IOException("Unsupported size: " + uncompressedSize +
+                        " for JarEntry " + ze.getName() +
+                        ". Allowed max size: " +
+                        SignatureFileVerifier.MAX_SIG_FILE_SIZE + " bytes. " +
+                        "You can use the jdk.jar.maxSignatureFileSize " +
+                        "system property to increase the default value.");
             }
             int len = (int)uncompressedSize;
             int bytesRead;
@@ -830,7 +813,7 @@ public class JarFile extends ZipFile {
 
     /**
      * Returns an input stream for reading the contents of the specified
-     * zip file entry.
+     * ZIP file entry.
      *
      * @apiNote The {@code InputStream} returned by this method can wrap an
      * {@link java.util.zip.InflaterInputStream InflaterInputStream}, whose
@@ -838,11 +821,11 @@ public class JarFile extends ZipFile {
      * read(byte[], int, int)} method can modify any element of the output
      * buffer.
      *
-     * @param ze the zip file entry
+     * @param ze the ZIP file entry
      * @return an input stream for reading the contents of the specified
-     *         zip file entry or null if the zip file entry does not exist
+     *         ZIP file entry or null if the ZIP file entry does not exist
      *         within the jar file
-     * @throws ZipException if a zip file format error has occurred
+     * @throws ZipException if a ZIP file format error has occurred
      * @throws IOException if an I/O error has occurred
      * @throws SecurityException if any of the jar file entries
      *         are incorrectly signed.

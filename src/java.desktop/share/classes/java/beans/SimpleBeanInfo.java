@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,8 +32,6 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.image.ImageProducer;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  * This is a support class to make it easier for people to provide
@@ -158,10 +156,8 @@ public @UsesObjectEquals class SimpleBeanInfo implements BeanInfo {
      * @return an image object. May be null if the load failed.
      * @see java.beans.SimpleBeanInfo#loadImage(String)
      */
-    @SuppressWarnings("removal")
     private Image loadStandardImage(final String resourceName) {
-        return AccessController.doPrivileged(
-                (PrivilegedAction<Image>) () -> loadImage(resourceName));
+        return loadImage(resourceName);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,11 +46,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -373,15 +368,6 @@ import jdk.internal.reflect.Reflection;
  *
  * </ul>
  *
- * <h2> Security </h2>
- *
- * <p> Service loaders always execute in the security context of the caller
- * of the iterator or stream methods and may also be restricted by the security
- * context of the caller that created the service loader.
- * Trusted system code should typically invoke the methods in this class, and
- * the methods of the iterators which they return, from within a privileged
- * security context.
- *
  * <h2> Concurrency </h2>
  *
  * <p> Instances of this class are not safe for use by multiple concurrent
@@ -397,7 +383,6 @@ import jdk.internal.reflect.Reflection;
  *
  * @author Mark Reinhold
  * @since 1.6
- * @revised 9
  */
 
 @AnnotatedFor({"interning", "lock", "nullness"})
@@ -418,10 +403,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
     // null when locating provider using a module layer
     private final ClassLoader loader;
 
-    // The access control context taken when the ServiceLoader is created
-    @SuppressWarnings("removal")
-    private final AccessControlContext acc;
-
     // The lazy-lookup iterator for iterator operations
     private Iterator<Provider<S>> lookupIterator1;
     private final List<S> instantiatedProviders = new ArrayList<>();
@@ -434,10 +415,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
     // Incremented when reload is called
     private int reloadCount;
 
-    private static JavaLangAccess LANG_ACCESS;
-    static {
-        LANG_ACCESS = SharedSecrets.getJavaLangAccess();
-    }
+    private static final JavaLangAccess LANG_ACCESS = SharedSecrets.getJavaLangAccess();
 
     /**
      * Represents a service provider located by {@code ServiceLoader}.
@@ -487,7 +465,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         If {@code svc} is not accessible to {@code caller} or the caller
      *         module does not use the service type.
      */
-    @SuppressWarnings("removal")
     private ServiceLoader(Class<?> caller, ModuleLayer layer, Class<S> svc) {
         Objects.requireNonNull(caller);
         Objects.requireNonNull(layer);
@@ -498,9 +475,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
         this.serviceName = svc.getName();
         this.layer = layer;
         this.loader = null;
-        this.acc = (System.getSecurityManager() != null)
-                ? AccessController.getContext()
-                : null;
     }
 
     /**
@@ -511,7 +485,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         If {@code svc} is not accessible to {@code caller} or the caller
      *         module does not use the service type.
      */
-    @SuppressWarnings("removal")
     private ServiceLoader(Class<?> caller, Class<S> svc, ClassLoader cl) {
         Objects.requireNonNull(svc);
 
@@ -540,9 +513,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
         this.serviceName = svc.getName();
         this.layer = null;
         this.loader = cl;
-        this.acc = (System.getSecurityManager() != null)
-                ? AccessController.getContext()
-                : null;
     }
 
     /**
@@ -554,7 +524,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      * @throws ServiceConfigurationError
      *         If the caller module does not use the service type.
      */
-    @SuppressWarnings("removal")
     private ServiceLoader(Module callerModule, Class<S> svc, ClassLoader cl) {
         if (!callerModule.canUse(svc)) {
             fail(svc, callerModule + " does not declare `uses`");
@@ -564,9 +533,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
         this.serviceName = svc.getName();
         this.layer = null;
         this.loader = cl;
-        this.acc = (System.getSecurityManager() != null)
-                ? AccessController.getContext()
-                : null;
     }
 
     /**
@@ -626,7 +592,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         provider method or there is more than one public static
      *         provider method
      */
-    @SuppressWarnings("removal")
     private Method findStaticProviderMethod(Class<?> clazz) {
         List<Method> methods = null;
         try {
@@ -653,12 +618,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
         }
         if (result != null) {
-            Method m = result;
-            PrivilegedAction<Void> pa = () -> {
-                m.setAccessible(true);
-                return null;
-            };
-            AccessController.doPrivileged(pa);
+            result.setAccessible(true);
         }
         return result;
     }
@@ -669,27 +629,16 @@ public final @UsesObjectEquals class ServiceLoader<S>
      * @throws ServiceConfigurationError if the class does not have
      *         public no-arg constructor
      */
-    @SuppressWarnings("removal")
     private Constructor<?> getConstructor(Class<?> clazz) {
-        PrivilegedExceptionAction<Constructor<?>> pa
-            = new PrivilegedExceptionAction<>() {
-                @Override
-                public Constructor<?> run() throws Exception {
-                    Constructor<?> ctor = clazz.getConstructor();
-                    if (inExplicitModule(clazz))
-                        ctor.setAccessible(true);
-                    return ctor;
-                }
-            };
         Constructor<?> ctor = null;
         try {
-            ctor = AccessController.doPrivileged(pa);
-        } catch (Throwable x) {
-            if (x instanceof PrivilegedActionException)
-                x = x.getCause();
+            ctor = clazz.getConstructor();
+        } catch (NoSuchMethodException ex) {
             String cn = clazz.getName();
-            fail(service, cn + " Unable to get public no-arg constructor", x);
+            fail(service, cn + " Unable to get public no-arg constructor", ex);
         }
+        if (inExplicitModule(clazz))
+            ctor.setAccessible(true);
         return ctor;
     }
 
@@ -703,29 +652,23 @@ public final @UsesObjectEquals class ServiceLoader<S>
         final Class<? extends S> type;
         final Method factoryMethod;  // factory method or null
         final Constructor<? extends S> ctor; // public no-args constructor or null
-        @SuppressWarnings("removal")
-        final AccessControlContext acc;
 
         ProviderImpl(Class<S> service,
                      Class<? extends S> type,
-                     Method factoryMethod,
-                     @SuppressWarnings("removal") AccessControlContext acc) {
+                     Method factoryMethod) {
             this.service = service;
             this.type = type;
             this.factoryMethod = factoryMethod;
             this.ctor = null;
-            this.acc = acc;
         }
 
         ProviderImpl(Class<S> service,
                      Class<? extends S> type,
-                     Constructor<? extends S> ctor,
-                     @SuppressWarnings("removal") AccessControlContext acc) {
+                     Constructor<? extends S> ctor) {
             this.service = service;
             this.type = type;
             this.factoryMethod = null;
             this.ctor = ctor;
-            this.acc = acc;
         }
 
         @Override
@@ -749,36 +692,14 @@ public final @UsesObjectEquals class ServiceLoader<S>
          * permissions that are restricted by the security context of whatever
          * created this loader.
          */
-        @SuppressWarnings("removal")
         private S invokeFactoryMethod() {
             Object result = null;
-            Throwable exc = null;
-            if (acc == null) {
-                try {
-                    result = factoryMethod.invoke(null);
-                } catch (Throwable x) {
-                    exc = x;
-                }
-            } else {
-                PrivilegedExceptionAction<?> pa = new PrivilegedExceptionAction<>() {
-                    @Override
-                    public Object run() throws Exception {
-                        return factoryMethod.invoke(null);
-                    }
-                };
-                // invoke factory method with permissions restricted by acc
-                try {
-                    result = AccessController.doPrivileged(pa, acc);
-                } catch (Throwable x) {
-                    if (x instanceof PrivilegedActionException)
-                        x = x.getCause();
-                    exc = x;
-                }
-            }
-            if (exc != null) {
-                if (exc instanceof InvocationTargetException)
-                    exc = exc.getCause();
-                fail(service, factoryMethod + " failed", exc);
+            try {
+                result = factoryMethod.invoke(null);
+            } catch (Throwable ex) {
+                if (ex instanceof InvocationTargetException)
+                    ex = ex.getCause();
+                fail(service, factoryMethod + " failed", ex);
             }
             if (result == null) {
                 fail(service, factoryMethod + " returned null");
@@ -793,38 +714,16 @@ public final @UsesObjectEquals class ServiceLoader<S>
          * with a security manager then the constructor runs with permissions that
          * are restricted by the security context of whatever created this loader.
          */
-        @SuppressWarnings("removal")
         private S newInstance() {
             S p = null;
-            Throwable exc = null;
-            if (acc == null) {
-                try {
-                    p = ctor.newInstance();
-                } catch (Throwable x) {
-                    exc = x;
-                }
-            } else {
-                PrivilegedExceptionAction<S> pa = new PrivilegedExceptionAction<>() {
-                    @Override
-                    public S run() throws Exception {
-                        return ctor.newInstance();
-                    }
-                };
-                // invoke constructor with permissions restricted by acc
-                try {
-                    p = AccessController.doPrivileged(pa, acc);
-                } catch (Throwable x) {
-                    if (x instanceof PrivilegedActionException)
-                        x = x.getCause();
-                    exc = x;
-                }
-            }
-            if (exc != null) {
-                if (exc instanceof InvocationTargetException)
-                    exc = exc.getCause();
+            try {
+                p = ctor.newInstance();
+            } catch (Throwable ex) {
+                if (ex instanceof InvocationTargetException)
+                    ex = ex.getCause();
                 String cn = ctor.getDeclaringClass().getName();
                 fail(service,
-                     "Provider " + cn + " could not be instantiated", exc);
+                     "Provider " + cn + " could not be instantiated", ex);
             }
             return p;
         }
@@ -836,16 +735,15 @@ public final @UsesObjectEquals class ServiceLoader<S>
         @Override
         @Pure
         public int hashCode() {
-            return Objects.hash(service, type, acc);
+            return Objects.hash(service, type);
         }
 
         @Override
         @Pure
         public boolean equals(Object ob) {
-            return ob instanceof @SuppressWarnings("unchecked")ProviderImpl<?> that
+            return ob instanceof ProviderImpl<?> that
                     && this.service == that.service
-                    && this.type == that.type
-                    && Objects.equals(this.acc, that.acc);
+                    && this.type == that.type;
         }
     }
 
@@ -859,7 +757,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         isn't the expected sub-type (or doesn't define a provider
      *         factory method that returns the expected type)
      */
-    @SuppressWarnings("removal")
     private Provider<S> loadProvider(ServiceProvider provider) {
         Module module = provider.module();
         if (!module.canRead(service.getModule())) {
@@ -869,22 +766,10 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         String cn = provider.providerName();
         Class<?> clazz = null;
-        if (acc == null) {
-            try {
-                clazz = Class.forName(module, cn);
-            } catch (LinkageError e) {
-                fail(service, "Unable to load " + cn, e);
-            }
-        } else {
-            PrivilegedExceptionAction<Class<?>> pa = () -> Class.forName(module, cn);
-            try {
-                clazz = AccessController.doPrivileged(pa);
-            } catch (Throwable x) {
-                if (x instanceof PrivilegedActionException)
-                    x = x.getCause();
-                fail(service, "Unable to load " + cn, x);
-                return null;
-            }
+        try {
+            clazz = Class.forName(module, cn);
+        } catch (LinkageError e) {
+            fail(service, "Unable to load " + cn, e);
         }
         if (clazz == null) {
             fail(service, "Provider " + cn + " not found");
@@ -906,7 +791,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
                 @SuppressWarnings("unchecked")
                 Class<? extends S> type = (Class<? extends S>) returnType;
-                return new ProviderImpl<S>(service, type, factoryMethod, acc);
+                return new ProviderImpl<S>(service, type, factoryMethod);
             }
         }
 
@@ -919,7 +804,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         Class<? extends S> type = (Class<? extends S>) clazz;
         @SuppressWarnings("unchecked")
         Constructor<? extends S> ctor = (Constructor<? extends S> ) getConstructor(clazz);
-        return new ProviderImpl<S>(service, type, ctor, acc);
+        return new ProviderImpl<S>(service, type, ctor);
     }
 
     /**
@@ -1030,20 +915,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         /**
-         * Returns the class loader that a module is defined to
-         */
-        @SuppressWarnings("removal")
-        private ClassLoader loaderFor(Module module) {
-            SecurityManager sm = System.getSecurityManager();
-            if (sm == null) {
-                return module.getClassLoader();
-            } else {
-                PrivilegedAction<ClassLoader> pa = module::getClassLoader;
-                return AccessController.doPrivileged(pa);
-            }
-        }
-
-        /**
          * Returns an iterator to iterate over the implementations of {@code
          * service} in modules defined to the given class loader or in custom
          * layers with a module defined to this class loader.
@@ -1073,7 +944,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
                 while (iterator.hasNext()) {
                     ModuleLayer layer = iterator.next();
                     for (ServiceProvider sp : providers(layer)) {
-                        ClassLoader l = loaderFor(sp.module());
+                        ClassLoader l = sp.module().getClassLoader();
                         if (l != null && l != platformClassLoader) {
                             allProviders.add(sp);
                         }
@@ -1259,7 +1130,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
                         Class<? extends S> type = (Class<? extends S>) clazz;
                         Constructor<? extends S> ctor
                             = (Constructor<? extends S>)getConstructor(clazz);
-                        ProviderImpl<S> p = new ProviderImpl<S>(service, type, ctor, acc);
+                        ProviderImpl<S> p = new ProviderImpl<S>(service, type, ctor);
                         nextProvider = (ProviderImpl<T>) p;
                     } else {
                         fail(service, clazz.getName() + " not a subtype");
@@ -1287,34 +1158,18 @@ public final @UsesObjectEquals class ServiceLoader<S>
             }
         }
 
-        @SuppressWarnings("removal")
         @Override
         @Pure
         @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
-            if (acc == null) {
-                return hasNextService();
-            } else {
-                PrivilegedAction<Boolean> action = new PrivilegedAction<>() {
-                    public Boolean run() { return hasNextService(); }
-                };
-                return AccessController.doPrivileged(action, acc);
-            }
+            return hasNextService();
         }
 
-        @SuppressWarnings("removal")
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public Provider<T> next(@NonEmpty LazyClassPathLookupIterator<T> this) {
-            if (acc == null) {
-                return nextService();
-            } else {
-                PrivilegedAction<Provider<T>> action = new PrivilegedAction<>() {
-                    public Provider<T> run() { return nextService(); }
-                };
-                return AccessController.doPrivileged(action, acc);
-            }
+            return nextService();
         }
     }
 
@@ -1387,8 +1242,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *
      * @return  An iterator that lazily loads providers for this loader's
      *          service
-     *
-     * @revised 9
      */
     @SideEffectFree
     public Iterator<S> iterator() {
@@ -1677,8 +1530,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         if the service type is not accessible to the caller or the
      *         caller is in an explicit module and its module descriptor does
      *         not declare that it uses {@code service}
-     *
-     * @revised 9
      */
     @CallerSensitive
     @SuppressWarnings("doclint:reference") // cross-module links
@@ -1723,8 +1574,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         if the service type is not accessible to the caller or the
      *         caller is in an explicit module and its module descriptor does
      *         not declare that it uses {@code service}
-     *
-     * @revised 9
      */
     @CallerSensitive
     public static <S> ServiceLoader<S> load(Class<S> service) {
@@ -1758,8 +1607,6 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         if the service type is not accessible to the caller or the
      *         caller is in an explicit module and its module descriptor does
      *         not declare that it uses {@code service}
-     *
-     * @revised 9
      */
     @CallerSensitive
     public static <S> ServiceLoader<S> loadInstalled(Class<S> service) {

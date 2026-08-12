@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,9 +34,9 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 public class StringTokenIterator {
-    private String text;
-    private String dlms;        // null if a single char delimiter
-    private char delimiterChar; // delimiter if a single char delimiter
+    private final String text;
+    private final String dlms;        // null if a single char delimiter
+    private final char delimiterChar; // delimiter if a single char delimiter
 
     private String token;
     private int start;
@@ -47,7 +47,9 @@ public class StringTokenIterator {
         this.text = text;
         if (dlms.length() == 1) {
             delimiterChar = dlms.charAt(0);
+            this.dlms = null;
         } else {
+            delimiterChar = 0;
             this.dlms = dlms;
         }
         setStart(0);
@@ -101,12 +103,6 @@ public class StringTokenIterator {
         end = nextDelimiter(start);
         token = text.substring(start, end);
         done = false;
-        return this;
-    }
-
-    public StringTokenIterator setText(String text) {
-        this.text = text;
-        setStart(0);
         return this;
     }
 

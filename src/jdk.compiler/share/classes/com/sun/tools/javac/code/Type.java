@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -341,7 +341,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
      * it should not be used outside this class.
      */
     protected Type typeNoMetadata() {
-        return metadata.isEmpty() ? this : baseType();
+        return metadata.isEmpty() ? this : stripMetadata();
     }
 
     /**
@@ -362,7 +362,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     /**
      * Get the type metadata of the given kind associated with this type (if any).
      */
-    @SuppressWarnings("unchecked")
     public <M extends TypeMetadata> M getMetadata(Class<M> metadataClass) {
         return getMetadata(metadataClass, Function.identity(), null);
     }
@@ -427,25 +426,42 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         return accept(stripMetadata, null);
     }
     //where
+        /**
+         * Note: this visitor only needs to handle cases where
+         * 'contained' types can be annotated. These cases are
+         * described in JVMS 4.7.20.2 and are : classes (for type
+         * parameters and enclosing types), wildcards, and arrays.
+         */
         private static final TypeMapping<Void> stripMetadata = new StructuralTypeMapping<Void>() {
             @Override
             public Type visitClassType(ClassType t, Void aVoid) {
-                return super.visitClassType((ClassType)t.typeNoMetadata(), aVoid);
+                return super.visitClassType((ClassType) dropMetadata(t), aVoid);
             }
 
             @Override
             public Type visitArrayType(ArrayType t, Void aVoid) {
-                return super.visitArrayType((ArrayType)t.typeNoMetadata(), aVoid);
-            }
-
-            @Override
-            public Type visitTypeVar(TypeVar t, Void aVoid) {
-                return super.visitTypeVar((TypeVar)t.typeNoMetadata(), aVoid);
+                return super.visitArrayType((ArrayType) dropMetadata(t), aVoid);
             }
 
             @Override
             public Type visitWildcardType(WildcardType wt, Void aVoid) {
-                return super.visitWildcardType((WildcardType)wt.typeNoMetadata(), aVoid);
+                return super.visitWildcardType((WildcardType) dropMetadata(wt), aVoid);
+            }
+
+            @Override
+            public Type visitType(Type t, Void aVoid) {
+                return dropMetadata(t);
+            }
+
+            private static Type dropMetadata(Type t) {
+                if (t.getMetadata().isEmpty()) {
+                    return t;
+                }
+                Type baseType = t.baseType();
+                if (baseType.getMetadata().isEmpty()) {
+                    return baseType;
+                }
+                return baseType.cloneWithMetadata(List.nil());
             }
         };
 
@@ -466,20 +482,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         return getMetadata(TypeMetadata.Annotations.class, Annotations::annotations, List.nil());
     }
 
-
-    @Override @DefinedBy(Api.LANGUAGE_MODEL)
-    public <A extends Annotation> A getAnnotation(Class<A> annotationType) {
-        return null;
-    }
-
-
-    @Override @DefinedBy(Api.LANGUAGE_MODEL)
-    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType) {
-        @SuppressWarnings("unchecked")
-        A[] tmp = (A[]) java.lang.reflect.Array.newInstance(annotationType, 0);
-        return tmp;
-    }
-
     /** Return the base types of a list of types.
      */
     public static List<Type> baseTypes(List<Type> ts) {
@@ -498,7 +500,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             if (prefix) {
                 sb.append(" ");
             }
-            sb.append(getAnnotationMirrors());
+            sb.append(getAnnotationMirrors().toString(" "));
             sb.append(" ");
         }
     }
@@ -598,7 +600,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     public Type              getUpperBound()     { return null; }
     public Type              getLowerBound()     { return null; }
 
-    /** Navigation methods, these will work for classes, type variables,
+    /* Navigation methods, these will work for classes, type variables,
      *  foralls, but will return null for arrays and methods.
      */
 
@@ -662,6 +664,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
     public boolean isFinal() {
         return (tsym.flags() & FINAL) != 0;
+    }
+
+    public boolean isValueBased() {
+        return tsym != null && (tsym.flags_field & VALUE_BASED) != 0;
     }
 
     /**
@@ -1123,6 +1129,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
                         s += String.valueOf(sym.hashCode());
                     return s;
                 } else if (longform) {
+                    sym.apiComplete();
                     return sym.getQualifiedName().toString();
                 } else {
                     return sym.name.toString();
@@ -2139,7 +2146,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             addBound(ib, bound, types, false);
         }
 
-        @SuppressWarnings("fallthrough")
         private void addBound(InferenceBound ib, Type bound, Types types, boolean update) {
             if (kind == Kind.CAPTURED && !update) {
                 //Captured inference variables bounds must not be updated during incorporation,
@@ -2344,7 +2350,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             this.originalType = (originalType == null ? noType : originalType);
         }
 
-        private ErrorType(Type originalType, TypeSymbol tsym,
+        public ErrorType(Type originalType, TypeSymbol tsym,
                           List<TypeMetadata> metadata) {
             super(noType, List.nil(), null, metadata);
             this.tsym = tsym;
@@ -2399,10 +2405,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public boolean isCompound()              { return false; }
         public boolean isInterface()             { return false; }
 
-        public List<Type> allparams()            { return List.nil(); }
-        @DefinedBy(Api.LANGUAGE_MODEL)
-        public List<Type> getTypeArguments()     { return List.nil(); }
-
         @DefinedBy(Api.LANGUAGE_MODEL)
         public TypeKind getKind() {
             return TypeKind.ERROR;
@@ -2415,30 +2417,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         @DefinedBy(Api.LANGUAGE_MODEL)
         public <R, P> R accept(TypeVisitor<R, P> v, P p) {
             return v.visitError(this, p);
-        }
-    }
-
-    public static class UnknownType extends Type {
-
-        public UnknownType() {
-            // Unknown is a synthesized internal type, so it cannot be
-            // annotated.
-            super(null, List.nil());
-        }
-
-        @Override
-        public TypeTag getTag() {
-            return UNKNOWN;
-        }
-
-        @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public <R, P> R accept(TypeVisitor<R, P> v, P p) {
-            return v.visitUnknown(this, p);
-        }
-
-        @Override
-        public boolean isPartial() {
-            return true;
         }
     }
 
