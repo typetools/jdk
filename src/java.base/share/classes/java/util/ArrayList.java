@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,10 +42,10 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -824,9 +824,17 @@ public class ArrayList<E> extends AbstractList<E>
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(@GuardSatisfied ArrayList<E> this, Collection<? extends E> c) {
-        Object[] a = c.toArray();
+        Object[] a;
+        int numNew;
+        if (c.getClass() == ArrayList.class) {
+            ArrayList<?> src = (ArrayList<?>) c;
+            a = src.elementData;
+            numNew = src.size;
+        } else {
+            a = c.toArray();
+            numNew = a.length;
+        }
         modCount++;
-        int numNew = a.length;
         if (numNew == 0)
             return false;
         Object[] elementData;

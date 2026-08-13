@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -66,14 +66,17 @@ public final class SimpleCMYKColorSpace extends ColorSpace {
 
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object o) {
         return o instanceof SimpleCMYKColorSpace;
     }
 
+    @Override
     public int hashCode() {
         return System.identityHashCode(theInstance);
     }
 
+    @Override
     public float[] toRGB(float[] colorvalue) {
         float C = colorvalue[0];
         float M = colorvalue[1];
@@ -105,6 +108,7 @@ public final class SimpleCMYKColorSpace extends ColorSpace {
         return rgbvalue;
     }
 
+    @Override
     public float[] fromRGB(float[] rgbvalue) {
         // Convert from sRGB to linear RGB.
         for (int i = 0; i < 3; i++) {
@@ -136,10 +140,12 @@ public final class SimpleCMYKColorSpace extends ColorSpace {
         return new float[] {C, M, Y, K};
     }
 
+    @Override
     public float[] toCIEXYZ(float[] colorvalue) {
         return csRGB.toCIEXYZ(toRGB(colorvalue));
     }
 
+    @Override
     public float[] fromCIEXYZ(float[] xyzvalue) {
         return fromRGB(csRGB.fromCIEXYZ(xyzvalue));
     }

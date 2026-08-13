@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,9 +72,7 @@ import javax.print.attribute.PrintRequestAttribute;
  * <p>
  * The rectangular printable area is defined thus: The (x,y) origin is
  * positioned at the top-left of the paper in portrait mode regardless of the
- * orientation specified in the requesting context. For example a printable area
- * for A4 paper in portrait or landscape orientation will have height
- * {@literal >} width.
+ * orientation specified in the requesting context.
  * <p>
  * A printable area attribute's values are stored internally as integers in
  * units of micrometers (&#181;m), where 1 micrometer = 10<SUP>-6</SUP> meter =
@@ -249,6 +247,7 @@ public final class MediaPrintableArea
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object object) {
         boolean ret = false;
         if (object instanceof MediaPrintableArea) {
@@ -270,6 +269,7 @@ public final class MediaPrintableArea
      * @return printing attribute class (category), an instance of class
      *         {@link Class java.lang.Class}
      */
+    @Override
     public final Class<? extends Attribute> getCategory() {
         return MediaPrintableArea.class;
     }
@@ -285,6 +285,7 @@ public final class MediaPrintableArea
      *
      * @return attribute category name
      */
+    @Override
     public final String getName() {
         return "media-printable-area";
     }
@@ -312,6 +313,7 @@ public final class MediaPrintableArea
     /**
      * Returns a string version of this rectangular size attribute in mm.
      */
+    @Override
     public String toString() {
         return(toString(MM, "mm"));
     }
@@ -319,6 +321,7 @@ public final class MediaPrintableArea
     /**
      * Returns a hash code value for this attribute.
      */
+    @Override
     public int hashCode() {
         return x + 37*y + 43*w + 47*h;
     }

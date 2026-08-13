@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,8 @@
 
 package compiler.lib.ir_framework;
 
+import compiler.lib.ir_framework.shared.SystemProperty;
+import compiler.lib.ir_framework.shared.SystemProperty.Mode;
 import compiler.lib.ir_framework.shared.TestRunException;
 
 import java.util.*;
@@ -44,7 +46,7 @@ import java.util.stream.Collectors;
  */
 public class Scenario {
     private static final String ADDITIONAL_SCENARIO_FLAGS_PROPERTY = System.getProperty("ScenarioFlags", "");
-    private static final String SCENARIOS_PROPERTY = System.getProperty("Scenarios", "");
+    private static final String SCENARIOS_PROPERTY = SystemProperty.getCaseInsensitive(Mode.CASE_INSENSITIVE_EMPTY_DEFAULT, "scenario", "scenarios");
     private static final List<String> ADDITIONAL_SCENARIO_FLAGS;
     private static final Set<Integer> ENABLED_SCENARIOS;
 
@@ -121,16 +123,16 @@ public class Scenario {
     }
 
     /**
-     * Get the test VM output (stdout + stderr) of this scenario from the last execution of the framework.
+     * Get the Test VM output (stdout + stderr) of this scenario from the last execution of the framework.
      *
-     * @return the test VM output.
+     * @return the Test VM output.
      */
     public String getTestVMOutput() {
         return testVMOutput;
     }
 
     /**
-     * Set the test VM output, called by the framework.
+     * Set the Test VM output, called by the framework.
      */
     void setTestVMOutput(String testVMOutput) {
         this.testVMOutput = testVMOutput;

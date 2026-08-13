@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,6 +48,7 @@ public class GetKey {
         IycFtI70ciPjgwDSjtCcPxR8fSxJPrm2yOJsRVo=
         -----END ENCRYPTED PRIVATE KEY-----
         """;
+
     private static final String passwdText = "fish";
     private static final char[] password = passwdText.toCharArray();
     private static final SecretKey key = new SecretKeySpec(
@@ -66,10 +67,10 @@ public class GetKey {
                 + "match with expected.");
         }
 
-        // Test getKey(key, provider)
+        // Test getKey(EdEC)
         if (!Arrays.equals(priKey.getEncoded(),
-            ekpi.getKey(key, null).getEncoded())) {
-            throw new AssertionError("getKey(key, provider) " +
+            ekpi.getKey(key).getEncoded())) {
+            throw new AssertionError("getKey(key) " +
                 "didn't match with expected.");
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -470,8 +470,6 @@ public class PrintWriter extends Writer {
             try {
                 ensureOpen();
                 out.write(c);
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }
@@ -494,8 +492,6 @@ public class PrintWriter extends Writer {
             try {
                 ensureOpen();
                 out.write(buf, off, len);
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }
@@ -527,8 +523,6 @@ public class PrintWriter extends Writer {
             try {
                 ensureOpen();
                 out.write(s, off, len);
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }
@@ -551,8 +545,6 @@ public class PrintWriter extends Writer {
                 out.write(System.lineSeparator());
                 if (autoFlush)
                     out.flush();
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }
@@ -986,8 +978,6 @@ public class PrintWriter extends Writer {
                 formatter.format(Locale.getDefault(), format, args);
                 if (autoFlush)
                     out.flush();
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }
@@ -1046,8 +1036,6 @@ public class PrintWriter extends Writer {
                 formatter.format(l, format, args);
                 if (autoFlush)
                     out.flush();
-            } catch (InterruptedIOException x) {
-                Thread.currentThread().interrupt();
             } catch (IOException x) {
                 trouble = true;
             }

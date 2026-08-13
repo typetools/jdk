@@ -812,7 +812,7 @@ public @UsesObjectEquals class ColorConvertOp implements BufferedImageOp, Raster
                 idx = 0;
                 for (int x = 0; x < w; x++) {
                     pixel = srcRas.getDataElements(x, y, pixel);
-                    color = srcCM.getNormalizedComponents(pixel, color, 0);
+                    color = srcCM.getNormalizedComponents(pixel, null, 0);
                     if (needSrcAlpha) {
                         alpha[x] = color[srcNumComp];
                     }

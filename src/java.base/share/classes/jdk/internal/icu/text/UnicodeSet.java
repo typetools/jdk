@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -294,7 +294,7 @@ import jdk.internal.icu.util.VersionInfo;
  * @author Alan Liu
  * @stable ICU 2.0
  */
-public class UnicodeSet {
+public class UnicodeSet implements Cloneable {
 
     private static final int LOW = 0x000000; // LOW <= all valid values. ZERO for codepoints
     private static final int HIGH = 0x110000; // HIGH > all valid values. 10000 for code units.
@@ -384,6 +384,18 @@ public class UnicodeSet {
     public UnicodeSet(String pattern) {
         this();
         applyPattern(pattern, null);
+    }
+
+    /**
+     * Return a new set that is equivalent to this one.
+     * @stable ICU 2.0
+     */
+    @Override
+    public UnicodeSet clone() {
+        if (isFrozen()) {
+            return this;
+        }
+        return new UnicodeSet(this);
     }
 
     /**

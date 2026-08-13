@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@
 #include "gc/g1/g1HeapRegionSet.hpp"
 #include "gc/g1/g1RegionToSpaceMapper.hpp"
 #include "memory/allocation.hpp"
+#include "runtime/atomic.hpp"
 #include "services/memoryUsage.hpp"
 
 class G1HeapRegion;
@@ -70,11 +71,12 @@ class G1HeapRegionTable : public G1BiasedMappedArray<G1HeapRegion*> {
 //
 
 class G1HeapRegionManager: public CHeapObj<mtGC> {
-  friend class VMStructs;
   friend class G1HeapRegionClaimer;
+  friend class VMStructs;
 
   G1RegionToSpaceMapper* _bot_mapper;
-  G1RegionToSpaceMapper* _cardtable_mapper;
+  G1RegionToSpaceMapper* _card_table_mapper;
+  G1RegionToSpaceMapper* _refinement_table_mapper;
 
   // Keeps track of the currently committed regions in the heap. The committed regions
   // can either be active (ready for use) or inactive (ready for uncommit).
@@ -161,7 +163,8 @@ public:
   void initialize(G1RegionToSpaceMapper* heap_storage,
                   G1RegionToSpaceMapper* bitmap,
                   G1RegionToSpaceMapper* bot,
-                  G1RegionToSpaceMapper* cardtable);
+                  G1RegionToSpaceMapper* card_table,
+                  G1RegionToSpaceMapper* refinement_table);
 
   // Return the "dummy" region used for G1AllocRegion. This is currently a hardwired
   // new G1HeapRegion that owns G1HeapRegion at index 0. Since at the moment we commit
@@ -217,7 +220,7 @@ public:
 
   // Return the number of committed free regions in the heap.
   uint num_free_regions() const {
-    return _free_list.length();
+    return _free_list.num_regions();
   }
 
   uint num_used_regions() const { return num_committed_regions() - num_free_regions(); }
@@ -239,8 +242,6 @@ public:
   // The number of regions reserved for the heap.
   uint max_num_regions() const { return (uint)_regions.length(); }
 
-  uint num_available_regions() const { return num_free_regions() + num_inactive_regions(); }
-
   MemoryUsage get_auxiliary_data_memory_usage() const;
 
   MemRegion reserved() const { return MemRegion(heap_bottom(), heap_end()); }
@@ -258,8 +259,8 @@ public:
 
   // Allocate the regions that contain the address range specified, committing the
   // regions if necessary. Return false if any of the regions is already committed
-  // and not free, and return the number of regions newly committed in commit_count.
-  bool allocate_containing_regions(MemRegion range, size_t* commit_count, WorkerThreads* pretouch_workers);
+  // and not free, and return the number of regions newly committed in num_regions_committed.
+  bool allocate_containing_regions(MemRegion range, size_t* num_regions_committed, WorkerThreads* pretouch_workers);
 
   // Apply blk->do_heap_region() on all committed regions in address order,
   // terminating the iteration early if do_heap_region() returns true.
@@ -294,7 +295,7 @@ public:
 class G1HeapRegionClaimer : public StackObj {
   uint           _n_workers;
   uint           _n_regions;
-  volatile uint* _claims;
+  Atomic<uint>*  _claims;
 
   static const uint Unclaimed = 0;
   static const uint Claimed   = 1;

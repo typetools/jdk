@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.image.ColorModel;
 
-import sun.awt.AppContext;
 import sun.awt.SunToolkit;
 
 /**
@@ -79,13 +78,7 @@ import sun.awt.SunToolkit;
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class GraphicsDevice {
 
-    private Window fullScreenWindow;
-    private AppContext fullScreenAppContext; // tracks which AppContext
-                                             // created the FS window
-    // this lock is used for making synchronous changes to the AppContext's
-    // current full screen window
-    private final Object fsAppContextLock = new Object();
-
+    private volatile Window fullScreenWindow;
     private Rectangle windowedModeBounds;
 
     /**
@@ -307,15 +300,7 @@ public abstract @UsesObjectEquals class GraphicsDevice {
             fullScreenWindow.setBounds(windowedModeBounds);
         }
         // Set the full screen window
-        synchronized (fsAppContextLock) {
-            // Associate fullscreen window with current AppContext
-            if (w == null) {
-                fullScreenAppContext = null;
-            } else {
-                fullScreenAppContext = AppContext.getAppContext();
-            }
-            fullScreenWindow = w;
-        }
+        fullScreenWindow = w;
         if (fullScreenWindow != null) {
             windowedModeBounds = fullScreenWindow.getBounds();
             // Note that we use the graphics configuration of the device,
@@ -323,7 +308,7 @@ public abstract @UsesObjectEquals class GraphicsDevice {
             // this device.
             final GraphicsConfiguration gc = getDefaultConfiguration();
             final Rectangle screenBounds = gc.getBounds();
-            if (SunToolkit.isDispatchThreadForAppContext(fullScreenWindow)) {
+            if (EventQueue.isDispatchThread()) {
                 // Update graphics configuration here directly and do not wait
                 // asynchronous notification from the peer. Note that
                 // setBounds() will reset a GC, if it was set incorrectly.
@@ -346,15 +331,7 @@ public abstract @UsesObjectEquals class GraphicsDevice {
      * @since 1.4
      */
     public Window getFullScreenWindow() {
-        Window returnWindow = null;
-        synchronized (fsAppContextLock) {
-            // Only return a handle to the current fs window if we are in the
-            // same AppContext that set the fs window
-            if (fullScreenAppContext == AppContext.getAppContext()) {
-                returnWindow = fullScreenWindow;
-            }
-        }
-        return returnWindow;
+        return fullScreenWindow;
     }
 
     /**

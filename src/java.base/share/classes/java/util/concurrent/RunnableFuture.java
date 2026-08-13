@@ -50,8 +50,9 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 @AnnotatedFor({"nullness"})
 public interface RunnableFuture<V> extends Runnable, Future<V> {
     /**
-     * Sets this Future to the result of its computation
-     * unless it has been cancelled.
+     * Sets this Future to the result of its computation unless it has
+     * been cancelled (or has already been invoked, in which case
+     * effects are undefined).
      */
     void run();
 }

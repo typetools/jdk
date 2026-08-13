@@ -50,9 +50,9 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.ObjectStreamField;
 import java.io.Serializable;
@@ -89,6 +89,8 @@ import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.ArraysSupport;
+import jdk.internal.vm.annotation.AOTRuntimeSetup;
+import jdk.internal.vm.annotation.AOTSafeClassInitializer;
 import jdk.internal.vm.annotation.Stable;
 
 /**
@@ -166,7 +168,7 @@ import jdk.internal.vm.annotation.Stable;
  * <p>Like {@link Hashtable} but unlike {@link HashMap}, this class
  * does <em>not</em> allow {@code null} to be used as a key or value.
  *
- * <p>ConcurrentHashMaps support a set of sequential and parallel bulk
+ * <p id="Bulk">ConcurrentHashMaps support a set of sequential and parallel bulk
  * operations that, unlike most {@link Stream} methods, are designed
  * to be safely, and often sensibly, applied even with maps that are
  * being concurrently updated by other threads; for example, when
@@ -283,6 +285,7 @@ import jdk.internal.vm.annotation.Stable;
  * @param <V> the type of mapped values
  */
 @AnnotatedFor({"nullness"})
+@AOTSafeClassInitializer
 public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Object> extends AbstractMap<K,V>
     implements ConcurrentMap<K,V>, Serializable {
     private static final long serialVersionUID = 7249069246763182397L;
@@ -622,7 +625,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         runtimeSetup();
     }
 
-    // Called from JVM when loading an AOT cache.
+    @AOTRuntimeSetup
     private static void runtimeSetup() {
         NCPU = Runtime.getRuntime().availableProcessors();
     }
@@ -1419,12 +1422,20 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             Node<K,V>[] t;
             int f = (t = table) == null ? 0 : t.length;
             Traverser<K,V> it = new Traverser<K,V>(t, f, 0, f);
-            for (Node<K,V> p; (p = it.advance()) != null; ) {
-                V val = p.val;
-                Object v = m.get(p.key);
-                if (v == null || (v != val && !v.equals(val)))
-                    return false;
+
+            try {
+                for (Node<K,V> p; (p = it.advance()) != null; ) {
+                    V val = p.val;
+                    Object v = m.get(p.key);
+                    if (v == null || (v != val && !v.equals(val)))
+                        return false;
+                }
+            } catch (ClassCastException | NullPointerException _) {
+                // m.get(p.key) is contractually allowed to throw CCE or NPE
+                // but CHM doesn't allow null keys, so NPE shouldn't occur in practice
+                return false;
             }
+
             for (Map.Entry<?,?> e : m.entrySet()) {
                 Object mk, mv, v;
                 if ((mk = e.getKey()) == null ||
@@ -3370,7 +3381,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
                 return false;
             if (tr != null && (tr.parent != t || tr.hash < t.hash))
                 return false;
-            if (t.red && tl != null && tl.red && tr != null && tr.red)
+            if (t.red && (tl != null && tl.red || tr != null && tr.red))
                 return false;
             if (tl != null && !checkInvariants(tl))
                 return false;
@@ -3796,7 +3807,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each (key, value).
+     * Performs the given {@linkplain ##Bulk bulk} action for each (key, value).
      *
      * @param parallelismThreshold the (estimated) number of elements
      * needed for this operation to be executed in parallel
@@ -3812,7 +3823,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each non-null transformation
+     * Performs the given {@linkplain ##Bulk bulk} action for each non-null transformation
      * of each (key, value).
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -3835,7 +3846,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns a non-null result from applying the given search
+     * Returns a non-null result from applying the given {@linkplain ##Bulk bulk} search
      * function on each (key, value), or null if none.  Upon
      * success, further element processing is suppressed and the
      * results of any other parallel invocations of the search
@@ -3859,7 +3870,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of accumulating the given {@linkplain ##Bulk bulk} transformation
      * of all (key, value) pairs using the given reducer to
      * combine values, or null if none.
      *
@@ -3885,7 +3896,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of accumulating the given {@linkplain ##Bulk bulk} transformation
      * of all (key, value) pairs using the given reducer to
      * combine values, and the given basis as an identity value.
      *
@@ -3911,7 +3922,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of accumulating the given {@linkplain ##Bulk bulk} transformation
      * of all (key, value) pairs using the given reducer to
      * combine values, and the given basis as an identity value.
      *
@@ -3937,7 +3948,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of accumulating the given {@linkplain ##Bulk bulk} transformation
      * of all (key, value) pairs using the given reducer to
      * combine values, and the given basis as an identity value.
      *
@@ -3963,7 +3974,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each key.
+     * Performs the given {@linkplain ##Bulk bulk} action for each key.
      *
      * @param parallelismThreshold the (estimated) number of elements
      * needed for this operation to be executed in parallel
@@ -3979,7 +3990,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each non-null transformation
+     * Performs the given {@linkplain ##Bulk bulk} action for each non-null transformation
      * of each key.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4002,7 +4013,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns a non-null result from applying the given search
+     * Returns a non-null result from applying the given {@linkplain ##Bulk bulk} search
      * function on each key, or null if none. Upon success,
      * further element processing is suppressed and the results of
      * any other parallel invocations of the search function are
@@ -4026,7 +4037,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating all keys using the given
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating all keys using the given
      * reducer to combine values, or null if none.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4045,7 +4056,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all keys using the given reducer to combine values, or
      * null if none.
      *
@@ -4071,7 +4082,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all keys using the given reducer to combine values, and
      * the given basis as an identity value.
      *
@@ -4097,7 +4108,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all keys using the given reducer to combine values, and
      * the given basis as an identity value.
      *
@@ -4123,7 +4134,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all keys using the given reducer to combine values, and
      * the given basis as an identity value.
      *
@@ -4149,7 +4160,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each value.
+     * Performs the given {@linkplain ##Bulk bulk} action for each value.
      *
      * @param parallelismThreshold the (estimated) number of elements
      * needed for this operation to be executed in parallel
@@ -4166,7 +4177,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each non-null transformation
+     * Performs the given {@linkplain ##Bulk bulk} action for each non-null transformation
      * of each value.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4189,7 +4200,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns a non-null result from applying the given search
+     * Returns a non-null result from {@linkplain ##Bulk bulk} applying the given search
      * function on each value, or null if none.  Upon success,
      * further element processing is suppressed and the results of
      * any other parallel invocations of the search function are
@@ -4213,7 +4224,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating all values using the
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating all values using the
      * given reducer to combine values, or null if none.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4231,7 +4242,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all values using the given reducer to combine values, or
      * null if none.
      *
@@ -4257,7 +4268,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all values using the given reducer to combine values,
      * and the given basis as an identity value.
      *
@@ -4283,7 +4294,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all values using the given reducer to combine values,
      * and the given basis as an identity value.
      *
@@ -4309,7 +4320,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all values using the given reducer to combine values,
      * and the given basis as an identity value.
      *
@@ -4335,7 +4346,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each entry.
+     * Performs the given {@linkplain ##Bulk bulk} action for each entry.
      *
      * @param parallelismThreshold the (estimated) number of elements
      * needed for this operation to be executed in parallel
@@ -4350,7 +4361,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Performs the given action for each non-null transformation
+     * Performs the given {@linkplain ##Bulk bulk} action for each non-null transformation
      * of each entry.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4373,7 +4384,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns a non-null result from applying the given search
+     * Returns a non-null result from {@linkplain ##Bulk bulk} applying the given search
      * function on each entry, or null if none.  Upon success,
      * further element processing is suppressed and the results of
      * any other parallel invocations of the search function are
@@ -4397,7 +4408,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating all entries using the
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating all entries using the
      * given reducer to combine values, or null if none.
      *
      * @param parallelismThreshold the (estimated) number of elements
@@ -4415,7 +4426,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all entries using the given reducer to combine values,
      * or null if none.
      *
@@ -4441,7 +4452,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all entries using the given reducer to combine values,
      * and the given basis as an identity value.
      *
@@ -4467,7 +4478,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all entries using the given reducer to combine values,
      * and the given basis as an identity value.
      *
@@ -4493,7 +4504,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /**
-     * Returns the result of accumulating the given transformation
+     * Returns the result of {@linkplain ##Bulk bulk} accumulating the given transformation
      * of all entries using the given reducer to combine values,
      * and the given basis as an identity value.
      *

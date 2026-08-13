@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -44,7 +44,7 @@ import com.sun.org.apache.bcel.internal.util.ByteSequence;
 /**
  * Utility functions that do not really belong to any class in particular.
  *
- * @LastModified: Feb 2023
+ * @LastModified: Sept 2025
  */
 // @since 6.0 methods are no longer final
 public abstract class Utility {
@@ -52,7 +52,7 @@ public abstract class Utility {
     /**
      * Decode characters into bytes. Used by <a href="Utility.html#decode(java.lang.String, boolean)">decode()</a>
      */
-    private static class JavaReader extends FilterReader {
+    private static final class JavaReader extends FilterReader {
 
         public JavaReader(final Reader in) {
             super(in);
@@ -89,10 +89,10 @@ public abstract class Utility {
     }
 
     /**
-     * Encode bytes into valid java identifier characters. Used by
+     * Encode bytes into valid Java identifier characters. Used by
      * <a href="Utility.html#encode(byte[], boolean)">encode()</a>
      */
-    private static class JavaWriter extends FilterWriter {
+    private static final class JavaWriter extends FilterWriter {
 
         public JavaWriter(final Writer out) {
             super(out);
@@ -438,7 +438,9 @@ public abstract class Utility {
         case Const.NEW:
         case Const.CHECKCAST:
             buf.append("\t");
-            //$FALL-THROUGH$
+            index = bytes.readUnsignedShort();
+            buf.append("\t<").append(constantPool.constantToString(index, Const.CONSTANT_Class)).append(">").append(verbose ? " (" + index + ")" : "");
+            break;
         case Const.INSTANCEOF:
             index = bytes.readUnsignedShort();
             buf.append("\t<").append(constantPool.constantToString(index, Const.CONSTANT_Class)).append(">").append(verbose ? " (" + index + ")" : "");
@@ -865,7 +867,7 @@ public abstract class Utility {
             // Skip any type arguments to read argument declarations between '(' and ')'
             index = signature.indexOf('(') + 1;
             if (index <= 0) {
-                throw new ClassFormatException("Invalid method signature: " + signature);
+                throw new InvalidMethodSignatureException(signature);
             }
             while (signature.charAt(index) != ')') {
                 vec.add(typeSignatureToString(signature.substring(index), chopit));
@@ -873,7 +875,7 @@ public abstract class Utility {
                 index += unwrap(CONSUMER_CHARS); // update position
             }
         } catch (final StringIndexOutOfBoundsException e) { // Should never occur
-            throw new ClassFormatException("Invalid method signature: " + signature, e);
+            throw new InvalidMethodSignatureException(signature, e);
         }
         return vec.toArray(Const.EMPTY_STRING_ARRAY);
     }
@@ -904,11 +906,11 @@ public abstract class Utility {
             // Read return type after ')'
             index = signature.lastIndexOf(')') + 1;
             if (index <= 0) {
-                throw new ClassFormatException("Invalid method signature: " + signature);
+                throw new InvalidMethodSignatureException(signature);
             }
             type = typeSignatureToString(signature.substring(index), chopit);
         } catch (final StringIndexOutOfBoundsException e) { // Should never occur
-            throw new ClassFormatException("Invalid method signature: " + signature, e);
+            throw new InvalidMethodSignatureException(signature, e);
         }
         return type;
     }
@@ -960,7 +962,7 @@ public abstract class Utility {
             // Skip any type arguments to read argument declarations between '(' and ')'
             index = signature.indexOf('(') + 1;
             if (index <= 0) {
-                throw new ClassFormatException("Invalid method signature: " + signature);
+                throw new InvalidMethodSignatureException(signature);
             }
             while (signature.charAt(index) != ')') {
                 final String paramType = typeSignatureToString(signature.substring(index), chopit);
@@ -986,7 +988,7 @@ public abstract class Utility {
             // Read return type after ')'
             type = typeSignatureToString(signature.substring(index), chopit);
         } catch (final StringIndexOutOfBoundsException e) { // Should never occur
-            throw new ClassFormatException("Invalid method signature: " + signature, e);
+            throw new InvalidMethodSignatureException(signature, e);
         }
         // ignore any throws information in the signature
         if (buf.length() > 1) {
@@ -1173,7 +1175,7 @@ public abstract class Utility {
             type = typeParams + typeSignaturesToString(signature.substring(index), chopit, ')');
             index += unwrap(CONSUMER_CHARS); // update position
             // add return type
-            type = type + typeSignatureToString(signature.substring(index), chopit);
+            type += typeSignatureToString(signature.substring(index), chopit);
             index += unwrap(CONSUMER_CHARS); // update position
             // ignore any throws information in the signature
             return type;
@@ -1238,12 +1240,12 @@ public abstract class Utility {
         int index;
         try {
             if (signature.charAt(0) != '(') {
-                throw new ClassFormatException("Invalid method signature: " + signature);
+                throw new InvalidMethodSignatureException(signature);
             }
             index = signature.lastIndexOf(')') + 1;
             return typeOfSignature(signature.substring(index));
         } catch (final StringIndexOutOfBoundsException e) {
-            throw new ClassFormatException("Invalid method signature: " + signature, e);
+            throw new InvalidMethodSignatureException(signature, e);
         }
     }
 
@@ -1287,10 +1289,10 @@ public abstract class Utility {
             case '*':
                 return typeOfSignature(signature.substring(1));
             default:
-                throw new ClassFormatException("Invalid method signature: " + signature);
+                throw new InvalidMethodSignatureException(signature);
             }
         } catch (final StringIndexOutOfBoundsException e) {
-            throw new ClassFormatException("Invalid method signature: " + signature, e);
+            throw new InvalidMethodSignatureException(signature, e);
         }
     }
 
@@ -1470,8 +1472,8 @@ public abstract class Utility {
                 } else {
                     type.append(typeSignatureToString(signature.substring(consumedChars), chopit));
                     // update our consumed count by the number of characters the for type argument
-                    consumedChars = unwrap(Utility.CONSUMER_CHARS) + consumedChars;
-                    wrap(Utility.CONSUMER_CHARS, consumedChars);
+                    consumedChars = unwrap(CONSUMER_CHARS) + consumedChars;
+                    wrap(CONSUMER_CHARS, consumedChars);
                 }
 
                 // are there more TypeArguments?
@@ -1491,8 +1493,8 @@ public abstract class Utility {
                     } else {
                         type.append(typeSignatureToString(signature.substring(consumedChars), chopit));
                         // update our consumed count by the number of characters the for type argument
-                        consumedChars = unwrap(Utility.CONSUMER_CHARS) + consumedChars;
-                        wrap(Utility.CONSUMER_CHARS, consumedChars);
+                        consumedChars = unwrap(CONSUMER_CHARS) + consumedChars;
+                        wrap(CONSUMER_CHARS, consumedChars);
                     }
                 }
 
@@ -1509,14 +1511,14 @@ public abstract class Utility {
                     // update our consumed count by the number of characters the for type argument
                     // note that this count includes the "L" we added, but that is ok
                     // as it accounts for the "." we didn't consume
-                    consumedChars = unwrap(Utility.CONSUMER_CHARS) + consumedChars;
-                    wrap(Utility.CONSUMER_CHARS, consumedChars);
+                    consumedChars = unwrap(CONSUMER_CHARS) + consumedChars;
+                    wrap(CONSUMER_CHARS, consumedChars);
                     return type.toString();
                 }
                 if (signature.charAt(consumedChars) != ';') {
                     throw new ClassFormatException("Invalid signature: " + signature);
                 }
-                wrap(Utility.CONSUMER_CHARS, consumedChars + 1); // remove final ";"
+                wrap(CONSUMER_CHARS, consumedChars + 1); // remove final ";"
                 return type.toString();
             }
             case 'S':
@@ -1537,9 +1539,9 @@ public abstract class Utility {
                 // The rest of the string denotes a '<field_type>'
                 type = typeSignatureToString(signature.substring(n), chopit);
                 // corrected concurrent private static field acess
-                // Utility.consumed_chars += consumed_chars; is replaced by:
-                final int temp = unwrap(Utility.CONSUMER_CHARS) + consumedChars;
-                wrap(Utility.CONSUMER_CHARS, temp);
+                // consumed_chars += consumed_chars; is replaced by:
+                final int temp = unwrap(CONSUMER_CHARS) + consumedChars;
+                wrap(CONSUMER_CHARS, temp);
                 return type + brackets.toString();
             }
             case 'V':
@@ -1553,11 +1555,11 @@ public abstract class Utility {
     }
 
     private static int unwrap(final ThreadLocal<Integer> tl) {
-        return tl.get();
+        return tl.get().intValue();
     }
 
     private static void wrap(final ThreadLocal<Integer> tl, final int value) {
-        tl.set(value);
+        tl.set(Integer.valueOf(value));
     }
 
 }

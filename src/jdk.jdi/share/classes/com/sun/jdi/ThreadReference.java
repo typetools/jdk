@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -402,8 +402,8 @@ public interface ThreadReference extends ObjectReference {
      * @throws java.lang.IllegalArgumentException if <CODE>frame</CODE>
      * is not on this thread's call stack.
      *
-     * @throws OpaqueFrameException if this thread is a suspended virtual thread and the
-     * target VM was unable to pop the frames.
+     * @throws OpaqueFrameException if the target VM is unable to pop this frame
+     * (e.g. a virtual thread is suspended, but not at an event).
      *
      * @throws NativeMethodException if one of the frames that would be
      * popped is that of a native method or if the frame previous to
@@ -454,9 +454,10 @@ public interface ThreadReference extends ObjectReference {
      * Events, such as MethodExit, are generated as they would be in
      * a normal return.
      * <p>
-     * The called method must be a non-native Java programming
-     * language method. Forcing return on a thread with only one
-     * frame on the stack causes the thread to exit when resumed.
+     * The called method must not be a native method or the constructor of
+     * a {@linkplain Class#isValue() value class}. Forcing early return
+     * on a thread with only one frame on the stack causes the thread to
+     * exit when resumed.
      * <p>
      * The <code>value</code> argument is the value that the
      * method is to return.
@@ -484,8 +485,8 @@ public interface ThreadReference extends ObjectReference {
      * @throws IncompatibleThreadStateException if this
      * thread is not suspended.
      *
-     * @throws OpaqueFrameException if this thread is a suspended virtual thread and the
-     * target VM is unable to force the method to return.
+     * @throws OpaqueFrameException if the target VM is unable to force the method to return
+     * (e.g. a virtual thread is suspended, but not at an event).
      *
      * @throws NativeMethodException if the frame to be returned from
      * is that of a native method.

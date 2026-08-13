@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,7 @@ import java.io.FileInputStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Objects;
 
 public abstract class PhysicalFont extends Font2D {
 
@@ -49,14 +50,13 @@ public abstract class PhysicalFont extends Font2D {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        if (o == null || o.getClass() != this.getClass()) {
-            return false;
+        if (o == this) {
+            return true;
         }
-        PhysicalFont other = (PhysicalFont)o;
-        return
-           (this.fullName.equals(other.fullName)) &&
-            ((this.platName == null && other.platName == null) ||
-             (this.platName != null && this.platName.equals(other.platName)));
+        return o instanceof PhysicalFont other &&
+            other.getClass() == this.getClass() &&
+            fullName.equals(other.fullName) &&
+            Objects.equals(platName, other.platName);
     }
 
     public int hashCode() {

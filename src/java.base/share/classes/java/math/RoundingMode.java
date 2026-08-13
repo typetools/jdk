@@ -117,9 +117,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *       IEEE Standard for Floating-Point Arithmetic
  * @jls 15.4 Floating-point Expressions
  *
- * @author  Josh Bloch
- * @author  Mike Cowlishaw
- * @author  Joseph D. Darcy
  * @since 1.5
  */
 @SuppressWarnings("deprecation") // Legacy rounding mode constants in BigDecimal

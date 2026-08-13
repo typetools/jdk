@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -96,10 +96,11 @@
   product(uint, ZOldGCThreads, 0, DIAGNOSTIC,                               \
           "Number of GC threads for the old generation")                    \
                                                                             \
-  product(uintx, ZIndexDistributorStrategy, 0, DIAGNOSTIC,                  \
+  product(uint, ZIndexDistributorStrategy, 0, DIAGNOSTIC,                   \
           "Strategy used to distribute indices to parallel workers "        \
           "0: Claim tree "                                                  \
           "1: Simple Striped ")                                             \
+          range(0, 1)                                                       \
                                                                             \
   product(bool, ZVerifyRemembered, trueInDebug, DIAGNOSTIC,                 \
           "Verify remembered sets")                                         \
@@ -113,10 +114,15 @@
                                                                             \
   product(int, ZTenuringThreshold, -1, DIAGNOSTIC,                          \
           "Young generation tenuring threshold, -1 for dynamic computation")\
-          range(-1, static_cast<int>(ZPageAgeMax))                          \
+          range(-1, static_cast<int>(ZPageAgeCount) - 1)                    \
                                                                             \
   develop(bool, ZVerifyOops, false,                                         \
           "Verify accessed oops")                                           \
+                                                                            \
+  develop(size_t, ZFailLargerCommits, 0,                                    \
+          "Commits larger than ZFailLargerCommits will be truncated, "      \
+          "used to stress page allocation commit failure paths "            \
+          "(0: Disabled)")                                                  \
                                                                             \
   develop(uint, ZFakeNUMA, 1,                                               \
           "ZFakeNUMA is used to test the internal NUMA memory support "     \

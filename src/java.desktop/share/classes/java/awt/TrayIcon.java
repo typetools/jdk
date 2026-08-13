@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,6 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.event.*;
 import java.awt.peer.TrayIconPeer;
-import sun.awt.AppContext;
 import sun.awt.SunToolkit;
 import sun.awt.AWTAccessor;
 import sun.awt.HeadlessToolkit;
@@ -130,7 +129,6 @@ public @UsesObjectEquals class TrayIcon {
         if (!SystemTray.isSupported()) {
             throw new UnsupportedOperationException();
         }
-        SunToolkit.insertTargetMapping(this, AppContext.getAppContext());
     }
 
     /**

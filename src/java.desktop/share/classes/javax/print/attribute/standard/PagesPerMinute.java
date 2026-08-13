@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -85,6 +85,7 @@ public final class PagesPerMinute extends IntegerSyntax
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object object) {
         return (super.equals (object) &&
                 object instanceof PagesPerMinute);
@@ -100,6 +101,7 @@ public final class PagesPerMinute extends IntegerSyntax
      * @return printing attribute class (category), an instance of class
      *         {@link Class java.lang.Class}
      */
+    @Override
     public final Class<? extends Attribute> getCategory() {
         return PagesPerMinute.class;
     }
@@ -113,6 +115,7 @@ public final class PagesPerMinute extends IntegerSyntax
      *
      * @return attribute category name
      */
+    @Override
     public final String getName() {
         return "pages-per-minute";
     }

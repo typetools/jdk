@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2026, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2023, Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -839,7 +839,7 @@ void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, 
   char buffer[64];
 #ifdef COMPILER1
   if (CommentedAssembly) {
-    snprintf(buffer, sizeof(buffer), "verify_oop at %d", offset());
+    os::snprintf_checked(buffer, sizeof(buffer), "verify_oop at %d", offset());
     block_comment(buffer);
   }
 #endif
@@ -1750,15 +1750,14 @@ void MacroAssembler::read_polling_page(Register dest, relocInfo::relocType rtype
   POISON_REG(mask, 1, R2, poison)               \
   POISON_REG(mask, 2, R3, poison)
 
-// Attempt to lightweight-lock an object
+// Attempt to fast-lock an object
 // Registers:
 //  - obj: the object to be locked
 //  - t1, t2, t3: temp registers. If corresponding bit in savemask is set, they get saved, otherwise blown.
 // Result:
 //  - Success: fallthrough
 //  - Error:   break to slow, Z cleared.
-void MacroAssembler::lightweight_lock(Register obj, Register t1, Register t2, Register t3, unsigned savemask, Label& slow) {
-  assert(LockingMode == LM_LIGHTWEIGHT, "only used with new lightweight locking");
+void MacroAssembler::fast_lock(Register obj, Register t1, Register t2, Register t3, unsigned savemask, Label& slow) {
   assert_different_registers(obj, t1, t2, t3);
 
 #ifdef ASSERT
@@ -1808,15 +1807,14 @@ void MacroAssembler::lightweight_lock(Register obj, Register t1, Register t2, Re
   // Success: fall through
 }
 
-// Attempt to lightweight-unlock an object
+// Attempt to fast-unlock an object
 // Registers:
 //  - obj: the object to be unlocked
 //  - t1, t2, t3: temp registers. If corresponding bit in savemask is set, they get saved, otherwise blown.
 // Result:
 //  - Success: fallthrough
 //  - Error:   break to slow, Z cleared.
-void MacroAssembler::lightweight_unlock(Register obj, Register t1, Register t2, Register t3, unsigned savemask, Label& slow) {
-  assert(LockingMode == LM_LIGHTWEIGHT, "only used with new lightweight locking");
+void MacroAssembler::fast_unlock(Register obj, Register t1, Register t2, Register t3, unsigned savemask, Label& slow) {
   assert_different_registers(obj, t1, t2, t3);
 
 #ifdef ASSERT
@@ -1889,4 +1887,38 @@ int MacroAssembler::ic_check(int end_alignment) {
   jump(SharedRuntime::get_ic_miss_stub(), relocInfo::runtime_call_type);
   bind(dont);
   return uep_offset;
+}
+
+void MacroAssembler::remove_frame(int frame_size_in_bytes) {
+  add_slow(SP, SP, frame_size_in_bytes);
+  raw_pop(FP, LR);
+}
+
+// Unimplemented methods for inline types.
+int MacroAssembler::store_inline_type_fields_to_buf(ciInlineKlass* vk, bool from_interpreter) {
+   Unimplemented();
+}
+
+bool MacroAssembler::move_helper(VMReg from, VMReg to, BasicType bt, RegState reg_state[]) {
+  Unimplemented();
+}
+
+bool MacroAssembler::unpack_inline_helper(const GrowableArray<SigEntry>* sig, int& sig_index,
+                            VMReg from, int& from_index, VMRegPair* to, int to_count, int& to_index,
+                            RegState reg_state[]) {
+  Unimplemented();
+}
+
+bool MacroAssembler::pack_inline_helper(const GrowableArray<SigEntry>* sig, int& sig_index, int vtarg_index,
+                          VMRegPair* from, int from_count, int& from_index, VMReg to,
+                          RegState reg_state[], Register val_array) {
+  Unimplemented();
+}
+
+int MacroAssembler::extend_stack_for_inline_args(int args_on_stack) {
+  Unimplemented();
+}
+
+VMReg MacroAssembler::spill_reg_for(VMReg reg) {
+  Unimplemented();
 }

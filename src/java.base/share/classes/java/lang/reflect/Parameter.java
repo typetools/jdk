@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
+
+import jdk.internal.reflect.AccessFlagSet;
 import sun.reflect.annotation.AnnotationSupport;
 
 /**
@@ -63,7 +65,7 @@ public final class Parameter implements AnnotatedElement {
      * absent, however, then {@code Executable} uses this constructor
      * to synthesize them.
      *
-     * @param name The name of the parameter.
+     * @param name The name of the parameter, or {@code null} if absent
      * @param modifiers The modifier flags for the parameter.
      * @param executable The executable which defines this parameter.
      * @param index The index of the parameter.
@@ -114,7 +116,7 @@ public final class Parameter implements AnnotatedElement {
      * to the class file.
      */
     public boolean isNamePresent() {
-        return executable.hasRealParameterData() && name != null;
+        return name != null;
     }
 
     /**
@@ -136,10 +138,9 @@ public final class Parameter implements AnnotatedElement {
         final Type type = getParameterizedType();
         final String typename = type.getTypeName();
 
-        sb.append(Modifier.toString(getModifiers()));
-
-        if(0 != modifiers)
-            sb.append(' ');
+        if (Modifier.isFinal(modifiers)) {
+            sb.append("final ");
+        }
 
         if(isVarArgs())
             sb.append(typename.replaceFirst("\\[\\]$", "..."));
@@ -182,8 +183,7 @@ public final class Parameter implements AnnotatedElement {
      * @since 20
      */
     public Set<AccessFlag> accessFlags() {
-        return AccessibleObject.reflectionFactory.parseAccessFlags(getModifiers(),
-                AccessFlag.Location.METHOD_PARAMETER, getDeclaringExecutable().getDeclaringClass());
+        return AccessFlagSet.ofValidated(AccessFlagSet.METHOD_PARAMETER_FLAGS, modifiers);
     }
 
     /**

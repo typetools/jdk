@@ -23,9 +23,9 @@
  */
 
 #include "compiler/disassembler.hpp"
+#include "interpreter/interp_masm.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/interpreterRuntime.hpp"
-#include "interpreter/interp_masm.hpp"
 #include "interpreter/templateInterpreter.hpp"
 #include "interpreter/templateInterpreterGenerator.hpp"
 #include "interpreter/templateTable.hpp"
@@ -190,9 +190,11 @@ void TemplateInterpreterGenerator::generate_all() {
   method_entry(getter)
   method_entry(setter)
   method_entry(abstract)
+  method_entry(object_init)
   method_entry(java_lang_math_sin  )
   method_entry(java_lang_math_cos  )
   method_entry(java_lang_math_tan  )
+  method_entry(java_lang_math_sinh )
   method_entry(java_lang_math_tanh )
   method_entry(java_lang_math_cbrt )
   method_entry(java_lang_math_abs  )
@@ -204,7 +206,7 @@ void TemplateInterpreterGenerator::generate_all() {
   method_entry(java_lang_math_pow  )
   method_entry(java_lang_math_fmaF )
   method_entry(java_lang_math_fmaD )
-  method_entry(java_lang_ref_reference_get)
+  method_entry(java_lang_ref_reference_get0)
   AbstractInterpreter::initialize_method_handle_entries();
 
   method_entry(java_util_zip_CRC32C_updateBytes)
@@ -228,6 +230,7 @@ void TemplateInterpreterGenerator::generate_all() {
   // entries for `native` methods to use the same address in case
   // intrinsic is disabled.
   native_method_entry(java_lang_Thread_currentThread)
+  native_method_entry(java_lang_ref_reference_get0)
 
   native_method_entry(java_util_zip_CRC32_update)
   native_method_entry(java_util_zip_CRC32_updateBytes)
@@ -415,6 +418,7 @@ address TemplateInterpreterGenerator::generate_method_entry(
   case Interpreter::empty                  : break;
   case Interpreter::getter                 : break;
   case Interpreter::setter                 : break;
+  case Interpreter::object_init            : break;
   case Interpreter::abstract               : entry_point = generate_abstract_entry(); break;
   default:
     entry_point = generate_intrinsic_entry(kind); // process the rest
@@ -427,14 +431,17 @@ address TemplateInterpreterGenerator::generate_method_entry(
 
   // We expect the normal and native entry points to be generated first so we can reuse them.
   if (native) {
+    assert(kind != Interpreter::object_init, "Not supported");
     entry_point = Interpreter::entry_for_kind(synchronized ? Interpreter::native_synchronized : Interpreter::native);
     if (entry_point == nullptr) {
       entry_point = generate_native_entry(synchronized);
     }
   } else {
-    entry_point = Interpreter::entry_for_kind(synchronized ? Interpreter::zerolocals_synchronized : Interpreter::zerolocals);
+    entry_point = kind == Interpreter::object_init ?
+                  Interpreter::entry_for_kind(Interpreter::object_init) :
+                  Interpreter::entry_for_kind(synchronized ? Interpreter::zerolocals_synchronized : Interpreter::zerolocals);
     if (entry_point == nullptr) {
-      entry_point = generate_normal_entry(synchronized);
+      entry_point = generate_normal_entry(synchronized, kind == Interpreter::object_init);
     }
   }
 
@@ -453,6 +460,7 @@ address TemplateInterpreterGenerator::generate_intrinsic_entry(AbstractInterpret
   case Interpreter::java_lang_math_sin     : // fall thru
   case Interpreter::java_lang_math_cos     : // fall thru
   case Interpreter::java_lang_math_tan     : // fall thru
+  case Interpreter::java_lang_math_sinh    : // fall thru
   case Interpreter::java_lang_math_tanh    : // fall thru
   case Interpreter::java_lang_math_cbrt    : // fall thru
   case Interpreter::java_lang_math_abs     : // fall thru
@@ -465,7 +473,7 @@ address TemplateInterpreterGenerator::generate_intrinsic_entry(AbstractInterpret
   case Interpreter::java_lang_math_fmaF    : entry_point = generate_math_entry(kind);      break;
   case Interpreter::java_lang_math_sqrt_strict
                                            : entry_point = generate_math_entry(Interpreter::java_lang_math_sqrt); break;
-  case Interpreter::java_lang_ref_reference_get
+  case Interpreter::java_lang_ref_reference_get0
                                            : entry_point = generate_Reference_get_entry(); break;
   case Interpreter::java_util_zip_CRC32_update
                                            : entry_point = generate_CRC32_update_entry();  break;

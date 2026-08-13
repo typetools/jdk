@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,16 @@
 #include "gc/z/zBarrierSet.hpp"
 
 #include "gc/shared/accessBarrierSupport.inline.hpp"
+#include "gc/z/zAddress.hpp"
 #include "gc/z/zAddress.inline.hpp"
-#include "gc/z/zBarrier.inline.hpp"
-#include "gc/z/zIterator.inline.hpp"
+#include "gc/z/zHeap.hpp"
 #include "gc/z/zNMethod.hpp"
-#include "memory/iterator.inline.hpp"
+#include "gc/z/zUtils.inline.hpp"
+#include "oops/inlineKlass.inline.hpp"
+#include "oops/objArrayOop.hpp"
+#include "utilities/copy.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/globalDefinitions.hpp"
 
 template <DecoratorSet decorators, typename BarrierSetT>
 template <DecoratorSet expected>
@@ -68,21 +72,21 @@ inline zaddress ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrie
   if (HasDecorator<decorators, AS_NO_KEEPALIVE>::value) {
     if (HasDecorator<decorators, ON_STRONG_OOP_REF>::value) {
       // Load barriers on strong oop refs don't keep objects alive
-      return ZBarrier::load_barrier_on_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_oop_field_preloaded(p, o);
     } else if (HasDecorator<decorators, ON_WEAK_OOP_REF>::value) {
-      return ZBarrier::no_keep_alive_load_barrier_on_weak_oop_field_preloaded(p, o);
+      return ZBarrierSet::no_keep_alive_load_barrier_on_weak_oop_field_preloaded(p, o);
     } else {
       assert((HasDecorator<decorators, ON_PHANTOM_OOP_REF>::value), "Must be");
-      return ZBarrier::no_keep_alive_load_barrier_on_phantom_oop_field_preloaded(p, o);
+      return ZBarrierSet::no_keep_alive_load_barrier_on_phantom_oop_field_preloaded(p, o);
     }
   } else {
     if (HasDecorator<decorators, ON_STRONG_OOP_REF>::value) {
-      return ZBarrier::load_barrier_on_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_oop_field_preloaded(p, o);
     } else if (HasDecorator<decorators, ON_WEAK_OOP_REF>::value) {
-      return ZBarrier::load_barrier_on_weak_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_weak_oop_field_preloaded(p, o);
     } else {
       assert((HasDecorator<decorators, ON_PHANTOM_OOP_REF>::value), "Must be");
-      return ZBarrier::load_barrier_on_phantom_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_phantom_oop_field_preloaded(p, o);
     }
   }
 }
@@ -97,21 +101,21 @@ inline zaddress ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::load_barrie
   if (HasDecorator<decorators, AS_NO_KEEPALIVE>::value) {
     if (decorators_known_strength & ON_STRONG_OOP_REF) {
       // Load barriers on strong oop refs don't keep objects alive
-      return ZBarrier::load_barrier_on_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_oop_field_preloaded(p, o);
     } else if (decorators_known_strength & ON_WEAK_OOP_REF) {
-      return ZBarrier::no_keep_alive_load_barrier_on_weak_oop_field_preloaded(p, o);
+      return ZBarrierSet::no_keep_alive_load_barrier_on_weak_oop_field_preloaded(p, o);
     } else {
       assert(decorators_known_strength & ON_PHANTOM_OOP_REF, "Must be");
-      return ZBarrier::no_keep_alive_load_barrier_on_phantom_oop_field_preloaded(p, o);
+      return ZBarrierSet::no_keep_alive_load_barrier_on_phantom_oop_field_preloaded(p, o);
     }
   } else {
     if (decorators_known_strength & ON_STRONG_OOP_REF) {
-      return ZBarrier::load_barrier_on_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_oop_field_preloaded(p, o);
     } else if (decorators_known_strength & ON_WEAK_OOP_REF) {
-      return ZBarrier::load_barrier_on_weak_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_weak_oop_field_preloaded(p, o);
     } else {
       assert(decorators_known_strength & ON_PHANTOM_OOP_REF, "Must be");
-      return ZBarrier::load_barrier_on_phantom_oop_field_preloaded(p, o);
+      return ZBarrierSet::load_barrier_on_phantom_oop_field_preloaded(p, o);
     }
   }
 }
@@ -126,7 +130,7 @@ inline zpointer ZBarrierSet::store_good(oop obj) {
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_heap_with_healing(zpointer* p) {
   if (!HasDecorator<decorators, IS_DEST_UNINITIALIZED>::value) {
-    ZBarrier::store_barrier_on_heap_oop_field(p, true /* heal */);
+    ZBarrierSet::store_barrier_on_heap_oop_field(p, true /* heal */);
   } else {
     assert(false, "Should not be used on uninitialized memory");
   }
@@ -135,21 +139,21 @@ inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_h
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_heap_without_healing(zpointer* p) {
   if (!HasDecorator<decorators, IS_DEST_UNINITIALIZED>::value) {
-    ZBarrier::store_barrier_on_heap_oop_field(p, false /* heal */);
+    ZBarrierSet::store_barrier_on_heap_oop_field(p, false /* heal */);
   }
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::no_keep_alive_store_barrier_heap(zpointer* p) {
   if (!HasDecorator<decorators, IS_DEST_UNINITIALIZED>::value) {
-    ZBarrier::no_keep_alive_store_barrier_on_heap_oop_field(p);
+    ZBarrierSet::no_keep_alive_store_barrier_on_heap_oop_field(p);
   }
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_native_with_healing(zpointer* p) {
   if (!HasDecorator<decorators, IS_DEST_UNINITIALIZED>::value) {
-    ZBarrier::store_barrier_on_native_oop_field(p, true /* heal */);
+    ZBarrierSet::store_barrier_on_native_oop_field(p, true /* heal */);
   } else {
     assert(false, "Should not be used on uninitialized memory");
   }
@@ -158,7 +162,7 @@ inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_n
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::store_barrier_native_without_healing(zpointer* p) {
   if (!HasDecorator<decorators, IS_DEST_UNINITIALIZED>::value) {
-    ZBarrier::store_barrier_on_native_oop_field(p, false /* heal */);
+    ZBarrierSet::store_barrier_on_native_oop_field(p, false /* heal */);
   }
 }
 
@@ -325,53 +329,81 @@ template <DecoratorSet decorators, typename BarrierSetT>
 inline zaddress ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_copy_one_barriers(zpointer* dst, zpointer* src) {
   store_barrier_heap_without_healing(dst);
 
-  return ZBarrier::load_barrier_on_oop_field(src);
+  return ZBarrierSet::load_barrier_on_oop_field(src);
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_copy_one(zpointer* dst, zpointer* src) {
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_copy_one(zpointer* dst, zpointer* src) {
   const zaddress obj = oop_copy_one_barriers(dst, src);
 
-  Atomic::store(dst, ZAddress::store_good(obj));
+  if (HasDecorator<decorators, ARRAYCOPY_NOTNULL>::value && is_null(obj)) {
+    return OopCopyResult::failed_check_null;
+  }
+
+  AtomicAccess::store(dst, ZAddress::store_good(obj));
+
+  return OopCopyResult::ok;
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline bool ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_copy_one_check_cast(zpointer* dst, zpointer* src, Klass* dst_klass) {
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_clear_one(zpointer* dst) {
+  if (HasDecorator<decorators, ARRAYCOPY_NOTNULL>::value) {
+    return OopCopyResult::failed_check_null;
+  }
+
+  // Store barrier
+  store_barrier_heap_without_healing(dst);
+
+  // Store colored null
+  AtomicAccess::store(dst, color_null());
+
+  return OopCopyResult::ok;
+}
+
+template <DecoratorSet decorators, typename BarrierSetT>
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_copy_one_check_cast(zpointer* dst, zpointer* src, Klass* dst_klass) {
   const zaddress obj = oop_copy_one_barriers(dst, src);
+
+  if (HasDecorator<decorators, ARRAYCOPY_NOTNULL>::value && is_null(obj)) {
+    return OopCopyResult::failed_check_null;
+  }
 
   if (!oopDesc::is_instanceof_or_null(to_oop(obj), dst_klass)) {
     // Check cast failed
-    return false;
+    return OopCopyResult::failed_check_class_cast;
   }
 
-  Atomic::store(dst, ZAddress::store_good(obj));
+  AtomicAccess::store(dst, ZAddress::store_good(obj));
 
-  return true;
+  return OopCopyResult::ok;
 }
 
-
 template <DecoratorSet decorators, typename BarrierSetT>
-inline bool ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap_check_cast(zpointer* dst, zpointer* src, size_t length, Klass* dst_klass) {
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap_check_cast(zpointer* dst, zpointer* src, size_t length, Klass* dst_klass) {
   // Check cast and copy each elements
   for (const zpointer* const end = src + length; src < end; src++, dst++) {
-    if (!oop_copy_one_check_cast(dst, src, dst_klass)) {
-      // Check cast failed
-      return false;
+    const OopCopyResult result = oop_copy_one_check_cast(dst, src, dst_klass);
+    if (result != OopCopyResult::ok) {
+      return result;
     }
   }
 
-  return true;
+  return OopCopyResult::ok;
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline bool ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap_no_check_cast(zpointer* dst, zpointer* src, size_t length) {
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap_no_check_cast(zpointer* dst, zpointer* src, size_t length) {
   const bool is_disjoint = HasDecorator<decorators, ARRAYCOPY_DISJOINT>::value;
 
   if (is_disjoint || src > dst) {
     for (const zpointer* const end = src + length; src < end; src++, dst++) {
-      oop_copy_one(dst, src);
+      const OopCopyResult result = oop_copy_one(dst, src);
+      if (result != OopCopyResult::ok) {
+        return result;
+      }
     }
-    return true;
+
+    return OopCopyResult::ok;
   }
 
   if (src < dst) {
@@ -379,82 +411,162 @@ inline bool ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_i
     src += length - 1;
     dst += length - 1;
     for ( ; src >= end; src--, dst--) {
-      oop_copy_one(dst, src);
+      const OopCopyResult result = oop_copy_one(dst, src);
+      if (result != OopCopyResult::ok) {
+        return result;
+      }
     }
-    return true;
+
+    return OopCopyResult::ok;
   }
 
   // src and dst are the same; nothing to do
-  return true;
+  return OopCopyResult::ok;
 }
 
 template <DecoratorSet decorators, typename BarrierSetT>
-inline bool ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, zpointer* src_raw,
-                                                                                       arrayOop dst_obj, size_t dst_offset_in_bytes, zpointer* dst_raw,
-                                                                                       size_t length) {
+inline OopCopyResult ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, zpointer* src_raw,
+                                                                                                arrayOop dst_obj, size_t dst_offset_in_bytes, zpointer* dst_raw,
+                                                                                                size_t length) {
   zpointer* const src = arrayOopDesc::obj_offset_to_raw(src_obj, src_offset_in_bytes, src_raw);
   zpointer* const dst = arrayOopDesc::obj_offset_to_raw(dst_obj, dst_offset_in_bytes, dst_raw);
 
   if (HasDecorator<decorators, ARRAYCOPY_CHECKCAST>::value) {
     Klass* const dst_klass = objArrayOop(dst_obj)->element_klass();
     return oop_arraycopy_in_heap_check_cast(dst, src, length, dst_klass);
+  } else {
+    return oop_arraycopy_in_heap_no_check_cast(dst, src, length);
   }
-
-  return oop_arraycopy_in_heap_no_check_cast(dst, src, length);
 }
-
-class ZColorStoreGoodOopClosure : public BasicOopIterateClosure {
-public:
-  virtual void do_oop(oop* p_) {
-    volatile zpointer* const p = (volatile zpointer*)p_;
-    const zpointer ptr = ZBarrier::load_atomic(p);
-    const zaddress addr = ZPointer::uncolor(ptr);
-    Atomic::store(p, ZAddress::store_good(addr));
-  }
-
-  virtual void do_oop(narrowOop* p) {
-    ShouldNotReachHere();
-  }
-};
-
-class ZLoadBarrierOopClosure : public BasicOopIterateClosure {
-public:
-  virtual void do_oop(oop* p) {
-    ZBarrier::load_barrier_on_oop_field((zpointer*)p);
-  }
-
-  virtual void do_oop(narrowOop* p) {
-    ShouldNotReachHere();
-  }
-};
 
 template <DecoratorSet decorators, typename BarrierSetT>
 inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::clone_in_heap(oop src, oop dst, size_t size) {
   check_is_valid_zaddress(src);
+  check_is_valid_zaddress(dst);
+  precond(src->klass() == dst->klass());
 
-  if (dst->is_objArray()) {
-    // Cloning an object array is similar to performing array copy.
-    // If an array is large enough to have its allocation segmented,
-    // this operation might require GC barriers. However, the intrinsics
-    // for cloning arrays transform the clone to an optimized allocation
-    // and arraycopy sequence, so the performance of this runtime call
-    // does not matter for object arrays.
-    clone_obj_array(objArrayOop(src), objArrayOop(dst));
+  clone_obj(to_zaddress(src), to_zaddress(dst), ZUtils::words_to_bytes(size));
+}
+
+static inline void copy_primitive_payload(const void* src, const void* dst, const size_t payload_size_bytes, size_t& copied_bytes) {
+  if (payload_size_bytes == 0) {
     return;
   }
 
-  // Fix the oops
-  ZLoadBarrierOopClosure cl;
-  ZIterator::oop_iterate(src, &cl);
+  void* src_payload = (void*)(address(src) + copied_bytes);
+  void* dst_payload = (void*)(address(dst) + copied_bytes);
+  Copy::copy_value_content(src_payload, dst_payload, payload_size_bytes);
+  copied_bytes += payload_size_bytes;
+}
 
-  // Clone the object
-  Raw::clone_in_heap(src, dst, size);
+static inline void clear_primitive_payload(const void* dst, const size_t payload_size_bytes, size_t& copied_bytes) {
+  if (payload_size_bytes == 0) {
+    return;
+  }
 
-  assert(dst->is_typeArray() || ZHeap::heap()->is_young(to_zaddress(dst)), "ZColorStoreGoodOopClosure is only valid for young objects");
+  void* dst_payload = (void*)(address(dst) + copied_bytes);
+  Copy::fill_to_memory_atomic(dst_payload, payload_size_bytes);
+  copied_bytes += payload_size_bytes;
+}
 
-  // Color store good before handing out
-  ZColorStoreGoodOopClosure cl_sg;
-  ZIterator::oop_iterate(dst, &cl_sg);
+template <DecoratorSet decorators, typename BarrierSetT>
+inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::value_copy_in_heap(const ValuePayload& src, const ValuePayload& dst) {
+  precond(src.klass() == dst.klass());
+
+  const LayoutKind lk = LayoutKindHelper::get_copy_layout(src.layout_kind(), dst.layout_kind());
+  const InlineKlass* md = src.klass();
+  if (md->contains_oops()) {
+    assert(!LayoutKindHelper::is_atomic_flat(lk) ||
+               (md->nonstatic_oop_map_count() == 1 &&
+                md->layout_size_in_bytes(lk) == sizeof(zpointer)),
+           "ZGC can only handle atomic flat values with a single oop");
+
+    // Iterate over each oop map, performing:
+    //   1) possibly raw copy for any primitive payload before each map
+    //   2) load and store barrier for each oop
+    //   3) possibly raw copy for any primitive payload trailer
+
+    // addr() points at the payload start, the oop map offset are relative to
+    // the object header, adjust address to account for this discrepancy.
+    const address src_addr = src.addr();
+    const address dst_addr = dst.addr();
+    const address oop_map_adjusted_src_addr = src_addr - md->payload_offset();
+    OopMapBlock* map = md->start_of_nonstatic_oop_maps();
+    const OopMapBlock* const end = map + md->nonstatic_oop_map_count();
+    size_t size_in_bytes = md->layout_size_in_bytes(lk);
+    size_t copied_bytes = 0;
+    while (map != end) {
+      zpointer* src_p = (zpointer*)(oop_map_adjusted_src_addr + map->offset());
+      const uintptr_t oop_offset = uintptr_t(src_p) - uintptr_t(src_addr);
+      zpointer* dst_p = (zpointer*)(uintptr_t(dst_addr) + oop_offset);
+
+      // Copy any leading primitive payload before every cluster of oops
+      assert(copied_bytes < oop_offset || copied_bytes == oop_offset, "Negative sized leading payload segment");
+      copy_primitive_payload(src_addr, dst_addr, oop_offset - copied_bytes, copied_bytes);
+
+      // Copy a cluster of oops
+      for (const zpointer* const src_end = src_p + map->count(); src_p < src_end; src_p++, dst_p++) {
+        oop_copy_one(dst_p, src_p);
+        copied_bytes += sizeof(zpointer);
+      }
+      map++;
+    }
+
+    // Copy trailing primitive payload after potential oops
+    assert(copied_bytes < size_in_bytes || copied_bytes == size_in_bytes, "Negative sized trailing payload segment");
+    copy_primitive_payload(src_addr, dst_addr, size_in_bytes - copied_bytes, copied_bytes);
+  } else {
+    Raw::value_copy_in_heap(src, dst);
+  }
+}
+
+template <DecoratorSet decorators, typename BarrierSetT>
+inline void ZBarrierSet::AccessBarrier<decorators, BarrierSetT>::value_store_null_in_heap(const ValuePayload& dst) {
+  const LayoutKind lk = dst.layout_kind();
+  assert(!LayoutKindHelper::is_null_free_flat(lk), "Cannot store null in null free layout");
+  const InlineKlass* md = dst.klass();
+
+  if (md->contains_oops()) {
+    assert(!LayoutKindHelper::is_atomic_flat(lk) ||
+               (md->nonstatic_oop_map_count() == 1 &&
+                md->layout_size_in_bytes(lk) == sizeof(zpointer)),
+           "ZGC can only handle atomic flat values with a single oop");
+
+    // Iterate over each oop map, performing:
+    //   1) possibly raw clear for any primitive payload before each map
+    //   2) store barrier and clear for each oop
+    //   3) possibly raw clear for any primitive payload trailer
+
+    // addr() points at the payload start, the oop map offset are relative to
+    // the object header, adjust address to account for this discrepancy.
+    const address dst_addr = dst.addr();
+    const address oop_map_adjusted_dst_addr = dst_addr - md->payload_offset();
+    OopMapBlock* map = md->start_of_nonstatic_oop_maps();
+    const OopMapBlock* const end = map + md->nonstatic_oop_map_count();
+    size_t size_in_bytes = md->layout_size_in_bytes(lk);
+    size_t copied_bytes = 0;
+    while (map != end) {
+      zpointer* dst_p = (zpointer*)(oop_map_adjusted_dst_addr + map->offset());
+      const uintptr_t oop_offset = uintptr_t(dst_p) - uintptr_t(dst_addr);
+
+      // Clear any leading primitive payload before every cluster of oops
+      assert(copied_bytes < oop_offset || copied_bytes == oop_offset, "Negative sized leading payload segment");
+      clear_primitive_payload(dst_addr, oop_offset - copied_bytes, copied_bytes);
+
+      // Clear a cluster of oops
+      for (const zpointer* const dst_end = dst_p + map->count(); dst_p < dst_end; dst_p++) {
+        oop_clear_one(dst_p);
+        copied_bytes += sizeof(zpointer);
+      }
+      map++;
+    }
+
+    // Clear trailing primitive payload after potential oops
+    assert(copied_bytes < size_in_bytes || copied_bytes == size_in_bytes, "Negative sized trailing payload segment");
+    clear_primitive_payload(dst_addr, size_in_bytes - copied_bytes, copied_bytes);
+  } else {
+    Raw::value_store_null(dst);
+  }
 }
 
 //

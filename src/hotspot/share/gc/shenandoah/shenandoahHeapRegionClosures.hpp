@@ -44,6 +44,10 @@ public:
     }
   }
 
+  size_t parallel_region_stride() override {
+    return _closure->parallel_region_stride();
+  }
+
   bool is_thread_safe() override {
     return _closure->is_thread_safe();
   }
@@ -64,12 +68,18 @@ public:
     }
   }
 
+  size_t parallel_region_stride() override {
+    return _closure->parallel_region_stride();
+  }
+
   bool is_thread_safe() override {
     return _closure->is_thread_safe();
   }
 };
 
-// Makes regions pinned or unpinned according to the region's pin count
+// Makes regions pinned or unpinned according to the region's pin count.
+// On construction, it will flush all Java threads' pin caches into their
+// cached regions' pin counters.
 class ShenandoahSynchronizePinnedRegionStates : public ShenandoahHeapRegionClosure {
 private:
   ShenandoahHeapLock* const _lock;

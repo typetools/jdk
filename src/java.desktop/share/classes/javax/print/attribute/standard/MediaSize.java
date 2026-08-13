@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,7 @@ import javax.print.attribute.Size2DSyntax;
  * Class {@code MediaSize} is a two-dimensional size valued printing attribute
  * class that indicates the dimensions of the medium in a portrait orientation,
  * with the {@code X} dimension running along the bottom edge and the {@code Y}
- * dimension running along the left edge. Thus, the {@code Y} dimension must be
+ * dimension running along the left edge. For most media, the {@code Y} dimension will be
  * greater than or equal to the {@code X} dimension. Class {@code MediaSize}
  * declares many standard media size values, organized into nested classes for
  * ISO, JIS, North American, engineering, and other media.
@@ -82,13 +82,10 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      * @param  units unit conversion factor, e.g. {@code Size2DSyntax.INCH} or
      *         {@code Size2DSyntax.MM}
      * @throws IllegalArgumentException if {@code x < 0} or {@code y < 0} or
-     *         {@code units < 1} or {@code x > y}
+     *         {@code units < 1}
      */
     public MediaSize(float x, float y,int units) {
         super (x, y, units);
-        if (x > y) {
-            throw new IllegalArgumentException("X dimension > Y dimension");
-        }
         sizeVector.add(this);
     }
 
@@ -100,13 +97,10 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      * @param  units unit conversion factor, e.g. {@code Size2DSyntax.INCH} or
      *         {@code Size2DSyntax.MM}
      * @throws IllegalArgumentException if {@code x < 0} or {@code y < 0} or
-     *         {@code units < 1} or {@code x > y}
+     *         {@code units < 1}
      */
     public MediaSize(int x, int y,int units) {
         super (x, y, units);
-        if (x > y) {
-            throw new IllegalArgumentException("X dimension > Y dimension");
-        }
         sizeVector.add(this);
     }
 
@@ -120,13 +114,10 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      *         {@code Size2DSyntax.MM}
      * @param  media a media name to associate with this {@code MediaSize}
      * @throws IllegalArgumentException if {@code x < 0} or {@code y < 0} or
-     *         {@code units < 1} or {@code x > y}
+     *         {@code units < 1}
      */
     public MediaSize(float x, float y,int units, MediaSizeName media) {
         super (x, y, units);
-        if (x > y) {
-            throw new IllegalArgumentException("X dimension > Y dimension");
-        }
         if (media != null && mediaMap.get(media) == null) {
             mediaName = media;
             mediaMap.put(mediaName, this);
@@ -143,13 +134,10 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      *         {@code Size2DSyntax.MM}
      * @param  media a media name to associate with this {@code MediaSize}
      * @throws IllegalArgumentException if {@code x < 0} or {@code y < 0} or
-     *         {@code units < 1} or {@code x > y}
+     *         {@code units < 1}
      */
     public MediaSize(int x, int y,int units, MediaSizeName media) {
         super (x, y, units);
-        if (x > y) {
-            throw new IllegalArgumentException("X dimension > Y dimension");
-        }
         if (media != null && mediaMap.get(media) == null) {
             mediaName = media;
             mediaMap.put(mediaName, this);
@@ -250,6 +238,7 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object object) {
         return (super.equals(object) && object instanceof MediaSize);
     }
@@ -264,6 +253,7 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      * @return printing attribute class (category), an instance of class
      *         {@link Class java.lang.Class}
      */
+    @Override
     public final Class<? extends Attribute> getCategory() {
         return MediaSize.class;
     }
@@ -277,6 +267,7 @@ public class MediaSize extends Size2DSyntax implements Attribute {
      *
      * @return attribute category name
      */
+    @Override
     public final String getName() {
         return "media-size";
     }

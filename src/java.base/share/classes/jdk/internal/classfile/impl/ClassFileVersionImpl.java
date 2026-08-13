@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,14 +32,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import static java.lang.classfile.ClassFile.PREVIEW_MINOR_VERSION;
+
 public final class ClassFileVersionImpl
         extends AbstractElement
         implements ClassFileVersion {
     private final int majorVersion, minorVersion;
 
     public ClassFileVersionImpl(int majorVersion, int minorVersion) {
-        this.majorVersion = majorVersion;
-        this.minorVersion = minorVersion;
+        this.majorVersion = Util.checkU2(majorVersion, "major version");
+        this.minorVersion = minorVersion == -1 ? PREVIEW_MINOR_VERSION
+                : Util.checkU2(minorVersion, "minor version");
     }
 
     @Override

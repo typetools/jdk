@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2026, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -41,6 +41,7 @@
 #include "oops/methodCounters.hpp"
 #include "oops/methodData.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/inlineKlass.hpp"
 #include "oops/resolvedIndyEntry.hpp"
 #include "oops/resolvedMethodEntry.hpp"
 #include "prims/jvmtiExport.hpp"
@@ -467,6 +468,11 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
   __ lea(esp, Address(rfp, rscratch1, Address::lsl(Interpreter::logStackElementSize)));
   // and null it as marker that esp is now tos until next java call
   __ str(zr, Address(rfp, frame::interpreter_frame_last_sp_offset * wordSize));
+
+  if (state == atos && InlineTypeReturnedAsFields) {
+    __ store_inline_type_fields_to_buf(nullptr, true);
+  }
+
   __ restore_bcp();
   __ restore_locals();
   __ restore_constant_pool_cache();
@@ -524,30 +530,6 @@ address TemplateInterpreterGenerator::generate_deopt_entry_for(TosState state,
   // null last_sp until next java call
   __ str(zr, Address(rfp, frame::interpreter_frame_last_sp_offset * wordSize));
 
-#if INCLUDE_JVMCI
-  // Check if we need to take lock at entry of synchronized method.  This can
-  // only occur on method entry so emit it only for vtos with step 0.
-  if (EnableJVMCI && state == vtos && step == 0) {
-    Label L;
-    __ ldrb(rscratch1, Address(rthread, JavaThread::pending_monitorenter_offset()));
-    __ cbz(rscratch1, L);
-    // Clear flag.
-    __ strb(zr, Address(rthread, JavaThread::pending_monitorenter_offset()));
-    // Take lock.
-    lock_method();
-    __ bind(L);
-  } else {
-#ifdef ASSERT
-    if (EnableJVMCI) {
-      Label L;
-      __ ldrb(rscratch1, Address(rthread, JavaThread::pending_monitorenter_offset()));
-      __ cbz(rscratch1, L);
-      __ stop("unexpected pending monitor in deopt entry");
-      __ bind(L);
-    }
-#endif
-  }
-#endif
   // handle exceptions
   {
     Label L;
@@ -1018,7 +1000,7 @@ address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
 
   Label slow_path;
   // If we need a safepoint check, generate full interpreter entry.
-  __ safepoint_poll(slow_path, false /* at_return */, false /* acquire */, false /* in_nmethod */);
+  __ safepoint_poll(slow_path, false /* at_return */, false /* in_nmethod */);
 
   // We don't generate local frame and don't align stack because
   // we call stub code and there is no safepoint on this path.
@@ -1065,7 +1047,7 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
 
   Label slow_path;
   // If we need a safepoint check, generate full interpreter entry.
-  __ safepoint_poll(slow_path, false /* at_return */, false /* acquire */, false /* in_nmethod */);
+  __ safepoint_poll(slow_path, false /* at_return */, false /* in_nmethod */);
 
   // We don't generate local frame and don't align stack because
   // we call stub code and there is no safepoint on this path.
@@ -1375,7 +1357,6 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ ldr(r10, Address(rmethod, Method::native_function_offset()));
     ExternalAddress unsatisfied(SharedRuntime::native_method_throw_unsatisfied_link_error_entry());
     __ lea(rscratch2, unsatisfied);
-    __ ldr(rscratch2, rscratch2);
     __ cmp(r10, rscratch2);
     __ br(Assembler::NE, L);
     __ call_VM(noreg,
@@ -1455,7 +1436,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     Label L, Continue;
 
     // No need for acquire as Java threads always disarm themselves.
-    __ safepoint_poll(L, true /* at_return */, false /* acquire */, false /* in_nmethod */);
+    __ safepoint_poll(L, true /* at_return */, false /* in_nmethod */);
     __ ldrw(rscratch2, Address(rthread, JavaThread::suspend_flags_offset()));
     __ cbz(rscratch2, Continue);
     __ bind(L);
@@ -1478,22 +1459,17 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ lea(rscratch2, Address(rthread, JavaThread::thread_state_offset()));
   __ stlrw(rscratch1, rscratch2);
 
-  if (LockingMode != LM_LEGACY) {
-    // Check preemption for Object.wait()
-    Label not_preempted;
-    __ ldr(rscratch1, Address(rthread, JavaThread::preempt_alternate_return_offset()));
-    __ cbz(rscratch1, not_preempted);
-    __ str(zr, Address(rthread, JavaThread::preempt_alternate_return_offset()));
-    __ br(rscratch1);
-    __ bind(native_return);
-    __ restore_after_resume(true /* is_native */);
-    // reload result_handler
-    __ ldr(result_handler, Address(rfp, frame::interpreter_frame_result_handler_offset*wordSize));
-    __ bind(not_preempted);
-  } else {
-    // any pc will do so just use this one for LM_LEGACY to keep code together.
-    __ bind(native_return);
-  }
+  // Check preemption for Object.wait()
+  Label not_preempted;
+  __ ldr(rscratch1, Address(rthread, JavaThread::preempt_alternate_return_offset()));
+  __ cbz(rscratch1, not_preempted);
+  __ str(zr, Address(rthread, JavaThread::preempt_alternate_return_offset()));
+  __ br(rscratch1);
+  __ bind(native_return);
+  __ restore_after_resume(true /* is_native */);
+  // reload result_handler
+  __ ldr(result_handler, Address(rfp, frame::interpreter_frame_result_handler_offset*wordSize));
+  __ bind(not_preempted);
 
   // reset_last_Java_frame
   __ reset_last_Java_frame(true);
@@ -1608,7 +1584,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   Label slow_path;
   Label fast_path;
-  __ safepoint_poll(slow_path, true /* at_return */, false /* acquire */, false /* in_nmethod */);
+  __ safepoint_poll(slow_path, true /* at_return */, false /* in_nmethod */);
   __ br(Assembler::AL, fast_path);
   __ bind(slow_path);
   __ push(dtos);
@@ -1663,7 +1639,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 //
 // Generic interpreted method entry to (asm) interpreter
 //
-address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
+address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized, bool object_init) {
   // determine code generation flags
   bool inc_counter  = UseCompiler || CountCompiledCalls;
 
@@ -1788,6 +1764,12 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
       __ bind(L);
     }
 #endif
+  }
+
+  // Issue a StoreStore barrier on entry to Object_init if the
+  // class has strict field fields.  Be lazy, always do it.
+  if (object_init) {
+    __ membar(MacroAssembler::StoreStore);
   }
 
   // start execution

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,14 +25,13 @@
 #ifndef SHARE_CODE_RELOCINFO_HPP
 #define SHARE_CODE_RELOCINFO_HPP
 
+#include "cppstdlib/new.hpp"
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
 #include "runtime/osInfo.hpp"
 #include "utilities/checkedCast.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
-
-#include <new>
 
 class CodeBlob;
 class Metadata;
@@ -186,8 +185,7 @@ class nmethod;
 //   relative offset.  (Both n and l are relative to the call's first byte.)
 //
 //   The limit l of the search is exclusive.  However, if it points within
-//   the call (e.g., offset zero), it is adjusted to point after the call and
-//   any associated machine-specific delay slot.
+//   the call (e.g., offset zero), it is adjusted to point after the call.
 //
 //   Since the offsets could be as wide as 32-bits, these conventions
 //   put no restrictions whatever upon code reorganization.
@@ -269,8 +267,7 @@ class relocInfo {
     runtime_call_w_cp_type  = 14, // Runtime call which may load its target from the constant pool
     data_prefix_tag         = 15, // tag for a prefix (carries data arguments)
     post_call_nop_type      = 16, // A tag for post call nop relocations
-    entry_guard_type        = 17, // A tag for an nmethod entry barrier guard value
-    barrier_type            = 18, // GC barrier data
+    barrier_type            = 17, // GC barrier data
     type_mask               = 31  // A mask which selects only the above values
   };
 
@@ -311,7 +308,6 @@ class relocInfo {
     visitor(section_word) \
     visitor(trampoline_stub) \
     visitor(post_call_nop) \
-    visitor(entry_guard) \
     visitor(barrier) \
 
 
@@ -926,19 +922,6 @@ public:
   void copy_into(RelocationHolder& holder) const override;
 };
 
-class entry_guard_Relocation : public Relocation {
-  friend class RelocationHolder;
-
-public:
-  entry_guard_Relocation() : Relocation(relocInfo::entry_guard_type) { }
-
-  static RelocationHolder spec() {
-    return RelocationHolder::construct<entry_guard_Relocation>();
-  }
-
-  void copy_into(RelocationHolder& holder) const override;
-};
-
 // A CallRelocation always points at a call instruction.
 // It is PC-relative on most machines.
 class CallRelocation : public Relocation {
@@ -1109,7 +1092,6 @@ class virtual_call_Relocation : public CallRelocation {
   // data is packed as scaled offsets in "2_ints" format:  [f l] or [Ff Ll]
   // oop_limit is set to 0 if the limit falls somewhere within the call.
   // When unpacking, a zero oop_limit is taken to refer to the end of the call.
-  // (This has the effect of bringing in the call's delay slot on SPARC.)
   void pack_data_to(CodeSection* dest) override;
   void unpack_data() override;
 

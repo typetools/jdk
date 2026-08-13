@@ -169,7 +169,7 @@ public class LinkedBlockingDeque<E extends Object>
     transient Node<E> last;
 
     /** Number of items in the deque */
-    private transient int count;
+    private transient volatile int count;
 
     /** @serial Maximum number of items in the deque */
     private final int capacity;
@@ -225,10 +225,13 @@ public class LinkedBlockingDeque<E extends Object>
 
     /**
      * Links node as first element, or returns false if full.
+     *
+     * @return true if the node was added; false otherwise
      */
     private boolean linkFirst(Node<E> node) {
         // assert lock.isHeldByCurrentThread();
-        if (count >= capacity)
+        int c;
+        if ((c = count) >= capacity)
             return false;
         Node<E> f = first;
         node.next = f;
@@ -237,17 +240,20 @@ public class LinkedBlockingDeque<E extends Object>
             last = node;
         else
             f.prev = node;
-        ++count;
+        count = c + 1;
         notEmpty.signal();
         return true;
     }
 
     /**
      * Links node as last element, or returns false if full.
+     *
+     * @return true if the node was added; false otherwise
      */
     private boolean linkLast(Node<E> node) {
         // assert lock.isHeldByCurrentThread();
-        if (count >= capacity)
+        int c;
+        if ((c = count) >= capacity)
             return false;
         Node<E> l = last;
         node.prev = l;
@@ -256,7 +262,7 @@ public class LinkedBlockingDeque<E extends Object>
             first = node;
         else
             l.next = node;
-        ++count;
+        count = c + 1;
         notEmpty.signal();
         return true;
     }
@@ -361,6 +367,8 @@ public class LinkedBlockingDeque<E extends Object>
     @DoesNotUnrefineReceiver("modifiability")
     public boolean offerFirst(E e) {
         if (e == null) throw new NullPointerException();
+        if (count >= capacity)
+            return false;
         Node<E> node = new Node<E>(e);
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -378,6 +386,8 @@ public class LinkedBlockingDeque<E extends Object>
     @DoesNotUnrefineReceiver("modifiability")
     public boolean offerLast(E e) {
         if (e == null) throw new NullPointerException();
+        if (count >= capacity)
+            return false;
         Node<E> node = new Node<E>(e);
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -398,7 +408,7 @@ public class LinkedBlockingDeque<E extends Object>
         if (e == null) throw new NullPointerException();
         Node<E> node = new Node<E>(e);
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lockInterruptibly();
         try {
             while (!linkFirst(node))
                 notFull.await();
@@ -417,7 +427,7 @@ public class LinkedBlockingDeque<E extends Object>
         if (e == null) throw new NullPointerException();
         Node<E> node = new Node<E>(e);
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lockInterruptibly();
         try {
             while (!linkLast(node))
                 notFull.await();
@@ -501,6 +511,7 @@ public class LinkedBlockingDeque<E extends Object>
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable E pollFirst(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) {
+        if (count == 0) return null;
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -513,6 +524,7 @@ public class LinkedBlockingDeque<E extends Object>
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public @Nullable E pollLast(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) {
+        if (count == 0) return null;
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -526,7 +538,7 @@ public class LinkedBlockingDeque<E extends Object>
     @DoesNotUnrefineReceiver("modifiability")
     public E takeFirst(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) throws InterruptedException {
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lockInterruptibly();
         try {
             E x;
             while ( (x = unlinkFirst()) == null)
@@ -541,7 +553,7 @@ public class LinkedBlockingDeque<E extends Object>
     @DoesNotUnrefineReceiver("modifiability")
     public E takeLast(@GuardSatisfied @CanShrink LinkedBlockingDeque<E> this) throws InterruptedException {
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lockInterruptibly();
         try {
             E x;
             while ( (x = unlinkLast()) == null)
@@ -616,6 +628,7 @@ public class LinkedBlockingDeque<E extends Object>
 
     @Pure
     public @Nullable E peekFirst() {
+        if (count == 0) return null;
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -627,6 +640,7 @@ public class LinkedBlockingDeque<E extends Object>
 
     @Pure
     public @Nullable E peekLast() {
+        if (count == 0) return null;
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -800,13 +814,7 @@ public class LinkedBlockingDeque<E extends Object>
      * insert or remove an element.
      */
     public int remainingCapacity() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
-        try {
-            return capacity - count;
-        } finally {
-            lock.unlock();
-        }
+        return capacity - count;
     }
 
     /**
@@ -899,13 +907,7 @@ public class LinkedBlockingDeque<E extends Object>
      */
     @Pure
     public int size() {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
-        try {
-            return count;
-        } finally {
-            lock.unlock();
-        }
+        return count;
     }
 
     /**
@@ -955,7 +957,7 @@ public class LinkedBlockingDeque<E extends Object>
 
         // Copy c into a private chain of Nodes
         Node<E> beg = null, end = null;
-        int n = 0;
+        long n = 0;
         for (E e : c) {
             Objects.requireNonNull(e);
             n++;
@@ -975,14 +977,15 @@ public class LinkedBlockingDeque<E extends Object>
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            if (count + n <= capacity) {
+            long cnt;
+            if ((cnt = count + n) <= capacity) {
                 beg.prev = last;
                 if (first == null)
                     first = beg;
                 else
                     last.next = beg;
                 last = end;
-                count += n;
+                count = (int)cnt;
                 notEmpty.signalAll();
                 return true;
             }
@@ -991,6 +994,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
         // Fall back to historic non-atomic implementation, failing
         // with IllegalStateException when the capacity is exceeded.
+        beg = end = null; // help GC
         return super.addAll(c);
     }
 
@@ -1095,8 +1099,8 @@ public class LinkedBlockingDeque<E extends Object>
             for (Node<E> f = first; f != null; ) {
                 f.item = null;
                 Node<E> n = f.next;
-                f.prev = null;
-                f.next = null;
+                f.prev = f;
+                f.next = f;
                 f = n;
             }
             first = last = null;

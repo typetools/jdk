@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -489,6 +489,7 @@ public abstract class SetOfIntegerSyntax implements Serializable, Cloneable {
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object object) {
         if (object instanceof SetOfIntegerSyntax other) {
             int[][] myMembers = this.members;
@@ -516,6 +517,7 @@ public abstract class SetOfIntegerSyntax implements Serializable, Cloneable {
      * code is the sum of the lower and upper bounds of the ranges in the
      * canonical array form, or 0 for an empty set.
      */
+    @Override
     public int hashCode() {
         int result = 0;
         int n = members.length;
@@ -533,6 +535,7 @@ public abstract class SetOfIntegerSyntax implements Serializable, Cloneable {
      * the lower bound equals the upper bound or
      * <code>"<i>i</i>-<i>j</i>"</code> otherwise.
      */
+    @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         int n = members.length;

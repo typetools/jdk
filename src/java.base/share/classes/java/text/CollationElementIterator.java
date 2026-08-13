@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -666,7 +666,7 @@ public final @UsesObjectEquals class CollationElementIterator
 
         // (the Normalizer is cloned here so that the seeking we do in the next loop
         // won't affect our real position in the text)
-        NormalizerBase tempText = (NormalizerBase)text.clone();
+        NormalizerBase tempText = text.clone();
 
         // extract the next maxLength characters in the string (we have to do this using the
         // Normalizer to ensure that our offsets correspond to those the rest of the
@@ -737,7 +737,7 @@ public final @UsesObjectEquals class CollationElementIterator
         pair = list.lastElement();
         int maxLength = pair.entryName.length();
 
-        NormalizerBase tempText = (NormalizerBase)text.clone();
+        NormalizerBase tempText = text.clone();
 
         tempText.next();
         key.setLength(0);

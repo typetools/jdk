@@ -45,14 +45,17 @@ import java.util.function.LongUnaryOperator;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
+import jdk.internal.vm.annotation.TrustFinalFields;
+
 import java.lang.invoke.VarHandle;
 
 /**
  * A reflection-based utility that enables atomic updates to
- * designated {@code volatile long} fields of designated classes.
- * This class is designed for use in atomic data structures in which
- * several fields of the same node are independently subject to atomic
- * updates.
+ * designated non-static {@code volatile long} fields of designated
+ * classes, providing a subset of the functionality of class {@link
+ * VarHandle} that should be used instead.  This class is designed for
+ * use in atomic data structures in which several fields of the same
+ * node are independently subject to atomic updates.
  *
  * <p>Note that the guarantees of the {@code compareAndSet}
  * method in this class are weaker than in other atomic classes.
@@ -371,6 +374,7 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
         return next;
     }
 
+    @TrustFinalFields
     private static final class CASUpdater<T> extends AtomicLongFieldUpdater<T> {
         private static final Unsafe U = Unsafe.getUnsafe();
         private final long offset;
@@ -400,6 +404,9 @@ public abstract @UsesObjectEquals class AtomicLongFieldUpdater<T> {
 
             if (!Modifier.isVolatile(modifiers))
                 throw new IllegalArgumentException("Must be volatile type");
+
+            if (Modifier.isStatic(modifiers))
+                throw new IllegalArgumentException("Must not be a static field");
 
             // Access to protected field members is restricted to receivers only
             // of the accessing class, or one of its subclasses, and the

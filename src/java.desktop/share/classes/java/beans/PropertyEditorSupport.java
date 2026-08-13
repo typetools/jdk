@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -98,6 +98,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *     the PropertyEditor should create a new object to hold any
      *     modified value.
      */
+    @Override
     public void setValue(Object value) {
         this.value = value;
         firePropertyChange();
@@ -108,6 +109,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *
      * @return The value of the property.
      */
+    @Override
     public Object getValue() {
         return value;
     }
@@ -120,6 +122,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      * @return  True if the class will honor the paintValue method.
      */
 
+    @Override
     public boolean isPaintable() {
         return false;
     }
@@ -135,6 +138,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      * @param gfx  Graphics object to paint into.
      * @param box  Rectangle within graphics object into which we should paint.
      */
+    @Override
     public void paintValue(java.awt.Graphics gfx, java.awt.Rectangle box) {
     }
 
@@ -151,6 +155,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      * @return A fragment of Java code representing an initializer for the
      *          current value.
      */
+    @Override
     public String getJavaInitializationString() {
         return "???";
     }
@@ -167,6 +172,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      * <p>   If a non-null value is returned, then the PropertyEditor should
      *       be prepared to parse that string back in setAsText().
      */
+    @Override
     public String getAsText() {
         return (this.value != null)
                 ? this.value.toString()
@@ -181,6 +187,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *
      * @param text  The string to be parsed.
      */
+    @Override
     public void setAsText(String text) throws java.lang.IllegalArgumentException {
         if (value instanceof String) {
             setValue(text);
@@ -202,6 +209,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *   property cannot be represented as a tagged value.
      *
      */
+    @Override
     public String[] getTags() {
         return null;
     }
@@ -223,6 +231,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *      not supported.
      */
 
+    @Override
     public java.awt.Component getCustomEditor() {
         return null;
     }
@@ -232,6 +241,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *
      * @return  True if the propertyEditor can provide a custom editor.
      */
+    @Override
     public boolean supportsCustomEditor() {
         return false;
     }
@@ -254,6 +264,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *
      * @param listener  the {@link PropertyChangeListener} to add
      */
+    @Override
     public synchronized void addPropertyChangeListener(
                                 PropertyChangeListener listener) {
         if (listeners == null) {
@@ -272,6 +283,7 @@ public @UsesObjectEquals class PropertyEditorSupport implements PropertyEditor {
      *
      * @param listener  the {@link PropertyChangeListener} to remove
      */
+    @Override
     public synchronized void removePropertyChangeListener(
                                 PropertyChangeListener listener) {
         if (listeners == null) {

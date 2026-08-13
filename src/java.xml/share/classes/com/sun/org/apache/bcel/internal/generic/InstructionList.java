@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  */
  /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,6 +35,7 @@ import java.util.NoSuchElementException;
 import com.sun.org.apache.bcel.internal.Const;
 import com.sun.org.apache.bcel.internal.classfile.Constant;
 import com.sun.org.apache.bcel.internal.util.ByteSequence;
+import jdk.xml.internal.Utils;
 
 /**
  * This class is a container for a list of <a href="Instruction.html">Instruction</a> objects. Instructions can be
@@ -48,7 +49,7 @@ import com.sun.org.apache.bcel.internal.util.ByteSequence;
  * @see Instruction
  * @see InstructionHandle
  * @see BranchHandle
- * @LastModified: Feb 2023
+ * @LastModified: Sept 2025
  */
 public class InstructionList implements Iterable<InstructionHandle> {
 
@@ -62,23 +63,25 @@ public class InstructionList implements Iterable<InstructionHandle> {
      * @return target position's instruction handle if available
      */
     public static InstructionHandle findHandle(final InstructionHandle[] ihs, final int[] pos, final int count, final int target) {
-        int l = 0;
-        int r = count - 1;
-        /*
-         * Do a binary search since the pos array is orderd.
-         */
-        do {
-            final int i = l + r >>> 1;
-            final int j = pos[i];
-            if (j == target) {
-                return ihs[i];
-            }
-            if (target < j) {
-                r = i - 1;
-            } else {
-                l = i + 1;
-            }
-        } while (l <= r);
+        if (ihs != null && pos != null) {
+            int l = 0;
+            int r = count - 1;
+            /*
+             * Do a binary search since the pos array is orderd.
+             */
+            do {
+                final int i = l + r >>> 1;
+                final int j = pos[i];
+                if (j == target) {
+                    return ihs[i];
+                }
+                if (target < j) {
+                    r = i - 1;
+                } else {
+                    l = i + 1;
+                }
+            } while (l <= r);
+        }
         return null;
     }
 
@@ -517,7 +520,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
     }
 
     /**
-     * Get instruction handle for instruction at byte code position pos. This only works properly, if the list is freshly
+     * Gets instruction handle for instruction at byte code position pos. This only works properly, if the list is freshly
      * initialized from a byte array or setPositions() has been called before this method.
      *
      * @param pos byte code position to search for
@@ -609,7 +612,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
     }
 
     /**
-     * Get positions (offsets) of all instructions in the list. This relies on that the list has been freshly created from
+     * Gets positions (offsets) of all instructions in the list. This relies on that the list has been freshly created from
      * an byte code array, or that setPositions() has been called. Otherwise this may be inaccurate.
      *
      * @return array containing all instruction's offset in byte code
@@ -963,7 +966,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
      * @see MethodGen
      */
     public void redirectExceptionHandlers(final CodeExceptionGen[] exceptions, final InstructionHandle oldTarget, final InstructionHandle newTarget) {
-        for (final CodeExceptionGen exception : exceptions) {
+        Utils.streamOfIfNonNull(exceptions).forEach(exception -> {
             if (exception.getStartPC() == oldTarget) {
                 exception.setStartPC(newTarget);
             }
@@ -973,7 +976,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
             if (exception.getHandlerPC() == oldTarget) {
                 exception.setHandlerPC(newTarget);
             }
-        }
+        });
     }
 
     /**
@@ -985,16 +988,14 @@ public class InstructionList implements Iterable<InstructionHandle> {
      * @see MethodGen
      */
     public void redirectLocalVariables(final LocalVariableGen[] lg, final InstructionHandle oldTarget, final InstructionHandle newTarget) {
-        for (final LocalVariableGen element : lg) {
-            final InstructionHandle start = element.getStart();
-            final InstructionHandle end = element.getEnd();
-            if (start == oldTarget) {
+        Utils.streamOfIfNonNull(lg).forEach(element -> {
+            if (element.getStart() == oldTarget) {
                 element.setStart(newTarget);
             }
-            if (end == oldTarget) {
+            if (element.getEnd() == oldTarget) {
                 element.setEnd(newTarget);
             }
-        }
+        });
     }
 
     /**
@@ -1124,7 +1125,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
             ih.setPosition(index);
             pos[count++] = index;
             /*
-             * Get an estimate about how many additional bytes may be added, because BranchInstructions may have variable length
+             * Gets an estimate about how many additional bytes may be added, because BranchInstructions may have variable length
              * depending on the target offset (short vs. int) or alignment issues (TABLESWITCH and LOOKUPSWITCH).
              */
             switch (i.getOpcode()) {
@@ -1136,11 +1137,14 @@ public class InstructionList implements Iterable<InstructionHandle> {
             case Const.LOOKUPSWITCH:
                 maxAdditionalBytes += 3;
                 break;
+            default:
+                // TODO should this be an error?
+                break;
             }
             index += i.getLength();
         }
         /*
-         * Pass 2: Expand the variable-length (Branch)Instructions depending on the target offset (short or int) and ensure that
+         * Pass 2: Expand the variable-length (Branch) Instructions depending on the target offset (short or int) and ensure that
          * branch targets are within this list.
          */
         for (InstructionHandle ih = start; ih != null; ih = ih.getNext()) {
@@ -1156,8 +1160,7 @@ public class InstructionList implements Iterable<InstructionHandle> {
             pos[count++] = index;
             index += i.getLength();
         }
-        bytePositions = new int[count]; // Trim to proper size
-        System.arraycopy(pos, 0, bytePositions, 0, count);
+        bytePositions = Arrays.copyOfRange(pos, 0, count); // Trim to proper size
     }
 
     /**

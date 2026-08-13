@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
@@ -65,6 +66,8 @@ import java.security.cert.X509CRLEntry;
 import java.security.cert.X509CRLSelector;
 import javax.security.auth.x500.X500Principal;
 import java.util.Base64;
+
+import jdk.internal.util.StaticProperty;
 
 import sun.security.pkcs12.PKCS12KeyStore;
 import sun.security.provider.certpath.CertPathConstraintsParameters;
@@ -1298,7 +1301,7 @@ public final class Main {
             }
 
             if (alias != null) {
-                doPrintEntry(rb.getString("the.certificate"), alias, out);
+                doPrintEntry(alias, out);
             } else {
                 doPrintEntries(out);
             }
@@ -1480,7 +1483,7 @@ public final class Main {
         info.setVersion(new CertificateVersion(CertificateVersion.V3));
         info.setIssuer(issuer);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        BufferedReader reader = stdinAwareReader(in);
         boolean canRead = false;
         StringBuilder sb = new StringBuilder();
         while (true) {
@@ -1566,9 +1569,6 @@ public final class Main {
 
     private void doGenCRL(PrintStream out)
             throws Exception {
-        if (ids == null) {
-            throw new Exception("Must provide -id when -gencrl");
-        }
         Certificate signerCert = keyStore.getCertificate(alias);
         byte[] encoded = signerCert.getEncoded();
         X509CertImpl signerCertImpl = new X509CertImpl(encoded);
@@ -2184,9 +2184,10 @@ public final class Main {
     /**
      * Prints a single keystore entry.
      */
-    private void doPrintEntry(String label, String alias, PrintStream out)
+    private void doPrintEntry(String alias, PrintStream out)
         throws Exception
     {
+        String label = "<" + alias + ">";
         CertPathConstraintsParameters cpcp;
         if (!keyStore.containsAlias(alias)) {
             MessageFormat form = new MessageFormat
@@ -2638,7 +2639,7 @@ public final class Main {
         List<String> aliases = Collections.list(keyStore.aliases());
         aliases.sort(String::compareTo);
         for (String alias : aliases) {
-            doPrintEntry("<" + alias + ">", alias, out);
+            doPrintEntry(alias, out);
             if (verbose || rfc) {
                 out.println(rb.getString("NEWLINE"));
                 out.println(rb.getString
@@ -2835,7 +2836,7 @@ public final class Main {
     private void doPrintCertReq(InputStream in, PrintStream out)
             throws Exception {
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        BufferedReader reader = stdinAwareReader(in);
         StringBuilder sb = new StringBuilder();
         boolean started = false;
         while (true) {
@@ -3540,8 +3541,7 @@ public final class Main {
         } else {
             System.err.print(rb.getString("Enter.alias.name."));
         }
-        return (new BufferedReader(new InputStreamReader(
-                                        System.in))).readLine();
+        return stdinAwareReader(System.in).readLine();
     }
 
     /**
@@ -3551,8 +3551,14 @@ public final class Main {
      */
     private String inputStringFromStdin(String prompt) throws Exception {
         System.err.print(prompt);
-        return (new BufferedReader(new InputStreamReader(
-                                        System.in))).readLine();
+        return stdinAwareReader(System.in).readLine();
+    }
+
+    private static BufferedReader stdinAwareReader(InputStream in) {
+        InputStreamReader reader = in == System.in
+                ? new InputStreamReader(in, Charset.forName(StaticProperty.stdinEncoding(), Charset.defaultCharset()))
+                : new InputStreamReader(in);
+        return new BufferedReader(reader);
     }
 
     /**
@@ -3739,7 +3745,7 @@ public final class Main {
      */
     private X500Name getX500Name() throws IOException {
         BufferedReader in;
-        in = new BufferedReader(new InputStreamReader(System.in));
+        in = stdinAwareReader(System.in);
         String commonName = "Unknown";
         String organizationalUnit = "Unknown";
         String organization = "Unknown";
@@ -4245,8 +4251,7 @@ public final class Main {
             }
             System.err.print(prompt);
             System.err.flush();
-            reply = (new BufferedReader(new InputStreamReader
-                                        (System.in))).readLine();
+            reply = stdinAwareReader(System.in).readLine();
             if (reply == null ||
                 collator.compare(reply, "") == 0 ||
                 collator.compare(reply, rb.getString("n")) == 0 ||

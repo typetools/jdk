@@ -67,17 +67,21 @@ public class ArchiveRelocationTest {
         String logArg = "-Xlog:cds=debug,cds+reloc=debug,aot+heap";
         String unlockArg = "-XX:+UnlockDiagnosticVMOptions";
         String nmtArg = "-XX:NativeMemoryTracking=detail";
+        String relocMsg1 = "ArchiveRelocationMode == 1: always map archive(s) at an alternative address";
+        String relocMsg2 = "Try to map archive(s) at an alternative address";
 
         OutputAnalyzer out = TestCommon.dump(appJar,
-                                             TestCommon.list(mainClass),
-                                             unlockArg, logArg, nmtArg);
+                TestCommon.list(mainClass),
+                unlockArg, logArg, nmtArg);
         out.shouldContain("Relocating archive from");
 
         TestCommon.run("-cp", appJar, unlockArg, runRelocArg, logArg,  mainClass)
-            .assertNormalExit(output -> {
+                .assertNormalExit(output -> {
                     if (run_reloc) {
-                        output.shouldContain("ArchiveRelocationMode == 1: always map archive(s) at an alternative address")
-                              .shouldContain("Try to map archive(s) at an alternative address");
+                        if (!output.contains(relocMsg1) && !output.contains(relocMsg2)) {
+                            throw new RuntimeException("Relocation messages \"" + relocMsg1 +
+                                "\" and \"" + relocMsg2 + "\" are missing from the output");
+                        }
                     } else {
                         output.shouldContain("ArchiveRelocationMode: 0");
                     }

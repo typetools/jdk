@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,8 @@ package java.nio.channels;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.spi.*;
@@ -697,7 +699,9 @@ public abstract @UsesObjectEquals class AsynchronousFileChannel
      *          The handler for consuming the result
      *
      * @throws  IllegalArgumentException
-     *          If the position is negative or the buffer is read-only
+     *          If the position is negative, or the buffer is read-only or a view of a
+     *          {@link MemorySegment} allocated from a {@linkplain Arena#ofConfined()
+     *          thread-confined arena}
      * @throws  NonReadableChannelException
      *          If this channel was not opened for reading
      */
@@ -732,7 +736,9 @@ public abstract @UsesObjectEquals class AsynchronousFileChannel
      * @return  A {@code Future} object representing the pending result
      *
      * @throws  IllegalArgumentException
-     *          If the position is negative or the buffer is read-only
+     *          If the position is negative, or the buffer is read-only or a view of a
+     *          {@link MemorySegment} allocated from a {@linkplain Arena#ofConfined()
+     *          thread-confined arena}
      * @throws  NonReadableChannelException
      *          If this channel was not opened for reading
      */
@@ -763,7 +769,9 @@ public abstract @UsesObjectEquals class AsynchronousFileChannel
      *          The handler for consuming the result
      *
      * @throws  IllegalArgumentException
-     *          If the position is negative
+     *          If the position is negative or the buffer is a view of a {@link
+     *          MemorySegment} allocated from a {@linkplain Arena#ofConfined()
+     *          thread-confined arena}
      * @throws  NonWritableChannelException
      *          If this channel was not opened for writing
      */
@@ -799,7 +807,9 @@ public abstract @UsesObjectEquals class AsynchronousFileChannel
      * @return  A {@code Future} object representing the pending result
      *
      * @throws  IllegalArgumentException
-     *          If the position is negative
+     *          If the position is negative or the buffer is a view of a {@link
+     *          MemorySegment} allocated from a {@linkplain Arena#ofConfined()
+     *          thread-confined arena}
      * @throws  NonWritableChannelException
      *          If this channel was not opened for writing
      */

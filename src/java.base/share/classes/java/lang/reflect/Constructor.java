@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -374,10 +374,13 @@ public final class Constructor<T> extends Executable {
      */
     @SideEffectFree
     public String toString(@GuardSatisfied Constructor<T> this) {
-        return sharedToString(Modifier.constructorModifiers(),
-                              false,
-                              parameterTypes,
+        return sharedToString(parameterTypes,
                               exceptionTypes);
+    }
+
+    @Override
+    void appendModifiers(StringBuilder sb) {
+        Reflection.appendAccessControlModifiers(sb, getModifiers());
     }
 
     @Override
@@ -437,7 +440,7 @@ public final class Constructor<T> extends Executable {
      */
     @Override
     public String toGenericString() {
-        return sharedToGenericString(Modifier.constructorModifiers(), false);
+        return super.toGenericString();
     }
 
     @Override

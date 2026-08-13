@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -134,6 +134,7 @@ public abstract @UsesObjectEquals class DataBuffer {
      *
      *  @param dataType the data type of this {@code DataBuffer}
      *  @param size the size of the banks
+     *  @throws IllegalArgumentException if {@code size} is less than or equal to zero.
      */
     protected DataBuffer(int dataType, int size) {
         this(UNTRACKABLE, dataType, size);
@@ -146,11 +147,13 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param initialState the initial {@link State State} state of the data
      *  @param dataType the data type of this {@code DataBuffer}
      *  @param size the size of the banks
+     *  @throws IllegalArgumentException if {@code size} is less than or equal to zero.
      *  @since 1.7
      */
     DataBuffer(State initialState,
                int dataType, int size)
     {
+        checkSize(size);
         this.theTrackable = StateTrackableDelegate.createInstance(initialState);
         this.dataType = dataType;
         this.banks = 1;
@@ -167,6 +170,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param size the size of the banks
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
      */
     protected DataBuffer(int dataType, int size, int numBanks) {
         this(UNTRACKABLE, dataType, size, numBanks);
@@ -182,11 +187,15 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param size the size of the banks
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
      *  @since 1.7
      */
     DataBuffer(State initialState,
                int dataType, int size, int numBanks)
     {
+        checkSize(size);
+        checkNumBanks(numBanks);
         this.theTrackable = StateTrackableDelegate.createInstance(initialState);
         this.dataType = dataType;
         this.banks = numBanks;
@@ -204,6 +213,9 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
      *  @param offset the offset for each bank
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
+     *  @throws IllegalArgumentException if {@code offset} is less than zero.
      */
     protected DataBuffer(int dataType, int size, int numBanks, int offset) {
         this(UNTRACKABLE, dataType, size, numBanks, offset);
@@ -220,11 +232,17 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
      *  @param offset the offset for each bank
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
+     *  @throws IllegalArgumentException if {@code offset} is less than zero.
      *  @since 1.7
      */
     DataBuffer(State initialState,
                int dataType, int size, int numBanks, int offset)
     {
+        checkSize(size);
+        checkNumBanks(numBanks);
+        checkOffset(offset);
         this.theTrackable = StateTrackableDelegate.createInstance(initialState);
         this.dataType = dataType;
         this.banks = numBanks;
@@ -247,6 +265,10 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
      *  @param offsets an array containing an offset for each bank.
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
+     *  @throws NullPointerException if {@code offsets} is {@code null}.
+     *  @throws IllegalArgumentException if any element of {@code offsets} is less than zero.
      *  @throws ArrayIndexOutOfBoundsException if {@code numBanks}
      *          does not equal the length of {@code offsets}
      */
@@ -267,6 +289,10 @@ public abstract @UsesObjectEquals class DataBuffer {
      *  @param numBanks the number of banks in this
      *         {@code DataBuffer}
      *  @param offsets an array containing an offset for each bank.
+     *  @throws IllegalArgumentException if {@code size} or {@code numBanks}
+     *          is less than or equal to zero.
+     *  @throws NullPointerException if {@code offsets} is {@code null}.
+     *  @throws IllegalArgumentException if any element of {@code offsets} is less than zero.
      *  @throws ArrayIndexOutOfBoundsException if {@code numBanks}
      *          does not equal the length of {@code offsets}
      *  @since 1.7
@@ -274,9 +300,14 @@ public abstract @UsesObjectEquals class DataBuffer {
     DataBuffer(State initialState,
                int dataType, int size, int numBanks, int[] offsets)
     {
+        checkSize(size);
+        checkNumBanks(numBanks);
         if (numBanks != offsets.length) {
             throw new ArrayIndexOutOfBoundsException("Number of banks" +
                  " does not match number of bank offsets");
+        }
+        for (int i = 0; i < offsets.length; i++) {
+            checkOffset(offsets[i]);
         }
         this.theTrackable = StateTrackableDelegate.createInstance(initialState);
         this.dataType = dataType;
@@ -326,6 +357,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * as an integer.
      * @param i the index of the requested data array element
      * @return the data array element at the specified index.
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #setElem(int, int)
      * @see #setElem(int, int, int)
      */
@@ -340,6 +373,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the index of the requested data array element
      * @return the data array element at the specified index from the
      *         specified bank at the specified index.
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #setElem(int, int)
      * @see #setElem(int, int, int)
      */
@@ -351,6 +386,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index into the data array
      * @param val the data to set the element at the specified index in
      * the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #getElem(int)
      * @see #getElem(int, int)
      */
@@ -365,6 +402,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index into the data array
      * @param val  the data to set the element in the specified bank
      * at the specified index in the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #getElem(int)
      * @see #getElem(int, int)
      */
@@ -378,6 +417,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the index of the requested data array element
      * @return a float value representing the data array element at the
      *  specified index.
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #setElemFloat(int, float)
      * @see #setElemFloat(int, int, float)
      */
@@ -395,6 +436,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the index of the requested data array element
      * @return a float value representing the data array element from the
      * specified bank at the specified index.
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #setElemFloat(int, float)
      * @see #setElemFloat(int, int, float)
      */
@@ -410,6 +453,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @param val the value to set the element at the specified index in
      * the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #getElemFloat(int)
      * @see #getElemFloat(int, int)
      */
@@ -426,6 +471,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @param val the value to set the element in the specified bank at
      * the specified index in the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #getElemFloat(int)
      * @see #getElemFloat(int, int)
      */
@@ -442,6 +489,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @return a double value representing the element at the specified
      * index in the data array.
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #setElemDouble(int, double)
      * @see #setElemDouble(int, int, double)
      */
@@ -458,6 +507,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @return a double value representing the element from the specified
      * bank at the specified index in the data array.
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #setElemDouble(int, double)
      * @see #setElemDouble(int, int, double)
      */
@@ -473,6 +524,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @param val the value to set the element at the specified index
      * in the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code (i + getOffset())}
+     *         is not a valid index.
      * @see #getElemDouble(int)
      * @see #getElemDouble(int, int)
      */
@@ -489,6 +542,8 @@ public abstract @UsesObjectEquals class DataBuffer {
      * @param i the specified index
      * @param val the value to set the element in the specified bank
      * at the specified index of the data array
+     * @throws ArrayIndexOutOfBoundsException if {@code bank} is not a valid bank index,
+     *         or {@code (i + getOffsets()[bank])} is not a valid index into the bank.
      * @see #getElemDouble(int)
      * @see #getElemDouble(int, int)
      */
@@ -543,5 +598,90 @@ public abstract @UsesObjectEquals class DataBuffer {
                 db.theTrackable = trackable;
             }
         });
+    }
+
+    final void checkBank(int bank) {
+        if (bank < 0 || bank >= banks) {
+            throw new ArrayIndexOutOfBoundsException("Bank index out of range : " + bank);
+        }
+    }
+
+    final void checkIndex(int i) {
+        if (i < 0) {
+            throw new ArrayIndexOutOfBoundsException("Index cannot be negative : " + i);
+        }
+        if ((offset + i) < i) {
+            throw new ArrayIndexOutOfBoundsException("(offset+i) cannot be negative : " +
+                "(" + offset + " + " + i + ") = " + (offset + i));
+        }
+        if (i >= size) {
+            throw new ArrayIndexOutOfBoundsException("Invalid index " + i +
+                                                     " is too large for size : " + size);
+        }
+    }
+
+    final void checkIndex(int bank, int i) {
+        checkBank(bank);
+        if (i < 0) {
+            throw new ArrayIndexOutOfBoundsException("Index cannot be negative : " + i);
+        }
+        if ((offsets[bank] + i) < i) {
+            throw new ArrayIndexOutOfBoundsException("(offsets[" + bank + "]+i) cannot be negative : " +
+                "(" + offsets[bank] + " + " + i + ") = " + (offsets[bank] + i));
+        }
+        // Don't need to include bank offset here since all constructors validated
+        // the offset for each bank against the size.
+        if (i >= size) {
+            throw new ArrayIndexOutOfBoundsException("Invalid index " + i +
+                                                     " is too large for size : " + size);
+        }
+    }
+
+    // Checks used by subclass constructors.
+
+    static void checkSize(int size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be > 0");
+        }
+    }
+
+    static void checkOffset(int offset) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Offset must be >= 0");
+        }
+    }
+
+    static void checkNumBanks(int numBanks) {
+        if (numBanks <= 0) {
+            throw new IllegalArgumentException("Must have at least one bank");
+        }
+    }
+
+    static void checkArraySize(int size, int arrayLen) {
+        if ((size <= 0) || (size > arrayLen)) {
+            throw new IllegalArgumentException("Bad size : " + size);
+        }
+    }
+
+    private static boolean checkSizeAndOffset(int size, int offset, int arrayLen) {
+        return
+            (size <= 0) ||
+            (offset < 0) ||
+            ((offset + size) <= 0) ||
+            ((offset + size) > arrayLen);
+    }
+
+    static void checkArraySize(int size, int offset, int arrayLen) {
+        if (checkSizeAndOffset(size, offset, arrayLen)) {
+            throw new IllegalArgumentException("Bad size/offset." +
+                " Size = " + size + ", offset = " + offset + ", array length = " + arrayLen);
+        }
+    }
+
+    static void checkBankSize(int bankIndex, int size, int offset, int arrayLen) {
+        if (checkSizeAndOffset(size, offset, arrayLen)) {
+            throw new IllegalArgumentException("Bad size/offset for bank " + bankIndex + "." +
+                " Size = " + size + ", offset = " + offset + ", array length = " + arrayLen);
+        }
     }
 }

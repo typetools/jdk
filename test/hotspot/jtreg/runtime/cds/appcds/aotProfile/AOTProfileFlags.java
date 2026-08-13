@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,6 @@
  * @test
  * @summary Sanity test of combinations of the diagnostic flags [+-]AOTRecordTraining and [+-]AOTReplayTraining
  * @requires vm.cds
- * @comment work around JDK-8345635
- * @requires !vm.jvmci.enabled
  * @requires vm.cds.supports.aot.class.linking
  * @requires vm.flagless
  * @library /test/lib /test/setup_aot /test/hotspot/jtreg/runtime/cds/appcds/test-classes
@@ -38,7 +36,7 @@
  *                 JavacBenchApp$FileManager
  *                 JavacBenchApp$SourceFile
  * @run driver jdk.test.lib.helpers.ClassFileInstaller -jar hello.jar Hello
- * @run driver AOTProfileFlags
+ * @run driver/timeout=480 AOTProfileFlags
  */
 
 import jdk.test.lib.cds.CDSTestUtils;
@@ -123,6 +121,7 @@ public class AOTProfileFlags {
         trainAndRun("TypeProfileArgsLimit", "-XX:TypeProfileArgsLimit=2", "-XX:TypeProfileArgsLimit=3", errorPattern);
         trainAndRun("TypeProfileParamsLimit", "-XX:TypeProfileParmsLimit=2", "-XX:TypeProfileParmsLimit=3", errorPattern);
         trainAndRun("TypeProfileWidth", "-XX:TypeProfileWidth=2", "-XX:TypeProfileWidth=3", errorPattern);
+        trainAndRun("ProfileExceptionHandlers", "-XX:+ProfileExceptionHandlers", "-XX:-ProfileExceptionHandlers", errorPattern);
         if (Platform.isDebugBuild()) {
           trainAndRun("ProfileTraps", "-XX:+ProfileTraps", "-XX:-ProfileTraps", errorPattern);
           trainAndRun("TypeProfileCasts", "-XX:+TypeProfileCasts", "-XX:-TypeProfileCasts", errorPattern);

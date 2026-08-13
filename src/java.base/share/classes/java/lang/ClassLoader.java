@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, Azul Systems, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -42,9 +42,11 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.File;
+import java.lang.foreign.Arena;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
@@ -64,18 +66,22 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.loader.ClassLoaders;
 import jdk.internal.loader.NativeLibrary;
 import jdk.internal.loader.NativeLibraries;
 import jdk.internal.perf.PerfCounter;
+import jdk.internal.misc.CDS;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.misc.VM;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.CallerSensitiveAdapter;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.util.StaticProperty;
+import jdk.internal.vm.annotation.AOTRuntimeSetup;
+import jdk.internal.vm.annotation.AOTSafeClassInitializer;
 
 /**
  * A class loader is an object that is responsible for loading classes. The
@@ -233,10 +239,16 @@ import jdk.internal.util.StaticProperty;
  * @since 1.0
  */
 @AnnotatedFor({"interning", "lock", "nullness", "signature"})
+@AOTSafeClassInitializer
 public abstract @UsesObjectEquals class ClassLoader {
 
     private static native void registerNatives();
     static {
+        runtimeSetup();
+    }
+
+    @AOTRuntimeSetup
+    private static void runtimeSetup() {
         registerNatives();
     }
 
@@ -1044,7 +1056,7 @@ public abstract @UsesObjectEquals class ClassLoader {
      *
      * @since  1.5
      */
-    protected final Class<?> defineClass(@Nullable @BinaryName String name, java.nio.ByteBuffer b,
+    protected final Class<?> defineClass(@Nullable @BinaryName String name, ByteBuffer b,
                                          @Nullable ProtectionDomain protectionDomain)
         throws ClassFormatError
     {
@@ -1064,16 +1076,37 @@ public abstract @UsesObjectEquals class ClassLoader {
             }
         }
 
-        protectionDomain = preDefineClass(name, protectionDomain);
-        String source = defineClassSourceLocation(protectionDomain);
-        Class<?> c = defineClass2(this, name, b, b.position(), len, protectionDomain, source);
-        postDefineClass(c, protectionDomain);
-        return c;
+        boolean trusted = this instanceof BuiltinClassLoader;
+        if (trusted) {
+            return defineClass(name, b, len, protectionDomain);
+        } else {
+            // make copy from input byte buffer
+            try (var arena = Arena.ofConfined()) {
+                ByteBuffer bb = arena.allocate(len).asByteBuffer();
+                bb.put(0, b, b.position(), len);
+                return defineClass(name, bb, len, protectionDomain);
+            }
+        }
+    }
+
+    private Class<?> defineClass(String name, ByteBuffer b, int len, ProtectionDomain pd) {
+        pd = preDefineClass(name, pd);
+        String source = defineClassSourceLocation(pd);
+        SharedSecrets.getJavaNioAccess().acquireSession(b);
+        try {
+            Class<?> c = defineClass2(this, name, b, b.position(), len, pd, source);
+            postDefineClass(c, pd);
+            return c;
+        } finally {
+            SharedSecrets.getJavaNioAccess().releaseSession(b);
+        }
     }
 
     static native Class<?> defineClass1(ClassLoader loader, @BinaryName String name, byte[] b, int off, int len,
                                         ProtectionDomain pd, String source);
 
+    // Warning: Before calling this method, the provided ByteBuffer must be guarded
+    //          via JavaNioAccess::(acquire|release)Session
     static native Class<?> defineClass2(ClassLoader loader, @BinaryName String name, java.nio.ByteBuffer b,
                                         int off, int len, ProtectionDomain pd,
                                         String source);
@@ -1866,8 +1899,8 @@ public abstract @UsesObjectEquals class ClassLoader {
                 throw new IllegalStateException(msg);
             default:
                 // system fully initialized
-                assert VM.isBooted() && scl != null;
-                return scl;
+                assert VM.isBooted() && Holder.scl != null;
+                return Holder.scl;
         }
     }
 
@@ -1892,7 +1925,7 @@ public abstract @UsesObjectEquals class ClassLoader {
         }
 
         // detect recursive initialization
-        if (scl != null) {
+        if (Holder.scl != null) {
             throw new IllegalStateException("recursive invocation");
         }
 
@@ -1903,7 +1936,7 @@ public abstract @UsesObjectEquals class ClassLoader {
                 // custom class loader is only supported to be loaded from unnamed module
                 Constructor<?> ctor = Class.forName(cn, false, builtinLoader)
                                            .getDeclaredConstructor(ClassLoader.class);
-                scl = (ClassLoader) ctor.newInstance(builtinLoader);
+                Holder.scl = (ClassLoader) ctor.newInstance(builtinLoader);
             } catch (Exception e) {
                 Throwable cause = e;
                 if (e instanceof InvocationTargetException) {
@@ -1918,9 +1951,9 @@ public abstract @UsesObjectEquals class ClassLoader {
                 throw new Error(cause.getMessage(), cause);
             }
         } else {
-            scl = builtinLoader;
+            Holder.scl = builtinLoader;
         }
-        return scl;
+        return Holder.scl;
     }
 
     // Returns the class's class loader, or null if none.
@@ -1933,9 +1966,13 @@ public abstract @UsesObjectEquals class ClassLoader {
         return caller.getClassLoader0();
     }
 
-    // The system class loader
-    // @GuardedBy("ClassLoader.class")
-    private static volatile @Nullable ClassLoader scl;
+    // Holder has the field(s) that need to be initialized during JVM bootstrap even if
+    // the outer is aot-initialized.
+    private static class Holder {
+        // The system class loader
+        // @GuardedBy("ClassLoader.class")
+        private static volatile @Nullable ClassLoader scl;
+    }
 
     // -- Package --
 
@@ -2619,7 +2656,21 @@ public abstract @UsesObjectEquals class ClassLoader {
         if (parallelLockMap != null) {
             reinitObjectField("parallelLockMap", new ConcurrentHashMap<>());
         }
-        reinitObjectField("packages", new ConcurrentHashMap<>());
+
+        if (CDS.isDumpingAOTLinkedClasses()) {
+            if (System.getProperty("cds.debug.archived.packages") != null) {
+                for (Map.Entry<String, NamedPackage> entry : packages.entrySet()) {
+                    String key = entry.getKey();
+                    NamedPackage value = entry.getValue();
+                    System.out.println("Archiving " +
+                                       (value instanceof Package ? "Package" : "NamedPackage") +
+                                       " \"" + key + "\" for " + this);
+                }
+            }
+        } else {
+            reinitObjectField("packages", new ConcurrentHashMap<>());
+        }
+
         reinitObjectField("package2certs", new ConcurrentHashMap<>());
         classes.clear();
         classes.trimToSize();

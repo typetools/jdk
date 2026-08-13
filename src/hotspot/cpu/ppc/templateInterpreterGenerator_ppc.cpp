@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014, 2025, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025 SAP SE. All rights reserved.
+ * Copyright (c) 2014, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2026 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -619,6 +619,11 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
     default  : ShouldNotReachHere();
   }
 
+  if (state == atos && InlineTypeReturnedAsFields) {
+    __ unimplemented("return entry InlineTypeReturnedAsFields");
+    //__ store_inline_type_fields_to_buf(nullptr, true);
+  }
+
   __ restore_interpreter_state(R11_scratch1, false /*bcp_and_mdx_only*/, true /*restore_top_frame_sp*/);
 
   // Compiled code destroys templateTableBase, reload.
@@ -702,6 +707,11 @@ address TemplateInterpreterGenerator::generate_cont_resume_interpreter_adapter()
 
   __ load_const_optimized(R25_templateTableBase, (address)Interpreter::dispatch_table((TosState)0), R12_scratch2);
   __ restore_interpreter_state(R11_scratch1, false, true /*restore_top_frame_sp*/);
+  // Restore registers that are preserved across vthread preemption
+  assert(__ nonvolatile_accross_vthread_preemtion(R31) && __ nonvolatile_accross_vthread_preemtion(R24), "");
+  __ ld(R3_ARG1, _abi0(callers_sp), R1_SP); // load FP
+  __ ld(R31, _ijava_state_neg(lresult), R3_ARG1);
+  __ ld(R24, _ijava_state_neg(fresult), R3_ARG1);
   __ blr();
 
   return start;
@@ -1089,6 +1099,7 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
     case Interpreter::java_lang_math_sin  : runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dsin);   break;
     case Interpreter::java_lang_math_cos  : runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dcos);   break;
     case Interpreter::java_lang_math_tan  : runtime_entry = CAST_FROM_FN_PTR(address, SharedRuntime::dtan);   break;
+    case Interpreter::java_lang_math_sinh : /* run interpreted */ break;
     case Interpreter::java_lang_math_tanh : /* run interpreted */ break;
     case Interpreter::java_lang_math_cbrt : /* run interpreted */ break;
     case Interpreter::java_lang_math_abs  : /* run interpreted */ break;
@@ -1248,7 +1259,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   const Register pending_exception    = R0;
   const Register result_handler_addr  = R31;
   const Register native_method_fd     = R12_scratch2; // preferred in MacroAssembler::branch_to
-  const Register access_flags         = R22_tmp2;
+  const Register access_flags         = R24_tmp4;
   const Register active_handles       = R11_scratch1; // R26_monitor saved to state.
   const Register sync_state           = R12_scratch2;
   const Register sync_state_addr      = sync_state;   // Address is dead after use.
@@ -1361,7 +1372,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // convenient and the slow signature handler can use this same frame
   // anchor.
 
-  bool support_vthread_preemption = Continuations::enabled() && LockingMode != LM_LEGACY;
+  bool support_vthread_preemption = Continuations::enabled();
 
   // We have a TOP_IJAVA_FRAME here, which belongs to us.
   Label last_java_pc;
@@ -1705,7 +1716,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
 // Generic interpreted method entry to (asm) interpreter.
 //
-address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
+address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized, bool object_init) {
   bool inc_counter = UseCompiler || CountCompiledCalls;
   address entry = __ pc();
   // Generate the code to allocate the interpreter stack frame.
@@ -1786,6 +1797,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   if (synchronized) {
     lock_method(R3_ARG1, R4_ARG2, R5_ARG3);
   }
+
 #ifdef ASSERT
   else {
     Label Lok;
@@ -1795,6 +1807,12 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
     __ bind(Lok);
   }
 #endif // ASSERT
+
+  // Issue a StoreStore barrier on entry to Object_init if the
+  // class has strict field fields.  Be lazy, always do it.
+  if (object_init) {
+    __ membar(MacroAssembler::StoreStore);
+  }
 
   // --------------------------------------------------------------------------
   // JVMTI support

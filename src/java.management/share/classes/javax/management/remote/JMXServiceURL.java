@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -244,8 +244,8 @@ public class JMXServiceURL implements Serializable {
      * {@link #JMXServiceURL(String, String, int, String)
      * JMXServiceURL(protocol, host, port, null)}.</p>
      *
-     * @param protocol the protocol part of the URL.  If null, defaults
-     * to <code>jmxmp</code>.
+     * @param protocol the protocol part of the URL.  Must be specified,
+     * there is no default.
      *
      * @param host the host part of the URL. If host is null and if
      * local host name can be resolved to an IP, then host defaults
@@ -261,7 +261,7 @@ public class JMXServiceURL implements Serializable {
      * @exception MalformedURLException if one of the parts is
      * syntactically incorrect, or if <code>host</code> is null and it
      * is not possible to find the local host name, or if
-     * <code>port</code> is negative.
+     * <code>port</code> is negative, or if protocol is null.
      */
     public JMXServiceURL(String protocol, String host, int port)
             throws MalformedURLException {
@@ -271,8 +271,8 @@ public class JMXServiceURL implements Serializable {
     /**
      * <p>Constructs a <code>JMXServiceURL</code> with the given parts.
      *
-     * @param protocol the protocol part of the URL.  If null, defaults
-     * to <code>jmxmp</code>.
+     * @param protocol the protocol part of the URL.  Must be specified,
+     * there is no default.
      *
      * @param host the host part of the URL. If host is null and if
      * local host name can be resolved to an IP, then host defaults
@@ -291,14 +291,14 @@ public class JMXServiceURL implements Serializable {
      * @exception MalformedURLException if one of the parts is
      * syntactically incorrect, or if <code>host</code> is null and it
      * is not possible to find the local host name, or if
-     * <code>port</code> is negative.
+     * <code>port</code> is negative, or if protocol is null.
      */
     public JMXServiceURL(String protocol, String host, int port,
                          String urlPath)
             throws MalformedURLException {
-        if (protocol == null)
-            protocol = "jmxmp";
-
+        if (protocol == null) {
+            throw new MalformedURLException("Missing protocol name");
+        }
         if (host == null) {
             InetAddress local;
             try {

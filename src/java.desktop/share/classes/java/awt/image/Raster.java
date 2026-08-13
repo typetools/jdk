@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -204,8 +204,8 @@ public @UsesObjectEquals class Raster {
      * @throws IllegalArgumentException if {@code bands} is less than 1
      * @throws IllegalArgumentException if {@code w} and {@code h} are not
      *         both > 0
-     * @throws IllegalArgumentException if the product of {@code w}
-     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws IllegalArgumentException if the product of {@code w},
+     *         {@code h} and {@code bands} is greater than {@code Integer.MAX_VALUE}
      * @throws RasterFormatException if computing either
      *         {@code location.x + w} or
      *         {@code location.y + h} results in integer overflow
@@ -221,6 +221,14 @@ public @UsesObjectEquals class Raster {
         if (lsz > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Dimensions (width="+w+
                                                " height="+h+") are too large");
+        }
+        if (bands < 1) {
+            throw new IllegalArgumentException("Number of bands ("+
+                                               bands+") must be greater than 0");
+        }
+        long slsz = (long)w * bands;
+        if (slsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("width * bands is too large");
         }
         int[] bandOffsets = new int[bands];
         for (int i = 0; i < bands; i++) {
@@ -269,9 +277,15 @@ public @UsesObjectEquals class Raster {
      *         {@code location.x + w} or
      *         {@code location.y + h} results in integer overflow
      * @throws IllegalArgumentException if {@code scanlineStride}
-     *         is less than 0
-     * @throws IllegalArgumentException if {@code pixelStride} is less than 0
+     *         is less than or equal to 0
+     * @throws IllegalArgumentException if {@code pixelStride} is less than or equal to 0
+     * @throws IllegalArgumentException if {@code w * pixelStride} is greater
+     *         than {@code scanlineStride}
+     * @throws IllegalArgumentException if the data size need to store all
+     *          lines of the image is greater than {@code Integer.MAX_VALUE}
      * @throws NullPointerException if {@code bandOffsets} is null
+     * @throws IllegalArgumentException if any element of {@code bandOffsets} is greater
+     *         than {@code pixelStride} or the {@code scanlineStride}
      */
     public static WritableRaster createInterleavedRaster(int dataType,
                                                          int w, int h,
@@ -289,14 +303,32 @@ public @UsesObjectEquals class Raster {
             throw new IllegalArgumentException("Dimensions (width="+w+
                                                " height="+h+") are too large");
         }
-        if (pixelStride < 0) {
-            throw new IllegalArgumentException("pixelStride is < 0");
+        if (pixelStride <= 0) {
+            throw new IllegalArgumentException("pixelStride is <= 0");
         }
-        if (scanlineStride < 0) {
-            throw new IllegalArgumentException("scanlineStride is < 0");
+        if (scanlineStride <= 0) {
+            throw new IllegalArgumentException("scanlineStride is <= 0");
         }
-        int size = scanlineStride * (h - 1) + // first (h - 1) scans
-            pixelStride * w; // last scan
+        if (bandOffsets == null) {
+            throw new NullPointerException("bandOffsets is null");
+        }
+        for (int i = 0; i < bandOffsets.length; i++) {
+            int off = bandOffsets[i];
+            if ((off > pixelStride) || (off > scanlineStride)) {
+                throw new IllegalArgumentException("Band offset " + off + " is too large for stride");
+            }
+        }
+
+        lsz = (long)w * pixelStride;
+        if (lsz > scanlineStride) {
+            throw new IllegalArgumentException("w * pixelStride is too large");
+        }
+        lsz = (long)scanlineStride * (long)(h - 1) + // first (h - 1) scans
+            (long)pixelStride * (long)w; // last scan
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("size too large to store image");
+        }
+        int size = (int)lsz;
 
         if (location == null) {
             location = new Point(0, 0);
@@ -419,6 +451,10 @@ public @UsesObjectEquals class Raster {
      *         is less than 0
      * @throws ArrayIndexOutOfBoundsException if {@code bankIndices}
      *         is {@code null}
+     * @throws IllegalArgumentException if the lengths of {@code bankIndices}
+     *         and {@code bandOffsets} are different.
+     * @throws IllegalArgumentException if the data size need to store all
+     *          lines of a bank of the image is greater than {@code Integer.MAX_VALUE}
      * @throws NullPointerException if {@code bandOffsets} is {@code null}
      */
     public static WritableRaster createBandedRaster(int dataType,
@@ -427,9 +463,6 @@ public @UsesObjectEquals class Raster {
                                                     int[] bankIndices,
                                                     int[] bandOffsets,
                                                     Point location) {
-        DataBuffer d;
-        int bands = bandOffsets.length;
-
         if (w <= 0 || h <= 0) {
              throw new IllegalArgumentException("w and h must be positive");
         }
@@ -438,13 +471,20 @@ public @UsesObjectEquals class Raster {
             throw new IllegalArgumentException("Dimensions (width="+w+
                                                " height="+h+") are too large");
         }
+        if (scanlineStride < 0) {
+            throw new IllegalArgumentException("Scanline stride must be >= 0");
+        }
         if (bankIndices == null) {
             throw new
                 ArrayIndexOutOfBoundsException("Bank indices array is null");
         }
         if (bandOffsets == null) {
             throw new
-                ArrayIndexOutOfBoundsException("Band offsets array is null");
+                NullPointerException("Band offsets array is null");
+        }
+        if (bandOffsets.length != bankIndices.length) {
+            throw new IllegalArgumentException(
+                                   "bankIndices.length != bandOffsets.length");
         }
         if (location != null) {
             if ((w + location.getX() > Integer.MAX_VALUE) ||
@@ -454,6 +494,9 @@ public @UsesObjectEquals class Raster {
                  " cannot exceed Integer.MAX_VALUE");
             }
         }
+
+        DataBuffer d;
+        int bands = bandOffsets.length;
 
         // Figure out the #banks and the largest band offset
         int maxBank = bankIndices[0];
@@ -467,9 +510,15 @@ public @UsesObjectEquals class Raster {
             }
         }
         int banks = maxBank + 1;
-        int size = maxBandOff +
-            scanlineStride * (h - 1) + // first (h - 1) scans
-            w; // last scan
+
+        lsz = (long) maxBandOff +
+              (long)scanlineStride * (h - 1) + // first (h - 1) scans
+               w; // last scan
+        if (lsz > Integer.MAX_VALUE) {
+             throw new IllegalArgumentException("storage size is too large");
+        }
+
+        int size = (int)lsz;
 
         switch(dataType) {
         case DataBuffer.TYPE_BYTE:
@@ -512,11 +561,14 @@ public @UsesObjectEquals class Raster {
      * @param location  the upper-left corner of the {@code Raster}
      * @return a WritableRaster object with the specified data type,
      *         width, height, and band masks.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
+     * @throws NullPointerException if {@code bandMasks} is null
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
      *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     *         {@code location.y + h} results in integer overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
@@ -528,6 +580,24 @@ public @UsesObjectEquals class Raster {
                                                     int[] bandMasks,
                                                     Point location) {
         DataBuffer d;
+
+        if (w <= 0 || h <= 0) {
+             throw new IllegalArgumentException("w and h must be positive");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
+
+        if (location != null) {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
 
         switch(dataType) {
         case DataBuffer.TYPE_BYTE:
@@ -577,17 +647,19 @@ public @UsesObjectEquals class Raster {
      * @param location  the upper-left corner of the {@code Raster}
      * @return a WritableRaster object with the specified data type,
      *         width, height, number of bands, and bits per band.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
-     *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     * @throws IllegalArgumentException if {@code bitsPerBand} or
+     *         {@code bands} is not greater than zero
      * @throws IllegalArgumentException if the product of
      *         {@code bitsPerBand} and {@code bands} is
      *         greater than the number of bits held by
      *         {@code dataType}
-     * @throws IllegalArgumentException if {@code bitsPerBand} or
-     *         {@code bands} is not greater than zero
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
+     *         {@code location.x + w} or
+     *         {@code location.y + h} results in integer overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
@@ -611,18 +683,37 @@ public @UsesObjectEquals class Raster {
                                                ") must be greater than 0");
         }
 
+        if (w <= 0 || h <= 0) {
+             throw new IllegalArgumentException("w and h must be positive");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
+
+        if (location != null) {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
+
+        int shift = (bands-1)*bitsPerBand;
+
+        /* Make sure the total mask size will fit in the data type */
+        if (shift+bitsPerBand > DataBuffer.getDataTypeSize(dataType)) {
+            throw new IllegalArgumentException("bitsPerBand("+
+                                               bitsPerBand+") * bands is "+
+                                               " greater than data type "+
+                                               "size.");
+        }
         if (bands != 1) {
             int[] masks = new int[bands];
             int mask = (1 << bitsPerBand) - 1;
-            int shift = (bands-1)*bitsPerBand;
 
-            /* Make sure the total mask size will fit in the data type */
-            if (shift+bitsPerBand > DataBuffer.getDataTypeSize(dataType)) {
-                throw new IllegalArgumentException("bitsPerBand("+
-                                                   bitsPerBand+") * bands is "+
-                                                   " greater than data type "+
-                                                   "size.");
-            }
             switch(dataType) {
             case DataBuffer.TYPE_BYTE:
             case DataBuffer.TYPE_USHORT:
@@ -697,6 +788,7 @@ public @UsesObjectEquals class Raster {
      *         {@code DataBuffer.TYPE_USHORT}.
      * @throws RasterFormatException if {@code dataBuffer} has more
      *         than one bank.
+     * @throws RasterFormatException if {@code dataBuffer} is too small.
      * @throws IllegalArgumentException if {@code w} and {@code h} are not
      *         both > 0
      * @throws IllegalArgumentException if the product of {@code w}
@@ -708,6 +800,8 @@ public @UsesObjectEquals class Raster {
      *         is less than 0
      * @throws IllegalArgumentException if {@code pixelStride} is less than 0
      * @throws NullPointerException if {@code bandOffsets} is null
+     * @throws IllegalArgumentException if any element of {@code bandOffsets} is greater
+     *         than {@code pixelStride} or the {@code scanlineStride}
 
      */
     public static WritableRaster createInterleavedRaster(DataBuffer dataBuffer,
@@ -719,6 +813,21 @@ public @UsesObjectEquals class Raster {
     {
         if (dataBuffer == null) {
             throw new NullPointerException("DataBuffer cannot be null");
+        }
+        if (pixelStride < 0) {
+            throw new IllegalArgumentException("pixelStride is < 0");
+        }
+        if (scanlineStride < 0) {
+            throw new IllegalArgumentException("scanlineStride is < 0");
+        }
+        if (bandOffsets == null) {
+            throw new NullPointerException("bandOffsets is null");
+        }
+        for (int i = 0; i < bandOffsets.length; i++) {
+            int off = bandOffsets[i];
+            if ((off > pixelStride) || (off > scanlineStride)) {
+                throw new IllegalArgumentException("Band offset " + off + " is too large for stride");
+            }
         }
 
         if (location == null) {
@@ -783,6 +892,10 @@ public @UsesObjectEquals class Raster {
      *         bank indices and band offsets.
      * @throws NullPointerException if {@code dataBuffer} is null,
      *         or {@code bankIndices} is null, or {@code bandOffsets} is null
+     * @throws IllegalArgumentException if the lengths of {@code bankIndices}
+     *         and {@code bandOffsets} are different.
+     * @throws ArrayIndexOutOfBoundsException if any element of {@code bankIndices}
+     *         is greater or equal to the number of bands in {@code dataBuffer}
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
@@ -825,6 +938,14 @@ public @UsesObjectEquals class Raster {
         if (bandOffsets.length != bands) {
             throw new IllegalArgumentException(
                                    "bankIndices.length != bandOffsets.length");
+        }
+
+        int numBanks = dataBuffer.getNumBanks();
+        for (int i = 0; i < bands; i++) {
+            if (bankIndices[i] >= numBanks) {
+                throw new ArrayIndexOutOfBoundsException("Bank[" + i + "] == " + bankIndices[i] +
+                         " and there are only " + numBanks + " banks.");
+            }
         }
 
         if (location == null) {
@@ -887,11 +1008,14 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified
      *         {@code DataBuffer}, width, height, scanline stride,
      *         and band masks.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
+     * @throws NullPointerException if {@code bandMasks} is null
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
      *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     *         {@code location.y + h} results in integer overflow
      * @throws IllegalArgumentException if {@code dataBuffer} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
@@ -910,6 +1034,25 @@ public @UsesObjectEquals class Raster {
         if (dataBuffer == null) {
             throw new NullPointerException("DataBuffer cannot be null");
         }
+
+        if (w <= 0 || h <= 0) {
+             throw new IllegalArgumentException("w and h must be positive");
+        }
+        long lsz = (long)w * h;
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
+
+        if (location != null) {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
+
         if (location == null) {
            location = new Point(0,0);
         }
@@ -964,11 +1107,13 @@ public @UsesObjectEquals class Raster {
      * @return a WritableRaster object with the specified
      *         {@code DataBuffer}, width, height, and
      *         bits per pixel.
-     * @throws RasterFormatException if {@code w} or {@code h}
-     *         is less than or equal to zero, or computing either
+     * @throws IllegalArgumentException if {@code w} and {@code h}
+     *         are not both greater than 0
+     * @throws IllegalArgumentException if the product of {@code w}
+     *         and {@code h} is greater than {@code Integer.MAX_VALUE}
+     * @throws RasterFormatException if computing either
      *         {@code location.x + w} or
-     *         {@code location.y + h} results in integer
-     *         overflow
+     *         {@code location.y + h} results in integer overflow
      * @throws IllegalArgumentException if {@code dataType} is not
      *         one of the supported data types, which are
      *         {@code DataBuffer.TYPE_BYTE},
@@ -976,6 +1121,8 @@ public @UsesObjectEquals class Raster {
      *         or {@code DataBuffer.TYPE_INT}
      * @throws RasterFormatException if {@code dataBuffer} has more
      *         than one bank.
+     * @throws RasterFormatException if {@code bitsPixel} is less than 1 or
+     *         not a power of 2 or exceeds the {@code dataBuffer} element size.
      * @throws NullPointerException if {@code dataBuffer} is null
      */
     public static WritableRaster createPackedRaster(DataBuffer dataBuffer,
@@ -986,6 +1133,25 @@ public @UsesObjectEquals class Raster {
         if (dataBuffer == null) {
             throw new NullPointerException("DataBuffer cannot be null");
         }
+        if (w <= 0 || h <= 0) {
+             throw new IllegalArgumentException("w and h must be positive");
+        }
+        long lsz = (long)w * h;
+
+        if (lsz > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Dimensions (width="+w+
+                                               " height="+h+") are too large");
+        }
+
+        if (location != null) {
+            if ((w + location.getX() > Integer.MAX_VALUE) ||
+                (h + location.getY() > Integer.MAX_VALUE)) {
+              throw new RasterFormatException(
+                 "location.x + w and location.y + h " +
+                 " cannot exceed Integer.MAX_VALUE");
+            }
+        }
+
         if (location == null) {
            location = new Point(0,0);
         }
@@ -1004,6 +1170,12 @@ public @UsesObjectEquals class Raster {
                                       " must only have 1 bank.");
         }
 
+        if ((bitsPerPixel < 1) || (bitsPerPixel > DataBuffer.getDataTypeSize(dataType))) {
+            // NB MPPSM checks power of 2 condition
+            throw new
+                RasterFormatException("bitsPerPixel must be > 0 and a power of 2 that " +
+                                      "does not exceed data buffer element size");
+        }
         MultiPixelPackedSampleModel mppsm =
                 new MultiPixelPackedSampleModel(dataType, w, h, bitsPerPixel);
 

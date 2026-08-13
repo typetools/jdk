@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,6 +46,7 @@ import sun.util.logging.PlatformLogger;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -72,15 +73,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *        {@code AWTEvent}&nbsp;B then event B will not be
  *        dispatched before event A.
  * </dl>
- * <p>
- * Some browsers partition applets in different code bases into
- * separate contexts, and establish walls between these contexts.
- * In such a scenario, there will be one {@code EventQueue}
- * per context. Other browsers place all applets into the same
- * context, implying that there will be only a single, global
- * {@code EventQueue} for all applets. This behavior is
- * implementation-dependent.  Consult your browser's documentation
- * for more information.
  * <p>
  * For information on the threading issues of the event dispatch
  * machinery, see <a href="doc-files/AWTThreadIssues.html#Autoshutdown"
@@ -129,11 +121,11 @@ public @UsesObjectEquals class EventQueue {
 
     /*
      * A single lock to synchronize the push()/pop() and related operations with
-     * all the EventQueues from the AppContext. Synchronization on any particular
+     * all the EventQueues. Synchronization on any particular
      * event queue(s) is not enough: we should lock the whole stack.
      */
-    private final Lock pushPopLock;
-    private final Condition pushPopCond;
+    private static final Lock pushPopLock = new ReentrantLock();
+    private static final Condition pushPopCond = pushPopLock.newCondition();
 
     /*
      * Dummy runnable to wake up EDT from getNextEvent() after
@@ -172,11 +164,6 @@ public @UsesObjectEquals class EventQueue {
      * a particular ID to be posted to the queue.
      */
     private volatile int waitForID;
-
-    /*
-     * AppContext corresponding to the queue.
-     */
-    private final AppContext appContext;
 
     private final String name = "AWT-EventQueue-" + threadInitNumber.getAndIncrement();
 
@@ -239,18 +226,6 @@ public @UsesObjectEquals class EventQueue {
         for (int i = 0; i < NUM_PRIORITIES; i++) {
             queues[i] = new Queue();
         }
-        /*
-         * NOTE: if you ever have to start the associated event dispatch
-         * thread at this point, be aware of the following problem:
-         * If this EventQueue instance is created in
-         * SunToolkit.createNewAppContext() the started dispatch thread
-         * may call AppContext.getAppContext() before createNewAppContext()
-         * completes thus causing mess in thread group to appcontext mapping.
-         */
-
-        appContext = AppContext.getAppContext();
-        pushPopLock = (Lock)appContext.get(AppContext.EVENT_QUEUE_LOCK_KEY);
-        pushPopCond = (Condition)appContext.get(AppContext.EVENT_QUEUE_COND_KEY);
     }
 
     /**
@@ -264,7 +239,7 @@ public @UsesObjectEquals class EventQueue {
      * @throws NullPointerException if {@code theEvent} is {@code null}
      */
     public void postEvent(AWTEvent theEvent) {
-        SunToolkit.flushPendingEvents(appContext);
+        SunToolkit.flushPendingEvents();
         postEventPrivate(theEvent);
     }
 
@@ -549,7 +524,7 @@ public @UsesObjectEquals class EventQueue {
              * of the synchronized block to avoid deadlock when
              * event queues are nested with push()/pop().
              */
-            SunToolkit.flushPendingEvents(appContext);
+            SunToolkit.flushPendingEvents();
             pushPopLock.lock();
             try {
                 AWTEvent event = getNextEventPrivate();
@@ -589,7 +564,7 @@ public @UsesObjectEquals class EventQueue {
              * of the synchronized block to avoid deadlock when
              * event queues are nested with push()/pop().
              */
-            SunToolkit.flushPendingEvents(appContext);
+            SunToolkit.flushPendingEvents();
             pushPopLock.lock();
             try {
                 for (int i = 0; i < NUM_PRIORITIES; i++) {
@@ -886,8 +861,10 @@ public @UsesObjectEquals class EventQueue {
             newEventQueue.previousQueue = topQueue;
             topQueue.nextQueue = newEventQueue;
 
-            if (appContext.get(AppContext.EVENT_QUEUE_KEY) == topQueue) {
-                appContext.put(AppContext.EVENT_QUEUE_KEY, newEventQueue);
+            synchronized (SunToolkit.class) {
+                if (SunToolkit.getSystemEventQueueImplPP() == topQueue) {
+                    SunToolkit.currentEventQueue = newEventQueue;
+                }
             }
 
             pushPopCond.signalAll();
@@ -946,8 +923,10 @@ public @UsesObjectEquals class EventQueue {
                 topQueue.dispatchThread.setEventQueue(prevQueue);
             }
 
-            if (appContext.get(AppContext.EVENT_QUEUE_KEY) == this) {
-                appContext.put(AppContext.EVENT_QUEUE_KEY, prevQueue);
+            synchronized (SunToolkit.class) {
+                if (SunToolkit.getSystemEventQueueImplPP() == this) {
+                    SunToolkit.currentEventQueue = prevQueue;
+                }
             }
 
             // Wake up EDT waiting in getNextEvent(), so it can
@@ -1070,7 +1049,7 @@ public @UsesObjectEquals class EventQueue {
     final void initDispatchThread() {
         pushPopLock.lock();
         try {
-            if (dispatchThread == null && !threadGroup.isDestroyed() && !appContext.isDisposed()) {
+            if (dispatchThread == null && !threadGroup.isDestroyed()) {
                 EventDispatchThread t = new EventDispatchThread(threadGroup, name, EventQueue.this);
                 t.setContextClassLoader(classLoader);
                 t.setPriority(Thread.NORM_PRIORITY + 1);
@@ -1088,7 +1067,7 @@ public @UsesObjectEquals class EventQueue {
         /*
          * Minimize discard possibility for non-posted events
          */
-        SunToolkit.flushPendingEvents(appContext);
+        SunToolkit.flushPendingEvents();
         /*
          * This synchronized block is to secure that the event dispatch
          * thread won't die in the middle of posting a new event to the
@@ -1146,7 +1125,7 @@ public @UsesObjectEquals class EventQueue {
      * {@code removeNotify} method.
      */
     final void removeSourceEvents(Object source, boolean removeAllEvents) {
-        SunToolkit.flushPendingEvents(appContext);
+        SunToolkit.flushPendingEvents();
         pushPopLock.lock();
         try {
             for (int i = 0; i < NUM_PRIORITIES; i++) {

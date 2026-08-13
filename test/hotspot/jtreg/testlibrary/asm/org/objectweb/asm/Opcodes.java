@@ -315,6 +315,7 @@ public interface Opcodes {
     int V23 = 0 << 16 | 67;
     int V24 = 0 << 16 | 68;
     int V25 = 0 << 16 | 69;
+    int V26 = 0 << 16 | 70;
 
     /**
       * Version flag indicating that the class is using 'preview' features.
@@ -336,6 +337,7 @@ public interface Opcodes {
     int ACC_STATIC = 0x0008; // field, method
     int ACC_FINAL = 0x0010; // class, field, method, parameter
     int ACC_SUPER = 0x0020; // class
+    int ACC_IDENTITY = 0x0020; // class
     int ACC_SYNCHRONIZED = 0x0020; // method
     int ACC_OPEN = 0x0020; // module
     int ACC_TRANSITIVE = 0x0020; // module requires

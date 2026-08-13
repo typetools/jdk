@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -408,6 +408,7 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object obj) {
         // Note: This would be identical to PropertyDescriptor but they don't
         // share the same fields.
@@ -493,6 +494,7 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
         indexedReadMethodName = old.indexedReadMethodName;
     }
 
+    @Override
     void updateGenericsFor(Class<?> type) {
         super.updateGenericsFor(type);
         try {
@@ -510,6 +512,7 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
      * @return a hash code value for this object.
      * @since 1.5
      */
+    @Override
     public int hashCode() {
         int result = super.hashCode();
 
@@ -523,6 +526,7 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
         return result;
     }
 
+    @Override
     void appendTo(StringBuilder sb) {
         super.appendTo(sb);
         appendTo(sb, "indexedPropertyType", this.indexedPropertyTypeRef);

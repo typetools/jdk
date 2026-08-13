@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2025 SAP SE. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2026 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,12 +32,14 @@
 class VM_Version: public Abstract_VM_Version {
 protected:
   enum Feature_Flag {
+    mfdscr,
     darn,
     brw,
     num_features // last entry to count features
   };
   enum Feature_Flag_Set {
     unknown_m             = 0,
+    mfdscr_m              = (1 << mfdscr ),
     darn_m                = (1 << darn   ),
     brw_m                 = (1 << brw    ),
     all_features_m        = (unsigned long)-1
@@ -60,15 +62,18 @@ public:
   // PPC64 supports fast class initialization checks
   static bool supports_fast_class_init_checks() { return true; }
   constexpr static bool supports_stack_watermark_barrier() { return true; }
-  constexpr static bool supports_recursive_lightweight_locking() { return true; }
+  constexpr static bool supports_recursive_fast_locking() { return true; }
   constexpr static bool supports_secondary_supers_table() { return true; }
 
   static bool supports_float16() { return PowerArchitecturePPC64 >= 9; }
 
+  static bool supports_on_spin_wait() { return true; }
+
   static bool is_determine_features_test_running() { return _is_determine_features_test_running; }
   // CPU instruction support
-  static bool has_darn()    { return (_features & darn_m) != 0; }
-  static bool has_brw()     { return (_features & brw_m) != 0; }
+  static bool has_mfdscr() { return (_features & mfdscr_m) != 0; } // Power8, but may be unavailable (QEMU)
+  static bool has_darn()   { return (_features & darn_m) != 0; }
+  static bool has_brw()    { return (_features & brw_m) != 0; }
 
   // Assembler testing
   static void allow_all();
@@ -78,6 +83,9 @@ public:
   static uint64_t _dscr_val;
 
   static void initialize_cpu_information(void);
+
+  static int get_dcache_line_size();
+  static int get_icache_line_size();
 };
 
 #endif // CPU_PPC_VM_VERSION_PPC_HPP

@@ -1660,7 +1660,7 @@ public class Utils {
         CompilationUnitTree cu = path.getCompilationUnit();
         LineMap lineMap = cu.getLineMap();
         DocSourcePositions spos = docTrees.getSourcePositions();
-        long pos = spos.getStartPosition(cu, path.getLeaf());
+        long pos = spos.getStartPosition(path.getLeaf());
         return lineMap.getLineNumber(pos);
     }
 
@@ -2572,7 +2572,7 @@ public class Utils {
                     usedInDeclaration.addAll(types2Classes(tpe.getBounds()));
                 }
                 usedInDeclaration.addAll(types2Classes(List.of(te.getSuperclass())));
-                usedInDeclaration.addAll(types2Classes(te.getPermittedSubclasses()));
+                // Intentionally allow preview permitted subclasses
                 usedInDeclaration.addAll(types2Classes(te.getRecordComponents().stream().map(Element::asType).toList())); //TODO: annotations on record components???
             }
             case CONSTRUCTOR, METHOD -> {
@@ -2725,6 +2725,10 @@ public class Utils {
                 parentPreviewAPI = configuration.workArounds.isPreviewAPI(enclosing);
             }
         }
+        String previewFeatureTag = configuration.getOptions().previewFeatureTag();
+        if (previewFeatureTag != null && hasBlockTag(el, UNKNOWN_BLOCK_TAG, previewFeatureTag)) {
+            return true;
+        }
         boolean previewAPI = configuration.workArounds.isPreviewAPI(el);
         return !parentPreviewAPI && previewAPI;
     }
@@ -2801,6 +2805,7 @@ public class Utils {
         public boolean isPreview(Element el) {
             PreviewSummary previewAPIs = declaredUsingPreviewAPIs(el);
             Element enclosing = el.getEnclosingElement();
+            String previewFeatureTag = configuration.getOptions().previewFeatureTag();
 
             return    (   !previewLanguageFeaturesUsed(el).isEmpty()
                        || configuration.workArounds.isPreviewAPI(el)
@@ -2808,7 +2813,9 @@ public class Utils {
                            && configuration.workArounds.isPreviewAPI(enclosing))
                        || !previewAPIs.previewAPI.isEmpty()
                        || !previewAPIs.reflectivePreviewAPI.isEmpty()
-                       || !previewAPIs.declaredUsingPreviewFeature.isEmpty())
+                       || !previewAPIs.declaredUsingPreviewFeature.isEmpty()
+                       || (   previewFeatureTag != null
+                           && hasBlockTag(el, Kind.UNKNOWN_BLOCK_TAG, previewFeatureTag)))
                    && !hasNoPreviewAnnotation(el);
         }
     };

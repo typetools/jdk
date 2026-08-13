@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -122,6 +122,7 @@ public abstract class DateTimeSyntax implements Serializable, Cloneable {
      */
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
+    @Override
     public boolean equals(@Nullable Object object) {
         return object instanceof DateTimeSyntax other &&
                 value.equals(other.value);
@@ -131,6 +132,7 @@ public abstract class DateTimeSyntax implements Serializable, Cloneable {
      * Returns a hash code value for this date-time attribute. The hashcode is
      * that of this attribute's {@code java.util.Date} value.
      */
+    @Override
     public int hashCode() {
         return value.hashCode();
     }
@@ -140,6 +142,7 @@ public abstract class DateTimeSyntax implements Serializable, Cloneable {
      * string value is just this attribute's {@code java.util.Date} value
      * converted to a string.
      */
+    @Override
     public String toString() {
         return "" + value;
     }
