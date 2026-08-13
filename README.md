@@ -46,6 +46,17 @@ You might need to change `--with-jtreg` to one of these:
   --with-jtreg=$HOME/bin/install/jtreg
 ```
 
+`--with-jtreg` is needed only to run the JDK's own tests.  If `configure`
+rejects the installed jtreg as too old, omit `--with-jtreg`; `make jdk` does not
+use jtreg.
+
+Building JDK *N* requires a boot JDK of version *N* or *N*-1.  If the default
+`java` on your path is older, pass the boot JDK explicitly:
+
+```sh
+  --with-boot-jdk=/usr/lib/jvm/java-25-openjdk-amd64
+```
+
 ## Contributing
 
 We welcome pull requests that add new annotations or correct existing ones.
@@ -72,6 +83,9 @@ and do compile.
 This fork's annotations are pulled into those repositories, in order to build an
 annotated JDK.  We do not write annotations in (say) typetools:jdk21u, because
 it would be painful to get them into typetools:jdk21u due to subsequent commits.
+
+Upon upgrade, typetools:jdkNNu is no longer maintained for earlier NN.
+That is, only one typetools:jdkNNu is maintained at any moment.
 
 ## Pull request merge conflicts
 
@@ -174,7 +188,16 @@ Fork into typetools:  <https://github.com/openjdk/jdk${VER}u>
 
 Clone jdk${VER}u repositories into, say, $t/libraries/ .
 
-Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u:  run
+Determine the last commit in both openjdk:jdk and in openjdk:jdk${VER}u.  That
+commit carries two tags: the last mainline build of JDK ${VER} (for example,
+`jdk25+26`) and build 0 of the following JDK (for example, `jdk26+0`).  In a
+clone of openjdk:jdk, run
+
+```sh
+git merge-base jdk${VER}-ga master
+```
+
+Alternately, run
 
 ```sh
 git log --graph | tac > git-log-reversed.txt
@@ -200,7 +223,22 @@ great deal of work (requires using Emacs).
 Replace uses of the old JDK version (such as 17) with the new one (such as 21).
 
 * In this file
-* In .azure/azure-pipelines.yml.m4
+* In CI files.
+  Change `jdk_version` in `.azure/defs.m4` and `.github/workflows/defs.m4`.  That
+  one macro supplies both the "jdk25u" repository name (via `jdku_version`) and
+  the `mdernst/cf-ubuntu-jdk25-plus` boot-JDK container, throughout
+  `.azure/azure-pipelines.yml.m4` and `.github/workflows/ci.yml.m4`.
+
+  Do not change `canary_version` or `latest_version` in those same files, and do
+  not change the version numbers in `.azure/jobs.m4`.  Those are the JDK versions
+  that run the Checker Framework, not the JDK version that is annotated.
+
+  Regenerate some files:
+
+  ```sh
+  make -B -C .azure
+  make -B -C .github/workflows
+  ```
 
 Make a fork of jdk21u.  Follow the instructions in "The typetools/jdk21u
 repository" above, except replace
@@ -221,9 +259,14 @@ git pull ../jdk-fork-${USER}-branch-jdk21
 Push and wait for CI to pass.
 
 Find all `.java` files that contain both `@AnnotatedFor` and a relevant `@since`
-in Javadoc.  For example, the regex `@since[ \t](18|19|20|21)`.  For each
-relevant `@since`, add annotations for all the type systems in `@AnnotatedFor`.
-Note: I have not yet done this for JDK 18-21.
+in Javadoc.  For example, when upgrading from Java 21 to Java 25, the regex
+`@since[ \t](22|23|24|25)`.  The `@since` may be on the class declaration or on
+an individual method, constructor, or field, so examine every occurrence in the
+file rather than only the first.  For each relevant `@since`, add annotations
+for all the type systems in `@AnnotatedFor`.  Also annotate classes that are
+entirely new in the JDK versions being added; those have no `@AnnotatedFor` yet,
+so the above search does not find them.
+Note: I have not yet done this for JDK 18-25.
 
 DO NOT squash-and-merge the pull request.  Both the jdk and jdk21u repositories
 need to be merged, retaining history.
@@ -238,6 +281,10 @@ JDK source code.  In order to compile, it is necessary that definitions of
 those annotations are available -- in a module such as java.base, or on the
 classpath.  Putting them in `java.base` worked for JDK 11,
 but I wasn't able to make that work for JDK 17.
+
+The annotations provoke javac warnings, such as `[exports]` warnings about
+Checker Framework classes that a module does not export.  Those warnings must
+not fail the build.
 
 ## Upstream README follows
 
