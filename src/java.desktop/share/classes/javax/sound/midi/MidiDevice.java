@@ -27,6 +27,10 @@ package javax.sound.midi;
 
 import java.util.List;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
+
 /**
  * {@code MidiDevice} is the base interface for all MIDI devices. Common devices
  * include synthesizers, sequencers, MIDI input ports, and MIDI output ports.
@@ -93,6 +97,8 @@ import java.util.List;
  * @see Receiver
  * @see Transmitter
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface MidiDevice extends AutoCloseable {
 
     /**
