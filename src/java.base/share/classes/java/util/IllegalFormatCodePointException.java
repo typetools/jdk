@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when a character with an invalid Unicode code
  * point as defined by {@link Character#isValidCodePoint} is passed to the
@@ -50,6 +52,7 @@ public non-sealed class IllegalFormatCodePointException extends IllegalFormatExc
      * @param  c
      *         The illegal Unicode code point
      */
+    @SideEffectFree
     public IllegalFormatCodePointException(int c) {
         this.c = c;
     }

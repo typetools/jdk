@@ -72,6 +72,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @param index the illegal index.
      * @since 9
      */
+    @SideEffectFree
     public IndexOutOfBoundsException(int index) {
         super("Index out of range: " + index);
     }
@@ -86,6 +87,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @param index the illegal index.
      * @since 16
      */
+    @SideEffectFree
     public IndexOutOfBoundsException(long index) {
         super("Index out of range: " + index);
     }

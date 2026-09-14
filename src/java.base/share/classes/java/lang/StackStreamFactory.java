@@ -26,7 +26,7 @@ package java.lang;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.ConstructorAccessor;
@@ -376,7 +376,7 @@ final class StackStreamFactory {
          *
          * @see #tryNextFrame
          */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         final Class<?> nextFrame() {
             if (!hasNext()) {
                 return null;

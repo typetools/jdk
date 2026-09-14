@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the format width is a negative value other
  * than {@code -1} or is otherwise unsupported. If a given format width is not
@@ -46,6 +48,7 @@ public non-sealed class IllegalFormatWidthException extends IllegalFormatExcepti
      * @param  w
      *         The width
      */
+    @SideEffectFree
     public IllegalFormatWidthException(int w) {
         this.w = w;
     }

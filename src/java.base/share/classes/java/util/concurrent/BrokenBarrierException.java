@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -56,6 +57,7 @@ public class BrokenBarrierException extends Exception {
      * Constructs a {@code BrokenBarrierException} with no specified detail
      * message.
      */
+    @SideEffectFree
     public BrokenBarrierException() {}
 
     /**
@@ -64,6 +66,7 @@ public class BrokenBarrierException extends Exception {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     public BrokenBarrierException(@Nullable String message) {
         super(message);
     }

@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -43,6 +44,7 @@ public class ExemptionMechanismException extends GeneralSecurityException {
      * message. (A detailed message is a {@code String} that describes this
      * particular exception.)
      */
+    @SideEffectFree
     public ExemptionMechanismException() {
         super();
     }
@@ -54,6 +56,7 @@ public class ExemptionMechanismException extends GeneralSecurityException {
      *
      * @param msg the detailed message.
      */
+    @SideEffectFree
    public ExemptionMechanismException(String msg) {
        super(msg);
     }

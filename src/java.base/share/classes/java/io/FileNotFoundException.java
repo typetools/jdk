@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -50,6 +51,7 @@ public class FileNotFoundException extends IOException {
      * Constructs a {@code FileNotFoundException} with
      * {@code null} as its error detail message.
      */
+    @SideEffectFree
     public FileNotFoundException() {
         super();
     }
@@ -63,6 +65,7 @@ public class FileNotFoundException extends IOException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     public FileNotFoundException(@Nullable String s) {
         super(s);
     }
@@ -76,6 +79,7 @@ public class FileNotFoundException extends IOException {
      *
      * @since 1.2
      */
+    @SideEffectFree
     private FileNotFoundException(String path, @Nullable String reason) {
         super(path + ((reason == null)
                       ? ""

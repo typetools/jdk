@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception is thrown when a particular cryptographic algorithm is
  * requested but is not available in the environment.
@@ -43,6 +45,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      * message. A detail message is a {@code String} that describes this
      * particular exception.
      */
+    @SideEffectFree
     public NoSuchAlgorithmException() {
         super();
     }
@@ -55,6 +58,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public NoSuchAlgorithmException(String msg) {
         super(msg);
     }
@@ -70,6 +74,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public NoSuchAlgorithmException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -85,6 +90,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public NoSuchAlgorithmException(Throwable cause) {
         super(cause);
     }

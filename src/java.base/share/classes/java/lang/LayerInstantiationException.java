@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when creating a {@linkplain ModuleLayer module layer} fails.
  *
@@ -38,6 +40,7 @@ public class LayerInstantiationException extends RuntimeException {
     /**
      * Constructs a {@code LayerInstantiationException} with no detail message.
      */
+    @SideEffectFree
     public LayerInstantiationException() {
     }
 
@@ -48,6 +51,7 @@ public class LayerInstantiationException extends RuntimeException {
      * @param msg
      *        The detail message; can be {@code null}
      */
+    @SideEffectFree
     public LayerInstantiationException(String msg) {
         super(msg);
     }
@@ -58,6 +62,7 @@ public class LayerInstantiationException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
+    @SideEffectFree
     public LayerInstantiationException(Throwable cause) {
         super(cause);
     }
@@ -71,6 +76,7 @@ public class LayerInstantiationException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
+    @SideEffectFree
     public LayerInstantiationException(String msg, Throwable cause) {
         super(msg, cause);
     }

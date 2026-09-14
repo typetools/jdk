@@ -26,6 +26,8 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when a semantically malformed parameterized type is
  * encountered by a reflective method that needs to instantiate it.
@@ -42,6 +44,7 @@ public class MalformedParameterizedTypeException extends RuntimeException {
      * Constructs a {@code MalformedParameterizedTypeException} with
      * no detail message.
      */
+    @SideEffectFree
     public MalformedParameterizedTypeException() {
         super();
     }
@@ -51,6 +54,7 @@ public class MalformedParameterizedTypeException extends RuntimeException {
      * the given detail message.
      * @param message the detail message; may be {@code null}
      */
+    @SideEffectFree
     public MalformedParameterizedTypeException(String message) {
         super(message);
     }

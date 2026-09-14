@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -46,6 +47,7 @@ public class NotSerializableException extends ObjectStreamException {
      *
      * @param classname Class of the instance being serialized/deserialized.
      */
+    @SideEffectFree
     public NotSerializableException(@Nullable String classname) {
         super(classname);
     }
@@ -53,6 +55,7 @@ public class NotSerializableException extends ObjectStreamException {
     /**
      *  Constructs a NotSerializableException object.
      */
+    @SideEffectFree
     public NotSerializableException() {
         super();
     }

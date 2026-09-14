@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -44,6 +45,7 @@ public class ProtocolException extends IOException {
      *
      * @param   message   the detail message.
      */
+    @SideEffectFree
     public ProtocolException(String message) {
         super(message);
     }
@@ -51,6 +53,7 @@ public class ProtocolException extends IOException {
     /**
      * Constructs a new {@code ProtocolException} with no detail message.
      */
+    @SideEffectFree
     public ProtocolException() {
     }
 }

@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -54,6 +55,7 @@ public class UTFDataFormatException extends IOException {
      * Constructs a {@code UTFDataFormatException} with
      * {@code null} as its error detail message.
      */
+    @SideEffectFree
     public UTFDataFormatException() {
         super();
     }
@@ -67,6 +69,7 @@ public class UTFDataFormatException extends IOException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     public UTFDataFormatException(@Nullable String s) {
         super(s);
     }

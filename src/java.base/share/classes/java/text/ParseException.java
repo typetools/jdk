@@ -38,6 +38,8 @@
 
 package java.text;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an error has been reached unexpectedly
  * while parsing.
@@ -60,6 +62,7 @@ public class ParseException extends Exception {
      * @param s the detail message
      * @param errorOffset the position where the error is found while parsing.
      */
+    @SideEffectFree
     public ParseException(String s, int errorOffset) {
         super(s);
         this.errorOffset = errorOffset;

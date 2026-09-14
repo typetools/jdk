@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -48,6 +49,7 @@ public class NotDirectoryException
      * @param   file
      *          a string identifying the file or {@code null} if not known
      */
+    @SideEffectFree
     public NotDirectoryException(@Nullable String file) {
         super(file);
     }

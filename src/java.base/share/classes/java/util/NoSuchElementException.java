@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown by various accessor methods to indicate that the element being requested
  * does not exist.
@@ -41,6 +43,7 @@ public class NoSuchElementException extends RuntimeException {
      * Constructs a {@code NoSuchElementException} with {@code null}
      * as its error message string.
      */
+    @SideEffectFree
     public NoSuchElementException() {
         super();
     }
@@ -54,6 +57,7 @@ public class NoSuchElementException extends RuntimeException {
      *              {@link #getCause()} method), or null
      * @since 15
      */
+    @SideEffectFree
     public NoSuchElementException(String s, Throwable cause) {
         super(s, cause);
     }
@@ -68,6 +72,7 @@ public class NoSuchElementException extends RuntimeException {
      *              {@link #getCause()} method)
      * @since 15
      */
+    @SideEffectFree
     public NoSuchElementException(Throwable cause) {
         super(cause);
     }
@@ -79,6 +84,7 @@ public class NoSuchElementException extends RuntimeException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     public NoSuchElementException(String s) {
         super(s);
     }

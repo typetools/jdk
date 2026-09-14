@@ -128,6 +128,7 @@ public class Exception extends Throwable {
      *                           be writable
      * @since 1.7
      */
+    @SideEffectFree
     protected @Unique Exception(@Nullable @PolyConfidential String message, @Nullable @PolyConfidential Throwable cause,
                         boolean enableSuppression,
                         boolean writableStackTrace) {

@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -46,6 +47,7 @@ public class ShortBufferException extends GeneralSecurityException {
      * message. A detail message is a {@code String}  that describes this
      * particular exception.
      */
+    @SideEffectFree
     public ShortBufferException() {
         super();
     }
@@ -56,6 +58,7 @@ public class ShortBufferException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public ShortBufferException(String msg) {
         super(msg);
     }

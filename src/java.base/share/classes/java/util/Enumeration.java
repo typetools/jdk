@@ -29,9 +29,9 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 /**
  * An object that implements the Enumeration interface generates a
@@ -91,6 +91,7 @@ public interface Enumeration<E> {
      * @return     the next element of this enumeration.
      * @throws     NoSuchElementException  if no more elements exist.
      */
+    @SideEffectsOnly("this")
     E nextElement(@GuardSatisfied @NonEmpty Enumeration<E> this);
 
     /**
@@ -134,7 +135,7 @@ public interface Enumeration<E> {
             @Override public boolean hasNext() {
                 return hasMoreElements();
             }
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             @Override public E next(/*@NonEmpty Iterator<E> this*/) {
                 return nextElement();

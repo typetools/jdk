@@ -56,6 +56,7 @@
  */
 package java.time.zone;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.time.DateTimeException;
 
 /**
@@ -81,6 +82,7 @@ public class ZoneRulesException extends DateTimeException {
      *
      * @param message  the message to use for this exception, may be null
      */
+    @SideEffectFree
     public ZoneRulesException(String message) {
         super(message);
     }
@@ -91,6 +93,7 @@ public class ZoneRulesException extends DateTimeException {
      * @param message  the message to use for this exception, may be null
      * @param cause  the cause of the exception, may be null
      */
+    @SideEffectFree
     public ZoneRulesException(String message, Throwable cause) {
         super(message, cause);
     }

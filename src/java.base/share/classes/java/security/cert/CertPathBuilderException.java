@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.security.GeneralSecurityException;
 
 /**
@@ -57,6 +58,7 @@ public class CertPathBuilderException extends GeneralSecurityException {
      * Creates a {@code CertPathBuilderException} with {@code null}
      * as its detail message.
      */
+    @SideEffectFree
     public CertPathBuilderException() {
         super();
     }
@@ -68,6 +70,7 @@ public class CertPathBuilderException extends GeneralSecurityException {
      *
      * @param msg the detail message
      */
+    @SideEffectFree
     public CertPathBuilderException(String msg) {
         super(msg);
     }
@@ -85,6 +88,7 @@ public class CertPathBuilderException extends GeneralSecurityException {
      * {@link #getCause getCause()} method). (A {@code null} value is
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public CertPathBuilderException(Throwable cause) {
         super(cause);
     }
@@ -98,6 +102,7 @@ public class CertPathBuilderException extends GeneralSecurityException {
      * {@link #getCause getCause()} method). (A {@code null} value is
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public CertPathBuilderException(String msg, Throwable cause) {
         super(msg, cause);
     }

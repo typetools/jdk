@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -53,6 +54,7 @@ public class CancellationException extends IllegalStateException {
     /**
      * Constructs a {@code CancellationException} with no detail message.
      */
+    @SideEffectFree
     public CancellationException() {}
 
     /**
@@ -61,6 +63,7 @@ public class CancellationException extends IllegalStateException {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     public CancellationException(@Nullable String message) {
         super(message);
     }

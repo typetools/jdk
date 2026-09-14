@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -54,6 +55,7 @@ public class CompletionException extends RuntimeException {
      * The cause is not initialized, and may subsequently be
      * initialized by a call to {@link #initCause(Throwable) initCause}.
      */
+    @SideEffectFree
     protected CompletionException() { }
 
     /**
@@ -63,6 +65,7 @@ public class CompletionException extends RuntimeException {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     protected CompletionException(@Nullable String message) {
         super(message);
     }
@@ -75,6 +78,7 @@ public class CompletionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
+    @SideEffectFree
     public CompletionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -88,6 +92,7 @@ public class CompletionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
+    @SideEffectFree
     public CompletionException(@Nullable Throwable cause) {
         super(cause);
     }

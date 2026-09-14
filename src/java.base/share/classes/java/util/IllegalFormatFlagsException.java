@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an illegal combination flags is given.
  *
@@ -47,6 +49,7 @@ public non-sealed class IllegalFormatFlagsException extends IllegalFormatExcepti
      * @param  f
      *         The set of format flags which contain an illegal combination
      */
+    @SideEffectFree
     public IllegalFormatFlagsException(String f) {
         if (f == null)
             throw new NullPointerException();

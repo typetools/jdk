@@ -23,6 +23,8 @@ define([cftests_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -42,6 +44,8 @@ define([daikon_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -60,6 +64,8 @@ define([plume_lib_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework

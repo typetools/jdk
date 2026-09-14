@@ -25,6 +25,8 @@
 
 package javax.crypto;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception is thrown when the length of data provided to a block
  * cipher is incorrect, i.e., does not match the block size of the cipher.
@@ -45,6 +47,7 @@ public class IllegalBlockSizeException
      * A detail message is a {@code String}  that describes this particular
      * exception.
      */
+    @SideEffectFree
     public IllegalBlockSizeException() {
         super();
     }
@@ -55,6 +58,7 @@ public class IllegalBlockSizeException
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public IllegalBlockSizeException(String msg) {
         super(msg);
     }

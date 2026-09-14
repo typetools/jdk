@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate an unexpected failure in pattern matching.
  *
@@ -91,6 +93,7 @@ public final class MatchException extends RuntimeException {
      *         permitted, and indicates that the cause is nonexistent or
      *         unknown.)
      */
+    @SideEffectFree
     public MatchException(String message, Throwable cause) {
         super(message, cause);
     }

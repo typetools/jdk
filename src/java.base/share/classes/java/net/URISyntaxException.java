@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Checked exception thrown to indicate that a string could not be parsed as a
@@ -67,6 +68,7 @@ public class URISyntaxException
      * @throws  IllegalArgumentException
      *          If the error index is less than {@code -1}
      */
+    @SideEffectFree
     public URISyntaxException(String input, String reason, int index) {
         super(reason);
         if ((input == null) || (reason == null))
@@ -87,6 +89,7 @@ public class URISyntaxException
      * @throws  NullPointerException
      *          If either the input or reason strings are {@code null}
      */
+    @SideEffectFree
     public URISyntaxException(String input, String reason) {
         this(input, reason, -1);
     }

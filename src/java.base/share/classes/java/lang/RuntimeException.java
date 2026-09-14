@@ -122,6 +122,7 @@ public class RuntimeException extends Exception {
      *
      * @since 1.7
      */
+    @SideEffectFree
     protected RuntimeException(@Nullable @PolyConfidential String message, @Nullable @PolyConfidential Throwable cause,
                                boolean enableSuppression,
                                boolean writableStackTrace) {

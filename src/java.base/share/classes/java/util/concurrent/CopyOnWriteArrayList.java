@@ -49,8 +49,8 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
@@ -473,7 +473,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E set(int index, E element) {
         synchronized (lock) {
@@ -497,7 +497,7 @@ public class CopyOnWriteArrayList<E>
      * @return {@code true} (as specified by {@link Collection#add})
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean add(E e) {
         synchronized (lock) {
@@ -518,7 +518,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void add(int index, E element) {
         synchronized (lock) {
@@ -547,7 +547,7 @@ public class CopyOnWriteArrayList<E>
      * @since 21
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addFirst(E e) {
         add(0, e);
@@ -559,7 +559,7 @@ public class CopyOnWriteArrayList<E>
      * @since 21
      */
     @EnsuresNonEmpty("this")
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void addLast(E e) {
         synchronized (lock) {
@@ -574,7 +574,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E remove(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, int index) {
         synchronized (lock) {
@@ -602,7 +602,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeFirst() {
         synchronized (lock) {
@@ -619,7 +619,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NoSuchElementException {@inheritDoc}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E removeLast() {
         synchronized (lock) {
@@ -643,7 +643,7 @@ public class CopyOnWriteArrayList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if this list contained the specified element
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean remove(@CanShrink CopyOnWriteArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] snapshot = getArray();
@@ -725,7 +725,7 @@ public class CopyOnWriteArrayList<E>
      * @param e element to be added to this list, if absent
      * @return {@code true} if the element was added
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addIfAbsent(E e) {
         Object[] snapshot = getArray();
@@ -795,7 +795,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeAll(@CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
@@ -818,7 +818,7 @@ public class CopyOnWriteArrayList<E>
      *         or if the specified collection is null
      * @see #remove(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean retainAll(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
@@ -836,7 +836,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #addIfAbsent(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public int addAllAbsent(Collection<? extends E> c) {
         Object[] cs = c.toArray();
@@ -869,7 +869,7 @@ public class CopyOnWriteArrayList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void clear(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
@@ -887,7 +887,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #add(Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(Collection<? extends E> c) {
         Object[] cs = (c.getClass() == CopyOnWriteArrayList.class) ?
@@ -926,7 +926,7 @@ public class CopyOnWriteArrayList<E>
      * @throws NullPointerException if the specified collection is null
      * @see #add(int,Object)
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean addAll(int index, Collection<? extends E> c) {
         Object[] cs = c.toArray();
@@ -968,7 +968,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeIf(@CanShrink CopyOnWriteArrayList<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
@@ -1043,7 +1043,7 @@ public class CopyOnWriteArrayList<E>
         setArray(es);
     }
 
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public void sort(Comparator<? super E> c) {
         synchronized (lock) {
@@ -1265,7 +1265,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @SuppressWarnings("unchecked")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty COWIterator<E> this) {
             if (! hasNext())
@@ -1274,7 +1274,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @SuppressWarnings("unchecked")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         public E previous() {
             if (! hasPrevious())
                 throw new NoSuchElementException();
@@ -1296,7 +1296,7 @@ public class CopyOnWriteArrayList<E>
          * @throws UnsupportedOperationException always; {@code remove}
          *         is not supported by this iterator.
          */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             throw new UnsupportedOperationException();
@@ -1307,7 +1307,7 @@ public class CopyOnWriteArrayList<E>
          * @throws UnsupportedOperationException always; {@code set}
          *         is not supported by this iterator.
          */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) {
             throw new UnsupportedOperationException();
@@ -1318,7 +1318,7 @@ public class CopyOnWriteArrayList<E>
          * @throws UnsupportedOperationException always; {@code add}
          *         is not supported by this iterator.
          */
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
             throw new UnsupportedOperationException();
@@ -1535,7 +1535,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             synchronized (lock) {
@@ -1587,7 +1587,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean add(E element) {
             synchronized (lock) {
@@ -1599,7 +1599,7 @@ public class CopyOnWriteArrayList<E>
             return true;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             synchronized (lock) {
@@ -1611,13 +1611,13 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void addFirst(E e) {
             add(0, e);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void addLast(E e) {
             synchronized (lock) {
@@ -1625,7 +1625,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) {
             synchronized (lock) {
@@ -1637,7 +1637,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             synchronized (lock) {
@@ -1650,7 +1650,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             synchronized (lock) {
@@ -1661,7 +1661,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             synchronized (lock) {
@@ -1674,7 +1674,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E removeFirst() {
             synchronized (lock) {
@@ -1685,7 +1685,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E removeLast() {
             synchronized (lock) {
@@ -1696,7 +1696,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(@Nullable @UnknownSignedness Object o) {
             synchronized (lock) {
@@ -1758,7 +1758,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             synchronized (lock) {
@@ -1768,21 +1768,21 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> c.contains(e));
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
             Objects.requireNonNull(c);
             return bulkRemove(e -> !c.contains(e));
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             Objects.requireNonNull(filter);
@@ -1808,6 +1808,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public List<E> reversed() {
             return new Reversed<>(this, lock);
         }
@@ -1830,7 +1831,7 @@ public class CopyOnWriteArrayList<E>
             return nextIndex() < size;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E next(@NonEmpty COWSubListIterator<E> this) {
             if (hasNext())
@@ -1893,6 +1894,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @since 21
      */
+    @SideEffectFree
     public List<E> reversed() {
         return new Reversed<>(this, lock);
     }
@@ -1918,10 +1920,10 @@ public class CopyOnWriteArrayList<E>
             }
             @Pure
             public boolean hasNext() { return it.hasPrevious(); }
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public E next() { return it.previous(); }
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public void remove() { it.remove(); }
         }
@@ -1944,7 +1946,7 @@ public class CopyOnWriteArrayList<E>
                 return it.hasPrevious();
             }
 
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public E next() {
                 return it.previous();
@@ -1969,19 +1971,19 @@ public class CopyOnWriteArrayList<E>
                 return nextIndex() - 1;
             }
 
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 throw new UnsupportedOperationException();
             }
 
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public void set(E e) {
                 throw new UnsupportedOperationException();
             }
 
-            // @SideEffectsOnly("this")
+            @SideEffectsOnly("this")
             @DoesNotUnrefineReceiver("modifiability")
             public void add(E e) {
                 throw new UnsupportedOperationException();
@@ -2008,14 +2010,14 @@ public class CopyOnWriteArrayList<E>
 
         // ========== Collection ==========
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean add(E e) {
             base.add(0, e);
             return true;
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> c) {
             @SuppressWarnings("unchecked")
@@ -2029,7 +2031,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             base.clear();
@@ -2082,7 +2084,7 @@ public class CopyOnWriteArrayList<E>
             return StreamSupport.stream(spliterator(), true);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean remove(Object o) {
             synchronized (lock) {
@@ -2094,13 +2096,13 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeAll(Collection<?> c) {
             return base.removeAll(c);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean retainAll(Collection<?> c) {
             return base.retainAll(c);
@@ -2150,7 +2152,7 @@ public class CopyOnWriteArrayList<E>
 
         // ========== List ==========
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             synchronized (lock) {
@@ -2158,19 +2160,19 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void addFirst(E e) {
             base.add(e);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void addLast(E e) {
             base.add(0, e);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             @SuppressWarnings("unchecked")
@@ -2240,7 +2242,7 @@ public class CopyOnWriteArrayList<E>
             return new DescendingListIterator(index);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             synchronized (lock) {
@@ -2248,7 +2250,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E removeFirst() {
             synchronized (lock) {
@@ -2260,7 +2262,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E removeLast() {
             synchronized (lock) {
@@ -2271,7 +2273,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             return base.removeIf(filter);
@@ -2282,14 +2284,14 @@ public class CopyOnWriteArrayList<E>
             base.replaceAll(operator);
         }
 
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             base.sort(Collections.reverseOrder(c));
         }
 
         @EnsuresNonEmpty("this")
-        // @SideEffectsOnly("this")
+        @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             synchronized (lock) {
@@ -2306,6 +2308,7 @@ public class CopyOnWriteArrayList<E>
             }
         }
 
+        @SideEffectFree
         public List<E> reversed() {
             return base;
         }

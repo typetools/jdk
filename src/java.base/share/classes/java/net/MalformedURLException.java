@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -42,6 +43,7 @@ public class MalformedURLException extends IOException {
     /**
      * Constructs a {@code MalformedURLException} with no detail message.
      */
+    @SideEffectFree
     public MalformedURLException() {
     }
 
@@ -51,6 +53,7 @@ public class MalformedURLException extends IOException {
      *
      * @param   msg   the detail message.
      */
+    @SideEffectFree
     public MalformedURLException(String msg) {
         super(msg);
     }

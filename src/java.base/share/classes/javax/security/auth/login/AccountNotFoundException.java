@@ -25,6 +25,8 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an account was not found.
  *
@@ -42,6 +44,7 @@ public class AccountNotFoundException extends AccountException {
      * Constructs a AccountNotFoundException with no detail message.
      * A detail message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public AccountNotFoundException() {
         super();
     }
@@ -53,6 +56,7 @@ public class AccountNotFoundException extends AccountException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public AccountNotFoundException(String msg) {
         super(msg);
     }

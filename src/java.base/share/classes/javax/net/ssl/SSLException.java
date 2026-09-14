@@ -26,6 +26,7 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -46,6 +47,7 @@ public class SSLException extends IOException {
      *
      * @param reason describes the problem.
      */
+    @SideEffectFree
     public SSLException(String reason) {
         super(reason);
     }
@@ -62,6 +64,7 @@ public class SSLException extends IOException {
      *          unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public SSLException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -78,6 +81,7 @@ public class SSLException extends IOException {
      *          unknown.)
      * @since 1.5
      */
+    @SideEffectFree
     public SSLException(Throwable cause) {
         super(cause);
     }

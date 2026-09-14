@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the argument index is not within the valid
  * range of supported argument index values. If an index value isn't
@@ -44,6 +46,7 @@ final class IllegalFormatArgumentIndexException extends IllegalFormatException {
      * Constructs an instance of this class with the specified argument index
      * @param index The value of a corresponding illegal argument index.
      */
+    @SideEffectFree
     IllegalFormatArgumentIndexException(int index) {
         illegalIndex = index;
     }

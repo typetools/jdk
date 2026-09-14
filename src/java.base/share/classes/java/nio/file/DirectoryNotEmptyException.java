@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 /**
  * Checked exception thrown when a file system operation fails because a
@@ -47,6 +48,7 @@ public class DirectoryNotEmptyException
      * @param   dir
      *          a string identifying the directory or {@code null} if not known
      */
+    @SideEffectFree
     public DirectoryNotEmptyException(@Nullable String dir) {
         super(dir);
     }

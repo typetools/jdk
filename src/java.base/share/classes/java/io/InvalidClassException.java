@@ -25,6 +25,8 @@
 
 package java.io;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when the Serialization runtime detects one of the following
  * problems with a Class.
@@ -58,6 +60,7 @@ public class InvalidClassException extends ObjectStreamException {
      *
      * @param reason  String describing the reason for the exception.
      */
+    @SideEffectFree
     public InvalidClassException(String reason) {
         super(reason);
     }
@@ -68,6 +71,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @param cname   a String naming the invalid class.
      * @param reason  a String describing the reason for the exception.
      */
+    @SideEffectFree
     public InvalidClassException(String cname, String reason) {
         super(reason);
         classname = cname;
@@ -80,6 +84,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @param cause the cause
      * @since 19
      */
+    @SideEffectFree
     public InvalidClassException(String reason, Throwable cause) {
         super(reason, cause);
     }
@@ -92,6 +97,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @param cause the cause
      * @since 19
      */
+    @SideEffectFree
     public InvalidClassException(String cname, String reason, Throwable cause) {
         super(reason, cause);
         classname = cname;

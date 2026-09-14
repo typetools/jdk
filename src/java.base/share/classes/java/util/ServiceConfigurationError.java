@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Error thrown when something goes wrong while locating, loading, or
@@ -48,6 +49,7 @@ public class ServiceConfigurationError
      * @param  msg  The message, or {@code null} if there is no message
      *
      */
+    @SideEffectFree
     public ServiceConfigurationError(String msg) {
         super(msg);
     }
@@ -60,6 +62,7 @@ public class ServiceConfigurationError
      * @param  cause  The cause, or {@code null} if the cause is nonexistent
      *                or unknown
      */
+    @SideEffectFree
     public ServiceConfigurationError(String msg, Throwable cause) {
         super(msg, cause);
     }

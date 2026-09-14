@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -43,6 +44,7 @@ public class SocketException extends IOException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public SocketException(String msg) {
         super(msg);
     }
@@ -50,6 +52,7 @@ public class SocketException extends IOException {
     /**
      * Constructs a new {@code SocketException} with no detail message.
      */
+    @SideEffectFree
     public SocketException() {
     }
 
@@ -61,6 +64,7 @@ public class SocketException extends IOException {
      * @param cause the cause
      * @since 19
      */
+    @SideEffectFree
     public SocketException(String msg, Throwable cause) {
         super(msg, cause);
     }
@@ -72,6 +76,7 @@ public class SocketException extends IOException {
      * @param cause the cause
      * @since 19
      */
+    @SideEffectFree
     public SocketException(Throwable cause) {
         super(cause);
     }

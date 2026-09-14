@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -44,6 +45,7 @@ public class NotActiveException extends ObjectStreamException {
      *
      * @param reason  a String describing the reason for the exception.
      */
+    @SideEffectFree
     public NotActiveException(@Nullable String reason) {
         super(reason);
     }
@@ -51,6 +53,7 @@ public class NotActiveException extends ObjectStreamException {
     /**
      * Constructor to create a new NotActiveException without a reason.
      */
+    @SideEffectFree
     public NotActiveException() {
         super();
     }

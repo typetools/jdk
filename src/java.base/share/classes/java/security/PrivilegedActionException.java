@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -58,6 +59,7 @@ public class PrivilegedActionException extends Exception {
      *
      * @param exception The exception thrown
      */
+    @SideEffectFree
     public PrivilegedActionException(Exception exception) {
         super(null, exception);  // Disallow initCause
     }

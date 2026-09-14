@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -52,6 +53,7 @@ public class AccessDeniedException
      * @param   file
      *          a string identifying the file or {@code null} if not known
      */
+    @SideEffectFree
     public AccessDeniedException(@Nullable String file) {
         super(file);
     }
@@ -66,6 +68,7 @@ public class AccessDeniedException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
+    @SideEffectFree
     public AccessDeniedException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(file, other, reason);
     }

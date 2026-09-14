@@ -25,6 +25,8 @@
 
 package javax.security.auth;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code destroy} operation failed.
  *
@@ -43,6 +45,7 @@ public class DestroyFailedException extends Exception {
      * Constructs a DestroyFailedException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public DestroyFailedException() {
         super();
     }
@@ -54,6 +57,7 @@ public class DestroyFailedException extends Exception {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public DestroyFailedException(String msg) {
         super(msg);
     }

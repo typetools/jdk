@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
 /**
@@ -56,6 +57,7 @@ public class HttpRetryException extends IOException {
      * @param   detail   the detail message.
      * @param   code   the HTTP response code from server.
      */
+    @SideEffectFree
     public HttpRetryException(String detail, int code) {
         super(detail);
         responseCode = code;
@@ -69,6 +71,7 @@ public class HttpRetryException extends IOException {
      * @param   code   the HTTP response code from server.
      * @param   location   the URL to be redirected to
      */
+    @SideEffectFree
     public HttpRetryException(String detail, int code, String location) {
         super (detail);
         responseCode = code;

@@ -29,7 +29,7 @@ import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -113,7 +113,7 @@ class FileTreeIterator implements Iterator<Event>, Closeable {
     }
 
     @Override
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public Event next(@NonEmpty FileTreeIterator this) {
         if (!walker.isOpen())

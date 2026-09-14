@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Checked exception thrown when an input byte sequence is not legal for given
@@ -51,6 +52,7 @@ public class MalformedInputException
      * length.
      * @param inputLength the length of the input
      */
+    @SideEffectFree
     public MalformedInputException(int inputLength) {
         this.inputLength = inputLength;
     }

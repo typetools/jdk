@@ -24,6 +24,8 @@
  */
 
 package java.lang.annotation;
+
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.lang.reflect.Method;
 
 /**
@@ -65,6 +67,7 @@ public class AnnotationTypeMismatchException extends RuntimeException {
      *        as well.  The exact format of the string is unspecified,
      *        may be {@code null}.
      */
+    @SideEffectFree
     public AnnotationTypeMismatchException(Method element, String foundType) {
         super("Incorrectly typed data found for annotation element " + element
               + " (Found data of type " + foundType + ")");

@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the formatter has been closed.
  *
@@ -42,5 +44,6 @@ public class FormatterClosedException extends IllegalStateException {
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public FormatterClosedException() { }
 }

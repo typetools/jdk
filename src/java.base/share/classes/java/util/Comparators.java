@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.Serializable;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -53,6 +54,7 @@ class Comparators {
         }
 
         @Override
+        @SideEffectFree
         public Comparator<Comparable<Object>> reversed() {
             return Comparator.reverseOrder();
         }
@@ -93,6 +95,7 @@ class Comparators {
         }
 
         @Override
+        @SideEffectFree
         public Comparator<T> reversed() {
             return new NullComparator<>(!nullFirst, real == null ? null : real.reversed());
         }

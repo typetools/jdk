@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -314,7 +315,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
      default V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
@@ -331,7 +332,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @throws UnsupportedOperationException always
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     default V putLast(K k, V v) {
         throw new UnsupportedOperationException();
@@ -347,7 +348,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @return a reverse-ordered view of this map, as a {@code SortedMap}
      * @since 21
      */
-    // @SideEffectsOnly("this")
+    @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
     default SortedMap<K, V> reversed() {
         return ReverseOrderSortedMapView.of(this);

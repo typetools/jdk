@@ -25,6 +25,8 @@
 
 package java.security;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception, designed for use by the JCA/JCE engine classes,
  * is thrown when an invalid parameter is passed
@@ -44,6 +46,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      * A detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidParameterException() {
         super();
     }
@@ -55,6 +58,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      *
      * @param msg the detail message.
      */
+    @SideEffectFree
     public InvalidParameterException(String msg) {
         super(msg);
     }
@@ -77,6 +81,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      *
      * @since  20
      */
+    @SideEffectFree
     public InvalidParameterException(String msg, Throwable cause) {
         super(msg, cause);
     }
@@ -95,6 +100,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      *
      * @since  20
      */
+    @SideEffectFree
     public InvalidParameterException(Throwable cause) {
         super(cause);
     }

@@ -26,6 +26,7 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Indicates that the peer's identity has not been verified.
@@ -49,6 +50,7 @@ public class SSLPeerUnverifiedException extends SSLException {
      *
      * @param reason describes the problem.
      */
+    @SideEffectFree
     public SSLPeerUnverifiedException(String reason) {
         super(reason);
     }
@@ -65,6 +67,7 @@ public class SSLPeerUnverifiedException extends SSLException {
      *        unknown.)
      * @since 19
      */
+    @SideEffectFree
     public SSLPeerUnverifiedException(String message, Throwable cause) {
         super(message, cause);
     }

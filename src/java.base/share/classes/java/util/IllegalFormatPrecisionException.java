@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the precision is a negative value other than
  * {@code -1}, the conversion does not support a precision, or the value is
@@ -47,6 +49,7 @@ public non-sealed class IllegalFormatPrecisionException extends IllegalFormatExc
      * @param  p
      *         The precision
      */
+    @SideEffectFree
     public IllegalFormatPrecisionException(int p) {
         this.p = p;
     }

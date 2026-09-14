@@ -25,7 +25,7 @@
 
 package java.lang;
 
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -249,7 +249,7 @@ final class StringUTF16 {
     }
 
     @IntrinsicCandidate
-    // @SideEffectsOnly("#3")
+    @SideEffectsOnly("#3")
     public static void getChars(byte[] value, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
         // We need a range check here because 'getChar' has no checks
         if (srcBegin < srcEnd) {

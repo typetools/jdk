@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          show-progress: false
+          persist-credentials: false
       - name: Check generated ci.yml
         run: make -B -C .github/workflows && git diff --exit-code -- .github/workflows/ci.yml
 
@@ -32,6 +36,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          show-progress: false
+          persist-credentials: false
       - name: show environment
         run: |
           whoami
@@ -59,6 +67,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          show-progress: false
+          persist-credentials: false
       - name: show environment
         run: |
           whoami

@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -49,6 +50,7 @@ public class FileSystemLoopException
      *          a string identifying the file causing the cycle or {@code null} if
      *          not known
      */
+    @SideEffectFree
     public FileSystemLoopException(@Nullable String file) {
         super(file);
     }

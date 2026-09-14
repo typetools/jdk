@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Checked exception thrown when an input character (or byte) sequence
@@ -51,6 +52,7 @@ public class UnmappableCharacterException
      * given length.
      * @param inputLength the length of the input
      */
+    @SideEffectFree
     public UnmappableCharacterException(int inputLength) {
         this.inputLength = inputLength;
     }
