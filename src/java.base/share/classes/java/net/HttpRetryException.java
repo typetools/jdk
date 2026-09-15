@@ -94,7 +94,7 @@ public class HttpRetryException extends IOException {
      *
      * @return  The reason string
      */
-    public String getReason() {
+    public @Nullable String getReason() {
         return super.getMessage();
     }
 

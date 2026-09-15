@@ -116,7 +116,7 @@ public class SAXException extends Exception {
      *
      * @return The error or warning message.
      */
-    public String getMessage ()
+    public @Nullable String getMessage ()
     {
         String message = super.getMessage();
         Throwable cause = super.getCause();

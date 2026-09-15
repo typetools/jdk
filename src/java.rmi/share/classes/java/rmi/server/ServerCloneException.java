@@ -57,7 +57,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      *
      * @serial
      */
-    public Exception detail;
+    public @Nullable Exception detail;
 
     /* indicate compatibility with JDK 1.1.x version of class */
     private static final long serialVersionUID = 6617456357664815945L;

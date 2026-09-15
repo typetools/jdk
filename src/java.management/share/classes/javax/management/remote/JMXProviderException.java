@@ -81,5 +81,5 @@ public class JMXProviderException extends IOException {
      *         This field may be null.
      * @see #getCause()
      **/
-    private Throwable cause = null;
+    private @Nullable Throwable cause = null;
 }

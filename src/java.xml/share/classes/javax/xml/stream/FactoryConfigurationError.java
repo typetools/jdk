@@ -41,7 +41,7 @@ public class FactoryConfigurationError extends Error {
   /**
    * The nested exception.
    */
-  Exception nested;
+  @Nullable Exception nested;
 
   /**
    * Default constructor
@@ -95,7 +95,7 @@ public class FactoryConfigurationError extends Error {
    *
    * @return the nested exception or null
    */
-  public Exception getException() {
+  public @Nullable Exception getException() {
     return nested;
   }
     /**
@@ -111,7 +111,7 @@ public class FactoryConfigurationError extends Error {
    *
    * @return the string value of the message
    */
-  public String getMessage() {
+  public @Nullable String getMessage() {
     String msg = super.getMessage();
     if(msg != null)
       return msg;

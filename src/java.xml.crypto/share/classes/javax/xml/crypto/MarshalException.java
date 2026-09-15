@@ -61,7 +61,7 @@ public class MarshalException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code MarshalException} with

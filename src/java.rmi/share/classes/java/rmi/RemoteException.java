@@ -62,7 +62,7 @@ public class RemoteException extends java.io.IOException {
      *
      * @serial
      */
-    public Throwable detail;
+    public @Nullable Throwable detail;
 
     /**
      * Constructs a {@code RemoteException}.

@@ -57,7 +57,7 @@ public class URIReferenceException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * The {@code URIReference} that was being dereferenced

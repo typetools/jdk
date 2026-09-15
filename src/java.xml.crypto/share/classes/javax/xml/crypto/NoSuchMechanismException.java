@@ -62,7 +62,7 @@ public class NoSuchMechanismException extends RuntimeException {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code NoSuchMechanismException} with

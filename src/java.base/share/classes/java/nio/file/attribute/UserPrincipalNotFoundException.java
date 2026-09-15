@@ -45,7 +45,7 @@ public class UserPrincipalNotFoundException
     /**
      * The user principal name.
      */
-    private final String name;
+    private final @Nullable String name;
 
     /**
      * Constructs an instance of this class.
@@ -65,7 +65,7 @@ public class UserPrincipalNotFoundException
      *
      * @return  the user principal name or {@code null}
      */
-    public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 }

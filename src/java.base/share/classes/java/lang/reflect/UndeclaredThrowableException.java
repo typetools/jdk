@@ -96,7 +96,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      *
      * @return the undeclared checked exception that was thrown
      */
-    public Throwable getUndeclaredThrowable() {
+    public @Nullable Throwable getUndeclaredThrowable() {
         return super.getCause();
     }
 

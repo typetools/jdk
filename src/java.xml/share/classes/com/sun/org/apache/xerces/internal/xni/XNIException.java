@@ -47,7 +47,7 @@ public class XNIException
     //
 
     /** The wrapped exception. */
-    private Exception fException;
+    private @Nullable Exception fException;
 
     //
     // Constructors
@@ -88,7 +88,7 @@ public class XNIException
     //
 
     /** Returns the wrapped exception. */
-    public Exception getException() {
+    public @Nullable Exception getException() {
         return fException;
     } // getException():Exception
 

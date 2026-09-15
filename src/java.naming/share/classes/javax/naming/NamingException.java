@@ -190,7 +190,7 @@ public class NamingException extends Exception {
       *
       * @see java.lang.Throwable#getMessage
       */
-    public String getExplanation() {
+    public @Nullable String getExplanation() {
         return getMessage();
     }
 

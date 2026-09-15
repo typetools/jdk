@@ -53,7 +53,7 @@ public class KeySelectorException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code KeySelectorException} with

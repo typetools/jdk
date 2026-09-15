@@ -70,5 +70,5 @@ public class JMXServerErrorException extends IOException {
      * @serial An {@link Error} that caused this exception to be thrown.
      * @see #getCause()
      **/
-    private final Error cause;
+    private final @Nullable Error cause;
 }
