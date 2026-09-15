@@ -142,7 +142,7 @@ class EventRequestManagerImpl extends MirrorImpl
         /*
          * Override superclass back to default equality
          */
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return this == obj;
         }
 

@@ -1282,7 +1282,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
             }
 
             @Pure
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 if (obj instanceof Key key) {
                     if (key.utf8 != utf8) {
                         return false;

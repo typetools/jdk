@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
@@ -62,7 +63,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
 
     // copied from AbstractSet
     @Pure
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (o == this)
             return true;
 

@@ -332,7 +332,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         @Pure
-        public final boolean equals(Object o) {
+        public final boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
 

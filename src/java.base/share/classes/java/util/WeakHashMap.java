@@ -782,7 +782,7 @@ public class WeakHashMap<K,V>
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
             K k1 = getKey();

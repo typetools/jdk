@@ -100,7 +100,7 @@ public final class Register implements Comparable<Register> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof RegisterCategory) {
                 RegisterCategory that = (RegisterCategory) obj;
                 return this.name.equals(that.name);

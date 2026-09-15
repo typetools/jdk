@@ -2166,7 +2166,7 @@ public final class ObjectStreamClass implements Serializable {
             return hash;
         }
 
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return obj == this ||
                    obj instanceof FieldReflectorKey other &&
                    Arrays.equals(sigs, other.sigs);
@@ -2294,7 +2294,7 @@ public final class ObjectStreamClass implements Serializable {
             }
 
             @Override
-            public final boolean equals(Object obj) {
+            public final boolean equals(@Nullable Object obj) {
                 if (!(obj instanceof Key other)) return false;
                 int n = length();
                 if (n != other.length()) return false;

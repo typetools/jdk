@@ -274,7 +274,7 @@ public final
             return s;
         }
 
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Inet6AddressHolder that)) {
                 return false;
             }

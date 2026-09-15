@@ -456,7 +456,7 @@ public class Rdn implements Serializable, Comparable<Object> {
                         that.getValueComparable());
         }
 
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj == this) {
                 return true;
             }

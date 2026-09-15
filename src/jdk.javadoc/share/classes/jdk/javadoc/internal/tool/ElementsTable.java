@@ -24,6 +24,7 @@
  */
 package jdk.javadoc.internal.tool;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1159,7 +1160,7 @@ public class ElementsTable {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof ModulePackage that) {
                 return this.toString().equals(that.toString());
             }

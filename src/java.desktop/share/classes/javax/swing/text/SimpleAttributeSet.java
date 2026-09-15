@@ -396,7 +396,7 @@ public class SimpleAttributeSet implements MutableAttributeSet, Serializable, Cl
         public AttributeSet getResolveParent() {
             return null;
         }
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;
             }

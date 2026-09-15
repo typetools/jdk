@@ -60,6 +60,7 @@
 
 package jdk.dynalink;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 import java.util.Objects;
@@ -233,7 +234,7 @@ public final class NamespaceOperation implements Operation {
      * @return true if this object is equal to the other one, false otherwise.
      */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(final @Nullable Object obj) {
         if (obj instanceof NamespaceOperation) {
             final NamespaceOperation other = (NamespaceOperation)obj;
             return baseOperation.equals(other.baseOperation) && Arrays.equals(namespaces, other.namespaces);

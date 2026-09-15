@@ -25,6 +25,7 @@
 
 package com.sun.net.httpserver;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
@@ -275,7 +276,7 @@ public class Headers implements Map<String,List<String>> {
     }
 
     @Override
-    public boolean equals(Object o) { return map.equals(o); }
+    public boolean equals(@Nullable Object o) { return map.equals(o); }
 
     @Override
     public int hashCode() {return map.hashCode();}
