@@ -19,7 +19,6 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -283,7 +282,7 @@ public class ClassGen extends AccessFlags implements Cloneable {
      * @see Object#equals(Object)
      */
     @Override
-    public boolean equals(final @Nullable Object obj) {
+    public boolean equals(final Object obj) {
         return bcelComparator.equals(this, obj);
     }
 
