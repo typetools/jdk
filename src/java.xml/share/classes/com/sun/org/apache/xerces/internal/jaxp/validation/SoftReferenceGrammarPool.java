@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.jaxp.validation;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;

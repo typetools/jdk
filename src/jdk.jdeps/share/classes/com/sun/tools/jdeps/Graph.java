@@ -25,6 +25,7 @@
 package com.sun.tools.jdeps;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collections;

@@ -26,6 +26,7 @@
 package com.sun.security.ntlm;
 
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**

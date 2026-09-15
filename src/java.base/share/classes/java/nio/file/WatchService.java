@@ -25,13 +25,13 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
-import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
-import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A watch service that <em>watches</em> registered objects for changes and

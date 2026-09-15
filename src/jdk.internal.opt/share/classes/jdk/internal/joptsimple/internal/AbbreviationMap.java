@@ -56,6 +56,7 @@
 package jdk.internal.joptsimple.internal;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Map;
 import java.util.TreeMap;
 

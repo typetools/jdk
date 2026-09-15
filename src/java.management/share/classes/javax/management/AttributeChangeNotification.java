@@ -28,7 +28,6 @@ package javax.management;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * Provides definitions of the attribute change notifications sent by MBeans.
  * <P>

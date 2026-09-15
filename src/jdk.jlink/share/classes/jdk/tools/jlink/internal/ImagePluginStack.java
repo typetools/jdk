@@ -25,6 +25,7 @@
 package jdk.tools.jlink.internal;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.module.ModuleDescriptor;

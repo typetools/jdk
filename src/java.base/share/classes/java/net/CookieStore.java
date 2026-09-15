@@ -25,10 +25,11 @@
 
 package java.net;
 
-import java.util.List;
-import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * A CookieStore object represents a storage for cookie. Can store and retrieve

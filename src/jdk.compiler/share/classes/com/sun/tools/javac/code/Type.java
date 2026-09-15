@@ -26,6 +26,7 @@
 package com.sun.tools.javac.code;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.Collections;

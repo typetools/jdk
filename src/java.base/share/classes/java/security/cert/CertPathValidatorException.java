@@ -26,6 +26,7 @@
 package java.security.cert;
 
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.InvalidObjectException;
 import java.io.IOException;
 import java.io.ObjectInputStream;

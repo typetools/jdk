@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit.util;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.annotation.Documented;
 import java.lang.ref.SoftReference;
 import java.net.URI;

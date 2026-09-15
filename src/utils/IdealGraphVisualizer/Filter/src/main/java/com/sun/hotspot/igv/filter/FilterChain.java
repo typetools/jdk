@@ -24,6 +24,7 @@
 package com.sun.hotspot.igv.filter;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.hotspot.igv.data.ChangedEvent;
 import com.sun.hotspot.igv.data.ChangedEventProvider;
 import com.sun.hotspot.igv.data.ChangedListener;

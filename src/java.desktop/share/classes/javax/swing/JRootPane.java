@@ -24,6 +24,10 @@
  */
 package javax.swing;
 
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.*;
 import java.beans.*;
 import java.security.AccessController;
@@ -32,11 +36,6 @@ import javax.swing.plaf.RootPaneUI;
 import java.io.Serializable;
 
 import sun.security.action.GetBooleanAction;
-
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.framework.qual.AnnotatedFor;
-
 
 /**
  * A lightweight container used behind the scenes by
