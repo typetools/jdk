@@ -24,6 +24,7 @@
  */
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -50,7 +51,7 @@ public class CharConversionException
      * @param s the detailed message associated with the exception.
      */
     @SideEffectFree
-    public CharConversionException(String s) {
+    public CharConversionException(@Nullable String s) {
         super(s);
     }
 }

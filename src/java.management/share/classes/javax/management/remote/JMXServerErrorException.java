@@ -57,7 +57,7 @@ public class JMXServerErrorException extends IOException {
      * constructed where this parameter is null, but the standard
      * connectors will never do so.
      */
-    public JMXServerErrorException(String s, Error err) {
+    public JMXServerErrorException(@Nullable String s, @Nullable Error err) {
         super(s);
         cause = err;
     }

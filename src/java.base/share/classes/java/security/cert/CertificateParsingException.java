@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -58,7 +59,7 @@ public class CertificateParsingException extends CertificateException {
      * @param message the detail message.
      */
     @SideEffectFree
-    public CertificateParsingException(String message) {
+    public CertificateParsingException(@Nullable String message) {
         super(message);
     }
 
@@ -74,7 +75,7 @@ public class CertificateParsingException extends CertificateException {
      * @since 1.5
      */
     @SideEffectFree
-    public CertificateParsingException(String message, Throwable cause) {
+    public CertificateParsingException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -91,7 +92,7 @@ public class CertificateParsingException extends CertificateException {
      * @since 1.5
      */
     @SideEffectFree
-    public CertificateParsingException(Throwable cause) {
+    public CertificateParsingException(@Nullable Throwable cause) {
         super(cause);
     }
 }

@@ -25,6 +25,7 @@
 
 package java.nio.file.attribute;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
@@ -53,7 +54,7 @@ public class UserPrincipalNotFoundException
      *          the principal name; may be {@code null}
      */
     @SideEffectFree
-    public UserPrincipalNotFoundException(String name) {
+    public UserPrincipalNotFoundException(@Nullable String name) {
         super();
         this.name = name;
     }

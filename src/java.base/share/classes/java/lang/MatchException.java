@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -94,7 +95,7 @@ public final class MatchException extends RuntimeException {
      *         unknown.)
      */
     @SideEffectFree
-    public MatchException(String message, Throwable cause) {
+    public MatchException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

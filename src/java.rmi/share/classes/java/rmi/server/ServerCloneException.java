@@ -68,7 +68,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      *
      * @param s the detail message.
      */
-    public ServerCloneException(String s) {
+    public ServerCloneException(@Nullable String s) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
     }
@@ -80,7 +80,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      * @param s the detail message.
      * @param cause the cause
      */
-    public ServerCloneException(String s, Exception cause) {
+    public ServerCloneException(@Nullable String s, @Nullable Exception cause) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
         detail = cause;

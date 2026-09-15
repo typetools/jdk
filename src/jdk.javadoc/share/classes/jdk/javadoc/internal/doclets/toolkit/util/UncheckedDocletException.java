@@ -37,7 +37,7 @@ import jdk.javadoc.internal.doclets.toolkit.DocletException;
 public class UncheckedDocletException extends Error {
     private static final long serialVersionUID = -9131058909576418984L;
 
-    public UncheckedDocletException(DocletException de) {
+    public UncheckedDocletException(@Nullable DocletException de) {
         super(de);
     }
 

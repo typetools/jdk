@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -53,7 +54,7 @@ public class InaccessibleObjectException extends RuntimeException {
      *        The detail message
      */
     @SideEffectFree
-    public InaccessibleObjectException(String msg) {
+    public InaccessibleObjectException(@Nullable String msg) {
         super(msg);
     }
 

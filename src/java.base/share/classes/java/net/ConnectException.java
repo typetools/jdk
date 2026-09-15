@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -47,7 +48,7 @@ public class ConnectException extends SocketException {
      * @param msg the detail message
      */
     @SideEffectFree
-    public ConnectException(String msg) {
+    public ConnectException(@Nullable String msg) {
         super(msg);
     }
 

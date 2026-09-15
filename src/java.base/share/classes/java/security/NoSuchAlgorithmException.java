@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public NoSuchAlgorithmException(String msg) {
+    public NoSuchAlgorithmException(@Nullable String msg) {
         super(msg);
     }
 
@@ -75,7 +76,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public NoSuchAlgorithmException(String message, Throwable cause) {
+    public NoSuchAlgorithmException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -91,7 +92,7 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public NoSuchAlgorithmException(Throwable cause) {
+    public NoSuchAlgorithmException(@Nullable Throwable cause) {
         super(cause);
     }
 }

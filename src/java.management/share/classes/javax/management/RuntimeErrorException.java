@@ -60,7 +60,7 @@ public class RuntimeErrorException extends JMRuntimeException   {
      * @param e the wrapped error.
      * @param message the detail message.
      */
-    public RuntimeErrorException(java.lang.Error e, String message) {
+    public RuntimeErrorException(java.lang.Error e, @Nullable String message) {
        super(message);
        error = e ;
     }

@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -55,7 +56,7 @@ public class UnrecoverableKeyException extends UnrecoverableEntryException {
      * @param msg the detail message.
      */
     @SideEffectFree
-   public UnrecoverableKeyException(String msg) {
+   public UnrecoverableKeyException(@Nullable String msg) {
        super(msg);
     }
 }

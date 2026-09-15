@@ -25,6 +25,7 @@
 
 package javax.security.auth.callback;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -66,7 +67,7 @@ public class UnsupportedCallbackException extends Exception {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public UnsupportedCallbackException(Callback callback, String msg) {
+    public UnsupportedCallbackException(Callback callback, @Nullable String msg) {
         super(msg);
         this.callback = callback;
     }

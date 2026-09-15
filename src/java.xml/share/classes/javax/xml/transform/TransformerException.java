@@ -152,7 +152,7 @@ public class TransformerException extends Exception {
      *
      * @param message The error or warning message.
      */
-    public TransformerException(String message) {
+    public TransformerException(@Nullable String message) {
         this(message, null, null);
     }
 
@@ -161,7 +161,7 @@ public class TransformerException extends Exception {
      *
      * @param e The exception to be wrapped.
      */
-    public TransformerException(Throwable e) {
+    public TransformerException(@Nullable Throwable e) {
         this(null, null, e);
     }
 
@@ -175,7 +175,7 @@ public class TransformerException extends Exception {
      *                use the message from the embedded exception.
      * @param e Any exception
      */
-    public TransformerException(String message, Throwable e) {
+    public TransformerException(@Nullable String message, @Nullable Throwable e) {
         this(message, null, e);
     }
 
@@ -189,7 +189,7 @@ public class TransformerException extends Exception {
      * @param message The error or warning message.
      * @param locator The locator object for the error or warning.
      */
-    public TransformerException(String message, SourceLocator locator) {
+    public TransformerException(@Nullable String message, SourceLocator locator) {
         this(message, locator, null);
     }
 
@@ -201,8 +201,8 @@ public class TransformerException extends Exception {
      * @param locator The locator object for the error or warning.
      * @param e Any exception
      */
-    public TransformerException(String message, SourceLocator locator,
-                                Throwable e) {
+    public TransformerException(@Nullable String message, SourceLocator locator,
+                                @Nullable Throwable e) {
         super(((message == null) || (message.length() == 0))
               ? ((e == null) ? "" : e.toString())
               : message);

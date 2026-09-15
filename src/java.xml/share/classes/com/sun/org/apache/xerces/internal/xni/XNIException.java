@@ -58,7 +58,7 @@ public class XNIException
      *
      * @param message The exception message.
      */
-    public XNIException(String message) {
+    public XNIException(@Nullable String message) {
         super(message);
     } // <init>(String)
 
@@ -78,7 +78,7 @@ public class XNIException
      * @param message The exception message.
      * @param exception The wrapped exception.
      */
-    public XNIException(String message, Exception exception) {
+    public XNIException(@Nullable String message, @Nullable Exception exception) {
         super(message);
         fException = exception;
     } // <init>(Exception,String)

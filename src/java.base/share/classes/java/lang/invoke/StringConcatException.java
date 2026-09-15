@@ -25,6 +25,7 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -42,7 +43,7 @@ public class StringConcatException extends Exception {
      * @param msg exception message
      */
     @SideEffectFree
-    public StringConcatException(String msg) {
+    public StringConcatException(@Nullable String msg) {
         super(msg);
     }
 
@@ -52,7 +53,7 @@ public class StringConcatException extends Exception {
      * @param cause throwable cause
      */
     @SideEffectFree
-    public StringConcatException(String msg, Throwable cause) {
+    public StringConcatException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

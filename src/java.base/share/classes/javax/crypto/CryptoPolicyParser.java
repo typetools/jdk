@@ -26,6 +26,7 @@
 package javax.crypto;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import java.io.*;
@@ -678,7 +679,7 @@ final class CryptoPolicyParser {
          * detail message.
          * @param msg the detail message.
          */
-        ParsingException(String msg) {
+        ParsingException(@Nullable String msg) {
             super(msg);
         }
 

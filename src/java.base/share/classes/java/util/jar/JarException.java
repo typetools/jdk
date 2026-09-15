@@ -25,6 +25,7 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -50,7 +51,7 @@ public class JarException extends java.util.zip.ZipException {
      * @param s the detail message
      */
     @SideEffectFree
-    public JarException(String s) {
+    public JarException(@Nullable String s) {
         super(s);
     }
 }

@@ -125,7 +125,7 @@ public class NamingException extends Exception {
      *                          additional detail about this exception.
      * @see java.lang.Throwable#getMessage
      */
-    public NamingException(String explanation) {
+    public NamingException(@Nullable String explanation) {
         super(explanation);
         resolvedName = remainingName = null;
         resolvedObj = null;

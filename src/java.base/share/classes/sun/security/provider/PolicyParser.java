@@ -25,6 +25,7 @@
 
 package sun.security.provider;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.security.GeneralSecurityException;
@@ -1316,7 +1317,7 @@ public class PolicyParser {
             i18nMessage = msg;
         }
 
-        public ParsingException(String msg, LocalizedMessage localizedMsg,
+        public ParsingException(@Nullable String msg, LocalizedMessage localizedMsg,
                                 Object[] source) {
             super(msg);
             this.localizedMsg = localizedMsg;

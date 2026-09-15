@@ -25,6 +25,7 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -51,7 +52,7 @@ public class DataFormatException extends Exception {
      * @param s the String containing a detail message
      */
     @SideEffectFree
-    public DataFormatException(String s) {
+    public DataFormatException(@Nullable String s) {
         super(s);
     }
 }

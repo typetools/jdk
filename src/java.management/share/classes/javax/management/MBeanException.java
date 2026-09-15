@@ -64,7 +64,7 @@ public class MBeanException extends JMException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public MBeanException(java.lang.Exception e, String message) {
+    public MBeanException(java.lang.Exception e, @Nullable String message) {
         super(message) ;
         exception = e ;
     }

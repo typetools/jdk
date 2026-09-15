@@ -25,6 +25,7 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -61,7 +62,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @param reason  String describing the reason for the exception.
      */
     @SideEffectFree
-    public InvalidClassException(String reason) {
+    public InvalidClassException(@Nullable String reason) {
         super(reason);
     }
 
@@ -72,7 +73,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @param reason  a String describing the reason for the exception.
      */
     @SideEffectFree
-    public InvalidClassException(String cname, String reason) {
+    public InvalidClassException(String cname, @Nullable String reason) {
         super(reason);
         classname = cname;
     }
@@ -85,7 +86,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @since 19
      */
     @SideEffectFree
-    public InvalidClassException(String reason, Throwable cause) {
+    public InvalidClassException(@Nullable String reason, @Nullable Throwable cause) {
         super(reason, cause);
     }
 
@@ -98,7 +99,7 @@ public class InvalidClassException extends ObjectStreamException {
      * @since 19
      */
     @SideEffectFree
-    public InvalidClassException(String cname, String reason, Throwable cause) {
+    public InvalidClassException(String cname, @Nullable String reason, @Nullable Throwable cause) {
         super(reason, cause);
         classname = cname;
     }

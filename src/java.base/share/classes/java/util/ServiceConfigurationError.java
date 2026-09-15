@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -50,7 +51,7 @@ public class ServiceConfigurationError
      *
      */
     @SideEffectFree
-    public ServiceConfigurationError(String msg) {
+    public ServiceConfigurationError(@Nullable String msg) {
         super(msg);
     }
 
@@ -63,7 +64,7 @@ public class ServiceConfigurationError
      *                or unknown
      */
     @SideEffectFree
-    public ServiceConfigurationError(String msg, Throwable cause) {
+    public ServiceConfigurationError(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 

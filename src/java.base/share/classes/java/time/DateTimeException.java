@@ -61,6 +61,7 @@
  */
 package java.time;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -88,7 +89,7 @@ public class DateTimeException extends RuntimeException {
      * @param message  the message to use for this exception, may be null
      */
     @SideEffectFree
-    public DateTimeException(String message) {
+    public DateTimeException(@Nullable String message) {
         super(message);
     }
 
@@ -99,7 +100,7 @@ public class DateTimeException extends RuntimeException {
      * @param cause  the cause of the exception, may be null
      */
     @SideEffectFree
-    public DateTimeException(String message, Throwable cause) {
+    public DateTimeException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 

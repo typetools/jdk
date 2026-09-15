@@ -26,6 +26,7 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
@@ -48,7 +49,7 @@ public class SSLException extends IOException {
      * @param reason describes the problem.
      */
     @SideEffectFree
-    public SSLException(String reason) {
+    public SSLException(@Nullable String reason) {
         super(reason);
     }
 
@@ -65,7 +66,7 @@ public class SSLException extends IOException {
      * @since 1.5
      */
     @SideEffectFree
-    public SSLException(String message, Throwable cause) {
+    public SSLException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -82,7 +83,7 @@ public class SSLException extends IOException {
      * @since 1.5
      */
     @SideEffectFree
-    public SSLException(Throwable cause) {
+    public SSLException(@Nullable Throwable cause) {
         super(cause);
     }
 }
