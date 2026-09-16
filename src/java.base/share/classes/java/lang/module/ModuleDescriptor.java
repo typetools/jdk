@@ -341,7 +341,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Requires that)
                     && name.equals(that.name) && mods.equals(that.mods)
                     && Objects.equals(compiledVersion, that.compiledVersion)
@@ -582,7 +582,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Exports other)
                     && Objects.equals(this.mods, other.mods)
                     && Objects.equals(this.source, other.source)
@@ -806,7 +806,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
            return (ob instanceof Opens other)
                    && Objects.equals(this.mods, other.mods)
                    && Objects.equals(this.source, other.source)
@@ -940,7 +940,7 @@ public class ModuleDescriptor
          *          {@code Provides} that is equal to this {@code Provides}
          */
         @Override
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Provides other)
                     && Objects.equals(this.service, other.service)
                     && Objects.equals(this.providers, other.providers);
@@ -1237,7 +1237,7 @@ public class ModuleDescriptor
          *          reference that is equal to this module reference
          */
         @Override
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             if (!(ob instanceof Version))
                 return false;
             return compareTo((Version)ob) == 0;

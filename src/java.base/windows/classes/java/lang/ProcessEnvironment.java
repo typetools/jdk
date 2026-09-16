@@ -63,6 +63,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 // import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
@@ -128,7 +129,7 @@ final class ProcessEnvironment extends HashMap<String,String>
             return e.setValue(validateValue(value));
         }
         public String toString() { return getKey() + "=" + getValue();}
-        public boolean equals(Object o) {return e.equals(o);}
+        public boolean equals(@Nullable Object o) {return e.equals(o);}
         public int hashCode()    {return e.hashCode();}
     }
 

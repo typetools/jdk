@@ -676,7 +676,7 @@ public class GSSCredentialImpl implements GSSCredential {
         public int getUsage() {
             return usage;
         }
-        public boolean equals(Object other) {
+        public boolean equals(@Nullable Object other) {
             if (! (other instanceof SearchKey that))
                 return false;
             return ((this.mechOid.equals(that.mechOid)) &&

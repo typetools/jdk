@@ -1516,7 +1516,7 @@ public @UsesObjectEquals class Runtime {
          *
          */
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             boolean ret = equalsIgnoreOptional(obj);
             if (!ret)
                 return false;
@@ -1540,7 +1540,7 @@ public @UsesObjectEquals class Runtime {
          *          ignoring the optional build information
          *
          */
-        public boolean equalsIgnoreOptional(Object obj) {
+        public boolean equalsIgnoreOptional(@Nullable Object obj) {
             if (this == obj)
                 return true;
             return (obj instanceof Version that)

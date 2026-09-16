@@ -314,7 +314,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
             }
@@ -796,7 +796,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
             } else if (!(o instanceof Set)) {

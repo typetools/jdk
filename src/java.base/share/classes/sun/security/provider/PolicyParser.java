@@ -25,6 +25,7 @@
 
 package sun.security.provider;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import java.io.*;
 import java.security.GeneralSecurityException;
@@ -1050,7 +1051,7 @@ public class PolicyParser {
          * @return true if the objects are equal, false otherwise
          */
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (this == obj)
                 return true;
 
@@ -1130,7 +1131,7 @@ public class PolicyParser {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj == this)
                 return true;
 

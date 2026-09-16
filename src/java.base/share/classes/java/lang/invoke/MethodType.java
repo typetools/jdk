@@ -1489,7 +1489,7 @@ s.writeObject(this.parameterArray());
              * @see Object#equals(Object)
              */
             @Override
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 Object mine = get();
                 if (obj instanceof WeakEntry) {
                     Object that = ((WeakEntry) obj).get();

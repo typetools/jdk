@@ -559,7 +559,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          *         specified attribute object
          */
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o) {
                 return true;
             }

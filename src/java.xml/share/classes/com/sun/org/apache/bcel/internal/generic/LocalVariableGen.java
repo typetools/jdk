@@ -20,6 +20,7 @@
  */
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import com.sun.org.apache.bcel.internal.Const;
 import com.sun.org.apache.bcel.internal.classfile.LocalVariable;
@@ -111,7 +112,7 @@ public class LocalVariableGen implements InstructionTargeter, NamedAndTyped, Clo
      */
     @Override
     @Pure
-    public boolean equals(final Object o) {
+    public boolean equals(final @Nullable Object o) {
         if (!(o instanceof LocalVariableGen)) {
             return false;
         }

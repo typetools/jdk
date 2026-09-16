@@ -25,6 +25,7 @@
 
 package sun.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
@@ -260,7 +261,7 @@ public abstract class PreHashedMap<V>
                                            ? 0
                                            : v.hashCode()));
                             }
-                            public boolean equals(Object ob) {
+                            public boolean equals(@Nullable Object ob) {
                                 if (ob == this)
                                     return true;
                                 if (!(ob instanceof Map.Entry))

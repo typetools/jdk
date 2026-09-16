@@ -196,7 +196,7 @@ public class RenderingHints
          * The equals method for all Key objects will return the same
          * result as the equality operator '=='.
          */
-        public final boolean equals(Object o) {
+        public final boolean equals(@Nullable Object o) {
             return this == o;
         }
     }
