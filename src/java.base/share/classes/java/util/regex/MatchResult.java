@@ -25,6 +25,8 @@
 
 package java.util.regex;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -206,7 +208,7 @@ public interface MatchResult {
      *          If no match has yet been attempted,
      *          or if the previous match operation failed
      */
-    String group();
+    @Nullable String group();
 
     /**
      * Returns the input subsequence captured by the given group during the
@@ -244,7 +246,7 @@ public interface MatchResult {
      *          If there is no capturing group in the pattern
      *          with the given index
      */
-    String group(int group);
+    @Nullable String group(int group);
 
     /**
      * Returns the input subsequence captured by the given
@@ -279,7 +281,7 @@ public interface MatchResult {
      *
      * @since 20
      */
-    default String group(String name) {
+    default @Nullable String group(String name) {
         return group(groupNumber(name));
     }
 

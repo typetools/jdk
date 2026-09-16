@@ -3164,7 +3164,7 @@ public final class Arrays {
      * @since 9
      */
     @Pure
-    public static <T> boolean equals(T[] a, T[] a2, Comparator<? super T> cmp) {
+    public static <T> boolean equals(T @Nullable [] a, T @Nullable [] a2, Comparator<? super T> cmp) {
         Objects.requireNonNull(cmp);
         if (a==a2)
             return true;

@@ -80,7 +80,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
     }
 
     @Pure
-    public V get(Object key) {
+    public @Nullable V get(Object key) {
         return base.get(key);
     }
 
@@ -89,7 +89,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base.isEmpty();
     }
 
-    public V put(K key, V value) {
+    public @Nullable V put(K key, V value) {
         return base.put(key, value);
     }
 
@@ -97,7 +97,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         base.putAll(m);
     }
 
-    public V remove(Object key) {
+    public @Nullable V remove(Object key) {
         return base.remove(key);
     }
 
@@ -166,34 +166,34 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base.firstKey();
     }
 
-    public Map.Entry<K, V> firstEntry() {
+    public Map.@Nullable Entry<K, V> firstEntry() {
         return base.lastEntry();
     }
 
-    public Map.Entry<K, V> lastEntry() {
+    public Map.@Nullable Entry<K, V> lastEntry() {
         return base.firstEntry();
     }
 
-    public Map.Entry<K,V> pollFirstEntry() {
+    public Map.@Nullable Entry<K,V> pollFirstEntry() {
         return base.pollLastEntry();
     }
 
-    public Map.Entry<K,V> pollLastEntry() {
+    public Map.@Nullable Entry<K,V> pollLastEntry() {
         return base.pollFirstEntry();
     }
 
-    public V putFirst(K k, V v) {
+    public @Nullable V putFirst(K k, V v) {
         return base.putLast(k, v);
     }
 
-    public V putLast(K k, V v) {
+    public @Nullable V putLast(K k, V v) {
         return base.putFirst(k, v);
     }
 
     // ========== SortedMap ==========
 
     @Pure
-    public Comparator<? super K> comparator() {
+    public @Nullable Comparator<? super K> comparator() {
         return cmp;
     }
 
@@ -302,7 +302,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         public K getKey()             { return key; }
         @Pure
         public V getValue()           { return value; }
-        public V setValue(V newValue) { return map.put(key, newValue); }
+        public @Nullable V setValue(V newValue) { return map.put(key, newValue); }
 
         @Pure
         public boolean equals(@Nullable Object o) {
@@ -450,14 +450,14 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             };
         }
 
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             if (aboveHead(key) && belowTail(key))
                 return base.put(key, value);
             else
                 throw new IllegalArgumentException();
         }
 
-        public V remove(Object o) {
+        public @Nullable V remove(Object o) {
             @SuppressWarnings("unchecked")
             K key = (K) o;
             if (aboveHead(key) && belowTail(key))
@@ -472,7 +472,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         }
 
         @Pure
-        public Comparator<? super K> comparator() {
+        public @Nullable Comparator<? super K> comparator() {
             return cmp;
         }
 

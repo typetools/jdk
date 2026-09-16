@@ -357,14 +357,14 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
 
         @Override
         @SideEffectFree
-        public String group() {
+        public @Nullable String group() {
             checkMatch();
             return group(0);
         }
 
         @Override
         @SideEffectFree
-        public String group(int group) {
+        public @Nullable String group(int group) {
             checkMatch();
             checkGroup(group);
             if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))
@@ -643,7 +643,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *          or if the previous match operation failed
      */
     @SideEffectFree
-    public String group() {
+    public @Nullable String group() {
         return group(0);
     }
 

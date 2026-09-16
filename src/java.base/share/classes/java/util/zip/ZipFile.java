@@ -1090,7 +1090,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
      * This method is used in JarFile, via SharedSecrets, as an optimization
      * when looking up the manifest file.
      */
-    private String getManifestName(boolean onlyIfSignatureRelatedFiles) {
+    private @Nullable String getManifestName(boolean onlyIfSignatureRelatedFiles) {
         synchronized (this) {
             ensureOpen();
             Source zsrc = res.zsrc;

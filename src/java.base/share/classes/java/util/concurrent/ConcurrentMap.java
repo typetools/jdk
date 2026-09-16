@@ -389,8 +389,8 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    default @PolyNull V computeIfPresent(K key,
-            BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    default @Nullable V computeIfPresent(K key,
+            BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         for (V oldValue; (oldValue = get(key)) != null; ) {
             V newValue = remappingFunction.apply(key, oldValue);
@@ -439,7 +439,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
     @Override
     @DoesNotUnrefineReceiver("modifiability")
     default @PolyNull V compute(K key,
-                      BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                      BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
         retry: for (;;) {
             V oldValue = get(key);
             // if putIfAbsent fails, opportunistically use its return value

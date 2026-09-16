@@ -317,7 +317,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-     default V putFirst(K k, V v) {
+     default @Nullable V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -334,7 +334,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putLast(K k, V v) {
+    default @Nullable V putLast(K k, V v) {
         throw new UnsupportedOperationException();
     }
 

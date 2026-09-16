@@ -557,7 +557,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param q p.next: the next live node, or null if at end
      * @return pred if pred still alive and CAS succeeded; else p
      */
-    private Node skipDeadNodes(Node pred, Node c, Node p, Node q) {
+    private Node skipDeadNodes(@Nullable Node pred, Node c, Node p, @Nullable Node q) {
         // assert pred != c;
         // assert p != q;
         // assert c.isMatched();
@@ -608,7 +608,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if haveData mode but e is null
      */
     @SuppressWarnings("unchecked")
-    private E xfer(E e, boolean haveData, int how, long nanos) {
+    private @Nullable E xfer(@Nullable E e, boolean haveData, int how, long nanos) {
         if (haveData && (e == null))
             throw new NullPointerException();
 
@@ -650,7 +650,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return matched item, or e if unmatched on interrupt or timeout
      */
     @SuppressWarnings("unchecked")
-    private E awaitMatch(Node s, Node pred, E e, boolean timed, long nanos) {
+    private @Nullable E awaitMatch(Node s, @Nullable Node pred, @Nullable E e, boolean timed, long nanos) {
         final boolean isData = s.isData;
         final long deadline = timed ? System.nanoTime() + nanos : 0L;
         final Thread w = Thread.currentThread();
@@ -999,7 +999,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         boolean exhausted;  // true when no more nodes
         LTQSpliterator() {}
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node p, q;
             if ((p = current()) == null || (q = p.next) == null)
                 return null;
@@ -1335,7 +1335,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         E e = xfer(null, false, TIMED, unit.toNanos(timeout));
         if (e != null || !Thread.interrupted())
             return e;
@@ -1344,7 +1344,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this) {
+    public @Nullable E poll(@GuardSatisfied @CanShrink LinkedTransferQueue<E> this) {
         return xfer(null, false, NOW, 0L);
     }
 
@@ -1395,7 +1395,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     }
 
     @Pure
-    public E peek() {
+    public @Nullable E peek() {
         restartFromHead: for (;;) {
             for (Node p = head; p != null;) {
                 Object item = p.item;

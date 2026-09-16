@@ -585,7 +585,7 @@ public class JarFile extends ZipFile {
         return new JarFileEntry(name);
     }
 
-    private String getBasename(String name) {
+    private @Nullable String getBasename(String name) {
         if (name.startsWith(META_INF_VERSIONS)) {
             int off = META_INF_VERSIONS.length();
             int index = name.indexOf('/', off);
@@ -849,7 +849,7 @@ public class JarFile extends ZipFile {
      * @throws IllegalStateException
      *         may be thrown if the jar file has been closed
      */
-    public synchronized InputStream getInputStream(ZipEntry ze)
+    public synchronized @Nullable InputStream getInputStream(ZipEntry ze)
         throws IOException
     {
         Objects.requireNonNull(ze, "ze");
@@ -882,7 +882,7 @@ public class JarFile extends ZipFile {
 
     }
 
-    private JarEntry verifiableEntry(ZipEntry ze) throws ZipException {
+    private @Nullable JarEntry verifiableEntry(@Nullable ZipEntry ze) throws ZipException {
         if (ze instanceof JarFileEntry) {
             // assure the name and entry match for verification
             return ((JarFileEntry)ze).realEntry();

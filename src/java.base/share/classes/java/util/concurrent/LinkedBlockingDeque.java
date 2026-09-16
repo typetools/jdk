@@ -263,7 +263,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * Removes and returns first element, or null if empty.
      */
-    private E unlinkFirst(@CanShrink LinkedBlockingDeque<E> this) {
+    private @Nullable E unlinkFirst(@CanShrink LinkedBlockingDeque<E> this) {
         // assert lock.isHeldByCurrentThread();
         Node<E> f = first;
         if (f == null)
@@ -285,7 +285,7 @@ public class LinkedBlockingDeque<E extends Object>
     /**
      * Removes and returns last element, or null if empty.
      */
-    private E unlinkLast(@CanShrink LinkedBlockingDeque<E> this) {
+    private @Nullable E unlinkLast(@CanShrink LinkedBlockingDeque<E> this) {
         // assert lock.isHeldByCurrentThread();
         Node<E> l = last;
         if (l == null)
@@ -1297,7 +1297,7 @@ public class LinkedBlockingDeque<E extends Object>
 
         public long estimateSize() { return est; }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> h;
             if (!exhausted &&
                 ((h = current) != null || (h = first) != null)

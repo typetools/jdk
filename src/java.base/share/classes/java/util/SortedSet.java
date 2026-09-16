@@ -276,7 +276,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
         return new Spliterators.IteratorSpliterator<E>(
                 this, Spliterator.DISTINCT | Spliterator.SORTED | Spliterator.ORDERED) {
             @Override
-            public Comparator<? super E> getComparator() {
+            public @Nullable Comparator<? super E> getComparator() {
                 return SortedSet.this.comparator();
             }
         };

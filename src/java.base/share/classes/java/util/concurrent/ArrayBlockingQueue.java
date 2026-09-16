@@ -432,7 +432,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @CanShrink ArrayBlockingQueue<E> this) {
+    public @Nullable E poll(@GuardSatisfied @CanShrink ArrayBlockingQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -458,7 +458,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(@GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -475,7 +475,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     }
 
     @Pure
-    public E peek() {
+    public @Nullable E peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {

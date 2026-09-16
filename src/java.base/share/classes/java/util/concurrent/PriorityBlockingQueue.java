@@ -235,7 +235,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      *         than 1
      */
     public PriorityBlockingQueue(int initialCapacity,
-                                 Comparator<? super E> comparator) {
+                                 @Nullable Comparator<? super E> comparator) {
         if (initialCapacity < 1)
             throw new IllegalArgumentException();
         this.comparator = comparator;
@@ -608,7 +608,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
      *         ordering of its elements
      */
     @Pure
-    public Comparator<? super E> comparator() {
+    public @Nullable Comparator<? super E> comparator() {
         return comparator;
     }
 
@@ -1007,7 +1007,7 @@ public class PriorityBlockingQueue<E extends Object> extends AbstractQueue<E>
             return fence;
         }
 
-        public PBQSpliterator trySplit() {
+        public @Nullable PBQSpliterator trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null :
                 new PBQSpliterator(array, lo, index = mid);
