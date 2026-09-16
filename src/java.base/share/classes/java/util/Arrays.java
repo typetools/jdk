@@ -3253,7 +3253,7 @@ public final class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
-    @Pure
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned long[] a, @PolySigned long val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;

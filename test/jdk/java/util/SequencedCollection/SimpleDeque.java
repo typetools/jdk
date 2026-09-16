@@ -22,6 +22,7 @@
  */
 
 import java.util.*;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A complete Deque implementation that inherits the reversed() method

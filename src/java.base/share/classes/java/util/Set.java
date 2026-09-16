@@ -250,7 +250,6 @@ public interface Set<E> extends Collection<E> {
      *         set
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     <T> @Nullable T [] toArray(@MaybeModifiable Set<E> this, @PolyNull T[] a);
 
 

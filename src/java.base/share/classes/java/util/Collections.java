@@ -2139,7 +2139,6 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
-            @SideEffectFree
             public <T> @Nullable T[] toArray(@PolyNull T[] a) {
                 // We don't pass a to c.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
