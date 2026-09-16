@@ -1487,7 +1487,7 @@ public class LinkedList<E>
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return rlist.equals(o);
         }
 

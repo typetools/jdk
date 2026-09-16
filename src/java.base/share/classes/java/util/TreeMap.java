@@ -2673,7 +2673,7 @@ public @SeqUngrowable class TreeMap<K,V>
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return o instanceof Map.Entry<?, ?> e
                     && valEquals(key,e.getKey())
                     && valEquals(value,e.getValue());

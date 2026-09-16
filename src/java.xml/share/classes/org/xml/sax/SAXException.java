@@ -72,7 +72,7 @@ public class SAXException extends Exception {
      *
      * @param message The error or warning message.
      */
-    public SAXException (String message) {
+    public SAXException (@Nullable String message) {
         super(message);
     }
 
@@ -86,7 +86,7 @@ public class SAXException extends Exception {
      *
      * @param e The exception to be wrapped in a SAXException.
      */
-    public SAXException (Exception e)
+    public SAXException (@Nullable Exception e)
     {
         super(e);
     }
@@ -101,7 +101,7 @@ public class SAXException extends Exception {
      * @param message The detail message.
      * @param e The exception to be wrapped in a SAXException.
      */
-    public SAXException (String message, Exception e)
+    public SAXException (@Nullable String message, @Nullable Exception e)
     {
         super(message, e);
     }
@@ -116,7 +116,7 @@ public class SAXException extends Exception {
      *
      * @return The error or warning message.
      */
-    public String getMessage ()
+    public @Nullable String getMessage ()
     {
         String message = super.getMessage();
         Throwable cause = super.getCause();

@@ -61,7 +61,9 @@
  */
 package java.time.format;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.time.DateTimeException;
 
 /**
@@ -99,7 +101,7 @@ public class DateTimeParseException extends DateTimeException {
      * @param errorIndex  the index in the parsed string that was invalid, should be a valid index
      */
     @SideEffectFree
-    public DateTimeParseException(String message, CharSequence parsedData, int errorIndex) {
+    public DateTimeParseException(@Nullable String message, CharSequence parsedData, int errorIndex) {
         super(message);
         this.parsedString = parsedData.toString();
         this.errorIndex = errorIndex;
@@ -114,7 +116,7 @@ public class DateTimeParseException extends DateTimeException {
      * @param cause  the cause exception, may be null
      */
     @SideEffectFree
-    public DateTimeParseException(String message, CharSequence parsedData, int errorIndex, Throwable cause) {
+    public DateTimeParseException(@Nullable String message, CharSequence parsedData, int errorIndex, @Nullable Throwable cause) {
         super(message, cause);
         this.parsedString = parsedData.toString();
         this.errorIndex = errorIndex;

@@ -30,11 +30,10 @@ import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.io.OutputStream;
 import java.io.IOException;
-
-import org.checkerframework.framework.qual.CFComment;
 
 /**
  * This class implements a stream filter for writing compressed data in

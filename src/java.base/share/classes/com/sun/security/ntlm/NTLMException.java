@@ -25,7 +25,9 @@
 
 package com.sun.security.ntlm;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -81,7 +83,7 @@ public final class NTLMException extends GeneralSecurityException {
      * the {@link Exception#getMessage() } method.
      */
     @SideEffectFree
-    public NTLMException(int errorCode, String msg) {
+    public NTLMException(int errorCode, @Nullable String msg) {
         super(msg);
         this.errorCode = errorCode;
     }

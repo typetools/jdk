@@ -25,7 +25,9 @@
 
 package java.security.spec;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -62,7 +64,7 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public InvalidKeySpecException(String msg) {
+    public InvalidKeySpecException(@Nullable String msg) {
         super(msg);
     }
 
@@ -78,7 +80,7 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public InvalidKeySpecException(String message, Throwable cause) {
+    public InvalidKeySpecException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -94,7 +96,7 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public InvalidKeySpecException(Throwable cause) {
+    public InvalidKeySpecException(@Nullable Throwable cause) {
         super(cause);
     }
 }

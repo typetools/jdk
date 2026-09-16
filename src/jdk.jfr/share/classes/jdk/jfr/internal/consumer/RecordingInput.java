@@ -26,6 +26,7 @@
 package jdk.jfr.internal.consumer;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.File;

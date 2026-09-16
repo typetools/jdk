@@ -38,6 +38,7 @@
 
 package java.text;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -63,7 +64,7 @@ public class ParseException extends Exception {
      * @param errorOffset the position where the error is found while parsing.
      */
     @SideEffectFree
-    public ParseException(String s, int errorOffset) {
+    public ParseException(@Nullable String s, int errorOffset) {
         super(s);
         this.errorOffset = errorOffset;
     }

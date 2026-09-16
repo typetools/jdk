@@ -57,7 +57,7 @@ public class URIReferenceException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * The {@code URIReference} that was being dereferenced
@@ -80,7 +80,7 @@ public class URIReferenceException extends Exception {
      *
      * @param message the detail message
      */
-    public URIReferenceException(String message) {
+    public URIReferenceException(@Nullable String message) {
         super(message);
     }
 
@@ -95,7 +95,7 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public URIReferenceException(String message, Throwable cause) {
+    public URIReferenceException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -115,7 +115,7 @@ public class URIReferenceException extends Exception {
      * @throws NullPointerException if {@code uriReference} is
      *    {@code null}
      */
-    public URIReferenceException(String message, Throwable cause,
+    public URIReferenceException(@Nullable String message, @Nullable Throwable cause,
         URIReference uriReference) {
         this(message, cause);
         if (uriReference == null) {
@@ -133,7 +133,7 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public URIReferenceException(Throwable cause) {
+    public URIReferenceException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }

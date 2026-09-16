@@ -26,6 +26,7 @@
 package javax.naming.directory;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Vector;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;

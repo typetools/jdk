@@ -36,7 +36,6 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
-import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Provides a reverse-ordered view of any Deque. Not serializable.

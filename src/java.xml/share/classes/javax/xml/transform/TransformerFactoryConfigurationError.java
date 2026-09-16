@@ -61,7 +61,7 @@ public class TransformerFactoryConfigurationError extends Error {
      *
      * @param msg The error message for the exception.
      */
-    public TransformerFactoryConfigurationError(String msg) {
+    public TransformerFactoryConfigurationError(@Nullable String msg) {
 
         super(msg);
 
@@ -90,7 +90,7 @@ public class TransformerFactoryConfigurationError extends Error {
      * TransformerFactoryConfigurationError
      * @param msg The detail message.
      */
-    public TransformerFactoryConfigurationError(Exception e, String msg) {
+    public TransformerFactoryConfigurationError(@Nullable Exception e, @Nullable String msg) {
 
         super(msg);
 

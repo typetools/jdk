@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -58,7 +59,7 @@ public class GeneralSecurityException extends Exception {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public GeneralSecurityException(String msg) {
+    public GeneralSecurityException(@Nullable String msg) {
         super(msg);
     }
 
@@ -74,7 +75,7 @@ public class GeneralSecurityException extends Exception {
      * @since 1.5
      */
     @SideEffectFree
-    public GeneralSecurityException(String message, Throwable cause) {
+    public GeneralSecurityException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -90,7 +91,7 @@ public class GeneralSecurityException extends Exception {
      * @since 1.5
      */
     @SideEffectFree
-    public GeneralSecurityException(Throwable cause) {
+    public GeneralSecurityException(@Nullable Throwable cause) {
         super(cause);
     }
 }

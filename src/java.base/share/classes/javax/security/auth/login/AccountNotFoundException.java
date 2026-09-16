@@ -25,6 +25,7 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -57,7 +58,7 @@ public class AccountNotFoundException extends AccountException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public AccountNotFoundException(String msg) {
+    public AccountNotFoundException(@Nullable String msg) {
         super(msg);
     }
 }

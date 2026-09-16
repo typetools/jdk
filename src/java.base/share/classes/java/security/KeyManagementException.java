@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -69,7 +70,7 @@ public class KeyManagementException extends KeyException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public KeyManagementException(String msg) {
+    public KeyManagementException(@Nullable String msg) {
         super(msg);
     }
 
@@ -85,7 +86,7 @@ public class KeyManagementException extends KeyException {
      * @since 1.5
      */
     @SideEffectFree
-    public KeyManagementException(String message, Throwable cause) {
+    public KeyManagementException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -101,7 +102,7 @@ public class KeyManagementException extends KeyException {
      * @since 1.5
      */
     @SideEffectFree
-    public KeyManagementException(Throwable cause) {
+    public KeyManagementException(@Nullable Throwable cause) {
         super(cause);
     }
 }

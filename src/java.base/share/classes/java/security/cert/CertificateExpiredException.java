@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class CertificateExpiredException extends CertificateException {
      * @param message the detail message.
      */
     @SideEffectFree
-    public CertificateExpiredException(String message) {
+    public CertificateExpiredException(@Nullable String message) {
         super(message);
     }
 }

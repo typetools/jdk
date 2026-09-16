@@ -24,6 +24,7 @@
  */
 package java.lang.constant;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.MethodDescriptor;
 
 import java.lang.invoke.MethodHandles;
@@ -232,5 +233,5 @@ public sealed interface MethodTypeDesc
      * @param o the other object
      * @return whether this descriptor is equal to the other object
      */
-    boolean equals(Object o);
+    boolean equals(@Nullable Object o);
 }

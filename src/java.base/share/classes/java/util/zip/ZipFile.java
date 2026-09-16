@@ -36,10 +36,10 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -1282,7 +1282,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
             }
 
             @Pure
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 if (obj instanceof Key key) {
                     if (key.utf8 != utf8) {
                         return false;

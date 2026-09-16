@@ -20,7 +20,9 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.RevalidationHandler;
 import com.sun.org.apache.xerces.internal.impl.XMLEntityManager;
@@ -4542,7 +4544,7 @@ public class XMLSchemaValidator
             return fId.hashCode() + fDepth;
         }
 
-        public boolean equals(Object localIDKey) {
+        public boolean equals(@Nullable Object localIDKey) {
             if (localIDKey instanceof LocalIDKey) {
                 LocalIDKey lIDKey = (LocalIDKey) localIDKey;
                 return (lIDKey.fId == fId && lIDKey.fDepth == fDepth);

@@ -25,6 +25,7 @@
 
 package jdk.internal.loader;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import jdk.internal.access.JavaLangAccess;
@@ -418,7 +419,7 @@ public abstract class AbstractClassLoaderValue<CLV extends AbstractClassLoaderVa
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o) return true;
             if (!(o instanceof Sub)) return false;
             @SuppressWarnings("unchecked")

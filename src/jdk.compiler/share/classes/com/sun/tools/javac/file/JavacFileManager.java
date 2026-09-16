@@ -25,7 +25,9 @@
 
 package com.sun.tools.javac.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -1102,7 +1104,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return (o instanceof PathAndContainer pathAndContainer)
                     && path.equals(pathAndContainer.path)
                     && container.equals(pathAndContainer.container)

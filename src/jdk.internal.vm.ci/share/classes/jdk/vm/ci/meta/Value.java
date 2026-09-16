@@ -48,7 +48,7 @@ public abstract class Value {
         }
 
         @Override
-        public boolean equals(Object other) {
+        public boolean equals(@Nullable Object other) {
             // Due to de-serialization this object may exist multiple times. So we compare classes
             // instead of the individual objects.
             return other instanceof IllegalValue;

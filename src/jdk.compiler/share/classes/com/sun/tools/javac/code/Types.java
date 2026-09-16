@@ -25,7 +25,9 @@
 
 package com.sun.tools.javac.code;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
 import java.util.HashMap;
@@ -3158,7 +3160,7 @@ public class Types {
             }
 
             @Override
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 return (obj instanceof Entry entry)
                         && entry.msym == msym
                         && isSameType(site, entry.site);
@@ -3844,7 +3846,7 @@ public class Types {
                 return 127 * Types.this.hashCode(t1) + Types.this.hashCode(t2);
             }
             @Override
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 return (obj instanceof TypePair typePair)
                         && isSameType(t1, typePair.t1)
                         && isSameType(t2, typePair.t2);
@@ -4869,7 +4871,7 @@ public class Types {
             return types.hashCode(type);
         }
 
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return (obj instanceof UniqueType uniqueType) &&
                     types.isSameType(type, uniqueType.type);
         }

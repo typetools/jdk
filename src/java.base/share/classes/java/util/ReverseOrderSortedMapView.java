@@ -33,6 +33,7 @@ import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.SeqGrowable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -314,7 +315,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         public V setValue(@Replaceable ViewEntry<K,V> this, V newValue) { return map.put(key, newValue); }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return o instanceof Map.Entry<?, ?> e
                     && Objects.equals(key, e.getKey())
                     && Objects.equals(value, e.getValue());

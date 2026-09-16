@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -88,7 +89,7 @@ public class ConcurrentModificationException extends RuntimeException {
      * @param message the detail message pertaining to this exception.
      */
     @SideEffectFree
-    public ConcurrentModificationException(String message) {
+    public ConcurrentModificationException(@Nullable String message) {
         super(message);
     }
 
@@ -104,7 +105,7 @@ public class ConcurrentModificationException extends RuntimeException {
      * @since  1.7
      */
     @SideEffectFree
-    public ConcurrentModificationException(Throwable cause) {
+    public ConcurrentModificationException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -125,7 +126,7 @@ public class ConcurrentModificationException extends RuntimeException {
      * @since 1.7
      */
     @SideEffectFree
-    public ConcurrentModificationException(String message, Throwable cause) {
+    public ConcurrentModificationException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

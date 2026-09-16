@@ -52,7 +52,7 @@ public class XMLSignatureException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code XMLSignatureException} with
@@ -68,7 +68,7 @@ public class XMLSignatureException extends Exception {
      *
      * @param message the detail message
      */
-    public XMLSignatureException(String message) {
+    public XMLSignatureException(@Nullable String message) {
         super(message);
     }
 
@@ -83,7 +83,7 @@ public class XMLSignatureException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public XMLSignatureException(String message, Throwable cause) {
+    public XMLSignatureException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -98,7 +98,7 @@ public class XMLSignatureException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public XMLSignatureException(Throwable cause) {
+    public XMLSignatureException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }

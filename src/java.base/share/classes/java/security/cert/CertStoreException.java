@@ -25,7 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -71,7 +73,7 @@ public class CertStoreException extends GeneralSecurityException {
      * @param msg the detail message
      */
     @SideEffectFree
-    public CertStoreException(String msg) {
+    public CertStoreException(@Nullable String msg) {
         super(msg);
     }
 
@@ -88,7 +90,7 @@ public class CertStoreException extends GeneralSecurityException {
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public CertStoreException(Throwable cause) {
+    public CertStoreException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -102,7 +104,7 @@ public class CertStoreException extends GeneralSecurityException {
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public CertStoreException(String msg, Throwable cause) {
+    public CertStoreException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 

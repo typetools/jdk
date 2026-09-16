@@ -32,9 +32,9 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -841,7 +841,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @Override
         @Pure
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             return ob instanceof @SuppressWarnings("unchecked")ProviderImpl<?> that
                     && this.service == that.service
                     && this.type == that.type

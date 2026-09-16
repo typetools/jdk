@@ -30,6 +30,7 @@ import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.SeqGrowable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -306,7 +307,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
                 return SequencedMap.this.reversed().sequencedKeySet();
             }
             @Pure
-            public boolean equals(Object other) {
+            public boolean equals(@Nullable Object other) {
                 return view().equals(other);
             }
             @Pure
@@ -374,7 +375,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
                 return SequencedMap.this.reversed().sequencedEntrySet();
             }
             @Pure
-            public boolean equals(Object other) {
+            public boolean equals(@Nullable Object other) {
                 return view().equals(other);
             }
             @Pure

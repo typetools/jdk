@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
@@ -215,7 +216,7 @@ class ReverseOrderListView<E> implements List<E> {
 
     // copied from AbstractList
     @Pure
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (o == this)
             return true;
         if (!(o instanceof List))

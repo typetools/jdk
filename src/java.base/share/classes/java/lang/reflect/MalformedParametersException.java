@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -71,7 +72,7 @@ public class MalformedParametersException extends RuntimeException {
      * @param reason The reason for the exception.
      */
     @SideEffectFree
-    public MalformedParametersException(String reason) {
+    public MalformedParametersException(@Nullable String reason) {
         super(reason);
     }
 }

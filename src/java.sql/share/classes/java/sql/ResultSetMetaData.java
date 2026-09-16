@@ -25,9 +25,9 @@
 
 package java.sql;
 
-import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.common.value.qual.IntVal;
 
 /**
  * An object that can be used to get information about the types

@@ -25,8 +25,10 @@
 
 package sun.nio.ch;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
@@ -356,7 +358,7 @@ public class Util {
                 public String toString()          { return s.toString(); }
                 public Iterator<E> iterator()     { return s.iterator(); }
                 @Pure
-                public boolean equals(Object o)   { return s.equals(o); }
+                public boolean equals(@Nullable Object o)   { return s.equals(o); }
                 @Pure
                 public int hashCode()             { return s.hashCode(); }
                 public void clear()               { s.clear(); }

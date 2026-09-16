@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -44,7 +45,7 @@ public class PortUnreachableException extends SocketException {
      * @param msg the detail message
      */
     @SideEffectFree
-    public PortUnreachableException(String msg) {
+    public PortUnreachableException(@Nullable String msg) {
         super(msg);
     }
 

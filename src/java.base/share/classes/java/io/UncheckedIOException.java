@@ -24,11 +24,11 @@
  */
 package java.io;
 
-import java.util.Objects;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.util.Objects;
 
 /**
  * Wraps an {@link IOException} with an unchecked exception.

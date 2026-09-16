@@ -25,6 +25,7 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -54,7 +55,7 @@ public class AccountException extends LoginException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public AccountException(String msg) {
+    public AccountException(@Nullable String msg) {
         super(msg);
     }
 }

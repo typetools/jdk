@@ -710,7 +710,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
             }
 
             @Pure
-            public boolean equals(Object o) {
+            public boolean equals(@Nullable Object o) {
                 if (index < 0)
                     return o == this;
 

@@ -1392,7 +1392,7 @@ public class Collections {
 
         UnmodifiableSet(Set<? extends E> s)     {super(s);}
         @Pure
-        public boolean equals(Object o) {return o == this || c.equals(o);}
+        public boolean equals(@Nullable Object o) {return o == this || c.equals(o);}
         @Pure
         public int hashCode()           {return c.hashCode();}
     }
@@ -1433,7 +1433,7 @@ public class Collections {
 
         UnmodifiableSequencedSet(SequencedSet<? extends E> s)    {super(s);}
         @Pure
-        public boolean equals(Object o)                          {return o == this || c.equals(o);}
+        public boolean equals(@Nullable Object o)                          {return o == this || c.equals(o);}
         @Pure
         public int hashCode()                                    {return c.hashCode();}
 
@@ -1676,7 +1676,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {return o == this || list.equals(o);}
+        public boolean equals(@Nullable Object o) {return o == this || list.equals(o);}
         @Pure
         public int hashCode()           {return list.hashCode();}
 
@@ -1924,7 +1924,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {return o == this || m.equals(o);}
+        public boolean equals(@Nullable Object o) {return o == this || m.equals(o);}
         @Pure
         public int hashCode()           {return m.hashCode();}
         public String toString()        {return m.toString();}
@@ -2187,7 +2187,7 @@ public class Collections {
                 return true;
             }
             @Pure
-            public boolean equals(Object o) {
+            public boolean equals(@Nullable Object o) {
                 if (o == this)
                     return true;
 
@@ -2219,7 +2219,7 @@ public class Collections {
                 @Pure
                 public int hashCode()    {return e.hashCode();}
                 @Pure
-                public boolean equals(Object o) {
+                public boolean equals(@Nullable Object o) {
                     if (this == o)
                         return true;
                     return o instanceof Map.Entry<?, ?> t
@@ -2742,7 +2742,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return c.equals(o);}
@@ -3033,7 +3033,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return list.equals(o);}
@@ -3297,7 +3297,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return m.equals(o);}
@@ -3935,7 +3935,7 @@ public class Collections {
         @Pure
         public E element()              {return queue.element();}
         @Pure
-        public boolean equals(Object o) {return o == this || c.equals(o);}
+        public boolean equals(@Nullable Object o) {return o == this || c.equals(o);}
         @Pure
         public int hashCode()           {return c.hashCode();}
         @Pure
@@ -3994,7 +3994,7 @@ public class Collections {
         CheckedSet(Set<E> s, Class<E> elementType) { super(s, elementType); }
 
         @Pure
-        public boolean equals(Object o) { return o == this || c.equals(o); }
+        public boolean equals(@Nullable Object o) { return o == this || c.equals(o); }
         @Pure
         public int hashCode()           { return c.hashCode(); }
     }
@@ -4208,7 +4208,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o)  { return o == this || list.equals(o); }
+        public boolean equals(@Nullable Object o)  { return o == this || list.equals(o); }
         @Pure
         public int hashCode()            { return list.hashCode(); }
         @Pure
@@ -4444,7 +4444,7 @@ public class Collections {
         public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<K> keySet(@PolyShrinkable CheckedMap<K,V> this)                 { return m.keySet(); }
         public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable CheckedMap<K,V> this)          { return m.values(); }
         @Pure
-        public boolean equals(Object o)        { return o == this || m.equals(o); }
+        public boolean equals(@Nullable Object o)        { return o == this || m.equals(o); }
         @Pure
         public int hashCode()                  { return m.hashCode(); }
         public String toString()               { return m.toString(); }
@@ -4734,7 +4734,7 @@ public class Collections {
             }
 
             @Pure
-            public boolean equals(Object o) {
+            public boolean equals(@Nullable Object o) {
                 if (o == this)
                     return true;
                 return o instanceof Set<?> that
@@ -4783,7 +4783,7 @@ public class Collections {
                 }
 
                 @Pure
-                public boolean equals(Object o) {
+                public boolean equals(@Nullable Object o) {
                     if (o == this)
                         return true;
                     if (!(o instanceof Map.Entry))
@@ -5412,7 +5412,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return (o instanceof List) && ((List<?>)o).isEmpty();
         }
 
@@ -5555,7 +5555,7 @@ public class Collections {
         public Set<Map.Entry<K,V>> entrySet()      {return emptySet();}
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return (o instanceof Map) && ((Map<?,?>)o).isEmpty();
         }
 
@@ -6162,7 +6162,7 @@ public class Collections {
 
         @Override
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
             if (o instanceof CopiesList<?> other) {
@@ -6340,7 +6340,7 @@ public class Collections {
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return (o == this) ||
                 (o instanceof ReverseComparator2<?> that &&
                  cmp.equals(that.cmp));
@@ -6649,7 +6649,7 @@ public class Collections {
         @Pure
         public int hashCode()             { return s.hashCode(); }
         @Pure
-        public boolean equals(Object o)   { return o == this || s.equals(o); }
+        public boolean equals(@Nullable Object o)   { return o == this || s.equals(o); }
         @Pure
         public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {return s.containsAll(c);}
         @SideEffectsOnly("this")

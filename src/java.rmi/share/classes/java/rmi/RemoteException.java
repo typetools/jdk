@@ -62,7 +62,7 @@ public class RemoteException extends java.io.IOException {
      *
      * @serial
      */
-    public Throwable detail;
+    public @Nullable Throwable detail;
 
     /**
      * Constructs a {@code RemoteException}.
@@ -77,7 +77,7 @@ public class RemoteException extends java.io.IOException {
      *
      * @param s the detail message
      */
-    public RemoteException(String s) {
+    public RemoteException(@Nullable String s) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
     }
@@ -90,7 +90,7 @@ public class RemoteException extends java.io.IOException {
      * @param s the detail message
      * @param cause the cause
      */
-    public RemoteException(String s, Throwable cause) {
+    public RemoteException(@Nullable String s, @Nullable Throwable cause) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
         detail = cause;

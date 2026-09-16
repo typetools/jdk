@@ -26,6 +26,7 @@
 package com.sun.tools.javac.model;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
