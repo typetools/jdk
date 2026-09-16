@@ -7471,7 +7471,7 @@ public final class Arrays {
      * @since 9
      */
     @Pure
-    public static <T extends Comparable<? super T>> int compare(T @Nullable [] a, T @Nullable [] b) {
+    public static <T extends @Nullable Comparable<? super T>> int compare(T @Nullable [] a, T @Nullable [] b) {
         if (a == b)
             return 0;
         // A null array is less than a non-null array
@@ -7562,7 +7562,7 @@ public final class Arrays {
      * @since 9
      */
     @Pure
-    public static <T extends Comparable<? super T>> int compare(
+    public static <T extends @Nullable Comparable<? super T>> int compare(
             T[] a, int aFromIndex, int aToIndex,
             T[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
