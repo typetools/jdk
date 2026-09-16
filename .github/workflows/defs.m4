@@ -23,6 +23,8 @@ define([cftests_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: git config
         run: |
           git config --global --add safe.directory /__w/jdk/jdk
@@ -45,6 +47,8 @@ define([daikon_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: git config
         run: |
           git config --global --add safe.directory /__w/jdk/jdk
@@ -66,6 +70,8 @@ define([plume_lib_job], [dnl
         uses: actions/checkout@v7
         with:
           fetch-depth: 25
+          show-progress: false
+          persist-credentials: false
       - name: git config
         run: |
           git config --global --add safe.directory /__w/jdk/jdk

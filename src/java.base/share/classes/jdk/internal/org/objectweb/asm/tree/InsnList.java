@@ -539,6 +539,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
         }
 
         @Override
+        @Pure
         public boolean hasNext() {
             return nextInsn != null;
         }
