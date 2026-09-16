@@ -403,7 +403,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * Called only by methods that have performed required type checks.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static int cpr(Comparator c, Object x, Object y) {
+    static int cpr(@Nullable Comparator c, Object x, Object y) {
         return (c != null) ? c.compare(x, y) : ((Comparable)x).compareTo(y);
     }
 
@@ -714,7 +714,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @param cmp comparator
      */
     static <K,V> boolean addIndices(Index<K,V> q, int skips, Index<K,V> x,
-                                    Comparator<? super K> cmp) {
+                                    @Nullable Comparator<? super K> cmp) {
         Node<K,V> z; K key;
         if (x != null && (z = x.node) != null && (key = z.key) != null &&
             q != null) {                            // hoist checks
@@ -1067,7 +1067,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @return Entry fitting relation, or null if no such
      */
     final AbstractMap.@Nullable SimpleImmutableEntry<K,V> findNearEntry(K key, int rel,
-                                                              Comparator<? super K> cmp) {
+                                                                        @Nullable Comparator<? super K> cmp) {
         for (;;) {
             Node<K,V> n; V v;
             if ((n = findNear(key, rel, cmp)) == null)
@@ -2564,23 +2564,23 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         /* ----------------  Utilities -------------- */
 
-        boolean tooLow(Object key, Comparator<? super K> cmp) {
+        boolean tooLow(Object key, @Nullable Comparator<? super K> cmp) {
             int c;
             return (lo != null && ((c = cpr(cmp, key, lo)) < 0 ||
                                    (c == 0 && !loInclusive)));
         }
 
-        boolean tooHigh(Object key, Comparator<? super K> cmp) {
+        boolean tooHigh(Object key, @Nullable Comparator<? super K> cmp) {
             int c;
             return (hi != null && ((c = cpr(cmp, key, hi)) > 0 ||
                                    (c == 0 && !hiInclusive)));
         }
 
-        boolean inBounds(Object key, Comparator<? super K> cmp) {
+        boolean inBounds(Object key, @Nullable Comparator<? super K> cmp) {
             return !tooLow(key, cmp) && !tooHigh(key, cmp);
         }
 
-        void checkKeyBounds(K key, Comparator<? super K> cmp) {
+        void checkKeyBounds(K key, @Nullable Comparator<? super K> cmp) {
             if (key == null)
                 throw new NullPointerException();
             if (!inBounds(key, cmp))
@@ -2591,7 +2591,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
          * Returns true if node key is less than upper bound of range.
          */
         boolean isBeforeEnd(ConcurrentSkipListMap.Node<K,V> n,
-                            Comparator<? super K> cmp) {
+                            @Nullable Comparator<? super K> cmp) {
             if (n == null)
                 return false;
             if (hi == null)
@@ -3306,7 +3306,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         Index<K,V> row;    // the level to split out
         Node<K,V> current; // current traversal node; initialize at origin
         long est;          // size estimate
-        CSLMSpliterator(Comparator<? super K> comparator, Index<K,V> row,
+        CSLMSpliterator(@Nullable Comparator<? super K> comparator, Index<K,V> row,
                         Node<K,V> origin, K fence, long est) {
             this.comparator = comparator; this.row = row;
             this.current = origin; this.fence = fence; this.est = est;
@@ -3317,7 +3317,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
     static final class KeySpliterator<K,V> extends CSLMSpliterator<K,V>
         implements Spliterator<K> {
-        KeySpliterator(Comparator<? super K> comparator, Index<K,V> row,
+        KeySpliterator(@Nullable Comparator<? super K> comparator, Index<K,V> row,
                        Node<K,V> origin, K fence, long est) {
             super(comparator, row, origin, fence, est);
         }
@@ -3407,7 +3407,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
     static final class ValueSpliterator<K,V> extends CSLMSpliterator<K,V>
         implements Spliterator<V> {
-        ValueSpliterator(Comparator<? super K> comparator, Index<K,V> row,
+        ValueSpliterator(@Nullable Comparator<? super K> comparator, Index<K,V> row,
                        Node<K,V> origin, K fence, long est) {
             super(comparator, row, origin, fence, est);
         }
@@ -3493,7 +3493,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
     static final class EntrySpliterator<K,V> extends CSLMSpliterator<K,V>
         implements Spliterator<Map.Entry<K,V>> {
-        EntrySpliterator(Comparator<? super K> comparator, Index<K,V> row,
+        EntrySpliterator(@Nullable Comparator<? super K> comparator, Index<K,V> row,
                          Node<K,V> origin, K fence, long est) {
             super(comparator, row, origin, fence, est);
         }

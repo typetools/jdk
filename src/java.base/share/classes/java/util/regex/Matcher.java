@@ -357,7 +357,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
 
         @Override
         @SideEffectFree
-        public @Nullable String group() {
+        public String group() {
             checkMatch();
             return group(0);
         }
@@ -643,7 +643,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
      *          or if the previous match operation failed
      */
     @SideEffectFree
-    public @Nullable String group() {
+    public String group() {
         return group(0);
     }
 

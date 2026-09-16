@@ -428,7 +428,7 @@ public abstract class ResourceBundle {
                 }
 
                 @Override
-                public ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
+                public @Nullable ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
                     return ResourceBundleProviderHelper.newResourceBundle(bundleClass);
                 }
             });
@@ -660,7 +660,7 @@ public abstract class ResourceBundle {
         private volatile Throwable cause;
 
         // ResourceBundleProviders for loading ResourceBundles
-        private volatile ServiceLoader<ResourceBundleProvider> providers;
+        private volatile @Nullable ServiceLoader<ResourceBundleProvider> providers;
         private volatile boolean providersChecked;
 
         // Boolean.TRUE if the factory method caller provides a ResourceBundleProvier.
@@ -714,7 +714,7 @@ public abstract class ResourceBundle {
             return callerRef.get();
         }
 
-        ServiceLoader<ResourceBundleProvider> getProviders() {
+        @Nullable ServiceLoader<ResourceBundleProvider> getProviders() {
             if (!providersChecked) {
                 providers = getServiceLoader(getModule(), name);
                 providersChecked = true;
@@ -1738,14 +1738,14 @@ public abstract class ResourceBundle {
         return valid;
     }
 
-    private static ResourceBundle findBundle(Module callerModule,
-                                             Module module,
-                                             CacheKey cacheKey,
-                                             List<Locale> candidateLocales,
-                                             List<String> formats,
-                                             int index,
-                                             Control control,
-                                             ResourceBundle baseBundle) {
+    private static @Nullable ResourceBundle findBundle(Module callerModule,
+                                                       Module module,
+                                                       CacheKey cacheKey,
+                                                       List<Locale> candidateLocales,
+                                                       List<String> formats,
+                                                       int index,
+                                                       Control control,
+                                                       @Nullable ResourceBundle baseBundle) {
         Locale targetLocale = candidateLocales.get(index);
         ResourceBundle parent = null;
         if (index != candidateLocales.size() - 1) {
@@ -1952,14 +1952,14 @@ public abstract class ResourceBundle {
     @SuppressWarnings("removal")
     private static @Nullable ResourceBundle loadBundleFromProviders(String baseName,
                                                           Locale locale,
-                                                          ServiceLoader<ResourceBundleProvider> providers,
+                                                          @Nullable ServiceLoader<ResourceBundleProvider> providers,
                                                           CacheKey cacheKey)
     {
         if (providers == null) return null;
 
         return AccessController.doPrivileged(
                 new PrivilegedAction<>() {
-                    public ResourceBundle run() {
+                    public @Nullable ResourceBundle run() {
                         for (Iterator<ResourceBundleProvider> itr = providers.iterator(); itr.hasNext(); ) {
                             try {
                                 ResourceBundleProvider provider = itr.next();

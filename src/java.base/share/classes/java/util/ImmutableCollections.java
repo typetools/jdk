@@ -1185,7 +1185,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public V get(Object o) {
+        public @Nullable V get(Object o) {
             return o.equals(k0) ? v0 : null; // implicit nullcheck of o
         }
 

@@ -208,7 +208,7 @@ public interface MatchResult {
      *          If no match has yet been attempted,
      *          or if the previous match operation failed
      */
-    @Nullable String group();
+    String group();
 
     /**
      * Returns the input subsequence captured by the given group during the

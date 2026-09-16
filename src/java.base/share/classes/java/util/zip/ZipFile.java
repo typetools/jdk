@@ -1132,7 +1132,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
                     return ((ZipFile)jar).getManifestNum();
                 }
                 @Override
-                public String getManifestName(JarFile jar, boolean onlyIfHasSignatureRelatedFiles) {
+                public @Nullable String getManifestName(JarFile jar, boolean onlyIfHasSignatureRelatedFiles) {
                     return ((ZipFile)jar).getManifestName(onlyIfHasSignatureRelatedFiles);
                 }
                 @Override
