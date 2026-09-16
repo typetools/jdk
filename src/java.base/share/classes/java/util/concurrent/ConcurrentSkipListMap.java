@@ -2310,7 +2310,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
                 : ((SubMap<K,V>)m).new SubMapKeyIterator();
         }
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
             if (!(o instanceof Set))
@@ -2466,7 +2466,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
             m.clear();
         }
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
             if (!(o instanceof Set))

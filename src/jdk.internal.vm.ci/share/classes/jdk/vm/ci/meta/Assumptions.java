@@ -123,7 +123,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof NoFinalizableSubclass) {
                 NoFinalizableSubclass other = (NoFinalizableSubclass) obj;
                 return other.receiverType.equals(receiverType);
@@ -172,7 +172,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof ConcreteSubtype) {
                 ConcreteSubtype other = (ConcreteSubtype) obj;
                 return other.context.equals(context) && other.subtype.equals(subtype);
@@ -210,7 +210,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof LeafType) {
                 LeafType other = (LeafType) obj;
                 return other.context.equals(context);
@@ -262,7 +262,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof ConcreteMethod) {
                 ConcreteMethod other = (ConcreteMethod) obj;
                 return other.method.equals(method) && other.context.equals(context) && other.impl.equals(impl);
@@ -299,7 +299,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof CallSiteTargetValue) {
                 CallSiteTargetValue other = (CallSiteTargetValue) obj;
                 return callSite.equals(other.callSite) && methodHandle.equals(other.methodHandle);

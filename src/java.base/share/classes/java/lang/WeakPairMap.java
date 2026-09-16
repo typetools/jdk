@@ -292,7 +292,7 @@ final class WeakPairMap<K1, K2, V> {
             }
 
             @Override
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 return this == obj ||
                        (obj instanceof Pair &&
                         Pair.equals(first(), second(), (Pair<?, ?>) obj));
@@ -333,7 +333,7 @@ final class WeakPairMap<K1, K2, V> {
             }
 
             @Override
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 return obj instanceof Pair &&
                        Pair.equals(k1, k2, (Pair<?, ?>) obj);
             }

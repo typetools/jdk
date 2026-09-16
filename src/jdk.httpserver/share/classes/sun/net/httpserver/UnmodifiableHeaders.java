@@ -25,6 +25,7 @@
 
 package sun.net.httpserver;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.*;
@@ -102,7 +103,7 @@ public class UnmodifiableHeaders extends Headers {
         throw new UnsupportedOperationException ("unsupported operation");
     }
 
-    public boolean equals(Object o) {return headers.equals(o);}
+    public boolean equals(@Nullable Object o) {return headers.equals(o);}
 
     public int hashCode() {return headers.hashCode();}
 }

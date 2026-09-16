@@ -25,6 +25,7 @@
 package javax.swing.plaf.nimbus;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import javax.swing.Painter;
@@ -1106,7 +1107,7 @@ public final class NimbusStyle extends SynthStyle {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             final CacheKey other = (CacheKey) obj;
             if (obj == null) return false;
             if (this.xstate != other.xstate) return false;

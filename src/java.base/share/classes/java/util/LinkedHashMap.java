@@ -1202,7 +1202,7 @@ public class LinkedHashMap<K,V>
         // inherit toString() from AbstractMap; it depends on entrySet()
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return base.equals(o);
         }
 

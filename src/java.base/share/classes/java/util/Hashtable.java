@@ -1497,7 +1497,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
 

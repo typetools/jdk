@@ -1512,7 +1512,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
             if (!(o instanceof List))
@@ -2049,7 +2049,7 @@ public class CopyOnWriteArrayList<E>
 
         // copied from AbstractList
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this)
                 return true;
             if (!(o instanceof List))

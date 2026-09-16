@@ -568,7 +568,7 @@ public abstract class Clock implements InstantSource {
             return currentInstant();
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return obj instanceof SystemInstantSource;
         }
         @Override
@@ -622,7 +622,7 @@ public abstract class Clock implements InstantSource {
             return currentInstant();
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof SystemClock) {
                 return zone.equals(((SystemClock) obj).zone);
             }
@@ -673,7 +673,7 @@ public abstract class Clock implements InstantSource {
             return instant;
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return obj instanceof FixedClock other
                     && instant.equals(other.instant)
                     && zone.equals(other.zone);
@@ -723,7 +723,7 @@ public abstract class Clock implements InstantSource {
             return baseClock.instant().plus(offset);
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return obj instanceof OffsetClock other
                     && baseClock.equals(other.baseClock)
                     && offset.equals(other.offset);
@@ -781,7 +781,7 @@ public abstract class Clock implements InstantSource {
             return instant.minusNanos(adjust);
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return (obj instanceof TickClock other)
                     && tickNanos == other.tickNanos
                     && baseClock.equals(other.baseClock);
@@ -831,7 +831,7 @@ public abstract class Clock implements InstantSource {
             return baseSource.instant();
         }
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             return (obj instanceof SourceClock other)
                     && zone.equals(other.zone)
                     && baseSource.equals(other.baseSource);

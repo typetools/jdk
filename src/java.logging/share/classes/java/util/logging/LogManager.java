@@ -26,6 +26,7 @@
 package java.util.logging;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -201,7 +202,7 @@ public @UsesObjectEquals class LogManager {
             this.logger = Objects.requireNonNull(ref);
         }
         @Override
-        public boolean equals(Object other) {
+        public boolean equals(@Nullable Object other) {
             return (other instanceof CloseOnReset) && ((CloseOnReset)other).logger == logger;
         }
         @Override

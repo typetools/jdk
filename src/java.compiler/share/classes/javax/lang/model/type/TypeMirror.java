@@ -25,6 +25,7 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 
 import java.lang.annotation.Annotation;
@@ -123,7 +124,7 @@ public interface TypeMirror extends javax.lang.model.AnnotatedConstruct {
      * @param obj  the object to be compared with this type
      * @return {@code true} if the specified object is equal to this one
      */
-    boolean equals(Object obj);
+    boolean equals(@Nullable Object obj);
 
     /**
      * Obeys the general contract of {@link Object#hashCode Object.hashCode}.

@@ -1101,7 +1101,7 @@ public abstract class Provider extends Properties {
         public int hashCode() {
             return type.hashCode() * 31 + algorithm.hashCode();
         }
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;
             }
@@ -1549,7 +1549,7 @@ public abstract class Provider extends Properties {
             return lowerString.hashCode();
         }
 
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;
             }
