@@ -25,6 +25,9 @@
 
 package java.awt;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.peer.FramePeer;
@@ -40,9 +43,6 @@ import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
 import javax.accessibility.AccessibleState;
 import javax.accessibility.AccessibleStateSet;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 import sun.awt.AWTAccessor;
 import sun.awt.SunToolkit;

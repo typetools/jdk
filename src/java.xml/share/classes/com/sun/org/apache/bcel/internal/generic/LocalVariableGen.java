@@ -22,6 +22,7 @@ package com.sun.org.apache.bcel.internal.generic;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.bcel.internal.Const;
 import com.sun.org.apache.bcel.internal.classfile.LocalVariable;
 

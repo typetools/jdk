@@ -27,7 +27,6 @@ package java.io;
 
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * A filter for abstract pathnames.
  *

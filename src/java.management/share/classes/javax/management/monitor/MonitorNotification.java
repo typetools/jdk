@@ -28,10 +28,10 @@ package javax.management.monitor;
 
 // jmx imports
 //
-import javax.management.ObjectName;
-
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import javax.management.ObjectName;
 
 /**
  * Provides definitions of the notifications sent by monitor MBeans.

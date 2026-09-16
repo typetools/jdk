@@ -119,20 +119,25 @@ jobs:
           /tmp/$USER/git-scripts/git-clone-related typetools jdk21u ../jdk21u --single-branch
           cd ../jdk21u
           git diff --exit-code
+        # Run `ci-org-and-branch` in this repository's checkout, not in
+        # ../jdk21u.  Outside a pull request, the script falls back to the
+        # organization of the current clone's origin, and ../jdk21u's origin is
+        # the related repository (typetools/jdk21u, if this branch does not
+        # exist in the fork) rather than the repository under test.
       - name: git merge plan
         run: |
           set -ex
-          cd ../jdk21u
-          git status
           /tmp/$USER/plume-scripts/ci-org-and-branch typetools --debug
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
+          cd ../jdk21u
+          git status
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
         shell: bash --noprofile --norc -e {0}
       - name: git merge
         run: |
           set -ex
-          cd ../jdk21u
           eval $(/tmp/$USER/plume-scripts/ci-org-and-branch typetools)
+          cd ../jdk21u
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
           if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH}"; then
             git --version

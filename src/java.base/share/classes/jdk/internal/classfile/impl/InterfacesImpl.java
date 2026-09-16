@@ -24,14 +24,14 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import jdk.internal.classfile.constantpool.ClassEntry;
 import jdk.internal.classfile.Interfaces;

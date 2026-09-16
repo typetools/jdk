@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.impl.dv.xs;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.dv.DatatypeException;
 import com.sun.org.apache.xerces.internal.impl.dv.InvalidDatatypeFacetException;

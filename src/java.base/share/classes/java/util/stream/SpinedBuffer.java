@@ -25,6 +25,7 @@
 package java.util.stream;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.util.ArrayList;
@@ -40,7 +41,6 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.LongConsumer;
-import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * An ordered collection of elements.  Elements can be added, but not removed.

@@ -24,13 +24,13 @@
  */
 package jdk.internal.classfile.impl;
 
-import jdk.internal.classfile.ClassfileVersion;
-
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import jdk.internal.classfile.ClassfileVersion;
 
 public final class ClassfileVersionImpl
         extends AbstractElement

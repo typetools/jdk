@@ -26,6 +26,7 @@
 package sun.nio.cs;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.nio.charset.Charset;
 
 abstract class Unicode extends Charset

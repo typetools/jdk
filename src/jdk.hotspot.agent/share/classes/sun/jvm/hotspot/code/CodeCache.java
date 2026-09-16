@@ -25,6 +25,7 @@
 package sun.jvm.hotspot.code;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.memory.*;

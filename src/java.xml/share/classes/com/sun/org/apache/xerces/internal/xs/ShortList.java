@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.xs;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.List;
 
 /**

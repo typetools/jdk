@@ -26,8 +26,8 @@
 package java.nio.file.attribute;
 
 import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Basic attributes associated with a file in a file system.
