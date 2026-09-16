@@ -25,9 +25,9 @@
 
 package com.sun.source.tree;
 
-import jdk.internal.javac.PreviewFeature;
-
 import org.checkerframework.dataflow.qual.Pure;
+
+import jdk.internal.javac.PreviewFeature;
 
 /**
  * Common interface for all nodes in an abstract syntax tree.

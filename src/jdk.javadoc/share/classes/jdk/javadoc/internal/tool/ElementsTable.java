@@ -26,6 +26,7 @@ package jdk.javadoc.internal.tool;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;

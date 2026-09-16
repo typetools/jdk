@@ -27,6 +27,7 @@ package com.sun.tools.jdeps;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.tools.classfile.Dependency.Location;
 
 import java.io.BufferedReader;

@@ -28,7 +28,6 @@ package java.awt.image;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * The {@code Kernel} class defines a matrix that describes how a
  * specified pixel and its surrounding pixels affect the value

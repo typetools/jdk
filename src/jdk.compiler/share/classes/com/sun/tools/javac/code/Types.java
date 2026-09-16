@@ -27,6 +27,7 @@ package com.sun.tools.javac.code;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
 import java.util.HashMap;

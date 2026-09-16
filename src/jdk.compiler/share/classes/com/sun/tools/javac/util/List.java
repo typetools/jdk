@@ -27,6 +27,7 @@ package com.sun.tools.javac.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;

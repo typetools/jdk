@@ -29,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
-
 /**
  * This class extends {@code ThreadLocal} to provide inheritance of values
  * from parent thread to child thread: when a child thread is created, the

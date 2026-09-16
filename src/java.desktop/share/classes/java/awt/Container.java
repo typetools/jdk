@@ -27,8 +27,8 @@ package java.awt;
 
 import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.guieffect.qual.UIType;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.dnd.DropTarget;

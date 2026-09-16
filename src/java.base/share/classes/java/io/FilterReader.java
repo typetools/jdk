@@ -32,7 +32,6 @@ import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * Abstract class for reading filtered character streams.
  * The abstract class {@code FilterReader} itself

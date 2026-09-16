@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.xs.datatypes;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.xs.XSException;
 import java.util.List;
 

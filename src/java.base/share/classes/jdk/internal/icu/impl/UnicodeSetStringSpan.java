@@ -35,6 +35,7 @@
 package jdk.internal.icu.impl;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.ArrayList;
 
 import jdk.internal.icu.text.UTF16;
