@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -58,7 +59,7 @@ public class NoSuchElementException extends RuntimeException {
      * @since 15
      */
     @SideEffectFree
-    public NoSuchElementException(String s, Throwable cause) {
+    public NoSuchElementException(@Nullable String s, @Nullable Throwable cause) {
         super(s, cause);
     }
 
@@ -73,7 +74,7 @@ public class NoSuchElementException extends RuntimeException {
      * @since 15
      */
     @SideEffectFree
-    public NoSuchElementException(Throwable cause) {
+    public NoSuchElementException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -85,7 +86,7 @@ public class NoSuchElementException extends RuntimeException {
      * @param   s   the detail message.
      */
     @SideEffectFree
-    public NoSuchElementException(String s) {
+    public NoSuchElementException(@Nullable String s) {
         super(s);
     }
 }

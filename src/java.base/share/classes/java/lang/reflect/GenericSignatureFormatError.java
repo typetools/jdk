@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -54,7 +55,7 @@ public class GenericSignatureFormatError extends ClassFormatError {
      * @param message the detail message, may be {@code null}
      */
     @SideEffectFree
-    public GenericSignatureFormatError(String message) {
+    public GenericSignatureFormatError(@Nullable String message) {
         super(message);
     }
 }

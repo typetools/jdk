@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -65,7 +66,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      *          that was thrown
      */
     @SideEffectFree
-    public UndeclaredThrowableException(Throwable undeclaredThrowable) {
+    public UndeclaredThrowableException(@Nullable Throwable undeclaredThrowable) {
         super(null, undeclaredThrowable);  // Disallow initCause
     }
 
@@ -78,8 +79,8 @@ public class UndeclaredThrowableException extends RuntimeException {
      * @param   s the detail message
      */
     @SideEffectFree
-    public UndeclaredThrowableException(Throwable undeclaredThrowable,
-                                        String s)
+    public UndeclaredThrowableException(@Nullable Throwable undeclaredThrowable,
+                                        @Nullable String s)
     {
         super(s, undeclaredThrowable);  // Disallow initCause
     }
@@ -95,7 +96,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      *
      * @return the undeclared checked exception that was thrown
      */
-    public Throwable getUndeclaredThrowable() {
+    public @Nullable Throwable getUndeclaredThrowable() {
         return super.getCause();
     }
 

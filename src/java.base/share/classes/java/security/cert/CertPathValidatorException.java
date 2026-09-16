@@ -25,6 +25,7 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.InvalidObjectException;
 import java.io.IOException;
@@ -99,7 +100,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * @param msg the detail message
      */
     @SideEffectFree
-    public CertPathValidatorException(String msg) {
+    public CertPathValidatorException(@Nullable String msg) {
         this(msg, null);
     }
 
@@ -117,7 +118,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public CertPathValidatorException(Throwable cause) {
+    public CertPathValidatorException(@Nullable Throwable cause) {
         this((cause == null ? null : cause.toString()), cause);
     }
 
@@ -131,7 +132,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * permitted, and indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public CertPathValidatorException(String msg, Throwable cause) {
+    public CertPathValidatorException(@Nullable String msg, @Nullable Throwable cause) {
         this(msg, cause, null, -1);
     }
 
@@ -153,7 +154,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      * {@code null} and {@code index} is not -1
      */
     @SideEffectFree
-    public CertPathValidatorException(String msg, Throwable cause,
+    public CertPathValidatorException(@Nullable String msg, @Nullable Throwable cause,
             CertPath certPath, int index) {
         this(msg, cause, certPath, index, BasicReason.UNSPECIFIED);
     }
@@ -181,7 +182,7 @@ public class CertPathValidatorException extends GeneralSecurityException {
      */
     @SideEffectFree
     @SuppressWarnings("purity.not.sideeffectfree.call") // getCertificates() has no side effect
-    public CertPathValidatorException(String msg, Throwable cause,
+    public CertPathValidatorException(@Nullable String msg, @Nullable Throwable cause,
             CertPath certPath, int index, Reason reason) {
         super(msg, cause);
         if (certPath == null && index != -1) {

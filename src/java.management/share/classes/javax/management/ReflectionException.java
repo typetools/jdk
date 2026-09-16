@@ -63,7 +63,7 @@ public class ReflectionException extends JMException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public ReflectionException(java.lang.Exception e, String message) {
+    public ReflectionException(java.lang.Exception e, @Nullable String message) {
         super(message) ;
         exception = e ;
     }

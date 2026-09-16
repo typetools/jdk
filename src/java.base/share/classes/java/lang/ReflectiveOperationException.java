@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -57,7 +58,7 @@ public class ReflectiveOperationException extends Exception {
      *          later retrieval by the {@link #getMessage()} method.
      */
     @SideEffectFree
-    public ReflectiveOperationException(String message) {
+    public ReflectiveOperationException(@Nullable String message) {
         super(message);
     }
 
@@ -77,7 +78,7 @@ public class ReflectiveOperationException extends Exception {
      *         unknown.)
      */
     @SideEffectFree
-    public ReflectiveOperationException(String message, Throwable cause) {
+    public ReflectiveOperationException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -92,7 +93,7 @@ public class ReflectiveOperationException extends Exception {
      *         unknown.)
      */
     @SideEffectFree
-    public ReflectiveOperationException(Throwable cause) {
+    public ReflectiveOperationException(@Nullable Throwable cause) {
         super(cause);
     }
 }

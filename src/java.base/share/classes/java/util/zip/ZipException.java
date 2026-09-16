@@ -25,6 +25,7 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 
@@ -56,7 +57,7 @@ public class ZipException extends IOException {
      */
 
     @SideEffectFree
-    public ZipException(String s) {
+    public ZipException(@Nullable String s) {
         super(s);
     }
 }

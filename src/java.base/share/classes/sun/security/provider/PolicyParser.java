@@ -1317,7 +1317,7 @@ public class PolicyParser {
             i18nMessage = msg;
         }
 
-        public ParsingException(String msg, LocalizedMessage localizedMsg,
+        public ParsingException(@Nullable String msg, LocalizedMessage localizedMsg,
                                 Object[] source) {
             super(msg);
             this.localizedMsg = localizedMsg;

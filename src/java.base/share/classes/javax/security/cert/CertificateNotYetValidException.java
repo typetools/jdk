@@ -26,6 +26,7 @@
 
 package javax.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -68,7 +69,7 @@ public class CertificateNotYetValidException extends CertificateException {
      * @param message the detail message.
      */
     @SideEffectFree
-    public CertificateNotYetValidException(String message) {
+    public CertificateNotYetValidException(@Nullable String message) {
         super(message);
     }
 }

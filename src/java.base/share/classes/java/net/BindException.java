@@ -25,6 +25,7 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -47,7 +48,7 @@ public class BindException extends SocketException {
      * @param msg the detail message
      */
     @SideEffectFree
-    public BindException(String msg) {
+    public BindException(@Nullable String msg) {
         super(msg);
     }
 

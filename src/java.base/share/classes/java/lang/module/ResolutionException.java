@@ -25,6 +25,7 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -52,7 +53,7 @@ public class ResolutionException extends RuntimeException {
      *        The detail message; can be {@code null}
      */
     @SideEffectFree
-    public ResolutionException(String msg) {
+    public ResolutionException(@Nullable String msg) {
         super(msg);
     }
 
@@ -63,7 +64,7 @@ public class ResolutionException extends RuntimeException {
      *        The cause; can be {@code null}
      */
     @SideEffectFree
-    public ResolutionException(Throwable cause) {
+    public ResolutionException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -77,7 +78,7 @@ public class ResolutionException extends RuntimeException {
      *        The cause; can be {@code null}
      */
     @SideEffectFree
-    public ResolutionException(String msg, Throwable cause) {
+    public ResolutionException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 

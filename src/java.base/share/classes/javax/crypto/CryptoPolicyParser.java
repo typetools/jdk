@@ -679,7 +679,7 @@ final class CryptoPolicyParser {
          * detail message.
          * @param msg the detail message.
          */
-        ParsingException(String msg) {
+        ParsingException(@Nullable String msg) {
             super(msg);
         }
 

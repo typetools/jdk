@@ -1364,7 +1364,7 @@ public class Proxy implements java.io.Serializable {
         @java.io.Serial
         private static final long serialVersionUID = 0L;
 
-        InvocationException(Throwable cause) {
+        InvocationException(@Nullable Throwable cause) {
             super(cause);
         }
 

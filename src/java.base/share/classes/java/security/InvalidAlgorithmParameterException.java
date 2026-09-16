@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -65,7 +66,7 @@ extends GeneralSecurityException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public InvalidAlgorithmParameterException(String msg) {
+    public InvalidAlgorithmParameterException(@Nullable String msg) {
         super(msg);
     }
 
@@ -81,7 +82,7 @@ extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public InvalidAlgorithmParameterException(String message, Throwable cause) {
+    public InvalidAlgorithmParameterException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -98,7 +99,7 @@ extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public InvalidAlgorithmParameterException(Throwable cause) {
+    public InvalidAlgorithmParameterException(@Nullable Throwable cause) {
         super(cause);
     }
 }

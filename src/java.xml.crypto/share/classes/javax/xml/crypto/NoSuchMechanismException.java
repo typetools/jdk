@@ -62,7 +62,7 @@ public class NoSuchMechanismException extends RuntimeException {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code NoSuchMechanismException} with
@@ -78,7 +78,7 @@ public class NoSuchMechanismException extends RuntimeException {
      *
      * @param message the detail message
      */
-    public NoSuchMechanismException(String message) {
+    public NoSuchMechanismException(@Nullable String message) {
         super(message);
     }
 
@@ -93,7 +93,7 @@ public class NoSuchMechanismException extends RuntimeException {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public NoSuchMechanismException(String message, Throwable cause) {
+    public NoSuchMechanismException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -107,7 +107,7 @@ public class NoSuchMechanismException extends RuntimeException {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public NoSuchMechanismException(Throwable cause) {
+    public NoSuchMechanismException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }

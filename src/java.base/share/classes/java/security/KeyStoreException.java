@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class KeyStoreException extends GeneralSecurityException {
      * @param msg the detail message.
      */
     @SideEffectFree
-   public KeyStoreException(String msg) {
+   public KeyStoreException(@Nullable String msg) {
        super(msg);
     }
 
@@ -75,7 +76,7 @@ public class KeyStoreException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public KeyStoreException(String message, Throwable cause) {
+    public KeyStoreException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -91,7 +92,7 @@ public class KeyStoreException extends GeneralSecurityException {
      * @since 1.5
      */
     @SideEffectFree
-    public KeyStoreException(Throwable cause) {
+    public KeyStoreException(@Nullable Throwable cause) {
         super(cause);
     }
 }

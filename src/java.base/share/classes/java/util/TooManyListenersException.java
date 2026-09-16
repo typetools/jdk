@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -70,7 +71,7 @@ public class TooManyListenersException extends Exception {
      */
 
     @SideEffectFree
-    public TooManyListenersException(String s) {
+    public TooManyListenersException(@Nullable String s) {
         super(s);
     }
 }

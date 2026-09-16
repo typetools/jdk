@@ -26,6 +26,7 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -51,7 +52,7 @@ public class SSLPeerUnverifiedException extends SSLException {
      * @param reason describes the problem.
      */
     @SideEffectFree
-    public SSLPeerUnverifiedException(String reason) {
+    public SSLPeerUnverifiedException(@Nullable String reason) {
         super(reason);
     }
 
@@ -68,7 +69,7 @@ public class SSLPeerUnverifiedException extends SSLException {
      * @since 19
      */
     @SideEffectFree
-    public SSLPeerUnverifiedException(String message, Throwable cause) {
+    public SSLPeerUnverifiedException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

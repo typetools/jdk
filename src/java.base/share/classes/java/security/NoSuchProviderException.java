@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -58,7 +59,7 @@ public class NoSuchProviderException extends GeneralSecurityException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public NoSuchProviderException(String msg) {
+    public NoSuchProviderException(@Nullable String msg) {
         super(msg);
     }
 }

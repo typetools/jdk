@@ -64,7 +64,7 @@ public class FactoryConfigurationError extends Error {
      * @param msg The error message for the exception.
      */
 
-    public FactoryConfigurationError(String msg) {
+    public FactoryConfigurationError(@Nullable String msg) {
         super(msg);
         this.exception = null;
     }
@@ -92,7 +92,7 @@ public class FactoryConfigurationError extends Error {
      * @param msg The detail message.
      */
 
-    public FactoryConfigurationError(Exception e, String msg) {
+    public FactoryConfigurationError(@Nullable Exception e, @Nullable String msg) {
         super(msg);
         this.exception = e;
     }

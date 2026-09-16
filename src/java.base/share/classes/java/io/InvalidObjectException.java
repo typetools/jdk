@@ -66,7 +66,7 @@ public class InvalidObjectException extends ObjectStreamException {
      * @since 19
      */
     @SideEffectFree
-    public InvalidObjectException(String reason, Throwable cause) {
+    public InvalidObjectException(@Nullable String reason, @Nullable Throwable cause) {
         super(reason, cause);
     }
 }

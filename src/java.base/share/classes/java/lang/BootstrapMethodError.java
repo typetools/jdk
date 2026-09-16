@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -60,7 +61,7 @@ public class BootstrapMethodError extends LinkageError {
      * @param s the detail message.
      */
     @SideEffectFree
-    public BootstrapMethodError(String s) {
+    public BootstrapMethodError(@Nullable String s) {
         super(s);
     }
 
@@ -72,7 +73,7 @@ public class BootstrapMethodError extends LinkageError {
      * @param cause the cause, may be {@code null}.
      */
     @SideEffectFree
-    public BootstrapMethodError(String s, Throwable cause) {
+    public BootstrapMethodError(@Nullable String s, @Nullable Throwable cause) {
         super(s, cause);
     }
 
@@ -84,7 +85,7 @@ public class BootstrapMethodError extends LinkageError {
      */
     @SideEffectFree
     @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
-    public BootstrapMethodError(Throwable cause) {
+    public BootstrapMethodError(@Nullable Throwable cause) {
         // cf. Throwable(Throwable cause) constructor.
         super(cause == null ? null : cause.toString());
         initCause(cause);
