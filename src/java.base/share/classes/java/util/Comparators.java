@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.Serializable;
@@ -70,10 +71,10 @@ class Comparators {
         private final boolean nullFirst;
         // if null, non-null Ts are considered equal
         @SuppressWarnings("serial") // Not statically typed as Serializable
-        private final Comparator<T> real;
+        private final @Nullable Comparator<T> real;
 
         @SuppressWarnings("unchecked")
-        NullComparator(boolean nullFirst, Comparator<? super T> real) {
+        NullComparator(boolean nullFirst, @Nullable Comparator<? super T> real) {
             this.nullFirst = nullFirst;
             this.real = (Comparator<T>) real;
         }

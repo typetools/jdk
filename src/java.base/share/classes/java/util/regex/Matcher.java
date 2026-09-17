@@ -364,7 +364,7 @@ public final @UsesObjectEquals class Matcher implements MatchResult {
 
         @Override
         @SideEffectFree
-        public String group(int group) {
+        public @Nullable String group(int group) {
             checkMatch();
             checkGroup(group);
             if ((groups[group * 2] == -1) || (groups[group * 2 + 1] == -1))

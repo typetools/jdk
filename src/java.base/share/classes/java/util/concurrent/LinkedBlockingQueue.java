@@ -929,7 +929,7 @@ public class LinkedBlockingQueue<E extends Object> extends AbstractQueue<E>
 
         public long estimateSize() { return est; }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> h;
             if (!exhausted &&
                 ((h = current) != null || (h = head.next) != null)

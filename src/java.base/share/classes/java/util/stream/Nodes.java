@@ -24,6 +24,8 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
@@ -977,7 +979,7 @@ final class Nodes {
          * an explicit stack, to find the next non-empty leaf node.
          */
         @SuppressWarnings("unchecked")
-        protected final N findNextLeafNode(Deque<N> stack) {
+        protected final @Nullable N findNextLeafNode(Deque<N> stack) {
             N n = null;
             while ((n = stack.pollFirst()) != null) {
                 if (n.getChildCount() == 0) {
@@ -1019,7 +1021,7 @@ final class Nodes {
 
         @Override
         @SuppressWarnings("unchecked")
-        public final S trySplit() {
+        public final @Nullable S trySplit() {
             if (curNode == null || tryAdvanceSpliterator != null)
                 return null; // Cannot split if fully or partially traversed
             else if (lastNodeSpliterator != null)

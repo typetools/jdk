@@ -1535,7 +1535,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
         int batch;          // batch size for splits
         boolean exhausted;  // true when no more nodes
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> p, q;
             if ((p = current()) == null || (q = p.next) == null)
                 return null;

@@ -1668,7 +1668,7 @@ public class ArrayList<E> extends AbstractList<E>
                     return hi;
                 }
 
-                public ArrayList<E>.ArrayListSpliterator trySplit() {
+                public ArrayList<E>.@Nullable ArrayListSpliterator trySplit() {
                     int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
                     // ArrayListSpliterator can be used here as the source is already bound
                     return (lo >= mid) ? null : // divide range in half unless too small
@@ -1814,7 +1814,7 @@ public class ArrayList<E> extends AbstractList<E>
             return hi;
         }
 
-        public ArrayListSpliterator trySplit() {
+        public @Nullable ArrayListSpliterator trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null : // divide range in half unless too small
                 new ArrayListSpliterator(lo, index = mid, expectedModCount);

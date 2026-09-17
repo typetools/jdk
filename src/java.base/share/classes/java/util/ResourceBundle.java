@@ -428,7 +428,7 @@ public abstract class ResourceBundle {
                 }
 
                 @Override
-                public ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
+                public @Nullable ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
                     return ResourceBundleProviderHelper.newResourceBundle(bundleClass);
                 }
             });
@@ -437,7 +437,7 @@ public abstract class ResourceBundle {
     /** constant indicating that no resource bundle exists */
     private static final ResourceBundle NONEXISTENT_BUNDLE = new ResourceBundle() {
             public Enumeration<String> getKeys() { return null; }
-            protected Object handleGetObject(String key) { return null; }
+            protected @Nullable Object handleGetObject(String key) { return null; }
             public String toString() { return "NONEXISTENT_BUNDLE"; }
         };
 
@@ -660,7 +660,7 @@ public abstract class ResourceBundle {
         private volatile Throwable cause;
 
         // ResourceBundleProviders for loading ResourceBundles
-        private volatile ServiceLoader<ResourceBundleProvider> providers;
+        private volatile @Nullable ServiceLoader<ResourceBundleProvider> providers;
         private volatile boolean providersChecked;
 
         // Boolean.TRUE if the factory method caller provides a ResourceBundleProvier.
@@ -714,7 +714,7 @@ public abstract class ResourceBundle {
             return callerRef.get();
         }
 
-        ServiceLoader<ResourceBundleProvider> getProviders() {
+        @Nullable ServiceLoader<ResourceBundleProvider> getProviders() {
             if (!providersChecked) {
                 providers = getServiceLoader(getModule(), name);
                 providersChecked = true;
@@ -1738,14 +1738,14 @@ public abstract class ResourceBundle {
         return valid;
     }
 
-    private static ResourceBundle findBundle(Module callerModule,
-                                             Module module,
-                                             CacheKey cacheKey,
-                                             List<Locale> candidateLocales,
-                                             List<String> formats,
-                                             int index,
-                                             Control control,
-                                             ResourceBundle baseBundle) {
+    private static @Nullable ResourceBundle findBundle(Module callerModule,
+                                                       Module module,
+                                                       CacheKey cacheKey,
+                                                       List<Locale> candidateLocales,
+                                                       List<String> formats,
+                                                       int index,
+                                                       Control control,
+                                                       @Nullable ResourceBundle baseBundle) {
         Locale targetLocale = candidateLocales.get(index);
         ResourceBundle parent = null;
         if (index != candidateLocales.size() - 1) {
@@ -1886,7 +1886,7 @@ public abstract class ResourceBundle {
      * Returns a ServiceLoader that will find providers that are bound to
      * a given named module.
      */
-    private static ServiceLoader<ResourceBundleProvider> getServiceLoader(Module module,
+    private static @Nullable ServiceLoader<ResourceBundleProvider> getServiceLoader(Module module,
                                                                           String baseName)
     {
         if (!module.isNamed()) {
@@ -1932,7 +1932,7 @@ public abstract class ResourceBundle {
         return AccessController.doPrivileged(
             new PrivilegedAction<>() {
                 @Override
-                public Class<ResourceBundleProvider> run() {
+                public @Nullable Class<ResourceBundleProvider> run() {
                     try {
                         Class<?> c = Class.forName(providerName, false, loader);
                         if (ResourceBundleProvider.class.isAssignableFrom(c)) {
@@ -1950,16 +1950,16 @@ public abstract class ResourceBundle {
      * Loads ResourceBundle from service providers.
      */
     @SuppressWarnings("removal")
-    private static ResourceBundle loadBundleFromProviders(String baseName,
+    private static @Nullable ResourceBundle loadBundleFromProviders(String baseName,
                                                           Locale locale,
-                                                          ServiceLoader<ResourceBundleProvider> providers,
+                                                          @Nullable ServiceLoader<ResourceBundleProvider> providers,
                                                           CacheKey cacheKey)
     {
         if (providers == null) return null;
 
         return AccessController.doPrivileged(
                 new PrivilegedAction<>() {
-                    public ResourceBundle run() {
+                    public @Nullable ResourceBundle run() {
                         for (Iterator<ResourceBundleProvider> itr = providers.iterator(); itr.hasNext(); ) {
                             try {
                                 ResourceBundleProvider provider = itr.next();
@@ -2089,7 +2089,7 @@ public abstract class ResourceBundle {
      * cache or its parent has expired. {@code bundle.expire} is true
      * upon return if the bundle in the cache has expired.
      */
-    private static ResourceBundle findBundleInCache(CacheKey cacheKey,
+    private static @Nullable ResourceBundle findBundleInCache(CacheKey cacheKey,
                                                     Control control) {
         BundleReference bundleRef = cacheList.get(cacheKey);
         if (bundleRef == null) {
@@ -2293,7 +2293,7 @@ public abstract class ResourceBundle {
      * @throws    NullPointerException if {@code key} is {@code null}
      * @return the object for the given key, or null
      */
-    protected abstract Object handleGetObject(String key);
+    protected abstract @Nullable Object handleGetObject(String key);
 
     /**
      * Returns an enumeration of the keys.
@@ -3051,7 +3051,7 @@ public abstract class ResourceBundle {
          *        if {@code baseName} or {@code locale}
          *        is {@code null}
          */
-        public Locale getFallbackLocale(String baseName, Locale locale) {
+        public @Nullable Locale getFallbackLocale(String baseName, Locale locale) {
             if (baseName == null) {
                 throw new NullPointerException();
             }
@@ -3174,7 +3174,7 @@ public abstract class ResourceBundle {
          * @see java.util.spi.ResourceBundleProvider#getBundle(String, Locale)
          * @revised 9
          */
-        public ResourceBundle newBundle(@BinaryName String baseName, Locale locale, String format,
+        public @Nullable ResourceBundle newBundle(@BinaryName String baseName, Locale locale, String format,
                                         ClassLoader loader, boolean reload)
                     throws IllegalAccessException, InstantiationException, IOException {
             /*
@@ -3195,7 +3195,7 @@ public abstract class ResourceBundle {
         }
 
         @SuppressWarnings("removal")
-        private ResourceBundle newBundle0(String bundleName, String format,
+        private @Nullable ResourceBundle newBundle0(String bundleName, String format,
                     ClassLoader loader, boolean reload)
                     throws IllegalAccessException, InstantiationException, IOException {
             ResourceBundle bundle = null;
@@ -3542,7 +3542,7 @@ public abstract class ResourceBundle {
             return sb.toString();
         }
 
-        private String toResourceName0(String bundleName, String suffix) {
+        private @Nullable String toResourceName0(String bundleName, String suffix) {
             // application protocol check
             if (bundleName.contains("://")) {
                 return null;
@@ -3595,7 +3595,7 @@ public abstract class ResourceBundle {
             super(formats);
         }
 
-        public Locale getFallbackLocale(String baseName, Locale locale) {
+        public @Nullable Locale getFallbackLocale(String baseName, Locale locale) {
             if (baseName == null || locale == null) {
                 throw new NullPointerException();
             }
@@ -3608,7 +3608,7 @@ public abstract class ResourceBundle {
          * Returns a new ResourceBundle instance of the given bundleClass
          */
         @SuppressWarnings("removal")
-        static ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
+        static @Nullable ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass) {
             try {
                 @SuppressWarnings("unchecked")
                 Constructor<? extends ResourceBundle> ctor =
@@ -3639,7 +3639,7 @@ public abstract class ResourceBundle {
          *
          * The caller module is used for access check only.
          */
-        static ResourceBundle loadResourceBundle(Module callerModule,
+        static @Nullable ResourceBundle loadResourceBundle(Module callerModule,
                                                  Module module,
                                                  String baseName,
                                                  Locale locale)
@@ -3698,7 +3698,7 @@ public abstract class ResourceBundle {
          *
          * The caller module is used for access check only.
          */
-        static ResourceBundle loadPropertyResourceBundle(Module callerModule,
+        static @Nullable ResourceBundle loadPropertyResourceBundle(Module callerModule,
                                                          Module module,
                                                          String baseName,
                                                          Locale locale)

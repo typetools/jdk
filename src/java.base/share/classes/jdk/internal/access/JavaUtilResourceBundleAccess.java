@@ -25,6 +25,8 @@
 
 package jdk.internal.access;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -62,5 +64,5 @@ public interface JavaUtilResourceBundleAccess {
     /**
      * Instantiates a {@code ResourceBundle} of the given bundle class.
      */
-    ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass);
+    @Nullable ResourceBundle newResourceBundle(Class<? extends ResourceBundle> bundleClass);
 }

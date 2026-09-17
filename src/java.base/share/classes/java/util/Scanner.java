@@ -1005,7 +1005,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * 2. null with needInput=false means we won't ever find it
      * 3. null with needInput=true means try again after readInput
      */
-    private String getCompleteTokenInBuffer(Pattern pattern) {
+    private @Nullable String getCompleteTokenInBuffer(@Nullable Pattern pattern) {
         matchValid = false;
         // Skip delims first
         matcher.usePattern(delimPattern);

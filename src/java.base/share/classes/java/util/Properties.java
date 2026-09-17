@@ -1140,7 +1140,7 @@ public class Properties extends Hashtable<Object,Object> {
      *         Encoding in Entities</a>
      * @since 10
      */
-    public void storeToXML(OutputStream os, String comment, Charset charset)
+    public void storeToXML(OutputStream os, @Nullable String comment, Charset charset)
         throws IOException {
         Objects.requireNonNull(os, "OutputStream");
         Objects.requireNonNull(charset, "Charset");
@@ -1560,7 +1560,7 @@ public class Properties extends Hashtable<Object,Object> {
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized Object replace(Object key, Object value) {
+    public synchronized @Nullable Object replace(Object key, Object value) {
         return map.replace(key, value);
     }
 
@@ -1573,15 +1573,15 @@ public class Properties extends Hashtable<Object,Object> {
 
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull Object computeIfPresent(Object key,
-            BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
+    public synchronized @Nullable Object computeIfPresent(Object key,
+            BiFunction<? super Object, ? super Object, ? extends @Nullable Object> remappingFunction) {
         return map.computeIfPresent(key, remappingFunction);
     }
 
     @Override
     @DoesNotUnrefineReceiver("modifiability")
     public synchronized @PolyNull Object compute(Object key,
-            BiFunction<? super Object, ? super Object, ? extends @PolyNull Object> remappingFunction) {
+            BiFunction<? super Object, ? super @Nullable Object, ? extends @PolyNull Object> remappingFunction) {
         return map.compute(key, remappingFunction);
     }
 

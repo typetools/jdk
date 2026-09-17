@@ -156,7 +156,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @return the first key-value mapping,
      *         or {@code null} if this map is empty
      */
-    default Map.Entry<K,V> firstEntry() {
+    default Map.@Nullable Entry<K,V> firstEntry() {
         var it = entrySet().iterator();
         return it.hasNext() ? new NullableKeyValueHolder<>(it.next()) : null;
     }
@@ -173,7 +173,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      * @return the last key-value mapping,
      *         or {@code null} if this map is empty
      */
-    default Map.Entry<K,V> lastEntry() {
+    default Map.@Nullable Entry<K,V> lastEntry() {
         var it = reversed().entrySet().iterator();
         return it.hasNext() ? new NullableKeyValueHolder<>(it.next()) : null;
     }
@@ -194,7 +194,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default Map.Entry<K,V> pollFirstEntry() {
+    default Map.@Nullable Entry<K,V> pollFirstEntry() {
         var it = entrySet().iterator();
         if (it.hasNext()) {
             var entry = new NullableKeyValueHolder<>(it.next());
@@ -221,7 +221,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default Map.Entry<K,V> pollLastEntry() {
+    default Map.@Nullable Entry<K,V> pollLastEntry() {
         var it = reversed().entrySet().iterator();
         if (it.hasNext()) {
             var entry = new NullableKeyValueHolder<>(it.next());
@@ -249,7 +249,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putFirst(K k, V v) {
+    default @Nullable V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -270,7 +270,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putLast(K k, V v) {
+    default @Nullable V putLast(K k, V v) {
         throw new UnsupportedOperationException();
     }
 

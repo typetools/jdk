@@ -1332,7 +1332,7 @@ public class LinkedList<E>
 
         public long estimateSize() { return (long) getEst(); }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> p;
             int s = getEst();
             if (s > 1 && (p = current) != null) {
@@ -1531,13 +1531,13 @@ public class LinkedList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean removeLastOccurrence(Object o) {
+        public boolean removeLastOccurrence(@Nullable Object o) {
             return rdeque.removeLastOccurrence(o);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean removeFirstOccurrence(Object o) {
+        public boolean removeFirstOccurrence(@Nullable Object o) {
             return rdeque.removeFirstOccurrence(o);
         }
 
@@ -1555,23 +1555,23 @@ public class LinkedList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollLast() {
+        public @Nullable E pollLast() {
             return rdeque.pollLast();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollFirst() {
+        public @Nullable E pollFirst() {
             return rdeque.pollFirst();
         }
 
         @Pure
-        public E peekLast() {
+        public @Nullable E peekLast() {
             return rdeque.peekLast();
         }
 
         @Pure
-        public E peekFirst() {
+        public @Nullable E peekFirst() {
             return rdeque.peekFirst();
         }
 
@@ -1601,7 +1601,7 @@ public class LinkedList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E poll() {
+        public @Nullable E poll() {
             return rdeque.poll();
         }
 
@@ -1611,17 +1611,17 @@ public class LinkedList<E>
         }
 
         @Pure
-        public E peek() {
+        public @Nullable E peek() {
             return rdeque.peek();
         }
 
         @Pure
-        public int lastIndexOf(Object o) {
+        public int lastIndexOf(@Nullable Object o) {
             return rlist.lastIndexOf(o);
         }
 
         @Pure
-        public int indexOf(Object o) {
+        public int indexOf(@Nullable Object o) {
             return rlist.indexOf(o);
         }
 
@@ -1669,7 +1669,7 @@ public class LinkedList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean remove(Object o) {
+        public boolean remove(@Nullable Object o) {
             return rlist.remove(o);
         }
 
@@ -1685,7 +1685,7 @@ public class LinkedList<E>
         }
 
         @Pure
-        public boolean contains(Object o) {
+        public boolean contains(@Nullable Object o) {
             return rlist.contains(o);
         }
 

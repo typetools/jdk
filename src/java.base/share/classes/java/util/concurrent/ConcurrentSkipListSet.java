@@ -381,7 +381,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public E lower(E e) {
+    public @Nullable E lower(E e) {
         return m.lowerKey(e);
     }
 
@@ -390,7 +390,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public E floor(E e) {
+    public @Nullable E floor(E e) {
         return m.floorKey(e);
     }
 
@@ -399,7 +399,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public E ceiling(E e) {
+    public @Nullable E ceiling(E e) {
         return m.ceilingKey(e);
     }
 
@@ -408,7 +408,7 @@ public class ConcurrentSkipListSet<E extends @NonNull Object>
      * @throws NullPointerException if the specified element is null
      */
     @Pure
-    public E higher(E e) {
+    public @Nullable E higher(E e) {
         return m.higherKey(e);
     }
 

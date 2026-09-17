@@ -1345,7 +1345,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public OfInt trySplit() {
+            public @Nullable OfInt trySplit() {
                 int hi = getFence();
                 int lo = index;
                 if (lo < 0) {
@@ -1390,7 +1390,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public Comparator<? super Integer> getComparator() {
+            public @Nullable Comparator<? super Integer> getComparator() {
                 return null;
             }
         }

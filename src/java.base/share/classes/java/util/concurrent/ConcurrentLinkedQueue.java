@@ -351,7 +351,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
      * @param q p.next: the next live node, or null if at end
      * @return either old pred or p if pred dead or CAS failed
      */
-    private Node<E> skipDeadNodes(Node<E> pred, Node<E> c, Node<E> p, Node<E> q) {
+    private Node<E> skipDeadNodes(@Nullable Node<E> pred, Node<E> c, Node<E> p, @Nullable Node<E> q) {
         // assert pred != c;
         // assert p != q;
         // assert c.item == null;
@@ -907,7 +907,7 @@ public class ConcurrentLinkedQueue<E extends @NonNull Object> extends AbstractQu
         int batch;          // batch size for splits
         boolean exhausted;  // true when no more nodes
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> p, q;
             if ((p = current()) == null || (q = p.next) == null)
                 return null;
