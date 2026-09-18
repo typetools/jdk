@@ -169,6 +169,7 @@ public final class Register implements Comparable<Register> {
     }
 
     @Override
+    @Pure
     public int compareTo(Register o) {
         if (number < o.number) {
             return -1;

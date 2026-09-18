@@ -1027,6 +1027,7 @@ public final class Year
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Year other) {
         return year - other.year;
     }

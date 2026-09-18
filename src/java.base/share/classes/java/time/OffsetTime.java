@@ -1290,6 +1290,7 @@ public final class OffsetTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(OffsetTime other) {
         if (offset.equals(other.offset)) {
             return time.compareTo(other.time);

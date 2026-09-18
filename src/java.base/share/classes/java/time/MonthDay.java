@@ -684,6 +684,7 @@ public final class MonthDay
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(MonthDay other) {
         int cmp = (month - other.month);
         if (cmp == 0) {

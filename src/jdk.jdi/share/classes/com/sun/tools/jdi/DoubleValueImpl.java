@@ -56,6 +56,7 @@ public class DoubleValueImpl extends PrimitiveValueImpl
         }
     }
 
+    @Pure
     public int compareTo(DoubleValue obj) {
         double other = obj.value();
         if (value() < other) {

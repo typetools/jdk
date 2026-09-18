@@ -1676,6 +1676,7 @@ public final class URI
      * @throws  ClassCastException
      *          If the given object is not a URI
      */
+    @Pure
     public int compareTo(URI that) {
         int c;
 

@@ -299,6 +299,7 @@ public class ModuleDescriptor
          *         module dependence
          */
         @Override
+        @Pure
         public int compareTo(Requires that) {
             if (this == that) return 0;
 
@@ -525,6 +526,7 @@ public class ModuleDescriptor
          *         export dependence
          */
         @Override
+        @Pure
         public int compareTo(Exports that) {
             if (this == that) return 0;
 
@@ -749,6 +751,7 @@ public class ModuleDescriptor
          *         module {@code Opens}
          */
         @Override
+        @Pure
         public int compareTo(Opens that) {
             if (this == that) return 0;
 
@@ -887,6 +890,7 @@ public class ModuleDescriptor
          *         {@code Provides} is less than, equal to, or greater than
          *         the given {@code Provides}
          */
+        @Pure
         public int compareTo(Provides that) {
             if (this == that) return 0;
 
@@ -1207,6 +1211,7 @@ public class ModuleDescriptor
          *         given module version
          */
         @Override
+        @Pure
         public int compareTo(Version that) {
             int c = compareTokens(this.sequence, that.sequence);
             if (c != 0) return c;
@@ -2259,6 +2264,7 @@ public class ModuleDescriptor
      *         module descriptor
      */
     @Override
+    @Pure
     public int compareTo(ModuleDescriptor that) {
         if (this == that) return 0;
 

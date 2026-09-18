@@ -1261,6 +1261,7 @@ final class Win32ShellFolder2 extends ShellFolder {
      *
      * @see sun.awt.shell.ShellFolder#compareTo(File)
      */
+    @Pure
     public int compareTo(File file2) {
         if (!(file2 instanceof Win32ShellFolder2)) {
             if (isFileSystem() && !isSpecial()) {

@@ -3135,6 +3135,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *          less than, equal to, or greater than {@code val}.
      */
     @Override
+    @Pure
     public int compareTo(BigDecimal val) {
         // Quick path for equal scale and non-inflated case.
         if (scale == val.scale) {

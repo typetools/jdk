@@ -1540,6 +1540,7 @@ public final class LocalTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(LocalTime other) {
         int cmp = Integer.compare(hour, other.hour);
         if (cmp == 0) {

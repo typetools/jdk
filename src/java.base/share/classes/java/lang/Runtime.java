@@ -29,6 +29,7 @@ package java.lang;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.TerminatesExecution;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -1362,6 +1363,7 @@ public @UsesObjectEquals class Runtime {
          *          If the given object is {@code null}
          */
         @Override
+        @Pure
         public int compareTo(Version obj) {
             return compare(obj, false);
         }

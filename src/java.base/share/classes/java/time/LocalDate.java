@@ -1997,6 +1997,7 @@ public final class LocalDate
      * @return the comparator value, negative if less, positive if greater
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public int compareTo(ChronoLocalDate other) {
         if (other instanceof LocalDate) {
             return compareTo0((LocalDate) other);

@@ -1810,6 +1810,7 @@ public final class OffsetDateTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(OffsetDateTime other) {
         int cmp = compareInstant(this, other);
         if (cmp == 0) {

@@ -1282,6 +1282,7 @@ public final class Instant
      * @throws NullPointerException if otherInstant is null
      */
     @Override
+    @Pure
     public int compareTo(Instant otherInstant) {
         int cmp = Long.compare(seconds, otherInstant.seconds);
         if (cmp != 0) {

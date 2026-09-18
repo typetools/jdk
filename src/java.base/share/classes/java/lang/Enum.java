@@ -233,6 +233,7 @@ public abstract class Enum<E extends Enum<E>>
      * method is the order in which the constants are declared.
      */
     @SuppressWarnings({"rawtypes"})
+    @Pure
     public final int compareTo(@UnknownKeyFor @Tainted E o) {
         Enum<?> other = o;
         Enum<E> self = this;

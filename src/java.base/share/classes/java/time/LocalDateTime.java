@@ -1816,6 +1816,7 @@ public final class LocalDateTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public int compareTo(ChronoLocalDateTime<?> other) {
         if (other instanceof LocalDateTime) {
             return compareTo0((LocalDateTime) other);

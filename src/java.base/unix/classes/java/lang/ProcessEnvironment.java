@@ -180,6 +180,7 @@ final class ProcessEnvironment
             return new Variable(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Variable variable) {
             return Arrays.compare(getBytes(), variable.getBytes());
         }
@@ -213,6 +214,7 @@ final class ProcessEnvironment
             return new Value(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Value value) {
             return Arrays.compare(getBytes(), value.getBytes());
         }

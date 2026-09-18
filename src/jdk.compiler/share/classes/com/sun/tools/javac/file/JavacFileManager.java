@@ -1101,6 +1101,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         }
 
         @Override
+        @Pure
         public int compareTo(PathAndContainer other) {
             return index - other.index;
         }

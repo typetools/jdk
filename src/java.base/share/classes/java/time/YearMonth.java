@@ -1131,6 +1131,7 @@ public final class YearMonth
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(YearMonth other) {
         int cmp = (year - other.year);
         if (cmp == 0) {
