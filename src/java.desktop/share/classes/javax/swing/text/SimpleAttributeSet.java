@@ -120,6 +120,7 @@ public class SimpleAttributeSet implements MutableAttributeSet, Serializable, Cl
      * @param attr the second attribute set
      * @return true if the sets are equal, false otherwise
      */
+    @Pure
     public boolean isEqual(AttributeSet attr) {
         return ((getAttributeCount() == attr.getAttributeCount()) &&
                 containsAttributes(attr));
@@ -375,6 +376,7 @@ public class SimpleAttributeSet implements MutableAttributeSet, Serializable, Cl
         public boolean isDefined(Object attrName) {
             return false;
         }
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             return (attr.getAttributeCount() == 0);
         }

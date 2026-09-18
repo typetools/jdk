@@ -699,6 +699,7 @@ public final class MonthDay
      * @param other  the other month-day to compare to, not null
      * @return true if this is after the specified month-day
      */
+    @Pure
     public boolean isAfter(MonthDay other) {
         return compareTo(other) > 0;
     }
@@ -709,6 +710,7 @@ public final class MonthDay
      * @param other  the other month-day to compare to, not null
      * @return true if this point is before the specified month-day
      */
+    @Pure
     public boolean isBefore(MonthDay other) {
         return compareTo(other) < 0;
     }

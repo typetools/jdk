@@ -2038,6 +2038,7 @@ public final class LocalDate
      * @return true if this date is after the specified date
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isAfter(ChronoLocalDate other) {
         if (other instanceof LocalDate) {
             return compareTo0((LocalDate) other) > 0;
@@ -2067,6 +2068,7 @@ public final class LocalDate
      * @return true if this date is before the specified date
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isBefore(ChronoLocalDate other) {
         if (other instanceof LocalDate) {
             return compareTo0((LocalDate) other) < 0;
@@ -2096,6 +2098,7 @@ public final class LocalDate
      * @return true if this date is equal to the specified date
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isEqual(ChronoLocalDate other) {
         if (other instanceof LocalDate) {
             return compareTo0((LocalDate) other) == 0;

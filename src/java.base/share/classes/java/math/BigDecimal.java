@@ -2680,6 +2680,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @return -1, 0, or 1 as the value of this {@code BigDecimal}
      *         is negative, zero, or positive.
      */
+    @Pure
     public int signum() {
         return (intCompact != INFLATED)?
             Long.signum(intCompact):

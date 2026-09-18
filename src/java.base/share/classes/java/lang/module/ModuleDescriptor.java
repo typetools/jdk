@@ -2658,6 +2658,7 @@ public class ModuleDescriptor
         return h;
     }
 
+    @Pure
     private static <T extends Object & Comparable<? super T>>
     int compare(T obj1, T obj2) {
         if (obj1 != null) {
@@ -2671,6 +2672,7 @@ public class ModuleDescriptor
      * Compares two sets of {@code Comparable} objects.
      */
     @SuppressWarnings("unchecked")
+    @Pure
     private static <T extends Object & Comparable<? super T>>
     int compare(Set<T> s1, Set<T> s2) {
         T[] a1 = (T[]) s1.toArray();

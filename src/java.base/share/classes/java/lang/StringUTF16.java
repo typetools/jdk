@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Arrays;
@@ -1374,6 +1375,7 @@ final class StringUTF16 {
         return pos;
     }
 
+    @Pure
     public static boolean contentEquals(byte[] v1, byte[] v2, int len) {
         checkBoundsOffCount(0, len, v2);
         for (int i = 0; i < len; i++) {
@@ -1384,6 +1386,7 @@ final class StringUTF16 {
         return true;
     }
 
+    @Pure
     public static boolean contentEquals(byte[] value, CharSequence cs, int len) {
         checkOffset(len, value);
         for (int i = 0; i < len; i++) {

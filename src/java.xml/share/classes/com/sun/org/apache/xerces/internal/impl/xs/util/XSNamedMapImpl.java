@@ -194,6 +194,7 @@ public class XSNamedMapImpl extends AbstractMap<QName, XSObject> implements XSNa
         return fArray[index];
     }
 
+    @Pure
     static boolean isEqual(String one, String two) {
         return (one != null) ? one.equals(two) : (two == null);
     }

@@ -360,6 +360,7 @@ public abstract class Collator
      * @see java.text.CollationKey
      * @see java.text.Collator#getCollationKey
      */
+    @Pure
     public abstract int compare(String source, String target);
 
     /**

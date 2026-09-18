@@ -1475,6 +1475,7 @@ public class HtmlDocletWriter {
         return result;
     }
 
+    @Pure
     private boolean equalsIgnoreCase(Name name, String s) {
         return name != null && name.toString().equalsIgnoreCase(s);
     }

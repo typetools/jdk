@@ -964,6 +964,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return true if the same
          * @see AttributeSet#isEqual
          */
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             if (attr instanceof SmallAttributeSet) {
                 return attr == this;
@@ -1477,6 +1478,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return true if the same
          * @see AttributeSet#isEqual
          */
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             return attributes.isEqual(attr);
         }

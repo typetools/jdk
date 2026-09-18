@@ -1146,6 +1146,7 @@ public final class YearMonth
      * @param other  the other year-month to compare to, not null
      * @return true if this is after the specified year-month
      */
+    @Pure
     public boolean isAfter(YearMonth other) {
         return compareTo(other) > 0;
     }
@@ -1156,6 +1157,7 @@ public final class YearMonth
      * @param other  the other year-month to compare to, not null
      * @return true if this point is before the specified year-month
      */
+    @Pure
     public boolean isBefore(YearMonth other) {
         return compareTo(other) < 0;
     }

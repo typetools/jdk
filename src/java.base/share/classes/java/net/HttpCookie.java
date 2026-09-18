@@ -1117,6 +1117,7 @@ public final class HttpCookie implements Cloneable {
         return str;
     }
 
+    @Pure
     private static boolean equalsIgnoreCase(String s, String t) {
         if (s == t) return true;
         if ((s != null) && (t != null)) {

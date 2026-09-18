@@ -1393,6 +1393,7 @@ public @UsesObjectEquals class Runtime {
             return compare(obj, true);
         }
 
+        @Pure
         private int compare(Version obj, boolean ignoreOpt) {
             if (obj == null)
                 throw new NullPointerException();

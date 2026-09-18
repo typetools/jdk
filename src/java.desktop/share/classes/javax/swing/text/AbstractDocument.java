@@ -26,6 +26,7 @@
 package javax.swing.text;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.font.TextAttribute;
@@ -1918,6 +1919,7 @@ public abstract class AbstractDocument implements Document, Serializable {
          * @return true if the same
          * @see AttributeSet#isEqual
          */
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             return attributes.isEqual(attr);
         }

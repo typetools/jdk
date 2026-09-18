@@ -1563,6 +1563,7 @@ public final class LocalTime
      * @param other  the other time to compare to, not null
      * @return true if this is after the specified time
      */
+    @Pure
     public boolean isAfter(LocalTime other) {
         return compareTo(other) > 0;
     }
@@ -1575,6 +1576,7 @@ public final class LocalTime
      * @param other  the other time to compare to, not null
      * @return true if this point is before the specified time
      */
+    @Pure
     public boolean isBefore(LocalTime other) {
         return compareTo(other) < 0;
     }

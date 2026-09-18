@@ -1948,6 +1948,7 @@ public final class URI
         return h;
     }
 
+    @Pure
     private static int compare(String s, String t) {
         boolean testForEquality = false;
         int result = percentNormalizedComparison(s, t, testForEquality);
