@@ -771,6 +771,7 @@ public final class LdapName implements Name {
          * If "value" is binary, it is returned in uppercase but
          * otherwise unmodified.
          */
+        @Pure
         private String getValueComparable() {
             if (comparable != null) {
                 return comparable;      // return cached result

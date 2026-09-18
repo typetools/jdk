@@ -2710,6 +2710,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @return the precision of this {@code BigDecimal}.
      * @since  1.5
      */
+    @Pure
     public int precision() {
         int result = precision;
         if (result == 0) {
