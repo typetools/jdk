@@ -265,7 +265,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      *         returned.
      * @since 1.4
      */
-    @PolyUIEffect public @PolyUI PropertyChangeListener[] getPropertyChangeListeners(@PolyUI PropertyChangeSupport this, String propertyName) {
+    @PolyUIEffect public @PolyUI PropertyChangeListener[] getPropertyChangeListeners(@PolyUI PropertyChangeSupport this, @Nullable String propertyName) {
         return this.map.getListeners(propertyName);
     }
 
@@ -283,7 +283,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param oldValue      the old value of the property
      * @param newValue      the new value of the property
      */
-    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, @Nullable @FenumTop Object oldValue, @Nullable @FenumTop Object newValue) {
+    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, @Nullable String propertyName, @Nullable @FenumTop Object oldValue, @Nullable @FenumTop Object newValue) {
         if (oldValue == null || newValue == null || !oldValue.equals(newValue)) {
             firePropertyChange(new PropertyChangeEvent(this.source, propertyName, oldValue, newValue));
         }
@@ -304,7 +304,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param newValue      the new value of the property
      * @since 1.2
      */
-    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, @FenumTop int oldValue, @FenumTop int newValue) {
+    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, @Nullable String propertyName, @FenumTop int oldValue, @FenumTop int newValue) {
         if (oldValue != newValue) {
             firePropertyChange(propertyName, Integer.valueOf(oldValue), Integer.valueOf(newValue));
         }
@@ -325,7 +325,7 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
      * @param newValue      the new value of the property
      * @since 1.2
      */
-    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, String propertyName, boolean oldValue, boolean newValue) {
+    @PolyUIEffect public void firePropertyChange(@PolyUI PropertyChangeSupport this, @Nullable String propertyName, boolean oldValue, boolean newValue) {
         if (oldValue != newValue) {
             firePropertyChange(propertyName, Boolean.valueOf(oldValue), Boolean.valueOf(newValue));
         }
