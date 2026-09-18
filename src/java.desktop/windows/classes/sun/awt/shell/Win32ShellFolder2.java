@@ -1374,6 +1374,7 @@ final class Win32ShellFolder2 extends ShellFolder {
         }
 
         // compares 2 objects within this folder by the specified column
+        @Pure
         public int compare(final File o, final File o1) {
             Integer result = invoke(new Callable<Integer>() {
                 public Integer call() {
