@@ -26,6 +26,7 @@
 package java.security;
 
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.*;
@@ -472,6 +473,7 @@ public abstract class MessageDigest extends MessageDigestSpi {
      *
      * @return {@code true} if the digests are equal, {@code false} otherwise.
      */
+    @Pure
     public static boolean isEqual(byte[] digesta, byte[] digestb) {
         if (digesta == digestb) return true;
         if (digesta == null || digestb == null) {

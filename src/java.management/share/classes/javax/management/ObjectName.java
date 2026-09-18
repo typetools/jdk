@@ -2146,6 +2146,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      *
      * @since 1.6
      */
+    @Pure
     public int compareTo(ObjectName name) {
         // Quick optimization:
         //

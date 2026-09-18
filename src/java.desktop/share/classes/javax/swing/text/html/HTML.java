@@ -27,6 +27,7 @@ package javax.swing.text.html;
 
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
@@ -625,6 +626,7 @@ public class HTML {
          * @return    <code>true</code> if the objects are equal;
          *            <code>false</code> otherwise
          */
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof UnknownTag) {
                 return toString().equals(obj.toString());

@@ -1457,6 +1457,7 @@ public class Utils {
             return keys.computeIfAbsent(s, instance :: getCollationKey);
         }
 
+        @Pure
         public int compare(String s1, String s2) {
             return getKey(s1).compareTo(getKey(s2));
         }

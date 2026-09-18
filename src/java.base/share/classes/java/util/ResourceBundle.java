@@ -731,6 +731,7 @@ public abstract class ResourceBundle {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object other) {
             if (this == other) {
                 return true;

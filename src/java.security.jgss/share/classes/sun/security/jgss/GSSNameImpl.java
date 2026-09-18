@@ -283,6 +283,7 @@ public final class GSSNameImpl implements GSSName {
      * names are equals, then there is some mechanism that
      * authenticates them as the same principal.
      */
+    @Pure
     public boolean equals(GSSName other) throws GSSException {
 
         if (this.isAnonymous() || other.isAnonymous())

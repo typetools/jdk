@@ -26,6 +26,7 @@
 package java.lang.annotation;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -82,6 +83,7 @@ public interface Annotation {
      * @return true if the specified object represents an annotation
      *     that is logically equivalent to this one, otherwise false
      */
+    @Pure
     boolean equals(@Nullable Object obj);
 
     /**

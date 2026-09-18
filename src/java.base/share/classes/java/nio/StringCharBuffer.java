@@ -173,6 +173,7 @@ final class StringCharBuffer                                  // package-private
                                        thisRem) < 0;
     }
 
+    @Pure
     public int compareTo(CharBuffer that) {
         int thisPos = this.position();
         int thisRem = this.limit() - thisPos;

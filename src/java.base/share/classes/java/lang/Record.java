@@ -27,6 +27,7 @@ package java.lang;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * This is the common base class of all Java language record classes.
@@ -144,6 +145,7 @@ public abstract class Record {
      *          argument; {@code false} otherwise.
      */
     @Override
+    @Pure
     public abstract boolean equals(@GuardSatisfied Record this, @GuardSatisfied @Nullable Object obj);
 
     /**

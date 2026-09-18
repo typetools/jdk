@@ -741,6 +741,7 @@ final class MemberName implements Member, Cloneable {
      *  two member names resolve to the same actual member, they may
      *  be distinct references.
      */
+    @Pure
     public boolean equals(MemberName that) {
         if (this == that)  return true;
         if (that == null)  return false;

@@ -28,6 +28,7 @@ package java.io;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.BinaryName;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -1779,6 +1780,7 @@ public final class ObjectStreamClass implements Serializable {
                 fieldSigs[i] = new MemberSignature(fields[i]);
             }
             Arrays.sort(fieldSigs, new Comparator<>() {
+                @Pure
                 public int compare(MemberSignature ms1, MemberSignature ms2) {
                     return ms1.name.compareTo(ms2.name);
                 }
@@ -1810,6 +1812,7 @@ public final class ObjectStreamClass implements Serializable {
                 consSigs[i] = new MemberSignature(cons[i]);
             }
             Arrays.sort(consSigs, new Comparator<>() {
+                @Pure
                 public int compare(MemberSignature ms1, MemberSignature ms2) {
                     return ms1.signature.compareTo(ms2.signature);
                 }
@@ -1833,6 +1836,7 @@ public final class ObjectStreamClass implements Serializable {
                 methSigs[i] = new MemberSignature(methods[i]);
             }
             Arrays.sort(methSigs, new Comparator<>() {
+                @Pure
                 public int compare(MemberSignature ms1, MemberSignature ms2) {
                     int comp = ms1.name.compareTo(ms2.name);
                     if (comp == 0) {
@@ -2166,6 +2170,7 @@ public final class ObjectStreamClass implements Serializable {
             return hash;
         }
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return obj == this ||
                    obj instanceof FieldReflectorKey other &&
@@ -2294,6 +2299,7 @@ public final class ObjectStreamClass implements Serializable {
             }
 
             @Override
+            @Pure
             public final boolean equals(@Nullable Object obj) {
                 if (!(obj instanceof Key other)) return false;
                 int n = length();

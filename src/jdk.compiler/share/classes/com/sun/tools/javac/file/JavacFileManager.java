@@ -121,12 +121,14 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
     protected enum SortFiles implements Comparator<Path> {
         FORWARD {
             @Override
+            @Pure
             public int compare(Path f1, Path f2) {
                 return f1.getFileName().compareTo(f2.getFileName());
             }
         },
         REVERSE {
             @Override
+            @Pure
             public int compare(Path f1, Path f2) {
                 return f2.getFileName().compareTo(f1.getFileName());
             }
@@ -1099,11 +1101,13 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         }
 
         @Override
+        @Pure
         public int compareTo(PathAndContainer other) {
             return index - other.index;
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             return (o instanceof PathAndContainer pathAndContainer)
                     && path.equals(pathAndContainer.path)

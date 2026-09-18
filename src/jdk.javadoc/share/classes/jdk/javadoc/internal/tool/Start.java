@@ -217,6 +217,7 @@ public class Start {
             { collator.setStrength(Collator.PRIMARY); }
 
             @Override
+            @Pure
             public int compare(ToolOption o1, ToolOption o2) {
                 return collator.compare(o1.primaryName, o2.primaryName);
             }
@@ -258,6 +259,7 @@ public class Start {
             { collator.setStrength(Collator.PRIMARY); }
 
             @Override
+            @Pure
             public int compare(Doclet.Option o1, Doclet.Option o2) {
                 return collator.compare(o1.getNames().get(0), o2.getNames().get(0));
             }

@@ -766,6 +766,7 @@ public class AttributedString {
 
         // Object methods. See documentation in that class.
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;

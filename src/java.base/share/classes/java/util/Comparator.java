@@ -161,6 +161,7 @@ public interface Comparator<T> {
      * @throws ClassCastException if the arguments' types prevent them from
      *         being compared by this comparator.
      */
+    @Pure
     int compare(T o1, T o2);
 
     /**
