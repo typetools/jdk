@@ -278,6 +278,7 @@ public class XSNamedMapImpl extends AbstractMap<QName, XSObject> implements XSNa
         public XSObject setValue(XSObject value) {
             throw new UnsupportedOperationException();
         }
+        @Pure
         public boolean equals(XSNamedMapEntry o) {
             if (o instanceof Map.Entry) {
                 Map.Entry<QName, XSObject> e = (Map.Entry<QName, XSObject>) o;

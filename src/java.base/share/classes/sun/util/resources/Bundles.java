@@ -41,6 +41,7 @@
 package sun.util.resources;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -500,6 +501,7 @@ public abstract class Bundles {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object other) {
             if (this == other) {
                 return true;

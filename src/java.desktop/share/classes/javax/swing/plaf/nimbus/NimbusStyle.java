@@ -1109,6 +1109,7 @@ public final class NimbusStyle extends SynthStyle {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             final CacheKey other = (CacheKey) obj;
             if (obj == null) return false;

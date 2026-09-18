@@ -239,6 +239,7 @@ public final class Graph<T> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (this == o) return true;
             if (o == null || !(o instanceof Edge))

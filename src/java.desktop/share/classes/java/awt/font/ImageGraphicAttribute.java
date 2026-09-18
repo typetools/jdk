@@ -208,6 +208,7 @@ public final class ImageGraphicAttribute extends GraphicAttribute {
      * {@code ImageGraphicAttribute} equals {@code rhs};
      * {@code false} otherwise.
      */
+    @Pure
     public boolean equals(ImageGraphicAttribute rhs) {
 
         if (rhs == null) {

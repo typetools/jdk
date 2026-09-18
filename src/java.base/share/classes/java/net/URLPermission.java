@@ -583,6 +583,7 @@ public final class URLPermission extends Permission {
                         thisrange[1] >= thatrange[1];
         }
 
+        @Pure
         boolean equals(Authority that) {
             return this.p.equals(that.p);
         }

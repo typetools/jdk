@@ -357,6 +357,7 @@ public class Analyzer {
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (o instanceof Dep) {
                 Dep d = (Dep) o;

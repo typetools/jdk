@@ -82,6 +82,7 @@ public class ListDV extends TypeValidator{
         public int getLength() {
             return data.length;
         }
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (!(obj instanceof ListData))
                 return false;

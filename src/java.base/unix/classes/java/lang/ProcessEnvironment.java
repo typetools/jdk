@@ -146,6 +146,7 @@ final class ProcessEnvironment
             return str;
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             return o instanceof ExternalData
                 && Arrays.equals(getBytes(), ((ExternalData) o).getBytes());
@@ -185,6 +186,7 @@ final class ProcessEnvironment
             return Arrays.compare(getBytes(), variable.getBytes());
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             return o instanceof Variable && super.equals(o);
         }
@@ -219,6 +221,7 @@ final class ProcessEnvironment
             return Arrays.compare(getBytes(), value.getBytes());
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             return o instanceof Value && super.equals(o);
         }
@@ -321,6 +324,7 @@ final class ProcessEnvironment
             return e.setValue(Value.valueOf(newValue)).toString();
         }
         public String toString() {return getKey() + "=" + getValue();}
+        @Pure
         public boolean equals(@Nullable Object o) {
             return o instanceof StringEntry
                 && e.equals(((StringEntry)o).e);
@@ -400,6 +404,7 @@ final class ProcessEnvironment
         public boolean remove(Object o) {
             return c.remove(Value.valueOfQueryOnly(o));
         }
+        @Pure
         public boolean equals(@Nullable Object o) {
             return o instanceof StringValues
                 && c.equals(((StringValues)o).c);

@@ -1507,6 +1507,7 @@ public final class Subject implements java.io.Serializable {
             return elements.toArray(a);
         }
 
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;

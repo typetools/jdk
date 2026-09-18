@@ -635,6 +635,7 @@ final class CryptoPolicyParser {
             return retval;
         }
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj == this)
                 return true;

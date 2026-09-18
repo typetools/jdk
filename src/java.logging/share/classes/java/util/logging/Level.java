@@ -29,6 +29,7 @@ import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.checkerframework.checker.signature.qual.BinaryName;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
@@ -552,6 +553,7 @@ public @Interned class Level implements java.io.Serializable {
     @CFComment({"nullness: It returns false in case a NullPointerException is thrown"})
     @SuppressWarnings({"dereference.of.nullable"})
     @Override
+    @Pure
     public boolean equals(@Nullable Object ox) {
         try {
             Level lx = (Level)ox;

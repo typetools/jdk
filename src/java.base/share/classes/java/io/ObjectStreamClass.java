@@ -2170,6 +2170,7 @@ public final class ObjectStreamClass implements Serializable {
             return hash;
         }
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return obj == this ||
                    obj instanceof FieldReflectorKey other &&
@@ -2298,6 +2299,7 @@ public final class ObjectStreamClass implements Serializable {
             }
 
             @Override
+            @Pure
             public final boolean equals(@Nullable Object obj) {
                 if (!(obj instanceof Key other)) return false;
                 int n = length();

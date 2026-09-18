@@ -112,6 +112,7 @@ public class LongHashMap
          * @return <tt>true</tt> if the specified object is equal to this map
          *         entry.
          */
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (!(o instanceof Entry))
                 return false;

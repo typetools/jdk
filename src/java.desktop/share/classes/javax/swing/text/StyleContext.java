@@ -27,6 +27,7 @@ package javax.swing.text;
 
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.Color;
@@ -906,6 +907,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return    <code>true</code> if the objects are equal;
          *            <code>false</code> otherwise.
          */
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof AttributeSet) {
                 AttributeSet attrs = (AttributeSet) obj;
@@ -1277,6 +1279,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return    <code>true</code> if the objects are equal;
          *            <code>false</code> otherwise.
          */
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof FontKey) {
                 FontKey font = (FontKey)obj;

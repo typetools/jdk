@@ -972,6 +972,7 @@ public abstract class Charset
      * @return  {@code true} if, and only if, this charset is equal to the
      *          given object
      */
+    @Pure
     public final boolean equals(@Nullable Object ob) {
         if (!(ob instanceof Charset))
             return false;

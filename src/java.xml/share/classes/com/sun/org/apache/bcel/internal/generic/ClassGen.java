@@ -283,6 +283,7 @@ public class ClassGen extends AccessFlags implements Cloneable {
      * @see Object#equals(Object)
      */
     @Override
+    @Pure
     public boolean equals(final Object obj) {
         return bcelComparator.equals(this, obj);
     }

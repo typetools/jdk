@@ -1161,6 +1161,7 @@ public class ElementsTable {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof ModulePackage that) {
                 return this.toString().equals(that.toString());

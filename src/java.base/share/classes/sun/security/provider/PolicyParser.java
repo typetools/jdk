@@ -1052,6 +1052,7 @@ public class PolicyParser {
          * @return true if the objects are equal, false otherwise
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (this == obj)
                 return true;
@@ -1132,6 +1133,7 @@ public class PolicyParser {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj == this)
                 return true;

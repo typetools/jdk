@@ -261,6 +261,7 @@ public abstract class PreHashedMap<V>
                                            ? 0
                                            : v.hashCode()));
                             }
+                            @Pure
                             public boolean equals(@Nullable Object ob) {
                                 if (ob == this)
                                     return true;

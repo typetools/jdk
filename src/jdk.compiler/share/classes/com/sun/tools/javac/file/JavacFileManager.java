@@ -1107,6 +1107,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             return (o instanceof PathAndContainer pathAndContainer)
                     && path.equals(pathAndContainer.path)

@@ -342,6 +342,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object ob) {
             return (ob instanceof Requires that)
                     && name.equals(that.name) && mods.equals(that.mods)
@@ -584,6 +585,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object ob) {
             return (ob instanceof Exports other)
                     && Objects.equals(this.mods, other.mods)
@@ -809,6 +811,7 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object ob) {
            return (ob instanceof Opens other)
                    && Objects.equals(this.mods, other.mods)
@@ -944,6 +947,7 @@ public class ModuleDescriptor
          *          {@code Provides} that is equal to this {@code Provides}
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object ob) {
             return (ob instanceof Provides other)
                     && Objects.equals(this.service, other.service)
@@ -1242,6 +1246,7 @@ public class ModuleDescriptor
          *          reference that is equal to this module reference
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object ob) {
             if (!(ob instanceof Version))
                 return false;

@@ -636,6 +636,7 @@ public final class LdapName implements Name {
             return new String(buf);
         }
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return ((obj instanceof Rdn) &&
                     (compareTo(obj) == 0));
@@ -729,6 +730,7 @@ public final class LdapName implements Name {
             return getValueComparable().compareTo(that.getValueComparable());
         }
 
+        @Pure
         public boolean equals(@Nullable Object obj) {
             // NB:  Any change here must be reflected in hashCode().
             if (!(obj instanceof TypeAndValue)) {

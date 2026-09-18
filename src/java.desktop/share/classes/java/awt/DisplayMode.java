@@ -135,6 +135,7 @@ public final class DisplayMode {
      * @param  dm the display mode to compare to
      * @return whether the two display modes are equal
      */
+    @Pure
     public boolean equals(DisplayMode dm) {
         if (dm == null) {
             return false;

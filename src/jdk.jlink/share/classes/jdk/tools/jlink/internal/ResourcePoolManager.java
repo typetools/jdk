@@ -437,6 +437,7 @@ public class ResourcePoolManager {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object other) {
             if (!(other instanceof CompressedModuleData)) {
                 return false;

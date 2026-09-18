@@ -1518,6 +1518,7 @@ public @UsesObjectEquals class Runtime {
          *
          */
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             boolean ret = equalsIgnoreOptional(obj);
             if (!ret)
