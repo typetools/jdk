@@ -27,6 +27,7 @@ package java.lang.annotation;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -118,6 +119,7 @@ public interface Annotation {
      *
      * @return the hash code of this annotation
      */
+    @Pure
     int hashCode();
 
     /**
@@ -130,6 +132,7 @@ public interface Annotation {
      *
      * @return a string representation of this annotation
      */
+    @SideEffectFree
     String toString();
 
     /**
@@ -144,5 +147,6 @@ public interface Annotation {
      * @return the annotation interface of this annotation
      * @see Enum#getDeclaringClass
      */
+    @Pure
     Class<? extends Annotation> annotationType();
 }
