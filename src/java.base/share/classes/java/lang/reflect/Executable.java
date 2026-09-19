@@ -199,11 +199,13 @@ public abstract sealed class Executable extends AccessibleObject
      * Returns the {@code Class} object representing the class or interface
      * that declares the executable represented by this object.
      */
+    @Pure
     public abstract Class<?> getDeclaringClass();
 
     /**
      * Returns the name of the executable represented by this object.
      */
+    @Pure
     public abstract String getName();
 
     /**
@@ -211,6 +213,7 @@ public abstract sealed class Executable extends AccessibleObject
      * the executable represented by this object}
      * @see #accessFlags
      */
+    @Pure
     public abstract int getModifiers();
 
     /**
@@ -223,6 +226,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @since 20
      */
     @Override
+    @SideEffectFree
     public Set<AccessFlag> accessFlags() {
         return AccessFlag.maskToAccessFlags(getModifiers(),
                                             AccessFlag.Location.METHOD);
@@ -242,6 +246,7 @@ public abstract sealed class Executable extends AccessibleObject
      *     the format specified in
      *     <cite>The Java Virtual Machine Specification</cite>
      */
+    @SideEffectFree
     public abstract TypeVariable<?>[] getTypeParameters();
 
     // returns shared array of parameter types - must never give it out
@@ -264,6 +269,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @return the parameter types for the executable this object
      * represents
      */
+    @SideEffectFree
     public abstract Class<?>[] getParameterTypes();
 
     /**
@@ -274,6 +280,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @return The number of formal parameters for the executable this
      * object represents
      */
+    @Pure
     public abstract int getParameterCount();
 
     /**
@@ -312,6 +319,7 @@ public abstract sealed class Executable extends AccessibleObject
      *     the underlying executable's parameter types refer to a parameterized
      *     type that cannot be instantiated for any reason
      */
+    @SideEffectFree
     public Type[] getGenericParameterTypes() {
         if (hasGenericInformation())
             return getGenericInfo().getParameterTypes();
@@ -379,6 +387,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @throws MalformedParametersException if the class file contains
      * a MethodParameters attribute that is improperly formatted.
      */
+    @SideEffectFree
     public Parameter[] getParameters() {
         // TODO: This may eventually need to be guarded by security
         // mechanisms similar to those in Field, Method, etc.
@@ -478,6 +487,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @return the exception types declared as being thrown by the
      * executable this object represents
      */
+    @SideEffectFree
     public abstract Class<?>[] getExceptionTypes();
 
     /**
@@ -501,6 +511,7 @@ public abstract sealed class Executable extends AccessibleObject
      *     the underlying executable's {@code throws} clause refers to a
      *     parameterized type that cannot be instantiated for any reason
      */
+    @SideEffectFree
     public Type[] getGenericExceptionTypes() {
         Type[] result;
         if (hasGenericInformation() &&
@@ -514,12 +525,14 @@ public abstract sealed class Executable extends AccessibleObject
      * {@return a string describing this {@code Executable}, including
      * any type parameters}
      */
+    @SideEffectFree
     public abstract String toGenericString();
 
     /**
      * {@return {@code true} if this executable was declared to take a
      * variable number of arguments; returns {@code false} otherwise}
      */
+    @Pure
     public boolean isVarArgs()  {
         return (getModifiers() & Modifier.VARARGS) != 0;
     }
@@ -534,6 +547,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @jls 13.1 The Form of a Binary
      * @jvms 4.6 Methods
      */
+    @Pure
     public boolean isSynthetic() {
         return Modifier.isSynthetic(getModifiers());
     }
@@ -569,6 +583,7 @@ public abstract sealed class Executable extends AccessibleObject
      *    the formal and implicit parameters, in declaration order, of
      *    the executable represented by this object
      */
+    @SideEffectFree
     public abstract Annotation[][] getParameterAnnotations();
 
     Annotation[][] sharedGetParameterAnnotations(Class<?>[] parameterTypes,
@@ -599,6 +614,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @throws NullPointerException  {@inheritDoc}
      */
     @Override
+    @Pure
     public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
         return annotationClass.cast(declaredAnnotations().get(annotationClass));
@@ -610,6 +626,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
 
@@ -620,6 +637,7 @@ public abstract sealed class Executable extends AccessibleObject
      * {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public Annotation[] getDeclaredAnnotations()  {
         return AnnotationParser.toArray(declaredAnnotations());
     }
@@ -664,6 +682,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @return an object representing the return type of the method
      * or constructor represented by this {@code Executable}
      */
+    @SideEffectFree
     public abstract AnnotatedType getAnnotatedReturnType();
 
     /* Helper for subclasses of Executable.
@@ -708,6 +727,7 @@ public abstract sealed class Executable extends AccessibleObject
      * @jls 8.4.1 Formal Parameters
      * @jls 8.8 Constructor Declarations
      */
+    @SideEffectFree
     public @Nullable AnnotatedType getAnnotatedReceiverType() {
         if (Modifier.isStatic(this.getModifiers()))
             return null;
@@ -758,6 +778,7 @@ public abstract sealed class Executable extends AccessibleObject
      * formal parameters of the method or constructor represented by this
      * {@code Executable}
      */
+    @SideEffectFree
     public AnnotatedType[] getAnnotatedParameterTypes() {
         return TypeAnnotationParser.buildAnnotatedTypes(getTypeAnnotationBytes0(),
                 SharedSecrets.getJavaLangAccess().
@@ -782,6 +803,7 @@ public abstract sealed class Executable extends AccessibleObject
      * exceptions of the method or constructor represented by this {@code
      * Executable}
      */
+    @SideEffectFree
     public AnnotatedType[] getAnnotatedExceptionTypes() {
         return TypeAnnotationParser.buildAnnotatedTypes(getTypeAnnotationBytes0(),
                 SharedSecrets.getJavaLangAccess().
