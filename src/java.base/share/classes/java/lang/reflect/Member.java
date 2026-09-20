@@ -25,6 +25,9 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Set;
 
 /**
