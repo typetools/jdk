@@ -64,6 +64,7 @@ public non-sealed class IllegalFormatPrecisionException extends IllegalFormatExc
         return p;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return Integer.toString(p);
     }

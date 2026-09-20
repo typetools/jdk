@@ -26,6 +26,8 @@
 package java.rmi.server;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A {@code ServerCloneException} is thrown if a remote exception occurs
@@ -68,6 +70,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      *
      * @param s the detail message.
      */
+    @SideEffectFree
     public ServerCloneException(@Nullable String s) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
@@ -80,6 +83,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      * @param s the detail message.
      * @param cause the cause
      */
+    @SideEffectFree
     public ServerCloneException(@Nullable String s, @Nullable Exception cause) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
@@ -92,6 +96,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      *
      * @return the detail message
      */
+    @SideEffectFree
     public String getMessage() {
         if (detail == null)
             return super.getMessage();
@@ -108,6 +113,7 @@ public class ServerCloneException extends CloneNotSupportedException {
      * @return  the cause, which may be {@code null}.
      * @since   1.4
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return detail;
     }

@@ -67,6 +67,7 @@ public non-sealed class IllegalFormatCodePointException extends IllegalFormatExc
         return c;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return String.format("Code point = %#x", c);
     }

@@ -27,6 +27,7 @@ package com.sun.tools.javac.code;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
@@ -642,6 +643,7 @@ public class Types {
 
         transient JCDiagnostic diagnostic;
 
+        @SideEffectFree
         FunctionDescriptorLookupError() {
             this.diagnostic = null;
         }
@@ -5051,6 +5053,7 @@ public class Types {
 
             private final transient Type type;
 
+            @SideEffectFree
             InvalidSignatureException(Type type) {
                 this.type = type;
             }

@@ -27,6 +27,7 @@ package sun.security.provider;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
@@ -1315,11 +1316,13 @@ public class PolicyParser {
          *
          * @param msg the detail message.
          */
+        @SideEffectFree
         public ParsingException(String msg) {
             super(msg);
             i18nMessage = msg;
         }
 
+        @SideEffectFree
         public ParsingException(@Nullable String msg, LocalizedMessage localizedMsg,
                                 Object[] source) {
             super(msg);
@@ -1327,12 +1330,14 @@ public class PolicyParser {
             this.source = source;
         }
 
+        @SideEffectFree
         public ParsingException(int line, String msg) {
             super("line " + line + ": " + msg);
             localizedMsg = new LocalizedMessage("line.number.msg");
             source = new Object[] {line, msg};
         }
 
+        @SideEffectFree
         public ParsingException(int line, String expect, String actual) {
             super("line " + line + ": expected [" + expect +
                 "], found [" + actual + "]");

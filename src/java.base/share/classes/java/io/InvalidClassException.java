@@ -107,6 +107,7 @@ public class InvalidClassException extends ObjectStreamException {
     /**
      * Produce the message and include the classname, if present.
      */
+    @SideEffectFree
     @Override
     public String getMessage() {
         if (classname == null)

@@ -66,6 +66,7 @@ public non-sealed class UnknownFormatFlagsException extends IllegalFormatExcepti
     }
 
     // javadoc inherited from Throwable.java
+    @SideEffectFree
     public String getMessage() {
         return "Flags = " + flags;
     }

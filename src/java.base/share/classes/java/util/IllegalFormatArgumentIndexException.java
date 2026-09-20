@@ -61,6 +61,7 @@ final class IllegalFormatArgumentIndexException extends IllegalFormatException {
         return illegalIndex;
     }
 
+    @SideEffectFree
     @Override
     public String getMessage() {
         int index = getIndex();

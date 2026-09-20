@@ -28,6 +28,7 @@ package jdk.internal.loader;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
@@ -353,6 +354,7 @@ public abstract class AbstractClassLoaderValue<CLV extends AbstractClassLoaderVa
             @java.io.Serial
             private static final long serialVersionUID = 1L;
 
+            @SideEffectFree
             RecursiveInvocationException() {
                 super("Recursive call");
             }
