@@ -2450,7 +2450,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.4 Method Declarations
      * @since 1.1
      */
-    @Pure  // I think it is actually @SideEffectFree.
+    @SideEffectFree
     @GetMethod
     @CallerSensitive
     public Method getMethod(String name, Class<?> @Nullable ... parameterTypes)
@@ -2501,7 +2501,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @GetConstructor
-    @Pure
+    @SideEffectFree
     @CallerSensitive
     public Constructor<T> getConstructor(Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException
@@ -2847,7 +2847,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.3 Field Declarations
      */
     @CallerSensitive
-    @Pure
+    @SideEffectFree
     public Field getDeclaredField(String name)
         throws NoSuchFieldException, SecurityException {
         Objects.requireNonNull(name);
@@ -2915,7 +2915,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @GetMethod
     @CallerSensitive
-    @Pure
+    @SideEffectFree
     public Method getDeclaredMethod(String name, Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException {
         Objects.requireNonNull(name);
@@ -2999,7 +2999,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
-    @Pure
+    @SideEffectFree
     public Constructor<T> getDeclaredConstructor(Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException
     {

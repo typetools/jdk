@@ -277,7 +277,7 @@ public final class Method extends Executable {
      */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    @Pure
+    @SideEffectFree
     public TypeVariable<Method>[] getTypeParameters() {
         if (getGenericSignature() != null)
             return (TypeVariable<Method>[])getGenericInfo().getTypeParameters();
@@ -459,7 +459,6 @@ public final class Method extends Executable {
     }
 
     @Override
-    @SideEffectFree
     void specificToStringHeader(StringBuilder sb) {
         sb.append(getReturnType().getTypeName()).append(' ');
         sb.append(getDeclaringClass().getTypeName()).append('.');
@@ -531,7 +530,6 @@ public final class Method extends Executable {
     }
 
     @Override
-    @SideEffectFree
     void specificToGenericStringHeader(StringBuilder sb) {
         Type genRetType = getGenericReturnType();
         sb.append(genRetType.getTypeName()).append(' ');
@@ -855,7 +853,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      * @since 1.5
      */
-    @Pure
+    @SideEffectFree
     @Override
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
