@@ -26,6 +26,7 @@
 package java.lang.reflect;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.invoke.MethodHandle;
@@ -1364,6 +1365,7 @@ public class Proxy implements java.io.Serializable {
         @java.io.Serial
         private static final long serialVersionUID = 0L;
 
+        @SideEffectFree
         InvocationException(@Nullable Throwable cause) {
             super(cause);
         }

@@ -2771,6 +2771,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
      * {@code when}; {@code false} otherwise.
      * @see     #compareTo(Calendar)
      */
+    @Pure
     public boolean before(Object when) {
         return when instanceof Calendar
             && compareTo((Calendar)when) < 0;
@@ -2792,6 +2793,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
      * otherwise.
      * @see     #compareTo(Calendar)
      */
+    @Pure
     public boolean after(Object when) {
         return when instanceof Calendar
             && compareTo((Calendar)when) > 0;

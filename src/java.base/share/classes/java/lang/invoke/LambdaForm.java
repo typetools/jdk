@@ -1073,6 +1073,7 @@ class LambdaForm {
     public boolean equals(@Nullable Object obj) {
         return obj instanceof LambdaForm && equals((LambdaForm)obj);
     }
+    @Pure
     public boolean equals(LambdaForm that) {
         if (this.result != that.result)  return false;
         return Arrays.equals(this.names, that.names);
@@ -1152,6 +1153,7 @@ class LambdaForm {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object other) {
             if (this == other) return true;
             if (other == null) return false;
@@ -1606,6 +1608,7 @@ class LambdaForm {
             return count;
         }
 
+        @Pure
         public boolean equals(Name that) {
             if (this == that)  return true;
             if (isParam())
@@ -1618,6 +1621,7 @@ class LambdaForm {
                 Arrays.equals(this.arguments, that.arguments);
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object x) {
             return x instanceof Name && equals((Name)x);
         }

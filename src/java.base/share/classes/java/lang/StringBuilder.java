@@ -176,7 +176,7 @@ public final class StringBuilder
      *
      * @since 11
      */
-    @SideEffectFree
+    @Pure
     @Override
     public int compareTo(StringBuilder another) {
         return super.compareTo(another);

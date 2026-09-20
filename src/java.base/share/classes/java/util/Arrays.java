@@ -797,6 +797,7 @@ public final class Arrays {
      */
     static final class NaturalOrder implements Comparator<Object> {
         @SuppressWarnings("unchecked")
+        @Pure
         public int compare(Object first, Object second) {
             return ((Comparable<Object>)first).compareTo(second);
         }

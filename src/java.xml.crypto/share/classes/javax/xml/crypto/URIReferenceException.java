@@ -28,6 +28,8 @@
 package javax.xml.crypto;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -70,6 +72,7 @@ public class URIReferenceException extends Exception {
      * Constructs a new {@code URIReferenceException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public URIReferenceException() {
         super();
     }
@@ -80,6 +83,7 @@ public class URIReferenceException extends Exception {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     public URIReferenceException(@Nullable String message) {
         super(message);
     }
@@ -95,6 +99,7 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public URIReferenceException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
@@ -115,6 +120,7 @@ public class URIReferenceException extends Exception {
      * @throws NullPointerException if {@code uriReference} is
      *    {@code null}
      */
+    @SideEffectFree
     public URIReferenceException(@Nullable String message, @Nullable Throwable cause,
         URIReference uriReference) {
         this(message, cause);
@@ -133,6 +139,7 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
+    @SideEffectFree
     public URIReferenceException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
@@ -158,6 +165,7 @@ public class URIReferenceException extends Exception {
      * @return the cause of this {@code URIReferenceException} or
      *    {@code null} if the cause is nonexistent or unknown.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return cause;
     }

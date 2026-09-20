@@ -66,6 +66,7 @@ public non-sealed class UnknownFormatConversionException extends IllegalFormatEx
     }
 
     // javadoc inherited from Throwable.java
+    @SideEffectFree
     public String getMessage() {
         return String.format("Conversion = '%s'", s);
     }

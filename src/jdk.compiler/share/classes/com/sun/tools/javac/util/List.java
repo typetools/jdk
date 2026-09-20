@@ -360,6 +360,7 @@ public class List<A> extends AbstractCollection<A> implements java.util.List<A> 
      *  @see java.util.List#equals
      */
     @Override
+    @Pure
     public boolean equals(@Nullable Object other) {
         if (other instanceof List<?> javacList)
             return equals(this, javacList);

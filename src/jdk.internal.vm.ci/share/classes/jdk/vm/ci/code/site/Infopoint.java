@@ -64,6 +64,7 @@ public class Infopoint extends Site implements Comparable<Infopoint> {
     }
 
     @Override
+    @Pure
     public int compareTo(Infopoint o) {
         if (pcOffset < o.pcOffset) {
             return -1;

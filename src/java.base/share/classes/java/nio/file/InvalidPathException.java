@@ -133,6 +133,7 @@ public class InvalidPathException
      *
      * @return  a string describing the error
      */
+    @SideEffectFree
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
         sb.append(getReason());

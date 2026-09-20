@@ -103,6 +103,7 @@ public class UnmodifiableHeaders extends Headers {
         throw new UnsupportedOperationException ("unsupported operation");
     }
 
+    @Pure
     public boolean equals(@Nullable Object o) {return headers.equals(o);}
 
     public int hashCode() {return headers.hashCode();}

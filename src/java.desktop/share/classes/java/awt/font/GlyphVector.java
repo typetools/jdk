@@ -30,6 +30,7 @@
 package java.awt.font;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.Graphics2D;
@@ -616,5 +617,6 @@ public abstract @UsesObjectEquals class GlyphVector implements Cloneable {
      *   {@code GlyphVector} equals this {@code GlyphVector};
      *   {@code false} otherwise.
      */
+    @Pure
     public abstract boolean equals(GlyphVector set);
 }

@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -66,6 +67,7 @@ public non-sealed class MissingFormatWidthException extends IllegalFormatExcepti
         return s;
     }
 
+    @Pure
     public String getMessage() {
         return s;
     }

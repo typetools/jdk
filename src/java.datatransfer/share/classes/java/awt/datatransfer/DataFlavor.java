@@ -947,6 +947,7 @@ public class DataFlavor implements Externalizable, Cloneable {
      *         {@code DataFlavor}; {@code false} otherwise
      * @see #selectBestTextFlavor
      */
+    @Pure
     public boolean equals(DataFlavor that) {
         if (that == null) {
             return false;
@@ -1007,6 +1008,7 @@ public class DataFlavor implements Externalizable, Cloneable {
      *             {@link #isMimeTypeEqual(String)} instead.
      */
     @Deprecated
+    @Pure
     public boolean equals(String s) {
         if (s == null || mimeType == null)
             return false;

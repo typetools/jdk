@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -113,6 +114,7 @@ public class NullPointerException extends RuntimeException {
      *
      * @return the detail message string, which may be {@code null}.
      */
+    @Pure
     public String getMessage() {
         String message = super.getMessage();
         if (message == null) {

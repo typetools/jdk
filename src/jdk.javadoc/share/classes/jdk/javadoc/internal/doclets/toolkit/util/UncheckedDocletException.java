@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import jdk.javadoc.internal.doclets.toolkit.DocletException;
 
@@ -37,6 +38,7 @@ import jdk.javadoc.internal.doclets.toolkit.DocletException;
 public class UncheckedDocletException extends Error {
     private static final long serialVersionUID = -9131058909576418984L;
 
+    @SideEffectFree
     public UncheckedDocletException(DocletException de) {
         super(de);
     }

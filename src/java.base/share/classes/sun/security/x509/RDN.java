@@ -477,6 +477,7 @@ class AVAComparator implements Comparator<AVA> {
      * AVA's containing a standard keyword are ordered alphabetically,
      * followed by AVA's containing an OID keyword, ordered numerically
      */
+    @Pure
     public int compare(AVA a1, AVA a2) {
         boolean a1Has2253 = a1.hasRFC2253Keyword();
         boolean a2Has2253 = a2.hasRFC2253Keyword();

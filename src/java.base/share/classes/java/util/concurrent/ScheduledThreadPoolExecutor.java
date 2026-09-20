@@ -255,6 +255,7 @@ public class ScheduledThreadPoolExecutor
             return unit.convert(time - System.nanoTime(), NANOSECONDS);
         }
 
+        @Pure
         public int compareTo(Delayed other) {
             if (other == this) // compare zero if same object
                 return 0;

@@ -132,6 +132,7 @@ public class URISyntaxException
      *
      * @return  A string describing the parse error
      */
+    @SideEffectFree
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
         sb.append(getReason());

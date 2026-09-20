@@ -26,6 +26,7 @@
 package java.math;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -265,6 +266,7 @@ import java.util.Arrays;
      * as this MutableBigInteger is numerically less than, equal to, or
      * greater than {@code b}.
      */
+    @Pure
     final int compare(MutableBigInteger b) {
         int blen = b.intLen;
         if (intLen < blen)

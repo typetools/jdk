@@ -25,6 +25,7 @@
 package java.sql;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.util.Map;
 
@@ -66,6 +67,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException() {
 
                 this.failedProperties = null;
@@ -90,6 +92,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable Map<String, ClientInfoStatus> failedProperties) {
 
                 this.failedProperties = failedProperties;
@@ -114,6 +117,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable Map<String, ClientInfoStatus> failedProperties,
                                                            @Nullable Throwable cause) {
 
@@ -142,6 +146,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                 @Nullable Map<String, ClientInfoStatus> failedProperties) {
 
@@ -168,6 +173,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                                                            @Nullable Map<String, ClientInfoStatus> failedProperties,
                                                            @Nullable Throwable cause) {
@@ -197,6 +203,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                                                            @Nullable String SQLState,
                                                            @Nullable Map<String, ClientInfoStatus> failedProperties) {
@@ -223,6 +230,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                                                            @Nullable String SQLState,
                                                            @Nullable Map<String, ClientInfoStatus> failedProperties,
@@ -253,6 +261,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                                                            @Nullable String SQLState,
                                                            int vendorCode,
@@ -282,6 +291,7 @@ public class SQLClientInfoException extends SQLException {
      *
      * @since 1.6
      */
+        @SideEffectFree
         public SQLClientInfoException(@Nullable String reason,
                                                            @Nullable String SQLState,
                                                            int vendorCode,

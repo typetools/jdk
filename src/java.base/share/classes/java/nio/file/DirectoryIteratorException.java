@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -71,6 +72,7 @@ public final class DirectoryIteratorException
      *
      * @return  the cause
      */
+    @Pure
     @Override
     public IOException getCause() {
         return (IOException)super.getCause();

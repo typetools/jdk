@@ -242,6 +242,7 @@ class Field extends AccessibleObject implements Member {
      * @since 20
      */
     @Override
+    @SideEffectFree
     public Set<AccessFlag> accessFlags() {
         return AccessFlag.maskToAccessFlags(getModifiers(), AccessFlag.Location.FIELD);
     }
@@ -1291,6 +1292,7 @@ class Field extends AccessibleObject implements Member {
      * @throws NullPointerException {@inheritDoc}
      * @since 1.8
      */
+    @SideEffectFree
     @Override
     public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
@@ -1341,6 +1343,7 @@ class Field extends AccessibleObject implements Member {
      *
      * @since 1.8
      */
+    @SideEffectFree
     public AnnotatedType getAnnotatedType() {
         return TypeAnnotationParser.buildAnnotatedType(getTypeAnnotationBytes0(),
                                                        SharedSecrets.getJavaLangAccess().

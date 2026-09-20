@@ -140,6 +140,7 @@ public abstract class Enum<E extends Enum<E>>
      *
      * @return the ordinal of this enumeration constant
      */
+    @Pure
     public final @NonNegative int ordinal() {
         return ordinal;
     }
@@ -233,6 +234,7 @@ public abstract class Enum<E extends Enum<E>>
      * method is the order in which the constants are declared.
      */
     @SuppressWarnings({"rawtypes"})
+    @Pure
     public final int compareTo(@UnknownKeyFor @Tainted E o) {
         Enum<?> other = o;
         Enum<E> self = this;
@@ -254,6 +256,7 @@ public abstract class Enum<E extends Enum<E>>
      * @return the Class object corresponding to this enum constant's
      *     enum type
      */
+    @Pure
     @SuppressWarnings("unchecked")
     public final Class<@Tainted E> getDeclaringClass() {
         Class<?> clazz = getClass();
@@ -270,6 +273,7 @@ public abstract class Enum<E extends Enum<E>>
      * @since 12
      */
     @Override
+    @SideEffectFree
     public final Optional<EnumDesc<E>> describeConstable() {
         return getDeclaringClass()
                 .describeConstable()
@@ -303,6 +307,7 @@ public abstract class Enum<E extends Enum<E>>
      *         is null
      * @since 1.5
      */
+    @Pure
     public static <T extends Enum<T>> @PolyValue T valueOf(Class<T> enumClass,
                                                 @PolyValue String name) {
         T result = enumClass.enumConstantDirectory().get(name);
@@ -373,6 +378,7 @@ public abstract class Enum<E extends Enum<E>>
          * @jvms 4.2.2 Unqualified Names
          * @since 12
          */
+        @SideEffectFree
         public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
                                                         String constantName) {
             return new EnumDesc<>(enumClass, constantName);
@@ -380,11 +386,13 @@ public abstract class Enum<E extends Enum<E>>
 
         @Override
         @SuppressWarnings("unchecked")
+        @Pure
         public E resolveConstantDesc(MethodHandles.Lookup lookup)
                 throws ReflectiveOperationException {
             return Enum.valueOf((Class<E>) constantType().resolveConstantDesc(lookup), constantName());
         }
 
+        @SideEffectFree
         @Override
         public String toString() {
             return String.format("EnumDesc[%s.%s]", constantType().displayName(), constantName());

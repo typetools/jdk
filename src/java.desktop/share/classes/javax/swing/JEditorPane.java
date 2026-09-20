@@ -26,6 +26,7 @@
 package javax.swing;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.Component;
@@ -2333,10 +2334,12 @@ public class JEditorPane extends JTextComponent {
                 public void paint(Graphics g, Shape allocation) {
                 }
 
+                @Pure
                 protected boolean isBefore(int x, int y, Rectangle alloc) {
                     return false;
                 }
 
+                @Pure
                 protected boolean isAfter(int x, int y, Rectangle alloc) {
                     return false;
                 }
