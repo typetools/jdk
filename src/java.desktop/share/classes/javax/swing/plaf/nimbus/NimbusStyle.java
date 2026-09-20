@@ -26,6 +26,7 @@ package javax.swing.plaf.nimbus;
 
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import javax.swing.Painter;
@@ -165,6 +166,7 @@ public final class NimbusStyle extends SynthStyle {
     private static final Comparator<RuntimeState> STATE_COMPARATOR =
         new Comparator<RuntimeState>() {
             @Override
+            @Pure
             public int compare(RuntimeState a, RuntimeState b) {
                 return a.state - b.state;
             }
@@ -1107,6 +1109,7 @@ public final class NimbusStyle extends SynthStyle {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             final CacheKey other = (CacheKey) obj;
             if (obj == null) return false;

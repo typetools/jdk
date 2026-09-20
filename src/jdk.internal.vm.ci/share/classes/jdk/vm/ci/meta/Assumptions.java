@@ -123,6 +123,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof NoFinalizableSubclass) {
                 NoFinalizableSubclass other = (NoFinalizableSubclass) obj;
@@ -172,6 +173,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof ConcreteSubtype) {
                 ConcreteSubtype other = (ConcreteSubtype) obj;
@@ -210,6 +212,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof LeafType) {
                 LeafType other = (LeafType) obj;
@@ -262,6 +265,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof ConcreteMethod) {
                 ConcreteMethod other = (ConcreteMethod) obj;
@@ -299,6 +303,7 @@ public final class Assumptions implements Iterable<Assumptions.Assumption> {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof CallSiteTargetValue) {
                 CallSiteTargetValue other = (CallSiteTargetValue) obj;

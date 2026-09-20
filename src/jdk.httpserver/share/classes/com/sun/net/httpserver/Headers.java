@@ -276,6 +276,7 @@ public class Headers implements Map<String,List<String>> {
     }
 
     @Override
+    @Pure
     public boolean equals(@Nullable Object o) { return map.equals(o); }
 
     @Override

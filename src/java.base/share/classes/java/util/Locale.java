@@ -969,6 +969,7 @@ public final class Locale implements Cloneable, Serializable {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;

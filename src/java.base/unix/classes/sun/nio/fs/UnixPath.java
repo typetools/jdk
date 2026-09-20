@@ -723,6 +723,7 @@ class UnixPath implements Path {
     }
 
     @Override
+    @Pure
     public int compareTo(Path other) {
         int len1 = path.length;
         int len2 = ((UnixPath) other).path.length;

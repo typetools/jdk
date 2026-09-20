@@ -676,6 +676,7 @@ public class GSSCredentialImpl implements GSSCredential {
         public int getUsage() {
             return usage;
         }
+        @Pure
         public boolean equals(@Nullable Object other) {
             if (! (other instanceof SearchKey that))
                 return false;

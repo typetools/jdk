@@ -112,6 +112,7 @@ class Startup {
 
         // built-ins match on name only.  Time stamp isn't considered
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (!(o instanceof StartupEntry)) {
                 return false;

@@ -26,6 +26,8 @@
 package javax.naming.spi;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.security.AccessController;
@@ -762,10 +764,12 @@ public class NamingManager {
         @java.io.Serial
         static final long serialVersionUID = -5805552256848841560L;
 
+        @SideEffectFree
         private FactoryInitializationError(NoInitialContextException cause) {
             super(cause);
         }
 
+        @Pure
         @Override
         public NoInitialContextException getCause() {
             return (NoInitialContextException) super.getCause();

@@ -190,6 +190,7 @@ class DerivedColor extends Color {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             return (o instanceof UIResource) && super.equals(o);
         }

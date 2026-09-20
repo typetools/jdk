@@ -28,6 +28,7 @@ package java.io;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.annotation.Native;
@@ -242,6 +243,7 @@ abstract @UsesObjectEquals class FileSystem {
     /**
      * Compare two abstract pathnames lexicographically.
      */
+    @Pure
     public abstract int compare(File f1, File f2);
 
     /**

@@ -187,6 +187,7 @@ public abstract class MethodImpl extends TypeComponentImpl
         return types;
     }
 
+    @Pure
     public int compareTo(Method method) {
         ReferenceTypeImpl declaringType = (ReferenceTypeImpl)declaringType();
         int rc = declaringType.compareTo(method.declaringType());

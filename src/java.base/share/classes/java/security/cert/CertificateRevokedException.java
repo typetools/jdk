@@ -180,6 +180,7 @@ public class CertificateRevokedException extends CertificateException {
         return Collections.unmodifiableMap(extensions);
     }
 
+    @SideEffectFree
     @Override
     public String getMessage() {
         return "Certificate has been revoked, reason: "

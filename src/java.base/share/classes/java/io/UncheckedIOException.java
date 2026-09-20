@@ -25,6 +25,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -75,6 +76,7 @@ public class UncheckedIOException extends RuntimeException {
      *
      * @return  the {@code IOException} which is the cause of this exception.
      */
+    @Pure
     @Override
     public IOException getCause() {
         return (IOException) super.getCause();

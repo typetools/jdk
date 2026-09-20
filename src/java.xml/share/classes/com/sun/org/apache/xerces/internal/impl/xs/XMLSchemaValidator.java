@@ -4544,6 +4544,7 @@ public class XMLSchemaValidator
             return fId.hashCode() + fDepth;
         }
 
+        @Pure
         public boolean equals(@Nullable Object localIDKey) {
             if (localIDKey instanceof LocalIDKey) {
                 LocalIDKey lIDKey = (LocalIDKey) localIDKey;

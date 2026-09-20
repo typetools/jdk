@@ -2680,6 +2680,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @return -1, 0, or 1 as the value of this {@code BigDecimal}
      *         is negative, zero, or positive.
      */
+    @Pure
     public int signum() {
         return (intCompact != INFLATED)?
             Long.signum(intCompact):
@@ -2709,6 +2710,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * @return the precision of this {@code BigDecimal}.
      * @since  1.5
      */
+    @Pure
     public int precision() {
         int result = precision;
         if (result == 0) {
@@ -3135,6 +3137,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *          less than, equal to, or greater than {@code val}.
      */
     @Override
+    @Pure
     public int compareTo(BigDecimal val) {
         // Quick path for equal scale and non-inflated case.
         if (scale == val.scale) {

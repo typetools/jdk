@@ -64,6 +64,7 @@ public class CharValueImpl extends PrimitiveValueImpl
         return intValue();
     }
 
+    @Pure
     public int compareTo(CharValue obj) {
         char other = obj.value();
         return value() - other;

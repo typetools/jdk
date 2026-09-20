@@ -111,6 +111,7 @@ public class AuthTimeWithHash extends AuthTime
     }
 
     @Override
+    @Pure
     public int compareTo(AuthTimeWithHash other) {
         int cmp = 0;
         if (ctime != other.ctime) {

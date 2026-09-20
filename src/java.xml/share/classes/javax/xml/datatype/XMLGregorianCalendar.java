@@ -667,6 +667,7 @@ public abstract class XMLGregorianCalendar
      *
      * @throws NullPointerException if {@code xmlGregorianCalendar} is null.
      */
+    @Pure
     public abstract int compare(XMLGregorianCalendar xmlGregorianCalendar);
 
     /**

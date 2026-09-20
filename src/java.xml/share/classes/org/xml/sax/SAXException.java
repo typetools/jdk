@@ -26,6 +26,8 @@
 package org.xml.sax;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 import java.io.InvalidClassException;
@@ -61,6 +63,7 @@ public class SAXException extends Exception {
     /**
      * Create a new SAXException.
      */
+    @SideEffectFree
     public SAXException ()
     {
         super();
@@ -72,6 +75,7 @@ public class SAXException extends Exception {
      *
      * @param message The error or warning message.
      */
+    @SideEffectFree
     public SAXException (@Nullable String message) {
         super(message);
     }
@@ -86,6 +90,7 @@ public class SAXException extends Exception {
      *
      * @param e The exception to be wrapped in a SAXException.
      */
+    @SideEffectFree
     public SAXException (@Nullable Exception e)
     {
         super(e);
@@ -101,6 +106,7 @@ public class SAXException extends Exception {
      * @param message The detail message.
      * @param e The exception to be wrapped in a SAXException.
      */
+    @SideEffectFree
     public SAXException (@Nullable String message, @Nullable Exception e)
     {
         super(message, e);
@@ -116,6 +122,7 @@ public class SAXException extends Exception {
      *
      * @return The error or warning message.
      */
+    @Pure
     public @Nullable String getMessage ()
     {
         String message = super.getMessage();
@@ -143,6 +150,7 @@ public class SAXException extends Exception {
      *
      * @return Return the cause of the exception
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return super.getCause();
     }
@@ -152,6 +160,7 @@ public class SAXException extends Exception {
      *
      * @return A string representation of this exception.
      */
+    @SideEffectFree
     public String toString ()
     {
         Throwable exception = super.getCause();

@@ -321,6 +321,7 @@ public class FontRenderContext {
      *         otherwise.
      * @since 1.4
      */
+    @Pure
     public boolean equals(FontRenderContext rhs) {
         if (this == rhs) {
             return true;

@@ -85,6 +85,7 @@ public class PrivilegedActionException extends Exception {
         return (Exception)super.getCause();
     }
 
+    @SideEffectFree
     public String toString() {
         String s = getClass().getName();
         Throwable cause = super.getCause();

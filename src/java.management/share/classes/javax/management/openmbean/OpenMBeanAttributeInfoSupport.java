@@ -571,6 +571,7 @@ public class OpenMBeanAttributeInfoSupport
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
+    @Pure
     static int compare(Object x, Object y) {
         return ((Comparable) x).compareTo(y);
     }

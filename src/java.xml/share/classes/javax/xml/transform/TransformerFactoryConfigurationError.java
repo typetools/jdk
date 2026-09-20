@@ -26,6 +26,8 @@
 package javax.xml.transform;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Thrown when a problem with configuration with the Transformer Factories
@@ -48,6 +50,7 @@ public class TransformerFactoryConfigurationError extends Error {
      * Create a new <code>TransformerFactoryConfigurationError</code> with no
      * detail message.
      */
+    @SideEffectFree
     public TransformerFactoryConfigurationError() {
 
         super();
@@ -61,6 +64,7 @@ public class TransformerFactoryConfigurationError extends Error {
      *
      * @param msg The error message for the exception.
      */
+    @SideEffectFree
     public TransformerFactoryConfigurationError(@Nullable String msg) {
 
         super(msg);
@@ -75,6 +79,7 @@ public class TransformerFactoryConfigurationError extends Error {
      * @param e The exception to be encapsulated in a
      * TransformerFactoryConfigurationError.
      */
+    @SideEffectFree
     public TransformerFactoryConfigurationError(Exception e) {
 
         super(e.toString());
@@ -90,6 +95,7 @@ public class TransformerFactoryConfigurationError extends Error {
      * TransformerFactoryConfigurationError
      * @param msg The detail message.
      */
+    @SideEffectFree
     public TransformerFactoryConfigurationError(@Nullable Exception e, @Nullable String msg) {
 
         super(msg);
@@ -104,6 +110,7 @@ public class TransformerFactoryConfigurationError extends Error {
      *
      * @return The error message.
      */
+    @Pure
     public String getMessage() {
 
         String message = super.getMessage();
@@ -127,6 +134,7 @@ public class TransformerFactoryConfigurationError extends Error {
     /**
      * use the exception chaining mechanism of JDK1.4
     */
+    @Pure
     @Override
     public @Nullable Throwable getCause() {
         return exception;

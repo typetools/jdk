@@ -26,6 +26,7 @@ package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -292,6 +293,7 @@ final class WeakPairMap<K1, K2, V> {
             }
 
             @Override
+            @Pure
             public boolean equals(@Nullable Object obj) {
                 return this == obj ||
                        (obj instanceof Pair &&
@@ -333,6 +335,7 @@ final class WeakPairMap<K1, K2, V> {
             }
 
             @Override
+            @Pure
             public boolean equals(@Nullable Object obj) {
                 return obj instanceof Pair &&
                        Pair.equals(k1, k2, (Pair<?, ?>) obj);

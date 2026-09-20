@@ -28,6 +28,7 @@ package java.lang;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.util.OperatingSystem;
@@ -680,6 +681,7 @@ public final class ProcessBuilder
          * instances of the same type associated with non-null equal
          * {@code File} instances.
          */
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj == this)
                 return true;

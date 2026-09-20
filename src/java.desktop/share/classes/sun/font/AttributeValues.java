@@ -453,6 +453,7 @@ public final class AttributeValues implements Cloneable {
         return false;
     }
 
+    @Pure
     public boolean equals(AttributeValues rhs) {
         // test in order of most likely to differ and easiest to compare
         // also assumes we're generally calling this only if family,

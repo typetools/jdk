@@ -146,10 +146,23 @@ jobs:
           CI_DEFAULT_ORGANIZATION=typetools
           . /tmp/$USER/plume-scripts/set-ci-org-and-branch
           cd ../jdk21u
+          jdk21u_url=$(git config --get remote.origin.url)
+          jdk21u_branch=$(git rev-parse --abbrev-ref HEAD)
+          jdk21u_commit=$(git rev-parse HEAD)
           echo "About to run: git pull --no-edit https://github.com/${CI_ORGANIZATION}/jdk ${CI_BRANCH}"
           if ! git pull --no-edit "https://github.com/${CI_ORGANIZATION}/jdk" "${CI_BRANCH}"; then
             git --version
-            git show | head -100
+            merge_head=$(git rev-parse --verify --quiet MERGE_HEAD) || merge_head=
+            echo "Merge into ${jdk21u_url} branch ${jdk21u_branch} :"
+            git --no-pager log -1 --format='  %H %cd %s' --date=iso "${jdk21u_commit}"
+            echo "Merge from https://github.com/${CI_ORGANIZATION}/jdk branch ${CI_BRANCH} :"
+            if test -n "${merge_head}"; then
+              git --no-pager log -1 --format='  %H %cd %s' --date=iso "${merge_head}"
+              echo "Merge base:"
+              git --no-pager log -1 --format='  %H %cd %s' --date=iso "$(git merge-base "${jdk21u_commit}" "${merge_head}")"
+            else
+              echo "  unknown; the merge did not start"
+            fi
             git status && git diff | head -1000
             echo "Merge failed; see 'Pull request merge conflicts' at https://github.com/typetools/jdk/blob/master/README.md"
             false

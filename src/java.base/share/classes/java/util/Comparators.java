@@ -25,6 +25,7 @@
 package java.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.Serializable;
@@ -51,6 +52,7 @@ class Comparators {
         INSTANCE;
 
         @Override
+        @Pure
         public int compare(Comparable<Object> c1, Comparable<Object> c2) {
             return c1.compareTo(c2);
         }
@@ -80,6 +82,7 @@ class Comparators {
         }
 
         @Override
+        @Pure
         public int compare(T a, T b) {
             if (a == null) {
                 return (b == null) ? 0 : (nullFirst ? -1 : 1);

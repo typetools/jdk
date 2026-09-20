@@ -209,7 +209,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
      *
      * @since 11
      */
-    @SideEffectFree
+    @Pure
     @Override
     public synchronized int compareTo(StringBuffer another) {
         return super.compareTo(another);
