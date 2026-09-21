@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A tree node for a parenthesized expression.  Note: parentheses
  * not be preserved by the parser.
@@ -45,5 +47,6 @@ public interface ParenthesizedTree extends ExpressionTree {
      * Returns the expression within the parentheses.
      * @return the expression
      */
+    @Pure
     ExpressionTree getExpression();
 }

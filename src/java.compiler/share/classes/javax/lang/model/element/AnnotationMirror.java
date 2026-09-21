@@ -25,6 +25,8 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Map;
 import javax.lang.model.type.DeclaredType;
 
@@ -43,6 +45,7 @@ public interface AnnotationMirror {
     /**
      * {@return the type of this annotation}
      */
+    @Pure
     DeclaredType getAnnotationType();
 
     /**

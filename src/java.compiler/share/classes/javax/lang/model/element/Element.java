@@ -25,6 +25,7 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationTypeMismatchException;
@@ -68,6 +69,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * @see TypeParameterElement#asType
      * @see VariableElement#asType
      */
+    @Pure
     TypeMirror asType();
 
     /**

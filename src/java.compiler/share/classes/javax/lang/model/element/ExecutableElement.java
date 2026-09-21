@@ -25,6 +25,9 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.CFComment;
+
 import java.util.List;
 import javax.lang.model.type.*;
 
@@ -73,6 +76,10 @@ public interface ExecutableElement extends Element, Parameterizable {
      * @return the formal parameters,
      * or an empty list if there are none
      */
+    @CFComment(
+        "purity: javac's MethodSymbol caches the list in a private field, so repeated calls"
+            + " return the identical List and no externally-visible state changes")
+    @Pure
     List<? extends VariableElement> getParameters();
 
     /**
@@ -102,6 +109,7 @@ public interface ExecutableElement extends Element, Parameterizable {
      * {@return {@code true} if this method or constructor accepts a variable
      * number of arguments and returns {@code false} otherwise}
      */
+    @Pure
     boolean isVarArgs();
 
     /**

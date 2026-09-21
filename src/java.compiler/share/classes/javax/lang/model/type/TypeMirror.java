@@ -111,6 +111,7 @@ public interface TypeMirror extends javax.lang.model.AnnotatedConstruct {
      *
      * </ul>
      */
+    @Pure
     TypeKind getKind();
 
     /**
