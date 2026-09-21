@@ -334,7 +334,7 @@ public @SeqUngrowable class TreeMap<K,V>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @SideEffectFree
+    @Pure
     public @KeyFor("this") K firstKey(@NonEmpty TreeMap<K,V> this) {
         return key(getFirstEntry());
     }
@@ -342,7 +342,7 @@ public @SeqUngrowable class TreeMap<K,V>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @SideEffectFree
+    @Pure
     public @KeyFor("this") K lastKey(@NonEmpty TreeMap<K,V> this) {
         return key(getLastEntry());
     }
@@ -1084,7 +1084,7 @@ public @SeqUngrowable class TreeMap<K,V>
      *         does not permit null keys
      * @since 1.6
      */
-    @SideEffectFree
+    @Pure
     public @Nullable K lowerKey(K key) {
         return keyOrNull(getLowerEntry(key));
     }
@@ -1108,7 +1108,7 @@ public @SeqUngrowable class TreeMap<K,V>
      *         does not permit null keys
      * @since 1.6
      */
-    @SideEffectFree
+    @Pure
     public @Nullable K floorKey(K key) {
         return keyOrNull(getFloorEntry(key));
     }
@@ -1132,7 +1132,7 @@ public @SeqUngrowable class TreeMap<K,V>
      *         does not permit null keys
      * @since 1.6
      */
-    @SideEffectFree
+    @Pure
     public @Nullable K ceilingKey(K key) {
         return keyOrNull(getCeilingEntry(key));
     }
@@ -1156,7 +1156,7 @@ public @SeqUngrowable class TreeMap<K,V>
      *         does not permit null keys
      * @since 1.6
      */
-    @SideEffectFree
+    @Pure
     public @Nullable K higherKey(K key) {
         return keyOrNull(getHigherEntry(key));
     }
@@ -2044,6 +2044,7 @@ public @SeqUngrowable class TreeMap<K,V>
             return exportEntry(subCeiling(key));
         }
 
+        @Pure
         public final @Nullable K ceilingKey(K key) {
             return keyOrNull(subCeiling(key));
         }
@@ -2052,6 +2053,7 @@ public @SeqUngrowable class TreeMap<K,V>
             return exportEntry(subHigher(key));
         }
 
+        @Pure
         public final @Nullable K higherKey(K key) {
             return keyOrNull(subHigher(key));
         }
@@ -2060,6 +2062,7 @@ public @SeqUngrowable class TreeMap<K,V>
             return exportEntry(subFloor(key));
         }
 
+        @Pure
         public final @Nullable K floorKey(K key) {
             return keyOrNull(subFloor(key));
         }
@@ -2068,14 +2071,17 @@ public @SeqUngrowable class TreeMap<K,V>
             return exportEntry(subLower(key));
         }
 
+        @Pure
         public final @Nullable K lowerKey(K key) {
             return keyOrNull(subLower(key));
         }
 
+        @Pure
         public final K firstKey() {
             return key(subLowest());
         }
 
+        @Pure
         public final K lastKey() {
             return key(subHighest());
         }
@@ -2600,7 +2606,9 @@ public @SeqUngrowable class TreeMap<K,V>
         }
         @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet() { throw new InternalError(); }
+        @Pure
         public K lastKey() { throw new InternalError(); }
+        @Pure
         public K firstKey() { throw new InternalError(); }
         @SideEffectFree
         public SortedMap<K,V> subMap(K fromKey, K toKey) { throw new InternalError(); }

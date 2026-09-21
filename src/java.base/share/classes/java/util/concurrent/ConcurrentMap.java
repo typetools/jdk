@@ -128,7 +128,7 @@ public interface ConcurrentMap<K extends @NonNull Object,V extends @NonNull Obje
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    default void forEach(@MaybeModifiable ConcurrentMap<K,V> this,BiConsumer<? super K, ? super V> action) {
+    default void forEach(@MaybeModifiable ConcurrentMap<K,V> this, BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K,V> entry : entrySet()) {
             K k;

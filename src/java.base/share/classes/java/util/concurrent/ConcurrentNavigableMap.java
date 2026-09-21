@@ -76,7 +76,7 @@ public interface ConcurrentNavigableMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentNavigableMap<K,V> this, 
+    @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentNavigableMap<K,V> this,
                                         K toKey, boolean inclusive);
 
     /**
@@ -85,7 +85,7 @@ public interface ConcurrentNavigableMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentNavigableMap<K,V> this, 
+    @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentNavigableMap<K,V> this,
                                         K fromKey, boolean inclusive);
 
     /**
@@ -94,7 +94,7 @@ public interface ConcurrentNavigableMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    @PolyModifiable ConcurrentNavigableMap<K,V> subMap(@PolyModifiable ConcurrentNavigableMap<K,V> this, 
+    @PolyModifiable ConcurrentNavigableMap<K,V> subMap(@PolyModifiable ConcurrentNavigableMap<K,V> this,
                                        K fromKey, K toKey);
 
     /**
@@ -103,7 +103,7 @@ public interface ConcurrentNavigableMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentNavigableMap<K,V> this, 
+    @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentNavigableMap<K,V> this,
                                         K toKey);
 
     /**
@@ -112,7 +112,7 @@ public interface ConcurrentNavigableMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentNavigableMap<K,V> this, 
+    @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentNavigableMap<K,V> this,
                                         K fromKey);
 
     /**

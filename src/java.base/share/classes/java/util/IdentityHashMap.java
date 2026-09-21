@@ -1298,7 +1298,7 @@ public class IdentityHashMap<K,V>
 
     private class EntrySet extends AbstractSet<Map.Entry<K,V>> {
         @SideEffectFree
-        public Iterator<Map.@Modifiable Entry<K,V>> iterator() {
+        public @Modifiable Iterator<Map.Entry<K,V>> iterator() {
             return new EntryIterator();
         }
         @Pure

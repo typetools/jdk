@@ -65,35 +65,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Collections.AsLIFOQueue;
-import java.util.Collections.CheckedCollection;
-import java.util.Collections.CheckedList;
-import java.util.Collections.CheckedNavigableMap;
-import java.util.Collections.CheckedNavigableSet;
-import java.util.Collections.CheckedQueue;
-import java.util.Collections.CheckedRandomAccessList;
-import java.util.Collections.CheckedSet;
-import java.util.Collections.CheckedSortedMap;
-import java.util.Collections.CheckedSortedSet;
-import java.util.Collections.SynchronizedCollection;
-import java.util.Collections.SynchronizedList;
-import java.util.Collections.SynchronizedNavigableMap;
-import java.util.Collections.SynchronizedNavigableSet;
-import java.util.Collections.SynchronizedRandomAccessList;
-import java.util.Collections.SynchronizedSet;
-import java.util.Collections.SynchronizedSortedMap;
-import java.util.Collections.SynchronizedSortedSet;
-import java.util.Collections.UnmodifiableCollection;
-import java.util.Collections.UnmodifiableList;
-import java.util.Collections.UnmodifiableNavigableMap;
-import java.util.Collections.UnmodifiableNavigableSet;
-import java.util.Collections.UnmodifiableRandomAccessList;
-import java.util.Collections.UnmodifiableSequencedCollection;
-import java.util.Collections.UnmodifiableSequencedSet;
-import java.util.Collections.UnmodifiableSet;
-import java.util.Collections.UnmodifiableSortedMap;
-import java.util.Collections.UnmodifiableSortedSet;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -206,7 +177,6 @@ public class Collections {
      *         found to violate the {@link Comparable} contract
      * @see List#sort(Comparator)
      */
-    @SuppressWarnings("unchecked")
     @SideEffectsOnly("#1")
     public static <T extends Comparable<? super T>> void sort(@IteratorPolyMod @Replaceable List<T> list) {
         list.sort(null);
@@ -2355,7 +2325,9 @@ public class Collections {
         @SideEffectFree
         public SortedMap<K,V> tailMap(K fromKey)
                    { return new UnmodifiableSortedMap<>(sm.tailMap(fromKey)); }
+        @Pure
         public K firstKey()                           { return sm.firstKey(); }
+        @Pure
         public K lastKey()                             { return sm.lastKey(); }
     }
 
@@ -2435,9 +2407,13 @@ public class Collections {
         UnmodifiableNavigableMap(NavigableMap<K, ? extends V> m)
                                                             {super(m); nm = m;}
 
+        @Pure
         public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
+        @Pure
         public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
+        @Pure
         public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
+        @Pure
         public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
         @SuppressWarnings("unchecked")
@@ -2836,9 +2812,11 @@ public class Collections {
             }
         }
 
+        @Pure
         public E first() {
             synchronized (mutex) {return ss.first();}
         }
+        @Pure
         public E last() {
             synchronized (mutex) {return ss.last();}
         }
@@ -3473,9 +3451,11 @@ public class Collections {
             }
         }
 
+        @Pure
         public K firstKey() {
             synchronized (mutex) {return sm.firstKey();}
         }
+        @Pure
         public K lastKey() {
             synchronized (mutex) {return sm.lastKey();}
         }
@@ -3558,18 +3538,22 @@ public class Collections {
 
         public @Nullable Entry<K, V> lowerEntry(K key)
                         { synchronized (mutex) { return nm.lowerEntry(key); } }
+        @Pure
         public @Nullable K lowerKey(K key)
                           { synchronized (mutex) { return nm.lowerKey(key); } }
         public @Nullable Entry<K, V> floorEntry(K key)
                         { synchronized (mutex) { return nm.floorEntry(key); } }
+        @Pure
         public @Nullable K floorKey(K key)
                           { synchronized (mutex) { return nm.floorKey(key); } }
         public @Nullable Entry<K, V> ceilingEntry(K key)
                       { synchronized (mutex) { return nm.ceilingEntry(key); } }
+        @Pure
         public @Nullable K ceilingKey(K key)
                         { synchronized (mutex) { return nm.ceilingKey(key); } }
         public @Nullable Entry<K, V> higherEntry(K key)
                        { synchronized (mutex) { return nm.higherEntry(key); } }
+        @Pure
         public @Nullable K higherKey(K key)
                          { synchronized (mutex) { return nm.higherKey(key); } }
         public @Nullable Entry<K, V> firstEntry()
@@ -4047,6 +4031,7 @@ public class Collections {
 
         @Pure
         public @Nullable Comparator<? super E> comparator() { return ss.comparator(); }
+        @Pure
         public E first()                   { return ss.first(); }
         @Pure
         public E last()                    { return ss.last(); }
@@ -4852,7 +4837,9 @@ public class Collections {
 
         @Pure
         public @Nullable Comparator<? super K> comparator() { return sm.comparator(); }
+        @Pure
         public K firstKey()                       { return sm.firstKey(); }
+        @Pure
         public K lastKey()                        { return sm.lastKey(); }
 
         @SideEffectFree
@@ -4932,7 +4919,9 @@ public class Collections {
 
         @Pure
         public @Nullable Comparator<? super K> comparator()   { return nm.comparator(); }
+        @Pure
         public K firstKey()                           { return nm.firstKey(); }
+        @Pure
         public K lastKey()                             { return nm.lastKey(); }
 
         public @Nullable Entry<K, V> lowerEntry(K key) {
@@ -4942,6 +4931,7 @@ public class Collections {
                 : null;
         }
 
+        @Pure
         public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
 
         public @Nullable Entry<K, V> floorEntry(K key) {
@@ -4951,6 +4941,7 @@ public class Collections {
                 : null;
         }
 
+        @Pure
         public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
 
         public @Nullable Entry<K, V> ceilingEntry(K key) {
@@ -4960,6 +4951,7 @@ public class Collections {
                 : null;
         }
 
+        @Pure
         public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
 
         public @Nullable Entry<K, V> higherEntry(K key) {
@@ -4969,6 +4961,7 @@ public class Collections {
                 : null;
         }
 
+        @Pure
         public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
         public @Nullable Entry<K, V> firstEntry() {
@@ -5080,7 +5073,7 @@ public class Collections {
      */
     @SuppressWarnings("unchecked")
     @SideEffectFree
-    public static <T> @Modifiable Iterator<T> emptyIterator() {
+    public static <T> @Unmodifiable Iterator<T> emptyIterator() {
         return (Iterator<T>) EmptyIterator.EMPTY_ITERATOR;
     }
 

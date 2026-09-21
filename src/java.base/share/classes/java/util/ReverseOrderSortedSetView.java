@@ -365,12 +365,12 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
             return ReverseOrderSortedSetView.this.comparator();
         }
 
-        @SideEffectFree
+        @Pure
         public E first() {
             return this.iterator().next();
         }
 
-        @SideEffectFree
+        @Pure
         public E last() {
             var it = this.iterator();
             if (! it.hasNext())

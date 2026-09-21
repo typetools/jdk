@@ -148,7 +148,7 @@ cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar check
 jar tf checker-qual.jar | grep '\.java$' | grep -v 'module-info.java' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
 ```
 
-It addition to updating `.java` files, the command will output a list of export
+In addition to updating `.java` files, the command will output a list of export
 lines.  Place them in `src/java.base/share/classes/module-info.java`.  If no new
 packages were recently added to the Checker Framework, then likely no changes
 are needed in the `module-info.java` file.

@@ -168,10 +168,12 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base;
     }
 
+    @Pure
     public K firstKey() {
         return base.lastKey();
     }
 
+    @Pure
     public K lastKey() {
         return base.firstKey();
     }
@@ -486,10 +488,12 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             return cmp;
         }
 
+        @Pure
         public K firstKey() {
             return this.entryIterator().next().getKey();
         }
 
+        @Pure
         public K lastKey() {
             var it = this.entryIterator();
             if (! it.hasNext())

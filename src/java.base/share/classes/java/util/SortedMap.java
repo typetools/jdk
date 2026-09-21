@@ -236,7 +236,7 @@ public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @return the first (lowest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
+    @Pure
     @KeyFor("this") K firstKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
@@ -245,7 +245,7 @@ public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @return the last (highest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
+    @Pure
     @KeyFor("this") K lastKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**

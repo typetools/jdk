@@ -1048,7 +1048,8 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable E poll(@Shrinkable @CanShrink ConcurrentLinkedDeque<E> this)           { return pollFirst(); }    @Pure
+    public @Nullable E poll(@Shrinkable @CanShrink ConcurrentLinkedDeque<E> this)           { return pollFirst(); }
+    @Pure
     public @Nullable E peek()           { return peekFirst(); }
 
     /**
@@ -1057,6 +1058,7 @@ public class ConcurrentLinkedDeque<E extends @NonNull Object>
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public E remove(@Shrinkable @NonEmpty @CanShrink ConcurrentLinkedDeque<E> this)         { return removeFirst(); }
+
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */

@@ -223,4 +223,5 @@ public interface ListIterator<E> extends Iterator<E> {
     @CFComment("Not @EnsuresNonEmpty(this) because this adds *before* the cursor.")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void add(@Growable @GuardSatisfied ListIterator<E> this, E e);}
+    void add(@Growable @GuardSatisfied ListIterator<E> this, E e);
+}
