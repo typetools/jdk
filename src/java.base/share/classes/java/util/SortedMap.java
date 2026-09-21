@@ -323,7 +323,7 @@ public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-     default V putFirst(@SeqGrowable SortedMap<K,V> this, K k, V v) {
+     default @Nullable V putFirst(@SeqGrowable SortedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -340,7 +340,7 @@ public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putLast(@SeqGrowable SortedMap<K,V> this, K k, V v) {
+    default @Nullable V putLast(@SeqGrowable SortedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 

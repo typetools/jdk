@@ -1549,7 +1549,7 @@ public class Vector<E>
             return hi;
         }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null :
                 new VectorSpliterator(array, lo, index = mid, expectedModCount);

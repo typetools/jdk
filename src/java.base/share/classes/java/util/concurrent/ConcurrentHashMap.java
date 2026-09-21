@@ -746,7 +746,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * Returns x's Class if it is of the form "class C implements
      * Comparable<C>", else null.
      */
-    static Class<?> comparableClassFor(Object x) {
+    static @Nullable Class<?> comparableClassFor(Object x) {
         if (x instanceof Comparable) {
             Class<?> c; Type[] ts, as; ParameterizedType p;
             if ((c = x.getClass()) == String.class) // bypass checks
@@ -1053,7 +1053,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
     }
 
     /** Implementation for put and putIfAbsent */
-    final V putVal(K key, V value, boolean onlyIfAbsent) {
+    final @Nullable V putVal(K key, V value, boolean onlyIfAbsent) {
         if (key == null || value == null) throw new NullPointerException();
         int hash = spread(key.hashCode());
         int binCount = 0;
@@ -1157,7 +1157,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * Replaces node value with v, conditional upon match of cv if
      * non-null.  If resulting value is null, delete.
      */
-    final V replaceNode(Object key, V value, Object cv) {
+    final @Nullable V replaceNode(Object key, @Nullable V value, @Nullable Object cv) {
         int hash = spread(key.hashCode());
         for (Node<K,V>[] tab = table;;) {
             Node<K,V> f; int n, i, fh;
@@ -1875,7 +1875,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      *         in which case the mapping is unchanged
      */
     @DoesNotUnrefineReceiver("modifiability")
-    public @PolyNull V computeIfPresent(@Shrinkable @Replaceable ConcurrentHashMap<K,V> this, K key, BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    public @Nullable V computeIfPresent(@Shrinkable @Replaceable ConcurrentHashMap<K,V> this, K key, BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         if (key == null || remappingFunction == null)
             throw new NullPointerException();
         int h = spread(key.hashCode());
@@ -2812,7 +2812,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * Returns the TreeNode (or null if not found) for the given key
          * starting at given root.
          */
-        final TreeNode<K,V> findTreeNode(int h, Object k, Class<?> kc) {
+        final @Nullable TreeNode<K,V> findTreeNode(int h, @Nullable Object k, @Nullable Class<?> kc) {
             if (k != null) {
                 TreeNode<K,V> p = this;
                 do {
@@ -2967,7 +2967,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * using tree comparisons from root, but continues linear
          * search when lock not available.
          */
-        final Node<K,V> find(int h, Object k) {
+        final @Nullable Node<K,V> find(int h, @Nullable Object k) {
             if (k != null) {
                 for (Node<K,V> e = first; e != null; ) {
                     int s; K ek;
@@ -3000,7 +3000,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * Finds or adds a node.
          * @return null if added
          */
-        final TreeNode<K,V> putTreeVal(int h, K k, V v) {
+        final @Nullable TreeNode<K,V> putTreeVal(int h, K k, V v) {
             Class<?> kc = null;
             boolean searched = false;
             for (TreeNode<K,V> p = root;;) {
@@ -3663,7 +3663,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             this.est = est;
         }
 
-        public KeySpliterator<K,V> trySplit() {
+        public @Nullable KeySpliterator<K,V> trySplit() {
             int i, f, h;
             return (h = ((i = baseIndex) + (f = baseLimit)) >>> 1) <= i ? null :
                 new KeySpliterator<K,V>(tab, baseSize, baseLimit = h,
@@ -3702,7 +3702,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             this.est = est;
         }
 
-        public ValueSpliterator<K,V> trySplit() {
+        public @Nullable ValueSpliterator<K,V> trySplit() {
             int i, f, h;
             return (h = ((i = baseIndex) + (f = baseLimit)) >>> 1) <= i ? null :
                 new ValueSpliterator<K,V>(tab, baseSize, baseLimit = h,
@@ -3742,7 +3742,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
             this.est = est;
         }
 
-        public EntrySpliterator<K,V> trySplit() {
+        public @Nullable EntrySpliterator<K,V> trySplit() {
             int i, f, h;
             return (h = ((i = baseIndex) + (f = baseLimit)) >>> 1) <= i ? null :
                 new EntrySpliterator<K,V>(tab, baseSize, baseLimit = h,
@@ -3820,7 +3820,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     public <U> void forEach(long parallelismThreshold,
-                            BiFunction<? super K, ? super V, ? extends U> transformer,
+                            BiFunction<? super K, ? super V, ? extends @Nullable U> transformer,
                             Consumer<? super U> action) {
         if (transformer == null || action == null)
             throw new NullPointerException();
@@ -3845,8 +3845,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * function on each (key, value), or null if none
      * @since 1.8
      */
-    public <U> U search(long parallelismThreshold,
-                        BiFunction<? super K, ? super V, ? extends U> searchFunction) {
+    public <U> @Nullable U search(long parallelismThreshold,
+                        BiFunction<? super K, ? super V, ? extends @Nullable U> searchFunction) {
         if (searchFunction == null) throw new NullPointerException();
         return new SearchMappingsTask<K,V,U>
             (null, batchFor(parallelismThreshold), 0, 0, table,
@@ -3869,8 +3869,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * of all (key, value) pairs
      * @since 1.8
      */
-    public <U> U reduce(long parallelismThreshold,
-                        BiFunction<? super K, ? super V, ? extends U> transformer,
+    public <U> @Nullable U reduce(long parallelismThreshold,
+                        BiFunction<? super K, ? super V, ? extends @Nullable U> transformer,
                         BiFunction<? super U, ? super U, ? extends U> reducer) {
         if (transformer == null || reducer == null)
             throw new NullPointerException();
@@ -3987,7 +3987,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     public <U> void forEachKey(long parallelismThreshold,
-                               Function<? super K, ? extends U> transformer,
+                               Function<? super K, ? extends @Nullable U> transformer,
                                Consumer<? super U> action) {
         if (transformer == null || action == null)
             throw new NullPointerException();
@@ -4012,8 +4012,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * function on each key, or null if none
      * @since 1.8
      */
-    public <U> U searchKeys(long parallelismThreshold,
-                            Function<? super K, ? extends U> searchFunction) {
+    public <U> @Nullable U searchKeys(long parallelismThreshold,
+                            Function<? super K, ? extends @Nullable U> searchFunction) {
         if (searchFunction == null) throw new NullPointerException();
         return new SearchKeysTask<K,V,U>
             (null, batchFor(parallelismThreshold), 0, 0, table,
@@ -4031,7 +4031,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * reducer to combine values, or null if none
      * @since 1.8
      */
-    public K reduceKeys(long parallelismThreshold,
+    public @Nullable K reduceKeys(long parallelismThreshold,
                         BiFunction<? super K, ? super K, ? extends K> reducer) {
         if (reducer == null) throw new NullPointerException();
         return new ReduceKeysTask<K,V>
@@ -4055,8 +4055,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * of all keys
      * @since 1.8
      */
-    public <U> U reduceKeys(long parallelismThreshold,
-                            Function<? super K, ? extends U> transformer,
+    public <U> @Nullable U reduceKeys(long parallelismThreshold,
+                            Function<? super K, ? extends @Nullable U> transformer,
          BiFunction<? super U, ? super U, ? extends U> reducer) {
         if (transformer == null || reducer == null)
             throw new NullPointerException();
@@ -4174,7 +4174,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     public <U> void forEachValue(long parallelismThreshold,
-                                 Function<? super V, ? extends U> transformer,
+                                 Function<? super V, ? extends @Nullable U> transformer,
                                  Consumer<? super U> action) {
         if (transformer == null || action == null)
             throw new NullPointerException();
@@ -4199,8 +4199,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * function on each value, or null if none
      * @since 1.8
      */
-    public <U> U searchValues(long parallelismThreshold,
-                              Function<? super V, ? extends U> searchFunction) {
+    public <U> @Nullable U searchValues(long parallelismThreshold,
+                              Function<? super V, ? extends @Nullable U> searchFunction) {
         if (searchFunction == null) throw new NullPointerException();
         return new SearchValuesTask<K,V,U>
             (null, batchFor(parallelismThreshold), 0, 0, table,
@@ -4217,7 +4217,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @return the result of accumulating all values
      * @since 1.8
      */
-    public V reduceValues(long parallelismThreshold,
+    public @Nullable V reduceValues(long parallelismThreshold,
                           BiFunction<? super V, ? super V, ? extends V> reducer) {
         if (reducer == null) throw new NullPointerException();
         return new ReduceValuesTask<K,V>
@@ -4241,8 +4241,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * of all values
      * @since 1.8
      */
-    public <U> U reduceValues(long parallelismThreshold,
-                              Function<? super V, ? extends U> transformer,
+    public <U> @Nullable U reduceValues(long parallelismThreshold,
+                              Function<? super V, ? extends @Nullable U> transformer,
                               BiFunction<? super U, ? super U, ? extends U> reducer) {
         if (transformer == null || reducer == null)
             throw new NullPointerException();
@@ -4358,7 +4358,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @since 1.8
      */
     public <U> void forEachEntry(long parallelismThreshold,
-                                 Function<Map.@Unmodifiable Entry<K,V>, ? extends U> transformer,
+                                 Function<Map.@Unmodifiable Entry<K,V>, ? extends @Nullable U> transformer,
                                  Consumer<? super U> action) {
         if (transformer == null || action == null)
             throw new NullPointerException();
@@ -4383,8 +4383,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * function on each entry, or null if none
      * @since 1.8
      */
-    public <U> U searchEntries(long parallelismThreshold,
-                               Function<Map.@Unmodifiable Entry<K,V>, ? extends U> searchFunction) {
+    public <U> @Nullable U searchEntries(long parallelismThreshold,
+                               Function<Map.@Unmodifiable Entry<K,V>, ? extends @Nullable U> searchFunction) {
         if (searchFunction == null) throw new NullPointerException();
         return new SearchEntriesTask<K,V,U>
             (null, batchFor(parallelismThreshold), 0, 0, table,
@@ -4401,7 +4401,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @return the result of accumulating all entries
      * @since 1.8
      */
-    public Map.Entry<K,V> reduceEntries(long parallelismThreshold,
+    public Map.@Nullable Entry<K,V> reduceEntries(long parallelismThreshold,
                                         BiFunction<Map.Entry<K,V>, Map.Entry<K,V>, ? extends Map.Entry<K,V>> reducer) {
         if (reducer == null) throw new NullPointerException();
         return new ReduceEntriesTask<K,V>
@@ -4425,8 +4425,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * of all entries
      * @since 1.8
      */
-    public <U> U reduceEntries(long parallelismThreshold,
-                               Function<Map.@Unmodifiable Entry<K,V>, ? extends U> transformer,
+    public <U> @Nullable U reduceEntries(long parallelismThreshold,
+                               Function<Map.@Unmodifiable Entry<K,V>, ? extends @Nullable U> transformer,
                                BiFunction<? super U, ? super U, ? extends U> reducer) {
         if (transformer == null || reducer == null)
             throw new NullPointerException();
@@ -4716,8 +4716,8 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
         implements Set<K>, java.io.Serializable {
         private static final long serialVersionUID = 7249069246763182397L;
         @SuppressWarnings("serial") // Conditionally serializable
-        private final V value;
-        KeySetView(ConcurrentHashMap<K,V> map, V value) {  // non-public
+        private final @Nullable V value;
+        KeySetView(ConcurrentHashMap<K,V> map, @Nullable V value) {  // non-public
             super(map);
             this.value = value;
         }
@@ -4729,7 +4729,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
          * @return the default mapped value for additions, or {@code null}
          * if not supported
          */
-        public V getMappedValue() { return value; }
+        public @Nullable V getMappedValue() { return value; }
 
         /**
          * {@inheritDoc}

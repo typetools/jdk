@@ -2246,7 +2246,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
         return getDisplayNamesImpl(field, style, locale);
     }
 
-    private Map<String,Integer> getDisplayNamesImpl(int field, int style, Locale locale) {
+    private @Nullable Map<String,Integer> getDisplayNamesImpl(int field, int style, Locale locale) {
         DateFormatSymbols symbols = DateFormatSymbols.getInstance(locale);
         String[] strings = getFieldStrings(field, style, symbols);
         if (strings != null) {
@@ -2275,7 +2275,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
         return isFieldSet(fieldMask, field);
     }
 
-    private String[] getFieldStrings(int field, int style, DateFormatSymbols symbols) {
+    private String @Nullable [] getFieldStrings(int field, int style, DateFormatSymbols symbols) {
         int baseStyle = getBaseStyle(style); // ignore the standalone mask
 
         // DateFormatSymbols doesn't support any narrow names.
@@ -2771,6 +2771,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
      * {@code when}; {@code false} otherwise.
      * @see     #compareTo(Calendar)
      */
+    @Pure
     public boolean before(Object when) {
         return when instanceof Calendar
             && compareTo((Calendar)when) < 0;
@@ -2792,6 +2793,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
      * otherwise.
      * @see     #compareTo(Calendar)
      */
+    @Pure
     public boolean after(Object when) {
         return when instanceof Calendar
             && compareTo((Calendar)when) > 0;

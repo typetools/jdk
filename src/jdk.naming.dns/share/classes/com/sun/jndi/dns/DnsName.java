@@ -222,6 +222,7 @@ public final class DnsName implements Name {
                 (compareTo(obj) == 0));
     }
 
+    @Pure
     public int compareTo(Object obj) {
         Name n = (Name) obj;
         return compareRange(0, size(), n);      // never 0 if sizes differ

@@ -155,6 +155,7 @@ public class MenuShortcut implements java.io.Serializable
      * {@code false} otherwise.
      * @since 1.1
      */
+    @Pure
     public boolean equals(MenuShortcut s) {
         return (s != null && (s.getKey() == key) &&
                 (s.usesShiftModifier() == usesShift));

@@ -1075,6 +1075,7 @@ abstract class P11Key implements Key, Length {
             }
             return Objects.hash(x, params.getP(), params.getG());
         }
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (this == obj) return true;
             // equals() should never throw exceptions
@@ -1160,6 +1161,7 @@ abstract class P11Key implements Key, Length {
             fetchValues();
             return Objects.hash(y, params.getP(), params.getG());
         }
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (this == obj) return true;
             // equals() should never throw exceptions

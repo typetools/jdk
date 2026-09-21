@@ -515,6 +515,7 @@ class NameImpl {
       * Note: using syntax of this NameImpl and ignoring
       * that of comparison target.
       */
+    @Pure
     public int compareTo(NameImpl obj) {
         if (this == obj) {
             return 0;

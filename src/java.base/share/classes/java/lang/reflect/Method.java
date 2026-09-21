@@ -109,15 +109,18 @@ public final class Method extends Executable {
     private Method              root;
 
     // Generics infrastructure
+    @Pure
     private String getGenericSignature() {return signature;}
 
     // Accessor for factory
+    @SideEffectFree
     private GenericsFactory getFactory() {
         // create scope and factory
         return CoreReflectionFactory.make(this, MethodScope.make(this));
     }
 
     // Accessor for generic info repository
+    @Pure
     @Override
     MethodRepository getGenericInfo() {
         var genericInfo = this.genericInfo;
@@ -163,6 +166,7 @@ public final class Method extends Executable {
      * ReflectAccess) which returns a copy of this Method. The copy's
      * "root" field points to this Method.
      */
+    @SideEffectFree
     Method copy() {
         // This routine enables sharing of MethodAccessor objects
         // among Method objects which refer to the same underlying
@@ -186,6 +190,7 @@ public final class Method extends Executable {
     /**
      * Make a copy of a leaf method.
      */
+    @SideEffectFree
     Method leafCopy() {
         if (this.root == null)
             throw new IllegalArgumentException("Can only leafCopy a non-root Method");
@@ -211,21 +216,25 @@ public final class Method extends Executable {
     }
 
     @Override
+    @SideEffectFree
     void checkCanSetAccessible(Class<?> caller) {
         checkCanSetAccessible(caller, clazz);
     }
 
     @Override
+    @Pure
     Method getRoot() {
         return root;
     }
 
     @Override
+    @Pure
     boolean hasGenericInformation() {
         return (getGenericSignature() != null);
     }
 
     @Override
+    @Pure
     byte[] getAnnotationBytes() {
         return annotations;
     }
@@ -235,6 +244,7 @@ public final class Method extends Executable {
      * that declares the method represented by this object.
      */
     @Override
+    @Pure
     public Class<?> getDeclaringClass() {
         return clazz;
     }
@@ -244,6 +254,7 @@ public final class Method extends Executable {
      * object, as a {@code String}.
      */
     @Override
+    @Pure
     public @Interned @Identifier String getName() {
         return name;
     }
@@ -253,6 +264,7 @@ public final class Method extends Executable {
      * @jls 8.4.3 Method Modifiers
      */
     @Override
+    @Pure
     public int getModifiers() {
         return modifiers;
     }
@@ -265,6 +277,7 @@ public final class Method extends Executable {
      */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
+    @SideEffectFree
     public TypeVariable<Method>[] getTypeParameters() {
         if (getGenericSignature() != null)
             return (TypeVariable<Method>[])getGenericInfo().getTypeParameters();
@@ -279,6 +292,7 @@ public final class Method extends Executable {
      * @return the return type for the method this object represents
      */
     @CFComment("lock/nullness: never returns null; returns Void instead")
+    @Pure
     public Class<?> getReturnType() {
         return returnType;
     }
@@ -308,6 +322,7 @@ public final class Method extends Executable {
      * @since 1.5
      */
     @CFComment("lock/nullness: never returns null; returns Void instead")
+    @SideEffectFree
     public Type getGenericReturnType() {
       if (getGenericSignature() != null) {
         return getGenericInfo().getReturnType();
@@ -315,11 +330,13 @@ public final class Method extends Executable {
     }
 
     @Override
+    @Pure
     Class<?>[] getSharedParameterTypes() {
         return parameterTypes;
     }
 
     @Override
+    @Pure
     Class<?>[] getSharedExceptionTypes() {
         return exceptionTypes;
     }
@@ -328,6 +345,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public Class<?>[] getParameterTypes() {
         return parameterTypes.clone();
     }
@@ -336,6 +354,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      * @since 1.8
      */
+    @Pure
     public int getParameterCount() { return parameterTypes.length; }
 
 
@@ -346,6 +365,7 @@ public final class Method extends Executable {
      * @throws MalformedParameterizedTypeException {@inheritDoc}
      * @since 1.5
      */
+    @SideEffectFree
     @Override
     public Type[] getGenericParameterTypes() {
         return super.getGenericParameterTypes();
@@ -355,6 +375,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public Class<?>[] getExceptionTypes() {
         return exceptionTypes.clone();
     }
@@ -367,6 +388,7 @@ public final class Method extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Type[] getGenericExceptionTypes() {
         return super.getGenericExceptionTypes();
     }
@@ -444,11 +466,13 @@ public final class Method extends Executable {
     }
 
     @Override
+    @SideEffectFree
     String toShortString() {
         return "method " + getDeclaringClass().getTypeName() +
                 '.' + toShortSignature();
     }
 
+    @SideEffectFree
     String toShortSignature() {
         StringJoiner sj = new StringJoiner(",", getName() + "(", ")");
         for (Class<?> parameterType : getSharedParameterTypes()) {
@@ -500,6 +524,7 @@ public final class Method extends Executable {
      * @jls 9.6.1 Annotation Interface Elements
      */
     @Override
+    @SideEffectFree
     public String toGenericString() {
         return sharedToGenericString(Modifier.methodModifiers(), isDefault());
     }
@@ -635,6 +660,7 @@ public final class Method extends Executable {
     // -1 = initialized, not CS
     @Stable private byte callerSensitive;
 
+    @Pure
     private boolean isCallerSensitive() {
         byte cs = callerSensitive;
         if (cs == 0) {
@@ -729,6 +755,7 @@ public final class Method extends Executable {
      * @since 1.8
      * @jls 9.4 Method Declarations
      */
+    @Pure
     public boolean isDefault() {
         // Default methods are public non-abstract instance methods
         // declared in an interface.
@@ -760,6 +787,7 @@ public final class Method extends Executable {
 
     // Returns MethodAccessor for this Method object, not looking up
     // the chain to the root
+    @Pure
     MethodAccessor getMethodAccessor() {
         return methodAccessor;
     }
@@ -790,6 +818,7 @@ public final class Method extends Executable {
      * @since  1.5
      * @jls 9.6.2 Defaults for Annotation Type Elements
      */
+    @SideEffectFree
     public @Nullable Object getDefaultValue() {
         if  (annotationDefault == null)
             return null;
@@ -814,6 +843,7 @@ public final class Method extends Executable {
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
+    @Pure
     @Override
     public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
@@ -823,6 +853,7 @@ public final class Method extends Executable {
      * {@inheritDoc}
      * @since 1.5
      */
+    @SideEffectFree
     @Override
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
@@ -833,6 +864,7 @@ public final class Method extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Annotation[][] getParameterAnnotations() {
         return sharedGetParameterAnnotations(parameterTypes, parameterAnnotations);
     }
@@ -842,6 +874,7 @@ public final class Method extends Executable {
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public AnnotatedType getAnnotatedReturnType() {
         return getAnnotatedReturnType0(getGenericReturnType());
     }

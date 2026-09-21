@@ -763,7 +763,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             return hi;
         }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null : // divide range in half unless too small
                     new RandomAccessSpliterator<>(this, lo, index = mid);

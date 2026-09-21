@@ -1011,7 +1011,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized V putIfAbsent(@Growable Hashtable<K, V> this, K key, V value) {
+    public synchronized @Nullable V putIfAbsent(@Growable Hashtable<K, V> this, K key, V value) {
         Objects.requireNonNull(value);
 
         // Makes sure the key is not already in the hashtable.
@@ -1088,7 +1088,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized V replace(@Replaceable Hashtable<K, V> this, K key, V value) {
+    public synchronized @Nullable V replace(@Replaceable Hashtable<K, V> this, K key, V value) {
         Objects.requireNonNull(value);
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
@@ -1154,7 +1154,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull V computeIfPresent(@Shrinkable @Replaceable Hashtable<K, V> this, K key, BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    public synchronized @Nullable V computeIfPresent(@Shrinkable @Replaceable Hashtable<K, V> this, K key, BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
 
         Entry<?,?> tab[] = table;
@@ -1197,7 +1197,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull V compute(@Modifiable Hashtable<K, V> this, K key, BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    public synchronized @PolyNull V compute(@Modifiable Hashtable<K, V> this, K key, BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
 
         Entry<?,?> tab[] = table;

@@ -568,6 +568,7 @@ public abstract class Clock implements InstantSource {
             return currentInstant();
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return obj instanceof SystemInstantSource;
         }
@@ -622,6 +623,7 @@ public abstract class Clock implements InstantSource {
             return currentInstant();
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof SystemClock) {
                 return zone.equals(((SystemClock) obj).zone);
@@ -673,6 +675,7 @@ public abstract class Clock implements InstantSource {
             return instant;
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return obj instanceof FixedClock other
                     && instant.equals(other.instant)
@@ -723,6 +726,7 @@ public abstract class Clock implements InstantSource {
             return baseClock.instant().plus(offset);
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return obj instanceof OffsetClock other
                     && baseClock.equals(other.baseClock)
@@ -781,6 +785,7 @@ public abstract class Clock implements InstantSource {
             return instant.minusNanos(adjust);
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return (obj instanceof TickClock other)
                     && tickNanos == other.tickNanos
@@ -831,6 +836,7 @@ public abstract class Clock implements InstantSource {
             return baseSource.instant();
         }
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             return (obj instanceof SourceClock other)
                     && zone.equals(other.zone)

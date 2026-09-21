@@ -60,6 +60,7 @@ final class RuleBasedCollationKey extends CollationKey {
      * zero if this is greater than target.
      * @see java.text.Collator#compare
      */
+    @Pure
     public int compareTo(CollationKey target)
     {
         int result = key.compareTo(((RuleBasedCollationKey)(target)).key);

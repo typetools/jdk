@@ -161,6 +161,7 @@ public interface Comparator<T> {
      * @throws ClassCastException if the arguments' types prevent them from
      *         being compared by this comparator.
      */
+    @Pure
     int compare(T o1, T o2);
 
     /**
@@ -391,7 +392,7 @@ public interface Comparator<T> {
      *         {@code Comparator}.
      * @since 1.8
      */
-    public static <T> Comparator<@Nullable T> nullsFirst(Comparator<@Nullable ? super T> comparator) {
+    public static <T> Comparator<@Nullable T> nullsFirst(@Nullable Comparator<? super T> comparator) {
         return new Comparators.NullComparator<>(true, comparator);
     }
 
@@ -412,7 +413,7 @@ public interface Comparator<T> {
      *         {@code Comparator}.
      * @since 1.8
      */
-    public static <T> Comparator<@Nullable T> nullsLast(Comparator<@Nullable ? super T> comparator) {
+    public static <T> Comparator<@Nullable T> nullsLast(@Nullable Comparator<? super T> comparator) {
         return new Comparators.NullComparator<>(false, comparator);
     }
 

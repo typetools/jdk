@@ -162,7 +162,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *         or {@code null} if this map is empty
      */
     @SideEffectFree
-    default Map.Entry<K,V> firstEntry() {
+    default Map.@Nullable Entry<K,V> firstEntry() {
         var it = entrySet().iterator();
         return it.hasNext() ? new NullableKeyValueHolder<>(it.next()) : null;
     }
@@ -180,7 +180,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      *         or {@code null} if this map is empty
      */
     @SideEffectFree
-    default Map.Entry<K,V> lastEntry() {
+    default Map.@Nullable Entry<K,V> lastEntry() {
         var it = reversed().entrySet().iterator();
         return it.hasNext() ? new NullableKeyValueHolder<>(it.next()) : null;
     }
@@ -201,7 +201,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default Map.Entry<K,V> pollFirstEntry(@Shrinkable SequencedMap<K,V> this) {
+    default Map.@Nullable Entry<K,V> pollFirstEntry(@Shrinkable SequencedMap<K,V> this) {
         var it = entrySet().iterator();
         if (it.hasNext()) {
             var entry = new NullableKeyValueHolder<>(it.next());
@@ -228,7 +228,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default Map.Entry<K,V> pollLastEntry(@Shrinkable SequencedMap<K,V> this) {
+    default Map.@Nullable Entry<K,V> pollLastEntry(@Shrinkable SequencedMap<K,V> this) {
         var it = reversed().entrySet().iterator();
         if (it.hasNext()) {
             var entry = new NullableKeyValueHolder<>(it.next());
@@ -256,7 +256,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putFirst(@SeqGrowable SequencedMap<K,V> this, K k, V v) {
+    default @Nullable V putFirst(@SeqGrowable SequencedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -277,7 +277,7 @@ public interface SequencedMap<K, V> extends Map<K, V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default V putLast(@SeqGrowable SequencedMap<K,V> this, K k, V v) {
+    default @Nullable V putLast(@SeqGrowable SequencedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 

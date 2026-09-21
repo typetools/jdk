@@ -162,6 +162,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return Long.hashCode(ref());
     }
 
+    @Pure
     public int compareTo(ReferenceType object) {
         /*
          * Note that it is critical that compareTo() == 0

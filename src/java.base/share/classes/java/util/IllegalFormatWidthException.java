@@ -63,6 +63,7 @@ public non-sealed class IllegalFormatWidthException extends IllegalFormatExcepti
         return w;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return Integer.toString(w);
     }

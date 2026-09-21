@@ -586,6 +586,7 @@ public final class DOMXMLSignature extends DOMStructure
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (this == o) {
                 return true;

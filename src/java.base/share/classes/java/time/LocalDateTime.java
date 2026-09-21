@@ -1816,6 +1816,7 @@ public final class LocalDateTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public int compareTo(ChronoLocalDateTime<?> other) {
         if (other instanceof LocalDateTime) {
             return compareTo0((LocalDateTime) other);
@@ -1853,6 +1854,7 @@ public final class LocalDateTime
      * @return true if this date-time is after the specified date-time
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isAfter(ChronoLocalDateTime<?> other) {
         if (other instanceof LocalDateTime) {
             return compareTo0((LocalDateTime) other) > 0;
@@ -1882,6 +1884,7 @@ public final class LocalDateTime
      * @return true if this date-time is before the specified date-time
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isBefore(ChronoLocalDateTime<?> other) {
         if (other instanceof LocalDateTime) {
             return compareTo0((LocalDateTime) other) < 0;
@@ -1911,6 +1914,7 @@ public final class LocalDateTime
      * @return true if this date-time is equal to the specified date-time
      */
     @Override  // override for Javadoc and performance
+    @Pure
     public boolean isEqual(ChronoLocalDateTime<?> other) {
         if (other instanceof LocalDateTime) {
             return compareTo0((LocalDateTime) other) == 0;

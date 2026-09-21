@@ -1627,6 +1627,7 @@ public final @UsesObjectEquals class Files {
      * @since 12
      */
     @ReleasesNoLocks
+    @Pure
     public static long mismatch(Path path, Path path2) throws IOException {
         if (isSameFile(path, path2)) {
             return -1;

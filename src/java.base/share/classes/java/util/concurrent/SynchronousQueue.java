@@ -218,7 +218,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
          *         the caller can distinguish which of these occurred
          *         by checking Thread.interrupted.
          */
-        abstract E transfer(E e, boolean timed, long nanos);
+        abstract @Nullable E transfer(@Nullable E e, boolean timed, long nanos);
     }
 
     /**
@@ -356,7 +356,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
          * Puts or takes an item.
          */
         @SuppressWarnings("unchecked")
-        E transfer(E e, boolean timed, long nanos) {
+        @Nullable E transfer(@Nullable E e, boolean timed, long nanos) {
             /*
              * Basic algorithm is to loop trying one of three actions:
              *
@@ -647,7 +647,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
          * Puts or takes an item.
          */
         @SuppressWarnings("unchecked")
-        E transfer(E e, boolean timed, long nanos) {
+        @Nullable E transfer(@Nullable E e, boolean timed, long nanos) {
             /* Basic algorithm is to loop trying to take either of
              * two actions:
              *
@@ -930,7 +930,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @Shrinkable @CanShrink SynchronousQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(@GuardSatisfied @Shrinkable @CanShrink SynchronousQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         E e = transferer.transfer(null, true, unit.toNanos(timeout));
         if (e != null || !Thread.interrupted())
             return e;
@@ -946,7 +946,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E poll(@GuardSatisfied @Shrinkable @CanShrink SynchronousQueue<E> this) {
+    public @Nullable E poll(@GuardSatisfied @Shrinkable @CanShrink SynchronousQueue<E> this) {
         return transferer.transfer(null, true, 0);
     }
 
@@ -1064,7 +1064,7 @@ public class SynchronousQueue<E extends @NonNull Object> extends AbstractQueue<E
      * @return {@code null}
      */
     @Pure
-    public E peek() {
+    public @Nullable E peek() {
         return null;
     }
 

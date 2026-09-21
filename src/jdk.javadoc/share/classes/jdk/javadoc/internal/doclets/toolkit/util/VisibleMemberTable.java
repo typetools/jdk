@@ -1140,6 +1140,7 @@ public class VisibleMemberTable {
     }
 
     @Override
+    @Pure
     public boolean equals(@Nullable Object obj) {
         if (!(obj instanceof VisibleMemberTable other))
             return false;

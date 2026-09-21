@@ -1492,7 +1492,7 @@ public class Collections {
         UnmodifiableSortedSet(SortedSet<E> s) {super(s); ss = s;}
 
         @Pure
-        public Comparator<? super E> comparator() {return ss.comparator();}
+        public @Nullable Comparator<? super E> comparator() {return ss.comparator();}
 
         @SideEffectFree
         @DoesNotUnrefineReceiver("modifiability")
@@ -1587,19 +1587,19 @@ public class Collections {
         UnmodifiableNavigableSet(NavigableSet<E> s)         {super(s); ns = s;}
 
         @Pure
-        public E lower(E e)                             { return ns.lower(e); }
+        public @Nullable E lower(E e)                             { return ns.lower(e); }
         @Pure
-        public E floor(E e)                             { return ns.floor(e); }
+        public @Nullable E floor(E e)                             { return ns.floor(e); }
         @Pure
-        public E ceiling(E e)                         { return ns.ceiling(e); }
+        public @Nullable E ceiling(E e)                         { return ns.ceiling(e); }
         @Pure
-        public E higher(E e)                           { return ns.higher(e); }
+        public @Nullable E higher(E e)                           { return ns.higher(e); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollFirst()     { throw new UnsupportedOperationException(); }
+        public @Nullable E pollFirst()     { throw new UnsupportedOperationException(); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollLast()      { throw new UnsupportedOperationException(); }
+        public @Nullable E pollLast()      { throw new UnsupportedOperationException(); }
         @SideEffectFree
         @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> descendingSet()
@@ -1876,17 +1876,17 @@ public class Collections {
         @Pure
         public boolean containsValue(@UnknownSignedness Object val) {return m.containsValue(val);}
         @Pure
-        public V get(Object key)                 {return m.get(key);}
+        public @Nullable V get(Object key)                 {return m.get(key);}
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             throw new UnsupportedOperationException();
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V remove(Object key) {
+        public @Nullable V remove(Object key) {
             throw new UnsupportedOperationException();
         }
         @SideEffectsOnly("this")
@@ -1953,7 +1953,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -1974,7 +1974,7 @@ public class Collections {
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V replace(K key, V value) {
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -1986,15 +1986,15 @@ public class Collections {
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
@@ -2054,7 +2054,7 @@ public class Collections {
                 }
 
                 @Override
-                public Spliterator<Entry<K, V>> trySplit() {
+                public @Nullable Spliterator<Entry<K, V>> trySplit() {
                     Spliterator<Entry<K, V>> split = s.trySplit();
                     return split == null
                            ? null
@@ -2082,7 +2082,7 @@ public class Collections {
                 }
 
                 @Override
-                public Comparator<? super Entry<K, V>> getComparator() {
+                public @Nullable Comparator<? super Entry<K, V>> getComparator() {
                     return s.getComparator();
                 }
             }
@@ -2283,25 +2283,25 @@ public class Collections {
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollFirstEntry() {
+        public @Nullable Entry<K, V> pollFirstEntry() {
             throw new UnsupportedOperationException();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollLastEntry() {
+        public @Nullable Entry<K, V> pollLastEntry() {
             throw new UnsupportedOperationException();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V putFirst(K k, V v) {
+        public @Nullable V putFirst(K k, V v) {
             throw new UnsupportedOperationException();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V putLast(K k, V v) {
+        public @Nullable V putLast(K k, V v) {
             throw new UnsupportedOperationException();
         }
     }
@@ -2348,7 +2348,7 @@ public class Collections {
 
         UnmodifiableSortedMap(SortedMap<K, ? extends V> m) {super(m); sm = m; }
         @Pure
-        public Comparator<? super K> comparator()   { return sm.comparator(); }
+        public @Nullable Comparator<? super K> comparator()   { return sm.comparator(); }
         @SideEffectFree
         public SortedMap<K,V> subMap(K fromKey, K toKey)
              { return new UnmodifiableSortedMap<>(sm.subMap(fromKey, toKey)); }
@@ -2438,13 +2438,13 @@ public class Collections {
         UnmodifiableNavigableMap(NavigableMap<K, ? extends V> m)
                                                             {super(m); nm = m;}
 
-        public K lowerKey(K key)                   { return nm.lowerKey(key); }
-        public K floorKey(K key)                   { return nm.floorKey(key); }
-        public K ceilingKey(K key)               { return nm.ceilingKey(key); }
-        public K higherKey(K key)                 { return nm.higherKey(key); }
+        public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
+        public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
+        public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
+        public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> lowerEntry(K key) {
+        public @Nullable Entry<K, V> lowerEntry(K key) {
             Entry<K,V> lower = (Entry<K, V>) nm.lowerEntry(key);
             return (null != lower)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(lower)
@@ -2452,7 +2452,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> floorEntry(K key) {
+        public @Nullable Entry<K, V> floorEntry(K key) {
             Entry<K,V> floor = (Entry<K, V>) nm.floorEntry(key);
             return (null != floor)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(floor)
@@ -2460,7 +2460,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> ceilingEntry(K key) {
+        public @Nullable Entry<K, V> ceilingEntry(K key) {
             Entry<K,V> ceiling = (Entry<K, V>) nm.ceilingEntry(key);
             return (null != ceiling)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(ceiling)
@@ -2469,7 +2469,7 @@ public class Collections {
 
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> higherEntry(K key) {
+        public @Nullable Entry<K, V> higherEntry(K key) {
             Entry<K,V> higher = (Entry<K, V>) nm.higherEntry(key);
             return (null != higher)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(higher)
@@ -2477,7 +2477,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> firstEntry() {
+        public @Nullable Entry<K, V> firstEntry() {
             Entry<K,V> first = (Entry<K, V>) nm.firstEntry();
             return (null != first)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(first)
@@ -2485,7 +2485,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> lastEntry() {
+        public @Nullable Entry<K, V> lastEntry() {
             Entry<K,V> last = (Entry<K, V>) nm.lastEntry();
             return (null != last)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(last)
@@ -2494,11 +2494,11 @@ public class Collections {
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollFirstEntry()
+        public @Nullable Entry<K, V> pollFirstEntry()
                                  { throw new UnsupportedOperationException(); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollLastEntry()
+        public @Nullable Entry<K, V> pollLastEntry()
                                  { throw new UnsupportedOperationException(); }
         @SideEffectFree
         public NavigableMap<K, V> descendingMap()
@@ -2818,7 +2818,7 @@ public class Collections {
         }
 
         @Pure
-        public Comparator<? super E> comparator() {
+        public @Nullable Comparator<? super E> comparator() {
             synchronized (mutex) {return ss.comparator();}
         }
 
@@ -2914,16 +2914,16 @@ public class Collections {
             super(s, mutex);
             ns = s;
         }
-        public E lower(E e)      { synchronized (mutex) {return ns.lower(e);} }
-        public E floor(E e)      { synchronized (mutex) {return ns.floor(e);} }
-        public E ceiling(E e)  { synchronized (mutex) {return ns.ceiling(e);} }
-        public E higher(E e)    { synchronized (mutex) {return ns.higher(e);} }
+        public @Nullable E lower(E e)      { synchronized (mutex) {return ns.lower(e);} }
+        public @Nullable E floor(E e)      { synchronized (mutex) {return ns.floor(e);} }
+        public @Nullable E ceiling(E e)  { synchronized (mutex) {return ns.ceiling(e);} }
+        public @Nullable E higher(E e)    { synchronized (mutex) {return ns.higher(e);} }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollFirst()  { synchronized (mutex) {return ns.pollFirst();} }
+        public @Nullable E pollFirst()  { synchronized (mutex) {return ns.pollFirst();} }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E pollLast()    { synchronized (mutex) {return ns.pollLast();} }
+        public @Nullable E pollLast()    { synchronized (mutex) {return ns.pollLast();} }
 
         @SideEffectFree
         public NavigableSet<E> descendingSet() {
@@ -3240,19 +3240,19 @@ public class Collections {
             synchronized (mutex) {return m.containsValue(value);}
         }
         @Pure
-        public V get(Object key) {
+        public @Nullable V get(Object key) {
             synchronized (mutex) {return m.get(key);}
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             synchronized (mutex) {return m.put(key, value);}
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V remove(Object key) {
+        public @Nullable V remove(Object key) {
             synchronized (mutex) {return m.remove(key);}
         }
         @SideEffectsOnly("this")
@@ -3328,7 +3328,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             synchronized (mutex) {return m.putIfAbsent(key, value);}
         }
         @Override
@@ -3346,7 +3346,7 @@ public class Collections {
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V replace(K key, V value) {
+        public @Nullable V replace(K key, V value) {
             synchronized (mutex) {return m.replace(key, value);}
         }
         @Override
@@ -3357,14 +3357,14 @@ public class Collections {
         }
         @Override
         @DoesNotUnrefineReceiver("modifiability")
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             synchronized (mutex) {return m.computeIfPresent(key, remappingFunction);}
         }
         @Override
         @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.compute(key, remappingFunction);}
         }
         @Override
@@ -3452,7 +3452,7 @@ public class Collections {
         }
 
         @Pure
-        public Comparator<? super K> comparator() {
+        public @Nullable Comparator<? super K> comparator() {
             synchronized (mutex) {return sm.comparator();}
         }
 
@@ -3559,33 +3559,33 @@ public class Collections {
             nm = m;
         }
 
-        public Entry<K, V> lowerEntry(K key)
+        public @Nullable Entry<K, V> lowerEntry(K key)
                         { synchronized (mutex) { return nm.lowerEntry(key); } }
-        public K lowerKey(K key)
+        public @Nullable K lowerKey(K key)
                           { synchronized (mutex) { return nm.lowerKey(key); } }
-        public Entry<K, V> floorEntry(K key)
+        public @Nullable Entry<K, V> floorEntry(K key)
                         { synchronized (mutex) { return nm.floorEntry(key); } }
-        public K floorKey(K key)
+        public @Nullable K floorKey(K key)
                           { synchronized (mutex) { return nm.floorKey(key); } }
-        public Entry<K, V> ceilingEntry(K key)
+        public @Nullable Entry<K, V> ceilingEntry(K key)
                       { synchronized (mutex) { return nm.ceilingEntry(key); } }
-        public K ceilingKey(K key)
+        public @Nullable K ceilingKey(K key)
                         { synchronized (mutex) { return nm.ceilingKey(key); } }
-        public Entry<K, V> higherEntry(K key)
+        public @Nullable Entry<K, V> higherEntry(K key)
                        { synchronized (mutex) { return nm.higherEntry(key); } }
-        public K higherKey(K key)
+        public @Nullable K higherKey(K key)
                          { synchronized (mutex) { return nm.higherKey(key); } }
-        public Entry<K, V> firstEntry()
+        public @Nullable Entry<K, V> firstEntry()
                            { synchronized (mutex) { return nm.firstEntry(); } }
-        public Entry<K, V> lastEntry()
+        public @Nullable Entry<K, V> lastEntry()
                             { synchronized (mutex) { return nm.lastEntry(); } }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollFirstEntry()
+        public @Nullable Entry<K, V> pollFirstEntry()
                        { synchronized (mutex) { return nm.pollFirstEntry(); } }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollLastEntry()
+        public @Nullable Entry<K, V> pollLastEntry()
                         { synchronized (mutex) { return nm.pollLastEntry(); } }
 
         @SideEffectFree
@@ -3938,10 +3938,10 @@ public class Collections {
         @Pure
         public int hashCode()           {return c.hashCode();}
         @Pure
-        public E peek()                 {return queue.peek();}
+        public @Nullable E peek()                 {return queue.peek();}
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public E poll()                 {return queue.poll();}
+        public @Nullable E poll()                 {return queue.poll();}
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public E remove()               {return queue.remove();}
@@ -4049,8 +4049,8 @@ public class Collections {
         }
 
         @Pure
-        public Comparator<? super E> comparator() { return ss.comparator(); }
         @Pure
+        public @Nullable Comparator<? super E> comparator() { return ss.comparator(); }
         public E first()                   { return ss.first(); }
         @Pure
         public E last()                    { return ss.last(); }
@@ -4117,15 +4117,15 @@ public class Collections {
         }
 
         @Pure
-        public E lower(E e)                             { return ns.lower(e); }
+        public @Nullable E lower(E e)                             { return ns.lower(e); }
         @Pure
-        public E floor(E e)                             { return ns.floor(e); }
+        public @Nullable E floor(E e)                             { return ns.floor(e); }
         @Pure
-        public E ceiling(E e)                         { return ns.ceiling(e); }
+        public @Nullable E ceiling(E e)                         { return ns.ceiling(e); }
         @Pure
-        public E higher(E e)                           { return ns.higher(e); }
-        public E pollFirst()                         { return ns.pollFirst(); }
-        public E pollLast()                            {return ns.pollLast(); }
+        public @Nullable E higher(E e)                           { return ns.higher(e); }
+        public @Nullable E pollFirst()                         { return ns.pollFirst(); }
+        public @Nullable E pollLast()                            {return ns.pollLast(); }
         @SideEffectFree
         public NavigableSet<E> descendingSet()
                       { return checkedNavigableSet(ns.descendingSet(), type); }
@@ -4433,10 +4433,10 @@ public class Collections {
         @Pure
         public boolean containsValue(@UnknownSignedness Object v) { return m.containsValue(v); }
         @Pure
-        public V get(Object key)               { return m.get(key); }
+        public @Nullable V get(Object key)               { return m.get(key); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V remove(Object key)            { return m.remove(key); }
+        public @Nullable V remove(Object key)            { return m.remove(key); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear()                    { m.clear(); }
@@ -4451,7 +4451,7 @@ public class Collections {
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             typeCheck(key, value);
             return m.put(key, value);
         }
@@ -4504,7 +4504,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             typeCheck(key, value);
             return m.putIfAbsent(key, value);
         }
@@ -4527,7 +4527,7 @@ public class Collections {
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V replace(K key, V value) {
+        public @Nullable V replace(K key, V value) {
             typeCheck(key, value);
             return m.replace(key, value);
         }
@@ -4546,14 +4546,14 @@ public class Collections {
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             return m.computeIfPresent(key, typeCheck(remappingFunction));
         }
 
         @Override
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             return m.compute(key, typeCheck(remappingFunction));
         }
 
@@ -4855,7 +4855,7 @@ public class Collections {
         }
 
         @Pure
-        public Comparator<? super K> comparator() { return sm.comparator(); }
+        public @Nullable Comparator<? super K> comparator() { return sm.comparator(); }
         public K firstKey()                       { return sm.firstKey(); }
         public K lastKey()                        { return sm.lastKey(); }
 
@@ -4935,54 +4935,54 @@ public class Collections {
         }
 
         @Pure
-        public Comparator<? super K> comparator()   { return nm.comparator(); }
+        public @Nullable Comparator<? super K> comparator()   { return nm.comparator(); }
         public K firstKey()                           { return nm.firstKey(); }
         public K lastKey()                             { return nm.lastKey(); }
 
-        public Entry<K, V> lowerEntry(K key) {
+        public @Nullable Entry<K, V> lowerEntry(K key) {
             Entry<K,V> lower = nm.lowerEntry(key);
             return (null != lower)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(lower, valueType)
                 : null;
         }
 
-        public K lowerKey(K key)                   { return nm.lowerKey(key); }
+        public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
 
-        public Entry<K, V> floorEntry(K key) {
+        public @Nullable Entry<K, V> floorEntry(K key) {
             Entry<K,V> floor = nm.floorEntry(key);
             return (null != floor)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(floor, valueType)
                 : null;
         }
 
-        public K floorKey(K key)                   { return nm.floorKey(key); }
+        public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
 
-        public Entry<K, V> ceilingEntry(K key) {
+        public @Nullable Entry<K, V> ceilingEntry(K key) {
             Entry<K,V> ceiling = nm.ceilingEntry(key);
             return (null != ceiling)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(ceiling, valueType)
                 : null;
         }
 
-        public K ceilingKey(K key)               { return nm.ceilingKey(key); }
+        public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
 
-        public Entry<K, V> higherEntry(K key) {
+        public @Nullable Entry<K, V> higherEntry(K key) {
             Entry<K,V> higher = nm.higherEntry(key);
             return (null != higher)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(higher, valueType)
                 : null;
         }
 
-        public K higherKey(K key)                 { return nm.higherKey(key); }
+        public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
-        public Entry<K, V> firstEntry() {
+        public @Nullable Entry<K, V> firstEntry() {
             Entry<K,V> first = nm.firstEntry();
             return (null != first)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(first, valueType)
                 : null;
         }
 
-        public Entry<K, V> lastEntry() {
+        public @Nullable Entry<K, V> lastEntry() {
             Entry<K,V> last = nm.lastEntry();
             return (null != last)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(last, valueType)
@@ -4991,7 +4991,7 @@ public class Collections {
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollFirstEntry() {
+        public @Nullable Entry<K, V> pollFirstEntry() {
             Entry<K,V> entry = nm.pollFirstEntry();
             return (null == entry)
                 ? null
@@ -5000,7 +5000,7 @@ public class Collections {
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Entry<K, V> pollLastEntry() {
+        public @Nullable Entry<K, V> pollLastEntry() {
             Entry<K,V> entry = nm.pollLastEntry();
             return (null == entry)
                 ? null
@@ -5547,7 +5547,7 @@ public class Collections {
         @Pure
         public boolean containsValue(@UnknownSignedness Object value) {return false;}
         @Pure
-        public V get(Object key)                   {return null;}
+        public @Nullable V get(Object key)                   {return null;}
         public Set<K> keySet()                     {return emptySet();}
         public Collection<V> values()              {return emptySet();}
         @SideEffectFree
@@ -5582,7 +5582,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5603,7 +5603,7 @@ public class Collections {
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V replace(K key, V value) {
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5616,15 +5616,15 @@ public class Collections {
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
@@ -5700,7 +5700,7 @@ public class Collections {
             long est = 1;
 
             @Override
-            public Spliterator<T> trySplit() {
+            public @Nullable Spliterator<T> trySplit() {
                 return null;
             }
 
@@ -5911,7 +5911,7 @@ public class Collections {
         @Pure
         public boolean containsValue(@UnknownSignedness Object value)       {return eq(value, v);}
         @Pure
-        public V get(Object key)              {return (eq(key, k) ? v : null);}
+        public @Nullable V get(Object key)              {return (eq(key, k) ? v : null);}
 
         private transient Set<K> keySet;
         private transient Set<Map.Entry<K,V>> entrySet;
@@ -5959,7 +5959,7 @@ public class Collections {
         @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5980,7 +5980,7 @@ public class Collections {
         @Override
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public V replace(K key, V value) {
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
@@ -5993,15 +5993,15 @@ public class Collections {
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
@@ -6256,6 +6256,7 @@ public class Collections {
         static final ReverseComparator REVERSE_ORDER
             = new ReverseComparator();
 
+        @Pure
         public int compare(Comparable<Object> c1, Comparable<Object> c2) {
             return c2.compareTo(c1);
         }
@@ -6334,6 +6335,7 @@ public class Collections {
             this.cmp = cmp;
         }
 
+        @Pure
         public int compare(T t1, T t2) {
             return cmp.compare(t2, t1);
         }
@@ -6815,10 +6817,10 @@ public class Collections {
         @EnsuresNonEmpty("this")
         public boolean add(E e)                     { q.addFirst(e); return true; }
         public boolean offer(E e)                   { return q.offerFirst(e); }
-        public E poll()                             { return q.pollFirst(); }
+        public @Nullable E poll()                             { return q.pollFirst(); }
         public E remove()                           { return q.removeFirst(); }
         @Pure
-        public E peek()                             { return q.peekFirst(); }
+        public @Nullable E peek()                             { return q.peekFirst(); }
         @Pure
         public E element()                          { return q.getFirst(); }
         public void clear()                         {        q.clear(); }

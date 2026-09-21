@@ -345,6 +345,7 @@ public final class FileTime
      *          {@code FileTime} represents a time that is after {@code other}
      */
     @Override
+    @Pure
     public int compareTo(FileTime other) {
         // same granularity
         if (unit != null && unit == other.unit) {

@@ -68,6 +68,7 @@ public non-sealed class MissingFormatArgumentException extends IllegalFormatExce
         return s;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Format specifier '" + s + "'";
     }

@@ -235,6 +235,7 @@ public final class NamespaceOperation implements Operation {
      * @return true if this object is equal to the other one, false otherwise.
      */
     @Override
+    @Pure
     public boolean equals(final @Nullable Object obj) {
         if (obj instanceof NamespaceOperation) {
             final NamespaceOperation other = (NamespaceOperation)obj;

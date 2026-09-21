@@ -113,6 +113,7 @@ final class Signature {
      * @return {@code true} if first object is the same as the second object,
      *         {@code false} otherwise
      */
+    @Pure
     private static boolean isEqual(Object obj1, Object obj2) {
         return (obj1 == null)
                 ? obj2 == null
@@ -128,6 +129,7 @@ final class Signature {
      * @return {@code true} if first array is the same as the second array,
      *         {@code false} otherwise
      */
+    @Pure
     private static boolean isEqual(Class<?>[] args1, Class<?>[] args2) {
         if ((args1 == null) || (args2 == null)) {
             return args1 == args2;

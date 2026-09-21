@@ -835,7 +835,7 @@ public abstract class TimeZone implements Serializable, Cloneable {
      * @return a newly created TimeZone with the given offset and
      * no daylight saving time, or null if the id cannot be parsed.
      */
-    private static final TimeZone parseCustomTimeZone(String id) {
+    private static final @Nullable TimeZone parseCustomTimeZone(String id) {
         int length;
 
         // Error if the length of id isn't long enough or id doesn't

@@ -204,7 +204,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
     // ========== SortedSet ==========
 
     @Pure
-    public Comparator<? super E> comparator() {
+    public @Nullable Comparator<? super E> comparator() {
         return comp;
     }
 
@@ -361,7 +361,7 @@ class ReverseOrderSortedSetView<E> implements SortedSet<E> {
         }
 
         @Pure
-        public Comparator<? super E> comparator() {
+        public @Nullable Comparator<? super E> comparator() {
             return ReverseOrderSortedSetView.this.comparator();
         }
 

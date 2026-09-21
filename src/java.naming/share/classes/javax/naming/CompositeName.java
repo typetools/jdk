@@ -330,6 +330,7 @@ public class CompositeName implements Name {
      *          is less than, equal to, or greater than the given Object.
      * @throws ClassCastException if obj is not a CompositeName.
      */
+    @Pure
     public int compareTo(Object obj) {
         if (!(obj instanceof CompositeName)) {
             throw new ClassCastException("Not a CompositeName");

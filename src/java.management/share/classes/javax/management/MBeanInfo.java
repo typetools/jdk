@@ -612,6 +612,7 @@ public class MBeanInfo implements Cloneable, Serializable, DescriptorRead {
         }
     }
 
+    @Pure
     private static boolean isEqual(String s1, String s2) {
         boolean ret;
 

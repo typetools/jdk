@@ -168,6 +168,7 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
                       prf.getAlgorithm().toLowerCase(Locale.ENGLISH).hashCode();
                 }
                 @Override
+                @Pure
                 public boolean equals(Object obj) {
                     if (this == obj) return true;
                     if (this.getClass() != obj.getClass()) return false;

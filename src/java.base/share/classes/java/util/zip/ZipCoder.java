@@ -26,6 +26,7 @@
 package java.util.zip;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.ByteBuffer;
@@ -246,6 +247,7 @@ class ZipCoder {
      *                      a directory match will also be tested
      *
      */
+    @Pure
     Comparison compare(String str, byte[] b, int off, int len, boolean matchDirectory) {
         String decoded = toString(b, off, len);
         if (decoded.startsWith(str)) {
@@ -309,6 +311,7 @@ class ZipCoder {
         }
 
         @Override
+        @Pure
         Comparison compare(String str, byte[] b, int off, int len, boolean matchDirectory) {
             try {
                 byte[] encoded = JLA.getBytesNoRepl(str, UTF_8.INSTANCE);

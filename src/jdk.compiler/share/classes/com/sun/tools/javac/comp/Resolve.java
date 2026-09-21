@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import com.sun.tools.javac.api.Formattable.LocalizedString;
 import com.sun.tools.javac.code.*;
@@ -842,6 +843,7 @@ public class Resolve {
         class SharedInapplicableMethodException extends InapplicableMethodException {
             private static final long serialVersionUID = 0;
 
+            @SideEffectFree
             SharedInapplicableMethodException() {
                 super(null);
             }
@@ -1398,6 +1400,7 @@ public class Resolve {
 
         transient JCDiagnostic diagnostic;
 
+        @SideEffectFree
         InapplicableMethodException(JCDiagnostic diag) {
             this.diagnostic = diag;
         }

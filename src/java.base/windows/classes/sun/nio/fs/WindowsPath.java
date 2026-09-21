@@ -794,6 +794,7 @@ class WindowsPath implements Path {
     }
 
     @Override
+    @Pure
     public int compareTo(Path obj) {
         if (obj == null)
             throw new NullPointerException();

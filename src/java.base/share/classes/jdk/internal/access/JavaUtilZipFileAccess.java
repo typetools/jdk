@@ -25,6 +25,8 @@
 
 package jdk.internal.access;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -36,7 +38,7 @@ import java.util.zip.ZipFile;
 public interface JavaUtilZipFileAccess {
     public boolean startsWithLocHeader(ZipFile zip);
     public List<String> getManifestAndSignatureRelatedFiles(JarFile zip);
-    public String getManifestName(JarFile zip, boolean onlyIfSignatureRelatedFiles);
+    public @Nullable String getManifestName(JarFile zip, boolean onlyIfSignatureRelatedFiles);
     public int getManifestNum(JarFile zip);
     public int[] getMetaInfVersions(JarFile zip);
     public Enumeration<JarEntry> entries(ZipFile zip);

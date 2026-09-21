@@ -90,7 +90,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
     }
 
     @Pure
-    public V get(Object key) {
+    public @Nullable V get(Object key) {
         return base.get(key);
     }
 
@@ -99,7 +99,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base.isEmpty();
     }
 
-    public V put(@Growable @Replaceable ReverseOrderSortedMapView<K,V> this, K key, V value) {
+    public @Nullable V put(@Growable @Replaceable ReverseOrderSortedMapView<K,V> this, K key, V value) {
         return base.put(key, value);
     }
 
@@ -107,7 +107,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         base.putAll(m);
     }
 
-    public V remove(@Shrinkable ReverseOrderSortedMapView<K,V> this, Object key) {
+    public @Nullable V remove(@Shrinkable ReverseOrderSortedMapView<K,V> this, Object key) {
         return base.remove(key);
     }
 
@@ -176,34 +176,34 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         return base.firstKey();
     }
 
-    public Map.Entry<K, V> firstEntry() {
+    public Map.@Nullable Entry<K, V> firstEntry() {
         return base.lastEntry();
     }
 
-    public Map.Entry<K, V> lastEntry() {
+    public Map.@Nullable Entry<K, V> lastEntry() {
         return base.firstEntry();
     }
 
-    public Map.Entry<K,V> pollFirstEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
+    public Map.@Nullable Entry<K,V> pollFirstEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
         return base.pollLastEntry();
     }
 
-    public Map.Entry<K,V> pollLastEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
+    public Map.@Nullable Entry<K,V> pollLastEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
         return base.pollFirstEntry();
     }
 
-    public V putFirst(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
+    public @Nullable V putFirst(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
         return base.putLast(k, v);
     }
 
-    public V putLast(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
+    public @Nullable V putLast(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
         return base.putFirst(k, v);
     }
 
     // ========== SortedMap ==========
 
     @Pure
-    public Comparator<? super K> comparator() {
+    public @Nullable Comparator<? super K> comparator() {
         return cmp;
     }
 
@@ -312,7 +312,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         public K getKey()             { return key; }
         @Pure
         public V getValue()           { return value; }
-        public V setValue(@Replaceable ViewEntry<K,V> this, V newValue) { return map.put(key, newValue); }
+        public @Nullable V setValue(@Replaceable ViewEntry<K,V> this, V newValue) { return map.put(key, newValue); }
 
         @Pure
         public boolean equals(@Nullable Object o) {
@@ -460,14 +460,14 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
             };
         }
 
-        public V put(@Growable @Replaceable Submap this, K key, V value) {
+        public @Nullable V put(@Growable @Replaceable Submap this, K key, V value) {
             if (aboveHead(key) && belowTail(key))
                 return base.put(key, value);
             else
                 throw new IllegalArgumentException();
         }
 
-        public V remove(@Shrinkable Submap this, Object o) {
+        public @Nullable V remove(@Shrinkable Submap this, Object o) {
             @SuppressWarnings("unchecked")
             K key = (K) o;
             if (aboveHead(key) && belowTail(key))
@@ -482,7 +482,7 @@ class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements Sorte
         }
 
         @Pure
-        public Comparator<? super K> comparator() {
+        public @Nullable Comparator<? super K> comparator() {
             return cmp;
         }
 

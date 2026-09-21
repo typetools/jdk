@@ -24,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
@@ -377,7 +378,7 @@ class SpinedBuffer<E>
             }
 
             @Override
-            public Spliterator<E> trySplit() {
+            public @Nullable Spliterator<E> trySplit() {
                 if (splSpineIndex < lastSpineIndex) {
                     // split just before last chunk (if it is full this means 50:50 split)
                     Spliterator<E> ret = new Splitr(splSpineIndex, lastSpineIndex - 1,
@@ -697,7 +698,7 @@ class SpinedBuffer<E>
             }
 
             @Override
-            public T_SPLITR trySplit() {
+            public @Nullable T_SPLITR trySplit() {
                 if (splSpineIndex < lastSpineIndex) {
                     // split just before last chunk (if it is full this means 50:50 split)
                     T_SPLITR ret = newSpliterator(splSpineIndex, lastSpineIndex - 1,

@@ -26,6 +26,8 @@
 package javax.xml.transform;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
@@ -92,6 +94,7 @@ public class TransformerException extends Exception {
      * caused this throwable to get thrown.)
      * @return the cause, or null if unknown
      */
+    @Pure
     @Override
     public @Nullable Throwable getCause() {
 
@@ -152,6 +155,7 @@ public class TransformerException extends Exception {
      *
      * @param message The error or warning message.
      */
+    @SideEffectFree
     public TransformerException(@Nullable String message) {
         this(message, null, null);
     }
@@ -161,6 +165,7 @@ public class TransformerException extends Exception {
      *
      * @param e The exception to be wrapped.
      */
+    @SideEffectFree
     public TransformerException(@Nullable Throwable e) {
         this(null, null, e);
     }
@@ -175,6 +180,7 @@ public class TransformerException extends Exception {
      *                use the message from the embedded exception.
      * @param e Any exception
      */
+    @SideEffectFree
     public TransformerException(@Nullable String message, @Nullable Throwable e) {
         this(message, null, e);
     }
@@ -189,6 +195,7 @@ public class TransformerException extends Exception {
      * @param message The error or warning message.
      * @param locator The locator object for the error or warning.
      */
+    @SideEffectFree
     public TransformerException(@Nullable String message, @Nullable SourceLocator locator) {
         this(message, locator, null);
     }
@@ -201,6 +208,7 @@ public class TransformerException extends Exception {
      * @param locator The locator object for the error or warning.
      * @param e Any exception
      */
+    @SideEffectFree
     public TransformerException(@Nullable String message, @Nullable SourceLocator locator,
                                 @Nullable Throwable e) {
         super(((message == null) || (message.length() == 0))

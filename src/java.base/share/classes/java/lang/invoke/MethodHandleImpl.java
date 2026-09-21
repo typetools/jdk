@@ -27,6 +27,7 @@ package java.lang.invoke;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import jdk.internal.access.JavaLangInvokeAccess;
@@ -2176,6 +2177,7 @@ abstract @UsesObjectEquals class MethodHandleImpl {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;

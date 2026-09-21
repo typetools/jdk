@@ -89,6 +89,7 @@ final class ConnectionPool {
         }
 
         @Override
+        @Pure
         public boolean equals(@Nullable Object obj) {
             if (obj == null) {
                 return false;

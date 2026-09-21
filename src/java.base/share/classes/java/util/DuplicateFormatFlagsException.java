@@ -66,6 +66,7 @@ public non-sealed class DuplicateFormatFlagsException extends IllegalFormatExcep
         return flags;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return String.format("Flags = '%s'", flags);
     }

@@ -27,6 +27,8 @@
 package javax.management.remote;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 
@@ -47,6 +49,7 @@ public class JMXProviderException extends IOException {
      * <p>Constructs a <code>JMXProviderException</code> with no
      * specified detail message.</p>
      */
+    @SideEffectFree
     public JMXProviderException() {
     }
 
@@ -56,6 +59,7 @@ public class JMXProviderException extends IOException {
      *
      * @param message the detail message
      */
+    @SideEffectFree
     public JMXProviderException(@Nullable String message) {
         super(message);
     }
@@ -67,11 +71,13 @@ public class JMXProviderException extends IOException {
      * @param message the detail message
      * @param cause the nested exception
      */
+    @SideEffectFree
     public JMXProviderException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
 
+    @Pure
     public @Nullable Throwable getCause() {
         return cause;
     }

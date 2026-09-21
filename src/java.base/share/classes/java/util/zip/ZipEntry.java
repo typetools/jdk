@@ -327,7 +327,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setLastModifiedTime(FileTime)
      * @since 1.8
      */
-    public FileTime getLastModifiedTime() {
+    public @Nullable FileTime getLastModifiedTime() {
         if (mtime != null)
             return mtime;
         if (xdostime == -1)
@@ -367,7 +367,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setLastAccessTime(FileTime)
      * @since 1.8
      */
-    public FileTime getLastAccessTime() {
+    public @Nullable FileTime getLastAccessTime() {
         return atime;
     }
 
@@ -403,7 +403,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setCreationTime(FileTime)
      * @since 1.8
      */
-    public FileTime getCreationTime() {
+    public @Nullable FileTime getCreationTime() {
         return ctime;
     }
 

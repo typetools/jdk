@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -255,29 +256,29 @@ class ReverseOrderDequeView<E> implements Deque<E> {
     }
 
     @Pure
-    public E peek() {
+    public @Nullable E peek() {
         return base.peekLast();
     }
 
     @Pure
-    public E peekFirst() {
+    public @Nullable E peekFirst() {
         return base.peekLast();
     }
 
     @Pure
-    public E peekLast() {
+    public @Nullable E peekLast() {
         return base.peekFirst();
     }
 
-    public E poll() {
+    public @Nullable E poll() {
         return base.pollLast();
     }
 
-    public E pollFirst() {
+    public @Nullable E pollFirst() {
         return base.pollLast();
     }
 
-    public E pollLast() {
+    public @Nullable E pollLast() {
         return base.pollFirst();
     }
 

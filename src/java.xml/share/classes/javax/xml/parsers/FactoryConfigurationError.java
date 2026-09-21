@@ -26,6 +26,8 @@
 package javax.xml.parsers;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -52,6 +54,7 @@ public class FactoryConfigurationError extends Error {
      * detail message.
      */
 
+    @SideEffectFree
     public FactoryConfigurationError() {
         super();
         this.exception = null;
@@ -64,6 +67,7 @@ public class FactoryConfigurationError extends Error {
      * @param msg The error message for the exception.
      */
 
+    @SideEffectFree
     public FactoryConfigurationError(@Nullable String msg) {
         super(msg);
         this.exception = null;
@@ -78,6 +82,7 @@ public class FactoryConfigurationError extends Error {
      * FactoryConfigurationError.
      */
 
+    @SideEffectFree
     public FactoryConfigurationError(Exception e) {
         super(e.toString());
         this.exception = e;
@@ -92,6 +97,7 @@ public class FactoryConfigurationError extends Error {
      * @param msg The detail message.
      */
 
+    @SideEffectFree
     public FactoryConfigurationError(@Nullable Exception e, @Nullable String msg) {
         super(msg);
         this.exception = e;
@@ -108,6 +114,7 @@ public class FactoryConfigurationError extends Error {
      * @return The error message.
      */
 
+    @Pure
     public @Nullable String getMessage () {
         String message = super.getMessage ();
 
@@ -132,6 +139,7 @@ public class FactoryConfigurationError extends Error {
     /**
      * use the exception chaining mechanism of JDK1.4
     */
+    @Pure
     @Override
     public @Nullable Throwable getCause() {
         return exception;
