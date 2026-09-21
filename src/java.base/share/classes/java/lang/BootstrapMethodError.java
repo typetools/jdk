@@ -84,7 +84,7 @@ public class BootstrapMethodError extends LinkageError {
      * @param cause the cause, may be {@code null}.
      */
     @SideEffectFree
-    @SuppressWarnings("purity.not.sideeffectfree.call") // initCause affects only the new object
+    @SuppressWarnings("purity.call") // initCause affects only the new object
     public BootstrapMethodError(@Nullable Throwable cause) {
         // cf. Throwable(Throwable cause) constructor.
         super(cause == null ? null : cause.toString());
