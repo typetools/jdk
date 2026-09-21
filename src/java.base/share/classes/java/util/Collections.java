@@ -69,7 +69,6 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections.AsLIFOQueue;
 import java.util.Collections.CheckedCollection;
 import java.util.Collections.CheckedList;
-import java.util.Collections.CheckedMap.CheckedEntrySet;
 import java.util.Collections.CheckedNavigableMap;
 import java.util.Collections.CheckedNavigableSet;
 import java.util.Collections.CheckedQueue;
@@ -87,8 +86,6 @@ import java.util.Collections.SynchronizedSortedMap;
 import java.util.Collections.SynchronizedSortedSet;
 import java.util.Collections.UnmodifiableCollection;
 import java.util.Collections.UnmodifiableList;
-import java.util.Collections.UnmodifiableMap.UnmodifiableEntrySet;
-import java.util.Collections.UnmodifiableMap.UnmodifiableEntrySet.UnmodifiableEntrySetSpliterator;
 import java.util.Collections.UnmodifiableNavigableMap;
 import java.util.Collections.UnmodifiableNavigableSet;
 import java.util.Collections.UnmodifiableRandomAccessList;
@@ -4048,7 +4045,6 @@ public class Collections {
             ss = s;
         }
 
-        @Pure
         @Pure
         public @Nullable Comparator<? super E> comparator() { return ss.comparator(); }
         public E first()                   { return ss.first(); }
