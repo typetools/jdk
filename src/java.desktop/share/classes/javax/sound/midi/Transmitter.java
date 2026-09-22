@@ -25,6 +25,9 @@
 
 package javax.sound.midi;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * A {@code Transmitter} sends {@link MidiEvent} objects to one or more
  * {@link Receiver Receivers}. Common MIDI transmitters include sequencers and
@@ -33,6 +36,8 @@ package javax.sound.midi;
  * @author Kara Kytle
  * @see Receiver
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface Transmitter extends AutoCloseable {
 
     /**
