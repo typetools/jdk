@@ -28,6 +28,7 @@ package javax.lang.model.type;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -144,6 +145,7 @@ public interface TypeMirror extends javax.lang.model.AnnotatedConstruct {
      *
      * @return a string representation of this type
      */
+    @SideEffectFree
     @FullyQualifiedName String toString();
 
     /**

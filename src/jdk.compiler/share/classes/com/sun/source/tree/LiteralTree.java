@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * A tree node for a literal expression.
  * Use {@link #getKind getKind} to determine the kind of literal.
@@ -46,5 +48,6 @@ public interface LiteralTree extends ExpressionTree {
      * The value will be a boxed primitive value, a String, or {@code null}.
      * @return the value
      */
+    @SideEffectFree
     Object getValue();
 }
