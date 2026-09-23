@@ -26,6 +26,7 @@
 package javax.lang.model.element;
 
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationTypeMismatchException;
@@ -234,6 +235,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * @jls 8.10 Record Classes
      * @revised 9
      */
+    @SideEffectFree
     List<? extends Element> getEnclosedElements();
 
     /**

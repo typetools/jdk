@@ -137,6 +137,7 @@ public interface ExecutableElement extends Element, Parameterizable {
      *
      * @return the default value, or {@code null} if none
      */
+    @Pure
     AnnotationValue getDefaultValue();
 
     /**
