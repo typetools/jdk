@@ -28,6 +28,9 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -173,8 +176,7 @@ public interface ListIterator<E> extends Iterator<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void remove(@GuardSatisfied ListIterator<E> this);
-
+    void remove(@Shrinkable @GuardSatisfied ListIterator<E> this);
     /**
      * Replaces the last element returned by {@link #next} or
      * {@link #previous} with the specified element (optional operation).
@@ -197,8 +199,7 @@ public interface ListIterator<E> extends Iterator<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void set(@GuardSatisfied ListIterator<E> this, E e);
-
+    void set(@Replaceable @GuardSatisfied ListIterator<E> this, E e);
     /**
      * Inserts the specified element into the list (optional operation).
      * The element is inserted immediately before the element that
@@ -222,5 +223,5 @@ public interface ListIterator<E> extends Iterator<E> {
     @CFComment("Not @EnsuresNonEmpty(this) because this adds *before* the cursor.")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void add(@GuardSatisfied ListIterator<E> this, E e);
+    void add(@Growable @GuardSatisfied ListIterator<E> this, E e);
 }

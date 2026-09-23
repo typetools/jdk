@@ -88,6 +88,7 @@ module java.base {
     exports org.checkerframework.checker.initialization.qual;
     exports org.checkerframework.checker.interning.qual;
     exports org.checkerframework.checker.lock.qual;
+    exports org.checkerframework.checker.modifiability.qual;
     exports org.checkerframework.checker.mustcall.qual;
     exports org.checkerframework.checker.nonempty.qual;
     exports org.checkerframework.checker.nullness.qual;

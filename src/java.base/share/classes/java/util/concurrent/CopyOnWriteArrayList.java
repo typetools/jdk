@@ -37,6 +37,13 @@ package java.util.concurrent;
 import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -47,9 +54,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.invoke.VarHandle;
@@ -114,6 +123,7 @@ import jdk.internal.util.ArraysSupport;
  * @author Doug Lea
  * @param <E> the type of elements held in this list
  */
+@AnnotatedFor("modifiability")
 public class CopyOnWriteArrayList<E>
     implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
     private static final long serialVersionUID = 8673264195747942595L;
@@ -145,7 +155,7 @@ public class CopyOnWriteArrayList<E>
     /**
      * Creates an empty list.
      */
-    public CopyOnWriteArrayList() {
+    public @Modifiable CopyOnWriteArrayList() {
         setArray(new Object[0]);
     }
 
@@ -157,7 +167,7 @@ public class CopyOnWriteArrayList<E>
      * @param c the collection of initially held elements
      * @throws NullPointerException if the specified collection is null
      */
-    public CopyOnWriteArrayList(Collection<? extends E> c) {
+    public @Modifiable CopyOnWriteArrayList(Collection<? extends E> c) {
         Object[] es;
         if (c.getClass() == CopyOnWriteArrayList.class)
             es = ((CopyOnWriteArrayList<?>)c).getArray();
@@ -176,7 +186,7 @@ public class CopyOnWriteArrayList<E>
      *        internal array)
      * @throws NullPointerException if the specified array is null
      */
-    public CopyOnWriteArrayList(E[] toCopyIn) {
+    public @Modifiable CopyOnWriteArrayList(E[] toCopyIn) {
         setArray(Arrays.copyOf(toCopyIn, toCopyIn.length, Object[].class));
     }
 
@@ -262,6 +272,7 @@ public class CopyOnWriteArrayList<E>
      * {@inheritDoc}
      */
     @Pure
+    @StaticallyExecutable
     public int indexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return indexOfRange(o, es, 0, es.length);
@@ -283,6 +294,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
     @Pure
+    @StaticallyExecutable
     public int indexOf(E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
@@ -292,6 +304,7 @@ public class CopyOnWriteArrayList<E>
      * {@inheritDoc}
      */
     @Pure
+    @StaticallyExecutable
     public int lastIndexOf(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] es = getArray();
         return lastIndexOfRange(o, es, 0, es.length);
@@ -314,6 +327,7 @@ public class CopyOnWriteArrayList<E>
      *         than or equal to the current size of this list
      */
     @Pure
+    @StaticallyExecutable
     public int lastIndexOf(E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
@@ -326,7 +340,7 @@ public class CopyOnWriteArrayList<E>
      * @return a clone of this list
      */
     @SideEffectFree
-    public Object clone() {
+    public @Modifiable Object clone() {
         try {
             @SuppressWarnings("unchecked")
             CopyOnWriteArrayList<E> clone =
@@ -475,7 +489,7 @@ public class CopyOnWriteArrayList<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E set(int index, E element) {
+    public E set(@Replaceable CopyOnWriteArrayList<E> this, int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             E oldValue = elementAt(es, index);
@@ -499,7 +513,7 @@ public class CopyOnWriteArrayList<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean add(E e) {
+    public boolean add(@Growable CopyOnWriteArrayList<E> this, E e) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -520,7 +534,7 @@ public class CopyOnWriteArrayList<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void add(int index, E element) {
+    public void add(@Growable CopyOnWriteArrayList<E> this, int index, E element) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -549,7 +563,7 @@ public class CopyOnWriteArrayList<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void addFirst(E e) {
+    public void addFirst(@SeqGrowable CopyOnWriteArrayList<E> this, E e) {
         add(0, e);
     }
 
@@ -561,7 +575,7 @@ public class CopyOnWriteArrayList<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void addLast(E e) {
+    public void addLast(@SeqGrowable CopyOnWriteArrayList<E> this, E e) {
         synchronized (lock) {
             add(getArray().length, e);
         }
@@ -576,7 +590,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E remove(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, int index) {
+    public E remove(@Shrinkable @GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, int index) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -604,7 +618,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E removeFirst() {
+    public E removeFirst(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
             if (getArray().length == 0)
                 throw new NoSuchElementException();
@@ -621,7 +635,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E removeLast() {
+    public E removeLast(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
             int size = getArray().length;
             if (size == 0)
@@ -645,7 +659,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean remove(@CanShrink CopyOnWriteArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@Shrinkable @CanShrink CopyOnWriteArrayList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         Object[] snapshot = getArray();
         int index = indexOfRange(o, snapshot, 0, snapshot.length);
         return index >= 0 && remove(o, snapshot, index);
@@ -727,7 +741,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addIfAbsent(E e) {
+    public boolean addIfAbsent(@Growable CopyOnWriteArrayList<E> this, E e) {
         Object[] snapshot = getArray();
         return indexOfRange(e, snapshot, 0, snapshot.length) < 0
             && addIfAbsent(e, snapshot);
@@ -797,7 +811,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeAll(@CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -820,7 +834,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean retainAll(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
@@ -838,7 +852,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public int addAllAbsent(Collection<? extends E> c) {
+    public int addAllAbsent(@Growable CopyOnWriteArrayList<E> this, Collection<? extends E> c) {
         Object[] cs = c.toArray();
         if (c.getClass() != ArrayList.class) {
             cs = cs.clone();
@@ -871,7 +885,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear(@GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this) {
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this) {
         synchronized (lock) {
             setArray(new Object[0]);
         }
@@ -889,7 +903,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(@Growable CopyOnWriteArrayList<E> this, Collection<? extends E> c) {
         Object[] cs = (c.getClass() == CopyOnWriteArrayList.class) ?
             ((CopyOnWriteArrayList<?>)c).getArray() : c.toArray();
         if (cs.length == 0)
@@ -928,7 +942,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addAll(int index, Collection<? extends E> c) {
+    public boolean addAll(@Growable CopyOnWriteArrayList<E> this, int index, Collection<? extends E> c) {
         Object[] cs = c.toArray();
         synchronized (lock) {
             Object[] es = getArray();
@@ -970,7 +984,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeIf(@CanShrink CopyOnWriteArrayList<E> this, Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable @CanShrink CopyOnWriteArrayList<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -1028,7 +1042,7 @@ public class CopyOnWriteArrayList<E>
     }
 
     @DoesNotUnrefineReceiver("modifiability")
-    public void replaceAll(UnaryOperator<E> operator) {
+    public void replaceAll(@Replaceable CopyOnWriteArrayList<E> this, UnaryOperator<E> operator) {
         synchronized (lock) {
             replaceAllRange(operator, 0, getArray().length);
         }
@@ -1045,7 +1059,7 @@ public class CopyOnWriteArrayList<E>
 
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void sort(Comparator<? super E> c) {
+    public void sort(@Replaceable CopyOnWriteArrayList<E> this, Comparator<? super E> c) {
         synchronized (lock) {
             sortRange(c, 0, getArray().length);
         }
@@ -1187,7 +1201,7 @@ public class CopyOnWriteArrayList<E>
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
+    public @Unmodifiable @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return new COWIterator<E>(getArray(), 0);
     }
 
@@ -1199,7 +1213,7 @@ public class CopyOnWriteArrayList<E>
      * traversing the iterator. The iterator does <em>NOT</em> support the
      * {@code remove}, {@code set} or {@code add} methods.
      */
-    public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
+    public @Unmodifiable @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArrayList<E> this) {
         return new COWIterator<E>(getArray(), 0);
     }
 
@@ -1213,7 +1227,7 @@ public class CopyOnWriteArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink CopyOnWriteArrayList<E> this, int index) {
+    public @Unmodifiable @PolyGrowShrink ListIterator<E> listIterator(@PolyGrowShrink CopyOnWriteArrayList<E> this, int index) {
         Object[] es = getArray();
         int len = es.length;
         if (index < 0 || index > len)
@@ -1351,7 +1365,7 @@ public class CopyOnWriteArrayList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @SideEffectFree
-    public @PolyGrowShrink List<E> subList(@PolyGrowShrink CopyOnWriteArrayList<E> this, int fromIndex, int toIndex) {
+    public @PolyGrowShrink @PolyModifiable List<E> subList(@PolyGrowShrink @PolyModifiable CopyOnWriteArrayList<E> this, int fromIndex, int toIndex) {
         synchronized (lock) {
             Object[] es = getArray();
             int len = es.length;
@@ -1438,6 +1452,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             final Object[] es;
             final int offset;
@@ -1452,6 +1467,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             final Object[] es;
             final int offset;
@@ -1613,13 +1629,13 @@ public class CopyOnWriteArrayList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void addFirst(E e) {
+        public void addFirst(@SeqGrowable COWSubList this, E e) {
             add(0, e);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void addLast(E e) {
+        public void addLast(@SeqGrowable COWSubList this, E e) {
             synchronized (lock) {
                 add(size, e);
             }
@@ -1895,7 +1911,7 @@ public class CopyOnWriteArrayList<E>
      * @since 21
      */
     @SideEffectFree
-    public List<E> reversed() {
+    public @PolyGrowShrink @PolyModifiable List<E> reversed(@PolyGrowShrink @PolyModifiable CopyOnWriteArrayList<E> this) {
         return new Reversed<>(this, lock);
     }
 
@@ -2128,6 +2144,7 @@ public class CopyOnWriteArrayList<E>
             return toArray(i -> (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), i));
         }
 
+        @SideEffectFree
         public <T> T[] toArray(IntFunction<T[]> generator) {
             return ArraysSupport.reverse(base.toArray(generator));
         }
@@ -2162,13 +2179,13 @@ public class CopyOnWriteArrayList<E>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void addFirst(E e) {
+        public void addFirst(@SeqGrowable Reversed<E> this, E e) {
             base.add(e);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void addLast(E e) {
+        public void addLast(@SeqGrowable Reversed<E> this, E e) {
             base.add(0, e);
         }
 
@@ -2219,6 +2236,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             synchronized (lock) {
                 int i = base.lastIndexOf(o);
@@ -2227,6 +2245,7 @@ public class CopyOnWriteArrayList<E>
         }
 
         @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             synchronized (lock) {
                 int i = base.indexOf(o);

@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import org.checkerframework.common.value.qual.StaticallyExecutable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.Arrays;
@@ -187,6 +189,8 @@ final class StringLatin1 {
         return len1 - len2;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int hashCode(byte[] value) {
         return switch (value.length) {
             case 0 -> 0;
@@ -195,6 +199,8 @@ final class StringLatin1 {
         };
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int indexOf(byte[] value, int ch, int fromIndex, int toIndex) {
         if (!canEncode(ch)) {
             return -1;
@@ -218,6 +224,8 @@ final class StringLatin1 {
         return -1;
     }
 
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOf(byte[] value, byte[] str) {
         if (str.length == 0) {
@@ -229,6 +237,8 @@ final class StringLatin1 {
         return indexOf(value, value.length, str, str.length, 0);
     }
 
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOf(byte[] value, int valueCount, byte[] str, int strCount, int fromIndex) {
         byte first = str[0];
@@ -252,6 +262,8 @@ final class StringLatin1 {
         return -1;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOf(byte[] src, int srcCount,
                                   byte[] tgt, int tgtCount, int fromIndex) {
         int min = tgtCount - 1;
@@ -280,6 +292,8 @@ final class StringLatin1 {
         }
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOf(final byte[] value, int ch, int fromIndex) {
         if (!canEncode(ch)) {
             return -1;
@@ -583,6 +597,8 @@ final class StringLatin1 {
             newString(value, st, len - st) : null;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int indexOfNonWhitespace(byte[] value) {
         int length = value.length;
         int left = 0;
@@ -596,6 +612,8 @@ final class StringLatin1 {
         return left;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOfNonWhitespace(byte[] value) {
         int length = value.length;
         int right = length;

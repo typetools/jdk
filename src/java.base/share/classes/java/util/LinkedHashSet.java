@@ -25,6 +25,13 @@
 
 package java.util;
 
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
@@ -129,7 +136,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
  */
 
 @CFComment({"lock/nullness: This class permits null elements"})
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 public class LinkedHashSet<E>
     extends HashSet<E>
     implements SequencedSet<E>, Cloneable, java.io.Serializable {
@@ -150,7 +157,7 @@ public class LinkedHashSet<E>
      * @throws     IllegalArgumentException  if the initial capacity is less
      *               than zero, or if the load factor is nonpositive
      */
-    public LinkedHashSet(int initialCapacity, float loadFactor) {
+    public @Modifiable @IteratorPolyMod LinkedHashSet(int initialCapacity, float loadFactor) {
         super(initialCapacity, loadFactor, true);
     }
 
@@ -166,7 +173,7 @@ public class LinkedHashSet<E>
      * @throws  IllegalArgumentException if the initial capacity is less
      *              than zero
      */
-    public LinkedHashSet(int initialCapacity) {
+    public @Modifiable @IteratorPolyMod LinkedHashSet(int initialCapacity) {
         super(initialCapacity, .75f, true);
     }
 
@@ -175,7 +182,7 @@ public class LinkedHashSet<E>
      * capacity (16) and load factor (0.75).
      */
     @SideEffectFree
-    public LinkedHashSet() {
+    public @Modifiable @IteratorPolyMod LinkedHashSet() {
         super(16, .75f, true);
     }
 
@@ -189,7 +196,7 @@ public class LinkedHashSet<E>
      *           this set
      * @throws NullPointerException if the specified collection is null
      */
-    public LinkedHashSet(Collection<? extends E> c) {
+    public @Modifiable @IteratorPolyMod LinkedHashSet(Collection<? extends E> c) {
         super(HashMap.calculateHashMapCapacity(Math.max(c.size(), 12)), .75f, true);
         addAll(c);
     }
@@ -215,6 +222,7 @@ public class LinkedHashSet<E>
      */
     @Override
     @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);
     }
@@ -231,7 +239,7 @@ public class LinkedHashSet<E>
      * @throws IllegalArgumentException if numElements is negative
      * @since 19
      */
-    public static <T> LinkedHashSet<T> newLinkedHashSet(int numElements) {
+    public static <T> @Modifiable LinkedHashSet<T> newLinkedHashSet(int numElements) {
         if (numElements < 0) {
             throw new IllegalArgumentException("Negative number of elements: " + numElements);
         }
@@ -255,7 +263,7 @@ public class LinkedHashSet<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void addFirst(E e) {
+    public void addFirst(@SeqGrowable LinkedHashSet<E> this, E e) {
         map().putFirst(e, PRESENT);
     }
 
@@ -270,7 +278,7 @@ public class LinkedHashSet<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void addLast(E e) {
+    public void addLast(@SeqGrowable LinkedHashSet<E> this, E e) {
         map().putLast(e, PRESENT);
     }
 
@@ -306,7 +314,7 @@ public class LinkedHashSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E removeFirst() {
+    public E removeFirst(@Shrinkable LinkedHashSet<E> this) {
         return map().sequencedKeySet().removeFirst();
     }
 
@@ -318,7 +326,7 @@ public class LinkedHashSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E removeLast() {
+    public E removeLast(@Shrinkable LinkedHashSet<E> this) {
         return map().sequencedKeySet().removeLast();
     }
 
@@ -339,15 +347,15 @@ public class LinkedHashSet<E>
             public int size()                  { return LinkedHashSet.this.size(); }
             @SideEffectFree
             public Iterator<E> iterator()      { return map().sequencedKeySet().reversed().iterator(); }
-            public boolean add(E e)            { return LinkedHashSet.this.add(e); }
-            public void addFirst(E e)          { LinkedHashSet.this.addLast(e); }
-            public void addLast(E e)           { LinkedHashSet.this.addFirst(e); }
+            public boolean add(@Growable ReverseLinkedHashSetView this, E e)            { return LinkedHashSet.this.add(e); }
+            public void addFirst(@SeqGrowable ReverseLinkedHashSetView this, E e)       { LinkedHashSet.this.addLast(e); }
+            public void addLast(@SeqGrowable ReverseLinkedHashSetView this, E e)        { LinkedHashSet.this.addFirst(e); }
             @Pure
             public E getFirst()                { return LinkedHashSet.this.getLast(); }
             @Pure
             public E getLast()                 { return LinkedHashSet.this.getFirst(); }
-            public E removeFirst()             { return LinkedHashSet.this.removeLast(); }
-            public E removeLast()              { return LinkedHashSet.this.removeFirst(); }
+            public E removeFirst(@Shrinkable ReverseLinkedHashSetView this)             { return LinkedHashSet.this.removeLast(); }
+            public E removeLast(@Shrinkable ReverseLinkedHashSetView this)              { return LinkedHashSet.this.removeFirst(); }
             @SideEffectFree
             public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
             @Pure

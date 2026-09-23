@@ -31,6 +31,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.security.AccessController;
@@ -2344,6 +2345,7 @@ public class ObjectOutputStream
         /**
          * Returns the number of mappings currently in table.
          */
+        @Pure
         int size() {
             return size;
         }
@@ -2444,6 +2446,7 @@ public class ObjectOutputStream
         /**
          * Returns the number of mappings currently in table.
          */
+        @Pure
         int size() {
             return htab.size();
         }

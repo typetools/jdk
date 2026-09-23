@@ -47,7 +47,9 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         this.size = size;
     }
 
-    @Override public final int size() {
+    @Override
+    @Pure
+    public final int size() {
         return size;
     }
 

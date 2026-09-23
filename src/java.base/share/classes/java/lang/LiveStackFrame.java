@@ -24,6 +24,8 @@
  */
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.StackWalker.StackFrame;
 import java.util.EnumSet;
 import java.util.Set;
@@ -125,6 +127,7 @@ interface LiveStackFrame extends StackFrame {
         /**
          * Returns the size, in bytes, of the slot.
          */
+        @Pure
         public abstract int size();
 
         /**

@@ -36,6 +36,16 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -47,6 +57,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.invoke.MethodHandles;
@@ -123,7 +134,8 @@ import java.util.concurrent.atomic.LongAdder;
  * @param <V> the type of mapped values
  * @since 1.6
  */
-public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
+@AnnotatedFor({"nullness", "modifiability"})
+public @SeqUngrowable class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     implements ConcurrentNavigableMap<K,V>, Cloneable, Serializable {
     /*
      * This class implements a tree-like two-dimensionally linked skip
@@ -1083,7 +1095,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * Constructs a new, empty map, sorted according to the
      * {@linkplain Comparable natural ordering} of the keys.
      */
-    public ConcurrentSkipListMap() {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable ConcurrentSkipListMap() {
         this.comparator = null;
     }
 
@@ -1095,7 +1107,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *        If {@code null}, the {@linkplain Comparable natural
      *        ordering} of the keys will be used.
      */
-    public ConcurrentSkipListMap(@Nullable Comparator<? super K> comparator) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable ConcurrentSkipListMap(@Nullable Comparator<? super K> comparator) {
         this.comparator = comparator;
     }
 
@@ -1110,7 +1122,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified map or any of its keys
      *         or values are null
      */
-    public ConcurrentSkipListMap(Map<? extends K, ? extends V> m) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable ConcurrentSkipListMap(Map<? extends K, ? extends V> m) {
         this.comparator = null;
         putAll(m);
     }
@@ -1124,7 +1136,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws NullPointerException if the specified sorted map or any of
      *         its keys or values are null
      */
-    public ConcurrentSkipListMap(SortedMap<K, ? extends V> m) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable ConcurrentSkipListMap(SortedMap<K, ? extends V> m) {
         this.comparator = m.comparator();
         buildFromSorted(m); // initializes transients
     }
@@ -1136,7 +1148,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @return a shallow copy of this map
      */
     @SideEffectFree
-    public ConcurrentSkipListMap<K,V> clone() {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable ConcurrentSkipListMap<K,V> clone() {
         try {
             @SuppressWarnings("unchecked")
             ConcurrentSkipListMap<K,V> clone =
@@ -1341,7 +1353,9 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @Pure
-    public V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
+    public @PolyModifiable V getOrDefault(ConcurrentSkipListMap<K, @PolyModifiable V> this,
+                                          @GuardSatisfied @UnknownSignedness Object key,
+                                          @PolyModifiable V defaultValue) {
         V v;
         return (v = doGet(key)) == null ? defaultValue : v;
     }
@@ -1361,7 +1375,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V put(K key, V value) {
+    public @Nullable V put(@Growable @Replaceable ConcurrentSkipListMap<K,V> this, K key, V value) {
         if (value == null)
             throw new NullPointerException();
         return doPut(key, value, false);
@@ -1379,7 +1393,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V remove(@GuardSatisfied @UnknownSignedness Object key) {
+    public @Nullable V remove(@Shrinkable ConcurrentSkipListMap<K,V> this, @GuardSatisfied @UnknownSignedness Object key) {
         return doRemove(key, null);
     }
 
@@ -1436,7 +1450,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear() {
+    public void clear(@Shrinkable ConcurrentSkipListMap<K,V> this) {
         Index<K,V> h, r, d; Node<K,V> b;
         VarHandle.acquireFence();
         while ((h = head) != null) {
@@ -1482,7 +1496,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @DoesNotUnrefineReceiver("modifiability")
-    public @PolyNull V computeIfAbsent(K key,
+    public @PolyNull V computeIfAbsent(@Growable ConcurrentSkipListMap<K,V> this, K key,
                              Function<? super K, ? extends @PolyNull V> mappingFunction) {
         if (key == null || mappingFunction == null)
             throw new NullPointerException();
@@ -1507,7 +1521,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V computeIfPresent(K key,
+    public @Nullable V computeIfPresent(@Shrinkable @Replaceable ConcurrentSkipListMap<K,V> this, K key,
                               BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         if (key == null || remappingFunction == null)
             throw new NullPointerException();
@@ -1540,7 +1554,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @DoesNotUnrefineReceiver("modifiability")
-    public @PolyNull V compute(K key,
+    public @PolyNull V compute(@Growable @Shrinkable @Replaceable ConcurrentSkipListMap<K,V> this, K key,
                      BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
         if (key == null || remappingFunction == null)
             throw new NullPointerException();
@@ -1580,7 +1594,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @since 1.8
      */
     @DoesNotUnrefineReceiver("modifiability")
-    public @PolyNull V merge(K key, @NonNull V value,
+    public @PolyNull V merge(@Growable @Shrinkable @Replaceable ConcurrentSkipListMap<K,V> this, K key, @NonNull V value,
                    BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         if (key == null || value == null || remappingFunction == null)
             throw new NullPointerException();
@@ -1643,14 +1657,14 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @return a navigable set view of the keys in this map
      */
     @SideEffectFree
-    public NavigableSet<K> keySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> keySet(@PolyShrinkable ConcurrentSkipListMap<K,V> this) {
         KeySet<K,V> ks;
         if ((ks = keySet) != null) return ks;
         return keySet = new KeySet<>(this);
     }
 
     @SideEffectFree
-    public NavigableSet<K> navigableKeySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> navigableKeySet(@PolyShrinkable ConcurrentSkipListMap<K,V> this) {
         KeySet<K,V> ks;
         if ((ks = keySet) != null) return ks;
         return keySet = new KeySet<>(this);
@@ -1676,7 +1690,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
      */
     @SideEffectFree
-    public Collection<V> values() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable ConcurrentSkipListMap<K,V> this) {
         Values<K,V> vs;
         if ((vs = values) != null) return vs;
         return values = new Values<>(this);
@@ -1710,14 +1724,14 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      *         sorted in ascending key order
      */
     @SideEffectFree
-    public Set<Map.Entry<K,V>> entrySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@Unmodifiable Entry<K,V>> entrySet(@PolyShrinkable ConcurrentSkipListMap<K,V> this) {
         EntrySet<K,V> es;
         if ((es = entrySet) != null) return es;
         return entrySet = new EntrySet<K,V>(this);
     }
 
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> descendingMap() {
+    public @PolyModifiable ConcurrentNavigableMap<K,V> descendingMap(@PolyModifiable ConcurrentSkipListMap<K,V> this) {
         ConcurrentNavigableMap<K,V> dm;
         if ((dm = descendingMap) != null) return dm;
         return descendingMap =
@@ -1725,7 +1739,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     }
 
     @SideEffectFree
-    public NavigableSet<K> descendingKeySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> descendingKeySet(@PolyShrinkable ConcurrentSkipListMap<K,V> this) {
         return descendingMap().navigableKeySet();
     }
 
@@ -1823,7 +1837,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V putIfAbsent(K key, V value) {
+    public @Nullable V putIfAbsent(@Growable ConcurrentSkipListMap<K,V> this, K key, V value) {
         if (value == null)
             throw new NullPointerException();
         return doPut(key, value, true);
@@ -1838,7 +1852,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+    public boolean remove(@Shrinkable ConcurrentSkipListMap<K,V> this, @GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         if (key == null)
             throw new NullPointerException();
         return value != null && doRemove(key, value) != null;
@@ -1853,7 +1867,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean replace(K key, V oldValue, V newValue) {
+    public boolean replace(@Replaceable ConcurrentSkipListMap<K,V> this, K key, V oldValue, V newValue) {
         if (key == null || oldValue == null || newValue == null)
             throw new NullPointerException();
         for (;;) {
@@ -1880,7 +1894,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V replace(K key, V value) {
+    public @Nullable V replace(@Replaceable ConcurrentSkipListMap<K,V> this, K key, V value) {
         if (key == null || value == null)
             throw new NullPointerException();
         for (;;) {
@@ -1902,6 +1916,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public K firstKey(@NonEmpty ConcurrentSkipListMap<K,V> this) {
         Node<K,V> n = findFirst();
         if (n == null)
@@ -1912,6 +1927,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
+    @Pure
     public K lastKey(@NonEmpty ConcurrentSkipListMap<K,V> this) {
         Node<K,V> n = findLast();
         if (n == null)
@@ -1929,7 +1945,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-     public @Nullable V putFirst(K k, V v) {
+     public @Nullable V putFirst(@SeqGrowable ConcurrentSkipListMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -1943,7 +1959,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V putLast(K k, V v) {
+    public @Nullable V putLast(@SeqGrowable ConcurrentSkipListMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -1953,7 +1969,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> subMap(K fromKey,
+    public @PolyModifiable ConcurrentNavigableMap<K,V> subMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K fromKey,
                                               boolean fromInclusive,
                                               K toKey,
                                               boolean toInclusive) {
@@ -1969,7 +1985,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> headMap(K toKey,
+    public @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K toKey,
                                                boolean inclusive) {
         if (toKey == null)
             throw new NullPointerException();
@@ -1983,7 +1999,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> tailMap(K fromKey,
+    public @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K fromKey,
                                                boolean inclusive) {
         if (fromKey == null)
             throw new NullPointerException();
@@ -1997,7 +2013,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> subMap(K fromKey, K toKey) {
+    public @PolyModifiable ConcurrentNavigableMap<K,V> subMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K fromKey, K toKey) {
         return subMap(fromKey, true, toKey, false);
     }
 
@@ -2007,7 +2023,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> headMap(K toKey) {
+    public @PolyModifiable ConcurrentNavigableMap<K,V> headMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K toKey) {
         return headMap(toKey, false);
     }
 
@@ -2017,7 +2033,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public ConcurrentNavigableMap<K,V> tailMap(K fromKey) {
+    public @PolyModifiable ConcurrentNavigableMap<K,V> tailMap(@PolyModifiable ConcurrentSkipListMap<K,V> this, K fromKey) {
         return tailMap(fromKey, true);
     }
 
@@ -2032,7 +2048,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
-    public Map.@Nullable Entry<K,V> lowerEntry(K key) {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> lowerEntry(K key) {
         return findNearEntry(key, LT, comparator);
     }
 
@@ -2040,6 +2057,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
+    @Pure
     public @Nullable K lowerKey(K key) {
         Node<K,V> n = findNear(key, LT, comparator);
         return (n == null) ? null : n.key;
@@ -2055,7 +2073,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
-    public Map.@Nullable Entry<K,V> floorEntry(K key) {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> floorEntry(K key) {
         return findNearEntry(key, LT|EQ, comparator);
     }
 
@@ -2064,6 +2083,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
+    @Pure
     public @Nullable K floorKey(K key) {
         Node<K,V> n = findNear(key, LT|EQ, comparator);
         return (n == null) ? null : n.key;
@@ -2078,7 +2098,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
-    public Map.@Nullable Entry<K,V> ceilingEntry(K key) {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> ceilingEntry(K key) {
         return findNearEntry(key, GT|EQ, comparator);
     }
 
@@ -2086,6 +2107,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
+    @Pure
     public @Nullable K ceilingKey(K key) {
         Node<K,V> n = findNear(key, GT|EQ, comparator);
         return (n == null) ? null : n.key;
@@ -2101,7 +2123,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
-    public Map.@Nullable Entry<K,V> higherEntry(K key) {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> higherEntry(K key) {
         return findNearEntry(key, GT, comparator);
     }
 
@@ -2110,6 +2133,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * @throws ClassCastException {@inheritDoc}
      * @throws NullPointerException if the specified key is null
      */
+    @Pure
     public @Nullable K higherKey(K key) {
         Node<K,V> n = findNear(key, GT, comparator);
         return (n == null) ? null : n.key;
@@ -2121,7 +2145,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * The returned entry does <em>not</em> support
      * the {@code Entry.setValue} method.
      */
-    public Map.@Nullable Entry<K,V> firstEntry() {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> firstEntry() {
         return findFirstEntry();
     }
 
@@ -2131,7 +2156,8 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      * The returned entry does <em>not</em> support
      * the {@code Entry.setValue} method.
      */
-    public Map.@Nullable Entry<K,V> lastEntry() {
+    @Pure
+    public Map.@Unmodifiable @Nullable Entry<K,V> lastEntry() {
         return findLastEntry();
     }
 
@@ -2143,7 +2169,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public Map.@Nullable Entry<K,V> pollFirstEntry() {
+    public Map.@Unmodifiable @Nullable Entry<K,V> pollFirstEntry(@Shrinkable ConcurrentSkipListMap<K,V> this) {
         return doRemoveFirstEntry();
     }
 
@@ -2155,7 +2181,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public Map.@Nullable Entry<K,V> pollLastEntry() {
+    public Map.@Unmodifiable @Nullable Entry<K,V> pollLastEntry(@Shrinkable ConcurrentSkipListMap<K,V> this) {
         return doRemoveLastEntry();
     }
 
@@ -2281,15 +2307,19 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
         public void clear() { m.clear(); }
+        @Pure
         public @Nullable K lower(K e) { return m.lowerKey(e); }
+        @Pure
         public @Nullable K floor(K e) { return m.floorKey(e); }
+        @Pure
         public @Nullable K ceiling(K e) { return m.ceilingKey(e); }
+        @Pure
         public @Nullable K higher(K e) { return m.higherKey(e); }
         @Pure
         public @Nullable Comparator<? super K> comparator() { return m.comparator(); }
-        @SideEffectFree
+        @Pure
         public K first() { return m.firstKey(); }
-        @SideEffectFree
+        @Pure
         public K last() { return m.lastKey(); }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
@@ -2779,14 +2809,14 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public @Nullable V put(K key, V value) {
+        public @Nullable V put(@Growable @Replaceable SubMap<K,V> this, K key, V value) {
             checkKeyBounds(key, m.comparator);
             return m.put(key, value);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public @Nullable V remove(Object key) {
+        public @Nullable V remove(@Shrinkable SubMap<K,V> this, Object key) {
             return (!inBounds(key, m.comparator)) ? null : m.remove(key);
         }
 
@@ -2827,7 +2857,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void clear() {
+        public void clear(@Shrinkable SubMap<K,V> this) {
             Comparator<? super K> cmp = m.comparator;
             for (ConcurrentSkipListMap.Node<K,V> n = loNode(cmp);
                  isBeforeEnd(n, cmp);
@@ -2841,27 +2871,27 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public @Nullable V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(@Growable SubMap<K,V> this, K key, V value) {
             checkKeyBounds(key, m.comparator);
             return m.putIfAbsent(key, value);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
+        public boolean remove(@Shrinkable SubMap<K,V> this, @UnknownSignedness Object key, @UnknownSignedness Object value) {
             return inBounds(key, m.comparator) && m.remove(key, value);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean replace(K key, V oldValue, V newValue) {
+        public boolean replace(@Replaceable SubMap<K,V> this, K key, V oldValue, V newValue) {
             checkKeyBounds(key, m.comparator);
             return m.replace(key, oldValue, newValue);
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public @Nullable V replace(K key, V value) {
+        public @Nullable V replace(@Replaceable SubMap<K,V> this, K key, V value) {
             checkKeyBounds(key, m.comparator);
             return m.replace(key, value);
         }
@@ -2919,7 +2949,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         @SideEffectFree
-        public SubMap<K,V> subMap(K fromKey, boolean fromInclusive,
+        public @PolyModifiable SubMap<K,V> subMap(@PolyModifiable SubMap<K,V> this, K fromKey, boolean fromInclusive,
                                   K toKey, boolean toInclusive) {
             if (fromKey == null || toKey == null)
                 throw new NullPointerException();
@@ -2927,134 +2957,146 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
         }
 
         @SideEffectFree
-        public SubMap<K,V> headMap(K toKey, boolean inclusive) {
+        public @PolyModifiable SubMap<K,V> headMap(@PolyModifiable SubMap<K,V> this, K toKey, boolean inclusive) {
             if (toKey == null)
                 throw new NullPointerException();
             return newSubMap(null, false, toKey, inclusive);
         }
 
         @SideEffectFree
-        public SubMap<K,V> tailMap(K fromKey, boolean inclusive) {
+        public @PolyModifiable SubMap<K,V> tailMap(@PolyModifiable SubMap<K,V> this, K fromKey, boolean inclusive) {
             if (fromKey == null)
                 throw new NullPointerException();
             return newSubMap(fromKey, inclusive, null, false);
         }
 
         @SideEffectFree
-        public SubMap<K,V> subMap(K fromKey, K toKey) {
+        public @PolyModifiable SubMap<K,V> subMap(@PolyModifiable SubMap<K,V> this, K fromKey, K toKey) {
             return subMap(fromKey, true, toKey, false);
         }
 
         @SideEffectFree
-        public SubMap<K,V> headMap(K toKey) {
+        public @PolyModifiable SubMap<K,V> headMap(@PolyModifiable SubMap<K,V> this, K toKey) {
             return headMap(toKey, false);
         }
 
         @SideEffectFree
-        public SubMap<K,V> tailMap(K fromKey) {
+        public @PolyModifiable SubMap<K,V> tailMap(@PolyModifiable SubMap<K,V> this, K fromKey) {
             return tailMap(fromKey, true);
         }
 
         @SideEffectFree
-        public SubMap<K,V> descendingMap() {
+        public @PolyModifiable SubMap<K,V> descendingMap(@PolyModifiable SubMap<K,V> this) {
             return new SubMap<K,V>(m, lo, loInclusive,
                                    hi, hiInclusive, !isDescending);
         }
 
         /* ----------------  Relational methods -------------- */
 
+        @Pure
         public Map.@Nullable Entry<K,V> ceilingEntry(K key) {
             return getNearEntry(key, GT|EQ);
         }
 
+        @Pure
         public @Nullable K ceilingKey(K key) {
             return getNearKey(key, GT|EQ);
         }
 
+        @Pure
         public Map.@Nullable Entry<K,V> lowerEntry(K key) {
             return getNearEntry(key, LT);
         }
 
+        @Pure
         public @Nullable K lowerKey(K key) {
             return getNearKey(key, LT);
         }
 
+        @Pure
         public Map.@Nullable Entry<K,V> floorEntry(K key) {
             return getNearEntry(key, LT|EQ);
         }
 
+        @Pure
         public @Nullable K floorKey(K key) {
             return getNearKey(key, LT|EQ);
         }
 
+        @Pure
         public Map.@Nullable Entry<K,V> higherEntry(K key) {
             return getNearEntry(key, GT);
         }
 
+        @Pure
         public @Nullable K higherKey(K key) {
             return getNearKey(key, GT);
         }
 
+        @Pure
         public K firstKey() {
             return isDescending ? highestKey() : lowestKey();
         }
 
+        @Pure
         public K lastKey() {
             return isDescending ? lowestKey() : highestKey();
         }
 
+        @Pure
         public Map.@Nullable Entry<K,V> firstEntry() {
             return isDescending ? highestEntry() : lowestEntry();
         }
 
+        @Pure
         public Map.@Nullable Entry<K,V> lastEntry() {
             return isDescending ? lowestEntry() : highestEntry();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Map.@Nullable Entry<K,V> pollFirstEntry() {
+        public Map.@Nullable Entry<K,V> pollFirstEntry(@Shrinkable SubMap<K,V> this) {
             return isDescending ? removeHighest() : removeLowest();
         }
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public Map.@Nullable Entry<K,V> pollLastEntry() {
+        public Map.@Nullable Entry<K,V> pollLastEntry(@Shrinkable SubMap<K,V> this) {
             return isDescending ? removeLowest() : removeHighest();
         }
 
         /* ---------------- Submap Views -------------- */
 
         @SideEffectFree
-        public NavigableSet<K> keySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> keySet(@PolyShrinkable SubMap<K,V> this) {
             KeySet<K,V> ks;
             if ((ks = keySetView) != null) return ks;
             return keySetView = new KeySet<>(this);
         }
 
         @SideEffectFree
-        public NavigableSet<K> navigableKeySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> navigableKeySet(@PolyShrinkable SubMap<K,V> this) {
             KeySet<K,V> ks;
             if ((ks = keySetView) != null) return ks;
             return keySetView = new KeySet<>(this);
         }
 
         @SideEffectFree
-        public Collection<V> values() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable SubMap<K,V> this) {
             Values<K,V> vs;
             if ((vs = valuesView) != null) return vs;
             return valuesView = new Values<>(this);
         }
 
         @SideEffectFree
-        public Set<Map.Entry<K,V>> entrySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@Unmodifiable Entry<K,V>> entrySet(@PolyShrinkable SubMap<K,V> this) {
             EntrySet<K,V> es;
             if ((es = entrySetView) != null) return es;
             return entrySetView = new EntrySet<K,V>(this);
         }
 
         @SideEffectFree
-        public NavigableSet<K> descendingKeySet() {
+        public @IteratorPolyMod NavigableSet<K> descendingKeySet() {
             return descendingMap().navigableKeySet();
         }
 
@@ -3232,7 +3274,7 @@ public class ConcurrentSkipListMap<K,V> extends AbstractMap<K,V>
     }
 
     @DoesNotUnrefineReceiver("modifiability")
-    public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+    public void replaceAll(@Replaceable ConcurrentSkipListMap<K,V> this, BiFunction<? super K, ? super V, ? extends V> function) {
         if (function == null) throw new NullPointerException();
         Node<K,V> b, n; V v;
         if ((b = baseHead()) != null) {

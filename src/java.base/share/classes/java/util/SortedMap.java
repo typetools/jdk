@@ -26,6 +26,12 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -123,7 +129,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public interface SortedMap<K,V> extends SequencedMap<K,V> {
+public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
     /**
      * Returns the comparator used to order the keys in this map, or
      * {@code null} if this map uses the {@linkplain Comparable
@@ -166,7 +172,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         outside the bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> subMap(@GuardSatisfied SortedMap<K, V> this, @GuardSatisfied K fromKey, @GuardSatisfied K toKey);
+    @PolyModifiable SortedMap<K,V> subMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, @GuardSatisfied K fromKey, @GuardSatisfied K toKey);
 
     /**
      * Returns a view of the portion of this map whose keys are
@@ -194,7 +200,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> headMap(@GuardSatisfied SortedMap<K, V> this, K toKey);
+    @PolyModifiable SortedMap<K,V> headMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, K toKey);
 
     /**
      * Returns a view of the portion of this map whose keys are
@@ -222,7 +228,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> tailMap(@GuardSatisfied SortedMap<K, V> this, K fromKey);
+    @PolyModifiable SortedMap<K,V> tailMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, K fromKey);
 
     /**
      * Returns the first (lowest) key currently in this map.
@@ -230,7 +236,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @return the first (lowest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
+    @Pure
     @KeyFor("this") K firstKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
@@ -239,7 +245,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      * @return the last (highest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
+    @Pure
     @KeyFor("this") K lastKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
@@ -260,7 +266,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         ascending order
      */
     @SideEffectFree
-    Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Set<@KeyFor({"this"}) K> keySet(@PolyShrinkable @GuardSatisfied SortedMap<K, V> this);
 
     /**
      * Returns a {@link Collection} view of the values contained in this map.
@@ -281,7 +287,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         sorted in ascending key order
      */
     @SideEffectFree
-    Collection<V> values(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable @GuardSatisfied SortedMap<K, V> this);
 
     /**
      * Returns a {@link Set} view of the mappings contained in this map.
@@ -302,7 +308,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      *         sorted in ascending key order
      */
     @SideEffectFree
-    Set<Map.Entry<@KeyFor({"this"}) K, V>> entrySet(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<@KeyFor({"this"}) K, V>> entrySet(@PolyModifiable @GuardSatisfied SortedMap<K, V> this);
 
     /**
      * Throws {@code UnsupportedOperationException}. The encounter order induced by this
@@ -317,7 +323,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-     default @Nullable V putFirst(K k, V v) {
+     default @Nullable V putFirst(@SeqGrowable SortedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -334,7 +340,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default @Nullable V putLast(K k, V v) {
+    default @Nullable V putLast(@SeqGrowable SortedMap<K,V> this, K k, V v) {
         throw new UnsupportedOperationException();
     }
 
@@ -350,7 +356,7 @@ public interface SortedMap<K,V> extends SequencedMap<K,V> {
      */
     @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
-    default SortedMap<K, V> reversed() {
+    default @PolyModifiable SortedMap<K, V> reversed(@PolyModifiable SortedMap<K, V> this) {
         return ReverseOrderSortedMapView.of(this);
     }
 }
