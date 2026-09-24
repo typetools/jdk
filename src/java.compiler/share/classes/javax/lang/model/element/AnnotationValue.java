@@ -25,6 +25,8 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Represents a value of an annotation interface element.
  * A value is of one of the following types:
@@ -44,6 +46,7 @@ public interface AnnotationValue {
     /**
      * {@return the value}
      */
+    @SideEffectFree
     Object getValue();
 
     /**

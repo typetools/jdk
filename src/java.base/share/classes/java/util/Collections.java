@@ -5581,6 +5581,7 @@ public class Collections {
      * @param o the sole object to be stored in the returned set.
      * @return an immutable set containing only the specified object.
      */
+    @SideEffectFree
     public static <T> Set<T> singleton(T o) {
         return new SingletonSet<>(o);
     }
@@ -5723,6 +5724,7 @@ public class Collections {
      * @return an immutable list containing only the specified object.
      * @since 1.3
      */
+    @SideEffectFree
     public static <T> @ArrayLen(1) List<T> singletonList(T o) {
         return new SingletonList<>(o);
     }

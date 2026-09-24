@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A tree node for a type cast expression.
  *
@@ -50,5 +52,6 @@ public interface TypeCastTree extends ExpressionTree {
      * Returns the expression being cast.
      * @return the expression
      */
+    @Pure
     ExpressionTree getExpression();
 }

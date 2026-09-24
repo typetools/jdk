@@ -228,6 +228,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if the argument is null.
      * @since 1.8
      */
+    @SideEffectFree
     default Comparator<T> thenComparing(Comparator<? super T> other) {
         Objects.requireNonNull(other);
         return (Comparator<T> & Serializable) (c1, c2) -> {
@@ -253,6 +254,7 @@ public interface Comparator<T> {
      * @see #thenComparing(Comparator)
      * @since 1.8
      */
+    @SideEffectFree
     default <U> Comparator<T> thenComparing(
             Function<? super T, ? extends U> keyExtractor,
             Comparator<? super U> keyComparator)
@@ -277,6 +279,7 @@ public interface Comparator<T> {
      * @see #thenComparing(Comparator)
      * @since 1.8
      */
+    @SideEffectFree
     default <U extends Comparable<? super U>> Comparator<T> thenComparing(
             Function<? super T, ? extends U> keyExtractor)
     {
@@ -298,6 +301,7 @@ public interface Comparator<T> {
      * @see #thenComparing(Comparator)
      * @since 1.8
      */
+    @SideEffectFree
     default Comparator<T> thenComparingInt(ToIntFunction<? super T> keyExtractor) {
         return thenComparing(comparingInt(keyExtractor));
     }
@@ -317,6 +321,7 @@ public interface Comparator<T> {
      * @see #thenComparing(Comparator)
      * @since 1.8
      */
+    @SideEffectFree
     default Comparator<T> thenComparingLong(ToLongFunction<? super T> keyExtractor) {
         return thenComparing(comparingLong(keyExtractor));
     }
@@ -336,6 +341,7 @@ public interface Comparator<T> {
      * @see #thenComparing(Comparator)
      * @since 1.8
      */
+    @SideEffectFree
     default Comparator<T> thenComparingDouble(ToDoubleFunction<? super T> keyExtractor) {
         return thenComparing(comparingDouble(keyExtractor));
     }
@@ -353,6 +359,7 @@ public interface Comparator<T> {
      * @see Comparable
      * @since 1.8
      */
+    @Pure
     public static <T extends Comparable<? super T>> Comparator<T> reverseOrder() {
         return Collections.reverseOrder();
     }
@@ -370,6 +377,7 @@ public interface Comparator<T> {
      * @see Comparable
      * @since 1.8
      */
+    @Pure
     @SuppressWarnings("unchecked")
     public static <T extends Comparable<@NonNull ? super @NonNull T>> Comparator<T> naturalOrder() {
         return (Comparator<T>) Comparators.NaturalOrderComparator.INSTANCE;
@@ -392,6 +400,7 @@ public interface Comparator<T> {
      *         {@code Comparator}.
      * @since 1.8
      */
+    @SideEffectFree
     public static <T> Comparator<@Nullable T> nullsFirst(@Nullable Comparator<? super T> comparator) {
         return new Comparators.NullComparator<>(true, comparator);
     }
@@ -413,6 +422,7 @@ public interface Comparator<T> {
      *         {@code Comparator}.
      * @since 1.8
      */
+    @SideEffectFree
     public static <T> Comparator<@Nullable T> nullsLast(@Nullable Comparator<? super T> comparator) {
         return new Comparators.NullComparator<>(false, comparator);
     }
@@ -444,6 +454,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if either argument is null
      * @since 1.8
      */
+    @SideEffectFree
     public static <T, U> Comparator<T> comparing(
             Function<? super T, ? extends U> keyExtractor,
             Comparator<? super U> keyComparator)
@@ -479,6 +490,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if the argument is null
      * @since 1.8
      */
+    @SideEffectFree
     public static <T, U extends Comparable<? super U>> Comparator<T> comparing(
             Function<? super T, ? extends U> keyExtractor)
     {
@@ -502,6 +514,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if the argument is null
      * @since 1.8
      */
+    @SideEffectFree
     public static <T> Comparator<T> comparingInt(ToIntFunction<? super T> keyExtractor) {
         Objects.requireNonNull(keyExtractor);
         return (Comparator<T> & Serializable)
@@ -523,6 +536,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if the argument is null
      * @since 1.8
      */
+    @SideEffectFree
     public static <T> Comparator<T> comparingLong(ToLongFunction<? super T> keyExtractor) {
         Objects.requireNonNull(keyExtractor);
         return (Comparator<T> & Serializable)
@@ -544,6 +558,7 @@ public interface Comparator<T> {
      * @throws NullPointerException if the argument is null
      * @since 1.8
      */
+    @SideEffectFree
     public static<T> Comparator<T> comparingDouble(ToDoubleFunction<? super T> keyExtractor) {
         Objects.requireNonNull(keyExtractor);
         return (Comparator<T> & Serializable)

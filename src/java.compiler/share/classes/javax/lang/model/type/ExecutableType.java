@@ -25,6 +25,7 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.List;
 
@@ -69,6 +70,7 @@ public interface ExecutableType extends TypeMirror {
      * @return the types of this executable's formal parameters,
      *          or an empty list if there are none
      */
+    @Pure
     List<? extends TypeMirror> getParameterTypes();
 
     /**

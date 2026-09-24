@@ -25,6 +25,9 @@
 
 package javax.lang.model.element;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Map;
 import javax.lang.model.type.DeclaredType;
 
@@ -43,6 +46,7 @@ public interface AnnotationMirror {
     /**
      * {@return the type of this annotation}
      */
+    @Pure
     DeclaredType getAnnotationType();
 
     /**
@@ -66,5 +70,6 @@ public interface AnnotationMirror {
      * @return the values of this annotation's elements,
      *          or an empty map if there are none
      */
+    @SideEffectFree
     Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValues();
 }
