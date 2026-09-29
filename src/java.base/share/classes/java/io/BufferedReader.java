@@ -450,6 +450,7 @@ public class BufferedReader extends Reader {
      *
      * @see java.nio.file.Files#readAllLines
      */
+    @SideEffectsOnly("this")
     public @Nullable String readLine(@GuardSatisfied BufferedReader this) throws IOException {
         return readLine(false, null);
     }
@@ -633,6 +634,7 @@ public class BufferedReader extends Reader {
         skipLF = markedSkipLF;
     }
 
+    @SideEffectsOnly("this")
     public void close(@GuardSatisfied BufferedReader this) throws IOException {
         Object lock = this.lock;
         if (lock instanceof InternalLock locker) {

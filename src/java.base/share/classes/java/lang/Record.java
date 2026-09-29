@@ -28,6 +28,7 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * This is the common base class of all Java language record classes.
@@ -96,6 +97,7 @@ public abstract class Record {
     /**
      * Constructor for record classes to call.
      */
+    @SideEffectFree
     protected Record() {}
 
     /**

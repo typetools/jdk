@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A tree node for an assignment expression.
  *
@@ -44,6 +46,7 @@ public interface AssignmentTree extends ExpressionTree {
      * Returns the variable being assigned to.
      * @return the variable
      */
+    @Pure
     ExpressionTree getVariable();
 
     /**

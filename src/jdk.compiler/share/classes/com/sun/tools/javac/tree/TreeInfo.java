@@ -894,6 +894,7 @@ public class TreeInfo {
         }
     }
 
+    @Pure
     public static Symbol symbolFor(JCTree node) {
         Symbol sym = symbolForImpl(node);
 
@@ -958,6 +959,7 @@ public class TreeInfo {
     /** If this tree is an identifier or a field, return its symbol,
      *  otherwise return null.
      */
+    @Pure
     public static Symbol symbol(JCTree tree) {
         tree = skipParens(tree);
         switch (tree.getTag()) {

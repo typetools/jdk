@@ -25,6 +25,7 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.List;
 
@@ -57,6 +58,7 @@ public interface DeclaredType extends ReferenceType {
     /**
      * {@return the element corresponding to this type}
      */
+    @Pure
     Element asElement();
 
     /**
