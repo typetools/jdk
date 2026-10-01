@@ -141,19 +141,19 @@ To update that copy, run the command below from this directory:
 rm -f checker-qual.jar && \
 cp -p $CHECKERFRAMEWORK/checker-qual/build/libs/checker-qual-*-sources.jar checker-qual.jar && \
 (cd src/java.base/share/classes && rm -rf org/checkerframework && \
+  touch META-INF && \
   unzip ../../../../checker-qual.jar -x module-info.java -x 'META-INF*' && \
   rm -f org/checkerframework/checker/signedness/SignednessUtilExtra.java && \
   chmod -R u+w org/checkerframework) && \
 jar tf checker-qual.jar | grep '\.java$' | grep -v 'module-info.java' | sed 's/\/[^/]*\.java/;/' | sed 's/\//./g' | sed 's/^/    exports /' | sort -u
 ```
 
-The result of the command will be a list of export lines.
-Replace the existing export lines present in
-`src/java.base/share/classes/module-info.java` with the newly-generated list of
-exports. If no new packages were added, then likely no changes are needed
-in the `module-info.java` file.
+In addition to updating `.java` files, the command will output a list of export
+lines.  Place them in `src/java.base/share/classes/module-info.java`.  If no new
+packages were recently added to the Checker Framework, then likely no changes
+are needed in the `module-info.java` file.
 
-Commit the changes, including the new `checker.jar` file and any new `.java`
+Commit the changes, including the new `checker-qual.jar` file and any new `.java`
 files in a `qual/` directory.  (Both are used, by different parts of the build.)
 
 ## The typetools/jdk21u repository

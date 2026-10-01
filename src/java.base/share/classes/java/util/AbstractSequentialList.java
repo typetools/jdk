@@ -28,6 +28,13 @@ package java.util;
 import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
@@ -100,7 +107,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public E get(@GuardSatisfied AbstractSequentialList<E> this, int index) {
+    public E get(@MaybeModifiable @GuardSatisfied AbstractSequentialList<E> this, int index) {
         try {
             return listIterator(index).next();
         } catch (NoSuchElementException exc) {
@@ -130,7 +137,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E set(@GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
+    public E set(@IteratorPolyMod @Replaceable @GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
         try {
             ListIterator<E> e = listIterator(index);
             E oldVal = e.next();
@@ -164,7 +171,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void add(@GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
+    public void add(@IteratorPolyMod @Growable @GuardSatisfied AbstractSequentialList<E> this, int index, E element) {
         try {
             listIterator(index).add(element);
         } catch (NoSuchElementException exc) {
@@ -191,7 +198,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E remove(@GuardSatisfied @CanShrink AbstractSequentialList<E> this, int index) {
+    public E remove(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink AbstractSequentialList<E> this, int index) {
         try {
             ListIterator<E> e = listIterator(index);
             E outCast = e.next();
@@ -236,7 +243,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addAll(@GuardSatisfied AbstractSequentialList<E> this, int index, Collection<? extends E> c) {
+    public boolean addAll(@IteratorPolyMod @Growable @GuardSatisfied AbstractSequentialList<E> this, int index, Collection<? extends E> c) {
         try {
             boolean modified = false;
             ListIterator<E> e1 = listIterator(index);

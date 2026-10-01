@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
@@ -69,7 +70,7 @@ import java.util.function.Consumer;
 @CFComment({"nullness: This @Covariant annotation is sound, but it would not be sound on",
             "ListIterator (a subclass of Iterator), which supports a set operation."
 })
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 @Covariant({0})
 public interface Iterator<E> {
     /**
@@ -120,7 +121,7 @@ public interface Iterator<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default void remove(@GuardSatisfied @CanShrink Iterator<E> this) {
+    default void remove(@Shrinkable @GuardSatisfied @CanShrink Iterator<E> this) {
         throw new UnsupportedOperationException("remove");
     }
 

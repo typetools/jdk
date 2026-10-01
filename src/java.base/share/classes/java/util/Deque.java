@@ -39,6 +39,10 @@ import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -219,7 +223,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
  * @param <E> the type of elements held in this deque
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
 public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
     /**
      * Inserts the specified element at the front of this deque if it is
@@ -241,8 +245,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void addFirst(@GuardSatisfied Deque<E> this, E e);
-
+    void addFirst(@SeqGrowable @GuardSatisfied Deque<E> this, E e);
     /**
      * Inserts the specified element at the end of this deque if it is
      * possible to do so immediately without violating capacity restrictions,
@@ -265,8 +268,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void addLast(@GuardSatisfied Deque<E> this, E e);
-
+    void addLast(@SeqGrowable @GuardSatisfied Deque<E> this, E e);
     /**
      * Inserts the specified element at the front of this deque unless it would
      * violate capacity restrictions.  When using a capacity-restricted deque,
@@ -285,8 +287,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean offerFirst(E e);
-
+    boolean offerFirst(@SeqGrowable Deque<E> this, E e);
     /**
      * Inserts the specified element at the end of this deque unless it would
      * violate capacity restrictions.  When using a capacity-restricted deque,
@@ -305,8 +306,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean offerLast(E e);
-
+    boolean offerLast(@SeqGrowable Deque<E> this, E e);
     /**
      * Retrieves and removes the first element of this deque.  This method
      * differs from {@link #pollFirst pollFirst} only in that it throws an
@@ -317,8 +317,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    E removeFirst(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
-
+    E removeFirst(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
     /**
      * Retrieves and removes the last element of this deque.  This method
      * differs from {@link #pollLast pollLast} only in that it throws an
@@ -329,8 +328,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    E removeLast(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
-
+    E removeLast(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
     /**
      * Retrieves and removes the first element of this deque,
      * or returns {@code null} if this deque is empty.
@@ -339,8 +337,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    @Nullable E pollFirst(@GuardSatisfied @CanShrink Deque<E> this);
-
+    @Nullable E pollFirst(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this);
     /**
      * Retrieves and removes the last element of this deque,
      * or returns {@code null} if this deque is empty.
@@ -349,8 +346,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    @Nullable E pollLast(@GuardSatisfied @CanShrink Deque<E> this);
-
+    @Nullable E pollLast(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this);
     /**
      * Retrieves, but does not remove, the first element of this deque.
      *
@@ -413,8 +409,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean removeFirstOccurrence(@GuardSatisfied @CanShrink Deque<E> this, Object o);
-
+    boolean removeFirstOccurrence(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this, Object o);
     /**
      * Removes the last occurrence of the specified element from this deque.
      * If the deque does not contain the element, it is unchanged.
@@ -434,8 +429,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean removeLastOccurrence(@GuardSatisfied @CanShrink Deque<E> this, Object o);
-
+    boolean removeLastOccurrence(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this, Object o);
     // *** Queue methods ***
 
     /**
@@ -463,8 +457,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean add(@GuardSatisfied Deque<E> this, E e);
-
+    boolean add(@Growable @GuardSatisfied Deque<E> this, E e);
     /**
      * Inserts the specified element into the queue represented by this deque
      * (in other words, at the tail of this deque) if it is possible to do so
@@ -488,8 +481,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean offer(E e);
-
+    boolean offer(@Growable Deque<E> this, E e);
     /**
      * Retrieves and removes the head of the queue represented by this deque
      * (in other words, the first element of this deque).
@@ -503,8 +495,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    E remove(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
-
+    E remove(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
     /**
      * Retrieves and removes the head of the queue represented by this deque
      * (in other words, the first element of this deque), or returns
@@ -517,8 +508,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    @Nullable E poll(@GuardSatisfied @CanShrink Deque<E> this);
-
+    @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this);
     /**
      * Retrieves, but does not remove, the head of the queue represented by
      * this deque (in other words, the first element of this deque).
@@ -572,8 +562,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean addAll(Collection<? extends E> c);
-
+    boolean addAll(@Growable Deque<E> this, Collection<? extends E> c);
     // *** Stack methods ***
 
     /**
@@ -596,8 +585,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    void push(@GuardSatisfied Deque<E> this, E e);
-
+    void push(@SeqGrowable @GuardSatisfied Deque<E> this, E e);
     /**
      * Pops an element from the stack represented by this deque.  In other
      * words, removes and returns the first element of this deque.
@@ -610,8 +598,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    E pop(@GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
-
+    E pop(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Deque<E> this);
 
     // *** Collection methods ***
 
@@ -636,8 +623,7 @@ public interface Deque<E> extends Queue<E>, SequencedCollection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean remove(@GuardSatisfied @CanShrink Deque<E> this, @UnknownSignedness Object o);
-
+    boolean remove(@Shrinkable @GuardSatisfied @CanShrink Deque<E> this, @UnknownSignedness Object o);
     /**
      * Returns {@code true} if this deque contains the specified element.
      * More formally, returns {@code true} if and only if this deque contains

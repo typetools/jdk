@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
@@ -415,6 +416,8 @@ final class StringUTF16 {
         return -StringLatin1.compareToCI_UTF16(other, value);
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int hashCode(byte[] value) {
         return switch (value.length) {
             case 0 -> 0;
@@ -423,6 +426,8 @@ final class StringUTF16 {
         };
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int indexOf(byte[] value, int ch, int fromIndex, int toIndex) {
         fromIndex = Math.max(fromIndex, 0);
         toIndex = Math.min(toIndex, value.length >> 1);
@@ -438,6 +443,8 @@ final class StringUTF16 {
         }
     }
 
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOf(byte[] value, byte[] str) {
         if (str.length == 0) {
@@ -449,6 +456,8 @@ final class StringUTF16 {
         return indexOfUnsafe(value, length(value), str, length(str), 0);
     }
 
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOf(byte[] value, int valueCount, byte[] str, int strCount, int fromIndex) {
         checkBoundsBeginEnd(fromIndex, valueCount, value);
@@ -487,6 +496,8 @@ final class StringUTF16 {
     /**
      * Handles indexOf Latin1 substring in UTF16 string.
      */
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOfLatin1(byte[] value, byte[] str) {
         if (str.length == 0) {
@@ -498,6 +509,8 @@ final class StringUTF16 {
         return indexOfLatin1Unsafe(value, length(value), str, str.length, 0);
     }
 
+    @Pure
+    @StaticallyExecutable
     @IntrinsicCandidate
     public static int indexOfLatin1(byte[] src, int srcCount, byte[] tgt, int tgtCount, int fromIndex) {
         checkBoundsBeginEnd(fromIndex, srcCount, src);
@@ -505,6 +518,8 @@ final class StringUTF16 {
         return indexOfLatin1Unsafe(src, srcCount, tgt, tgtCount, fromIndex);
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int indexOfLatin1Unsafe(byte[] src, int srcCount, byte[] tgt, int tgtCount, int fromIndex) {
         assert fromIndex >= 0;
         assert tgtCount > 0;
@@ -566,6 +581,8 @@ final class StringUTF16 {
     }
 
     // srcCoder == UTF16 && tgtCoder == UTF16
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOf(byte[] src, int srcCount,
                                   byte[] tgt, int tgtCount, int fromIndex) {
         assert fromIndex >= 0;
@@ -601,6 +618,8 @@ final class StringUTF16 {
         }
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOf(byte[] value, int ch, int fromIndex) {
         if (ch < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             // handle most cases here (ch is a BMP code point or a
@@ -1017,6 +1036,8 @@ final class StringUTF16 {
             null;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int indexOfNonWhitespace(byte[] value) {
         int length = value.length >> 1;
         int left = 0;
@@ -1030,6 +1051,8 @@ final class StringUTF16 {
         return left;
     }
 
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOfNonWhitespace(byte[] value) {
         int length = value.length >>> 1;
         int right = length;
@@ -1469,6 +1492,8 @@ final class StringUTF16 {
     }
 
     // srcCoder == UTF16 && tgtCoder == LATIN1
+    @Pure
+    @StaticallyExecutable
     public static int lastIndexOfLatin1(byte[] src, int srcCount,
                                         byte[] tgt, int tgtCount, int fromIndex) {
         assert fromIndex >= 0;

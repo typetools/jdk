@@ -27,6 +27,7 @@ package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -321,6 +322,7 @@ class ReverseOrderListView<E> implements List<E> {
         return ArraysSupport.toArrayReversed(base, a);
     }
 
+    @SideEffectFree
     public <T> T[] toArray(IntFunction<T[]> generator) {
         return ArraysSupport.reverse(base.toArray(generator));
     }
@@ -374,12 +376,14 @@ class ReverseOrderListView<E> implements List<E> {
     }
 
     @Pure
+    @StaticallyExecutable
     public int indexOf(Object o) {
         int i = base.lastIndexOf(o);
         return i == -1 ? -1 : base.size() - i - 1;
     }
 
     @Pure
+    @StaticallyExecutable
     public int lastIndexOf(Object o) {
         int i = base.indexOf(o);
         return i == -1 ? -1 : base.size() - i - 1;

@@ -186,6 +186,7 @@ class ReverseOrderDequeView<E> implements Deque<E> {
         return ArraysSupport.toArrayReversed(base, a);
     }
 
+    @SideEffectFree
     public <T> T[] toArray(IntFunction<T[]> generator) {
         return ArraysSupport.reverse(base.toArray(generator));
     }

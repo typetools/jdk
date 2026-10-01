@@ -37,6 +37,9 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -148,7 +151,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
  * @param <E> the type of elements held in this queue
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 public interface Queue<E> extends Collection<E> {
     /**
      * Inserts the specified element into this queue if it is possible to do so
@@ -170,8 +173,7 @@ public interface Queue<E> extends Collection<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean add(@GuardSatisfied Queue<E> this, E e);
-
+    boolean add(@Growable @GuardSatisfied Queue<E> this, E e);
     /**
      * Inserts the specified element into this queue if it is possible to do
      * so immediately without violating capacity restrictions.
@@ -191,8 +193,7 @@ public interface Queue<E> extends Collection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    boolean offer(E e);
-
+    boolean offer(@Growable Queue<E> this, E e);
     /**
      * Retrieves and removes the head of this queue.  This method differs
      * from {@link #poll() poll()} only in that it throws an exception if
@@ -203,8 +204,7 @@ public interface Queue<E> extends Collection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    E remove(@GuardSatisfied @NonEmpty @CanShrink Queue<E> this);
-
+    E remove(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Queue<E> this);
     /**
      * Retrieves and removes the head of this queue,
      * or returns {@code null} if this queue is empty.
@@ -213,8 +213,7 @@ public interface Queue<E> extends Collection<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    @Nullable E poll(@GuardSatisfied @CanShrink Queue<E> this);
-
+    @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink Queue<E> this);
     /**
      * Retrieves, but does not remove, the head of this queue.  This method
      * differs from {@link #peek peek} only in that it throws an exception
@@ -232,7 +231,6 @@ public interface Queue<E> extends Collection<E> {
      *
      * @return the head of this queue, or {@code null} if this queue is empty
      */
-    @DoesNotUnrefineReceiver("modifiability")
     @Pure
     @Nullable E peek();
 }

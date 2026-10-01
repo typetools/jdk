@@ -37,6 +37,9 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
@@ -100,7 +103,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public interface NavigableSet<E> extends SortedSet<E> {
+public @SeqUngrowable interface NavigableSet<E> extends SortedSet<E> {
     /**
      * Returns the greatest element in this set strictly less than the
      * given element, or {@code null} if there is no such element.
@@ -187,7 +190,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @return an iterator over the elements in this set, in ascending order
      */
     @SideEffectFree
-    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty NavigableSet<E> this);
+    @PolyModifiable @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty NavigableSet<E> this);
 
     /**
      * Returns a reverse order view of the elements contained in this set.
@@ -206,8 +209,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    NavigableSet<E> descendingSet();
-
+    @PolyModifiable NavigableSet<E> descendingSet(@PolyModifiable NavigableSet<E> this);
     /**
      * Returns an iterator over the elements in this set, in descending order.
      * Equivalent in effect to {@code descendingSet().iterator()}.
@@ -216,8 +218,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      */
     @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
-    Iterator<E> descendingIterator();
-
+    @PolyModifiable Iterator<E> descendingIterator(@PolyModifiable NavigableSet<E> this);
     /**
      * Returns a view of the portion of this set whose elements range from
      * {@code fromElement} to {@code toElement}.  If {@code fromElement} and
@@ -254,7 +255,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *         {@code toElement} lies outside the bounds of the range.
      */
     @SideEffectFree
-    NavigableSet<E> subSet(@GuardSatisfied NavigableSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
+    @PolyModifiable NavigableSet<E> subSet(@PolyModifiable NavigableSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
                            @GuardSatisfied E toElement,   boolean toInclusive);
 
     /**
@@ -285,7 +286,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    NavigableSet<E> headSet(@GuardSatisfied NavigableSet<E> this, @GuardSatisfied E toElement, boolean inclusive);
+    @PolyModifiable NavigableSet<E> headSet(@PolyModifiable NavigableSet<E> this, @GuardSatisfied E toElement, boolean inclusive);
 
     /**
      * Returns a view of the portion of this set whose elements are greater
@@ -315,7 +316,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    NavigableSet<E> tailSet(@GuardSatisfied NavigableSet<E> this, @GuardSatisfied E fromElement, boolean inclusive);
+    @PolyModifiable NavigableSet<E> tailSet(@PolyModifiable NavigableSet<E> this, @GuardSatisfied E fromElement, boolean inclusive);
 
     /**
      * {@inheritDoc}
@@ -327,7 +328,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    SortedSet<E> subSet(@GuardSatisfied NavigableSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
+    @PolyModifiable SortedSet<E> subSet(@PolyModifiable NavigableSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
 
     /**
      * {@inheritDoc}
@@ -339,7 +340,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    SortedSet<E> headSet(@GuardSatisfied NavigableSet<E> this, E toElement);
+    @PolyModifiable SortedSet<E> headSet(@PolyModifiable NavigableSet<E> this, E toElement);
 
     /**
      * {@inheritDoc}
@@ -351,7 +352,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    SortedSet<E> tailSet(@GuardSatisfied NavigableSet<E> this, E fromElement);
+    @PolyModifiable SortedSet<E> tailSet(@PolyModifiable NavigableSet<E> this, E fromElement);
 
     /**
      * {@inheritDoc}
@@ -366,7 +367,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default E removeFirst() {
+    default E removeFirst(@Shrinkable NavigableSet<E> this) {
         if (this.isEmpty()) {
             throw new NoSuchElementException();
         } else {
@@ -387,7 +388,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default E removeLast() {
+    default E removeLast(@Shrinkable NavigableSet<E> this) {
         if (this.isEmpty()) {
             throw new NoSuchElementException();
         } else {
@@ -409,7 +410,7 @@ public interface NavigableSet<E> extends SortedSet<E> {
      */
     @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
-    default NavigableSet<E> reversed() {
+    default @PolyModifiable NavigableSet<E> reversed(@PolyModifiable NavigableSet<E> this) {
         return this.descendingSet();
     }
 }

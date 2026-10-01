@@ -31,12 +31,20 @@ import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -134,7 +142,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean add(@GuardSatisfied AbstractList<E> this, E e) {
+    public boolean add(@IteratorPolyMod @Growable @GuardSatisfied AbstractList<E> this, E e) {
         add(size(), e);
         return true;
     }
@@ -145,7 +153,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Pure
-    public abstract E get(@GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index);
+    public abstract E get(@MaybeModifiable @GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index);
 
     /**
      * {@inheritDoc}
@@ -163,7 +171,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E set(@GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index, E element) {
+    public E set(@IteratorPolyMod @Replaceable @GuardSatisfied AbstractList<E> this, @IndexFor({"this"}) int index, E element) {
         throw new UnsupportedOperationException();
     }
 
@@ -183,7 +191,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void add(@GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, E element) {
+    public void add(@IteratorPolyMod @Growable @GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, E element) {
         throw new UnsupportedOperationException();
     }
 
@@ -199,7 +207,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E remove(@GuardSatisfied @CanShrink AbstractList<E> this, @IndexFor({"this"}) int index) {
+    public E remove(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink AbstractList<E> this, @IndexFor({"this"}) int index) {
         throw new UnsupportedOperationException();
     }
 
@@ -218,7 +226,8 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws NullPointerException {@inheritDoc}
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied AbstractList<E> this, @GuardSatisfied @UnknownSignedness Object o) {
+    @StaticallyExecutable
+    public @GTENegativeOne int indexOf(@MaybeModifiable @GuardSatisfied AbstractList<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         ListIterator<E> it = listIterator();
         if (o==null) {
             while (it.hasNext())
@@ -245,7 +254,8 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @throws NullPointerException {@inheritDoc}
      */
     @Pure
-    public @GTENegativeOne int lastIndexOf(@GuardSatisfied AbstractList<E> this, @GuardSatisfied @UnknownSignedness Object o) {
+    @StaticallyExecutable
+    public @GTENegativeOne int lastIndexOf(@MaybeModifiable @GuardSatisfied AbstractList<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         ListIterator<E> it = listIterator(size());
         if (o==null) {
             while (it.hasPrevious())
@@ -279,7 +289,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear(@GuardSatisfied @CanShrink AbstractList<E> this) {
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink AbstractList<E> this) {
         removeRange(0, size());
     }
 
@@ -305,7 +315,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addAll(@GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
+    public boolean addAll(@IteratorPolyMod @Growable @GuardSatisfied AbstractList<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c) {
         rangeCheckForAdd(index);
         boolean modified = false;
         for (E e : c) {
@@ -551,7 +561,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      *         {@code (fromIndex > toIndex)}
      */
     @SideEffectFree
-    public @PolyGrowShrink List<E> subList(@GuardSatisfied @PolyGrowShrink AbstractList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
+    public @PolyGrowShrink @PolyModifiable List<E> subList(@PolyModifiable @GuardSatisfied @PolyGrowShrink AbstractList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
         subListRangeCheck(fromIndex, toIndex, size());
         return (this instanceof RandomAccess ?
                 new RandomAccessSubList<>(this, fromIndex, toIndex) :
@@ -593,7 +603,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @return {@code true} if the specified object is equal to this list
      */
     @Pure
-    public boolean equals(@GuardSatisfied AbstractList<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean equals(@MaybeModifiable @GuardSatisfied AbstractList<E> this, @GuardSatisfied @Nullable Object o) {
         if (o == this)
             return true;
         if (!(o instanceof List))
@@ -621,7 +631,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      * @return the hash code value for this list
      */
     @Pure
-    public int hashCode(@GuardSatisfied AbstractList<E> this) {
+    public int hashCode(@MaybeModifiable @GuardSatisfied AbstractList<E> this) {
         int hashCode = 1;
         for (E e : this)
             hashCode = 31*hashCode + (e==null ? 0 : e.hashCode());
@@ -653,7 +663,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    protected void removeRange(@GuardSatisfied @CanShrink AbstractList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
+    protected void removeRange(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink AbstractList<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex) {
         ListIterator<E> it = listIterator(fromIndex);
         for (int i=0, n=toIndex-fromIndex; i<n; i++) {
             it.next();

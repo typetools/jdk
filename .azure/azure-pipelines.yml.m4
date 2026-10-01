@@ -19,6 +19,7 @@ jobs:
           pwd
           ls -al
           env | sort
+          set
         displayName: show environment
       - bash: pwd && ls && bash ./configure --with-jtreg=/usr/share/jtreg --disable-warnings-as-errors
         displayName: configure
@@ -44,6 +45,7 @@ jobs:
           pwd
           ls -al
           env | sort
+          set
         displayName: show environment
       - bash: |
           set -ex

@@ -42,10 +42,7 @@ jobs:
           git config --get remote.origin.url || true
           pwd
           ls -al
-          echo "HOME=${HOME}"
-          echo "USER=${USER}"
-          echo "SHELL=${SHELL}"
-          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}"
+          set
       - name: configure
         run: |
           pwd
@@ -73,10 +70,7 @@ jobs:
           git config --get remote.origin.url || true
           pwd
           ls -al
-          echo "HOME=${HOME}"
-          echo "USER=${USER}"
-          echo "SHELL=${SHELL}"
-          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}"
+          set
       - name: clone git-scripts
         run: |
           set -ex
@@ -199,6 +193,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -218,6 +215,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -237,6 +237,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -256,6 +259,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -275,6 +281,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -294,6 +303,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -313,6 +325,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -332,6 +347,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -351,6 +369,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -370,6 +391,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -389,6 +413,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -408,6 +435,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -427,6 +457,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -446,6 +479,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -465,6 +501,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -484,6 +523,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -504,6 +546,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -523,6 +568,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -542,6 +590,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -561,6 +612,9 @@ jobs:
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework

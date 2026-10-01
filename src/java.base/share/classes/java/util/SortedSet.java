@@ -26,6 +26,10 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -118,7 +122,7 @@ import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
+public @SeqUngrowable interface SortedSet<E> extends Set<E>, SequencedSet<E> {
     /**
      * Returns the comparator used to order the elements in this set,
      * or {@code null} if this set uses the {@linkplain Comparable
@@ -163,7 +167,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      *         {@code toElement} lies outside the bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> subSet(@GuardSatisfied SortedSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
+    @PolyModifiable SortedSet<E> subSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
 
     /**
      * Returns a view of the portion of this set whose elements are
@@ -191,7 +195,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> headSet(@GuardSatisfied SortedSet<E> this, E toElement);
+    @PolyModifiable SortedSet<E> headSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, E toElement);
 
     /**
      * Returns a view of the portion of this set whose elements are
@@ -219,7 +223,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> tailSet(@GuardSatisfied SortedSet<E> this, E fromElement);
+    @PolyModifiable SortedSet<E> tailSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, E fromElement);
 
     /**
      * Returns the first (lowest) element currently in this set.
@@ -227,7 +231,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @return the first (lowest) element currently in this set
      * @throws NoSuchElementException if this set is empty
      */
-    @SideEffectFree
+    @Pure
     E first(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
@@ -236,7 +240,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      * @return the last (highest) element currently in this set
      * @throws NoSuchElementException if this set is empty
      */
-    @SideEffectFree
+    @Pure
     E last(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
@@ -272,6 +276,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      */
     @Override
     @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     default Spliterator<E> spliterator() {
         return new Spliterators.IteratorSpliterator<E>(
                 this, Spliterator.DISTINCT | Spliterator.SORTED | Spliterator.ORDERED) {
@@ -298,7 +303,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default void addFirst(E e) {
+    default void addFirst(@SeqGrowable SortedSet<E> this, E e) {
         throw new UnsupportedOperationException();
     }
 
@@ -316,7 +321,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default void addLast(E e) {
+    default void addLast(@SeqGrowable SortedSet<E> this, E e) {
         throw new UnsupportedOperationException();
     }
 
@@ -364,7 +369,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default E removeFirst() {
+    default E removeFirst(@Shrinkable SortedSet<E> this) {
         E e = this.first();
         this.remove(e);
         return e;
@@ -384,7 +389,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    default E removeLast() {
+    default E removeLast(@Shrinkable SortedSet<E> this) {
         E e = this.last();
         this.remove(e);
         return e;
@@ -402,7 +407,7 @@ public interface SortedSet<E> extends Set<E>, SequencedSet<E> {
      */
     @SideEffectFree
     @DoesNotUnrefineReceiver("modifiability")
-    default SortedSet<E> reversed() {
+    default @PolyModifiable SortedSet<E> reversed(@PolyModifiable SortedSet<E> this) {
         return ReverseOrderSortedSetView.of(this);
     }
 }

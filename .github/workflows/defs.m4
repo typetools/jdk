@@ -25,6 +25,9 @@ define([cftests_job], [dnl
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -46,6 +49,9 @@ define([daikon_job], [dnl
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework
@@ -66,6 +72,9 @@ define([plume_lib_job], [dnl
           fetch-depth: 25
           show-progress: false
           persist-credentials: false
+      - name: git config
+        run: |
+          git config --global --add safe.directory /__w/jdk/jdk
       - name: clone git-scripts
         run: mkdir -p /tmp/$USER && git -C /tmp/$USER clone --depth=1 -q https://github.com/plume-lib/git-scripts.git
       - name: clone checker-framework

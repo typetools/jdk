@@ -27,6 +27,14 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -152,7 +160,7 @@ import jdk.internal.access.SharedSecrets;
  * @since 1.0
  */
 @CFComment({"lock: This collection can only contain nonnull values"})
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
 public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     extends Dictionary<K,V>
     implements Map<K,V>, Cloneable, java.io.Serializable {
@@ -204,7 +212,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws     IllegalArgumentException  if the initial capacity is less
      *             than zero, or if the load factor is nonpositive.
      */
-    public Hashtable(@NonNegative int initialCapacity, float loadFactor) {
+    public @Modifiable Hashtable(@NonNegative int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal Capacity: "+
                                                initialCapacity);
@@ -226,7 +234,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws    IllegalArgumentException if the initial capacity is less
      *              than zero.
      */
-    public Hashtable(@NonNegative int initialCapacity) {
+    public @Modifiable Hashtable(@NonNegative int initialCapacity) {
         this(initialCapacity, 0.75f);
     }
 
@@ -234,7 +242,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * Constructs a new, empty hashtable with a default initial capacity (11)
      * and load factor (0.75).
      */
-    public Hashtable() {
+    public @Modifiable Hashtable() {
         this(11, 0.75f);
     }
 
@@ -247,7 +255,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @throws NullPointerException if the specified map is null.
      * @since   1.2
      */
-    public Hashtable(Map<? extends K, ? extends V> t) {
+    public @Modifiable Hashtable(Map<? extends K, ? extends V> t) {
         this(Math.max(2*t.size(), 11), 0.75f);
         putAll(t);
     }
@@ -258,7 +266,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      *
      * @param dummy a dummy parameter
      */
-    Hashtable(Void dummy) {}
+    @Modifiable Hashtable(Void dummy) {}
 
     /**
      * Returns the number of keys in this hashtable.
@@ -505,7 +513,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @Nullable V put(@GuardSatisfied Hashtable<K, V> this, K key, V value) {
+    public synchronized @Nullable V put(@Growable @Replaceable @GuardSatisfied Hashtable<K, V> this, K key, V value) {
         // Make sure the value is not null
         if (value == null) {
             throw new NullPointerException();
@@ -540,7 +548,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @Nullable V remove(@GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
+    public synchronized @Nullable V remove(@Shrinkable @GuardSatisfied Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
         int index = (hash & 0x7FFFFFFF) % tab.length;
@@ -574,7 +582,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized void putAll(@GuardSatisfied Hashtable<K, V> this, Map<? extends K, ? extends V> t) {
+    public synchronized void putAll(@Growable @Replaceable @GuardSatisfied Hashtable<K, V> this, Map<? extends K, ? extends V> t) {
         for (Map.Entry<? extends K, ? extends V> e : t.entrySet())
             put(e.getKey(), e.getValue());
     }
@@ -584,7 +592,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized void clear(@GuardSatisfied Hashtable<K, V> this) {
+    public synchronized void clear(@Shrinkable @GuardSatisfied Hashtable<K, V> this) {
         Entry<?,?> tab[] = table;
         for (int index = tab.length; --index >= 0; )
             tab[index] = null;
@@ -600,7 +608,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @return  a clone of the hashtable
      */
     @SideEffectFree
-    public synchronized Object clone(@GuardSatisfied Hashtable<K, V> this) {
+    public synchronized @Modifiable Object clone(@GuardSatisfied Hashtable<K, V> this) {
         Hashtable<?,?> t = cloneHashtable();
         t.table = new Entry<?,?>[table.length];
         for (int i = table.length ; i-- > 0 ; ) {
@@ -702,7 +710,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @since 1.2
      */
     @SideEffectFree
-    public Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied Hashtable<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<@KeyFor({"this"}) K> keySet(@PolyShrinkable @GuardSatisfied Hashtable<K, V> this) {
         if (keySet == null)
             keySet = Collections.synchronizedSet(new KeySet(), this);
         return keySet;
@@ -751,7 +759,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @since 1.2
      */
     @SideEffectFree
-    public Set<Map.Entry<@KeyFor({"this"}) K,V>> entrySet(@GuardSatisfied Hashtable<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<@KeyFor({"this"}) K,V>> entrySet(@PolyModifiable @GuardSatisfied Hashtable<K, V> this) {
         if (entrySet==null)
             entrySet = Collections.synchronizedSet(new EntrySet(), this);
         return entrySet;
@@ -842,7 +850,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      * @since 1.2
      */
     @SideEffectFree
-    public Collection<V> values(@GuardSatisfied Hashtable<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable @GuardSatisfied Hashtable<K, V> this) {
         if (values==null)
             values = Collections.synchronizedCollection(new ValueCollection(),
                                                         this);
@@ -949,7 +957,9 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
 
     @Override
     @Pure
-    public synchronized V getOrDefault(@GuardSatisfied @UnknownSignedness Object key, V defaultValue) {
+    public synchronized @PolyModifiable V getOrDefault(Hashtable<K, @PolyModifiable V> this,
+                                                       @GuardSatisfied @UnknownSignedness Object key,
+                                                       @PolyModifiable V defaultValue) {
         V result = get(key);
         return (null == result) ? defaultValue : result;
     }
@@ -978,7 +988,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @SuppressWarnings("unchecked")
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+    public synchronized void replaceAll(@Replaceable Hashtable<K, V> this, BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);     // explicit check required in case
                                               // table is empty.
         final int expectedModCount = modCount;
@@ -1001,7 +1011,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @Nullable V putIfAbsent(K key, V value) {
+    public synchronized @Nullable V putIfAbsent(@Growable Hashtable<K, V> this, K key, V value) {
         Objects.requireNonNull(value);
 
         // Makes sure the key is not already in the hashtable.
@@ -1027,7 +1037,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized boolean remove(@GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
+    public synchronized boolean remove(@Shrinkable Hashtable<K, V> this, @GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         Objects.requireNonNull(value);
 
         Entry<?,?> tab[] = table;
@@ -1054,7 +1064,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized boolean replace(K key, V oldValue, V newValue) {
+    public synchronized boolean replace(@Replaceable Hashtable<K, V> this, K key, V oldValue, V newValue) {
         Objects.requireNonNull(oldValue);
         Objects.requireNonNull(newValue);
         Entry<?,?> tab[] = table;
@@ -1078,7 +1088,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
     @Override
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @Nullable V replace(K key, V value) {
+    public synchronized @Nullable V replace(@Replaceable Hashtable<K, V> this, K key, V value) {
         Objects.requireNonNull(value);
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
@@ -1107,7 +1117,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull V computeIfAbsent(K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
+    public synchronized @PolyNull V computeIfAbsent(@Growable Hashtable<K, V> this, K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
 
         Entry<?,?> tab[] = table;
@@ -1144,7 +1154,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @Nullable V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
+    public synchronized @Nullable V computeIfPresent(@Shrinkable @Replaceable Hashtable<K, V> this, K key, BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
 
         Entry<?,?> tab[] = table;
@@ -1187,7 +1197,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull V compute(K key, BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
+    public synchronized @PolyNull V compute(@Modifiable Hashtable<K, V> this, K key, BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
 
         Entry<?,?> tab[] = table;
@@ -1239,7 +1249,7 @@ public class Hashtable<K extends @NonNull Object,V extends @NonNull Object>
      */
     @Override
     @DoesNotUnrefineReceiver("modifiability")
-    public synchronized @PolyNull V merge(K key, @NonNull V value, BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
+    public synchronized @PolyNull V merge(@Modifiable Hashtable<K, V> this, K key, @NonNull V value, BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
 
         Entry<?,?> tab[] = table;

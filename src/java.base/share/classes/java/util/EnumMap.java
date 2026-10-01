@@ -28,6 +28,14 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
@@ -97,7 +105,7 @@ import jdk.internal.access.SharedSecrets;
  * @see EnumSet
  * @since 1.5
  */
-@AnnotatedFor({"nullness", "index"})
+@AnnotatedFor({"nullness", "index", "modifiability"})
 public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     implements java.io.Serializable, Cloneable
 {
@@ -155,7 +163,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @param keyType the class object of the key type for this enum map
      * @throws NullPointerException if {@code keyType} is null
      */
-    public EnumMap(Class<K> keyType) {
+    public @Modifiable EnumMap(Class<K> keyType) {
         this.keyType = keyType;
         keyUniverse = getKeyUniverse(keyType);
         vals = new Object[keyUniverse.length];
@@ -168,7 +176,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @param m the enum map from which to initialize this enum map
      * @throws NullPointerException if {@code m} is null
      */
-    public EnumMap(EnumMap<K, ? extends V> m) {
+    public @Modifiable EnumMap(EnumMap<K, ? extends V> m) {
         keyType = m.keyType;
         keyUniverse = m.keyUniverse;
         vals = m.vals.clone();
@@ -187,7 +195,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      *     {@code EnumMap} instance and contains no mappings
      * @throws NullPointerException if {@code m} is null
      */
-    public EnumMap(Map<K, ? extends V> m) {
+    public @Modifiable EnumMap(Map<K, ? extends V> m) {
         if (m instanceof EnumMap) {
             EnumMap<K, ? extends V> em = (EnumMap<K, ? extends V>) m;
             keyType = em.keyType;
@@ -293,7 +301,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     @EnsuresKeyFor(value={"#1"}, map={"this"})
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V put(K key, V value) {
+    public @Nullable V put(@Growable @Replaceable EnumMap<K, V> this, K key, V value) {
         typeCheck(key);
 
         int index = key.ordinal();
@@ -315,7 +323,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable V remove(@GuardSatisfied @UnknownSignedness Object key) {
+    public @Nullable V remove(@Shrinkable EnumMap<K, V> this, @GuardSatisfied @UnknownSignedness Object key) {
         if (!isValidKey(key))
             return null;
         int index = ((Enum<?>)key).ordinal();
@@ -369,7 +377,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
     @RequiresNonNull({"keyUniverse", "vals"})
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void putAll(@UnknownInitialization EnumMap<K, V> this, Map<? extends K, ? extends V> m) {
+    public void putAll(@Growable @Replaceable @UnknownInitialization EnumMap<K, V> this, Map<? extends K, ? extends V> m) {
         if (m instanceof EnumMap<?, ?> em) {
             if (em.keyType != keyType) {
                 if (em.isEmpty())
@@ -395,7 +403,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear() {
+    public void clear(@Shrinkable EnumMap<K, V> this) {
         Arrays.fill(vals, null);
         size = 0;
     }
@@ -419,7 +427,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @return a set view of the keys contained in this enum map
      */
     @SideEffectFree
-    public Set<K> keySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<K> keySet(@PolyShrinkable EnumMap<K, V> this) {
         Set<K> ks = keySet;
         if (ks == null) {
             ks = new KeySet();
@@ -444,14 +452,14 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@Shrinkable KeySet this, @Nullable @UnknownSignedness Object o) {
             int oldSize = size;
             EnumMap.this.remove(o);
             return size != oldSize;
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void clear() {
+        public void clear(@Shrinkable KeySet this) {
             EnumMap.this.clear();
         }
     }
@@ -467,7 +475,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @return a collection view of the values contained in this map
      */
     @SideEffectFree
-    public Collection<V> values() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable EnumMap<K, V> this) {
         Collection<V> vs = values;
         if (vs == null) {
             vs = new Values();
@@ -492,7 +500,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@Shrinkable Values this, @Nullable @UnknownSignedness Object o) {
             o = maskNull(o);
 
             for (int i = 0; i < vals.length; i++) {
@@ -506,7 +514,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void clear() {
+        public void clear(@Shrinkable Values this) {
             EnumMap.this.clear();
         }
     }
@@ -521,7 +529,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      * @return a set view of the mappings contained in this enum map
      */
     @SideEffectFree
-    public Set<Map.Entry<K,V>> entrySet() {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<K,V>> entrySet(@PolyModifiable EnumMap<K, V> this) {
         Set<Map.Entry<K,V>> es = entrySet;
         if (es != null)
             return es;
@@ -543,7 +551,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public boolean remove(@Nullable @UnknownSignedness Object o) {
+        public boolean remove(@Shrinkable EntrySet this, @Nullable @UnknownSignedness Object o) {
             return o instanceof Map.Entry<?, ?> entry
                     && removeMapping(entry.getKey(), entry.getValue());
         }
@@ -553,7 +561,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
         }
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void clear() {
+        public void clear(@Shrinkable EntrySet this) {
             EnumMap.this.clear();
         }
         @SideEffectFree
@@ -606,7 +614,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
 
         @SideEffectsOnly("this")
         @DoesNotUnrefineReceiver("modifiability")
-        public void remove() {
+        public void remove(@Shrinkable EnumMapIterator<T> this) {
             checkLastReturnedIndex();
 
             if (vals[lastReturnedIndex] != null) {
@@ -830,7 +838,7 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
      */
     @SuppressWarnings("unchecked")
     @SideEffectFree
-    public EnumMap<K, V> clone() {
+    public @Modifiable EnumMap<K, V> clone() {
         EnumMap<K, V> result = null;
         try {
             result = (EnumMap<K, V>) super.clone();
