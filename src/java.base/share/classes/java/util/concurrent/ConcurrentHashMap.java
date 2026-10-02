@@ -2265,7 +2265,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * @return the new set
      * @since 1.8
      */
-    public static <K> KeySetView<K,Boolean> newKeySet() {
+    public static <K> @Modifiable @IteratorPolyMod KeySetView<K,Boolean> newKeySet() {
         return new KeySetView<K,Boolean>
             (new ConcurrentHashMap<K,Boolean>(), Boolean.TRUE);
     }
@@ -2282,7 +2282,7 @@ public class ConcurrentHashMap<K extends @NonNull Object,V extends @NonNull Obje
      * elements is negative
      * @since 1.8
      */
-    public static <K> KeySetView<K,Boolean> newKeySet(int initialCapacity) {
+    public static <K> @Modifiable @IteratorPolyMod KeySetView<K,Boolean> newKeySet(int initialCapacity) {
         return new KeySetView<K,Boolean>
             (new ConcurrentHashMap<K,Boolean>(initialCapacity), Boolean.TRUE);
     }
