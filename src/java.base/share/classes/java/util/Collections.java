@@ -5190,7 +5190,7 @@ public class Collections {
      * @see #emptySet()
      */
     @SuppressWarnings("rawtypes")
-    public static final @Unmodifiable Set EMPTY_SET = new EmptySet<>();
+    public static final @Unmodifiable @IteratorPolyMod Set EMPTY_SET = new EmptySet<>();
 
     /**
      * Returns an empty set (immutable).  This set is serializable.
@@ -5213,7 +5213,7 @@ public class Collections {
      */
     @SuppressWarnings("unchecked")
     @SideEffectFree
-    public static final <T> @Unmodifiable Set<T> emptySet() {
+    public static final <T> @Unmodifiable @IteratorPolyMod Set<T> emptySet() {
         return (Set<T>) EMPTY_SET;
     }
 

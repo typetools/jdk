@@ -254,7 +254,7 @@ public class Object {
      */
     @SideEffectFree
     @IntrinsicCandidate
-    protected native Object clone(@GuardSatisfied Object this) throws CloneNotSupportedException;
+    protected native @PolyIteratorPolyMod @PolyModifiable Object clone(@GuardSatisfied @PolyIteratorPolyMod @PolyModifiable Object this) throws CloneNotSupportedException;
 
     /**
      * Returns a string representation of the object.
