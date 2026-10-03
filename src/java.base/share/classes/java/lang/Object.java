@@ -31,6 +31,8 @@ import org.checkerframework.checker.guieffect.qual.SafeEffect;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -254,7 +256,7 @@ public class Object {
      */
     @SideEffectFree
     @IntrinsicCandidate
-    protected native Object clone(@GuardSatisfied Object this) throws CloneNotSupportedException;
+    protected native @PolyIteratorPolyMod @PolyModifiable Object clone(@GuardSatisfied @PolyIteratorPolyMod @PolyModifiable Object this) throws CloneNotSupportedException;
 
     /**
      * Returns a string representation of the object.
