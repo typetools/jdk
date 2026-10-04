@@ -25,8 +25,8 @@
 
 package java.lang;
 
-import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -358,7 +358,7 @@ public final class ProcessBuilder
      * @see    Runtime#exec(String[],String[],java.io.File)
      * @see    System#getenv()
      */
-    public Map<String,String> environment() {
+    public @Modifiable Map<String,String> environment() {
         @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null)
