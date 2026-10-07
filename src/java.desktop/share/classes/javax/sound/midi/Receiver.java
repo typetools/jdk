@@ -25,6 +25,9 @@
 
 package javax.sound.midi;
 
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * A {@code Receiver} receives {@link MidiEvent} objects and typically does
  * something useful in response, such as interpreting them to generate sound or
@@ -36,6 +39,8 @@ package javax.sound.midi;
  * @see Synthesizer
  * @see Transmitter
  */
+@AnnotatedFor({"mustcall"})
+@InheritableMustCall("close")
 public interface Receiver extends AutoCloseable {
 
     //$$fb 2002-04-12: fix for 4662090: Contradiction in Receiver specification
