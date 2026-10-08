@@ -251,7 +251,7 @@ final class StringUTF16 {
     }
 
     @IntrinsicCandidate
-    @SideEffectsOnly("#3")
+    @SideEffectsOnly("#4")
     public static void getChars(byte[] value, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
         // We need a range check here because 'getChar' has no checks
         if (srcBegin < srcEnd) {
