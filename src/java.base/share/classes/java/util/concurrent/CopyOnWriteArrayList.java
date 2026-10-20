@@ -123,7 +123,7 @@ import jdk.internal.util.ArraysSupport;
  * @author Doug Lea
  * @param <E> the type of elements held in this list
  */
-@AnnotatedFor("modifiability")
+@AnnotatedFor({"modifiability", "nullness"})
 public class CopyOnWriteArrayList<E>
     implements List<E>, RandomAccess, Cloneable, java.io.Serializable {
     private static final long serialVersionUID = 8673264195747942595L;
@@ -295,7 +295,7 @@ public class CopyOnWriteArrayList<E>
      */
     @Pure
     @StaticallyExecutable
-    public int indexOf(E e, int index) {
+    public int indexOf(@Nullable E e, int index) {
         Object[] es = getArray();
         return indexOfRange(e, es, index, es.length);
     }
@@ -328,7 +328,7 @@ public class CopyOnWriteArrayList<E>
      */
     @Pure
     @StaticallyExecutable
-    public int lastIndexOf(E e, int index) {
+    public int lastIndexOf(@Nullable E e, int index) {
         Object[] es = getArray();
         return lastIndexOfRange(e, es, 0, index + 1);
     }
@@ -811,7 +811,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeAll(@Shrinkable @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -834,7 +834,7 @@ public class CopyOnWriteArrayList<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink CopyOnWriteArrayList<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

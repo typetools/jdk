@@ -57,6 +57,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.AbstractQueue;
@@ -637,6 +638,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
     }
 
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeFirstOccurrence(@Shrinkable @CanShrink LinkedBlockingDeque<E> this, Object o) {
@@ -656,6 +658,7 @@ public class LinkedBlockingDeque<E extends Object>
         }
     }
 
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
     public boolean removeLastOccurrence(@Shrinkable @CanShrink LinkedBlockingDeque<E> this, Object o) {
@@ -906,9 +909,10 @@ public class LinkedBlockingDeque<E extends Object>
      * @param o object to be checked for containment in this deque
      * @return {@code true} if this deque contains the specified element
      */
+    @CFComment("probably accepts null in practice, but docs at best imply this")
     @Pure
     @EnsuresNonEmptyIf(result = true, expression = "this")
-    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -1453,7 +1457,7 @@ public class LinkedBlockingDeque<E extends Object>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeAll(@Shrinkable @CanShrink LinkedBlockingDeque<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable @CanShrink LinkedBlockingDeque<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1463,7 +1467,7 @@ public class LinkedBlockingDeque<E extends Object>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink LinkedBlockingDeque<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink LinkedBlockingDeque<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

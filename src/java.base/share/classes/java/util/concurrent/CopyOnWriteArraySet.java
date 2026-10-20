@@ -388,7 +388,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         return al.removeAll(c);
     }
 
@@ -413,7 +413,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean retainAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         return al.retainAll(c);
     }
 
