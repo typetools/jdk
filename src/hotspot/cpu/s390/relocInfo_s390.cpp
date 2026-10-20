@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -99,7 +99,7 @@ address Relocation::pd_call_destination(address orig_addr) {
       return (address)(-1);
     }
     NativeFarCall* call;
-    if (orig_addr == NULL) {
+    if (orig_addr == nullptr) {
       call = nativeFarCall_at(inst_addr);
     } else {
       // must access location (in CP) where destination is stored in unmoved code, because load from CP is pc-relative
@@ -161,49 +161,6 @@ void Relocation::pd_set_call_destination(address x) {
 
   // constant is absolute, must use x
   nativeMovConstReg_at(inst_addr)->set_data(((intptr_t)x));
-}
-
-
-// store the new target address into an oop_Relocation cell, if any
-// return indication if update happened.
-bool relocInfo::update_oop_pool(address begin, address end, address newTarget, CodeBlob* cb) {
-
-  //  Try to find the CodeBlob, if not given by caller
-  if (cb == NULL) cb = CodeCache::find_blob(begin);
-#ifdef ASSERT
-  else
-    assert(cb == CodeCache::find_blob(begin), "consistency");
-#endif
-
-  //  'RelocIterator' requires an nmethod
-  nmethod*  nm = cb ? cb->as_nmethod_or_null() : NULL;
-  if (nm != NULL) {
-    RelocIterator iter(nm, begin, end);
-    oop* oop_addr = NULL;
-    Metadata** metadata_addr = NULL;
-    while (iter.next()) {
-      if (iter.type() == relocInfo::oop_type) {
-        oop_Relocation *r = iter.oop_reloc();
-        if (oop_addr == NULL) {
-          oop_addr = r->oop_addr();
-          *oop_addr = (oop)newTarget;
-        } else {
-          assert(oop_addr == r->oop_addr(), "must be only one set-oop here");
-        }
-      }
-      if (iter.type() == relocInfo::metadata_type) {
-        metadata_Relocation *r = iter.metadata_reloc();
-        if (metadata_addr == NULL) {
-          metadata_addr = r->metadata_addr();
-          *metadata_addr = (Metadata*)newTarget;
-        } else {
-          assert(metadata_addr == r->metadata_addr(), "must be only one set-metadata here");
-        }
-      }
-    }
-    return oop_addr || metadata_addr;
-  }
-  return false;
 }
 
 

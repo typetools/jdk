@@ -21,12 +21,11 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id$
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package com.sun.org.apache.xml.internal.security.signature.reference;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -81,6 +80,7 @@ public class ReferenceSubTreeData implements ReferenceNodeSetData {
             this.withComments = !excludeComments;
         }
 
+        @Pure
         public boolean hasNext() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);
@@ -127,7 +127,7 @@ public class ReferenceSubTreeData implements ReferenceNodeSetData {
          *
          * @param node the node to traverse
          * @param nodeSet the set of nodes traversed so far
-         * @param the previous sibling node
+         * @param prevSibling the previous sibling node
          */
         @SuppressWarnings("fallthrough")
         private void nodeSetMinusCommentNodes(Node node, List<Node> nodeSet,

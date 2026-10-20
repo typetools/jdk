@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * An event or a repeated event for an object that is registered with a {@link
  * WatchService}.
@@ -44,15 +47,17 @@ package java.nio.file;
  * @since 1.7
  */
 
-public interface WatchEvent<T> {
+@AnnotatedFor({"nullness"})
+public interface WatchEvent<T extends @Nullable Object> {
 
     /**
      * An event kind, for the purposes of identification.
+     * @param <T> The type of the context object associated with the event
      *
      * @since 1.7
      * @see StandardWatchEventKinds
      */
-    public static interface Kind<T> {
+    public static interface Kind<T extends @Nullable Object> {
         /**
          * Returns the name of the event kind.
          *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
 
 package sun.jvm.hotspot.gc.shared;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.*;
 import java.util.*;
 
@@ -31,8 +33,10 @@ import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.memory.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
-public class ContiguousSpace extends CompactibleSpace {
+public class ContiguousSpace extends Space implements LiveRegionsProvider {
   private static AddressField topField;
 
   static {
@@ -79,13 +83,14 @@ public class ContiguousSpace extends CompactibleSpace {
   }
 
   /** Returns regions of Space where live objects live */
-  public List/*<MemRegion>*/ getLiveRegions() {
-    List res = new ArrayList();
+  public List<MemRegion> getLiveRegions() {
+    List<MemRegion> res = new ArrayList<>();
     res.add(new MemRegion(bottom(), top()));
     return res;
   }
 
   /** Testers */
+  @Pure
   public boolean contains(Address p) {
     return (bottom().lessThanOrEqual(p) && top().greaterThan(p));
   }

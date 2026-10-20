@@ -21,13 +21,31 @@
  * questions.
  */
 
+#include <stdlib.h>
+
+// checked malloc to trap OOM conditions
+static void* c_malloc(JNIEnv* env, size_t size) {
+  void* ret = malloc(size);
+  if (ret == NULL)
+    env->FatalError("malloc failed");
+  return ret;
+}
+
 // Asserts every exception as fatal one
 #define CE {\
-    if ((*env)->ExceptionOccurred(env))\
+    if (env->ExceptionOccurred())\
     {\
-        puts("Unexpected JNI exception. TEST FAIL.");     \
-        (*env)->ExceptionDescribe(env);                   \
-        (*env)->ExceptionClear(env);\
-        (*env)->FatalError(env, "Unexpected JNI Exception. TEST FAIL."); \
+        puts("Unexpected JNI exception. TEST FAIL.");\
+        env->ExceptionDescribe();\
+        env->ExceptionClear();\
+        env->FatalError("Unexpected JNI Exception. TEST FAIL.");\
     }\
 }
+
+// Checks return code for JNI calls that don't raise exceptions
+// and generate fatal error
+#define CHECK(jniCall) do { \
+  if ((jniCall) != 0) { \
+    env->FatalError("Error invoking JNI method: " #jniCall); \
+  } \
+} while (0)

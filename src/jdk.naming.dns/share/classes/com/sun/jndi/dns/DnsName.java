@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -223,6 +222,7 @@ public final class DnsName implements Name {
                 (compareTo(obj) == 0));
     }
 
+    @Pure
     public int compareTo(Object obj) {
         Name n = (Name) obj;
         return compareRange(0, size(), n);      // never 0 if sizes differ
@@ -376,7 +376,7 @@ public final class DnsName implements Name {
 
     boolean hasRootLabel() {
         return (!isEmpty() &&
-                get(0).equals(""));
+                get(0).isEmpty());
     }
 
     /*
@@ -450,7 +450,7 @@ public final class DnsName implements Name {
         // label of the name.  Those two are special cases in that for
         // all other domain names, the number of labels is one greater
         // than the number of dot separators.
-        if (!name.equals("") && !name.equals(".")) {
+        if (!name.isEmpty() && !name.equals(".")) {
             add(0, label.toString());
         }
 

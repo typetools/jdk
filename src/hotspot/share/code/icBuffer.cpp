@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,26 +32,60 @@
 #include "interpreter/interpreter.hpp"
 #include "interpreter/linkResolver.hpp"
 #include "memory/resourceArea.hpp"
-#include "memory/universe.hpp"
 #include "oops/method.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
+#include "runtime/javaThread.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/stubRoutines.hpp"
+#include "runtime/vmOperations.hpp"
 
 DEF_STUB_INTERFACE(ICStub);
 
-StubQueue* InlineCacheBuffer::_buffer    = NULL;
-ICStub*    InlineCacheBuffer::_next_stub = NULL;
+StubQueue* InlineCacheBuffer::_buffer    = nullptr;
 
-CompiledICHolder* InlineCacheBuffer::_pending_released = NULL;
+CompiledICHolder* InlineCacheBuffer::_pending_released = nullptr;
 int InlineCacheBuffer::_pending_count = 0;
+
+#ifdef ASSERT
+ICRefillVerifier::ICRefillVerifier()
+  : _refill_requested(false),
+    _refill_remembered(false)
+{
+  Thread* thread = Thread::current();
+  assert(thread->missed_ic_stub_refill_verifier() == nullptr, "nesting not supported");
+  thread->set_missed_ic_stub_refill_verifier(this);
+}
+
+ICRefillVerifier::~ICRefillVerifier() {
+  assert(!_refill_requested || _refill_remembered,
+         "Forgot to refill IC stubs after failed IC transition");
+  Thread::current()->set_missed_ic_stub_refill_verifier(nullptr);
+}
+
+ICRefillVerifierMark::ICRefillVerifierMark(ICRefillVerifier* verifier) {
+  Thread* thread = Thread::current();
+  assert(thread->missed_ic_stub_refill_verifier() == nullptr, "nesting not supported");
+  thread->set_missed_ic_stub_refill_verifier(verifier);
+}
+
+ICRefillVerifierMark::~ICRefillVerifierMark() {
+  Thread::current()->set_missed_ic_stub_refill_verifier(nullptr);
+}
+
+static ICRefillVerifier* current_ic_refill_verifier() {
+  Thread* current = Thread::current();
+  ICRefillVerifier* verifier = current->missed_ic_stub_refill_verifier();
+  assert(verifier != nullptr, "need a verifier for safety");
+  return verifier;
+}
+#endif
 
 void ICStub::finalize() {
   if (!is_empty()) {
     ResourceMark rm;
     CompiledIC *ic = CompiledIC_at(CodeCache::find_compiled(ic_site()), ic_site());
-    assert(CodeCache::find_compiled(ic->instruction_address()) != NULL, "inline cache in non-compiled?");
+    assert(CodeCache::find_compiled(ic->instruction_address()) != nullptr, "inline cache in non-compiled?");
 
     assert(this == ICStub_from_destination_address(ic->stub_address()), "wrong owner of ic buffer");
     ic->set_ic_destination_and_value(destination(), cached_value());
@@ -85,7 +119,7 @@ void ICStub::clear() {
   if (CompiledIC::is_icholder_entry(destination())) {
     InlineCacheBuffer::queue_for_release((CompiledICHolder*)cached_value());
   }
-  _ic_site = NULL;
+  _ic_site = nullptr;
 }
 
 
@@ -103,52 +137,50 @@ void ICStub::print() {
 //-----------------------------------------------------------------------------------------------
 // Implementation of InlineCacheBuffer
 
-void InlineCacheBuffer::init_next_stub() {
-  ICStub* ic_stub = (ICStub*)buffer()->request_committed (ic_stub_code_size());
-  assert (ic_stub != NULL, "no room for a single stub");
-  set_next_stub(ic_stub);
-}
 
 void InlineCacheBuffer::initialize() {
-  if (_buffer != NULL) return; // already initialized
+  if (_buffer != nullptr) return; // already initialized
   _buffer = new StubQueue(new ICStubInterface, 10*K, InlineCacheBuffer_lock, "InlineCacheBuffer");
-  assert (_buffer != NULL, "cannot allocate InlineCacheBuffer");
-  init_next_stub();
+  assert (_buffer != nullptr, "cannot allocate InlineCacheBuffer");
 }
 
 
 ICStub* InlineCacheBuffer::new_ic_stub() {
-  while (true) {
-    ICStub* ic_stub = (ICStub*)buffer()->request_committed(ic_stub_code_size());
-    if (ic_stub != NULL) {
-      return ic_stub;
-    }
-    // we ran out of inline cache buffer space; must enter safepoint.
-    // We do this by forcing a safepoint
-    EXCEPTION_MARK;
-
-    VM_ICBufferFull ibf;
-    VMThread::execute(&ibf);
-    // We could potential get an async. exception at this point.
-    // In that case we will rethrow it to ourselvs.
-    if (HAS_PENDING_EXCEPTION) {
-      oop exception = PENDING_EXCEPTION;
-      CLEAR_PENDING_EXCEPTION;
-      Thread::send_async_exception(JavaThread::current()->threadObj(), exception);
-    }
-  }
-  ShouldNotReachHere();
-  return NULL;
+  return (ICStub*)buffer()->request_committed(ic_stub_code_size());
 }
 
 
+void InlineCacheBuffer::refill_ic_stubs() {
+#ifdef ASSERT
+  ICRefillVerifier* verifier = current_ic_refill_verifier();
+  verifier->request_remembered();
+#endif
+  // we ran out of inline cache buffer space; must enter safepoint.
+  // We do this by forcing a safepoint
+  VM_ICBufferFull ibf;
+  VMThread::execute(&ibf);
+}
+
+bool InlineCacheBuffer::needs_update_inline_caches() {
+  // Stub removal
+  if (buffer()->number_of_stubs() > 0) {
+    return true;
+  }
+
+  // Release pending CompiledICHolder
+  if (pending_icholder_count() > 0) {
+    return true;
+  }
+
+  return false;
+}
+
 void InlineCacheBuffer::update_inline_caches() {
-  if (buffer()->number_of_stubs() > 1) {
+  if (buffer()->number_of_stubs() > 0) {
     if (TraceICBuffer) {
       tty->print_cr("[updating inline caches with %d stubs]", buffer()->number_of_stubs());
     }
     buffer()->remove_all();
-    init_next_stub();
   }
   release_pending_icholders();
 }
@@ -160,7 +192,7 @@ bool InlineCacheBuffer::contains(address instruction_address) {
 
 
 bool InlineCacheBuffer::is_empty() {
-  return buffer()->number_of_stubs() == 1;    // always has sentinel
+  return buffer()->number_of_stubs() == 0;
 }
 
 
@@ -168,13 +200,22 @@ void InlineCacheBuffer_init() {
   InlineCacheBuffer::initialize();
 }
 
-
-void InlineCacheBuffer::create_transition_stub(CompiledIC *ic, void* cached_value, address entry) {
+bool InlineCacheBuffer::create_transition_stub(CompiledIC *ic, void* cached_value, address entry) {
   assert(!SafepointSynchronize::is_at_safepoint(), "should not be called during a safepoint");
-  assert (CompiledIC_lock->is_locked(), "");
+  assert(CompiledICLocker::is_safe(ic->instruction_address()), "mt unsafe call");
   if (TraceICBuffer) {
     tty->print_cr("  create transition stub for " INTPTR_FORMAT " destination " INTPTR_FORMAT " cached value " INTPTR_FORMAT,
                   p2i(ic->instruction_address()), p2i(entry), p2i(cached_value));
+  }
+
+  // allocate and initialize new "out-of-line" inline-cache
+  ICStub* ic_stub = new_ic_stub();
+  if (ic_stub == nullptr) {
+#ifdef ASSERT
+    ICRefillVerifier* verifier = current_ic_refill_verifier();
+    verifier->request_refill();
+#endif
+    return false;
   }
 
   // If an transition stub is already associate with the inline cache, then we remove the association.
@@ -183,14 +224,11 @@ void InlineCacheBuffer::create_transition_stub(CompiledIC *ic, void* cached_valu
     old_stub->clear();
   }
 
-  // allocate and initialize new "out-of-line" inline-cache
-  ICStub* ic_stub = get_next_stub();
   ic_stub->set_stub(ic, cached_value, entry);
 
   // Update inline cache in nmethod to point to new "out-of-line" allocated inline cache
   ic->set_ic_destination(ic_stub);
-
-  set_next_stub(new_ic_stub()); // can cause safepoint synchronization
+  return true;
 }
 
 
@@ -210,8 +248,8 @@ void* InlineCacheBuffer::cached_value_for(CompiledIC *ic) {
 void InlineCacheBuffer::release_pending_icholders() {
   assert(SafepointSynchronize::is_at_safepoint(), "should only be called during a safepoint");
   CompiledICHolder* holder = _pending_released;
-  _pending_released = NULL;
-  while (holder != NULL) {
+  _pending_released = nullptr;
+  while (holder != nullptr) {
     CompiledICHolder* next = holder->next();
     delete holder;
     holder = next;
@@ -224,7 +262,7 @@ void InlineCacheBuffer::release_pending_icholders() {
 // not safe to free them until them since they might be visible to
 // another thread.
 void InlineCacheBuffer::queue_for_release(CompiledICHolder* icholder) {
-  MutexLockerEx mex(InlineCacheBuffer_lock);
+  MutexLocker mex(InlineCacheBuffer_lock, Mutex::_no_safepoint_check_flag);
   icholder->set_next(_pending_released);
   _pending_released = icholder;
   _pending_count++;

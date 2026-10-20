@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,8 +50,12 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 @AnnotatedFor({"nullness", "signature"})
 public class TypeNotPresentException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = -5101214195716534496L;
 
+    /**
+     * The type name.
+     */
     private @FullyQualifiedName String typeName;
 
     /**

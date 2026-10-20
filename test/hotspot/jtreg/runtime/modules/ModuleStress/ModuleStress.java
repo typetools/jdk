@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,18 +25,20 @@
  * @test
  * @bug 8159262
  * @summary Test differing scenarios where a module's readability list and a package's exportability list should be walked
+ * @requires vm.flagless
  * @modules java.base/jdk.internal.misc
  * @library /test/lib
  * @compile ../AccessCheck/ModuleLibrary.java
  * @compile ModuleSameCLMain.java
  * @compile ModuleNonBuiltinCLMain.java
  * @compile CustomSystemClassLoader.java
- * @run main/othervm ModuleStress
+ * @run driver ModuleStress
  */
 
 import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.compiler.InMemoryJavaCompiler;
+import jdk.test.lib.helpers.ClassFileInstaller;
 
 public class ModuleStress {
 

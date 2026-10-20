@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package build.tools.cldrconverter;
 
-import static build.tools.cldrconverter.Bundle.jreTimeZoneNames;
 import build.tools.cldrconverter.BundleGenerator.BundleType;
 import java.io.File;
 import java.io.IOException;
@@ -35,8 +34,6 @@ import java.text.MessageFormat;
 import java.time.*;
 import java.util.*;
 import java.util.ResourceBundle.Control;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -69,6 +66,10 @@ public class CLDRConverter {
     private static String METAZONES_SOURCE_FILE;
     private static String LIKELYSUBTAGS_SOURCE_FILE;
     private static String TIMEZONE_SOURCE_FILE;
+    private static String WINZONES_SOURCE_FILE;
+    private static String PLURALS_SOURCE_FILE;
+    private static String DAYPERIODRULE_SOURCE_FILE;
+    private static String COVERAGELEVELS_FILE;
     static String DESTINATION_DIR = "build/gensrc";
 
     static final String LOCALE_NAME_PREFIX = "locale.displayname.";
@@ -87,14 +88,19 @@ public class CLDRConverter {
     static final String ZONE_NAME_PREFIX = "timezone.displayname.";
     static final String METAZONE_ID_PREFIX = "metazone.id.";
     static final String PARENT_LOCALE_PREFIX = "parentLocale.";
+    static final String META_EMPTY_ZONE_NAME = "EMPTY_ZONE";
     static final String[] EMPTY_ZONE = {"", "", "", "", "", ""};
+    static final String META_ETCUTC_ZONE_NAME = "ETC_UTC";
 
     private static SupplementDataParseHandler handlerSuppl;
     private static LikelySubtagsParseHandler handlerLikelySubtags;
+    private static WinZonesParseHandler handlerWinZones;
+    static PluralsParseHandler handlerPlurals;
     static SupplementalMetadataParseHandler handlerSupplMeta;
     static NumberingSystemsParseHandler handlerNumbering;
     static MetaZonesParseHandler handlerMetaZones;
     static TimeZoneParseHandler handlerTimeZone;
+    static DayPeriodRuleParseHandler handlerDayPeriodRule;
     private static BundleGenerator bundleGenerator;
 
     // java.base module related
@@ -106,10 +112,15 @@ public class CLDRConverter {
     private static final ResourceBundle.Control defCon =
         ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT);
 
-    private static final String[] AVAILABLE_TZIDS = TimeZone.getAvailableIDs();
+    private static Set<String> AVAILABLE_TZIDS;
+    static int copyrightYear;
     private static String zoneNameTempFile;
     private static String tzDataDir;
     private static final Map<String, String> canonicalTZMap = new HashMap<>();
+
+    // rules maps
+    static Map<String, String> pluralRules;
+    static Map<String, String> dayPeriodRules;
 
     static enum DraftType {
         UNCONFIRMED,
@@ -206,6 +217,10 @@ public class CLDRConverter {
                         verbose = true;
                         break;
 
+                    case "-year":
+                        copyrightYear = Integer.parseInt(args[++i]);
+                        break;
+
                     case "-zntempfile":
                         zoneNameTempFile = args[++i];
                         break;
@@ -224,7 +239,7 @@ public class CLDRConverter {
                     }
                 }
             } catch (RuntimeException e) {
-                severe("unknown or imcomplete arg(s): " + currentArg);
+                severe("unknown or incomplete arg(s): " + currentArg);
                 usage();
                 System.exit(1);
             }
@@ -241,9 +256,17 @@ public class CLDRConverter {
         METAZONES_SOURCE_FILE = CLDR_BASE + "/supplemental/metaZones.xml";
         TIMEZONE_SOURCE_FILE = CLDR_BASE + "/bcp47/timezone.xml";
         SPPL_META_SOURCE_FILE = CLDR_BASE + "/supplemental/supplementalMetadata.xml";
+        WINZONES_SOURCE_FILE = CLDR_BASE + "/supplemental/windowsZones.xml";
+        PLURALS_SOURCE_FILE = CLDR_BASE + "/supplemental/plurals.xml";
+        DAYPERIODRULE_SOURCE_FILE = CLDR_BASE + "/supplemental/dayPeriods.xml";
+        COVERAGELEVELS_FILE = CLDR_BASE + "/properties/coverageLevels.txt";
 
         if (BASE_LOCALES.isEmpty()) {
             setupBaseLocales("en-US");
+        }
+
+        if (copyrightYear == 0) {
+            copyrightYear = ZonedDateTime.now(ZoneId.of("America/Los_Angeles")).getYear();
         }
 
         bundleGenerator = new ResourceBundleGenerator();
@@ -252,12 +275,19 @@ public class CLDRConverter {
         parseSupplemental();
         parseBCP47();
 
+        // rules maps
+        pluralRules = generateRules(handlerPlurals);
+        dayPeriodRules = generateRules(handlerDayPeriodRule);
+
         List<Bundle> bundles = readBundleList();
         convertBundles(bundles);
 
-        // Generate java.time.format.ZoneName.java
         if (isBaseModule) {
+            // Generate java.time.format.ZoneName.java
             generateZoneName();
+
+            // Generate Windows tzmappings
+            generateWindowsTZMappings();
         }
     }
 
@@ -271,6 +301,7 @@ public class CLDRConverter {
                 + "\t-basemodule    generates bundles that go into java.base module%n"
                 + "\t-baselocales loc(,loc)*      locales that go into the base module%n"
                 + "\t-o dir         output directory (default: ./build/gensrc)%n"
+                + "\t-year year     copyright year in output%n"
                 + "\t-zntempfile    template file for java.time.format.ZoneName.java%n"
                 + "\t-tzdatadir     tzdata directory for java.time.format.ZoneName.java%n"
                 + "\t-utf8          use UTF-8 rather than \\uxxxx (for debug)%n");
@@ -330,27 +361,41 @@ public class CLDRConverter {
     private static List<Bundle> readBundleList() throws Exception {
         List<Bundle> retList = new ArrayList<>();
         Path path = FileSystems.getDefault().getPath(SOURCE_FILE_DIR);
+        var coverageMap = coverageLevelsMap();
         try (DirectoryStream<Path> dirStr = Files.newDirectoryStream(path)) {
             for (Path entry : dirStr) {
                 String fileName = entry.getFileName().toString();
                 if (fileName.endsWith(".xml")) {
                     String id = fileName.substring(0, fileName.indexOf('.'));
                     Locale cldrLoc = Locale.forLanguageTag(toLanguageTag(id));
-                    StringBuilder sb = getCandLocales(cldrLoc);
+                    List<Locale> candList = getCandidateLocales(cldrLoc);
+                    if (!"root".equals(id) && candList.stream().noneMatch(coverageMap::containsKey)) {
+                        continue;
+                    }
+                    StringBuilder sb = getCandLocales(candList);
                     if (sb.indexOf("root") == -1) {
                         sb.append("root");
                     }
-                    Bundle b = new Bundle(id, sb.toString(), null, null);
-                    // Insert the bundle for root at the top so that it will get
-                    // processed first.
-                    if ("root".equals(id)) {
-                        retList.add(0, b);
-                    } else {
-                        retList.add(b);
-                    }
+                    retList.add(new Bundle(id, sb.toString(), null, null));
                 }
             }
         }
+
+        // Sort the bundles based on id. This will make sure all the parent bundles are
+        // processed first, e.g., for en_GB bundle, en_001, and "root" comes before
+        // en_GB. In order for "root" to come at the beginning, "root" is replaced with
+        // empty string on comparison.
+        retList.sort((o1, o2) -> {
+            String id1 = o1.getID();
+            String id2 = o2.getID();
+            if(id1.equals("root")) {
+                id1 = "";
+            }
+            if(id2.equals("root")) {
+                id2 = "";
+            }
+            return id1.compareTo(id2);
+        });
         return retList;
     }
 
@@ -412,7 +457,7 @@ public class CLDRConverter {
         parentData.keySet().stream()
                 .filter(key -> key.startsWith(PARENT_LOCALE_PREFIX))
                 .forEach(key -> {
-                parentLocalesMap.put(key, new TreeSet(
+                parentLocalesMap.put(key, new TreeSet<String>(
                     Arrays.asList(((String)parentData.get(key)).split(" "))));
             });
 
@@ -432,6 +477,18 @@ public class CLDRConverter {
         // Currently interested in deprecated time zone ids and language aliases.
         handlerSupplMeta = new SupplementalMetadataParseHandler();
         parseLDMLFile(new File(SPPL_META_SOURCE_FILE), handlerSupplMeta);
+
+        // Parse windowsZones
+        handlerWinZones = new WinZonesParseHandler();
+        parseLDMLFile(new File(WINZONES_SOURCE_FILE), handlerWinZones);
+
+        // Parse plurals
+        handlerPlurals = new PluralsParseHandler();
+        parseLDMLFile(new File(PLURALS_SOURCE_FILE), handlerPlurals);
+
+        // Parse day period rules
+        handlerDayPeriodRule = new DayPeriodRuleParseHandler();
+        parseLDMLFile(new File(DAYPERIODRULE_SOURCE_FILE), handlerDayPeriodRule);
     }
 
     // Parsers for data in "bcp47" directory
@@ -451,7 +508,7 @@ public class CLDRConverter {
         });
     }
 
-    private static void parseLDMLFile(File srcfile, AbstractLDMLHandler handler) throws Exception {
+    private static void parseLDMLFile(File srcfile, AbstractLDMLHandler<?> handler) throws Exception {
         info("..... Parsing " + srcfile.getName() + " .....");
         SAXParserFactory pf = SAXParserFactory.newInstance();
         pf.setValidating(true);
@@ -460,8 +517,7 @@ public class CLDRConverter {
         parser.parse(srcfile, handler);
     }
 
-    private static StringBuilder getCandLocales(Locale cldrLoc) {
-        List<Locale> candList = getCandidateLocales(cldrLoc);
+    private static StringBuilder getCandLocales(List<Locale> candList) {
         StringBuilder sb = new StringBuilder();
         for (Locale loc : candList) {
             if (!loc.equals(Locale.ROOT)) {
@@ -479,6 +535,8 @@ public class CLDRConverter {
     }
 
     private static void convertBundles(List<Bundle> bundles) throws Exception {
+        var availableLangTags = metaInfo.get("AvailableLocales");
+
         // parent locales map. The mappings are put in base metaInfo file
         // for now.
         if (isBaseModule) {
@@ -490,8 +548,8 @@ public class CLDRConverter {
             // visible for the bundle's locale
 
             Map<String, Object> targetMap = bundle.getTargetMap();
-
             EnumSet<Bundle.Type> bundleTypes = bundle.getBundleTypes();
+            var id = bundle.getID();
 
             if (bundle.isRoot()) {
                 // Add DateTimePatternChars because CLDR no longer supports localized patterns.
@@ -501,40 +559,51 @@ public class CLDRConverter {
             // Now the map contains just the entries that need to be in the resources bundles.
             // Go ahead and generate them.
             if (bundleTypes.contains(Bundle.Type.LOCALENAMES)) {
-                Map<String, Object> localeNamesMap = extractLocaleNames(targetMap, bundle.getID());
+                Map<String, Object> localeNamesMap = extractLocaleNames(targetMap, id);
                 if (!localeNamesMap.isEmpty() || bundle.isRoot()) {
-                    bundleGenerator.generateBundle("util", "LocaleNames", bundle.getJavaID(), true, localeNamesMap, BundleType.OPEN);
+                    bundleGenerator.generateBundle("util", "LocaleNames", id, true, localeNamesMap, BundleType.OPEN);
                 }
             }
             if (bundleTypes.contains(Bundle.Type.CURRENCYNAMES)) {
-                Map<String, Object> currencyNamesMap = extractCurrencyNames(targetMap, bundle.getID(), bundle.getCurrencies());
+                Map<String, Object> currencyNamesMap = extractCurrencyNames(targetMap, id, bundle.getCurrencies());
                 if (!currencyNamesMap.isEmpty() || bundle.isRoot()) {
-                    bundleGenerator.generateBundle("util", "CurrencyNames", bundle.getJavaID(), true, currencyNamesMap, BundleType.OPEN);
+                    bundleGenerator.generateBundle("util", "CurrencyNames", id, true, currencyNamesMap, BundleType.OPEN);
                 }
             }
             if (bundleTypes.contains(Bundle.Type.TIMEZONENAMES)) {
-                Map<String, Object> zoneNamesMap = extractZoneNames(targetMap, bundle.getID());
+                Map<String, Object> zoneNamesMap = extractZoneNames(targetMap, id);
                 if (!zoneNamesMap.isEmpty() || bundle.isRoot()) {
-                    bundleGenerator.generateBundle("util", "TimeZoneNames", bundle.getJavaID(), true, zoneNamesMap, BundleType.TIMEZONE);
+                    bundleGenerator.generateBundle("util", "TimeZoneNames", id, true, zoneNamesMap, BundleType.TIMEZONE);
                 }
             }
             if (bundleTypes.contains(Bundle.Type.CALENDARDATA)) {
-                Map<String, Object> calendarDataMap = extractCalendarData(targetMap, bundle.getID());
+                Map<String, Object> calendarDataMap = extractCalendarData(targetMap, id);
                 if (!calendarDataMap.isEmpty() || bundle.isRoot()) {
-                    bundleGenerator.generateBundle("util", "CalendarData", bundle.getJavaID(), true, calendarDataMap, BundleType.PLAIN);
+                    bundleGenerator.generateBundle("util", "CalendarData", id, true, calendarDataMap, BundleType.PLAIN);
                 }
             }
             if (bundleTypes.contains(Bundle.Type.FORMATDATA)) {
-                Map<String, Object> formatDataMap = extractFormatData(targetMap, bundle.getID());
+                Map<String, Object> formatDataMap = extractFormatData(targetMap, id);
                 if (!formatDataMap.isEmpty() || bundle.isRoot()) {
-                    bundleGenerator.generateBundle("text", "FormatData", bundle.getJavaID(), true, formatDataMap, BundleType.PLAIN);
+                    bundleGenerator.generateBundle("text", "FormatData", id, true, formatDataMap, BundleType.PLAIN);
                 }
             }
 
             // For AvailableLocales
-            metaInfo.get("AvailableLocales").add(toLanguageTag(bundle.getID()));
-            addLikelySubtags(metaInfo, "AvailableLocales", bundle.getID());
+            var langTag = toLanguageTag(id);
+            availableLangTags.add(langTag);
+            addLikelySubtags(langTag);
         }
+
+        // Add extra language tags from likely subtags that meet the following conditions
+        // 1. Its likely subtag is supported (already in the available langtag set)
+        // 2. Neither of old obsolete ones (in/iw/ji)
+        handlerLikelySubtags.getData().entrySet().stream()
+            .filter(e -> availableLangTags.contains(e.getValue()))
+            .map(Map.Entry::getKey)
+            .filter(t -> !t.equals("in") && !t.equals("iw") && !t.equals("ji"))
+            .forEach(availableLangTags::add);
+
         bundleGenerator.generateMetaInfo(metaInfo);
     }
 
@@ -544,16 +613,19 @@ public class CLDRConverter {
      * Translate the aliases into the real entries in the bundle map.
      */
     static void handleAliases(Map<String, Object> bundleMap) {
-        Set bundleKeys = bundleMap.keySet();
-        try {
-            for (String key : aliases.keySet()) {
-                String targetKey = aliases.get(key);
-                if (bundleKeys.contains(targetKey)) {
-                    bundleMap.putIfAbsent(key, bundleMap.get(targetKey));
+        for (String key : aliases.keySet()) {
+            var source = bundleMap.get(aliases.get(key));
+            if (source != null) {
+                if (bundleMap.get(key) instanceof String[] sa) {
+                    // fill missing elements in case of String array
+                    for (int i = 0; i < sa.length; i++) {
+                        if (sa[i] == null && ((String[])source)[i] != null) {
+                            sa[i] = ((String[])source)[i];
+                        }
+                    }
                 }
+                bundleMap.putIfAbsent(key, source);
             }
-        } catch (Exception ex) {
-            Logger.getLogger(CLDRConverter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -568,7 +640,7 @@ public class CLDRConverter {
     /**
      * Examine if the id includes the country (territory) code. If it does, it returns
      * the country code.
-     * Otherwise, it returns null. eg. when the id is "zh_Hans_SG", it return "SG".
+     * Otherwise, it returns null. eg. when the id is "zh_Hans_SG", it returns "SG".
      * It does NOT return UN M.49 code, e.g., '001', as those three digit numbers cannot
      * be translated into package names.
      */
@@ -580,11 +652,19 @@ public class CLDRConverter {
     /**
      * Examine if the id includes the region code. If it does, it returns
      * the region code.
-     * Otherwise, it returns null. eg. when the id is "zh_Hans_SG", it return "SG".
+     * Otherwise, it returns null. eg. when the id is "zh_Hans_SG", it returns "SG".
      * It DOES return UN M.49 code, e.g., '001', as well as ISO 3166 two letter country codes.
      */
     static String getRegionCode(String id) {
         return Locale.forLanguageTag(id.replaceAll("_", "-")).getCountry();
+    }
+
+    /**
+     * Examine if the id includes the script code. If it does, it returns
+     * the script code.
+     */
+    static String getScriptCode(String id) {
+        return Locale.forLanguageTag(id.replaceAll("_", "-")).getScript();
     }
 
     private static class KeyComparator implements Comparator<String> {
@@ -655,70 +735,23 @@ public class CLDRConverter {
     }
 
     private static Map<String, Object> extractZoneNames(Map<String, Object> map, String id) {
-        Map<String, Object> names = new HashMap<>();
+        Map<String, Object> names = new TreeMap<>(KeyComparator.INSTANCE);
 
-        // Copy over missing time zone ids from JRE for English locale
-        if (id.equals("en")) {
-            Map<String[], String> jreMetaMap = new HashMap<>();
-            jreTimeZoneNames.stream().forEach(e -> {
-                String tzid = (String)e[0];
-                String[] data = (String[])e[1];
-
-                if (map.get(TIMEZONE_ID_PREFIX + tzid) == null &&
-                    handlerMetaZones.get(tzid) == null ||
-                    handlerMetaZones.get(tzid) != null &&
-                    map.get(METAZONE_ID_PREFIX + handlerMetaZones.get(tzid)) == null) {
-
-                    // First, check the alias
-                    String canonID = canonicalTZMap.get(tzid);
-                    if (canonID != null && !tzid.equals(canonID)) {
-                        Object value = map.get(TIMEZONE_ID_PREFIX + canonID);
-                        if (value != null) {
-                            names.put(tzid, value);
-                            return;
-                        } else {
-                            String meta = handlerMetaZones.get(canonID);
-                            if (meta != null) {
-                                value = map.get(METAZONE_ID_PREFIX + meta);
-                                if (value != null) {
-                                    names.put(tzid, meta);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-
-                    // Check the CLDR meta key
-                    Optional<Map.Entry<String, String>> cldrMeta =
-                        handlerMetaZones.getData().entrySet().stream()
-                            .filter(me ->
-                                Arrays.deepEquals(data,
-                                    (String[])map.get(METAZONE_ID_PREFIX + me.getValue())))
-                            .findAny();
-                    cldrMeta.ifPresentOrElse(meta -> names.put(tzid, meta.getValue()), () -> {
-                        // Check the JRE meta key, add if there is not.
-                        Optional<Map.Entry<String[], String>> jreMeta =
-                            jreMetaMap.entrySet().stream()
-                                .filter(jm -> Arrays.deepEquals(data, jm.getKey()))
-                                .findAny();
-                        jreMeta.ifPresentOrElse(meta -> names.put(tzid, meta.getValue()), () -> {
-                                String metaName = "JRE_" + tzid.replaceAll("[/-]", "_");
-                                names.put(METAZONE_ID_PREFIX + metaName, data);
-                                names.put(tzid, metaName);
-                        });
-                    });
-                }
-            });
-        }
-
-        Arrays.stream(AVAILABLE_TZIDS).forEach(tzid -> {
+        getAvailableZoneIds().stream().forEach(tzid -> {
             // If the tzid is deprecated, get the data for the replacement id
             String tzKey = Optional.ofNullable((String)handlerSupplMeta.get(tzid))
                                    .orElse(tzid);
             Object data = map.get(TIMEZONE_ID_PREFIX + tzKey);
 
             if (data instanceof String[]) {
-                names.put(tzid, data);
+                // Hack for UTC. UTC is an alias to Etc/UTC in CLDR
+                if (tzid.equals("Etc/UTC") && !map.containsKey(TIMEZONE_ID_PREFIX + "UTC")) {
+                    names.put(METAZONE_ID_PREFIX + META_ETCUTC_ZONE_NAME, data);
+                    names.put(tzid, META_ETCUTC_ZONE_NAME);
+                    names.put("UTC", META_ETCUTC_ZONE_NAME);
+                } else {
+                    names.put(tzid, data);
+                }
             } else {
                 String meta = handlerMetaZones.get(tzKey);
                 if (meta != null) {
@@ -735,23 +768,22 @@ public class CLDRConverter {
 
         // exemplar cities.
         Map<String, Object> exCities = map.entrySet().stream()
-                .filter(e -> e.getKey().startsWith(CLDRConverter.EXEMPLAR_CITY_PREFIX))
-                .collect(Collectors
-                        .toMap(Map.Entry::getKey, Map.Entry::getValue));
+            .filter(e -> e.getKey().startsWith(CLDRConverter.EXEMPLAR_CITY_PREFIX))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         names.putAll(exCities);
 
-        if (!id.equals("en") &&
-            !names.isEmpty()) {
-            // CLDR does not have UTC entry, so add it here.
-            names.put("UTC", EMPTY_ZONE);
-
-            // no metazone zones
-            Arrays.asList(handlerMetaZones.get(MetaZonesParseHandler.NO_METAZONE_KEY)
-                .split("\\s")).stream()
-                .forEach(tz -> {
-                    names.put(tz, EMPTY_ZONE);
-                });
+        // If there's no UTC entry at this point, add an empty one
+        if (!names.isEmpty() && !names.containsKey("UTC")) {
+            names.putIfAbsent(METAZONE_ID_PREFIX + META_EMPTY_ZONE_NAME, EMPTY_ZONE);
+            names.put("UTC", META_EMPTY_ZONE_NAME);
         }
+
+        // Finally some compatibility stuff
+        ZoneId.SHORT_IDS.entrySet().stream()
+            .filter(e -> !names.containsKey(e.getKey()) && names.containsKey(e.getValue()))
+            .forEach(e -> {
+                names.put(e.getKey(), names.get(e.getValue()));
+            });
 
         return names;
     }
@@ -827,31 +859,34 @@ public class CLDRConverter {
         "TimePatterns",
         "DatePatterns",
         "DateTimePatterns",
-        "DateTimePatternChars"
+        "DateTimePatternChars",
+        "PluralRules",
+        "DayPeriodRules",
+        "DateFormatItemInputRegions.allowed",
+        "DateFormatItemInputRegions.preferred",
     };
+
+    static final Set<String> availableSkeletons = new HashSet<>();
 
     private static Map<String, Object> extractFormatData(Map<String, Object> map, String id) {
         Map<String, Object> formatData = new LinkedHashMap<>();
         for (CalendarType calendarType : CalendarType.values()) {
-            if (calendarType == CalendarType.GENERIC) {
-                continue;
-            }
             String prefix = calendarType.keyElementName();
-            for (String element : FORMAT_DATA_ELEMENTS) {
-                String key = prefix + element;
-                copyIfPresent(map, "java.time." + key, formatData);
-                copyIfPresent(map, key, formatData);
-            }
+            Arrays.stream(FORMAT_DATA_ELEMENTS)
+                .forEach(elem -> {
+                    var key = prefix + elem;
+                    copyIfPresent(map, "java.time." + key, formatData);
+                    copyIfPresent(map, key, formatData);
+                });
+            availableSkeletons.forEach(s ->
+                copyIfPresent(map, prefix + "DateFormatItem." + s, formatData));
         }
 
         for (String key : map.keySet()) {
-        // Copy available calendar names
+            // Copy available calendar names
             if (key.startsWith(CLDRConverter.LOCALE_TYPE_PREFIX_CA)) {
                 String type = key.substring(CLDRConverter.LOCALE_TYPE_PREFIX_CA.length());
                 for (CalendarType calendarType : CalendarType.values()) {
-                    if (calendarType == CalendarType.GENERIC) {
-                        continue;
-                    }
                     if (type.equals(calendarType.lname())) {
                         Object value = map.get(key);
                         String dataKey = key.replace(LOCALE_TYPE_PREFIX_CA,
@@ -872,12 +907,15 @@ public class CLDRConverter {
         List<String> numberingScripts = (List<String>) map.remove("numberingScripts");
         if (numberingScripts != null) {
             for (String script : numberingScripts) {
-                copyIfPresent(map, script + "." + "NumberElements", formatData);
+                copyIfPresent(map, script + ".NumberElements", formatData);
+                copyIfPresent(map, script + ".NumberPatterns", formatData);
             }
         } else {
             copyIfPresent(map, "NumberElements", formatData);
+            copyIfPresent(map, "NumberPatterns", formatData);
         }
-        copyIfPresent(map, "NumberPatterns", formatData);
+        copyIfPresent(map, "short.CompactNumberPatterns", formatData);
+        copyIfPresent(map, "long.CompactNumberPatterns", formatData);
 
         // put extra number elements for available scripts into formatData, if it is "root"
         if (id.equals("root")) {
@@ -969,7 +1007,7 @@ public class CLDRConverter {
         return outBuffer.toString();
     }
 
-    private static String toLanguageTag(String locName) {
+    static String toLanguageTag(String locName) {
         if (locName.indexOf('_') == -1) {
             return locName;
         }
@@ -978,11 +1016,12 @@ public class CLDRConverter {
         return loc.toLanguageTag();
     }
 
-    private static void addLikelySubtags(Map<String, SortedSet<String>> metaInfo, String category, String id) {
-        String likelySubtag = handlerLikelySubtags.get(id);
+    private static void addLikelySubtags(String langTag) {
+        String likelySubtag = handlerLikelySubtags.get(langTag);
         if (likelySubtag != null) {
-            // Remove Script for now
-            metaInfo.get(category).add(toLanguageTag(likelySubtag).replaceFirst("-[A-Z][a-z]{3}", ""));
+            var availableLangTags = metaInfo.get("AvailableLocales");
+            availableLangTags.add(likelySubtag.replaceFirst("-[A-Z][a-z]{3}", ""));
+            availableLangTags.add(likelySubtag);
         }
     }
 
@@ -996,6 +1035,7 @@ public class CLDRConverter {
     private static void setupBaseLocales(String localeList) {
         Arrays.stream(localeList.split(","))
             .map(Locale::forLanguageTag)
+            .map(l -> new Locale.Builder().setLocale(l).setScript("Latn").build())
             .map(l -> Control.getControl(Control.FORMAT_DEFAULT)
                              .getCandidateLocales("", l))
             .forEach(BASE_LOCALES::addAll);
@@ -1024,6 +1064,10 @@ public class CLDRConverter {
                 Objects.nonNull(p) &&
                 !candidates.get(i+1).equals(p)) {
                 List<Locale> applied = candidates.subList(0, i+1);
+                if (applied.contains(p)) {
+                    // avoid circular recursion (could happen with nb/no case)
+                    continue;
+                }
                 applied.addAll(applyParentLocales(baseName, defCon.getCandidateLocales(baseName, p)));
                 return applied;
             }
@@ -1053,8 +1097,20 @@ public class CLDRConverter {
             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
+    // This method assumes handlerMetaZones is already initialized
+    private static Set<String> getAvailableZoneIds() {
+        assert handlerMetaZones != null;
+        if (AVAILABLE_TZIDS == null) {
+            AVAILABLE_TZIDS = new HashSet<>(ZoneId.getAvailableZoneIds());
+            AVAILABLE_TZIDS.addAll(handlerMetaZones.keySet());
+            AVAILABLE_TZIDS.remove(MetaZonesParseHandler.NO_METAZONE_KEY);
+        }
+
+        return AVAILABLE_TZIDS;
+    }
+
     private static Stream<String> zidMapEntry() {
-        return ZoneId.getAvailableZoneIds().stream()
+        return getAvailableZoneIds().stream()
                 .map(id -> {
                     String canonId = canonicalTZMap.getOrDefault(id, id);
                     String meta = handlerMetaZones.get(canonId);
@@ -1087,5 +1143,99 @@ public class CLDRConverter {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    // Generate tzmappings for Windows. The format is:
+    //
+    // (Windows Zone Name):(REGION):(Java TZID)
+    //
+    // where:
+    //   Windows Zone Name: arbitrary time zone name string used in Windows
+    //   REGION: ISO3166 or UN M.49 code
+    //   Java TZID: Java's time zone ID
+    //
+    // Note: the entries are alphabetically sorted, *except* the "world" region
+    // code, i.e., "001". It should be the last entry for the same windows time
+    // zone name entries. (cf. TimeZone_md.c)
+    private static void generateWindowsTZMappings() throws Exception {
+        Files.createDirectories(Paths.get(DESTINATION_DIR, "windows", "conf"));
+        Files.write(Paths.get(DESTINATION_DIR, "windows", "conf", "tzmappings"),
+            handlerWinZones.keySet().stream()
+                .map(k -> k + ":" + handlerWinZones.get(k) + ":")
+                .sorted(new Comparator<String>() {
+                    public int compare(String t1, String t2) {
+                        String[] s1 = t1.split(":");
+                        String[] s2 = t2.split(":");
+                        if (s1[0].equals(s2[0])) {
+                            if (s1[1].equals("001")) {
+                                return 1;
+                            } else if (s2[1].equals("001")) {
+                                return -1;
+                            } else {
+                                return s1[1].compareTo(s2[1]);
+                            }
+                        } else {
+                            return s1[0].compareTo(s2[0]);
+                        }
+                    }
+                })
+                .collect(Collectors.toList()),
+            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    /**
+     * Generates rules map for Plural rules and DayPeriod rules. The key is the locale id,
+     * and the value is rules, defined by the LDML spec. Each rule consists of {@code type:rule}
+     * notation, concatenated with a ";" as a delimiter.
+     * @param handler handler containing rules
+     * @return the map
+     */
+    private static Map<String, String> generateRules(AbstractLDMLHandler<Map<String, String>> handler) {
+        return handler.getData().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                Map<String, String> rules = e.getValue();
+                return rules.entrySet().stream()
+                    .map(rule -> rule.getKey() + ":" + rule.getValue().replaceFirst("@.*", ""))
+                    .map(String::trim)
+                    .collect(Collectors.joining(";"));
+            }));
+    }
+
+    private static Map<Locale, String> coverageLevelsMap() throws Exception {
+        // First, parse `coverageLevels.txt` file
+        var covMap = Files.readAllLines(Path.of(COVERAGELEVELS_FILE)).stream()
+            .filter(line -> !line.isBlank() && !line.startsWith("#"))
+            .map(line -> line.split("[\s\t]*;[\s\t]*", 3))
+            .filter(a -> a[1].matches("basic|moderate|modern|comprehensive"))
+            .collect(Collectors.toMap(
+                    a -> Locale.forLanguageTag(a[0].replaceAll("_", "-")),
+                    a -> a[1],
+                    (v1, v2) -> v2, // should never happen
+                    HashMap::new));
+
+        // Add other common (non-seed) locales (below `basic` coverage level) as of v42
+        ResourceBundle.getBundle(CLDRConverter.class.getPackageName() + ".OtherCommonLocales")
+            .keySet()
+            .forEach(k -> covMap.put(Locale.forLanguageTag(k), ""));
+
+        return covMap;
+    }
+
+    // for debug
+    static void dumpMap(Map<String, Object> map) {
+        map.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(e -> {
+                Object val = e.getValue();
+                String valStr = null;
+
+                if (val instanceof String[]) {
+                    valStr = Arrays.asList((String[])val).toString();
+                } else if (val != null) {
+                    valStr = val.toString();
+                }
+                return e.getKey() + " = " + valStr;
+            })
+            .forEach(System.out::println);
     }
 }

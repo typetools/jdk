@@ -36,9 +36,12 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import static java.lang.ref.Reference.reachabilityFence;
+import java.lang.ref.Cleaner.Cleanable;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -48,6 +51,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import jdk.internal.ref.CleanerFactory;
 import sun.security.util.SecurityConstants;
 
 /**
@@ -74,7 +78,7 @@ import sun.security.util.SecurityConstants;
  * @since 1.5
  * @author Doug Lea
  */
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public @UsesObjectEquals class Executors {
 
     /**
@@ -176,10 +180,7 @@ public @UsesObjectEquals class Executors {
      * @return the newly created single-threaded Executor
      */
     public static ExecutorService newSingleThreadExecutor() {
-        return new FinalizableDelegatedExecutorService
-            (new ThreadPoolExecutor(1, 1,
-                                    0L, TimeUnit.MILLISECONDS,
-                                    new LinkedBlockingQueue<Runnable>()));
+        return newSingleThreadExecutor(defaultThreadFactory());
     }
 
     /**
@@ -195,7 +196,7 @@ public @UsesObjectEquals class Executors {
      * @throws NullPointerException if threadFactory is null
      */
     public static ExecutorService newSingleThreadExecutor(ThreadFactory threadFactory) {
-        return new FinalizableDelegatedExecutorService
+        return new AutoShutdownDelegatedExecutorService
             (new ThreadPoolExecutor(1, 1,
                                     0L, TimeUnit.MILLISECONDS,
                                     new LinkedBlockingQueue<Runnable>(),
@@ -239,6 +240,40 @@ public @UsesObjectEquals class Executors {
                                       60L, TimeUnit.SECONDS,
                                       new SynchronousQueue<Runnable>(),
                                       threadFactory);
+    }
+
+    /**
+     * Creates an Executor that starts a new Thread for each task.
+     * The number of threads created by the Executor is unbounded.
+     *
+     * <p> Invoking {@link Future#cancel(boolean) cancel(true)} on a {@link
+     * Future Future} representing the pending result of a task submitted to
+     * the Executor will {@link Thread#interrupt() interrupt} the thread
+     * executing the task.
+     *
+     * @param threadFactory the factory to use when creating new threads
+     * @return a new executor that creates a new Thread for each task
+     * @throws NullPointerException if threadFactory is null
+     * @since 21
+     */
+    public static ExecutorService newThreadPerTaskExecutor(ThreadFactory threadFactory) {
+        return ThreadPerTaskExecutor.create(threadFactory);
+    }
+
+    /**
+     * Creates an Executor that starts a new virtual Thread for each task.
+     * The number of threads created by the Executor is unbounded.
+     *
+     * <p> This method is equivalent to invoking
+     * {@link #newThreadPerTaskExecutor(ThreadFactory)} with a thread factory
+     * that creates virtual threads.
+     *
+     * @return a new executor that creates a new virtual Thread for each task
+     * @since 21
+     */
+    public static ExecutorService newVirtualThreadPerTaskExecutor() {
+        ThreadFactory factory = Thread.ofVirtual().factory();
+        return newThreadPerTaskExecutor(factory);
     }
 
     /**
@@ -393,7 +428,15 @@ public @UsesObjectEquals class Executors {
      * @throws AccessControlException if the current access control
      * context does not have permission to both get and set context
      * class loader
+     *
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @Deprecated(since="17", forRemoval=true)
     public static ThreadFactory privilegedThreadFactory() {
         return new PrivilegedThreadFactory();
     }
@@ -422,7 +465,7 @@ public @UsesObjectEquals class Executors {
      * @return a callable object
      * @throws NullPointerException if task null
      */
-    public static Callable<Object> callable(Runnable task) {
+    public static Callable<@Nullable Object> callable(Runnable task) {
         if (task == null)
             throw new NullPointerException();
         return new RunnableAdapter<Object>(task, null);
@@ -435,7 +478,7 @@ public @UsesObjectEquals class Executors {
      * @return a callable object
      * @throws NullPointerException if action null
      */
-    public static Callable<Object> callable(final PrivilegedAction<?> action) {
+    public static Callable<@PolyNull Object> callable(final PrivilegedAction<@PolyNull ?> action) {
         if (action == null)
             throw new NullPointerException();
         return new Callable<Object>() {
@@ -450,7 +493,7 @@ public @UsesObjectEquals class Executors {
      * @return a callable object
      * @throws NullPointerException if action null
      */
-    public static Callable<Object> callable(final PrivilegedExceptionAction<?> action) {
+    public static Callable<@PolyNull Object> callable(final PrivilegedExceptionAction<@PolyNull ?> action) {
         if (action == null)
             throw new NullPointerException();
         return new Callable<Object>() {
@@ -470,7 +513,15 @@ public @UsesObjectEquals class Executors {
      * @param <T> the type of the callable's result
      * @return a callable object
      * @throws NullPointerException if callable null
+     *
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @Deprecated(since="17", forRemoval=true)
     public static <T> Callable<T> privilegedCallable(Callable<T> callable) {
         if (callable == null)
             throw new NullPointerException();
@@ -496,7 +547,15 @@ public @UsesObjectEquals class Executors {
      * @throws AccessControlException if the current access control
      * context does not have permission to both set and get context
      * class loader
+     *
+     * @deprecated This method is only useful in conjunction with
+     *       {@linkplain SecurityManager the Security Manager}, which is
+     *       deprecated and subject to removal in a future release.
+     *       Consequently, this method is also deprecated and subject to
+     *       removal. There is no replacement for the Security Manager or this
+     *       method.
      */
+    @Deprecated(since="17", forRemoval=true)
     public static <T> Callable<T> privilegedCallableUsingCurrentClassLoader(Callable<T> callable) {
         if (callable == null)
             throw new NullPointerException();
@@ -529,13 +588,16 @@ public @UsesObjectEquals class Executors {
      */
     private static final class PrivilegedCallable<T> implements Callable<T> {
         final Callable<T> task;
+        @SuppressWarnings("removal")
         final AccessControlContext acc;
 
+        @SuppressWarnings("removal")
         PrivilegedCallable(Callable<T> task) {
             this.task = task;
             this.acc = AccessController.getContext();
         }
 
+        @SuppressWarnings("removal")
         public T call() throws Exception {
             try {
                 return AccessController.doPrivileged(
@@ -561,9 +623,11 @@ public @UsesObjectEquals class Executors {
     private static final class PrivilegedCallableUsingCurrentClassLoader<T>
             implements Callable<T> {
         final Callable<T> task;
+        @SuppressWarnings("removal")
         final AccessControlContext acc;
         final ClassLoader ccl;
 
+        @SuppressWarnings("removal")
         PrivilegedCallableUsingCurrentClassLoader(Callable<T> task) {
             SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
@@ -581,6 +645,7 @@ public @UsesObjectEquals class Executors {
             this.ccl = Thread.currentThread().getContextClassLoader();
         }
 
+        @SuppressWarnings("removal")
         public T call() throws Exception {
             try {
                 return AccessController.doPrivileged(
@@ -620,6 +685,7 @@ public @UsesObjectEquals class Executors {
         private final String namePrefix;
 
         DefaultThreadFactory() {
+            @SuppressWarnings("removal")
             SecurityManager s = System.getSecurityManager();
             group = (s != null) ? s.getThreadGroup() :
                                   Thread.currentThread().getThreadGroup();
@@ -644,9 +710,11 @@ public @UsesObjectEquals class Executors {
      * Thread factory capturing access control context and class loader.
      */
     private static class PrivilegedThreadFactory extends DefaultThreadFactory {
+        @SuppressWarnings("removal")
         final AccessControlContext acc;
         final ClassLoader ccl;
 
+        @SuppressWarnings("removal")
         PrivilegedThreadFactory() {
             super();
             SecurityManager sm = System.getSecurityManager();
@@ -665,6 +733,7 @@ public @UsesObjectEquals class Executors {
 
         public Thread newThread(final Runnable r) {
             return super.newThread(new Runnable() {
+                @SuppressWarnings("removal")
                 public void run() {
                     AccessController.doPrivileged(new PrivilegedAction<>() {
                         public Void run() {
@@ -691,7 +760,11 @@ public @UsesObjectEquals class Executors {
                 e.execute(command);
             } finally { reachabilityFence(this); }
         }
-        public void shutdown() { e.shutdown(); }
+        public void shutdown() {
+            try {
+                e.shutdown();
+            } finally { reachabilityFence(this); }
+        }
         public List<Runnable> shutdownNow() {
             try {
                 return e.shutdownNow();
@@ -756,14 +829,28 @@ public @UsesObjectEquals class Executors {
         }
     }
 
-    private static class FinalizableDelegatedExecutorService
+    /**
+     * A DelegatedExecutorService that uses a Cleaner to shut down the underlying
+     * ExecutorService when the wrapper becomes phantom reachable.
+     */
+    private static class AutoShutdownDelegatedExecutorService
             extends DelegatedExecutorService {
-        FinalizableDelegatedExecutorService(ExecutorService executor) {
+        private final Cleanable cleanable;
+        AutoShutdownDelegatedExecutorService(ExecutorService executor) {
             super(executor);
+            Runnable action = () -> {
+                if (!executor.isShutdown()) {
+                    PrivilegedAction<Void> pa = () -> { executor.shutdown(); return null; };
+                    @SuppressWarnings("removal")
+                    var ignore = AccessController.doPrivileged(pa);
+                }
+            };
+            cleanable = CleanerFactory.cleaner().register(this, action);
         }
-        @SuppressWarnings("deprecation")
-        protected void finalize() {
+        @Override
+        public void shutdown() {
             super.shutdown();
+            cleanable.clean();  // unregisters the cleanable
         }
     }
 

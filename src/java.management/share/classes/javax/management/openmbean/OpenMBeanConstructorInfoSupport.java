@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-
 
 // java import
 //
@@ -130,11 +129,11 @@ public class OpenMBeanConstructorInfoSupport
         // check parameters that should not be null or empty
         // (unfortunately it is not done in superclass :-( ! )
         //
-        if (name == null || name.trim().equals("")) {
+        if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Argument name cannot be " +
                                                "null or empty");
         }
-        if (description == null || description.trim().equals("")) {
+        if (description == null || description.trim().isEmpty()) {
             throw new IllegalArgumentException("Argument description cannot " +
                                                "be null or empty");
         }
@@ -215,7 +214,7 @@ public class OpenMBeanConstructorInfoSupport
             return false;
         }
 
-        // All tests for equality were successfull
+        // All tests for equality were successful
         //
         return true;
     }

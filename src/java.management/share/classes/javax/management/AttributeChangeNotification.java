@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package javax.management;
 
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.qual.AnnotatedFor;
-
 
 /**
  * Provides definitions of the attribute change notifications sent by MBeans.
@@ -77,11 +76,13 @@ public class AttributeChangeNotification extends javax.management.Notification {
     /**
      * @serial The MBean attribute old value.
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private Object oldValue = null;
 
     /**
      * @serial The MBean attribute new value.
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private Object newValue = null;
 
 

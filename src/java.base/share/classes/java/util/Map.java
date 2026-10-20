@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,17 +28,35 @@ package java.util;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.aliasing.qual.NonLeaked;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -57,8 +75,10 @@ import java.io.Serializable;
  * or set of key-value mappings.  The <i>order</i> of a map is defined as
  * the order in which the iterators on the map's collection views return their
  * elements.  Some map implementations, like the {@code TreeMap} class, make
- * specific guarantees as to their order; others, like the {@code HashMap}
- * class, do not.
+ * specific guarantees as to their encounter order; others, like the
+ * {@code HashMap} class, do not. Maps with a defined
+ * <a href="SequencedCollection.html#encounter">encounter order</a>
+ * are generally subtypes of the {@link SequencedMap} interface.
  *
  * <p>Note: great care must be exercised if mutable objects are used as map
  * keys.  The behavior of a map is not specified if the value of an object is
@@ -146,10 +166,12 @@ import java.io.Serializable;
  * passed to a static factory method result in {@code IllegalArgumentException}.
  * <li>The iteration order of mappings is unspecified and is subject to change.
  * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
- * Callers should make no assumptions about the identity of the returned instances.
- * Factories are free to create new instances or reuse existing ones. Therefore,
- * identity-sensitive operations on these instances (reference equality ({@code ==}),
- * identity hash code, and synchronization) are unreliable and should be avoided.
+ * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+ * as interchangeable and should not use them for synchronization, or
+ * unpredictable behavior may occur. For example, in a future release,
+ * synchronization may fail. Callers should make no assumptions
+ * about the identity of the returned instances. Factories are free to
+ * create new instances or reuse existing ones.
  * <li>They are serialized as specified on the
  * <a href="{@docRoot}/serialized-form.html#java.util.CollSer">Serialized Form</a>
  * page.
@@ -172,7 +194,7 @@ import java.io.Serializable;
  * @since 1.2
  */
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "aliasing", "nonempty"})
 public interface Map<K, V> {
     // Query Operations
 
@@ -184,7 +206,7 @@ public interface Map<K, V> {
      * @return the number of key-value mappings in this map
      */
     @Pure
-    @NonNegative int size(@GuardSatisfied Map<K, V> this);
+    @NonNegative int size(@MaybeModifiable @GuardSatisfied Map<K, V> this);
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
@@ -192,7 +214,8 @@ public interface Map<K, V> {
      * @return {@code true} if this map contains no key-value mappings
      */
     @Pure
-    boolean isEmpty(@GuardSatisfied Map<K, V> this);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean isEmpty(@MaybeModifiable @GuardSatisfied Map<K, V> this);
 
     /**
      * Returns {@code true} if this map contains a mapping for the specified
@@ -205,15 +228,15 @@ public interface Map<K, V> {
      * @return {@code true} if this map contains a mapping for the specified
      *         key
      * @throws ClassCastException if the key is of an inappropriate type for
-     *         this map
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key is null and this map
-     *         does not permit null keys
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      */
+    @CFComment("nullness: key is not @Nullable because this map might not permit null values")
     @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    boolean containsKey(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
+    @EnsuresNonEmptyIf(result=true, expression={"this"})
+    boolean containsKey(@MaybeModifiable @GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
     /**
      * Returns {@code true} if this map maps one or more keys to the
@@ -227,14 +250,13 @@ public interface Map<K, V> {
      * @return {@code true} if this map maps one or more keys to the
      *         specified value
      * @throws ClassCastException if the value is of an inappropriate type for
-     *         this map
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified value is null and this
-     *         map does not permit null values
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         map does not permit null values ({@linkplain Collection##optional-restrictions optional})
      */
     @Pure
-    boolean containsValue(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object value);
+    @EnsuresNonEmptyIf(result=true, expression={"this"})
+    boolean containsValue(@MaybeModifiable @GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -256,14 +278,12 @@ public interface Map<K, V> {
      * @return the value to which the specified key is mapped, or
      *         {@code null} if this map contains no mapping for the key
      * @throws ClassCastException if the key is of an inappropriate type for
-     *         this map
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key is null and this map
-     *         does not permit null keys
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      */
     @Pure
-    @Nullable V get(@GuardSatisfied Map<K, V> this, @GuardSatisfied Object key);
+    @Nullable V get(@MaybeModifiable @GuardSatisfied Map<K, V> this, @UnknownSignedness @GuardSatisfied Object key);
 
     // Modification Operations
 
@@ -293,8 +313,10 @@ public interface Map<K, V> {
      */
     @ReleasesNoLocks
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    @Nullable V put(@GuardSatisfied Map<K, V> this, K key, V value);
-
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    @Nullable V put(@Growable @Replaceable @GuardSatisfied Map<K, V> this, K key, V value);
     /**
      * Removes the mapping for a key from this map if it is present
      * (optional operation).   More formally, if this map contains a mapping
@@ -319,14 +341,14 @@ public interface Map<K, V> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this map
      * @throws ClassCastException if the key is of an inappropriate type for
-     *         this map
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key is null and this
-     *         map does not permit null keys
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         map does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      */
-    @Nullable V remove(@GuardSatisfied Map<K, V> this, Object key);
-
+    @CFComment("nullness: key is not @Nullable because this map might not permit null values")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    @Nullable V remove(@Shrinkable @GuardSatisfied Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key);
 
     // Bulk Operations
 
@@ -335,8 +357,10 @@ public interface Map<K, V> {
      * (optional operation).  The effect of this call is equivalent to that
      * of calling {@link #put(Object,Object) put(k, v)} on this map once
      * for each mapping from key {@code k} to value {@code v} in the
-     * specified map.  The behavior of this operation is undefined if the
-     * specified map is modified while the operation is in progress.
+     * specified map.  The behavior of this operation is undefined if the specified map
+     * is modified while the operation is in progress. If the specified map has a defined
+     * <a href="SequencedCollection.html#encounter">encounter order</a>,
+     * processing of its mappings generally occurs in that order.
      *
      * @param m mappings to be stored in this map
      * @throws UnsupportedOperationException if the {@code putAll} operation
@@ -349,8 +373,9 @@ public interface Map<K, V> {
      * @throws IllegalArgumentException if some property of a key or value in
      *         the specified map prevents it from being stored in this map
      */
-    void putAll(@GuardSatisfied Map<K, V> this, Map<? extends K, ? extends V> m);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    void putAll(@Growable @Replaceable @GuardSatisfied Map<K, V> this, Map<? extends K, ? extends V> m);
     /**
      * Removes all of the mappings from this map (optional operation).
      * The map will be empty after this call returns.
@@ -358,8 +383,9 @@ public interface Map<K, V> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this map
      */
-    void clear(@GuardSatisfied Map<K, V> this);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    void clear(@Shrinkable @GuardSatisfied Map<K, V> this);
 
     // Views
 
@@ -379,7 +405,7 @@ public interface Map<K, V> {
      * @return a set view of the keys contained in this map
      */
     @SideEffectFree
-    Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied Map<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable @PolyNonEmpty Set<@KeyFor({"this"}) K> keySet(@PolyShrinkable @GuardSatisfied @PolyNonEmpty Map<K, V> this);
 
     /**
      * Returns a {@link Collection} view of the values contained in this map.
@@ -397,7 +423,7 @@ public interface Map<K, V> {
      * @return a collection view of the values contained in this map
      */
     @SideEffectFree
-    Collection<V> values(@GuardSatisfied Map<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable @PolyNonEmpty Collection<V> values(@PolyShrinkable @GuardSatisfied @PolyNonEmpty Map<K, V> this);
 
     /**
      * Returns a {@link Set} view of the mappings contained in this map.
@@ -416,17 +442,62 @@ public interface Map<K, V> {
      * @return a set view of the mappings contained in this map
      */
     @SideEffectFree
-    Set<Map.Entry<@KeyFor({"this"}) K, V>> entrySet(@GuardSatisfied Map<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable @PolyNonEmpty Set<Map.@PolyModifiable Entry<@KeyFor({"this"}) K, V>> entrySet(@PolyModifiable @GuardSatisfied @PolyNonEmpty Map<K, V> this);
 
     /**
-     * A map entry (key-value pair).  The {@code Map.entrySet} method returns
-     * a collection-view of the map, whose elements are of this class.  The
-     * <i>only</i> way to obtain a reference to a map entry is from the
-     * iterator of this collection-view.  These {@code Map.Entry} objects are
-     * valid <i>only</i> for the duration of the iteration; more formally,
-     * the behavior of a map entry is undefined if the backing map has been
-     * modified after the entry was returned by the iterator, except through
-     * the {@code setValue} operation on the map entry.
+     * A map entry (key-value pair). The Entry may be unmodifiable, or the
+     * value may be modifiable if the optional {@code setValue} method is
+     * implemented. The Entry may be independent of any map, or it may represent
+     * an entry of the entry-set view of a map.
+     * <p>
+     * An Entry maintains a connection to its underlying map if the Entry was obtained by
+     * iterating the {@link Map#entrySet} view of a map, either explicitly by using an
+     * {@link Iterator} or implicitly via the enhanced {@code for} statement. This connection
+     * to the backing map is valid <i>only</i> during iteration of the entry-set view. During
+     * the iteration, if supported by the backing map, a change to an Entry's value via
+     * the {@link Map.Entry#setValue setValue} method will be visible in the backing map.
+     * The behavior of such an Entry is undefined outside of iteration of the map's entry-set
+     * view. It is also undefined if the backing map has been modified after the Entry was
+     * returned by the iterator, except through the {@code setValue} method. In addition,
+     * a change to the value of a mapping in the backing map might or might not be
+     * visible in the corresponding Entry of the entry-set view.
+     * <p>
+     * An Entry may also be obtained from a map's entry-set view by other means, for
+     * example, using the
+     * {@link Set#parallelStream parallelStream},
+     * {@link Set#stream stream},
+     * {@link Set#spliterator spliterator} methods,
+     * any of the
+     * {@link Set#toArray toArray} overloads,
+     * or by copying the entry-set view into another collection. It is unspecified whether
+     * the obtained Entry instances are connected to the underlying map, whether changes
+     * to such an Entry will affect the underlying the map and vice-versa, and whether
+     * such an Entry supports the optional {@link Map.Entry#setValue setValue} method.
+     * <p>
+     * In addition, an Entry may be obtained directly from a map, for example via calls
+     * to methods directly on the {@link NavigableMap} interface. An entry thus obtained
+     * is generally not connected to the map and is an unmodifiable snapshot of the mapping
+     * as of the time of the call. Such an Entry also does not generally support the
+     * {@code setValue} method.
+     * <p>
+     * An Entry obtained by direct construction of the {@link AbstractMap.SimpleEntry}
+     * or {@link AbstractMap.SimpleImmutableEntry} classes or from a call to the
+     * {@link Map#entry Map.entry} or {@link Map.Entry#copyOf Map.Entry.copyOf} methods
+     * is not connected to any map.
+     *
+     * @apiNote
+     * The exact behavior of Entry instances obtained from a map's entry-set view other than
+     * via iteration varies across different map implementations; some are connected to the
+     * backing map, and some are not. To guarantee that an Entry is disconnected from its
+     * backing map, use the {@link Map.Entry#copyOf copyOf} method. For example, the following
+     * creates a snapshot of a map's entries that is guaranteed not to change even if the
+     * original map is modified:
+     * <pre> {@code
+     * var entries = map.entrySet().stream().map(Map.Entry::copyOf).toList()
+     * }</pre>
+     *
+     * @param <K> the type of the key
+     * @param <V> the type of the value
      *
      * @see Map#entrySet()
      * @since 1.2
@@ -442,7 +513,7 @@ public interface Map<K, V> {
          *         removed from the backing map.
          */
         @Pure
-        K getKey(Map.@GuardSatisfied Entry<K, V> this);
+        K getKey(Map.@MaybeModifiable @GuardSatisfied Entry<K, V> this);
 
         /**
          * Returns the value corresponding to this entry.  If the mapping
@@ -455,7 +526,7 @@ public interface Map<K, V> {
          *         removed from the backing map.
          */
         @Pure
-        V getValue(Map.@GuardSatisfied Entry<K, V> this);
+        V getValue(Map.@MaybeModifiable @GuardSatisfied Entry<K, V> this);
 
         /**
          * Replaces the value corresponding to this entry with the specified
@@ -477,8 +548,9 @@ public interface Map<K, V> {
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
          */
-        V setValue(Map.@GuardSatisfied Entry<K, V> this, V value);
-
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        V setValue(Map.@Replaceable @GuardSatisfied Entry<K, V> this, V value);
         /**
          * Compares the specified object with this entry for equality.
          * Returns {@code true} if the given object is also a map entry and
@@ -498,7 +570,7 @@ public interface Map<K, V> {
          *         entry
          */
         @Pure
-        boolean equals(Map.@GuardSatisfied Entry<K, V> this, @GuardSatisfied @Nullable Object o);
+        boolean equals(Map.@MaybeModifiable @GuardSatisfied Entry<K, V> this, @GuardSatisfied @Nullable Object o);
 
         /**
          * Returns the hash code value for this map entry.  The hash code
@@ -517,7 +589,7 @@ public interface Map<K, V> {
          * @see #equals(Object)
          */
         @Pure
-        int hashCode(Map.@GuardSatisfied Entry<K, V> this);
+        int hashCode(Map.@MaybeModifiable @GuardSatisfied Entry<K, V> this);
 
         /**
          * Returns a comparator that compares {@link Map.Entry} in natural order on key.
@@ -594,6 +666,38 @@ public interface Map<K, V> {
             return (Comparator<Map.Entry<K, V>> & Serializable)
                 (c1, c2) -> cmp.compare(c1.getValue(), c2.getValue());
         }
+
+        /**
+         * Returns a copy of the given {@code Map.Entry}. The returned instance is not
+         * associated with any map. The returned instance has the same characteristics
+         * as instances returned by the {@link Map#entry Map::entry} method.
+         *
+         * @apiNote
+         * An instance obtained from a map's entry-set view has a connection to that map.
+         * The {@code copyOf} method may be used to create a {@code Map.Entry} instance,
+         * containing the same key and value, that is independent of any map.
+         *
+         * @implNote
+         * If the given entry was obtained from a call to {@code copyOf} or {@code Map::entry},
+         * calling {@code copyOf} will generally not create another copy.
+         *
+         * @param <K> the type of the key
+         * @param <V> the type of the value
+         * @param e the entry to be copied
+         * @return a map entry equal to the given entry
+         * @throws NullPointerException if e is null or if either of its key or value is null
+         * @since 17
+         */
+        @SuppressWarnings("unchecked")
+        @SideEffectFree
+        public static <K extends @NonNull Object, V extends @NonNull Object> Map.@Unmodifiable Entry<K, V> copyOf(Map.@MaybeModifiable Entry<? extends K, ? extends V> e) {
+            Objects.requireNonNull(e);
+            if (e instanceof KeyValueHolder) {
+                return (Map.Entry<K, V>) e;
+            } else {
+                return Map.entry(e.getKey(), e.getValue());
+            }
+        }
     }
 
     // Comparison and hashing
@@ -610,7 +714,8 @@ public interface Map<K, V> {
      * @param o object to be compared for equality with this map
      * @return {@code true} if the specified object is equal to this map
      */
-    boolean equals(@GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object o);
+    @Pure
+    boolean equals(@MaybeModifiable @GuardSatisfied Map<K, V> this, @GuardSatisfied @Nullable Object o);
 
     /**
      * Returns the hash code value for this map.  The hash code of a map is
@@ -625,7 +730,8 @@ public interface Map<K, V> {
      * @see Object#equals(Object)
      * @see #equals(Object)
      */
-    int hashCode(@GuardSatisfied Map<K, V> this);
+    @Pure
+    int hashCode(@MaybeModifiable @GuardSatisfied Map<K, V> this);
 
     // Defaultable methods
 
@@ -644,15 +750,13 @@ public interface Map<K, V> {
      * @return the value to which the specified key is mapped, or
      * {@code defaultValue} if this map contains no mapping for the key
      * @throws ClassCastException if the key is of an inappropriate type for
-     * this map
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     * this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key is null and this map
-     * does not permit null keys
-     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     * does not permit null keys ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
     @Pure
-    default V getOrDefault(Object key, V defaultValue) {
+    default @PolyModifiable V getOrDefault(Map<K, @PolyModifiable V> this, @GuardSatisfied @UnknownSignedness Object key, @PolyModifiable V defaultValue) {
         V v;
         return (((v = get(key)) != null) || containsKey(key))
             ? v
@@ -684,7 +788,8 @@ public interface Map<K, V> {
      * removed during iteration
      * @since 1.8
      */
-    default void forEach(BiConsumer<? super K, ? super V> action) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default void forEach(@NonLeaked BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K, V> entry : entrySet()) {
             K k;
@@ -720,26 +825,22 @@ public interface Map<K, V> {
      *
      * @param function the function to apply to each entry
      * @throws UnsupportedOperationException if the {@code set} operation
-     * is not supported by this map's entry set iterator.
+     *         is not supported by this map's entry set iterator.
      * @throws ClassCastException if the class of a replacement value
-     * prevents it from being stored in this map
-     * @throws NullPointerException if the specified function is null, or the
-     * specified replacement value is null, and this map does not permit null
-     * values
-     * @throws ClassCastException if a replacement value is of an inappropriate
-     *         type for this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
-     * @throws NullPointerException if function or a replacement value is null,
-     *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         prevents it from being stored in this map
+     *         ({@linkplain Collection##optional-restrictions optional})
+     * @throws NullPointerException if the specified function is null, or if a
+     *         replacement value is null and this map does not permit null values
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of a replacement value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ConcurrentModificationException if an entry is found to be
-     * removed during iteration
+     *         removed during iteration
      * @since 1.8
      */
-    default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default void replaceAll(@Replaceable Map<K, V> this, BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         for (Map.Entry<K, V> entry : entrySet()) {
             K k;
@@ -770,8 +871,7 @@ public interface Map<K, V> {
      * {@code null}, else returns the current value.
      *
      * @implSpec
-     * The default implementation is equivalent to, for this {@code
-     * map}:
+     * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
      * V v = map.get(key);
@@ -795,20 +895,21 @@ public interface Map<K, V> {
      *         if the implementation supports null values.)
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the key or value is of an inappropriate
-     *         type for this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         type for this map ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    default @Nullable V putIfAbsent(K key, V value) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V putIfAbsent(@Growable Map<K, V> this, K key, V value) {
         V v = get(key);
         if (v == null) {
             v = put(key, value);
@@ -842,16 +943,19 @@ public interface Map<K, V> {
      * @return {@code true} if the value was removed
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the key or value is of an inappropriate
      *         type for this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
-    default boolean remove(Object key, Object value) {
+    @CFComment("nullness: key and value are not @Nullable because this map might not permit null values")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default boolean remove(@Shrinkable Map<K, V> this, @GuardSatisfied @UnknownSignedness Object key, @GuardSatisfied @UnknownSignedness Object value) {
         Object curValue = get(key);
         if (!Objects.equals(curValue, value) ||
             (curValue == null && !containsKey(key))) {
@@ -869,7 +973,7 @@ public interface Map<K, V> {
      * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
-     * if (map.containsKey(key) && Objects.equals(map.get(key), value)) {
+     * if (map.containsKey(key) && Objects.equals(map.get(key), oldValue)) {
      *     map.put(key, newValue);
      *     return true;
      * } else
@@ -890,20 +994,20 @@ public interface Map<K, V> {
      * @param newValue value to be associated with the specified key
      * @return {@code true} if the value was replaced
      * @throws UnsupportedOperationException if the {@code put} operation
-     *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         is not supported by this map ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of a specified key or value
      *         prevents it from being stored in this map
      * @throws NullPointerException if a specified key or newValue is null,
      *         and this map does not permit null keys or values
      * @throws NullPointerException if oldValue is null and this map does not
-     *         permit null values
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         permit null values ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of a specified key
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    default boolean replace(K key, V oldValue, V newValue) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default boolean replace(@Replaceable Map<K, V> this, K key, V oldValue, V newValue) {
         Object curValue = get(key);
         if (!Objects.equals(curValue, oldValue) ||
             (curValue == null && !containsKey(key))) {
@@ -941,17 +1045,19 @@ public interface Map<K, V> {
      *         if the implementation supports null values.)
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    default @Nullable V replace(K key, V value) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V replace(@Replaceable Map<K, V> this, K key, V value) {
         V curValue;
         if (((curValue = get(key)) != null) || containsKey(key)) {
             curValue = put(key, value);
@@ -1024,16 +1130,17 @@ public interface Map<K, V> {
      *         is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
-    default @PolyNull V computeIfAbsent(K key,
+    @DoesNotUnrefineReceiver("modifiability")
+    default @PolyNull V computeIfAbsent(@Growable Map<K, V> this, K key,
             Function<? super K, ? extends @PolyNull V> mappingFunction) {
         Objects.requireNonNull(mappingFunction);
         V v;
@@ -1101,17 +1208,18 @@ public interface Map<K, V> {
      *         remappingFunction is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
-    default @PolyNull V computeIfPresent(K key,
-            BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V computeIfPresent(@Shrinkable @Replaceable Map<K, V> this, K key,
+            BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue;
         if ((oldValue = get(key)) != null) {
@@ -1147,23 +1255,17 @@ public interface Map<K, V> {
      *
      * @implSpec
      * The default implementation is equivalent to performing the following
-     * steps for this {@code map}, then returning the current value or
-     * {@code null} if absent:
+     * steps for this {@code map}:
      *
      * <pre> {@code
      * V oldValue = map.get(key);
      * V newValue = remappingFunction.apply(key, oldValue);
-     * if (oldValue != null) {
-     *    if (newValue != null)
-     *       map.put(key, newValue);
-     *    else
-     *       map.remove(key);
-     * } else {
-     *    if (newValue != null)
-     *       map.put(key, newValue);
-     *    else
-     *       return null;
+     * if (newValue != null) {
+     *     map.put(key, newValue);
+     * } else if (oldValue != null || map.containsKey(key)) {
+     *     map.remove(key);
      * }
+     * return newValue;
      * }</pre>
      *
      * <p>The default implementation makes no guarantees about detecting if the
@@ -1193,17 +1295,18 @@ public interface Map<K, V> {
      *         remappingFunction is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+               ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @since 1.8
      */
-    default @PolyNull V compute(K key,
-            BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V compute(@Modifiable Map<K, V> this, K key,
+            BiFunction<? super K, ? super @Nullable V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         V oldValue = get(key);
 
@@ -1288,23 +1391,21 @@ public interface Map<K, V> {
      *         value is associated with the key
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified key is null and this map
      *         does not support null keys or the value or remappingFunction is
      *         null
      * @since 1.8
      */
-    // It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A
-    // remappingFunction that returns null is is probably rare, and these annotations accommodate
-    // the majority of uses that don't return null.
-    default @PolyNull V merge(K key, @NonNull V value,
-            BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V merge(@Modifiable Map<K, V> this, K key, @NonNull V value,
+            BiFunction<? super V, ? super V, ? extends @Nullable V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
         V oldValue = get(key);
@@ -1328,8 +1429,10 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of() {
-        return ImmutableCollections.emptyMap();
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    static <K, V> @Unmodifiable Map<K, V> of() {
+        return (Map<K,V>) ImmutableCollections.EMPTY_MAP;
     }
 
     /**
@@ -1345,7 +1448,8 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1) {
         return new ImmutableCollections.Map1<>(k1, v1);
     }
 
@@ -1365,7 +1469,8 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2);
     }
 
@@ -1387,7 +1492,8 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3);
     }
 
@@ -1411,7 +1517,8 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4);
     }
 
@@ -1437,7 +1544,8 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5);
     }
 
@@ -1465,7 +1573,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
                                K k6, V v6) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5,
                                                k6, v6);
@@ -1497,7 +1605,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
                                K k6, V v6, K k7, V v7) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5,
                                                k6, v6, k7, v7);
@@ -1531,7 +1639,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
                                K k6, V v6, K k7, V v7, K k8, V v8) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5,
                                                k6, v6, k7, v7, k8, v8);
@@ -1567,7 +1675,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
                                K k6, V v6, K k7, V v7, K k8, V v8, K k9, V v9) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5,
                                                k6, v6, k7, v7, k8, v8, k9, v9);
@@ -1605,7 +1713,7 @@ public interface Map<K, V> {
      *
      * @since 9
      */
-    static <K, V> Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @NonEmpty Map<K, V> of(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5,
                                K k6, V v6, K k7, V v7, K k8, V v8, K k9, V v9, K k10, V v10) {
         return new ImmutableCollections.MapN<>(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5,
                                                k6, v6, k7, v7, k8, v8, k9, v9, k10, v10);
@@ -1644,9 +1752,11 @@ public interface Map<K, V> {
      */
     @SafeVarargs
     @SuppressWarnings("varargs")
-    static <K, V> Map<K, V> ofEntries(Entry<? extends K, ? extends V>... entries) {
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @PolyNonEmpty Map<K, V> ofEntries(Entry<? extends K, ? extends V> @PolyNonEmpty... entries) {
         if (entries.length == 0) { // implicit null check of entries array
-            return ImmutableCollections.emptyMap();
+            @SuppressWarnings("unchecked")
+            var map = (Map<K,V>) ImmutableCollections.EMPTY_MAP;
+            return map;
         } else if (entries.length == 1) {
             // implicit null check of the array slot
             return new ImmutableCollections.Map1<>(entries[0].getKey(),
@@ -1676,10 +1786,12 @@ public interface Map<K, V> {
      * on a returned {@code Entry} result in {@code UnsupportedOperationException}.
      * <li>They are not serializable.
      * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
-     * Callers should make no assumptions about the identity of the returned instances.
-     * This method is free to create new instances or reuse existing ones. Therefore,
-     * identity-sensitive operations on these instances (reference equality ({@code ==}),
-     * identity hash code, and synchronization) are unreliable and should be avoided.
+     * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+     * as interchangeable and should not use them for synchronization, or
+     * unpredictable behavior may occur. For example, in a future release,
+     * synchronization may fail. Callers should make no assumptions
+     * about the identity of the returned instances. This method is free to
+     * create new instances or reuse existing ones.
      * </ul>
      *
      * @apiNote
@@ -1696,7 +1808,7 @@ public interface Map<K, V> {
      * @see Map#ofEntries Map.ofEntries()
      * @since 9
      */
-    static <K, V> Entry<K, V> entry(K k, V v) {
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable Entry<K, V> entry(@NonNull K k, @NonNull V v) {
         // KeyValueHolder checks for nulls
         return new KeyValueHolder<>(k, v);
     }
@@ -1719,9 +1831,12 @@ public interface Map<K, V> {
      * @since 10
      */
     @SuppressWarnings({"rawtypes","unchecked"})
-    static <K, V> Map<K, V> copyOf(Map<? extends K, ? extends V> map) {
+    @SideEffectFree
+    static <K extends @NonNull Object, V extends @NonNull Object> @Unmodifiable @PolyNonEmpty Map<K, V> copyOf(@MaybeModifiable @PolyNonEmpty Map<? extends K, ? extends V> map) {
         if (map instanceof ImmutableCollections.AbstractImmutableMap) {
             return (Map<K,V>)map;
+        } else if (map.isEmpty()) { // Implicit nullcheck of map
+            return Map.of();
         } else {
             return (Map<K,V>)Map.ofEntries(map.entrySet().toArray(new Entry[0]));
         }

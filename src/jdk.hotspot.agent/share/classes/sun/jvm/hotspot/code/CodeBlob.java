@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,8 @@
  */
 package sun.jvm.hotspot.code;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import sun.jvm.hotspot.compiler.ImmutableOopMap;
 import sun.jvm.hotspot.compiler.ImmutableOopMapSet;
 import sun.jvm.hotspot.debugger.Address;
@@ -35,8 +37,8 @@ import sun.jvm.hotspot.utilities.Assert;
 import sun.jvm.hotspot.utilities.CStringUtilities;
 
 import java.io.PrintStream;
-import java.util.Observable;
-import java.util.Observer;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 public class CodeBlob extends VMObject {
   private static AddressField nameField;
@@ -133,8 +135,6 @@ public class CodeBlob extends VMObject {
   // Typing
   public boolean isBufferBlob()         { return false; }
 
-  public boolean isAOT()                { return false; }
-
   public boolean isCompiled()           { return false; }
 
   public boolean isNMethod()            { return false; }
@@ -181,15 +181,10 @@ public class CodeBlob extends VMObject {
 
   public boolean dataContains(Address addr)    { return dataBegin()   .lessThanOrEqual(addr) && dataEnd()   .greaterThan(addr); }
 
+  @Pure
   public boolean contains(Address addr)        { return contentContains(addr);                                                  }
 
   public boolean isFrameCompleteAt(Address a)  { return codeContains(a) && a.minus(codeBegin()) >= getFrameCompleteOffset(); }
-
-  // Reclamation support (really only used by the nmethods, but in order to get asserts to work
-  // in the CodeCache they are defined virtual here)
-  public boolean isZombie()             { return false; }
-
-  public boolean isLockedByVM()         { return false; }
 
   public ImmutableOopMap getOopMapForReturnAddress(Address returnAddress, boolean debugging) {
     Address pc = returnAddress;

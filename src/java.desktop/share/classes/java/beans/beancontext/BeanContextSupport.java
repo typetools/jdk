@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,37 +27,25 @@ package java.beans.beancontext;
 
 import java.awt.Component;
 import java.awt.Container;
-
 import java.beans.Beans;
-import java.beans.AppletInitializer;
-
-import java.beans.DesignMode;
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-
-import java.beans.VetoableChangeListener;
-import java.beans.VetoableChangeSupport;
 import java.beans.PropertyVetoException;
-
+import java.beans.VetoableChangeListener;
 import java.beans.Visibility;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.io.Serializable;
-
 import java.net.URL;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
-
 
 /**
  * This helper class provides a utility implementation of the
@@ -77,8 +65,11 @@ public class      BeanContextSupport extends BeanContextChildSupport
                   PropertyChangeListener,
                   VetoableChangeListener {
 
-    // Fix for bug 4282900 to pass JCK regression test
-    static final long serialVersionUID = -4879613978649577204L;
+    /**
+     * Use serialVersionUID from JDK 1.3 for interoperability.
+     */
+    @Serial
+    private static final long serialVersionUID = -4879613978649577204L;
 
     /**
      *
@@ -313,9 +304,17 @@ public class      BeanContextSupport extends BeanContextChildSupport
      * when the BeanContextSupport is serialized.
      */
 
+    /**
+     * A protected nested class containing per-child information
+     * in the {@code children} hashtable.
+     */
     protected class BCSChild implements Serializable {
 
-    private static final long serialVersionUID = -5815286101609939109L;
+        /**
+         * Use serialVersionUID from JDK 1.7 for interoperability.
+         */
+        @Serial
+        private static final long serialVersionUID = -5815286101609939109L;
 
         BCSChild(Object bcc, Object peer) {
             super();
@@ -338,7 +337,17 @@ public class      BeanContextSupport extends BeanContextChildSupport
          */
 
 
-        private           Object   child;
+        /**
+         * The child.
+         */
+        @SuppressWarnings("serial") // Not statically typed as Serializable
+        private Object child;
+
+        /**
+         * The peer if the child and the peer are related by an implementation
+         * of BeanContextProxy
+         */
+        @SuppressWarnings("serial") // Not statically typed as Serializable
         private           Object   proxyPeer;
 
         private transient boolean  removePending;
@@ -569,9 +578,8 @@ public class      BeanContextSupport extends BeanContextChildSupport
     @SuppressWarnings("rawtypes")
     public boolean containsAll(Collection c) {
         synchronized(children) {
-            Iterator<?> i = c.iterator();
-            while (i.hasNext())
-                if(!contains(i.next()))
+            for (Object o : c)
+                if(!contains(o))
                     return false;
 
             return true;
@@ -767,17 +775,15 @@ public class      BeanContextSupport extends BeanContextChildSupport
         }
 
         synchronized(children) {
-            for (Iterator<Object> i = children.keySet().iterator(); i.hasNext();) {
-                Object c = i.next();
-
+            for (Object c : children.keySet()) {
                 try {
-                        return ((Visibility)c).needsGui();
-                    } catch (ClassCastException cce) {
-                        // do nothing ...
-                    }
+                    return ((Visibility)c).needsGui();
+                } catch (ClassCastException cce) {
+                    // do nothing ...
+                }
 
-                    if (c instanceof Container || c instanceof Component)
-                        return true;
+                if (c instanceof Container || c instanceof Component)
+                    return true;
             }
         }
 
@@ -794,11 +800,11 @@ public class      BeanContextSupport extends BeanContextChildSupport
 
             // lets also tell the Children that can that they may not use their GUI's
             synchronized(children) {
-                for (Iterator<Object> i = children.keySet().iterator(); i.hasNext();) {
-                    Visibility v = getChildVisibility(i.next());
+                for (Object c : children.keySet()) {
+                    Visibility v = getChildVisibility(c);
 
                     if (v != null) v.dontUseGui();
-               }
+                }
             }
         }
     }
@@ -813,8 +819,8 @@ public class      BeanContextSupport extends BeanContextChildSupport
 
             // lets also tell the Children that can that they may use their GUI's
             synchronized(children) {
-                for (Iterator<Object> i = children.keySet().iterator(); i.hasNext();) {
-                    Visibility v = getChildVisibility(i.next());
+                for (Object c : children.keySet()) {
+                    Visibility v = getChildVisibility(c);
 
                     if (v != null) v.okToUseGui();
                 }
@@ -995,10 +1001,11 @@ public class      BeanContextSupport extends BeanContextChildSupport
      * it should always call writeObject() followed by writeChildren() and
      * readObject() followed by readChildren().
      *
-     * @param oos the ObjectOutputStream
+     * @param  oos the {@code ObjectOutputStream} to write
+     * @throws IOException if an I/O error occurs
      */
-
-    private synchronized void writeObject(ObjectOutputStream oos) throws IOException, ClassNotFoundException {
+    @Serial
+    private synchronized void writeObject(ObjectOutputStream oos) throws IOException {
         serializing = true;
 
         synchronized (BeanContext.globalHierarchyLock) {
@@ -1030,18 +1037,8 @@ public class      BeanContextSupport extends BeanContextChildSupport
         int count = serializable;
 
         while (count-- > 0) {
-            Object                      child = null;
-            BeanContextSupport.BCSChild bscc  = null;
-
-            try {
-                child = ois.readObject();
-                bscc  = (BeanContextSupport.BCSChild)ois.readObject();
-            } catch (IOException ioe) {
-                continue;
-            } catch (ClassNotFoundException cnfe) {
-                continue;
-            }
-
+            Object child = ois.readObject();
+            BCSChild bscc = (BCSChild) ois.readObject();
 
             synchronized(child) {
                 BeanContextChild bcc = null;
@@ -1073,8 +1070,13 @@ public class      BeanContextSupport extends BeanContextChildSupport
      * deserialize contents ... if this instance has a distinct peer the
      * children are *not* serialized here, the peer's readObject() must call
      * readChildren() after deserializing this instance.
+     *
+     * @param  ois the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
      */
-
+    @Serial
     private synchronized void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 
         synchronized(BeanContext.globalHierarchyLock) {
@@ -1119,16 +1121,22 @@ public class      BeanContextSupport extends BeanContextChildSupport
         String propertyName = pce.getPropertyName();
         Object source       = pce.getSource();
 
-        synchronized(children) {
-            if ("beanContext".equals(propertyName) &&
-                containsKey(source)                    &&
-                children.get(source).isRemovePending()) {
-                BeanContext bc = getBeanContextPeer();
+        if ("beanContext".equals(propertyName)) {
+            synchronized (BeanContext.globalHierarchyLock) {
+                synchronized (children) {
+                    if (containsKey(source)
+                            && children.get(source).isRemovePending())
+                    {
+                        BeanContext bc = getBeanContextPeer();
 
-                if (bc.equals(pce.getOldValue()) && !bc.equals(pce.getNewValue())) {
-                    remove(source, false);
-                } else {
-                    children.get(source).setRemovePending(false);
+                        if (bc.equals(pce.getOldValue())
+                                && !bc.equals(pce.getNewValue()))
+                        {
+                            remove(source, false);
+                        } else {
+                            children.get(source).setRemovePending(false);
+                        }
+                    }
                 }
             }
         }
@@ -1325,7 +1333,7 @@ public class      BeanContextSupport extends BeanContextChildSupport
             /*
              * this adaptor is used by the BeanContextSupport class to forward
              * property changes from a child to the BeanContext, avoiding
-             * accidential serialization of the BeanContext by a badly
+             * accidental serialization of the BeanContext by a badly
              * behaved Serializable child.
              */
 
@@ -1339,7 +1347,7 @@ public class      BeanContextSupport extends BeanContextChildSupport
             /*
              * this adaptor is used by the BeanContextSupport class to forward
              * vetoable changes from a child to the BeanContext, avoiding
-             * accidential serialization of the BeanContext by a badly
+             * accidental serialization of the BeanContext by a badly
              * behaved Serializable child.
              */
 
@@ -1380,7 +1388,10 @@ public class      BeanContextSupport extends BeanContextChildSupport
      */
     protected transient HashMap<Object, BCSChild>         children;
 
-    private             int             serializable  = 0; // children serializable
+    /**
+     * Currently serializable children.
+     */
+    private int serializable = 0; // children serializable
 
     /**
      * all accesses to the {@code protected ArrayList bcmListeners} field

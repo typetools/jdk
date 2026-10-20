@@ -26,6 +26,7 @@
 package com.sun.jndi.ldap;
 
 import org.checkerframework.checker.interning.qual.Interned;
+
 import java.io.IOException;
 import javax.naming.*;
 import javax.naming.directory.*;
@@ -55,7 +56,7 @@ import javax.naming.directory.*;
  * @see com.sun.jndi.ldap.ctl.ResponseControlFactory ResponseControlFactory
  * @author Vincent Ryan
  */
-final public class EntryChangeResponseControl extends BasicControl {
+public final class EntryChangeResponseControl extends BasicControl {
 
     /**
      * The entry-change response control's assigned object identifier

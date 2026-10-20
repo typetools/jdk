@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that a malformed string in
  * <a href="DataInput.html#modified-utf-8">modified UTF-8</a>
@@ -32,7 +36,7 @@ package java.io;
  * input stream or by any class that implements the data input
  * interface.
  * See the
- * <a href="DataInput.html#modified-utf-8"><code>DataInput</code></a>
+ * <a href="DataInput.html#modified-utf-8">{@code DataInput}</a>
  * class description for the format in
  * which modified UTF-8 strings are read and written.
  *
@@ -42,28 +46,31 @@ package java.io;
  * @see     java.io.IOException
  * @since   1.0
  */
-public
-class UTFDataFormatException extends IOException {
+@AnnotatedFor({"nullness"})
+public class UTFDataFormatException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = 420743449228280612L;
 
     /**
-     * Constructs a <code>UTFDataFormatException</code> with
-     * <code>null</code> as its error detail message.
+     * Constructs a {@code UTFDataFormatException} with
+     * {@code null} as its error detail message.
      */
+    @SideEffectFree
     public UTFDataFormatException() {
         super();
     }
 
     /**
-     * Constructs a <code>UTFDataFormatException</code> with the
-     * specified detail message. The string <code>s</code> can be
+     * Constructs a {@code UTFDataFormatException} with the
+     * specified detail message. The string {@code s} can be
      * retrieved later by the
-     * <code>{@link java.lang.Throwable#getMessage}</code>
-     * method of class <code>java.lang.Throwable</code>.
+     * {@link java.lang.Throwable#getMessage}
+     * method of class {@code java.lang.Throwable}.
      *
      * @param   s   the detail message.
      */
-    public UTFDataFormatException(String s) {
+    @SideEffectFree
+    public UTFDataFormatException(@Nullable String s) {
         super(s);
     }
 }

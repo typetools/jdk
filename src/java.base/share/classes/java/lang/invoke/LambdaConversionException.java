@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,17 +25,22 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * LambdaConversionException
  *
  * @since 1.8
  */
 public class LambdaConversionException extends Exception {
+    @java.io.Serial
     private static final long serialVersionUID = 292L + 8L;
 
     /**
      * Constructs a {@code LambdaConversionException}.
      */
+    @SideEffectFree
     public LambdaConversionException() {
     }
 
@@ -43,7 +48,8 @@ public class LambdaConversionException extends Exception {
      * Constructs a {@code LambdaConversionException} with a message.
      * @param message the detail message
      */
-    public LambdaConversionException(String message) {
+    @SideEffectFree
+    public LambdaConversionException(@Nullable String message) {
         super(message);
     }
 
@@ -52,7 +58,8 @@ public class LambdaConversionException extends Exception {
      * @param message the detail message
      * @param cause the cause
      */
-    public LambdaConversionException(String message, Throwable cause) {
+    @SideEffectFree
+    public LambdaConversionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -60,7 +67,8 @@ public class LambdaConversionException extends Exception {
      * Constructs a {@code LambdaConversionException} with a cause.
      * @param cause the cause
      */
-    public LambdaConversionException(Throwable cause) {
+    @SideEffectFree
+    public LambdaConversionException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -72,7 +80,8 @@ public class LambdaConversionException extends Exception {
      * @param enableSuppression whether or not suppressed exceptions are enabled
      * @param writableStackTrace whether or not the stack trace is writable
      */
-    public LambdaConversionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    @SideEffectFree
+    public LambdaConversionException(@Nullable String message, @Nullable Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

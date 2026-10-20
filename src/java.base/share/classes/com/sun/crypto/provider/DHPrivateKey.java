@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,12 +32,12 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Objects;
 import java.math.BigInteger;
 import java.security.KeyRep;
 import java.security.PrivateKey;
 import java.security.InvalidKeyException;
-import java.security.ProviderException;
 import javax.crypto.spec.DHParameterSpec;
 import sun.security.util.*;
 
@@ -49,11 +49,12 @@ import sun.security.util.*;
  *
  *
  * @see DHPublicKey
- * @see java.security.KeyAgreement
+ * @see javax.crypto.KeyAgreement
  */
 final class DHPrivateKey implements PrivateKey,
-javax.crypto.interfaces.DHPrivateKey, Serializable {
+        javax.crypto.interfaces.DHPrivateKey, Serializable {
 
+    @java.io.Serial
     static final long serialVersionUID = 7565477590005668886L;
 
     // only supported version of PKCS#8 PrivateKeyInfo
@@ -77,8 +78,6 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
     // the private-value length (optional)
     private int l;
 
-    private int DH_data[] = { 1, 2, 840, 113549, 1, 3, 1 };
-
     /**
      * Make a DH private key out of a private value <code>x</code>, a prime
      * modulus <code>p</code>, and a base generator <code>g</code>.
@@ -86,8 +85,6 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      * @param x the private value
      * @param p the prime modulus
      * @param g the base generator
-     *
-     * @exception ProviderException if the key cannot be encoded
      */
     DHPrivateKey(BigInteger x, BigInteger p, BigInteger g)
         throws InvalidKeyException {
@@ -103,21 +100,18 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      * @param p the prime modulus
      * @param g the base generator
      * @param l the private-value length
-     *
-     * @exception InvalidKeyException if the key cannot be encoded
      */
     DHPrivateKey(BigInteger x, BigInteger p, BigInteger g, int l) {
         this.x = x;
         this.p = p;
         this.g = g;
         this.l = l;
-        try {
-            this.key = new DerValue(DerValue.tag_Integer,
-                                    this.x.toByteArray()).toByteArray();
-            this.encodedKey = getEncoded();
-        } catch (IOException e) {
-            throw new ProviderException("Cannot produce ASN.1 encoding", e);
-        }
+        byte[] xbytes = x.toByteArray();
+        DerValue val = new DerValue(DerValue.tag_Integer, xbytes);
+        this.key = val.toByteArray();
+        val.clear();
+        Arrays.fill(xbytes, (byte) 0);
+        encode();
     }
 
     /**
@@ -125,13 +119,13 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      *
      * @param encodedKey the encoded key
      *
-     * @exception InvalidKeyException if the encoded key does not represent
+     * @throws InvalidKeyException if the encoded key does not represent
      * a Diffie-Hellman private key
      */
     DHPrivateKey(byte[] encodedKey) throws InvalidKeyException {
-        InputStream inStream = new ByteArrayInputStream(encodedKey);
+        DerValue val = null;
         try {
-            DerValue val = new DerValue(inStream);
+            val = new DerValue(encodedKey);
             if (val.tag != DerValue.tag_Sequence) {
                 throw new InvalidKeyException ("Key not a SEQUENCE");
             }
@@ -189,6 +183,10 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
             this.encodedKey = encodedKey.clone();
         } catch (IOException | NumberFormatException e) {
             throw new InvalidKeyException("Error parsing key encoding", e);
+        } finally {
+            if (val != null) {
+                val.clear();
+            }
         }
     }
 
@@ -210,49 +208,53 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      * Get the encoding of the key.
      */
     public synchronized byte[] getEncoded() {
+        encode();
+        return encodedKey.clone();
+    }
+
+    /**
+     * Generate the encodedKey field if it has not been calculated.
+     * Could generate null.
+     */
+    private void encode() {
         if (this.encodedKey == null) {
-            try {
-                DerOutputStream tmp = new DerOutputStream();
+            DerOutputStream tmp = new DerOutputStream();
 
-                //
-                // version
-                //
-                tmp.putInteger(PKCS8_VERSION);
+            //
+            // version
+            //
+            tmp.putInteger(PKCS8_VERSION);
 
-                //
-                // privateKeyAlgorithm
-                //
-                DerOutputStream algid = new DerOutputStream();
+            //
+            // privateKeyAlgorithm
+            //
+            DerOutputStream algid = new DerOutputStream();
 
-                // store OID
-                algid.putOID(new ObjectIdentifier(DH_data));
-                // encode parameters
-                DerOutputStream params = new DerOutputStream();
-                params.putInteger(this.p);
-                params.putInteger(this.g);
-                if (this.l != 0) {
-                    params.putInteger(this.l);
-                }
-                // wrap parameters into SEQUENCE
-                DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
-                                                      params.toByteArray());
-                // store parameter SEQUENCE in algid
-                algid.putDerValue(paramSequence);
-                // wrap algid into SEQUENCE
-                tmp.write(DerValue.tag_Sequence, algid);
-
-                // privateKey
-                tmp.putOctetString(this.key);
-
-                // make it a SEQUENCE
-                DerOutputStream derKey = new DerOutputStream();
-                derKey.write(DerValue.tag_Sequence, tmp);
-                this.encodedKey = derKey.toByteArray();
-            } catch (IOException e) {
-                return null;
+            // store OID
+            algid.putOID(DHPublicKey.DH_OID);
+            // encode parameters
+            DerOutputStream params = new DerOutputStream();
+            params.putInteger(this.p);
+            params.putInteger(this.g);
+            if (this.l != 0) {
+                params.putInteger(this.l);
             }
+            // wrap parameters into SEQUENCE
+            DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
+                    params.toByteArray());
+            // store parameter SEQUENCE in algid
+            algid.putDerValue(paramSequence);
+            // wrap algid into SEQUENCE
+            tmp.write(DerValue.tag_Sequence, algid);
+
+            // privateKey
+            tmp.putOctetString(this.key);
+
+            // make it a SEQUENCE
+            DerValue val = DerValue.wrap(DerValue.tag_Sequence, tmp);
+            this.encodedKey = val.toByteArray();
+            val.clear();
         }
-        return this.encodedKey.clone();
     }
 
     /**
@@ -282,10 +284,8 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
             DerInputStream in = new DerInputStream(this.key);
             this.x = in.getBigInteger();
         } catch (IOException e) {
-            InvalidKeyException ike = new InvalidKeyException(
-                "Error parsing key encoding: " + e.getMessage());
-            ike.initCause(e);
-            throw ike;
+            throw new InvalidKeyException(
+                "Error parsing key encoding: " + e.getMessage(), e);
         }
     }
 
@@ -321,10 +321,12 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      * @throws java.io.ObjectStreamException if a new object representing
      * this DH private key could not be created
      */
+    @java.io.Serial
     private Object writeReplace() throws java.io.ObjectStreamException {
+        encode();
         return new KeyRep(KeyRep.Type.PRIVATE,
-                        getAlgorithm(),
-                        getFormat(),
-                        getEncoded());
+                getAlgorithm(),
+                getFormat(),
+                encodedKey);
     }
 }

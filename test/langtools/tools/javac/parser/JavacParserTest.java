@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 7073631 7159445 7156633 8028235 8065753 8205913
+ * @bug 7073631 7159445 7156633 8028235 8065753 8205418 8205913 8228451 8237041 8253584 8246774 8256411 8256149 8259050 8266436 8267221 8271928 8275097 8293897 8295401 8304671
  * @summary tests error and diagnostics positions
  * @author  Jan Lahoda
  * @modules jdk.compiler/com.sun.tools.javac.api
@@ -51,7 +51,7 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
-import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.TreePath;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.api.JavacTaskImpl;
@@ -71,6 +71,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -81,17 +82,25 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 
+import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.DefaultCaseLabelTree;
+import com.sun.source.tree.ModuleTree;
+import com.sun.source.util.TreePathScanner;
+import com.sun.tools.javac.api.JavacTaskPool;
+import com.sun.tools.javac.api.JavacTaskPool.Worker;
+import java.util.Objects;
+
 public class JavacParserTest extends TestCase {
     static final JavaCompiler tool = ToolProvider.getSystemJavaCompiler();
     static final JavaFileManager fm = tool.getStandardFileManager(null, null, null);
+    public static final String SOURCE_VERSION =
+        Integer.toString(Runtime.version().feature());
 
     private JavacParserTest(){}
 
     public static void main(String... args) throws Exception {
-        try {
+        try (fm) {
             new JavacParserTest().run(args);
-        } finally {
-            fm.close();
         }
     }
 
@@ -100,7 +109,11 @@ public class JavacParserTest extends TestCase {
         private String text;
 
         public MyFileObject(String text) {
-            super(URI.create("myfo:/Test.java"), JavaFileObject.Kind.SOURCE);
+            this("Test", text);
+        }
+
+        public MyFileObject(String fileName, String text) {
+            super(URI.create("myfo:/" + fileName + ".java"), JavaFileObject.Kind.SOURCE);
             this.text = text;
         }
 
@@ -854,11 +867,7 @@ public class JavacParserTest extends TestCase {
                 + expectedValues, values, expectedValues);
     }
 
-    /*
-     * The following tests do not work just yet with nb-javac nor javac,
-     * they need further investigation, see CR: 7167356
-     */
-
+    @Test
     void testPositionBrokenSource126732a() throws IOException {
         String[] commands = new String[]{
             "return Runnable()",
@@ -898,6 +907,7 @@ public class JavacParserTest extends TestCase {
         }
     }
 
+    @Test
     void testPositionBrokenSource126732b() throws IOException {
         String[] commands = new String[]{
             "break",
@@ -939,6 +949,7 @@ public class JavacParserTest extends TestCase {
         }
     }
 
+    @Test
     void testStartPositionEnumConstantInit() throws IOException {
 
         String code = "package t; enum Test { AAA; }";
@@ -952,7 +963,7 @@ public class JavacParserTest extends TestCase {
         int start = (int) t.getSourcePositions().getStartPosition(cut,
                 enumAAA.getInitializer());
 
-        assertEquals("testStartPositionEnumConstantInit", -1, start);
+        assertEquals("testStartPositionEnumConstantInit", 23, start);
     }
 
     @Test
@@ -995,7 +1006,7 @@ public class JavacParserTest extends TestCase {
     @Test //JDK-8065753
     void testWrongFirstToken() throws IOException {
         String code = "<";
-        String expectedErrors = "Test.java:1:1: compiler.err.expected3: class, interface, enum\n" +
+        String expectedErrors = "Test.java:1:1: compiler.err.expected4: class, interface, enum, record\n" +
                                 "1 error\n";
         StringWriter out = new StringWriter();
         JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null,
@@ -1035,6 +1046,1353 @@ public class JavacParserTest extends TestCase {
 
         String actualErrors = normalize(out.toString());
         assertEquals("the error message is not correct, actual: " + actualErrors, expectedErrors, actualErrors);
+    }
+
+    @Test //JDK-821742
+    void testCompDeclVarType() throws IOException {
+        String code = "package test; public class Test {"
+                + "private void test() {"
+                + "var v1 = 10,v2 = 12;"
+                + "} private Test() {}}";
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ct.enter();
+        ct.analyze();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree method = (MethodTree) clazz.getMembers().get(0);
+        VariableTree stmt1 = (VariableTree) method.getBody().getStatements().get(0);
+        VariableTree stmt2 = (VariableTree) method.getBody().getStatements().get(1);
+        Tree v1Type = stmt1.getType();
+        Tree v2Type = stmt2.getType();
+        assertEquals("Implicit type for v1 is not correct: ", Kind.PRIMITIVE_TYPE, v1Type.getKind());
+        assertEquals("Implicit type for v2 is not correct: ", Kind.PRIMITIVE_TYPE, v2Type.getKind());
+    }
+
+    @Test
+    void testCaseBodyStatements() throws IOException {
+        String code = "class C {" +
+                      "    void t(int i) {" +
+                      "        switch (i) {" +
+                      "            case 0 -> i++;" +
+                      "            case 1 -> { i++; }" +
+                      "            case 2 -> throw new RuntimeException();" +
+                      "            case 3 -> if (true) ;" +
+                      "            default -> i++;" +
+                      "        }" +
+                      "        switch (i) {" +
+                      "            case 0: i++; break;" +
+                      "            case 1: { i++; break;}" +
+                      "            case 2: throw new RuntimeException();" +
+                      "            case 3: if (true) ; break;" +
+                      "            default: i++; break;" +
+                      "        }" +
+                      "        int j = switch (i) {" +
+                      "            case 0 -> i + 1;" +
+                      "            case 1 -> { yield i + 1; }" +
+                      "            default -> throw new RuntimeException();" +
+                      "        };" +
+                      "        int k = switch (i) {" +
+                      "            case 0: yield i + 1;" +
+                      "            case 1: { yield i + 1; }" +
+                      "            default: throw new RuntimeException();" +
+                      "        };" +
+                      "    }" +
+                      "}";
+        String expectedErrors = "Test.java:1:178: compiler.err.switch.case.unexpected.statement\n";
+        StringWriter out = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null,
+                Arrays.asList("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees trees = Trees.instance(ct);
+        List<String> spans = new ArrayList<>();
+
+        new TreePathScanner<Void, Void>() {
+            @Override
+            public Void visitCase(CaseTree tree, Void v) {
+                if (tree.getBody() != null) {
+                    int start = (int) trees.getSourcePositions().getStartPosition(cut, tree.getBody());
+                    int end = (int) trees.getSourcePositions().getEndPosition(cut, tree.getBody());
+                    spans.add(code.substring(start, end));
+                } else {
+                    spans.add("<null>");
+                }
+                return super.visitCase(tree, v);
+            }
+        }.scan(cut, null);
+
+        List<String> expectedSpans = List.of(
+                "i++;", "{ i++; }", "throw new RuntimeException();", "if (true) ;", "i++;",
+                "<null>", "<null>", "<null>", "<null>", "<null>",
+                "i + 1"/*TODO semicolon?*/, "{ yield i + 1; }", "throw new RuntimeException();",
+                "<null>", "<null>", "<null>");
+        assertEquals("the error spans are not correct; actual:" + spans, expectedSpans, spans);
+        String toString = normalize(cut.toString());
+        String expectedToString =
+                "\n" +
+                "class C {\n" +
+                "    \n" +
+                "    void t(int i) {\n" +
+                "        switch (i) {\n" +
+                "        case 0 -> i++;\n" +
+                "        case 1 -> {\n" +
+                "            i++;\n" +
+                "        }\n" +
+                "        case 2 -> throw new RuntimeException();\n" +
+                "        case 3 -> if (true) ;\n" +
+                "        default -> i++;\n" +
+                "        }\n" +
+                "        switch (i) {\n" +
+                "        case 0:\n" +
+                "            i++;\n" +
+                "            break;\n" +
+                "        \n" +
+                "        case 1:\n" +
+                "            {\n" +
+                "                i++;\n" +
+                "                break;\n" +
+                "            }\n" +
+                "        \n" +
+                "        case 2:\n" +
+                "            throw new RuntimeException();\n" +
+                "        \n" +
+                "        case 3:\n" +
+                "            if (true) ;\n" +
+                "            break;\n" +
+                "        \n" +
+                "        default:\n" +
+                "            i++;\n" +
+                "            break;\n" +
+                "        \n" +
+                "        }\n" +
+                "        int j = switch (i) {\n" +
+                "        case 0 -> yield i + 1;\n" +
+                "        case 1 -> {\n" +
+                "            yield i + 1;\n" +
+                "        }\n" +
+                "        default -> throw new RuntimeException();\n" +
+                "        };\n" +
+                "        int k = switch (i) {\n" +
+                "        case 0:\n" +
+                "            yield i + 1;\n" +
+                "        \n" +
+                "        case 1:\n" +
+                "            {\n" +
+                "                yield i + 1;\n" +
+                "            }\n" +
+                "        \n" +
+                "        default:\n" +
+                "            throw new RuntimeException();\n" +
+                "        \n" +
+                "        };\n" +
+                "    }\n" +
+                "}";
+        System.err.println("toString:");
+        System.err.println(toString);
+        System.err.println("expectedToString:");
+        System.err.println(expectedToString);
+        assertEquals("the error spans are not correct; actual:" + toString, expectedToString, toString);
+        String actualErrors = normalize(out.toString());
+        assertEquals("the error message is not correct, actual: " + actualErrors, expectedErrors, actualErrors);
+    }
+
+    @Test
+    void testTypeParamsWithoutMethod() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { /**javadoc*/ |public <T> |}";
+        String[] parts = code.split("\\|");
+
+        code = parts[0] + parts[1] + parts[2];
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        Trees trees = Trees.instance(ct);
+        SourcePositions pos = trees.getSourcePositions();
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        ErroneousTree err = (ErroneousTree) clazz.getMembers().get(0);
+        MethodTree method = (MethodTree) err.getErrorTrees().get(0);
+
+        final int methodStart = parts[0].length();
+        final int methodEnd = parts[0].length() + parts[1].length();
+        assertEquals("testTypeParamsWithoutMethod",
+                methodStart, pos.getStartPosition(cut, method));
+        assertEquals("testTypeParamsWithoutMethod",
+                methodEnd, pos.getEndPosition(cut, method));
+
+        TreePath path2Method = new TreePath(new TreePath(new TreePath(cut), clazz), method);
+        String javadoc = trees.getDocComment(path2Method);
+
+        if (!"javadoc".equals(javadoc)) {
+            throw new AssertionError("Expected javadoc not found, actual javadoc: " + javadoc);
+        }
+    }
+
+    @Test
+    void testAnalyzeParensWithComma1() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { FI fi = |(s, |";
+        String[] parts = code.split("\\|", 3);
+
+        code = parts[0] + parts[1] + parts[2];
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        Trees trees = Trees.instance(ct);
+        SourcePositions pos = trees.getSourcePositions();
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        boolean[] found = new boolean[1];
+
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitLambdaExpression(LambdaExpressionTree tree, Void v) {
+                found[0] = true;
+                int lambdaStart = parts[0].length();
+                int lambdaEnd = parts[0].length() + parts[1].length();
+                assertEquals("testAnalyzeParensWithComma1",
+                        lambdaStart, pos.getStartPosition(cut, tree));
+                assertEquals("testAnalyzeParensWithComma1",
+                        lambdaEnd, pos.getEndPosition(cut, tree));
+                return null;
+            }
+        }.scan(cut, null);
+
+        assertTrue("testAnalyzeParensWithComma1", found[0]);
+    }
+
+    @Test
+    void testAnalyzeParensWithComma2() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { FI fi = |(s, o)|";
+        String[] parts = code.split("\\|", 3);
+
+        code = parts[0] + parts[1] + parts[2];
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        Trees trees = Trees.instance(ct);
+        SourcePositions pos = trees.getSourcePositions();
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        boolean[] found = new boolean[1];
+
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitLambdaExpression(LambdaExpressionTree tree, Void v) {
+                found[0] = true;
+                int lambdaStart = parts[0].length();
+                int lambdaEnd = parts[0].length() + parts[1].length();
+                assertEquals("testAnalyzeParensWithComma2",
+                        lambdaStart, pos.getStartPosition(cut, tree));
+                assertEquals("testAnalyzeParensWithComma2",
+                        lambdaEnd, pos.getEndPosition(cut, tree));
+                return null;
+            }
+        }.scan(cut, null);
+
+        assertTrue("testAnalyzeParensWithComma2", found[0]);
+    }
+
+    @Test
+    void testBrokenEnum1() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { enum E { A, B, C. D, E, F; } }";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:44: compiler.err.expected3: ',', '}', ';'");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\r*\n", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    \n" +
+                             "    enum E {\n" +
+                             "        /*public static final*/ A /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ B /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ C /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ D /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ E /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ F /* = new E() */ /*enum*/ ;\n" +
+                             "        (ERROR) <error>;\n" +
+                             "    }\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testBrokenEnum2() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { enum E { A, B, C void t() {} } }";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:44: compiler.err.expected3: ',', '}', ';'");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\r*\n", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    \n" +
+                             "    enum E {\n" +
+                             "        /*public static final*/ A /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ B /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ C /* = new E() */ /*enum*/ ;\n" +
+                             "        \n" +
+                             "        void t() {\n" +
+                             "        }\n" +
+                             "    }\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testBrokenEnum3() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { enum E { , void t() {} } }";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:38: compiler.err.expected2: '}', ';'");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\r*\n", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    \n" +
+                             "    enum E {\n" +
+                             ";\n" +
+                             "        \n" +
+                             "        void t() {\n" +
+                             "        }\n" +
+                             "    }\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testBrokenEnum4() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { enum E { A, B, C, void t() {} } }";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:46: compiler.err.enum.constant.expected");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\r*\n", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    \n" +
+                             "    enum E {\n" +
+                             "        /*public static final*/ A /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ B /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ C /* = new E() */ /*enum*/ ;\n" +
+                             "        \n" +
+                             "        void t() {\n" +
+                             "        }\n" +
+                             "    }\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testBrokenEnum5() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { enum E { A; void t() {} B; } }";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:52: compiler.err.enum.constant.not.expected");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\r*\n", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    \n" +
+                             "    enum E {\n" +
+                             "        /*public static final*/ A /* = new E() */ /*enum*/ ,\n" +
+                             "        /*public static final*/ B /* = new E() */ /*enum*/ ;\n" +
+                             "        \n" +
+                             "        void t() {\n" +
+                             "        }\n" +
+                             "    }\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testCompoundAssignment() throws IOException {
+        assert tool != null;
+
+        String code = "package test; class Test { v += v v;}";
+        StringWriter output = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(output, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        List<String> actual = List.of(output.toString().split("\r?\n"));
+        List<String> expected = List.of("Test.java:1:29: compiler.err.expected: token.identifier");
+
+        assertEquals("The expected and actual errors do not match, actual errors: " + actual,
+                     actual,
+                     expected);
+
+        String actualAST = cut.toString().replaceAll("\\R", "\n");
+        String expectedAST = "package test;\n" +
+                             "\n" +
+                             "class Test {\n" +
+                             "    v <error>;\n" +
+                             "    v v;\n" +
+                             "}";
+        assertEquals("The expected and actual AST do not match, actual AST: " + actualAST,
+                     actualAST,
+                     expectedAST);
+    }
+
+    @Test
+    void testStartAndEndPositionForClassesInPermitsClause() throws IOException {
+        String code = "package t; sealed class Test permits Sub1, Sub2 {} final class Sub1 extends Test {} final class Sub2 extends Test {}";
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        List<? extends Tree> permitsList = clazz.getPermitsClause();
+        assertEquals("testStartAndEndPositionForClassesInPermitsClause", 2, permitsList.size());
+        Trees t = Trees.instance(ct);
+        List<String> expected = List.of("Sub1", "Sub2");
+        int i = 0;
+        for (Tree permitted: permitsList) {
+            int start = (int) t.getSourcePositions().getStartPosition(cut, permitted);
+            int end = (int) t.getSourcePositions().getEndPosition(cut, permitted);
+            assertEquals("testStartAndEndPositionForClassesInPermitsClause", expected.get(i++), code.substring(start, end));
+        }
+    }
+
+    @Test //JDK-8237041
+    void testDeepNestingNoClose() throws IOException {
+        //verify that many nested unclosed classes do not crash javac
+        //due to the safety fallback in JavacParser.reportSyntaxError:
+        String code = "package t; class Test {\n";
+        for (int i = 0; i < 100; i++) {
+            code += "class C" + i + " {\n";
+        }
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, List.of("-XDdev"),
+                null, Arrays.asList(new MyFileObject(code)));
+        Result result = ct.doCall();
+        assertEquals("Expected a (plain) error, got: " + result, result, Result.ERROR);
+    }
+
+    @Test //JDK-8237041
+    void testErrorRecoveryClassNotBrace() throws IOException {
+        //verify the AST form produced for classes without opening brace
+        //(classes without an opening brace do not nest the upcoming content):
+        String code = """
+                      package t;
+                      class Test {
+                          String.class,
+                          String.class,
+                          class A
+                          public
+                          class B
+                      }
+                      """;
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, List.of("-XDdev"),
+                null, Arrays.asList(new MyFileObject(code)));
+        String ast = ct.parse().iterator().next().toString().replaceAll("\\R", "\n");
+        String expected = """
+                          package t;
+                          \n\
+                          class Test {
+                              String.<error> <error>;
+                              \n\
+                              class <error> {
+                              }
+                              \n\
+                              class <error> {
+                              }
+                              \n\
+                              class A {
+                              }
+                              \n\
+                              public class B {
+                              }
+                          }""";
+        assertEquals("Unexpected AST, got:\n" + ast, expected, ast);
+    }
+
+    @Test //JDK-8253584
+    void testElseRecovery() throws IOException {
+        //verify the errors and AST form produced for member selects which are
+        //missing the selected member name:
+        String code = """
+                      package t;
+                      class Test {
+                          void t() {
+                              if (true) {
+                                  s().
+                              } else {
+                              }
+                          }
+                          String s() {
+                              return null;
+                          }
+                      }
+                      """;
+        StringWriter out = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        String ast = ct.parse().iterator().next().toString().replaceAll("\\R", "\n");
+        String expected = """
+                          package t;
+                          \n\
+                          class Test {
+                              \n\
+                              void t() {
+                                  if (true) {
+                                      (ERROR);
+                                  } else {
+                                  }
+                              }
+                              \n\
+                              String s() {
+                                  return null;
+                              }
+                          } """;
+        assertEquals("Unexpected AST, got:\n" + ast, expected, ast);
+        assertEquals("Unexpected errors, got:\n" + out.toString(),
+                     out.toString().replaceAll("\\R", "\n"),
+                     """
+                     Test.java:5:17: compiler.err.expected: token.identifier
+                     Test.java:5:16: compiler.err.not.stmt
+                     """);
+    }
+
+    @Test
+    void testAtRecovery() throws IOException {
+        //verify the errors and AST form produced for member selects which are
+        //missing the selected member name and are followed by an annotation:
+        String code = """
+                      package t;
+                      class Test {
+                          int i1 = "".
+                          @Deprecated
+                          void t1() {
+                          }
+                          int i2 = String.
+                          @Deprecated
+                          void t2() {
+                          }
+                      }
+                      """;
+        StringWriter out = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null, List.of("-XDrawDiagnostics"),
+                null, Arrays.asList(new MyFileObject(code)));
+        String ast = ct.parse().iterator().next().toString().replaceAll("\\R", "\n");
+        String expected = """
+                          package t;
+                          \n\
+                          class Test {
+                              int i1 = "".<error>;
+                              \n\
+                              @Deprecated
+                              void t1() {
+                              }
+                              int i2 = String.<error>;
+                              \n\
+                              @Deprecated
+                              void t2() {
+                              }
+                          } """;
+        assertEquals("Unexpected AST, got:\n" + ast, expected, ast);
+        assertEquals("Unexpected errors, got:\n" + out.toString(),
+                     out.toString().replaceAll("\\R", "\n"),
+                     """
+                     Test.java:3:17: compiler.err.expected: token.identifier
+                     Test.java:7:21: compiler.err.expected: token.identifier
+                     """);
+    }
+
+    @Test //JDK-8256411
+    void testBasedAnonymous() throws IOException {
+        String code = """
+                      package t;
+                      class Test {
+                          class I {}
+                          static Object I = new Test().new I() {};
+                      }
+                      """;
+        StringWriter out = new StringWriter();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees trees = Trees.instance(ct);
+        SourcePositions sp = trees.getSourcePositions();
+        ct.analyze();
+        List<String> span = new ArrayList<>();
+        new TreeScanner<Void, Void>() {
+            public Void visitClass(ClassTree ct, Void v) {
+                if (ct.getExtendsClause() != null) {
+                    int start = (int) sp.getStartPosition(cut,
+                                                           ct.getExtendsClause());
+                    int end   = (int) sp.getEndPosition(cut,
+                                                        ct.getExtendsClause());
+                    span.add(code.substring(start, end));
+                }
+                return super.visitClass(ct, v);
+            }
+        }.scan(cut, null);
+        if (!Objects.equals(span, Arrays.asList("I"))) {
+            throw new AssertionError("Unexpected span: " + span);
+        }
+    }
+
+    @Test //JDK-8259050
+    void testBrokenUnicodeEscape() throws IOException {
+        String code = "package t;\n" +
+                      "class Test {\n" +
+                      "    private String s1 = \"\\" + "uaaa\";\n" +
+                      "    private String s2 = \\" + "uaaa;\n" +
+                      "}\n";
+        DiagnosticCollector<JavaFileObject> coll =
+                new DiagnosticCollector<>();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, coll, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees trees = Trees.instance(ct);
+        String ast = cut.toString().replaceAll("\\R", "\n");
+        String expected = """
+                          package t;
+
+                          class Test {
+                              private String s1 = "";
+                              private String s2 = (ERROR);
+                          } """;
+        assertEquals("Unexpected AST, got:\n" + ast, expected, ast);
+        List<String> codes = new LinkedList<>();
+
+        for (Diagnostic<? extends JavaFileObject> d : coll.getDiagnostics()) {
+            codes.add(d.getCode());
+        }
+
+        assertEquals("testBrokenUnicodeEscape: " + codes,
+                Arrays.<String>asList("compiler.err.illegal.unicode.esc",
+                                      "compiler.err.illegal.unicode.esc"),
+                codes);
+    }
+
+    @Test //JDK-8259050
+    void testUsupportedTextBlock() throws IOException {
+        String code = """
+                      package t;
+                      class Test {
+                          private String s = \"""
+                                             \""";
+                      }""";
+        DiagnosticCollector<JavaFileObject> coll =
+                new DiagnosticCollector<>();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, coll, List.of("--release", "14"),
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees trees = Trees.instance(ct);
+        String ast = cut.toString().replaceAll("\\R", "\n");
+        String expected = """
+                          package t;
+
+                          class Test {
+                              private String s = "";
+                          } """;
+        assertEquals("Unexpected AST, got:\n" + ast, expected, ast);
+        List<String> codes = new LinkedList<>();
+
+        for (Diagnostic<? extends JavaFileObject> d : coll.getDiagnostics()) {
+            codes.add(d.getCode());
+        }
+
+        assertEquals("testUsupportedTextBlock: " + codes,
+                Arrays.<String>asList("compiler.err.feature.not.supported.in.source.plural"),
+                codes);
+    }
+
+    @Test //JDK-8266436
+    void testSyntheticConstructorReturnType() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ct.analyze();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        assertEquals("expected null as constructor return type", constr.getReturnType(), null);
+    }
+
+    @Test //JDK-8267221
+    void testVarArgArrayParameter() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                           private void test(int[]... p) {}
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        VariableTree param = constr.getParameters().get(0);
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        int typeStart = (int) sp.getStartPosition(cut, param.getType());
+        int typeEnd   = (int) sp.getEndPosition(cut, param.getType());
+        assertEquals("correct parameter type span", code.substring(typeStart, typeEnd), "int[]...");
+    }
+
+    @Test //JDK-8271928
+    void testX() throws IOException {
+        String code = """
+                      package test;
+                          public static void test() {
+                              return test;
+                          }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        new TreePathScanner<Void, Void>() {
+            @Override
+            public Void visitErroneous(ErroneousTree tree, Void p) {
+                int pos = (int) sp.getStartPosition(cut, tree);
+                if (pos == (-1)) {
+                    fail("Invalid source position for an ErroneousTree");
+                }
+                return scan(tree.getErrorTrees(), p);
+            }
+        }.scan(cut, null);
+    }
+
+    @Test //JDK-8275097
+    void testDefaultTagPosition() throws IOException {
+        String code = """
+                      package t;
+                      class Test {
+                          private void test1(int i) {
+                              switch (i) {
+                                  default:
+                              }
+                          }
+                          private void test2(int i) {
+                              switch (i) {
+                                  case default:
+                              }
+                          }
+                          private int test3(int i) {
+                              return switch (i) {
+                                  default: yield 0;
+                              }
+                          }
+                          private int test4(int i) {
+                              return switch (i) {
+                                  case default: yield 0;
+                              }
+                          }
+                          private void test5(int i) {
+                              switch (i) {
+                                  default -> {}
+                              }
+                          }
+                          private void test6(int i) {
+                              switch (i) {
+                                  case default -> {}
+                              }
+                          }
+                          private int test5(int i) {
+                              return switch (i) {
+                                  default -> { yield 0; }
+                              }
+                          }
+                          private int test6(int i) {
+                              return switch (i) {
+                                  case default -> { yield 0; }
+                              }
+                          }
+                          private int test7(int i) {
+                              return switch (i) {
+                                  default -> 0;
+                              }
+                          }
+                          private int test8(int i) {
+                              return switch (i) {
+                                  case default -> 0;
+                              }
+                          }
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees t = Trees.instance(ct);
+        SourcePositions sp = t.getSourcePositions();
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitDefaultCaseLabel(DefaultCaseLabelTree tree, Void p) {
+                int start = (int) sp.getStartPosition(cut, tree);
+                int end   = (int) sp.getEndPosition(cut, tree);
+                String defaultName = code.substring(start, end);
+                if (!"default".equals(defaultName)) {
+                    throw new AssertionError("Incorrect span: " + defaultName);
+                }
+                return super.visitDefaultCaseLabel(tree, p);
+            }
+
+            @Override
+            public Void visitCase(CaseTree node, Void p) {
+                scan(node.getLabels(), p);
+                if (node.getCaseKind() == CaseTree.CaseKind.RULE)
+                    scan(node.getBody(), p);
+                else
+                    scan(node.getStatements(), p);
+                return null;
+            }
+        }.scan(cut, null);
+    }
+
+    @Test
+    void testStringTemplate1() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                           Test(int a) {
+                               String s = "prefix \\{a} suffix";
+                           }
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        VariableTree decl = (VariableTree) constr.getBody().getStatements().get(0);
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        int initStart = (int) sp.getStartPosition(cut, decl.getInitializer());
+        int initEnd   = (int) sp.getEndPosition(cut, decl.getInitializer());
+        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "\"prefix \\{a} suffix\"");
+    }
+
+    @Test
+    void testStringTemplate2() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                           Test(int a) {
+                               String s = STR."prefix \\{a} suffix";
+                           }
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        VariableTree decl = (VariableTree) constr.getBody().getStatements().get(0);
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        int initStart = (int) sp.getStartPosition(cut, decl.getInitializer());
+        int initEnd   = (int) sp.getEndPosition(cut, decl.getInitializer());
+        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "STR.\"prefix \\{a} suffix\"");
+    }
+
+    @Test //JDK-8293897
+    void testImplicitFinalInTryWithResources() throws IOException {
+        String code = """
+                      package t;
+                      class Test {
+                          void test1() {
+                              try (AutoCloseable ac = null) {}
+                          }
+                          void test2() {
+                              try (@Ann AutoCloseable withAnnotation = null) {}
+                          }
+                          void test3() {
+                              try (final AutoCloseable withFinal = null) {}
+                          }
+                          void test4() {
+                              try (final @Ann AutoCloseable withAnnotationFinal = null) {}
+                          }
+                          @interface Ann {}
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        Trees t = Trees.instance(ct);
+        SourcePositions sp = t.getSourcePositions();
+        new TreeScanner<Void, Void>() {
+            boolean modifiersHaveFinal;
+            boolean modifiersHaveSpan;
+
+            @Override
+            public Void visitVariable(VariableTree node, Void p) {
+                boolean prevModifiersHaveFinal = modifiersHaveFinal;
+                boolean prevModifiersHaveSpan = modifiersHaveSpan;
+                try {
+                    modifiersHaveFinal = node.getName().toString().contains("Final");
+                    modifiersHaveSpan = modifiersHaveFinal ||
+                                        node.getName().toString().contains("Annotation");
+                    return super.visitVariable(node, p);
+                } finally {
+                    modifiersHaveFinal = prevModifiersHaveFinal;
+                    modifiersHaveSpan = prevModifiersHaveSpan;
+                }
+            }
+            @Override
+            public Void visitClass(ClassTree node, Void p) {
+                boolean prevModifiersHaveSpan = modifiersHaveSpan;
+                try {
+                    modifiersHaveSpan = node.getKind() == Kind.ANNOTATION_TYPE;
+                    return super.visitClass(node, p);
+                } finally {
+                    modifiersHaveSpan = prevModifiersHaveSpan;
+                }
+            }
+            @Override
+            public Void visitModifiers(ModifiersTree node, Void p) {
+                if (modifiersHaveFinal) {
+                    if (!node.getFlags().contains(Modifier.FINAL)) {
+                        throw new AssertionError("Expected final missing.");
+                    }
+                } else {
+                    if (node.getFlags().contains(Modifier.FINAL)) {
+                        throw new AssertionError("Unexpected final modified.");
+                    }
+                }
+                long start = sp.getStartPosition(cut, node);
+                long end = sp.getEndPosition(cut, node);
+                if (modifiersHaveSpan) {
+                    if (start == (-1) || end == (-1)) {
+                        throw new AssertionError("Incorrect modifier span: " + start + "-" + end);
+                    }
+                } else {
+                    if (start != (-1) || end != (-1)) {
+                        throw new AssertionError("Incorrect modifier span: " + start + "-" + end);
+                    }
+                }
+                return super.visitModifiers(node, p);
+            }
+        }.scan(cut, null);
+    }
+
+    @Test
+    void testIncompleteStringTemplate() throws IOException {
+        String template = "\"\\{o.toString()}\"";
+        String prefix = """
+                      package t;
+                      class Test {
+                          void test(Object o) {
+                              String s = STR.""";
+
+        Worker<Void> verifyParseable = task -> {
+            try {
+                task.parse().iterator().next();
+                return null;
+            } catch (IOException ex) {
+                throw new AssertionError(ex);
+            }
+        };
+        JavacTaskPool pool = new JavacTaskPool(1);
+        DiagnosticListener<JavaFileObject> dl = d -> {};
+        List<String> options = List.of("--enable-preview",
+                                       "-source", System.getProperty("java.specification.version"));
+        for (int i = 0; i < template.length(); i++) {
+            pool.getTask(null, fm, dl, options,
+                    null, Arrays.asList(new MyFileObject(prefix + template.substring(0, i))),
+                    verifyParseable
+            );
+        }
+        for (int i = 0; i < template.length() - 1; i++) {
+            pool.getTask(null, fm, dl, options,
+                    null, Arrays.asList(new MyFileObject(prefix + template.substring(0, i) + "\"")),
+                    verifyParseable);
+        }
+        String incomplete = prefix + "\"\\{o.";
+        pool.getTask(null, fm, dl, options,
+                null, Arrays.asList(new MyFileObject(incomplete)), task -> {
+            try {
+                CompilationUnitTree cut = task.parse().iterator().next();
+                String result = cut.toString().replaceAll("\\R", "\n");
+                System.out.println("RESULT\n" + result);
+                assertEquals("incorrect AST",
+                             result,
+                             """
+                             package t;
+                             \n\
+                             class Test {
+                                 \n\
+                                 void test(Object o) {
+                                     String s = STR.<error>;
+                                 }
+                             }""");
+                return null;
+            } catch (IOException ex) {
+                throw new AssertionError(ex);
+            }
+        });
+    }
+
+    @Test //JDK-8295401
+    void testModuleInfoProvidesRecovery() throws IOException {
+        String code = """
+                      module m {
+                          $DIRECTIVE
+                      }
+                      """;
+        record Test(String directive, int prefix, Kind expectedKind) {}
+        Test[] tests = new Test[] {
+            new Test("uses api.api.API;", 4, Kind.USES),
+            new Test("opens api.api to other.module;", 5, Kind.OPENS),
+            new Test("exports api.api to other.module;", 7, Kind.EXPORTS),
+            new Test("provides java.util.spi.ToolProvider with impl.ToolProvider;", 8, Kind.PROVIDES),
+        };
+        JavacTaskPool pool = new JavacTaskPool(1);
+        for (Test test : tests) {
+            String directive = test.directive();
+            for (int i = test.prefix(); i < directive.length(); i++) {
+                String replaced = code.replace("$DIRECTIVE", directive.substring(0, i));
+                pool.getTask(null, null, d -> {}, List.of(), null, List.of(new MyFileObject(replaced)), task -> {
+                    try {
+                        CompilationUnitTree cut = task.parse().iterator().next();
+                        new TreePathScanner<Void, Void>() {
+                            @Override
+                            public Void visitModule(ModuleTree node, Void p) {
+                                assertEquals("Unexpected directives size: " + node.getDirectives().size(),
+                                             node.getDirectives().size(),
+                                             1);
+                                assertEquals("Unexpected directive: " + node.getDirectives().get(0).getKind(),
+                                             node.getDirectives().get(0).getKind(),
+                                             test.expectedKind);
+                                return super.visitModule(node, p);
+                            }
+                        }.scan(cut, null);
+                        return null;
+                    } catch (IOException ex) {
+                        throw new IllegalStateException(ex);
+                    }
+                });
+            }
+        }
+        String extendedCode = """
+                              module m {
+                                  provides ;
+                                  provides java.;
+                                  provides java.util.spi.ToolProvider with ;
+                                  provides java.util.spi.ToolProvider with impl.;
+                              """;
+        pool.getTask(null, null, d -> {}, List.of(), null, List.of(new MyFileObject("module-info", extendedCode)), task -> {
+            try {
+                CompilationUnitTree cut = task.parse().iterator().next();
+                task.analyze();
+                new TreePathScanner<Void, Void>() {
+                    @Override
+                    public Void visitModule(ModuleTree node, Void p) {
+                        assertEquals("Unexpected directives size: " + node.getDirectives().size(),
+                                     node.getDirectives().size(),
+                                     4);
+                        return super.visitModule(node, p);
+                    }
+                }.scan(cut, null);
+                return null;
+            } catch (IOException ex) {
+                throw new IllegalStateException(ex);
+            }
+        });
+    }
+
+    @Test //JDK-8304671
+    void testEnumConstantUnderscore() throws IOException {
+        record TestCase(String code, String release, String ast, String errors) {}
+        TestCase[] testCases = new TestCase[] {
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _
+                         }
+                         """,
+                         "8",
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         - compiler.warn.option.obsolete.source: 8
+                         - compiler.warn.option.obsolete.target: 8
+                         - compiler.warn.option.obsolete.suppression
+                         Test.java:3:5: compiler.warn.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _
+                         }
+                         """,
+                         System.getProperty("java.specification.version"),
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         Test.java:3:5: compiler.err.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _;
+                         }
+                         """,
+                         "8",
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         - compiler.warn.option.obsolete.source: 8
+                         - compiler.warn.option.obsolete.target: 8
+                         - compiler.warn.option.obsolete.suppression
+                         Test.java:3:5: compiler.warn.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _;
+                         }
+                         """,
+                         System.getProperty("java.specification.version"),
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         Test.java:3:5: compiler.err.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             A;
+                             void t() {}
+                             _;
+                         }
+                         """,
+                         "8",
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ A /* = new Test() */ /*enum*/ ,
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                             \n\
+                             void t() {
+                             }
+                         } """,
+                         """
+                         - compiler.warn.option.obsolete.source: 8
+                         - compiler.warn.option.obsolete.target: 8
+                         - compiler.warn.option.obsolete.suppression
+                         Test.java:5:5: compiler.err.enum.constant.not.expected
+                         Test.java:5:5: compiler.warn.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             A;
+                             void t() {}
+                             _;
+                         }
+                         """,
+                         System.getProperty("java.specification.version"),
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ A /* = new Test() */ /*enum*/ ,
+                             /*public static final*/ _ /* = new Test() */ /*enum*/ ;
+                             \n\
+                             void t() {
+                             }
+                         } """,
+                         """
+                         Test.java:5:5: compiler.err.enum.constant.not.expected
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _ {},
+                             A;
+                         }
+                         """,
+                         "8",
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/  {
+                             },
+                             /*public static final*/ A /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         - compiler.warn.option.obsolete.source: 8
+                         - compiler.warn.option.obsolete.target: 8
+                         - compiler.warn.option.obsolete.suppression
+                         Test.java:3:5: compiler.warn.underscore.as.identifier
+                         """),
+            new TestCase("""
+                         package t;
+                         enum Test {
+                             _ {},
+                             A;
+                         }
+                         """,
+                         System.getProperty("java.specification.version"),
+                         """
+                         package t;
+                         \n\
+                         enum Test {
+                             /*public static final*/ _ /* = new Test() */ /*enum*/  {
+                             },
+                             /*public static final*/ A /* = new Test() */ /*enum*/ ;
+                         } """,
+                         """
+                         Test.java:3:5: compiler.err.underscore.as.identifier
+                         """),
+        };
+        for (TestCase testCase : testCases) {
+            StringWriter out = new StringWriter();
+            JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(out, fm, null,
+                    List.of("-XDrawDiagnostics", "--release", testCase.release),
+                    null, Arrays.asList(new MyFileObject(testCase.code)));
+            String ast = ct.parse().iterator().next().toString().replaceAll("\\R", "\n");
+            assertEquals("Unexpected AST, got:\n" + ast, testCase.ast, ast);
+            assertEquals("Unexpected errors, got:\n" + out.toString(),
+                         out.toString().replaceAll("\\R", "\n"),
+                         testCase.errors);
+        }
+    }
+
+    @Test
+    void testGuardRecovery() throws IOException {
+        String code = """
+                      package t;
+                      class Test {
+                          private int t(Integer i, boolean b) {
+                              switch (i) {
+                                  case 0 when b -> {}
+                                  case null when b -> {}
+                                  default when b -> {}
+                              }
+                              return switch (i) {
+                                  case 0 when b -> 0;
+                                  case null when b -> 0;
+                                  default when b -> 0;
+                              };
+                          }
+                      }""";
+        DiagnosticCollector<JavaFileObject> coll =
+                new DiagnosticCollector<>();
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, coll, null,
+                null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitCase(CaseTree node, Void p) {
+                assertNotNull(node.getGuard());
+                assertEquals("guard kind", Kind.ERRONEOUS, node.getGuard().getKind());
+                assertEquals("guard content",
+                             List.of("b"),
+                             ((ErroneousTree) node.getGuard()).getErrorTrees()
+                                                              .stream()
+                                                              .map(t -> t.toString()).toList());
+                return super.visitCase(node, p);
+            }
+        }.scan(cut, null);
+
+        List<String> codes = new LinkedList<>();
+
+        for (Diagnostic<? extends JavaFileObject> d : coll.getDiagnostics()) {
+            codes.add(d.getLineNumber() + ":" + d.getColumnNumber() + ":" +  d.getCode());
+        }
+
+        assertEquals("testUsupportedTextBlock: " + codes,
+                List.of("5:20:compiler.err.guard.not.allowed",
+                        "6:23:compiler.err.guard.not.allowed",
+                        "7:21:compiler.err.guard.not.allowed",
+                        "10:20:compiler.err.guard.not.allowed",
+                        "11:23:compiler.err.guard.not.allowed",
+                        "12:21:compiler.err.guard.not.allowed"),
+                codes);
     }
 
     void run(String[] args) throws Exception {
@@ -1082,6 +2440,12 @@ abstract class TestCase {
         }
     }
 
+    void assertTrue(String message, boolean bvalue) {
+        if (bvalue == false) {
+            fail(message);
+        }
+    }
+
     void assertEquals(String message, int i, long l) {
         if (i != l) {
             fail(message + ":" + i + ":" + l);
@@ -1089,10 +2453,7 @@ abstract class TestCase {
     }
 
     void assertEquals(String message, Object o1, Object o2) {
-        if (o1 != null && o2 != null && !o1.equals(o2)) {
-            fail(message);
-        }
-        if (o1 == null && o2 != null) {
+        if (!Objects.equals(o1, o2)) {
             fail(message);
         }
     }

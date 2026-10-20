@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package com.sun.jndi.ldap;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.Hashtable;
@@ -38,6 +39,9 @@ import com.sun.jndi.ldap.pool.PooledConnection;
 import com.sun.jndi.ldap.pool.PoolCallback;
 import com.sun.jndi.ldap.sasl.LdapSasl;
 import com.sun.jndi.ldap.sasl.SaslInputStream;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * LDAP (RFC-1777) and LDAPv3 (RFC-2251) compliant client
@@ -115,11 +119,11 @@ public final class LdapClient implements PooledConnection {
     boolean isLdapv3;         // Used by LdapCtx
     int referenceCount = 1;   // Used by LdapCtx for check for sharing
 
-    Connection conn;  // Connection to server; has reader thread
+    final Connection conn;  // Connection to server; has reader thread
                       // used by LdapCtx for StartTLS
 
-    final private PoolCallback pcb;
-    final private boolean pooled;
+    private final PoolCallback pcb;
+    private final boolean pooled;
     private boolean authenticateCalled = false;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -309,7 +313,7 @@ public final class LdapClient implements PooledConnection {
      * @param auth The authentication mechanism
      *
      */
-    synchronized public LdapResult ldapBind(String dn, byte[]toServer,
+    public synchronized LdapResult ldapBind(String dn, byte[]toServer,
         Control[] bindCtls, String auth, boolean pauseAfterReceipt)
         throws java.io.IOException, NamingException {
 
@@ -396,6 +400,12 @@ public final class LdapClient implements PooledConnection {
         return (conn.inStream instanceof SaslInputStream);
     }
 
+    // Returns true if client connection was upgraded
+    // with STARTTLS extended operation on the server side
+    boolean isUpgradedToStartTls() {
+        return conn.isUpgradedToStartTls();
+    }
+
     synchronized void incRefCount() {
         ++referenceCount;
         if (debug > 1) {
@@ -415,9 +425,9 @@ public final class LdapClient implements PooledConnection {
 
         if (pw instanceof String) {
             if (v3) {
-                return ((String)pw).getBytes("UTF8");
+                return ((String)pw).getBytes(UTF_8);
             } else {
-                return ((String)pw).getBytes("8859_1");
+                return ((String)pw).getBytes(ISO_8859_1);
             }
         } else {
             return (byte[])pw;
@@ -433,19 +443,16 @@ public final class LdapClient implements PooledConnection {
             (new Throwable()).printStackTrace();
         }
 
-        if (referenceCount <= 0 && conn != null) {
+        if (referenceCount <= 0) {
             if (debug > 0) System.err.println("LdapClient: closed connection " + this);
             if (!pooled) {
                 // Not being pooled; continue with closing
                 conn.cleanup(reqCtls, false);
-                conn = null;
             } else {
                 // Pooled
-
                 // Is this a real close or a request to return conn to pool
                 if (hardClose) {
                     conn.cleanup(reqCtls, false);
-                    conn = null;
                     pcb.removePooledConnection(this);
                 } else {
                     pcb.releasePooledConnection(this);
@@ -461,20 +468,17 @@ public final class LdapClient implements PooledConnection {
         if (debug > 1) {
             System.err.println("LdapClient: forceClose() of " + this);
         }
-
-        if (conn != null) {
-            if (debug > 0) System.err.println(
-                "LdapClient: forced close of connection " + this);
-            conn.cleanup(null, false);
-            conn = null;
-
-            if (cleanPool) {
-                pcb.removePooledConnection(this);
-            }
+        if (debug > 0) {
+            System.err.println(
+                    "LdapClient: forced close of connection " + this);
+        }
+        conn.cleanup(null, false);
+        if (cleanPool) {
+            pcb.removePooledConnection(this);
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     protected void finalize() {
         if (debug > 0) System.err.println("LdapClient: finalize " + this);
         forceClose(pooled);
@@ -483,7 +487,7 @@ public final class LdapClient implements PooledConnection {
     /*
      * Used by connection pooling to close physical connection.
      */
-    synchronized public void closeConnection() {
+    public synchronized void closeConnection() {
         forceClose(false); // this is a pool callback so no need to clean pool
     }
 
@@ -568,7 +572,7 @@ public final class LdapClient implements PooledConnection {
      * Abandon the search operation and remove it from the message queue.
      */
     void clearSearchReply(LdapResult res, Control[] ctls) {
-        if (res != null && conn != null) {
+        if (res != null) {
 
             // Only send an LDAP abandon operation when clearing the search
             // reply from a one-level or subtree search.
@@ -756,9 +760,9 @@ public final class LdapClient implements PooledConnection {
                                    Hashtable<String, Boolean> binaryAttrs) {
         String id = attrid.toLowerCase(Locale.ENGLISH);
 
-        return ((id.indexOf(";binary") != -1) ||
+        return id.contains(";binary") ||
             defaultBinaryAttrs.containsKey(id) ||
-            ((binaryAttrs != null) && (binaryAttrs.containsKey(id))));
+            ((binaryAttrs != null) && (binaryAttrs.containsKey(id)));
     }
 
     // package entry point; used by Connection
@@ -1153,7 +1157,7 @@ public final class LdapClient implements PooledConnection {
 
                         // replace any escaped characters in the value
                         byte[] val = isLdapv3 ?
-                            value.getBytes("UTF8") : value.getBytes("8859_1");
+                            value.getBytes(UTF_8) : value.getBytes(ISO_8859_1);
                         ber.encodeOctetString(
                             Filter.unescapeFilterValue(val, 0, val.length),
                             Ber.ASN_OCTET_STR);
@@ -1574,15 +1578,15 @@ public final class LdapClient implements PooledConnection {
 
 
     private void notifyUnsolicited(Object e) {
-        Vector<LdapCtx> unsolicitedCopy;
+        ArrayList<LdapCtx> unsolicitedCopy;
         synchronized (unsolicited) {
-            unsolicitedCopy = new Vector<>(unsolicited);
+            unsolicitedCopy = new ArrayList<>(unsolicited);
             if (e instanceof NamingException) {
                 unsolicited.setSize(0);  // no more listeners after exception
             }
         }
         for (int i = 0; i < unsolicitedCopy.size(); i++) {
-            unsolicitedCopy.elementAt(i).fireUnsolicited(e);
+            unsolicitedCopy.get(i).fireUnsolicited(e);
         }
     }
 

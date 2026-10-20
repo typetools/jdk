@@ -97,7 +97,7 @@ public class TransitiveDependencies {
                 throw new IllegalStateException("Missing: " + current);
             }
 
-             //use the internal structure to avoid unnecesarily completing the symbol using the UsesProvidesVisitor:
+             //use the internal structure to avoid unnecessarily completing the symbol using the UsesProvidesVisitor:
             for (RequiresDirective rd : mod.requires) {
                 if (rd.isTransitive()) {
                     todo.offerLast(rd.getDependency().getQualifiedName().toString());
@@ -108,11 +108,7 @@ public class TransitiveDependencies {
         allModules.add("java.base");
         allModules.add("jdk.unsupported");
 
-        String version =
-                Integer.toString(Integer.parseInt(Source.DEFAULT.name), Character.MAX_RADIX);
-        version = version.toUpperCase(Locale.ROOT);
-
-        Path targetFile = Paths.get(args[0]).resolve(version).resolve("system-modules");
+        Path targetFile = Paths.get(args[0]);
 
         Files.createDirectories(targetFile.getParent());
 

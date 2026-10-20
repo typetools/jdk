@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/os.hpp"
 #include "services/attachListener.hpp"
-#include "services/dtraceAttacher.hpp"
 
 #include <windows.h>
 #include <signal.h>             // SIGBREAK
@@ -151,25 +150,25 @@ class Win32AttachOperation: public AttachOperation {
   // noarg constructor as operation is preallocated
   Win32AttachOperation() : AttachOperation("<noname>") {
     set_pipe("<nopipe>");
-    set_next(NULL);
+    set_next(nullptr);
   }
 
  public:
-  void Win32AttachOperation::complete(jint result, bufferedStream* result_stream);
+  void complete(jint result, bufferedStream* result_stream);
 };
 
 
 // Preallocate the maximum number of operations that can be enqueued.
 int Win32AttachListener::init() {
-  _mutex = (void*)::CreateMutex(NULL, FALSE, NULL);
-  guarantee(_mutex != (HANDLE)NULL, "mutex creation failed");
+  _mutex = (void*)::CreateMutex(nullptr, FALSE, nullptr);
+  guarantee(_mutex != (HANDLE)nullptr, "mutex creation failed");
 
-  _enqueued_ops_semaphore = ::CreateSemaphore(NULL, 0, max_enqueued_operations, NULL);
-  guarantee(_enqueued_ops_semaphore != (HANDLE)NULL, "semaphore creation failed");
+  _enqueued_ops_semaphore = ::CreateSemaphore(nullptr, 0, max_enqueued_operations, nullptr);
+  guarantee(_enqueued_ops_semaphore != (HANDLE)nullptr, "semaphore creation failed");
 
-  set_head(NULL);
-  set_tail(NULL);
-  set_available(NULL);
+  set_head(nullptr);
+  set_tail(nullptr);
+  set_available(nullptr);
 
   for (int i=0; i<max_enqueued_operations; i++) {
     Win32AttachOperation* op = new Win32AttachOperation();
@@ -184,12 +183,17 @@ int Win32AttachListener::init() {
 // Also we need to be careful not to execute anything that results in more than a 4k stack.
 //
 int Win32AttachListener::enqueue(char* cmd, char* arg0, char* arg1, char* arg2, char* pipename) {
-  // listener not running
-  if (!AttachListener::is_initialized()) {
-    return ATTACH_ERROR_DISABLED;
+  // wait up to 10 seconds for listener to be up and running
+  int sleep_count = 0;
+  while (!AttachListener::is_initialized()) {
+    Sleep(1000); // 1 second
+    sleep_count++;
+    if (sleep_count > 10) { // try for 10 seconds
+      return ATTACH_ERROR_DISABLED;
+    }
   }
 
-  // check that all paramteres to the operation
+  // check that all parameters to the operation
   if (strlen(cmd) > AttachOperation::name_length_max) return ATTACH_ERROR_ILLEGALARG;
   if (strlen(arg0) > AttachOperation::arg_length_max) return ATTACH_ERROR_ILLEGALARG;
   if (strlen(arg1) > AttachOperation::arg_length_max) return ATTACH_ERROR_ILLEGALARG;
@@ -207,12 +211,12 @@ int Win32AttachListener::enqueue(char* cmd, char* arg0, char* arg1, char* arg2, 
 
   // try to get an operation from the available list
   Win32AttachOperation* op = available();
-  if (op != NULL) {
+  if (op != nullptr) {
     set_available(op->next());
 
     // add to end (tail) of list
-    op->set_next(NULL);
-    if (tail() == NULL) {
+    op->set_next(nullptr);
+    if (tail() == nullptr) {
       set_head(op);
     } else {
       tail()->set_next(op);
@@ -229,12 +233,12 @@ int Win32AttachListener::enqueue(char* cmd, char* arg0, char* arg1, char* arg2, 
     // Side effect: Semaphore will be signaled and will release
     // any blocking waiters (i.e. the AttachListener thread).
     BOOL not_exceeding_semaphore_maximum_count =
-      ::ReleaseSemaphore(enqueued_ops_semaphore(), 1, NULL);
+      ::ReleaseSemaphore(enqueued_ops_semaphore(), 1, nullptr);
     guarantee(not_exceeding_semaphore_maximum_count, "invariant");
   }
   ::ReleaseMutex(mutex());
 
-  return (op != NULL) ? 0 : ATTACH_ERROR_RESOURCE;
+  return (op != nullptr) ? 0 : ATTACH_ERROR_RESOURCE;
 }
 
 
@@ -250,15 +254,15 @@ Win32AttachOperation* Win32AttachListener::dequeue() {
     guarantee(res == WAIT_OBJECT_0, "wait failed");
 
     Win32AttachOperation* op = head();
-    if (op != NULL) {
+    if (op != nullptr) {
       set_head(op->next());
-      if (head() == NULL) {     // list is empty
-        set_tail(NULL);
+      if (head() == nullptr) {     // list is empty
+        set_tail(nullptr);
       }
     }
     ::ReleaseMutex(mutex());
 
-    if (op != NULL) {
+    if (op != nullptr) {
       return op;
     }
   }
@@ -267,23 +271,13 @@ Win32AttachOperation* Win32AttachListener::dequeue() {
 
 // open the pipe to the client
 HANDLE Win32AttachOperation::open_pipe() {
-  HANDLE hPipe;
-
-  hPipe = ::CreateFile( pipe(),  // pipe name
+  HANDLE hPipe = ::CreateFile( pipe(),  // pipe name
                         GENERIC_WRITE,   // write only
                         0,              // no sharing
-                        NULL,           // default security attributes
+                        nullptr,           // default security attributes
                         OPEN_EXISTING,  // opens existing pipe
                         0,              // default attributes
-                        NULL);          // no template file
-
-  if (hPipe != INVALID_HANDLE_VALUE) {
-    // shouldn't happen as there is a pipe created per operation
-    if (::GetLastError() == ERROR_PIPE_BUSY) {
-      ::CloseHandle(hPipe);
-      return INVALID_HANDLE_VALUE;
-    }
-  }
+                        nullptr);          // no template file
   return hPipe;
 }
 
@@ -296,14 +290,13 @@ BOOL Win32AttachOperation::write_pipe(HANDLE hPipe, char* buf, int len) {
                                 (LPCVOID)buf,           // message
                                 (DWORD)len,             // message length
                                 &nwrote,                // bytes written
-                                NULL);                  // not overlapped
+                                nullptr);                  // not overlapped
     if (!fSuccess) {
       return fSuccess;
     }
     buf += nwrote;
     len -= nwrote;
-  }
-  while (len > 0);
+  } while (len > 0);
   return TRUE;
 }
 
@@ -316,11 +309,8 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   HANDLE hPipe = open_pipe();
+  int lastError = (int)::GetLastError();
   if (hPipe != INVALID_HANDLE_VALUE) {
     BOOL fSuccess;
 
@@ -332,6 +322,7 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
     if (fSuccess) {
       fSuccess = write_pipe(hPipe, (char*)result_stream->base(), (int)(result_stream->size()));
     }
+    lastError = (int)::GetLastError();
 
     // Need to flush buffers
     FlushFileBuffers(hPipe);
@@ -340,10 +331,10 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
     if (fSuccess) {
       log_debug(attach)("wrote result of attach operation %s to pipe %s", name(), pipe());
     } else {
-      log_error(attach)("failure writing result of operation %s to pipe %s", name(), pipe());
+      log_error(attach)("failure (%d) writing result of operation %s to pipe %s", lastError, name(), pipe());
     }
   } else {
-    log_error(attach)("could not open pipe %s to send result of operation %s", pipe(), name());
+    log_error(attach)("could not open (%d) pipe %s to send result of operation %s", lastError, pipe(), name());
   }
 
   DWORD res = ::WaitForSingleObject(Win32AttachListener::mutex(), INFINITE);
@@ -355,9 +346,6 @@ void Win32AttachOperation::complete(jint result, bufferedStream* result_stream) 
 
     ::ReleaseMutex(Win32AttachListener::mutex());
   }
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 }
 
 
@@ -367,14 +355,7 @@ AttachOperation* AttachListener::dequeue() {
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   AttachOperation* op = Win32AttachListener::dequeue();
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 
   return op;
 }
@@ -385,6 +366,12 @@ void AttachListener::vm_start() {
 
 int AttachListener::pd_init() {
   return Win32AttachListener::init();
+}
+
+// This function is used for Un*x OSes only.
+// We need not to implement it for Windows.
+bool AttachListener::check_socket_file() {
+  return false;
 }
 
 bool AttachListener::init_at_startup() {
@@ -405,7 +392,7 @@ void AttachListener::pd_data_dump() {
 }
 
 AttachOperationFunctionInfo* AttachListener::pd_find_operation(const char* n) {
-  return NULL;
+  return nullptr;
 }
 
 jint AttachListener::pd_set_flag(AttachOperation* op, outputStream* out) {

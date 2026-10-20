@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that code has attempted to call a method handle
  * via the wrong method type.  As with the bytecode representation of
@@ -41,11 +44,13 @@ package java.lang.invoke;
  * @since 1.7
  */
 public class WrongMethodTypeException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = 292L;
 
     /**
      * Constructs a {@code WrongMethodTypeException} with no detail message.
      */
+    @SideEffectFree
     public WrongMethodTypeException() {
         super();
     }
@@ -56,7 +61,8 @@ public class WrongMethodTypeException extends RuntimeException {
      *
      * @param s the detail message.
      */
-    public WrongMethodTypeException(String s) {
+    @SideEffectFree
+    public WrongMethodTypeException(@Nullable String s) {
         super(s);
     }
 
@@ -68,7 +74,9 @@ public class WrongMethodTypeException extends RuntimeException {
      * @param cause the cause of the exception, or null.
      */
     //FIXME: make this public in MR1
-    /*non-public*/ WrongMethodTypeException(String s, Throwable cause) {
+    /*non-public*/
+    @SideEffectFree
+    WrongMethodTypeException(@Nullable String s, @Nullable Throwable cause) {
         super(s, cause);
     }
 
@@ -79,7 +87,9 @@ public class WrongMethodTypeException extends RuntimeException {
      * @param cause the cause of the exception, or null.
      */
     //FIXME: make this public in MR1
-    /*non-public*/ WrongMethodTypeException(Throwable cause) {
+    /*non-public*/
+    @SideEffectFree
+    WrongMethodTypeException(@Nullable Throwable cause) {
         super(cause);
     }
 }

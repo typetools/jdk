@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Unchecked exception thrown when an attempt is made to update an object
  * associated with a {@link FileSystem#isReadOnly() read-only} {@code FileSystem}.
@@ -32,14 +35,17 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class ReadOnlyFileSystemException
     extends UnsupportedOperationException
 {
+    @java.io.Serial
     static final long serialVersionUID = -6822409595617487197L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ReadOnlyFileSystemException() {
     }
 }

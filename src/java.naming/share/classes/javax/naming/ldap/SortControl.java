@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -110,7 +110,7 @@ import com.sun.jndi.ldap.BerEncoder;
  * @author Vincent Ryan
  */
 @AnnotatedFor({"interning"})
-final public class SortControl extends BasicControl {
+public final class SortControl extends BasicControl {
 
     /**
      * The server-side sort control's assigned object identifier
@@ -131,8 +131,8 @@ final public class SortControl extends BasicControl {
      *                          requested or refuse to perform the search.
      *                          If false, then the server need not honor the
      *                          control.
-     * @exception IOException If an error was encountered while encoding the
-     *                        supplied arguments into a control.
+     * @throws IOException If an error was encountered while encoding the
+     *                     supplied arguments into a control.
      */
     public SortControl(String sortBy, boolean criticality) throws IOException {
 
@@ -153,8 +153,8 @@ final public class SortControl extends BasicControl {
      *                          requested or refuse to perform the search.
      *                          If false, then the server need not honor the
      *                          control.
-     * @exception IOException If an error was encountered while encoding the
-     *                        supplied arguments into a control.
+     * @throws IOException If an error was encountered while encoding the
+     *                     supplied arguments into a control.
      */
     public SortControl(String[] sortBy, boolean criticality)
         throws IOException {
@@ -179,8 +179,8 @@ final public class SortControl extends BasicControl {
      *                          requested or refuse to perform the search.
      *                          If false, then the server need not honor the
      *                          control.
-     * @exception IOException If an error was encountered while encoding the
-     *                        supplied arguments into a control.
+     * @throws IOException If an error was encountered while encoding the
+     *                     supplied arguments into a control.
      */
     public SortControl(SortKey[] sortBy, boolean criticality)
         throws IOException {
@@ -189,7 +189,7 @@ final public class SortControl extends BasicControl {
         super.value = setEncodedValue(sortBy);
     }
 
-    /*
+    /**
      * Encodes the sort control's value using ASN.1 BER.
      * The result includes the BER tag and length for the control's value but
      * does not include the control's object identifier and criticality setting.
@@ -197,7 +197,7 @@ final public class SortControl extends BasicControl {
      * @param   sortKeys    A non-null list of keys to sort by.
      * @return A possibly null byte array representing the ASN.1 BER encoded
      *         value of the sort control.
-     * @exception IOException If a BER encoding error occurs.
+     * @throws IOException If a BER encoding error occurs.
      */
     private byte[] setEncodedValue(SortKey[] sortKeys) throws IOException {
 

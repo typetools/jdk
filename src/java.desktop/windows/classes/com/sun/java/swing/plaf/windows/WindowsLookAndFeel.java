@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,58 +40,75 @@
 
 package com.sun.java.swing.plaf.windows;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.HeadlessException;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
-import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
-
-import javax.swing.plaf.*;
-import javax.swing.*;
-import javax.swing.plaf.basic.*;
-import javax.swing.border.*;
-import javax.swing.text.DefaultEditorKit;
-import static javax.swing.UIDefaults.LazyValue;
-
-import java.awt.Font;
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-
 import java.security.AccessController;
 
-import sun.awt.SunToolkit;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JRootPane;
+import javax.swing.JTextField;
+import javax.swing.LayoutStyle;
+import javax.swing.LookAndFeel;
+import javax.swing.MenuSelectionManager;
+import javax.swing.SwingConstants;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.BorderUIResource;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.FontUIResource;
+import javax.swing.plaf.InsetsUIResource;
+import javax.swing.plaf.UIResource;
+import javax.swing.plaf.basic.BasicBorders;
+import javax.swing.plaf.basic.BasicLookAndFeel;
+import javax.swing.text.DefaultEditorKit;
+
+import com.sun.java.swing.plaf.windows.WindowsIconFactory.VistaMenuItemCheckIconFactory;
 import sun.awt.OSInfo;
+import sun.awt.SunToolkit;
 import sun.awt.shell.ShellFolder;
 import sun.font.FontUtilities;
 import sun.security.action.GetPropertyAction;
-
 import sun.swing.DefaultLayoutStyle;
 import sun.swing.ImageIconUIResource;
-import sun.swing.SwingAccessor;
-import sun.swing.icon.SortArrowIcon;
-import sun.swing.SwingUtilities2;
 import sun.swing.StringUIClientPropertyKey;
+import sun.swing.SwingAccessor;
+import sun.swing.SwingUtilities2;
+import sun.swing.icon.SortArrowIcon;
 import sun.swing.plaf.windows.ClassicSortArrowIcon;
 
-import static com.sun.java.swing.plaf.windows.TMSchema.*;
+import static com.sun.java.swing.plaf.windows.TMSchema.Part;
+import static com.sun.java.swing.plaf.windows.TMSchema.Prop;
+import static com.sun.java.swing.plaf.windows.TMSchema.State;
 import static com.sun.java.swing.plaf.windows.XPStyle.Skin;
-
-import com.sun.java.swing.plaf.windows.WindowsIconFactory.VistaMenuItemCheckIconFactory;
+import static javax.swing.UIDefaults.LazyValue;
 
 /**
  * Implements the Windows95/98/NT/2000 Look and Feel.
  * UI classes not implemented specifically for Windows will
  * default to those implemented in Basic.
- * <p>
- * <strong>Warning:</strong>
- * Serialized objects of this class will not be compatible with
- * future Swing releases.  The current serialization support is appropriate
- * for short term storage or RMI between applications running the same
- * version of Swing.  A future release of Swing will provide support for
- * long term persistence.
- *
- * @author unattributed
  */
 @SuppressWarnings("serial") // Superclass is not serializable across versions
 public class WindowsLookAndFeel extends BasicLookAndFeel
@@ -166,10 +183,10 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
         // performance and compatibility issues, so allow this feature
         // to be switched off either at runtime or programmatically
         //
+        @SuppressWarnings("removal")
         String systemFonts = java.security.AccessController.doPrivileged(
                new GetPropertyAction("swing.useSystemFontSettings"));
-        useSystemFontSettings = (systemFonts == null ||
-                                 Boolean.valueOf(systemFonts).booleanValue());
+        useSystemFontSettings = systemFonts == null || Boolean.parseBoolean(systemFonts);
 
         if (useSystemFontSettings) {
             Object value = UIManager.get("Application.useSystemFontSettings");
@@ -309,7 +326,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
         LazyValue dialogBold12 = t -> new FontUIResource(Font.DIALOG, Font.BOLD, 12);
 
         // *** Colors
-        // XXX - some of these doens't seem to be used
+        // XXX - some of these doesn't seem to be used
         ColorUIResource red = new ColorUIResource(Color.red);
         ColorUIResource black = new ColorUIResource(Color.black);
         ColorUIResource white = new ColorUIResource(Color.white);
@@ -575,16 +592,19 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
 
 
         if (!(this instanceof WindowsClassicLookAndFeel) &&
-            (OSInfo.getOSType() == OSInfo.OSType.WINDOWS &&
-             OSInfo.getWindowsVersion().compareTo(OSInfo.WINDOWS_XP) >= 0) &&
-            AccessController.doPrivileged(new GetPropertyAction("swing.noxp")) == null) {
+                (OSInfo.getOSType() == OSInfo.OSType.WINDOWS &&
+                OSInfo.getWindowsVersion().compareTo(OSInfo.WINDOWS_XP) >= 0)) {
+            @SuppressWarnings("removal")
+            String prop = AccessController.doPrivileged(new GetPropertyAction("swing.noxp"));
+            if (prop == null) {
 
-            // These desktop properties are not used directly, but are needed to
-            // trigger realoading of UI's.
-            this.themeActive = new TriggerDesktopProperty("win.xpstyle.themeActive");
-            this.dllName     = new TriggerDesktopProperty("win.xpstyle.dllName");
-            this.colorName   = new TriggerDesktopProperty("win.xpstyle.colorName");
-            this.sizeName    = new TriggerDesktopProperty("win.xpstyle.sizeName");
+                // These desktop properties are not used directly, but are needed to
+                // trigger realoading of UI's.
+                this.themeActive = new TriggerDesktopProperty("win.xpstyle.themeActive");
+                this.dllName = new TriggerDesktopProperty("win.xpstyle.dllName");
+                this.colorName = new TriggerDesktopProperty("win.xpstyle.colorName");
+                this.sizeName = new TriggerDesktopProperty("win.xpstyle.sizeName");
+            }
         }
 
 
@@ -625,7 +645,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
             "Button.dashedRectGapHeight", new XPValue(Integer.valueOf(6), Integer.valueOf(8)),
             "Button.textShiftOffset", new XPValue(Integer.valueOf(0),
                                                   Integer.valueOf(1)),
-            // W2K keyboard navigation hidding.
+            // W2K keyboard navigation hiding.
             "Button.showMnemonics", showMnemonics,
             "Button.focusInputMap",
                new UIDefaults.LazyInputMap(new Object[] {
@@ -672,8 +692,8 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
             "ComboBox.buttonHighlight", ControlHighlightColor,
             "ComboBox.selectionBackground", SelectionBackgroundColor,
             "ComboBox.selectionForeground", SelectionTextColor,
-            "ComboBox.editorBorder", new XPValue(new EmptyBorder(1,4,1,1),
-                                                 new EmptyBorder(1,4,1,4)),
+            "ComboBox.editorBorder", new XPValue(new EmptyBorder(1,3,1,1),
+                                                 new EmptyBorder(1,3,1,4)),
             "ComboBox.disabledBackground",
                         new XPColorValue(Part.CP_COMBOBOX, State.DISABLED,
                         Prop.FILLCOLOR, DisabledTextBackground),
@@ -941,7 +961,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
             "PopupMenu.background", MenuBackgroundColor,
             "PopupMenu.foreground", MenuTextColor,
             "PopupMenu.popupSound", "win.sound.menuPopup",
-            "PopupMenu.consumeEventOnClose", Boolean.TRUE,
+            "PopupMenu.consumeEventOnClose", Boolean.FALSE,
 
             // Menus
             "Menu.font", MenuFont,
@@ -1587,7 +1607,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
                 "CheckBoxMenuItem", "RadioButtonMenuItem",
         };
 
-        Object menuDefaults[] = new Object[menuClasses.length * 2];
+        Object[] menuDefaults = new Object[menuClasses.length * 2];
 
         /* all the menus need to be non opaque. */
         for (int i = 0, j = 0; i < menuClasses.length; i++) {
@@ -2093,7 +2113,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
      * Gets an <code>Icon</code> from the native libraries if available.
      * A desktop property is used to trigger reloading the icon when needed.
      */
-    private class ActiveWindowsIcon implements UIDefaults.ActiveValue {
+    private static class ActiveWindowsIcon implements UIDefaults.ActiveValue {
         private Icon icon;
         private String nativeImageName;
         private String fallbackName;
@@ -2399,7 +2419,7 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
         }
     }
 
-    private class TriggerDesktopProperty extends WindowsDesktopProperty {
+    private static class TriggerDesktopProperty extends WindowsDesktopProperty {
         TriggerDesktopProperty(String key) {
             super(key, null);
             // This call adds a property change listener for the property,
@@ -2411,12 +2431,12 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
         protected void updateUI() {
             super.updateUI();
 
-            // Make sure property change listener is readded each time
+            // Make sure property change listener is re-added each time
             getValueFromDesktop();
         }
     }
 
-    private class FontDesktopProperty extends TriggerDesktopProperty {
+    private static class FontDesktopProperty extends TriggerDesktopProperty {
         FontDesktopProperty(String key) {
             super(key);
         }

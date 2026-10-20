@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate Expired Exception. This is thrown whenever the current
  * {@code Date} or the specified {@code Date} is after the
@@ -36,6 +39,7 @@ package java.security.cert;
  */
 public class CertificateExpiredException extends CertificateException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 9071001339691533771L;
 
     /**
@@ -43,6 +47,7 @@ public class CertificateExpiredException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateExpiredException() {
         super();
     }
@@ -54,7 +59,8 @@ public class CertificateExpiredException extends CertificateException {
      *
      * @param message the detail message.
      */
-    public CertificateExpiredException(String message) {
+    @SideEffectFree
+    public CertificateExpiredException(@Nullable String message) {
         super(message);
     }
 }

@@ -26,10 +26,16 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * This class provides a skeletal implementation of the {@code Set}
@@ -91,7 +97,7 @@ public abstract class AbstractSet<E> extends AbstractCollection<E> implements Se
      * @return {@code true} if the specified object is equal to this set
      */
     @Pure
-    public boolean equals(@GuardSatisfied AbstractSet<E> this, @GuardSatisfied @Nullable Object o) {
+    public boolean equals(@MaybeModifiable @GuardSatisfied AbstractSet<E> this, @GuardSatisfied @Nullable Object o) {
         if (o == this)
             return true;
 
@@ -125,7 +131,7 @@ public abstract class AbstractSet<E> extends AbstractCollection<E> implements Se
      * @see Set#equals(Object)
      */
     @Pure
-    public int hashCode(@GuardSatisfied AbstractSet<E> this) {
+    public int hashCode(@MaybeModifiable @GuardSatisfied AbstractSet<E> this) {
         int h = 0;
         Iterator<E> i = iterator();
         while (i.hasNext()) {
@@ -173,7 +179,9 @@ public abstract class AbstractSet<E> extends AbstractCollection<E> implements Se
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    public boolean removeAll(@GuardSatisfied AbstractSet<E> this, Collection<?> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeAll(@IteratorPolyMod @Shrinkable @GuardSatisfied AbstractSet<E> this, Collection<? extends @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
 

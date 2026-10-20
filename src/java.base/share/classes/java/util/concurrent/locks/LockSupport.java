@@ -38,6 +38,7 @@ package java.util.concurrent.locks;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
+import jdk.internal.misc.VirtualThreads;
 import jdk.internal.misc.Unsafe;
 
 /**
@@ -144,8 +145,25 @@ public @UsesObjectEquals class LockSupport {
     private LockSupport() {} // Cannot be instantiated.
 
     private static void setBlocker(Thread t, Object arg) {
-        // Even though volatile, hotspot doesn't need a write barrier here.
-        U.putObject(t, PARKBLOCKER, arg);
+        U.putReferenceOpaque(t, PARKBLOCKER, arg);
+    }
+
+    /**
+     * Sets the object to be returned by invocations of {@link
+     * #getBlocker getBlocker} for the current thread. This method may
+     * be used before invoking the no-argument version of {@link
+     * LockSupport#park() park()} from non-public objects, allowing
+     * more helpful diagnostics, or retaining compatibility with
+     * previous implementations of blocking methods.  Previous values
+     * of the blocker are not automatically restored after blocking.
+     * To obtain the effects of {@code park(b}}, use {@code
+     * setCurrentBlocker(b); park(); setCurrentBlocker(null);}
+     *
+     * @param blocker the blocker object
+     * @since 14
+     */
+    public static void setCurrentBlocker(Object blocker) {
+        U.putReferenceOpaque(Thread.currentThread(), PARKBLOCKER, blocker);
     }
 
     /**
@@ -160,8 +178,13 @@ public @UsesObjectEquals class LockSupport {
      *        this operation has no effect
      */
     public static void unpark(Thread thread) {
-        if (thread != null)
-            U.unpark(thread);
+        if (thread != null) {
+            if (thread.isVirtual()) {
+                VirtualThreads.unpark(thread);
+            } else {
+                U.unpark(thread);
+            }
+        }
     }
 
     /**
@@ -195,18 +218,26 @@ public @UsesObjectEquals class LockSupport {
     public static void park(Object blocker) {
         Thread t = Thread.currentThread();
         setBlocker(t, blocker);
-        U.park(false, 0L);
-        setBlocker(t, null);
+        try {
+            if (t.isVirtual()) {
+                VirtualThreads.park();
+            } else {
+                U.park(false, 0L);
+            }
+        } finally {
+            setBlocker(t, null);
+        }
     }
 
     /**
      * Disables the current thread for thread scheduling purposes, for up to
      * the specified waiting time, unless the permit is available.
      *
-     * <p>If the permit is available then it is consumed and the call
-     * returns immediately; otherwise the current thread becomes disabled
-     * for thread scheduling purposes and lies dormant until one of four
-     * things happens:
+     * <p>If the specified waiting time is zero or negative, the
+     * method does nothing. Otherwise, if the permit is available then
+     * it is consumed and the call returns immediately; otherwise the
+     * current thread becomes disabled for thread scheduling purposes
+     * and lies dormant until one of four things happens:
      *
      * <ul>
      * <li>Some other thread invokes {@link #unpark unpark} with the
@@ -235,8 +266,15 @@ public @UsesObjectEquals class LockSupport {
         if (nanos > 0) {
             Thread t = Thread.currentThread();
             setBlocker(t, blocker);
-            U.park(false, nanos);
-            setBlocker(t, null);
+            try {
+                if (t.isVirtual()) {
+                    VirtualThreads.park(nanos);
+                } else {
+                    U.park(false, nanos);
+                }
+            } finally {
+                setBlocker(t, null);
+            }
         }
     }
 
@@ -276,8 +314,15 @@ public @UsesObjectEquals class LockSupport {
     public static void parkUntil(Object blocker, long deadline) {
         Thread t = Thread.currentThread();
         setBlocker(t, blocker);
-        U.park(true, deadline);
-        setBlocker(t, null);
+        try {
+            if (t.isVirtual()) {
+                VirtualThreads.parkUntil(deadline);
+            } else {
+                U.park(true, deadline);
+            }
+        } finally {
+            setBlocker(t, null);
+        }
     }
 
     /**
@@ -295,7 +340,7 @@ public @UsesObjectEquals class LockSupport {
     public static Object getBlocker(Thread t) {
         if (t == null)
             throw new NullPointerException();
-        return U.getObjectVolatile(t, PARKBLOCKER);
+        return U.getReferenceOpaque(t, PARKBLOCKER);
     }
 
     /**
@@ -324,17 +369,22 @@ public @UsesObjectEquals class LockSupport {
      * for example, the interrupt status of the thread upon return.
      */
     public static void park() {
-        U.park(false, 0L);
+        if (Thread.currentThread().isVirtual()) {
+            VirtualThreads.park();
+        } else {
+            U.park(false, 0L);
+        }
     }
 
     /**
      * Disables the current thread for thread scheduling purposes, for up to
      * the specified waiting time, unless the permit is available.
      *
-     * <p>If the permit is available then it is consumed and the call
-     * returns immediately; otherwise the current thread becomes disabled
-     * for thread scheduling purposes and lies dormant until one of four
-     * things happens:
+     * <p>If the specified waiting time is zero or negative, the
+     * method does nothing. Otherwise, if the permit is available then
+     * it is consumed and the call returns immediately; otherwise the
+     * current thread becomes disabled for thread scheduling purposes
+     * and lies dormant until one of four things happens:
      *
      * <ul>
      * <li>Some other thread invokes {@link #unpark unpark} with the
@@ -357,8 +407,13 @@ public @UsesObjectEquals class LockSupport {
      * @param nanos the maximum number of nanoseconds to wait
      */
     public static void parkNanos(long nanos) {
-        if (nanos > 0)
-            U.park(false, nanos);
+        if (nanos > 0) {
+            if (Thread.currentThread().isVirtual()) {
+                VirtualThreads.park(nanos);
+            } else {
+                U.park(false, nanos);
+            }
+        }
     }
 
     /**
@@ -392,44 +447,23 @@ public @UsesObjectEquals class LockSupport {
      *        to wait until
      */
     public static void parkUntil(long deadline) {
-        U.park(true, deadline);
-    }
-
-    /**
-     * Returns the pseudo-randomly initialized or updated secondary seed.
-     * Copied from ThreadLocalRandom due to package access restrictions.
-     */
-    static final int nextSecondarySeed() {
-        int r;
-        Thread t = Thread.currentThread();
-        if ((r = U.getInt(t, SECONDARY)) != 0) {
-            r ^= r << 13;   // xorshift
-            r ^= r >>> 17;
-            r ^= r << 5;
+        if (Thread.currentThread().isVirtual()) {
+            VirtualThreads.parkUntil(deadline);
+        } else {
+            U.park(true, deadline);
         }
-        else if ((r = java.util.concurrent.ThreadLocalRandom.current().nextInt()) == 0)
-            r = 1; // avoid zero
-        U.putInt(t, SECONDARY, r);
-        return r;
     }
 
     /**
-     * Returns the thread id for the given thread.  We must access
-     * this directly rather than via method Thread.getId() because
-     * getId() has been known to be overridden in ways that do not
-     * preserve unique mappings.
+     * Returns the thread id for the given thread.
      */
     static final long getThreadId(Thread thread) {
-        return U.getLong(thread, TID);
+        return thread.threadId();
     }
 
     // Hotspot implementation via intrinsics API
     private static final Unsafe U = Unsafe.getUnsafe();
-    private static final long PARKBLOCKER = U.objectFieldOffset
-            (Thread.class, "parkBlocker");
-    private static final long SECONDARY = U.objectFieldOffset
-            (Thread.class, "threadLocalRandomSecondarySeed");
-    private static final long TID = U.objectFieldOffset
-            (Thread.class, "tid");
+    private static final long PARKBLOCKER
+        = U.objectFieldOffset(Thread.class, "parkBlocker");
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,10 @@
  */
 package java.lang;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.ConstructorAccessor;
 import java.lang.StackWalker.Option;
@@ -41,6 +45,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import jdk.internal.vm.Continuation;
+import jdk.internal.vm.ContinuationScope;
 import sun.security.action.GetPropertyAction;
 
 import static java.lang.StackStreamFactory.WalkerState.*;
@@ -63,7 +69,7 @@ final class StackStreamFactory {
 
     // Stack walk implementation classes to be excluded during stack walking
     // lazily add subclasses when they are loaded.
-    private final static Set<Class<?>> stackWalkImplClasses = init();
+    private static final Set<Class<?>> stackWalkImplClasses = init();
 
     private static final int SMALL_BATCH       = 8;
     private static final int BATCH_SIZE        = 32;
@@ -81,7 +87,7 @@ final class StackStreamFactory {
      * Performance work and extensive testing is needed to replace the
      * VM built-in backtrace filled in Throwable with the StackWalker.
      */
-    final static boolean isDebug =
+    static final boolean isDebug =
             "true".equals(GetPropertyAction.privilegedGetProperty("stackwalk.debug"));
 
     static <T> StackFrameTraverser<T>
@@ -118,7 +124,7 @@ final class StackStreamFactory {
      *            For example, StackFrameInfo for StackWalker::walk or
      *            Class<?> for StackWalker::getCallerClass
      */
-    static abstract class AbstractStackWalker<R, T> {
+    abstract static class AbstractStackWalker<R, T> {
         protected final StackWalker walker;
         protected final Thread thread;
         protected final int maxDepth;
@@ -126,6 +132,8 @@ final class StackStreamFactory {
         protected int depth;    // traversed stack depth
         protected FrameBuffer<? extends T> frameBuffer;
         protected long anchor;
+        protected final ContinuationScope contScope;
+        protected Continuation continuation;
 
         // buffers to fill in stack frame information
         protected AbstractStackWalker(StackWalker walker, int mode) {
@@ -137,6 +145,14 @@ final class StackStreamFactory {
             this.walker = walker;
             this.maxDepth = maxDepth;
             this.depth = 0;
+            ContinuationScope scope = walker.getContScope();
+            if (scope == null && thread.isVirtual()) {
+                this.contScope = VirtualThread.continuationScope();
+                this.continuation = null;
+            } else {
+                this.contScope = scope;
+                this.continuation = walker.getContinuation();
+            }
         }
 
         private int toStackWalkMode(StackWalker walker, int mode) {
@@ -236,8 +252,14 @@ final class StackStreamFactory {
          */
         final R walk() {
             checkState(NEW);
+            return (continuation != null)
+                ? Continuation.wrapWalk(continuation, contScope, this::walkHelper)
+                : walkHelper();
+        }
+
+        private final R walkHelper() {
             try {
-                // VM will need to stablize the stack before walking.  It will invoke
+                // VM will need to stabilize the stack before walking.  It will invoke
                 // the AbstractStackWalker::doStackWalk method once it fetches the first batch.
                 // the callback will be invoked within the scope of the callStackWalk frame.
                 return beginStackWalk();
@@ -311,7 +333,10 @@ final class StackStreamFactory {
          */
         private int getNextBatch() {
             int nextBatchSize = Math.min(maxDepth - depth, getNextBatchSize());
-            if (!frameBuffer.isActive() || nextBatchSize <= 0) {
+
+            if (!frameBuffer.isActive()
+                    || (nextBatchSize <= 0)
+                    || (frameBuffer.isAtBottom() && !hasMoreContinuations())) {
                 if (isDebug) {
                     System.out.format("  more stack walk done%n");
                 }
@@ -319,7 +344,26 @@ final class StackStreamFactory {
                 return 0;
             }
 
-            return fetchStackFrames(nextBatchSize);
+            if (frameBuffer.isAtBottom() && hasMoreContinuations()) {
+                setContinuation(continuation.getParent());
+            }
+
+            int numFrames = fetchStackFrames(nextBatchSize);
+            if (numFrames == 0 && !hasMoreContinuations()) {
+                frameBuffer.freeze(); // done stack walking
+            }
+            return numFrames;
+        }
+
+        private boolean hasMoreContinuations() {
+            return (continuation != null)
+                    && (continuation.getScope() != contScope)
+                    && (continuation.getParent() != null);
+        }
+
+        private void setContinuation(Continuation cont) {
+            this.continuation = cont;
+            setContinuation(anchor, frameBuffer.frames(), cont);
         }
 
         /*
@@ -332,6 +376,7 @@ final class StackStreamFactory {
          *
          * @see #tryNextFrame
          */
+        @SideEffectsOnly("this")
         final Class<?> nextFrame() {
             if (!hasNext()) {
                 return null;
@@ -347,6 +392,7 @@ final class StackStreamFactory {
          * This skips hidden frames unless this StackWalker has
          * {@link Option#SHOW_REFLECT_FRAMES}
          */
+        @Pure
         final boolean hasNext() {
             return peekFrame() != null;
         }
@@ -368,6 +414,7 @@ final class StackStreamFactory {
             initFrameBuffer();
 
             return callStackWalk(mode, 0,
+                                 contScope, continuation,
                                  frameBuffer.curBatchFrameCount(),
                                  frameBuffer.startIndex(),
                                  frameBuffer.frames());
@@ -376,8 +423,8 @@ final class StackStreamFactory {
         /*
          * Fetches stack frames.
          *
-         * @params batchSize number of elements of the frame  buffers for this batch
-         * @returns number of frames fetched in this batch
+         * @param batchSize number of elements of the frame buffers for this batch
+         * @return number of frames fetched in this batch
          */
         private int fetchStackFrames(int batchSize) {
             int startIndex = frameBuffer.startIndex();
@@ -390,10 +437,10 @@ final class StackStreamFactory {
                 System.out.format("  more stack walk requesting %d got %d to %d frames%n",
                                   batchSize, frameBuffer.startIndex(), endIndex);
             }
+
             int numFrames = endIndex - startIndex;
-            if (numFrames == 0) {
-                frameBuffer.freeze(); // done stack walking
-            } else {
+
+            if (numFrames > 0) {
                 frameBuffer.setBatch(depth, startIndex, endIndex);
             }
             return numFrames;
@@ -405,6 +452,8 @@ final class StackStreamFactory {
          *
          * @param mode        mode of stack walking
          * @param skipframes  number of frames to be skipped before filling the frame buffer.
+         * @param contScope   the continuation scope to walk.
+         * @param continuation the continuation to walk, or {@code null} if walking a thread.
          * @param batchSize   the batch size, max. number of elements to be filled in the frame buffers.
          * @param startIndex  start index of the frame buffers to be filled.
          * @param frames      Either a Class<?> array, if mode is {@link #FILL_CLASS_REFS_ONLY}
@@ -412,6 +461,7 @@ final class StackStreamFactory {
          * @return            Result of AbstractStackWalker::doStackWalk
          */
         private native R callStackWalk(long mode, int skipframes,
+                                       ContinuationScope contScope, Continuation continuation,
                                        int batchSize, int startIndex,
                                        T[] frames);
 
@@ -430,6 +480,8 @@ final class StackStreamFactory {
         private native int fetchStackFrames(long mode, long anchor,
                                             int batchSize, int startIndex,
                                             T[] frames);
+
+        private native void setContinuation(long anchor, T[] frames, Continuation cont);
     }
 
     /*
@@ -496,6 +548,12 @@ final class StackStreamFactory {
             @Override
             final Class<?> at(int index) {
                 return stackFrames[index].declaringClass();
+            }
+
+            @Override
+            final boolean filter(int index) {
+                return stackFrames[index].declaringClass() == Continuation.class
+                        && "yield0".equals(stackFrames[index].getMethodName());
             }
         }
 
@@ -620,7 +678,7 @@ final class StackStreamFactory {
             super(walker, FILL_CLASS_REFS_ONLY|GET_CALLER_CLASS);
         }
 
-        final class ClassBuffer extends FrameBuffer<Class<?>> {
+        static final class ClassBuffer extends FrameBuffer<Class<?>> {
             Class<?>[] classes;      // caller class for fast path
             ClassBuffer(int batchSize) {
                 super(batchSize);
@@ -632,6 +690,9 @@ final class StackStreamFactory {
 
             @Override
             final Class<?> at(int index) { return classes[index];}
+
+            @Override
+            final boolean filter(int index) { return false; }
 
 
             // ------ subclass may override the following methods -------
@@ -765,6 +826,12 @@ final class StackStreamFactory {
             final Class<?> at(int index) {
                 return stackFrames[index].declaringClass();
             }
+
+            @Override
+            final boolean filter(int index) {
+                return stackFrames[index].declaringClass() == Continuation.class
+                        && "yield0".equals(stackFrames[index].getMethodName());
+            }
         }
 
         LiveStackInfoTraverser(StackWalker walker,
@@ -783,7 +850,7 @@ final class StackStreamFactory {
      *
      * Each specialized AbstractStackWalker subclass may subclass the FrameBuffer.
      */
-    static abstract class FrameBuffer<F> {
+    abstract static class FrameBuffer<F> {
         static final int START_POS = 2;     // 0th and 1st elements are reserved
 
         // buffers for VM to fill stack frame info
@@ -834,6 +901,13 @@ final class StackStreamFactory {
          */
         abstract Class<?> at(int index);
 
+        /**
+         * Filter out frames at the top of a batch
+         * @param index the position of the frame.
+         * @return true if the frame should be skipped
+         */
+        abstract boolean filter(int index);
+
         // ------ subclass may override the following methods -------
 
         /*
@@ -864,6 +938,7 @@ final class StackStreamFactory {
         /*
          * Tests if this frame buffer is empty.  All frames are fetched.
          */
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         final boolean isEmpty() {
             return origin >= fence || (origin == START_POS && fence == 0);
         }
@@ -881,7 +956,15 @@ final class StackStreamFactory {
          * it is done for traversal.  All stack frames have been traversed.
          */
         final boolean isActive() {
-            return origin > 0 && (fence == 0 || origin < fence || fence == currentBatchSize);
+            return origin > 0; //  && (fence == 0 || origin < fence || fence == currentBatchSize);
+        }
+
+        /*
+         * Tests if this frame buffer is at the end of the stack
+         * and all frames have been traversed.
+         */
+        final boolean isAtBottom() {
+            return origin > 0 && origin >= fence && fence < currentBatchSize;
         }
 
         /**
@@ -929,16 +1012,13 @@ final class StackStreamFactory {
 
             this.origin = startIndex;
             this.fence = endIndex;
-            if (depth == 0 && fence > 0) {
-                // filter the frames due to the stack stream implementation
-                for (int i = START_POS; i < fence; i++) {
-                    Class<?> c = at(i);
-                    if (isDebug) System.err.format("  frame %d: %s%n", i, c);
-                    if (filterStackWalkImpl(c)) {
-                        origin++;
-                    } else {
-                        break;
-                    }
+            for (int i = START_POS; i < fence; i++) {
+                if (isDebug) System.err.format("  frame %d: %s%n", i, at(i));
+                if ((depth == 0 && filterStackWalkImpl(at(i))) // filter the frames due to the stack stream implementation
+                        || filter(i)) {
+                    origin++;
+                } else {
+                    break;
                 }
             }
         }

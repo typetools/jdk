@@ -26,6 +26,9 @@
 package javax.management;
 
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Represents exceptions thrown in the MBean server when using the
@@ -50,6 +53,7 @@ public class ReflectionException extends JMException   {
      *
      * @param e the wrapped exception.
      */
+    @SideEffectFree
     public ReflectionException(java.lang.Exception e) {
         super() ;
         exception = e ;
@@ -62,7 +66,8 @@ public class ReflectionException extends JMException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public ReflectionException(java.lang.Exception e, String message) {
+    @SideEffectFree
+    public ReflectionException(java.lang.Exception e, @Nullable String message) {
         super(message) ;
         exception = e ;
     }
@@ -81,7 +86,8 @@ public class ReflectionException extends JMException   {
      *
      * @return the wrapped {@link Exception}.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return exception;
     }
 }

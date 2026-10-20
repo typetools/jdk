@@ -55,6 +55,8 @@
 
 package jdk.internal.joptsimple.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -103,6 +105,7 @@ public class AbbreviationMap<V> implements OptionNameMap<V> {
      * @throws NullPointerException if {@code key} is {@code null}
      */
     @Override
+    @Pure
     public boolean contains(String key) {
         return get(key) != null;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,6 +61,9 @@
  */
 package java.time;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Exception used to indicate a problem while calculating a date-time.
  * <p>
@@ -77,6 +80,7 @@ public class DateTimeException extends RuntimeException {
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = -1632418723876261839L;
 
     /**
@@ -84,7 +88,8 @@ public class DateTimeException extends RuntimeException {
      *
      * @param message  the message to use for this exception, may be null
      */
-    public DateTimeException(String message) {
+    @SideEffectFree
+    public DateTimeException(@Nullable String message) {
         super(message);
     }
 
@@ -94,7 +99,8 @@ public class DateTimeException extends RuntimeException {
      * @param message  the message to use for this exception, may be null
      * @param cause  the cause of the exception, may be null
      */
-    public DateTimeException(String message, Throwable cause) {
+    @SideEffectFree
+    public DateTimeException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 

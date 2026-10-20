@@ -20,6 +20,8 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.xs.util.StringListImpl;
 import com.sun.org.apache.xerces.internal.impl.xs.util.XSNamedMap4Types;
@@ -812,6 +814,7 @@ public final class XSModelImpl extends AbstractList<XSNamespaceItem> implements 
         public XSNamespaceItemListIterator(int index) {
             this.index = index;
         }
+        @Pure
         public boolean hasNext() {
             return (index < fGrammarCount);
         }

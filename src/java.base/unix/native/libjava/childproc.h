@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -85,7 +85,6 @@ extern char **environ;
 #define MODE_FORK 1
 #define MODE_POSIX_SPAWN 2
 #define MODE_VFORK 3
-#define MODE_CLONE 4
 
 typedef struct _ChildStuff
 {
@@ -101,6 +100,7 @@ typedef struct _ChildStuff
     const char **envv;
     const char *pdir;
     int redirectErrorStream;
+    int sendAlivePing;
 } ChildStuff;
 
 /* following used in addition when mode is SPAWN */
@@ -114,13 +114,20 @@ typedef struct _SpawnInfo {
     int parentPathvBytes; /* total number of bytes in parentPathv array */
 } SpawnInfo;
 
+/* If ChildStuff.sendAlivePing is true, child shall signal aliveness to
+ * the parent the moment it gains consciousness, before any subsequent
+ * pre-exec errors could happen.
+ * This code must fit into an int and not be a valid errno value on any of
+ * our platforms. */
+#define CHILD_IS_ALIVE      65535
+
 /**
  * The cached and split version of the JDK's effective PATH.
  * (We don't support putenv("PATH=...") in native code)
  */
-const char * const *parentPathv;
+extern const char * const *parentPathv;
 
-ssize_t restartableWrite(int fd, const void *buf, size_t count);
+ssize_t writeFully(int fd, const void *buf, size_t count);
 int restartableDup2(int fd_from, int fd_to);
 int closeSafely(int fd);
 int isAsciiDigit(char c);
@@ -140,5 +147,15 @@ void JDK_execvpe(int mode, const char *file,
                  const char *argv[],
                  const char *const envp[]);
 int childProcess(void *arg);
+
+#ifdef DEBUG
+/* This method is only used in debug builds for testing MODE_POSIX_SPAWN
+ * in the light of abnormal program termination of either the parent JVM
+ * or the newly created jspawnhelper child process during the execution of
+ * Java_java_lang_ProcessImpl_forkAndExec().
+ * See: test/jdk/java/lang/ProcessBuilder/JspawnhelperProtocol.java
+ */
+void jtregSimulateCrash(pid_t child, int stage);
+#endif
 
 #endif

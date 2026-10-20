@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CharsetDecoder;
@@ -37,6 +39,7 @@ public class MS932_0213 extends Charset {
         super("x-MS932_0213", ExtendedCharsets.aliasesFor("x-MS932_0213"));
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof MS932)
@@ -52,7 +55,7 @@ public class MS932_0213 extends Charset {
     }
 
     protected static class Decoder extends SJIS_0213.Decoder {
-        static DoubleByte.Decoder decMS932 =
+        static final DoubleByte.Decoder decMS932 =
             (DoubleByte.Decoder)new MS932().newDecoder();
         protected Decoder(Charset cs) {
             super(cs);
@@ -68,7 +71,7 @@ public class MS932_0213 extends Charset {
 
     protected static class Encoder extends SJIS_0213.Encoder {
         // we only use its encodeChar() method
-        static DoubleByte.Encoder encMS932 =
+        static final DoubleByte.Encoder encMS932 =
             (DoubleByte.Encoder)new MS932().newEncoder();
         protected Encoder(Charset cs) {
             super(cs);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,20 +24,27 @@
  */
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * The Character Encoding is not supported.
  *
  * @author  Asmus Freytag
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class UnsupportedEncodingException
     extends IOException
 {
+    @java.io.Serial
     private static final long serialVersionUID = -4274276298326136670L;
 
     /**
      * Constructs an UnsupportedEncodingException without a detail message.
      */
+    @SideEffectFree
     public UnsupportedEncodingException() {
         super();
     }
@@ -46,7 +53,8 @@ public class UnsupportedEncodingException
      * Constructs an UnsupportedEncodingException with a detail message.
      * @param s Describes the reason for the exception.
      */
-    public UnsupportedEncodingException(String s) {
+    @SideEffectFree
+    public UnsupportedEncodingException(@Nullable String s) {
         super(s);
     }
 }

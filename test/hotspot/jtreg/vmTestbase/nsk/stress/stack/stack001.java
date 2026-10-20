@@ -34,7 +34,7 @@
  * COMMENTS
  *     Kestrel for Solaris_JDK_1.3-b10 crashes while trying to execute
  *     this test with Client HS VM.
- *     See lots of bugs concerning similar failuires:
+ *     See lots of bugs concerning similar failures:
  *     Evaluated:
  *     4217960 [native stack overflow bug] reflection test causes crash
  *     Accepted:
@@ -51,7 +51,8 @@
  *     4254634     println() while catching StackOverflowError causes hotspot VM crash
  *     4302288 the second stack overflow causes Classic VM to exit on win32
  *
- * @run main/othervm nsk.stress.stack.stack001
+ * @requires vm.opt.DeoptimizeALot != true
+ * @run main/othervm/timeout=900 nsk.stress.stack.stack001
  */
 
 package nsk.stress.stack;

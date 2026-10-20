@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2014, 2015, Red Hat Inc. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,8 @@
  *
  */
 
-#ifndef CPU_AARCH64_VM_C1_MACROASSEMBLER_AARCH64_HPP
-#define CPU_AARCH64_VM_C1_MACROASSEMBLER_AARCH64_HPP
+#ifndef CPU_AARCH64_C1_MACROASSEMBLER_AARCH64_HPP
+#define CPU_AARCH64_C1_MACROASSEMBLER_AARCH64_HPP
 
 using MacroAssembler::build_frame;
 using MacroAssembler::null_check;
@@ -48,7 +48,7 @@ using MacroAssembler::null_check;
   );
 
   void initialize_header(Register obj, Register klass, Register len, Register t1, Register t2);
-  void initialize_body(Register obj, Register len_in_bytes, int hdr_size_in_bytes, Register t1);
+  void initialize_body(Register obj, Register len_in_bytes, int hdr_size_in_bytes, Register t1, Register t2);
 
   void float_cmp(bool is_float, int unordered_result,
                  FloatRegister f0, FloatRegister f1,
@@ -58,9 +58,8 @@ using MacroAssembler::null_check;
   // hdr     : must be r0, contents destroyed
   // obj     : must point to the object to lock, contents preserved
   // disp_hdr: must point to the displaced header location, contents preserved
-  // scratch : scratch register, contents destroyed
   // returns code offset at which to add null check debug information
-  int lock_object  (Register swap, Register obj, Register disp_hdr, Register scratch, Label& slow_case);
+  int lock_object  (Register swap, Register obj, Register disp_hdr, Label& slow_case);
 
   // unlocking
   // hdr     : contents destroyed
@@ -107,8 +106,8 @@ using MacroAssembler::null_check;
   void invalidate_registers(bool inv_r0, bool inv_r19, bool inv_r2, bool inv_r3, bool inv_r4, bool inv_r5) PRODUCT_RETURN;
 
   // This platform only uses signal-based null checks. The Label is not needed.
-  void null_check(Register r, Label *Lnull = NULL) { MacroAssembler::null_check(r); }
+  void null_check(Register r, Label *Lnull = nullptr) { MacroAssembler::null_check(r); }
 
   void load_parameter(int offset_in_words, Register reg);
 
-#endif // CPU_AARCH64_VM_C1_MACROASSEMBLER_AARCH64_HPP
+#endif // CPU_AARCH64_C1_MACROASSEMBLER_AARCH64_HPP

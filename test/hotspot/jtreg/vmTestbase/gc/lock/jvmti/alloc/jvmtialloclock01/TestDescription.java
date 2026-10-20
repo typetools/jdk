@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,19 +24,15 @@
 
 /*
  * @test
- * @key stress gc
+ * @key stress randomness
  *
  * @summary converted from VM Testbase gc/lock/jvmti/alloc/jvmtialloclock01.
  * VM Testbase keywords: [gc, stress, stressopt, jvmti, nonconcurrent]
  *
  * @library /vmTestbase
  *          /test/lib
- * @run driver jdk.test.lib.FileInstaller . .
- * @run main/othervm/native
- *      -XX:-UseGCOverheadLimit
- *      -agentlib:JVMTIAllocLocker
- *      gc.lock.LockerTest
- *      -gp1 randomString
- *      -lockers jvmtiAlloc
+ * @build jdk.test.whitebox.WhiteBox
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller jdk.test.whitebox.WhiteBox
+ * @run main/othervm/native -Xbootclasspath/a:. -Xlog:gc=debug:gc.log -XX:+HeapDumpOnOutOfMemoryError -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI -agentlib:JVMTIAllocLocker gc.lock.LockerTest -lockers jvmtiAlloc -t 1
  */
 

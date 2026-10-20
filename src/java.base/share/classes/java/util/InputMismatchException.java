@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,23 +25,26 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown by a {@code Scanner} to indicate that the token
  * retrieved does not match the pattern for the expected type, or
  * that the token is out of range for the expected type.
  *
- * @author  unascribed
  * @see     java.util.Scanner
  * @since   1.5
  */
-public
-class InputMismatchException extends NoSuchElementException {
+public class InputMismatchException extends NoSuchElementException {
+    @java.io.Serial
     private static final long serialVersionUID = 8811230760997066428L;
 
     /**
      * Constructs an {@code InputMismatchException} with {@code null}
      * as its error message string.
      */
+    @SideEffectFree
     public InputMismatchException() {
         super();
     }
@@ -53,7 +56,8 @@ class InputMismatchException extends NoSuchElementException {
      *
      * @param   s   the detail message.
      */
-    public InputMismatchException(String s) {
+    @SideEffectFree
+    public InputMismatchException(@Nullable String s) {
         super(s);
     }
 }

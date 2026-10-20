@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -140,6 +140,7 @@ public class ModelMBeanInfoSupport extends MBeanInfo implements ModelMBeanInfo {
     static {
         try {
             GetPropertyAction act = new GetPropertyAction("jmx.serial.form");
+            @SuppressWarnings("removal")
             String form = AccessController.doPrivileged(act);
             compat = (form != null && form.equals("1.0"));
         } catch (Exception e) {
@@ -367,7 +368,7 @@ public class ModelMBeanInfoSupport extends MBeanInfo implements ModelMBeanInfo {
             MODELMBEAN_LOGGER.log(Level.TRACE, "Entry");
         }
 
-        if ((inDescriptorType == null) || (inDescriptorType.equals(""))) {
+        if ((inDescriptorType == null) || (inDescriptorType.isEmpty())) {
             inDescriptorType = "all";
         }
 
@@ -600,7 +601,7 @@ public class ModelMBeanInfoSupport extends MBeanInfo implements ModelMBeanInfo {
             inDescriptor = new DescriptorSupport();
         }
 
-        if ((inDescriptorType == null) || (inDescriptorType.equals(""))) {
+        if ((inDescriptorType == null) || (inDescriptorType.isEmpty())) {
             inDescriptorType =
                     (String) inDescriptor.getFieldValue("descriptorType");
 

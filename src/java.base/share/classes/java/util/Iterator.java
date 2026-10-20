@@ -25,11 +25,17 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
 
@@ -64,7 +70,7 @@ import java.util.function.Consumer;
 @CFComment({"nullness: This @Covariant annotation is sound, but it would not be sound on",
             "ListIterator (a subclass of Iterator), which supports a set operation."
 })
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 @Covariant({0})
 public interface Iterator<E> {
     /**
@@ -75,6 +81,7 @@ public interface Iterator<E> {
      * @return {@code true} if the iteration has more elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     boolean hasNext(@GuardSatisfied Iterator<E> this);
 
     /**
@@ -83,7 +90,9 @@ public interface Iterator<E> {
      * @return the next element in the iteration
      * @throws NoSuchElementException if the iteration has no more elements
      */
-    E next(@GuardSatisfied Iterator<E> this);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    E next(@GuardSatisfied @NonEmpty Iterator<E> this);
 
     /**
      * Removes from the underlying collection the last element returned
@@ -110,7 +119,9 @@ public interface Iterator<E> {
      *         been called after the last call to the {@code next}
      *         method
      */
-    default void remove(@GuardSatisfied Iterator<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void remove(@Shrinkable @GuardSatisfied @CanShrink Iterator<E> this) {
         throw new UnsupportedOperationException("remove");
     }
 
@@ -139,6 +150,7 @@ public interface Iterator<E> {
      * @throws NullPointerException if the specified action is null
      * @since 1.8
      */
+    @DoesNotUnrefineReceiver("modifiability")
     default void forEachRemaining(Consumer<? super E> action) {
         Objects.requireNonNull(action);
         while (hasNext())

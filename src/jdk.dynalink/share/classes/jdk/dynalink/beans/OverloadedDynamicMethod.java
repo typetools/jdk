@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,6 +60,8 @@
 
 package jdk.dynalink.beans;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.security.AccessControlContext;
@@ -67,9 +69,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -158,12 +158,7 @@ class OverloadedDynamicMethod extends DynamicMethod {
         invokables.removeAll(subtypingApplicables.getMethods());
         invokables.removeAll(methodInvocationApplicables.getMethods());
         invokables.removeAll(variableArityApplicables.getMethods());
-        for(final Iterator<SingleDynamicMethod> it = invokables.iterator(); it.hasNext();) {
-            final SingleDynamicMethod m = it.next();
-            if(!isApplicableDynamically(linkerServices, callSiteType, m)) {
-                it.remove();
-            }
-        }
+        invokables.removeIf(m -> !isApplicableDynamically(linkerServices, callSiteType, m));
 
         // If no additional methods can apply at invocation time, and there's more than one maximally specific method
         // based on call site signature, that is a link-time ambiguity. In a static scenario, javac would report an
@@ -201,20 +196,20 @@ class OverloadedDynamicMethod extends DynamicMethod {
         }
     }
 
+    @SuppressWarnings("removal")
     private static final AccessControlContext GET_CALL_SITE_CLASS_LOADER_CONTEXT =
             AccessControlContextFactory.createAccessControlContext(
                     "getClassLoader", SecureLookupSupplier.GET_LOOKUP_PERMISSION_NAME);
 
+    @SuppressWarnings("removal")
     private static ClassLoader getCallSiteClassLoader(final CallSiteDescriptor callSiteDescriptor) {
-        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-            @Override
-            public ClassLoader run() {
-                return callSiteDescriptor.getLookup().lookupClass().getClassLoader();
-            }
-        }, GET_CALL_SITE_CLASS_LOADER_CONTEXT);
+        return AccessController.doPrivileged(
+            (PrivilegedAction<ClassLoader>) () -> callSiteDescriptor.getLookup().lookupClass().getClassLoader(),
+            GET_CALL_SITE_CLASS_LOADER_CONTEXT);
     }
 
     @Override
+    @Pure
     public boolean contains(final SingleDynamicMethod m) {
         for(final SingleDynamicMethod method: methods) {
             if(method.contains(m)) {
@@ -243,7 +238,7 @@ class OverloadedDynamicMethod extends DynamicMethod {
         // Case insensitive sorting, so e.g. "Object" doesn't come before "boolean".
         final Collator collator = Collator.getInstance();
         collator.setStrength(Collator.SECONDARY);
-        Collections.sort(names, collator);
+        names.sort(collator);
 
         final String className = getClass().getName();
         // Class name length + length of signatures + 2 chars/per signature for indentation and newline +
@@ -257,7 +252,7 @@ class OverloadedDynamicMethod extends DynamicMethod {
         b.append(']');
         assert b.length() == totalLength;
         return b.toString();
-    };
+    }
 
     private static boolean isApplicableDynamically(final LinkerServices linkerServices, final MethodType callSiteType,
             final SingleDynamicMethod m) {
@@ -327,7 +322,7 @@ class OverloadedDynamicMethod extends DynamicMethod {
     }
 
     private boolean constructorFlagConsistent(final SingleDynamicMethod method) {
-        return methods.isEmpty()? true : (methods.getFirst().isConstructor() == method.isConstructor());
+        return methods.isEmpty() || methods.getFirst().isConstructor() == method.isConstructor();
     }
 
     /**

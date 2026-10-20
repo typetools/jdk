@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,13 +35,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/* !!!! WARNING !!!!
- * This class has to be in sync with
- * src/solaris/classes/sun/awt/windows/ThemeReader.java
- * while we continue to build WinL&F on solaris
- */
-
-
 /**
  * Implements Theme Support for Windows XP.
  *
@@ -60,7 +53,7 @@ public final class ThemeReader {
         new ReentrantReadWriteLock();
     private static final Lock readLock = readWriteLock.readLock();
     private static final Lock writeLock = readWriteLock.writeLock();
-    private static volatile boolean valid = false;
+    private static volatile boolean valid;
     private static volatile boolean isThemed;
 
     static volatile boolean xpStyleEnabled;
@@ -298,8 +291,6 @@ public final class ThemeReader {
             readLock.unlock();
         }
     }
-
-    public static native boolean isGetThemeTransitionDurationDefined();
 
     private static native Insets getThemeBackgroundContentMargins(long theme,
                      int part, int state, int boundingWidth, int boundingHeight);

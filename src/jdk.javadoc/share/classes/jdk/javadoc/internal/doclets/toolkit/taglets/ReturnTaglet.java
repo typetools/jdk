@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,78 +25,98 @@
 
 package jdk.javadoc.internal.doclets.toolkit.taglets;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.ReturnTree;
+import jdk.javadoc.doclet.Taglet.Location;
+import jdk.javadoc.internal.doclets.toolkit.BaseConfiguration;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.Messages;
-import jdk.javadoc.internal.doclets.toolkit.util.CommentHelper;
 import jdk.javadoc.internal.doclets.toolkit.util.DocFinder;
-import jdk.javadoc.internal.doclets.toolkit.util.DocFinder.Input;
+import jdk.javadoc.internal.doclets.toolkit.util.DocFinder.Result;
 import jdk.javadoc.internal.doclets.toolkit.util.Utils;
 
-import static com.sun.source.doctree.DocTree.Kind.RETURN;
-
 /**
- * A taglet that represents the @return tag.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
+ * A taglet that represents the {@code @return} and {@code {@return }} tags.
  */
 public class ReturnTaglet extends BaseTaglet implements InheritableTaglet {
 
     public ReturnTaglet() {
-        super(RETURN.tagName, false, EnumSet.of(Site.METHOD));
+        super(DocTree.Kind.RETURN, true, EnumSet.of(Location.METHOD));
     }
 
     @Override
-    public void inherit(DocFinder.Input input, DocFinder.Output output) {
-        List<? extends DocTree> tags = input.utils.getBlockTags(input.element, DocTree.Kind.RETURN);
-        CommentHelper ch = input.utils.getCommentHelper(input.element);
-        if (!tags.isEmpty()) {
-            output.holder = input.element;
-            output.holderTag = tags.get(0);
-            output.inlineTags = input.isFirstSentence
-                    ? ch.getFirstSentenceTrees(input.utils.configuration, output.holderTag)
-                    : ch.getDescription(input.utils.configuration, output.holderTag);
+    public boolean isBlockTag() {
+        return true;
+    }
+
+    @Override
+    public Output inherit(Element owner, DocTree tag, boolean isFirstSentence, BaseConfiguration configuration) {
+        try {
+            var docFinder = configuration.utils.docFinder();
+            var r = docFinder.trySearch((ExecutableElement) owner, m -> Result.fromOptional(extract(configuration.utils, m))).toOptional();
+            return r.map(result -> new Output(result.returnTree, result.method, result.returnTree.getDescription(), true))
+                    .orElseGet(() -> new Output(null, null, List.of(), true));
+        } catch (DocFinder.NoOverriddenMethodsFound e) {
+            return new Output(null, null, List.of(), false);
         }
     }
 
     @Override
-    public Content getTagletOutput(Element holder, TagletWriter writer) {
+    public Content getInlineTagOutput(Element element, DocTree tag, TagletWriter writer) {
+        return writer.returnTagOutput(element, (ReturnTree) tag, true);
+    }
+
+    @Override
+    public Content getAllBlockTagOutput(Element holder, TagletWriter writer) {
+        assert holder.getKind() == ElementKind.METHOD : holder.getKind();
+        var method = (ExecutableElement) holder;
         Messages messages = writer.configuration().getMessages();
         Utils utils = writer.configuration().utils;
-        TypeMirror returnType = utils.getReturnType((ExecutableElement)holder);
-        List<? extends DocTree> tags = utils.getBlockTags(holder, name);
+        List<? extends ReturnTree> tags = utils.getReturnTrees(holder);
 
-        //Make sure we are not using @return tag on method with void return type.
+        // make sure we are not using @return on a method with the void return type
+        TypeMirror returnType = utils.getReturnType(writer.getCurrentPageElement(), method);
         if (returnType != null && utils.isVoid(returnType)) {
-            if (!tags.isEmpty()) {
+            if (!tags.isEmpty() && !writer.configuration().isDocLintReferenceGroupEnabled()) {
                 messages.warning(holder, "doclet.Return_tag_on_void_method");
             }
             return null;
         }
-        if (!tags.isEmpty())
-            return writer.returnTagOutput(holder, tags.get(0));
-        //Inherit @return tag if necessary.
-        List<DocTree> ntags = new ArrayList<>();
-        Input input = new DocFinder.Input(utils, holder, this);
-        DocFinder.Output inheritedDoc = DocFinder.search(writer.configuration(), input);
-        if (inheritedDoc.holderTag != null) {
-            CommentHelper ch = utils.getCommentHelper(input.element);
-            ch.setOverrideElement(inheritedDoc.holder);
-            ntags.add(inheritedDoc.holderTag);
-        }
-        return !ntags.isEmpty() ? writer.returnTagOutput(holder, ntags.get(0)) : null;
+
+        // it would also be good to check if there are more than one @return
+        // tags and produce a warning or error similarly to how it's done
+        // above for a case where @return is used for void
+
+        var docFinder = utils.docFinder();
+        return docFinder.search(method, m -> Result.fromOptional(extract(utils, m))).toOptional()
+                .map(r -> writer.returnTagOutput(r.method, r.returnTree, false))
+                .orElse(null);
+    }
+
+    private record Documentation(ReturnTree returnTree, ExecutableElement method) { }
+
+    private static Optional<Documentation> extract(Utils utils, ExecutableElement method) {
+        // TODO
+        //  Using getBlockTags(..., Kind.RETURN) for clarity. Since @return has become a bimodal tag,
+        //  Utils.getReturnTrees is now a misnomer: it returns only block returns, not all returns.
+        //  We could revisit this later.
+        Stream<? extends ReturnTree> blockTags = utils.getBlockTags(method, DocTree.Kind.RETURN, ReturnTree.class).stream();
+        Stream<? extends ReturnTree> mainDescriptionTags = utils.getFirstSentenceTrees(method).stream()
+                .mapMulti((t, c) -> {
+                    if (t.getKind() == DocTree.Kind.RETURN) c.accept((ReturnTree) t);
+                });
+        // this method should not check validity of @return tags, hence findAny and not findFirst or what have you
+        return Stream.concat(blockTags, mainDescriptionTags)
+                .map(t -> new Documentation(t, method)).findAny();
     }
 }

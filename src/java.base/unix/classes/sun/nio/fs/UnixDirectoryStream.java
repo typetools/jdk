@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 
 package sun.nio.fs;
+
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.nio.file.*;
 import java.util.Iterator;
@@ -67,7 +70,7 @@ class UnixDirectoryStream
         this.filter = filter;
     }
 
-    protected final UnixPath directory() {
+    final UnixPath directory() {
         return dir;
     }
 
@@ -193,6 +196,7 @@ class UnixDirectoryStream
         }
 
         @Override
+        @Pure
         public synchronized boolean hasNext() {
             if (nextEntry == null && !atEof)
                 nextEntry = readNextEntry();
@@ -200,6 +204,7 @@ class UnixDirectoryStream
         }
 
         @Override
+        @SideEffectsOnly("this")
         public synchronized Path next() {
             Path result;
             if (nextEntry == null && !atEof) {

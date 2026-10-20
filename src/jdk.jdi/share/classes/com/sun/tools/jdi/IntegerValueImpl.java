@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,8 +48,8 @@ public class IntegerValueImpl extends PrimitiveValueImpl
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj != null) && (obj instanceof IntegerValue)) {
-            return (value == ((IntegerValue)obj).value()) &&
+        if (obj instanceof IntegerValue other) {
+            return (value == other.value()) &&
                    super.equals(obj);
         } else {
             return false;
@@ -63,6 +63,7 @@ public class IntegerValueImpl extends PrimitiveValueImpl
         return intValue();
     }
 
+    @Pure
     public int compareTo(IntegerValue obj) {
         int other = obj.value();
         return (value()<other ? -1 : (value()==other ? 0 : 1));

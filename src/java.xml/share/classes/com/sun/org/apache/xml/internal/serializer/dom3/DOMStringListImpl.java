@@ -22,6 +22,8 @@
 package com.sun.org.apache.xml.internal.serializer.dom3;
 
 //import org.apache.xerces.dom3.DOMStringList;
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.w3c.dom.DOMStringList;
@@ -84,6 +86,7 @@ final class DOMStringListImpl implements DOMStringList {
     /**
      * @see org.apache.xerces.dom3.DOMStringList#contains(String)
      */
+    @Pure
     public boolean contains(String param) {
         return fStrings.contains(param) ;
     }

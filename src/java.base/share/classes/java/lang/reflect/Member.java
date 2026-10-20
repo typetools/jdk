@@ -25,6 +25,11 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import java.util.Set;
+
 /**
  * Member is an interface that reflects identifying information about
  * a single member (a field or a method) or a constructor.
@@ -37,8 +42,7 @@ package java.lang.reflect;
  * @author Nakul Saraiya
  * @since 1.1
  */
-public
-interface Member {
+public interface Member {
 
     /**
      * Identifies the set of all public members of a class or interface,
@@ -59,6 +63,7 @@ interface Member {
      * @return an object representing the declaring class of the
      * underlying member
      */
+    @Pure
     public Class<?> getDeclaringClass();
 
     /**
@@ -67,6 +72,7 @@ interface Member {
      *
      * @return the simple name of the underlying member
      */
+    @Pure
     public String getName();
 
     /**
@@ -77,8 +83,26 @@ interface Member {
      *
      * @return the Java language modifiers for the underlying member
      * @see Modifier
+     * @see #accessFlags()
      */
+    @Pure
     public int getModifiers();
+
+
+    /**
+     * {@return an unmodifiable set of the {@linkplain AccessFlag
+     * access flags} for this member, possibly empty}
+     *
+     * @implSpec
+     * The default implementation throws {@link
+     * UnsupportedOperationException}.
+     * @see #getModifiers()
+     * @since 20
+     */
+    @SideEffectFree
+    public default Set<AccessFlag> accessFlags() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Returns {@code true} if this member was introduced by
@@ -89,5 +113,6 @@ interface Member {
      * @jls 13.1 The Form of a Binary
      * @since 1.5
      */
+    @Pure
     public boolean isSynthetic();
 }

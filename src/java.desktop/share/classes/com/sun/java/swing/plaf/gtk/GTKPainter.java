@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,7 +61,7 @@ class GTKPainter extends SynthPainter {
         PositionType.TOP, PositionType.LEFT
     };
 
-    private static final ShadowType SHADOWS[] = {
+    private static final ShadowType[] SHADOWS = {
         ShadowType.NONE, ShadowType.IN, ShadowType.OUT,
         ShadowType.ETCHED_IN, ShadowType.OUT
     };
@@ -185,6 +185,21 @@ class GTKPainter extends SynthPainter {
         }
     }
 
+    //This is workaround used to draw the highlight
+    // when the MENU or MenuItem is selected on some platforms
+    //This should be properly fixed by reading color from css
+    private void paintComponentBackground(SynthContext context,
+                                          Graphics g, int x, int y,
+                                          int w, int h) {
+        GTKStyle style = (GTKStyle) context.getStyle();
+        Color highlightColor =
+                style.getGTKColor(GTKEngine.WidgetType.TEXT_AREA.ordinal(),
+                GTKLookAndFeel.synthStateToGTKStateType(SynthConstants.SELECTED).ordinal(),
+                ColorType.BACKGROUND.getID());
+        g.setColor(highlightColor);
+        g.fillRect(x, y, w, h);
+    }
+
     //
     // RADIO_BUTTON_MENU_ITEM
     //
@@ -196,6 +211,10 @@ class GTKPainter extends SynthPainter {
         int gtkState = GTKLookAndFeel.synthStateToGTKState(
                 id, context.getComponentState());
         if (gtkState == SynthConstants.MOUSE_OVER) {
+            if (GTKLookAndFeel.is3()) {
+                paintComponentBackground(context, g, x, y, w, h);
+                return;
+            }
             synchronized (UNIXToolkit.GTK_LOCK) {
                 if (! ENGINE.paintCachedImage(g, x, y, w, h, id)) {
                     ShadowType shadow = (GTKLookAndFeel.is2_2() ?
@@ -551,6 +570,10 @@ class GTKPainter extends SynthPainter {
         int gtkState = GTKLookAndFeel.synthStateToGTKState(
                 context.getRegion(), context.getComponentState());
         if (gtkState == SynthConstants.MOUSE_OVER) {
+            if (GTKLookAndFeel.is3()) {
+                paintComponentBackground(context, g, x, y, w, h);
+                return;
+            }
             Region id = Region.MENU_ITEM;
             synchronized (UNIXToolkit.GTK_LOCK) {
                 if (! ENGINE.paintCachedImage(g, x, y, w, h, id)) {
@@ -1252,8 +1275,10 @@ class GTKPainter extends SynthPainter {
                 ENGINE.startPainting(g, x, y, w, h, id, state);
                 // the string arg should alternate based on row being painted,
                 // but we currently don't pass that in.
-                ENGINE.paintFlatBox(g, context, id, gtkState, ShadowType.NONE,
-                        "cell_odd", x, y, w, h, ColorType.TEXT_BACKGROUND);
+                if (context.getComponent().isOpaque()) {
+                    ENGINE.paintFlatBox(g, context, id, gtkState, ShadowType.NONE,
+                            "cell_odd", x, y, w, h, ColorType.TEXT_BACKGROUND);
+                }
                 ENGINE.finishPainting();
             }
         }
@@ -1334,9 +1359,7 @@ class GTKPainter extends SynthPainter {
                 ENGINE.startPainting(g, x, y, w, h, state, paintMethod);
                 try {
                     paintMethod.invoke(this, context, g, state, x, y, w, h);
-                } catch (IllegalAccessException iae) {
-                    assert false;
-                } catch (InvocationTargetException ite) {
+                } catch (IllegalAccessException | InvocationTargetException e) {
                     assert false;
                 }
                 ENGINE.finishPainting();
@@ -1355,9 +1378,7 @@ class GTKPainter extends SynthPainter {
                 try {
                     paintMethod.invoke(this, context,
                             g, state, x, y, w, h, direction);
-                } catch (IllegalAccessException iae) {
-                    assert false;
-                } catch (InvocationTargetException ite) {
+                } catch (IllegalAccessException | InvocationTargetException e) {
                     assert false;
                 }
                 ENGINE.finishPainting();

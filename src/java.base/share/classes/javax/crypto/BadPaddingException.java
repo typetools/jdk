@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -37,24 +40,27 @@ import java.security.GeneralSecurityException;
 
 public class BadPaddingException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -5315033893984728443L;
 
     /**
-     * Constructs a BadPaddingException with no detail
-     * message. A detail message is a String that describes this
+     * Constructs a {@code BadPaddingException} with no detail
+     * message. A detail message is a {@code String} that describes this
      * particular exception.
      */
+    @SideEffectFree
     public BadPaddingException() {
         super();
     }
 
     /**
-     * Constructs a BadPaddingException with the specified
+     * Constructs a {@code BadPaddingException} with the specified
      * detail message.
      *
      * @param msg the detail message.
      */
-    public BadPaddingException(String msg) {
+    @SideEffectFree
+    public BadPaddingException(@Nullable String msg) {
         super(msg);
     }
 }

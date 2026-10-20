@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import jdk.internal.util.OperatingSystem;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -199,7 +201,7 @@ import java.lang.Double;
  * <ol>
  *
  * <li><p>If the system property
- * {@code java.util.prefs.PreferencesFactory} is defined, then it is
+ * {@systemProperty java.util.prefs.PreferencesFactory} is defined, then it is
  * taken to be the fully-qualified name of a class implementing the
  * {@code PreferencesFactory} interface.  The class is loaded and
  * instantiated; if this process fails then an unspecified error is
@@ -231,6 +233,7 @@ public abstract @UsesObjectEquals class Preferences {
 
     private static final PreferencesFactory factory = factory();
 
+    @SuppressWarnings("removal")
     private static PreferencesFactory factory() {
         // 1. Try user-specified system property
         String factoryName = AccessController.doPrivileged(
@@ -297,15 +300,11 @@ public abstract @UsesObjectEquals class Preferences {
         }
 
         // 3. Use platform-specific system-wide default
-        String osName = System.getProperty("os.name");
-        String platformFactory;
-        if (osName.startsWith("Windows")) {
-            platformFactory = "java.util.prefs.WindowsPreferencesFactory";
-        } else if (osName.contains("OS X")) {
-            platformFactory = "java.util.prefs.MacOSXPreferencesFactory";
-        } else {
-            platformFactory = "java.util.prefs.FileSystemPreferencesFactory";
-        }
+        String platformFactory = switch (OperatingSystem.current()) {
+            case WINDOWS -> "java.util.prefs.WindowsPreferencesFactory";
+            case MACOS -> "java.util.prefs.MacOSXPreferencesFactory";
+            default -> "java.util.prefs.FileSystemPreferencesFactory";
+        };
         try {
             @SuppressWarnings("deprecation")
             Object result = Class.forName(platformFactory, false,
@@ -456,6 +455,7 @@ public abstract @UsesObjectEquals class Preferences {
      * @see    RuntimePermission
      */
     public static Preferences userRoot() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null)
             security.checkPermission(prefsPerm);
@@ -472,6 +472,7 @@ public abstract @UsesObjectEquals class Preferences {
      * @see    RuntimePermission
      */
     public static Preferences systemRoot() {
+        @SuppressWarnings("removal")
         SecurityManager security = System.getSecurityManager();
         if (security != null)
             security.checkPermission(prefsPerm);
@@ -904,7 +905,7 @@ public abstract @UsesObjectEquals class Preferences {
      * @see #get(String,String)
      * @see #putByteArray(String,byte[])
      */
-    public abstract byte @PolyNull[] getByteArray(String key, byte @PolyNull[] def);
+    public abstract byte @PolyNull [] getByteArray(String key, byte @PolyNull [] def);
 
     /**
      * Returns all of the keys that have an associated value in this

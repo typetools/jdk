@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code Credential} has expired.
  *
@@ -41,12 +44,14 @@ package javax.security.auth.login;
  */
 public class CredentialExpiredException extends CredentialException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -5344739593859737937L;
 
     /**
      * Constructs a CredentialExpiredException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CredentialExpiredException() {
         super();
     }
@@ -58,7 +63,8 @@ public class CredentialExpiredException extends CredentialException {
      *
      * @param msg the detail message.
      */
-    public CredentialExpiredException(String msg) {
+    @SideEffectFree
+    public CredentialExpiredException(@Nullable String msg) {
         super(msg);
     }
 }

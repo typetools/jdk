@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,15 +25,31 @@
 
 package javax.swing.plaf.synth;
 
-import javax.swing.*;
-import javax.swing.plaf.*;
-import javax.swing.plaf.basic.*;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.UIResource;
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.text.View;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeEvent;
 import sun.swing.SwingUtilities2;
 
 /**
@@ -56,7 +72,7 @@ public class SynthTabbedPaneUI extends BasicTabbedPaneUI
      * or right).</p>
 
      * <p>A positive overlap indicates that tabs should overlap right/down,
-     * while a negative overlap indicates tha tabs should overlap left/up.</p>
+     * while a negative overlap indicates that tabs should overlap left/up.</p>
      *
      * <p>When tabOverlap is specified, it both changes the x position and width
      * of the tab if in TOP or BOTTOM placement, and changes the y position and
@@ -104,6 +120,12 @@ public class SynthTabbedPaneUI extends BasicTabbedPaneUI
     private boolean nudgeSelectedLabel = true;
 
     private boolean selectedTabIsPressed = false;
+
+    /**
+     *
+     * Constructs a {@code SynthTabbedPaneUI}.
+     */
+    public SynthTabbedPaneUI() {}
 
     /**
      * Creates a new UI object for the given component.
@@ -815,6 +837,9 @@ public class SynthTabbedPaneUI extends BasicTabbedPaneUI
     }
 
     private FontMetrics getFontMetrics(Font font) {
+        if (font == null) {
+            font = tabPane.getFont();
+        }
         return tabPane.getFontMetrics(font);
     }
 
@@ -906,8 +931,12 @@ public class SynthTabbedPaneUI extends BasicTabbedPaneUI
         }
     }
 
+    /**
+     * A subclass of {@code SynthArrowButton} that implements
+     * {@code UIResource}.
+     */
     @SuppressWarnings("serial") // Superclass is not serializable across versions
-    private class SynthScrollableTabButton extends SynthArrowButton implements
+    private static class SynthScrollableTabButton extends SynthArrowButton implements
             UIResource {
         public SynthScrollableTabButton(int direction) {
             super(direction);

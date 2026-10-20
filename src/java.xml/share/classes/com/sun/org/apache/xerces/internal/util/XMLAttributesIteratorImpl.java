@@ -25,6 +25,8 @@
 
 package com.sun.org.apache.xerces.internal.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -55,6 +57,7 @@ public class XMLAttributesIteratorImpl extends XMLAttributesImpl implements
     public XMLAttributesIteratorImpl() {
     }
 
+    @Pure
     public boolean hasNext() {
         return fCurrent < getLength() ? true : false ;
     }//hasNext()

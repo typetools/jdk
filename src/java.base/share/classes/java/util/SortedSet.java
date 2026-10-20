@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,11 +26,19 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link Set} that further provides a <i>total ordering</i> on its elements.
@@ -114,7 +122,7 @@ import org.checkerframework.framework.qual.CFComment;
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public interface SortedSet<E> extends Set<E> {
+public @SeqUngrowable interface SortedSet<E> extends Set<E>, SequencedSet<E> {
     /**
      * Returns the comparator used to order the elements in this set,
      * or {@code null} if this set uses the {@linkplain Comparable
@@ -159,7 +167,7 @@ public interface SortedSet<E> extends Set<E> {
      *         {@code toElement} lies outside the bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> subSet(@GuardSatisfied SortedSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
+    @PolyModifiable SortedSet<E> subSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement);
 
     /**
      * Returns a view of the portion of this set whose elements are
@@ -187,7 +195,7 @@ public interface SortedSet<E> extends Set<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> headSet(@GuardSatisfied SortedSet<E> this, E toElement);
+    @PolyModifiable SortedSet<E> headSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, E toElement);
 
     /**
      * Returns a view of the portion of this set whose elements are
@@ -215,7 +223,7 @@ public interface SortedSet<E> extends Set<E> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedSet<E> tailSet(@GuardSatisfied SortedSet<E> this, E fromElement);
+    @PolyModifiable SortedSet<E> tailSet(@PolyModifiable @GuardSatisfied SortedSet<E> this, E fromElement);
 
     /**
      * Returns the first (lowest) element currently in this set.
@@ -223,8 +231,8 @@ public interface SortedSet<E> extends Set<E> {
      * @return the first (lowest) element currently in this set
      * @throws NoSuchElementException if this set is empty
      */
-    @SideEffectFree
-    E first(@GuardSatisfied SortedSet<E> this);
+    @Pure
+    E first(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
      * Returns the last (highest) element currently in this set.
@@ -232,8 +240,8 @@ public interface SortedSet<E> extends Set<E> {
      * @return the last (highest) element currently in this set
      * @throws NoSuchElementException if this set is empty
      */
-    @SideEffectFree
-    E last(@GuardSatisfied SortedSet<E> this);
+    @Pure
+    E last(@GuardSatisfied @NonEmpty SortedSet<E> this);
 
     /**
      * Creates a {@code Spliterator} over the elements in this sorted set.
@@ -267,13 +275,139 @@ public interface SortedSet<E> extends Set<E> {
      * @since 1.8
      */
     @Override
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     default Spliterator<E> spliterator() {
         return new Spliterators.IteratorSpliterator<E>(
                 this, Spliterator.DISTINCT | Spliterator.SORTED | Spliterator.ORDERED) {
             @Override
-            public Comparator<? super E> getComparator() {
+            public @Nullable Comparator<? super E> getComparator() {
                 return SortedSet.this.comparator();
             }
         };
+    }
+
+    // ========== SequencedCollection ==========
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * set's comparison method determines the position of elements, so explicit positioning
+     * is not supported.
+     *
+     * @implSpec
+     * The implementation in this interface always throws {@code UnsupportedOperationException}.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void addFirst(@SeqGrowable SortedSet<E> this, E e) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * set's comparison method determines the position of elements, so explicit positioning
+     * is not supported.
+     *
+     * @implSpec
+     * The implementation in this interface always throws {@code UnsupportedOperationException}.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void addLast(@SeqGrowable SortedSet<E> this, E e) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns the result of calling the {@code first} method.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    default E getFirst() {
+        return this.first();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns the result of calling the {@code last} method.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    default E getLast() {
+        return this.last();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls the {@code first} method to obtain the first
+     * element, then it calls {@code remove(element)} to remove the element, and then it returns
+     * the element.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default E removeFirst(@Shrinkable SortedSet<E> this) {
+        E e = this.first();
+        this.remove(e);
+        return e;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls the {@code last} method to obtain the last
+     * element, then it calls {@code remove(element)} to remove the element, and then it returns
+     * the element.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default E removeLast(@Shrinkable SortedSet<E> this) {
+        E e = this.last();
+        this.remove(e);
+        return e;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns an instance of a reverse-ordered
+     * SortedSet that delegates its operations to this SortedSet.
+     *
+     * @return a reverse-ordered view of this collection, as a {@code SortedSet}
+     * @since 21
+     */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
+    default @PolyModifiable SortedSet<E> reversed(@PolyModifiable SortedSet<E> this) {
+        return ReverseOrderSortedSetView.of(this);
     }
 }

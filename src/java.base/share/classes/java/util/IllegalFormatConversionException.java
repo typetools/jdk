@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the argument corresponding to the format
  * specifier is of an incompatible type.
@@ -35,8 +37,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class IllegalFormatConversionException extends IllegalFormatException {
+public non-sealed class IllegalFormatConversionException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 17000126L;
 
     private char c;
@@ -52,6 +55,7 @@ public class IllegalFormatConversionException extends IllegalFormatException {
      * @param  arg
      *         Class of the mismatched argument
      */
+    @SideEffectFree
     public IllegalFormatConversionException(char c, Class<?> arg) {
         if (arg == null)
             throw new NullPointerException();
@@ -78,6 +82,7 @@ public class IllegalFormatConversionException extends IllegalFormatException {
     }
 
     // javadoc inherited from Throwable.java
+    @SideEffectFree
     public String getMessage() {
         return String.format("%c != %s", c, arg.getName());
     }

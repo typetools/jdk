@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package javax.lang.model.type;
 
+import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * Represents a wildcard type argument.
@@ -38,28 +39,24 @@ package javax.lang.model.type;
  * {@code extends} clause, its lower bound explicitly set by a
  * {@code super} clause, or neither (but not both).
  *
- * @author Joseph D. Darcy
- * @author Scott Seligman
- * @author Peter von der Ah&eacute;
+ * @jls 4.5.1 Type Arguments of Parameterized Types
  * @since 1.6
  */
 public interface WildcardType extends TypeMirror {
 
     /**
-     * Returns the upper bound of this wildcard.
+     * {@return the upper bound of this wildcard}
      * If no upper bound is explicitly declared,
      * {@code null} is returned.
-     *
-     * @return the upper bound of this wildcard
      */
+    @Pure
     TypeMirror getExtendsBound();
 
     /**
-     * Returns the lower bound of this wildcard.
+     * {@return the lower bound of this wildcard}
      * If no lower bound is explicitly declared,
      * {@code null} is returned.
-     *
-     * @return the lower bound of this wildcard
      */
+    @Pure
     TypeMirror getSuperBound();
 }

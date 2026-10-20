@@ -32,7 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 // java import
 //
 import java.util.Set;
@@ -115,6 +114,7 @@ public interface TabularData /*extends Map*/ {
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object[] key) ;
 
     /**
@@ -126,6 +126,7 @@ public interface TabularData /*extends Map*/ {
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(CompositeData value) ;
 
     /**

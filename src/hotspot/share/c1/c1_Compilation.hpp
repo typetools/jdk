@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_COMPILATION_HPP
-#define SHARE_VM_C1_C1_COMPILATION_HPP
+#ifndef SHARE_C1_C1_COMPILATION_HPP
+#define SHARE_C1_C1_COMPILATION_HPP
 
 #include "ci/ciEnv.hpp"
 #include "ci/ciMethodData.hpp"
 #include "code/exceptionHandlerTable.hpp"
+#include "compiler/compiler_globals.hpp"
+#include "compiler/compilerDefinitions.inline.hpp"
 #include "compiler/compilerDirectives.hpp"
 #include "memory/resourceArea.hpp"
 #include "runtime/deoptimization.hpp"
@@ -48,11 +50,9 @@ class CodeEmitInfo;
 class ciEnv;
 class ciMethod;
 class ValueStack;
-class LIR_OprDesc;
 class C1_MacroAssembler;
 class CFGPrinter;
 class CFGPrinterOutput;
-typedef LIR_OprDesc* LIR_Opr;
 
 typedef GrowableArray<BasicType> BasicTypeArray;
 typedef GrowableArray<BasicType> BasicTypeList;
@@ -78,9 +78,12 @@ class Compilation: public StackObj {
   bool               _has_exception_handlers;
   bool               _has_fpu_code;
   bool               _has_unsafe_access;
+  bool               _has_irreducible_loops;
   bool               _would_profile;
   bool               _has_method_handle_invokes;  // True if this method has MethodHandle invokes.
   bool               _has_reserved_stack_access;
+  bool               _has_monitors; // Fastpath monitors detection for Continuations
+  bool               _install_code;
   const char*        _bailout_msg;
   ExceptionInfoList* _exception_info_list;
   ExceptionHandlerTable _exception_handler_table;
@@ -90,6 +93,7 @@ class Compilation: public StackObj {
   CodeBuffer         _code;
   bool               _has_access_indexed;
   int                _interpreter_frame_size; // Stack space needed in case of a deoptimization
+  int                _immediate_oops_patched;
 
   // compilation helpers
   void initialize();
@@ -108,7 +112,6 @@ class Compilation: public StackObj {
   ExceptionInfoList* exception_info_list() const { return _exception_info_list; }
   ExceptionHandlerTable* exception_handler_table() { return &_exception_handler_table; }
 
-  LinearScan* allocator()                          { return _allocator;      }
   void        set_allocator(LinearScan* allocator) { _allocator = allocator; }
 
   Instruction*       _current_instruction;       // the instruction currently being processed
@@ -120,7 +123,7 @@ class Compilation: public StackObj {
  public:
   // creation
   Compilation(AbstractCompiler* compiler, ciEnv* env, ciMethod* method,
-              int osr_bci, BufferBlob* buffer_blob, DirectiveSet* directive);
+              int osr_bci, BufferBlob* buffer_blob, bool install_code, DirectiveSet* directive);
   ~Compilation();
 
 
@@ -136,6 +139,8 @@ class Compilation: public StackObj {
   bool has_exception_handlers() const            { return _has_exception_handlers; }
   bool has_fpu_code() const                      { return _has_fpu_code; }
   bool has_unsafe_access() const                 { return _has_unsafe_access; }
+  bool has_monitors() const                      { return _has_monitors; }
+  bool has_irreducible_loops() const             { return _has_irreducible_loops; }
   int max_vector_size() const                    { return 0; }
   ciMethod* method() const                       { return _method; }
   int osr_bci() const                            { return _osr_bci; }
@@ -148,6 +153,8 @@ class Compilation: public StackObj {
   CodeOffsets* offsets()                         { return &_offsets; }
   Arena* arena()                                 { return _arena; }
   bool has_access_indexed()                      { return _has_access_indexed; }
+  bool should_install_code()                     { return _install_code && InstallMethods; }
+  LinearScan* allocator()                        { return _allocator; }
 
   // Instruction ids
   int get_next_id()                              { return _next_id++; }
@@ -161,8 +168,10 @@ class Compilation: public StackObj {
   void set_has_exception_handlers(bool f)        { _has_exception_handlers = f; }
   void set_has_fpu_code(bool f)                  { _has_fpu_code = f; }
   void set_has_unsafe_access(bool f)             { _has_unsafe_access = f; }
+  void set_has_irreducible_loops(bool f)         { _has_irreducible_loops = f; }
   void set_would_profile(bool f)                 { _would_profile = f; }
   void set_has_access_indexed(bool f)            { _has_access_indexed = f; }
+  void set_has_monitors(bool f)                  { _has_monitors = f; }
   // Add a set of exception handlers covering the given PC offset
   void add_exception_handlers_for_pco(int pco, XHandlers* exception_handlers);
   // Statistics gathering
@@ -189,14 +198,14 @@ class Compilation: public StackObj {
 #ifndef PRODUCT
   void maybe_print_current_instruction();
   CFGPrinterOutput* cfg_printer_output() {
-    guarantee(_cfg_printer_output != NULL, "CFG printer output not initialized");
+    guarantee(_cfg_printer_output != nullptr, "CFG printer output not initialized");
     return _cfg_printer_output;
   }
 #endif // PRODUCT
 
   // error handling
   void bailout(const char* msg);
-  bool bailed_out() const                        { return _bailout_msg != NULL; }
+  bool bailed_out() const                        { return _bailout_msg != nullptr; }
   const char* bailout_msg() const                { return _bailout_msg; }
 
   static int desired_max_code_buffer_size() {
@@ -211,22 +220,10 @@ class Compilation: public StackObj {
   // timers
   static void print_timers();
 
-#ifndef PRODUCT
-  // debugging support.
-  // produces a file named c1compileonly in the current directory with
-  // directives to compile only the current method and it's inlines.
-  // The file can be passed to the command line option -XX:Flags=<filename>
-  void compile_only_this_method();
-  void compile_only_this_scope(outputStream* st, IRScope* scope);
-  void exclude_this_method();
-#endif // PRODUCT
-
   bool is_profiling() {
     return env()->comp_level() == CompLevel_full_profile ||
            env()->comp_level() == CompLevel_limited_profile;
   }
-  bool count_invocations() { return is_profiling(); }
-  bool count_backedges()   { return is_profiling(); }
 
   // Helpers for generation of profile information
   bool profile_branches() {
@@ -256,14 +253,11 @@ class Compilation: public StackObj {
     return env()->comp_level() == CompLevel_full_profile &&
       C1UpdateMethodData && MethodData::profile_return();
   }
-  bool age_code() const {
-    return _method->profile_aging();
-  }
 
   // will compilation make optimistic assumptions that might lead to
   // deoptimization and that the runtime will account for?
-  bool is_optimistic() const                             {
-    return !TieredCompilation &&
+  bool is_optimistic() {
+    return CompilerConfig::is_c1_only_no_jvmci() && !is_profiling() &&
       (RangeCheckElimination || UseLoopInvariantCodeMotion) &&
       method()->method_data()->trap_count(Deoptimization::Reason_none) == 0;
   }
@@ -296,6 +290,11 @@ class Compilation: public StackObj {
 #define CHECK_BAILOUT()            { if (bailed_out()) return;          }
 #define CHECK_BAILOUT_(res)        { if (bailed_out()) return res;      }
 
+// BAILOUT check with reset of bound labels
+#define CHECK_BAILOUT1(l1)         { if (bailed_out()) { l1.reset();                         return; } }
+#define CHECK_BAILOUT2(l1, l2)     { if (bailed_out()) { l1.reset(); l2.reset();             return; } }
+#define CHECK_BAILOUT3(l1, l2, l3) { if (bailed_out()) { l1.reset(); l2.reset(); l3.reset(); return; } }
+
 
 class InstructionMark: public StackObj {
  private:
@@ -315,13 +314,19 @@ class InstructionMark: public StackObj {
 
 //----------------------------------------------------------------------
 // Base class for objects allocated by the compiler in the compilation arena
-class CompilationResourceObj ALLOCATION_SUPER_CLASS_SPEC {
+class CompilationResourceObj {
  public:
   void* operator new(size_t size) throw() { return Compilation::current()->arena()->Amalloc(size); }
   void* operator new(size_t size, Arena* arena) throw() {
     return arena->Amalloc(size);
   }
   void  operator delete(void* p) {} // nothing to do
+
+#ifndef PRODUCT
+  // Printing support
+  void print() const;
+  virtual void print_on(outputStream* st) const;
+#endif
 };
 
 
@@ -347,4 +352,4 @@ class ExceptionInfo: public CompilationResourceObj {
   XHandlers* exception_handlers()                { return _exception_handlers; }
 };
 
-#endif // SHARE_VM_C1_C1_COMPILATION_HPP
+#endif // SHARE_C1_C1_COMPILATION_HPP

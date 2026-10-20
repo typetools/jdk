@@ -25,7 +25,6 @@
 package java.beans;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.ref.Reference;

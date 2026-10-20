@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the basic login exception.
  *
@@ -34,12 +37,14 @@ package javax.security.auth.login;
 
 public class LoginException extends java.security.GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -4679091624035232488L;
 
     /**
      * Constructs a LoginException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public LoginException() {
         super();
     }
@@ -51,7 +56,8 @@ public class LoginException extends java.security.GeneralSecurityException {
      *
      * @param msg the detail message.
      */
-    public LoginException(String msg) {
+    @SideEffectFree
+    public LoginException(@Nullable String msg) {
         super(msg);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,17 +25,20 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that a method has been called by an inappropriate caller.
  *
  * @since 9
- * @spec JPMS
  * @see StackWalker#getCallerClass
  */
 public class IllegalCallerException extends RuntimeException {
     /**
      * Constructs an IllegalCallerException with no detail message.
      */
+    @SideEffectFree
     public IllegalCallerException() {
         super();
     }
@@ -46,7 +49,8 @@ public class IllegalCallerException extends RuntimeException {
      *
      * @param s the String that contains a detailed message (can be null)
      */
-    public IllegalCallerException(String s) {
+    @SideEffectFree
+    public IllegalCallerException(@Nullable String s) {
         super(s);
     }
 
@@ -57,7 +61,8 @@ public class IllegalCallerException extends RuntimeException {
      * @param  message the detail message (can be null)
      * @param  cause the cause (can be null)
      */
-    public IllegalCallerException(String message, Throwable cause) {
+    @SideEffectFree
+    public IllegalCallerException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -68,9 +73,11 @@ public class IllegalCallerException extends RuntimeException {
      *
      * @param  cause the cause (can be null)
      */
-    public IllegalCallerException(Throwable cause) {
+    @SideEffectFree
+    public IllegalCallerException(@Nullable Throwable cause) {
         super(cause);
     }
 
+    @java.io.Serial
     static final long serialVersionUID = -2349421918363102232L;
 }

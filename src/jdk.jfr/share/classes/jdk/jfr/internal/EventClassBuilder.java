@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,7 +57,7 @@ public final class EventClassBuilder {
 
     public EventClassBuilder(List<AnnotationElement> annotationElements, List<ValueDescriptor> fields) {
         this.fullClassName = "jdk.jfr.DynamicEvent" + idCounter.incrementAndGet();
-        this.type = Type.getType(fullClassName.replace(".", "/"));
+        this.type = Type.getType("L" + fullClassName.replace(".", "/") + ";");
         this.fields = fields;
         this.annotationElements = annotationElements;
     }
@@ -70,7 +70,7 @@ public final class EventClassBuilder {
         endClass();
         byte[] bytes = classWriter.toByteArray();
         ASMToolkit.logASM(fullClassName, bytes);
-        return SecuritySupport.defineClass(type.getInternalName(), bytes, Event.class.getClassLoader()).asSubclass(Event.class);
+        return SecuritySupport.defineClass(Event.class, bytes).asSubclass(Event.class);
     }
 
     private void endClass() {
@@ -101,7 +101,7 @@ public final class EventClassBuilder {
     private void buildConstructor() {
         MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC, DEFAULT_CONSTRUCTOR.getName(), DEFAULT_CONSTRUCTOR.getDescriptor(), null, null);
         mv.visitIntInsn(Opcodes.ALOAD, 0);
-        ASMToolkit.invokeSpecial(mv, TYPE_EVENT.getInternalName(), DEFAULT_CONSTRUCTOR);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, TYPE_EVENT.getInternalName(), DEFAULT_CONSTRUCTOR.getName(), DEFAULT_CONSTRUCTOR.getDescriptor(), false);
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
     }

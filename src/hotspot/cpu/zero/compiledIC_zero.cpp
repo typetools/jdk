@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,6 @@
  */
 
 #include "precompiled.hpp"
-#include "classfile/systemDictionary.hpp"
 #include "code/codeCache.hpp"
 #include "code/compiledIC.hpp"
 #include "code/icBuffer.hpp"
@@ -46,7 +45,7 @@
 
 address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) {
   ShouldNotReachHere(); // Only needed for COMPILER2.
-  return NULL;
+  return nullptr;
 }
 
 int CompiledStaticCall::to_interp_stub_size() {

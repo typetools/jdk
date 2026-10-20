@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,13 +25,12 @@
 
 package java.net;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-
-import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.ObjectStreamException;
@@ -45,7 +44,7 @@ import java.io.ObjectStreamException;
  * and <a href="http://www.ietf.org/rfc/rfc2365.txt"><i>RFC&nbsp;2365:
  * Administratively Scoped IP Multicast</i></a>
  *
- * <h3> <a id="format">Textual representation of IP addresses</a> </h3>
+ * <h2> <a id="format">Textual representation of IP addresses</a> </h2>
  *
  * Textual representation of IPv4 address used as input to methods
  * takes one of the following forms:
@@ -60,7 +59,7 @@ import java.io.ObjectStreamException;
  * <p> When four parts are specified, each is interpreted as a byte of
  * data and assigned, from left to right, to the four bytes of an IPv4
  * address.
-
+ *
  * <p> When a three part address is specified, the last part is
  * interpreted as a 16-bit quantity and placed in the right most two
  * bytes of the network address. This makes the three part address
@@ -79,7 +78,7 @@ import java.io.ObjectStreamException;
  * <p> For methods that return a textual representation as output
  * value, the first form, i.e. a dotted-quad string, is used.
  *
- * <h4> The Scope of a Multicast Address </h4>
+ * <h3> The Scope of a Multicast Address </h3>
  *
  * Historically the IPv4 TTL field in the IP header has doubled as a
  * multicast scope field: a TTL of 0 means node-local, 1 means
@@ -88,6 +87,13 @@ import java.io.ObjectStreamException;
  * 255 are global. However, the administrative scoping is preferred.
  * Please refer to <a href="http://www.ietf.org/rfc/rfc2365.txt">
  * <i>RFC&nbsp;2365: Administratively Scoped IP Multicast</i></a>
+ *
+ * @spec https://www.rfc-editor.org/info/rfc1918
+ *      RFC 1918: Address Allocation for Private Internets
+ * @spec https://www.rfc-editor.org/info/rfc2365
+ *      RFC 2365: Administratively Scoped IP Multicast
+ * @spec https://www.rfc-editor.org/info/rfc790
+ *      RFC 790: Assigned numbers
  * @since 1.4
  */
 
@@ -99,6 +105,7 @@ public final
     /** use serialVersionUID from InetAddress, but Inet4Address instance
      *  is always replaced by an InetAddress instance before being
      *  serialized */
+    @java.io.Serial
     private static final long serialVersionUID = 3286316764910316507L;
 
     /*
@@ -115,7 +122,7 @@ public final
         holder().family = IPv4;
     }
 
-    Inet4Address(String hostName, byte addr[]) {
+    Inet4Address(String hostName, byte[] addr) {
         holder().hostName = hostName;
         holder().family = IPv4;
         if (addr != null) {
@@ -144,6 +151,7 @@ public final
      * @throws ObjectStreamException if a new object replacing this
      * object could not be created
      */
+    @java.io.Serial
     private Object writeReplace() throws ObjectStreamException {
         // will replace the to be serialized 'this' object
         InetAddress inet = new InetAddress();
@@ -174,7 +182,7 @@ public final
 
     /**
      * Utility routine to check if the InetAddress is a wildcard address.
-     * @return a {@code boolean} indicating if the Inetaddress is
+     * @return a {@code boolean} indicating if the InetAddress is
      *         a wildcard address.
      */
     public boolean isAnyLocalAddress() {
@@ -194,7 +202,7 @@ public final
     }
 
     /**
-     * Utility routine to check if the InetAddress is an link local address.
+     * Utility routine to check if the InetAddress is a link local address.
      *
      * @return a {@code boolean} indicating if the InetAddress is
      * a link local address; or false if address is not a link local unicast address.
@@ -319,6 +327,13 @@ public final
     }
 
     /**
+     * Returns the 32-bit IPv4 address.
+     */
+    int addressValue() {
+        return holder().getAddress();
+    }
+
+    /**
      * Returns the IP address string in textual presentation form.
      *
      * @return  the raw IP address in a string format.
@@ -355,8 +370,8 @@ public final
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        return (obj != null) && (obj instanceof Inet4Address) &&
-            (((InetAddress)obj).holder().getAddress() == holder().getAddress());
+        return (obj instanceof Inet4Address inet4Address) &&
+            inet4Address.holder().getAddress() == holder().getAddress();
     }
 
     // Utilities

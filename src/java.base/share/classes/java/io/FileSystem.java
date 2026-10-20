@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,8 @@ package java.io;
 
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.annotation.Native;
@@ -93,6 +95,11 @@ abstract @UsesObjectEquals class FileSystem {
     public abstract boolean isAbsolute(File f);
 
     /**
+     * Tell whether the given abstract pathname is invalid.
+     */
+    public abstract boolean isInvalid(File f);
+
+    /**
      * Resolve the given abstract pathname into absolute form.  Invoked by the
      * getAbsolutePath and getCanonicalPath methods in the File class.
      */
@@ -104,10 +111,10 @@ abstract @UsesObjectEquals class FileSystem {
     /* -- Attribute accessors -- */
 
     /* Constants for simple boolean attributes */
-    @Native public static final int BA_EXISTS    = 0x01;
-    @Native public static final int BA_REGULAR   = 0x02;
-    @Native public static final int BA_DIRECTORY = 0x04;
-    @Native public static final int BA_HIDDEN    = 0x08;
+    @Native public static final @SignedPositive int BA_EXISTS    = 0x01;
+    @Native public static final @SignedPositive int BA_REGULAR   = 0x02;
+    @Native public static final @SignedPositive int BA_DIRECTORY = 0x04;
+    @Native public static final @SignedPositive int BA_HIDDEN    = 0x08;
 
     /**
      * Return the simple boolean attributes for the file or directory denoted
@@ -116,9 +123,18 @@ abstract @UsesObjectEquals class FileSystem {
      */
     public abstract int getBooleanAttributes(File f);
 
-    @Native public static final int ACCESS_READ    = 0x04;
-    @Native public static final int ACCESS_WRITE   = 0x02;
-    @Native public static final int ACCESS_EXECUTE = 0x01;
+    /**
+     * Checks if all the given boolean attributes are true for the file or
+     * directory denoted by the given abstract pathname. False if it does not
+     * exist or some other I/O error occurs.
+     */
+    public boolean hasBooleanAttributes(File f, int attributes) {
+        return (getBooleanAttributes(f) & attributes) == attributes;
+    }
+
+    @Native public static final @SignedPositive int ACCESS_READ    = 0x04;
+    @Native public static final @SignedPositive int ACCESS_WRITE   = 0x02;
+    @Native public static final @SignedPositive int ACCESS_EXECUTE = 0x01;
 
     /**
      * Check whether the file or directory denoted by the given abstract
@@ -153,7 +169,7 @@ abstract @UsesObjectEquals class FileSystem {
 
     /**
      * Create a new empty file with the given pathname.  Return
-     * <code>true</code> if the file was created and <code>false</code> if a
+     * {@code true} if the file was created and {@code false} if a
      * file or directory with the given pathname already exists.  Throw an
      * IOException if an I/O error occurs.
      */
@@ -162,40 +178,40 @@ abstract @UsesObjectEquals class FileSystem {
 
     /**
      * Delete the file or directory denoted by the given abstract pathname,
-     * returning <code>true</code> if and only if the operation succeeds.
+     * returning {@code true} if and only if the operation succeeds.
      */
     public abstract boolean delete(File f);
 
     /**
      * List the elements of the directory denoted by the given abstract
      * pathname.  Return an array of strings naming the elements of the
-     * directory if successful; otherwise, return <code>null</code>.
+     * directory if successful; otherwise, return {@code null}.
      */
     public abstract String[] list(File f);
 
     /**
      * Create a new directory denoted by the given abstract pathname,
-     * returning <code>true</code> if and only if the operation succeeds.
+     * returning {@code true} if and only if the operation succeeds.
      */
     public abstract boolean createDirectory(File f);
 
     /**
      * Rename the file or directory denoted by the first abstract pathname to
-     * the second abstract pathname, returning <code>true</code> if and only if
+     * the second abstract pathname, returning {@code true} if and only if
      * the operation succeeds.
      */
     public abstract boolean rename(File f1, File f2);
 
     /**
      * Set the last-modified time of the file or directory denoted by the
-     * given abstract pathname, returning <code>true</code> if and only if the
+     * given abstract pathname, returning {@code true} if and only if the
      * operation succeeds.
      */
     public abstract boolean setLastModifiedTime(File f, long time);
 
     /**
      * Mark the file or directory denoted by the given abstract pathname as
-     * read-only, returning <code>true</code> if and only if the operation
+     * read-only, returning {@code true} if and only if the operation
      * succeeds.
      */
     public abstract boolean setReadOnly(File f);
@@ -227,6 +243,7 @@ abstract @UsesObjectEquals class FileSystem {
     /**
      * Compare two abstract pathnames lexicographically.
      */
+    @Pure
     public abstract int compare(File f1, File f2);
 
     /**
@@ -234,20 +251,4 @@ abstract @UsesObjectEquals class FileSystem {
      */
     public abstract int hashCode(File f);
 
-    // Flags for enabling/disabling performance optimizations for file
-    // name canonicalization
-    static boolean useCanonCaches      = true;
-    static boolean useCanonPrefixCache = true;
-
-    private static boolean getBooleanProperty(String prop, boolean defaultVal) {
-        return Boolean.parseBoolean(System.getProperty(prop,
-                String.valueOf(defaultVal)));
-    }
-
-    static {
-        useCanonCaches      = getBooleanProperty("sun.io.useCanonCaches",
-                                                 useCanonCaches);
-        useCanonPrefixCache = getBooleanProperty("sun.io.useCanonPrefixCache",
-                                                 useCanonPrefixCache);
-    }
 }

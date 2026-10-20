@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package javax.lang.model.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.AnnotationTypeMismatchException;
 import java.lang.annotation.IncompleteAnnotationException;
@@ -38,24 +42,37 @@ import javax.lang.model.type.*;
  * <p><b>Compatibility Note:</b> Methods may be added to this interface
  * in future releases of the platform.
  *
- * @author Joseph D. Darcy
- * @author Scott Seligman
- * @author Peter von der Ah&eacute;
  * @see javax.annotation.processing.ProcessingEnvironment#getTypeUtils
  * @since 1.6
  */
+@AnnotatedFor("nullness")
 public interface Types {
 
     /**
      * Returns the element corresponding to a type.
-     * The type may be a {@code DeclaredType} or {@code TypeVariable}.
-     * Returns {@code null} if the type is not one with a
+     * The type may be one of:
+     * <ul>
+     * <li>a {@link DeclaredType}
+     * <li>a {@link TypeVariable}
+     * <li>a pseudo-type for a {@linkplain TypeKind#PACKAGE package} or
+     * {@linkplain TypeKind#MODULE module}
+     * </ul>
+     * The method returns {@code null} if the type is not one with a
      * corresponding element.
+     * Types <em>without</em> corresponding elements include:
+     * <ul>
+     * <li>{@linkplain TypeKind#isPrimitive() primitive types}
+     * <li>{@linkplain TypeKind#EXECUTABLE executable types}
+     * <li>{@linkplain TypeKind#NONE "none"} pseudo-types
+     * <li>{@linkplain TypeKind#NULL null types}
+     * <li>{@link TypeKind#VOID void}
+     * <li>{@linkplain TypeKind#WILDCARD wildcard type argument}
+     * </ul>
      *
      * @param t the type to map to an element
      * @return the element corresponding to the given type
      */
-    Element asElement(TypeMirror t);
+    @Nullable Element asElement(TypeMirror t);
 
     /**
      * Tests whether two {@code TypeMirror} objects represent the same type.
@@ -104,7 +121,7 @@ public interface Types {
      * @return {@code true} if and only if the first type is assignable
      *          to the second
      * @throws IllegalArgumentException if given a type for an executable, package, or module
-     * @jls 5.2 Assignment Conversion
+     * @jls 5.2 Assignment Contexts
      */
     boolean isAssignable(TypeMirror t1, TypeMirror t2);
 
@@ -115,8 +132,9 @@ public interface Types {
      * @param t2  the second type
      * @return {@code true} if and only if the first type contains the second
      * @throws IllegalArgumentException if given a type for an executable, package, or module
-     * @jls 4.5.1.1 Type Argument Containment and Equivalence
+     * @jls 4.5.1 Type Arguments of Parameterized Types
      */
+    @Pure
     boolean contains(TypeMirror t1, TypeMirror t2);
 
     /**
@@ -136,6 +154,10 @@ public interface Types {
      * will appear last in the list. For an interface type with no direct
      * super-interfaces, a type mirror representing {@code java.lang.Object}
      * is returned.
+     * The type {@code java.lang.Object} has no direct supertype (JLS
+     * {@jls 8.1.4}, {@jls 8.1.5}) so an empty list is returned for
+     * the direct supertypes of a type mirror representing {@code
+     * java.lang.Object}.
      *
      * @param t  the type being examined
      * @return the direct supertypes, or an empty list if none
@@ -145,21 +167,19 @@ public interface Types {
     List<? extends TypeMirror> directSupertypes(TypeMirror t);
 
     /**
-     * Returns the erasure of a type.
+     * {@return the erasure of a type}
      *
      * @param t  the type to be erased
-     * @return the erasure of the given type
      * @throws IllegalArgumentException if given a type for a package or module
      * @jls 4.6 Type Erasure
      */
     TypeMirror erasure(TypeMirror t);
 
     /**
-     * Returns the class of a boxed value of a given primitive type.
+     * {@return the class of a boxed value of the primitive type argument}
      * That is, <i>boxing conversion</i> is applied.
      *
      * @param p  the primitive type to be converted
-     * @return the class of a boxed value of type {@code p}
      * @jls 5.1.7 Boxing Conversion
      */
     TypeElement boxedClass(PrimitiveType p);
@@ -187,18 +207,15 @@ public interface Types {
     TypeMirror capture(TypeMirror t);
 
     /**
-     * Returns a primitive type.
+     * {@return a primitive type}
      *
      * @param kind  the kind of primitive type to return
-     * @return a primitive type
      * @throws IllegalArgumentException if {@code kind} is not a primitive kind
      */
     PrimitiveType getPrimitiveType(TypeKind kind);
 
     /**
-     * Returns the null type.  This is the type of {@code null}.
-     *
-     * @return the null type
+     * {@return the null type}  This is the type of {@code null}.
      */
     NullType getNullType();
 
@@ -222,30 +239,28 @@ public interface Types {
     NoType getNoType(TypeKind kind);
 
     /**
-     * Returns an array type with the specified component type.
+     * {@return an array type with the specified component type}
      *
      * @param componentType  the component type
-     * @return an array type with the specified component type.
      * @throws IllegalArgumentException if the component type is not valid for
      *          an array
      */
     ArrayType getArrayType(TypeMirror componentType);
 
     /**
-     * Returns a new wildcard type argument.  Either of the wildcard's
+     * {@return a new wildcard type}  Either of the wildcard's
      * bounds may be specified, or neither, but not both.
      *
      * @param extendsBound  the extends (upper) bound, or {@code null} if none
      * @param superBound    the super (lower) bound, or {@code null} if none
-     * @return a new wildcard
      * @throws IllegalArgumentException if bounds are not valid
      */
-    WildcardType getWildcardType(TypeMirror extendsBound,
-                                 TypeMirror superBound);
+    WildcardType getWildcardType(@Nullable TypeMirror extendsBound,
+                                 @Nullable TypeMirror superBound);
 
     /**
-     * Returns the type corresponding to a type element and
-     * actual type arguments.
+     * {@return the type corresponding to a type element and
+     * actual type arguments}
      * Given the type element for {@code Set} and the type mirror
      * for {@code String},
      * for example, this method may be used to get the
@@ -265,8 +280,6 @@ public interface Types {
      *
      * @param typeElem  the type element
      * @param typeArgs  the actual type arguments
-     * @return the type corresponding to the type element and
-     *          actual type arguments
      * @throws IllegalArgumentException if too many or too few
      *          type arguments are given, or if an inappropriate type
      *          argument or type element is provided
@@ -299,7 +312,7 @@ public interface Types {
      *          type arguments are given, or if an inappropriate type
      *          argument, type element, or containing type is provided
      */
-    DeclaredType getDeclaredType(DeclaredType containing,
+    DeclaredType getDeclaredType(@Nullable DeclaredType containing,
                                  TypeElement typeElem, TypeMirror... typeArgs);
 
     /**

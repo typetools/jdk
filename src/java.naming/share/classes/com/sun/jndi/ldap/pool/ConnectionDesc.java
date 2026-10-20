@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,14 +40,14 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * @author Rosanna Lee
  */
 final class ConnectionDesc {
-    private final static boolean debug = Pool.debug;
+    private static final boolean debug = Pool.debug;
 
     // Package private because used by Pool.showStats()
     static final byte BUSY = (byte)0;
     static final byte IDLE = (byte)1;
     static final byte EXPIRED = (byte)2;
 
-    final private PooledConnection conn;
+    private final PooledConnection conn;
 
     private byte state = IDLE;  // initial state
     private long idleSince;
@@ -73,9 +73,8 @@ final class ConnectionDesc {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        return obj != null
-            && obj instanceof ConnectionDesc
-            && ((ConnectionDesc)obj).conn == conn;
+        return (obj instanceof ConnectionDesc other)
+            && other.conn == conn;
     }
 
     /**

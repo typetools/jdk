@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Signals that a sync operation has failed.
  *
@@ -33,7 +37,9 @@ package java.io;
  * @see     java.io.IOException
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class SyncFailedException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = -2353342684412443330L;
 
     /**
@@ -42,7 +48,8 @@ public class SyncFailedException extends IOException {
      *
      * @param desc  a String describing the exception.
      */
-    public SyncFailedException(String desc) {
+    @SideEffectFree
+    public SyncFailedException(@Nullable String desc) {
         super(desc);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,14 +25,19 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when serialization or deserialization is not active.
  *
- * @author  unascribed
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class NotActiveException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -3893467273049808895L;
 
     /**
@@ -40,13 +45,15 @@ public class NotActiveException extends ObjectStreamException {
      *
      * @param reason  a String describing the reason for the exception.
      */
-    public NotActiveException(String reason) {
+    @SideEffectFree
+    public NotActiveException(@Nullable String reason) {
         super(reason);
     }
 
     /**
      * Constructor to create a new NotActiveException without a reason.
      */
+    @SideEffectFree
     public NotActiveException() {
         super();
     }

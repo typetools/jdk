@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.math;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -149,7 +150,6 @@ import java.util.Arrays;
      * Makes this number an {@code n}-int number all of whose bits are ones.
      * Used by Burnikel-Ziegler division.
      * @param n number of ints in the {@code value} array
-     * @return a number equal to {@code ((1<<(32*n)))-1}
      */
     private void ones(int n) {
         if (n > value.length)
@@ -164,8 +164,14 @@ import java.util.Arrays;
      * supposed to modify the returned array.
      */
     private int[] getMagnitudeArray() {
-        if (offset > 0 || value.length != intLen)
-            return Arrays.copyOfRange(value, offset, offset + intLen);
+        if (offset > 0 || value.length != intLen) {
+            // Shrink value to be the total magnitude
+            int[] tmp = Arrays.copyOfRange(value, offset, offset + intLen);
+            Arrays.fill(value, 0);
+            offset = 0;
+            intLen = tmp.length;
+            value = tmp;
+        }
         return value;
     }
 
@@ -260,6 +266,7 @@ import java.util.Arrays;
      * as this MutableBigInteger is numerically less than, equal to, or
      * greater than {@code b}.
      */
+    @Pure
     final int compare(MutableBigInteger b) {
         int blen = b.intLen;
         if (intLen < blen)
@@ -944,13 +951,13 @@ import java.util.Arrays;
             x--; y--;
 
             diff = (a.value[x+a.offset] & LONG_MASK) -
-                   (b.value[y+b.offset] & LONG_MASK) - ((int)-(diff>>32));
+                   (b.value[y+b.offset] & LONG_MASK) + (diff >> 32);
             result[rstart--] = (int)diff;
         }
         // Subtract remainder of longer number
         while (x > 0) {
             x--;
-            diff = (a.value[x+a.offset] & LONG_MASK) - ((int)-(diff>>32));
+            diff = (a.value[x+a.offset] & LONG_MASK) + (diff >> 32);
             result[rstart--] = (int)diff;
         }
 
@@ -985,13 +992,13 @@ import java.util.Arrays;
         while (y > 0) {
             x--; y--;
             diff = (a.value[a.offset+ x] & LONG_MASK) -
-                (b.value[b.offset+ y] & LONG_MASK) - ((int)-(diff>>32));
+                (b.value[b.offset+ y] & LONG_MASK) + (diff >> 32);
             a.value[a.offset+x] = (int)diff;
         }
         // Subtract remainder of longer number
-        while (x > 0) {
+        while (diff < 0 && x > 0) {
             x--;
-            diff = (a.value[a.offset+ x] & LONG_MASK) - ((int)-(diff>>32));
+            diff = (a.value[a.offset+ x] & LONG_MASK) + (diff >> 32);
             a.value[a.offset+x] = (int)diff;
         }
 
@@ -1078,7 +1085,7 @@ import java.util.Arrays;
         z.value = zval;
     }
 
-     /**
+    /**
      * This method is used for division of an n word dividend by a one word
      * divisor. The quotient is placed into quotient. The one word divisor is
      * specified by divisor.
@@ -1171,7 +1178,7 @@ import java.util.Arrays;
      * Calculates the quotient of this div b and places the quotient in the
      * provided MutableBigInteger objects and the remainder object is returned.
      *
-     * Uses Algorithm D in Knuth section 4.3.1.
+     * Uses Algorithm D from Knuth TAOCP Vol. 2, 3rd edition, section 4.3.1.
      * Many optimizations to that algorithm have been adapted from the Colin
      * Plumb C library.
      * It special cases one word divisors for speed. The content of b is not
@@ -1530,13 +1537,10 @@ import java.util.Arrays;
         quotient.intLen = limit;
         int[] q = quotient.value;
 
-
-        // Must insert leading 0 in rem if its length did not change
-        if (rem.intLen == nlen) {
-            rem.offset = 0;
-            rem.value[0] = 0;
-            rem.intLen++;
-        }
+        // Insert leading 0 in rem
+        rem.offset = 0;
+        rem.value[0] = 0;
+        rem.intLen++;
 
         int dh = divisor[0];
         long dhLong = dh & LONG_MASK;
@@ -1985,7 +1989,7 @@ import java.util.Arrays;
      * Assumes that this and v are not zero.
      */
     private MutableBigInteger binaryGCD(MutableBigInteger v) {
-        // Algorithm B from Knuth section 4.5.2
+        // Algorithm B from Knuth TAOCP Vol. 2, 3rd edition, section 4.5.2
         MutableBigInteger u = this;
         MutableBigInteger r = new MutableBigInteger();
 
@@ -2105,6 +2109,7 @@ import java.util.Arrays;
 
         oddPart.leftShift(powersOf2);
         oddPart.multiply(y1, result);
+        oddPart.clear();
 
         evenPart.multiply(oddMod, temp1);
         temp1.multiply(y2, temp2);
@@ -2182,8 +2187,8 @@ import java.util.Arrays;
     }
 
     /**
-     * Calculate the multiplicative inverse of this mod mod, where mod is odd.
-     * This and mod are not changed by the calculation.
+     * Calculate the multiplicative inverse of this modulo mod, where the mod
+     * argument is odd.  This and mod are not changed by the calculation.
      *
      * This method implements an algorithm due to Richard Schroeppel, that uses
      * the same intermediate representation as Montgomery Reduction
@@ -2237,8 +2242,18 @@ import java.util.Arrays;
             k += trailingZeros;
         }
 
-        while (c.sign < 0)
-           c.signedAdd(p);
+        if (c.compare(p) >= 0) { // c has a larger magnitude than p
+            MutableBigInteger remainder = c.divide(p,
+                new MutableBigInteger());
+            // The previous line ignores the sign so we copy the data back
+            // into c which will restore the sign as needed (and converts
+            // it back to a SignedMutableBigInteger)
+            c.copyValue(remainder);
+        }
+
+        if (c.sign < 0) {
+            c.signedAdd(p);
+        }
 
         return fixup(c, p, k);
     }
@@ -2276,8 +2291,8 @@ import java.util.Arrays;
         }
 
         // In theory, c may be greater than p at this point (Very rare!)
-        while (c.compare(p) >= 0)
-            c.subtract(p);
+        if (c.compare(p) >= 0)
+            c = c.divide(p, new MutableBigInteger());
 
         return c;
     }

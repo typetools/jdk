@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,15 +30,15 @@ import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.types.*;
 
 public class StackValueCollection {
-  private List list;
+  private List<StackValue> list;
 
-  public StackValueCollection()           { list = new ArrayList(); }
-  public StackValueCollection(int length) { list = new ArrayList(length); }
+  public StackValueCollection()           { list = new ArrayList<>(); }
+  public StackValueCollection(int length) { list = new ArrayList<>(length); }
 
   public void add(StackValue val) { list.add(val); }
   public int  size()              { return list.size(); }
   public boolean isEmpty()        { return (size() == 0); }
-  public StackValue get(int i)    { return (StackValue) list.get(i); }
+  public StackValue get(int i)    { return list.get(i); }
 
   // Get typed locals/expressions
   // FIXME: must figure out whether word swapping is necessary on x86

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -35,13 +38,15 @@ import java.security.GeneralSecurityException;
  */
 public class CRLException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -6694728944094197147L;
 
-   /**
+    /**
      * Constructs a CRLException with no detail message. A
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CRLException() {
         super();
     }
@@ -53,7 +58,8 @@ public class CRLException extends GeneralSecurityException {
      *
      * @param message the detail message.
      */
-    public CRLException(String message) {
+    @SideEffectFree
+    public CRLException(@Nullable String message) {
         super(message);
     }
 
@@ -68,7 +74,8 @@ public class CRLException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CRLException(String message, Throwable cause) {
+    @SideEffectFree
+    public CRLException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -83,7 +90,8 @@ public class CRLException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CRLException(Throwable cause) {
+    @SideEffectFree
+    public CRLException(@Nullable Throwable cause) {
         super(cause);
     }
 }

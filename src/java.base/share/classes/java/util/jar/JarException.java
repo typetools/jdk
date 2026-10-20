@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.util.jar;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an error of some sort has occurred while reading from
  * or writing to a JAR file.
@@ -32,13 +35,14 @@ package java.util.jar;
  * @author  David Connelly
  * @since   1.2
  */
-public
-class JarException extends java.util.zip.ZipException {
+public class JarException extends java.util.zip.ZipException {
+    @java.io.Serial
     private static final long serialVersionUID = 7159778400963954473L;
 
     /**
      * Constructs a JarException with no detail message.
      */
+    @SideEffectFree
     public JarException() {
     }
 
@@ -46,7 +50,8 @@ class JarException extends java.util.zip.ZipException {
      * Constructs a JarException with the specified detail message.
      * @param s the detail message
      */
-    public JarException(String s) {
+    @SideEffectFree
+    public JarException(@Nullable String s) {
         super(s);
     }
 }

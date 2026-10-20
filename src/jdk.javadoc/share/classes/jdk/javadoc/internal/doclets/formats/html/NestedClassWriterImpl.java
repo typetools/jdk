@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,35 +25,22 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.Table;
-import jdk.javadoc.internal.doclets.formats.html.markup.TableHeader;
-
 import java.util.Arrays;
 import java.util.List;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
+import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
+import jdk.javadoc.internal.doclets.formats.html.markup.Entity;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
-import jdk.javadoc.internal.doclets.formats.html.markup.Navigation;
-import jdk.javadoc.internal.doclets.formats.html.markup.StringContent;
+import jdk.javadoc.internal.doclets.formats.html.markup.Text;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.MemberSummaryWriter;
 
 /**
  * Writes nested class documentation in HTML format.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Robert Field
- * @author Atul M Dambalkar
- * @author Jamie Ho (rewrite)
- * @author Bhavesh Patel (Modified)
  */
 public class NestedClassWriterImpl extends AbstractMemberWriter
     implements MemberSummaryWriter {
@@ -66,143 +53,95 @@ public class NestedClassWriterImpl extends AbstractMemberWriter
         super(writer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getMemberSummaryHeader(TypeElement typeElement,
-            Content memberSummaryTree) {
-        memberSummaryTree.addContent(HtmlConstants.START_OF_NESTED_CLASS_SUMMARY);
-        Content memberTree = writer.getMemberTreeHeader();
-        writer.addSummaryHeader(this, typeElement, memberTree);
-        return memberTree;
+            Content content) {
+        content.add(MarkerComments.START_OF_NESTED_CLASS_SUMMARY);
+        Content memberContent = new ContentBuilder();
+        writer.addSummaryHeader(this, memberContent);
+        return memberContent;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.nestedClassSummary,
+                HtmlIds.NESTED_CLASS_SUMMARY, summariesList, content);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addSummaryLabel(Content memberTree) {
-        Content label = HtmlTree.HEADING(HtmlConstants.SUMMARY_HEADING,
+    public void addSummaryLabel(Content content) {
+        var label = HtmlTree.HEADING(Headings.TypeDeclaration.SUMMARY_HEADING,
                 contents.nestedClassSummary);
-        memberTree.addContent(label);
+        content.add(label);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public TableHeader getSummaryTableHeader(Element member) {
-        Content label = utils.isInterface(member) ?
+        Content label = utils.isPlainInterface(member) ?
                 contents.interfaceLabel : contents.classLabel;
 
         return new TableHeader(contents.modifierAndTypeLabel, label, contents.descriptionLabel);
     }
 
     @Override
-    protected Table createSummaryTable() {
-        String summary =  resources.getText("doclet.Member_Table_Summary",
-                resources.getText("doclet.Nested_Class_Summary"),
-                resources.getText("doclet.nested_classes"));
-
+    protected Table<Element> createSummaryTable() {
         List<HtmlStyle> bodyRowStyles = Arrays.asList(HtmlStyle.colFirst, HtmlStyle.colSecond,
                 HtmlStyle.colLast);
 
-        return new Table(configuration.htmlVersion, HtmlStyle.memberSummary)
-                .setSummary(summary)
+        return new Table<Element>(HtmlStyle.summaryTable)
                 .setCaption(contents.getContent("doclet.Nested_Classes"))
                 .setHeader(getSummaryTableHeader(typeElement))
-                .setRowScopeColumn(1)
-                .setColumnStyles(bodyRowStyles)
-                .setUseTBody(false);  // temporary? compatibility mode for TBody
+                .setColumnStyles(bodyRowStyles);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addSummaryAnchor(TypeElement typeElement, Content memberTree) {
-        memberTree.addContent(links.createAnchor(
-                SectionName.NESTED_CLASS_SUMMARY));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addInheritedSummaryAnchor(TypeElement typeElement, Content inheritedTree) {
-        inheritedTree.addContent(links.createAnchor(
-                SectionName.NESTED_CLASSES_INHERITANCE,
-                utils.getFullyQualifiedName(typeElement)));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addInheritedSummaryLabel(TypeElement typeElement, Content inheritedTree) {
-        Content classLink = writer.getPreQualifiedClassLink(
-                LinkInfoImpl.Kind.MEMBER, typeElement, false);
+    public void addInheritedSummaryLabel(TypeElement typeElement, Content content) {
+        Content classLink = writer.getPreQualifiedClassLink(HtmlLinkInfo.Kind.PLAIN, typeElement);
         Content label;
-        if (configuration.summarizeOverriddenMethods) {
-            label = new StringContent(utils.isInterface(typeElement)
-                    ? configuration.getText("doclet.Nested_Classes_Interfaces_Declared_In_Interface")
-                    : configuration.getText("doclet.Nested_Classes_Interfaces_Declared_In_Class"));
+        if (options.summarizeOverriddenMethods()) {
+            label = Text.of(utils.isPlainInterface(typeElement)
+                    ? resources.getText("doclet.Nested_Classes_Interfaces_Declared_In_Interface")
+                    : resources.getText("doclet.Nested_Classes_Interfaces_Declared_In_Class"));
         } else {
-            label = new StringContent(utils.isInterface(typeElement)
-                    ? configuration.getText("doclet.Nested_Classes_Interfaces_Inherited_From_Interface")
-                    : configuration.getText("doclet.Nested_Classes_Interfaces_Inherited_From_Class"));
+            label = Text.of(utils.isPlainInterface(typeElement)
+                    ? resources.getText("doclet.Nested_Classes_Interfaces_Inherited_From_Interface")
+                    : resources.getText("doclet.Nested_Classes_Interfaces_Inherited_From_Class"));
         }
-        Content labelHeading = HtmlTree.HEADING(HtmlConstants.INHERITED_SUMMARY_HEADING,
-                label);
-        labelHeading.addContent(Contents.SPACE);
-        labelHeading.addContent(classLink);
-        inheritedTree.addContent(labelHeading);
+        var labelHeading = HtmlTree.HEADING(Headings.TypeDeclaration.SUMMARY_HEADING, label);
+        labelHeading.setId(htmlIds.forInheritedClasses(typeElement));
+        labelHeading.add(Entity.NO_BREAK_SPACE);
+        labelHeading.add(classLink);
+        content.add(labelHeading);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addSummaryLink(LinkInfoImpl.Kind context, TypeElement typeElement, Element member,
-            Content tdSummary) {
-        Content memberLink = HtmlTree.SPAN(HtmlStyle.memberNameLink,
-                writer.getLink(new LinkInfoImpl(configuration, context, (TypeElement)member)));
-        Content code = HtmlTree.CODE(memberLink);
-        tdSummary.addContent(code);
+    protected void addSummaryLink(HtmlLinkInfo.Kind context, TypeElement typeElement, Element member,
+                                  Content content) {
+        Content memberLink = writer.getLink(new HtmlLinkInfo(configuration, context, (TypeElement)member)
+                .style(HtmlStyle.typeNameLink));
+        var code = HtmlTree.CODE(memberLink);
+        content.add(code);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addInheritedSummaryLink(TypeElement typeElement, Element member, Content linksTree) {
-        linksTree.addContent(
-                writer.getLink(new LinkInfoImpl(configuration, LinkInfoImpl.Kind.MEMBER,
+    protected void addInheritedSummaryLink(TypeElement typeElement, Element member, Content target) {
+        target.add(
+                writer.getLink(new HtmlLinkInfo(configuration, HtmlLinkInfo.Kind.LINK_TYPE_PARAMS_AND_BOUNDS,
                         (TypeElement)member)));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addSummaryType(Element member, Content tdSummaryType) {
-        addModifierAndType(member, null, tdSummaryType);
+    protected void addSummaryType(Element member, Content content) {
+        addModifiersAndType(member, null, content);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected Content getDeprecatedLink(Element member) {
-        return writer.getQualifiedClassLink(LinkInfoImpl.Kind.MEMBER, member);
+    protected void addSummaryLink(TypeElement typeElement, Element member, Content content) {
+        addSummaryLink(HtmlLinkInfo.Kind.LINK_TYPE_PARAMS_AND_BOUNDS, typeElement, member, content);
+    }
+
+    @Override
+    protected Content getSummaryLink(Element member) {
+        return writer.getQualifiedClassLink(HtmlLinkInfo.Kind.SHOW_PREVIEW, member);
     }
 }

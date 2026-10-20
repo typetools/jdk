@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -99,7 +99,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalField;
 import java.time.temporal.ValueRange;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -199,8 +198,7 @@ public abstract class AbstractChronology implements Chronology {
             registerChrono(ThaiBuddhistChronology.INSTANCE);
 
             // Register Chronologies from the ServiceLoader
-            @SuppressWarnings("rawtypes")
-            ServiceLoader<AbstractChronology> loader =  ServiceLoader.load(AbstractChronology.class, null);
+            ServiceLoader<AbstractChronology> loader = ServiceLoader.load(AbstractChronology.class, null);
             for (AbstractChronology chrono : loader) {
                 String id = chrono.getId();
                 if (id.equals("ISO") || registerChrono(chrono) != null) {
@@ -244,7 +242,6 @@ public abstract class AbstractChronology implements Chronology {
 
         // Look for a Chronology using ServiceLoader of the Thread's ContextClassLoader
         // Application provided Chronologies must not be cached
-        @SuppressWarnings("rawtypes")
         ServiceLoader<Chronology> loader = ServiceLoader.load(Chronology.class);
         for (Chronology chrono : loader) {
             if (type.equals(chrono.getCalendarType())) {
@@ -277,7 +274,6 @@ public abstract class AbstractChronology implements Chronology {
 
         // Look for a Chronology using ServiceLoader of the Thread's ContextClassLoader
         // Application provided Chronologies must not be cached
-        @SuppressWarnings("rawtypes")
         ServiceLoader<Chronology> loader = ServiceLoader.load(Chronology.class);
         for (Chronology chrono : loader) {
             if (id.equals(chrono.getId()) || id.equals(chrono.getCalendarType())) {
@@ -317,7 +313,6 @@ public abstract class AbstractChronology implements Chronology {
         HashSet<Chronology> chronos = new HashSet<>(CHRONOS_BY_ID.values());
 
         /// Add in Chronologies from the ServiceLoader configuration
-        @SuppressWarnings("rawtypes")
         ServiceLoader<Chronology> loader = ServiceLoader.load(Chronology.class);
         for (Chronology chrono : loader) {
             chronos.add(chrono);
@@ -670,6 +665,7 @@ public abstract class AbstractChronology implements Chronology {
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Chronology other) {
         return getId().compareTo(other.getId());
     }
@@ -729,7 +725,7 @@ public abstract class AbstractChronology implements Chronology {
     //-----------------------------------------------------------------------
     /**
      * Writes the Chronology using a
-     * <a href="../../../serialized-form.html#java.time.chrono.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.chrono.Ser">dedicated serialized form</a>.
      * <pre>
      *  out.writeByte(1);  // identifies this as a Chronology
      *  out.writeUTF(getId());
@@ -737,8 +733,9 @@ public abstract class AbstractChronology implements Chronology {
      *
      * @return the instance of {@code Ser}, not null
      */
+    @java.io.Serial
     Object writeReplace() {
-        return new Ser(Ser.CHRONO_TYPE, this);
+        return new Ser(Ser.CHRONO_TYPE, (Serializable)this);
     }
 
     /**
@@ -747,6 +744,7 @@ public abstract class AbstractChronology implements Chronology {
      * @param s the stream to read
      * @throws java.io.InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s) throws ObjectStreamException {
         throw new InvalidObjectException("Deserialization via serialization delegate");
     }

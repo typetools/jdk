@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,12 +31,11 @@ import java.math.BigInteger;
 import java.security.*;
 import java.security.interfaces.*;
 import java.security.spec.*;
+import java.util.Arrays;
 
-import sun.security.util.DerInputStream;
-import sun.security.util.DerOutputStream;
-import sun.security.util.DerValue;
-import sun.security.util.ECParameters;
-import sun.security.util.ECUtil;
+import sun.security.ec.point.AffinePoint;
+import sun.security.ec.point.MutablePoint;
+import sun.security.util.*;
 import sun.security.x509.AlgorithmId;
 import sun.security.pkcs.PKCS8Key;
 
@@ -68,13 +67,16 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
     private static final long serialVersionUID = 88695385615075129L;
 
     private BigInteger s;       // private value
+    private byte[] arrayS;      // private value as a little-endian array
+    @SuppressWarnings("serial") // Type of field is not Serializable
     private ECParameterSpec params;
 
     /**
      * Construct a key from its encoding. Called by the ECKeyFactory.
      */
     ECPrivateKeyImpl(byte[] encoded) throws InvalidKeyException {
-        decode(encoded);
+        super(encoded);
+        parseKeyBits();
     }
 
     /**
@@ -85,21 +87,51 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
             throws InvalidKeyException {
         this.s = s;
         this.params = params;
-        // generate the encoding
+        makeEncoding(s);
+
+    }
+
+    ECPrivateKeyImpl(byte[] s, ECParameterSpec params)
+            throws InvalidKeyException {
+        this.arrayS = s.clone();
+        this.params = params;
+        makeEncoding(s);
+    }
+
+    private void makeEncoding(byte[] s) throws InvalidKeyException {
         algid = new AlgorithmId
-            (AlgorithmId.EC_oid, ECParameters.getAlgorithmParameters(params));
-        try {
-            DerOutputStream out = new DerOutputStream();
-            out.putInteger(1); // version 1
-            byte[] privBytes = ECUtil.trimZeroes(s.toByteArray());
-            out.putOctetString(privBytes);
-            DerValue val =
-                new DerValue(DerValue.tag_Sequence, out.toByteArray());
-            key = val.toByteArray();
-        } catch (IOException exc) {
-            // should never occur
-            throw new InvalidKeyException(exc);
-        }
+                (AlgorithmId.EC_oid, ECParameters.getAlgorithmParameters(params));
+        DerOutputStream out = new DerOutputStream();
+        out.putInteger(1); // version 1
+        byte[] privBytes = s.clone();
+        ArrayUtil.reverse(privBytes);
+        out.putOctetString(privBytes);
+        Arrays.fill(privBytes, (byte) 0);
+        DerValue val = DerValue.wrap(DerValue.tag_Sequence, out);
+        key = val.toByteArray();
+        val.clear();
+    }
+
+    private void makeEncoding(BigInteger s) throws InvalidKeyException {
+        algid = new AlgorithmId(AlgorithmId.EC_oid,
+                ECParameters.getAlgorithmParameters(params));
+        byte[] sArr = s.toByteArray();
+        // convert to fixed-length array
+        int numOctets = (params.getOrder().bitLength() + 7) / 8;
+        byte[] sOctets = new byte[numOctets];
+        int inPos = Math.max(sArr.length - sOctets.length, 0);
+        int outPos = Math.max(sOctets.length - sArr.length, 0);
+        int length = Math.min(sArr.length, sOctets.length);
+        System.arraycopy(sArr, inPos, sOctets, outPos, length);
+        Arrays.fill(sArr, (byte) 0);
+
+        DerOutputStream out = new DerOutputStream();
+        out.putInteger(1); // version 1
+        out.putOctetString(sOctets);
+        Arrays.fill(sOctets, (byte) 0);
+        DerValue val = DerValue.wrap(DerValue.tag_Sequence, out);
+        key = val.toByteArray();
+        val.clear();
     }
 
     // see JCA doc
@@ -109,7 +141,24 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
 
     // see JCA doc
     public BigInteger getS() {
+        if (s == null) {
+            byte[] arrCopy = arrayS.clone();
+            ArrayUtil.reverse(arrCopy);
+            s = new BigInteger(1, arrCopy);
+            Arrays.fill(arrCopy, (byte)0);
+        }
         return s;
+    }
+
+    private byte[] getArrayS0() {
+        if (arrayS == null) {
+            arrayS = ECUtil.sArray(getS(), params);
+        }
+        return arrayS;
+    }
+
+    public byte[] getArrayS() {
+        return getArrayS0().clone();
     }
 
     // see JCA doc
@@ -117,10 +166,7 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
         return params;
     }
 
-    /**
-     * Parse the key. Called by PKCS8Key.
-     */
-    protected void parseKeyBits() throws InvalidKeyException {
+    private void parseKeyBits() throws InvalidKeyException {
         try {
             DerInputStream in = new DerInputStream(key);
             DerValue derValue = in.getDerValue();
@@ -133,12 +179,13 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
                 throw new IOException("Version must be 1");
             }
             byte[] privData = data.getOctetString();
-            s = new BigInteger(1, privData);
+            ArrayUtil.reverse(privData);
+            arrayS = privData;
             while (data.available() != 0) {
                 DerValue value = data.getDerValue();
-                if (value.isContextSpecific((byte)0)) {
+                if (value.isContextSpecific((byte) 0)) {
                     // ignore for now
-                } else if (value.isContextSpecific((byte)1)) {
+                } else if (value.isContextSpecific((byte) 1)) {
                     // ignore for now
                 } else {
                     throw new InvalidKeyException("Unexpected value: " + value);
@@ -150,10 +197,25 @@ public final class ECPrivateKeyImpl extends PKCS8Key implements ECPrivateKey {
                     + "encoded in the algorithm identifier");
             }
             params = algParams.getParameterSpec(ECParameterSpec.class);
-        } catch (IOException e) {
+        } catch (IOException | InvalidParameterSpecException e) {
             throw new InvalidKeyException("Invalid EC private key", e);
-        } catch (InvalidParameterSpecException e) {
-            throw new InvalidKeyException("Invalid EC private key", e);
+        }
+    }
+
+    @Override
+    public PublicKey calculatePublicKey() {
+        ECParameterSpec ecParams = getParams();
+        ECOperations ops = ECOperations.forParameters(ecParams)
+                .orElseThrow(ProviderException::new);
+        MutablePoint pub = ops.multiply(ecParams.getGenerator(), getArrayS0());
+        AffinePoint affPub = pub.asAffine();
+        ECPoint w = new ECPoint(affPub.getX().asBigInteger(),
+                affPub.getY().asBigInteger());
+        try {
+            return new ECPublicKeyImpl(w, ecParams);
+        } catch (InvalidKeyException e) {
+            throw new ProviderException(
+                    "Unexpected error calculating public key", e);
         }
     }
 }

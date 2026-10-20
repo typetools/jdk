@@ -243,6 +243,11 @@ public class BasicDesktopIconUI extends DesktopIconUI {
         int __x, __y;
         Rectangle startingBounds;
 
+        /**
+         * Constructs a {@code MouseInputHandler}.
+         */
+        public MouseInputHandler() {}
+
         public void mouseReleased(MouseEvent e) {
             _x = 0;
             _y = 0;
@@ -346,6 +351,6 @@ public class BasicDesktopIconUI extends DesktopIconUI {
             SwingUtilities.computeUnion(newX, newY, newWidth, newHeight, r);
             f.getParent().repaint(r.x, r.y, r.width, r.height);
         }
-    }; /// End MotionListener
+    } /// End MotionListener
 
 }

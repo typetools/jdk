@@ -32,7 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 import com.sun.jmx.remote.util.ClassLogger;
 import com.sun.jmx.remote.util.EnvHelp;
 import java.io.IOException;
@@ -735,11 +734,11 @@ public class JMXServiceURL implements Serializable {
         return i;
     }
 
-    private final static BitSet alphaBitSet = new BitSet(128);
-    private final static BitSet numericBitSet = new BitSet(128);
-    private final static BitSet alphaNumericBitSet = new BitSet(128);
-    private final static BitSet protocolBitSet = new BitSet(128);
-    private final static BitSet hostNameBitSet = new BitSet(128);
+    private static final BitSet alphaBitSet = new BitSet(128);
+    private static final BitSet numericBitSet = new BitSet(128);
+    private static final BitSet alphaNumericBitSet = new BitSet(128);
+    private static final BitSet protocolBitSet = new BitSet(128);
+    private static final BitSet hostNameBitSet = new BitSet(128);
     static {
         /* J2SE 1.4 adds lots of handy methods to BitSet that would
            allow us to simplify here, e.g. by not writing loops, but

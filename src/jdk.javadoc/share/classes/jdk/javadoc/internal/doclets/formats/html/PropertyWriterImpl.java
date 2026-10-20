@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,36 +25,21 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
-
-import jdk.javadoc.internal.doclets.formats.html.markup.Table;
-import jdk.javadoc.internal.doclets.formats.html.markup.TableHeader;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
+import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
+import jdk.javadoc.internal.doclets.formats.html.markup.Entity;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
-import jdk.javadoc.internal.doclets.formats.html.markup.StringContent;
+import jdk.javadoc.internal.doclets.formats.html.markup.Text;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.MemberSummaryWriter;
 import jdk.javadoc.internal.doclets.toolkit.PropertyWriter;
 
-
 /**
  * Writes property documentation in HTML format.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Robert Field
- * @author Atul M Dambalkar
- * @author Jamie Ho (rewrite)
- * @author Bhavesh Patel (Modified)
  */
 public class PropertyWriterImpl extends AbstractMemberWriter
     implements PropertyWriter, MemberSummaryWriter {
@@ -63,264 +48,171 @@ public class PropertyWriterImpl extends AbstractMemberWriter
         super(writer, typeElement);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Content getMemberSummaryHeader(TypeElement typeElement, Content memberSummaryTree) {
-        memberSummaryTree.addContent(HtmlConstants.START_OF_PROPERTY_SUMMARY);
-        Content memberTree = writer.getMemberTreeHeader();
-        writer.addSummaryHeader(this, typeElement, memberTree);
-        return memberTree;
+    public Content getMemberSummaryHeader(TypeElement typeElement, Content content) {
+        content.add(MarkerComments.START_OF_PROPERTY_SUMMARY);
+        Content memberContent = new ContentBuilder();
+        writer.addSummaryHeader(this, memberContent);
+        return memberContent;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.propertySummary,
+                HtmlIds.PROPERTY_SUMMARY, summariesList, content);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Content getPropertyDetailsTreeHeader(TypeElement typeElement,
-            Content memberDetailsTree) {
-        memberDetailsTree.addContent(HtmlConstants.START_OF_PROPERTY_DETAILS);
-        Content propertyDetailsTree = writer.getMemberTreeHeader();
-        propertyDetailsTree.addContent(links.createAnchor(SectionName.PROPERTY_DETAIL));
-        Content heading = HtmlTree.HEADING(HtmlConstants.DETAILS_HEADING,
+    public Content getPropertyDetailsHeader(Content memberDetails) {
+        memberDetails.add(MarkerComments.START_OF_PROPERTY_DETAILS);
+        Content propertyDetailsContent = new ContentBuilder();
+        var heading = HtmlTree.HEADING(Headings.TypeDeclaration.DETAILS_HEADING,
                 contents.propertyDetailsLabel);
-        propertyDetailsTree.addContent(heading);
-        return propertyDetailsTree;
+        propertyDetailsContent.add(heading);
+        return propertyDetailsContent;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Content getPropertyDocTreeHeader(ExecutableElement property,
-            Content propertyDetailsTree) {
-        propertyDetailsTree.addContent(links.createAnchor(name(property)));
-        Content propertyDocTree = writer.getMemberTreeHeader();
-        Content heading = new HtmlTree(HtmlConstants.MEMBER_HEADING);
-        heading.addContent(utils.getPropertyLabel(name(property)));
-        propertyDocTree.addContent(heading);
-        return propertyDocTree;
+    public Content getPropertyHeaderContent(ExecutableElement property) {
+        Content content = new ContentBuilder();
+        var heading = HtmlTree.HEADING(Headings.TypeDeclaration.MEMBER_HEADING,
+                Text.of(utils.getPropertyLabel(name(property))));
+        content.add(heading);
+        return HtmlTree.SECTION(HtmlStyle.detail, content)
+                .setId(htmlIds.forProperty(property));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getSignature(ExecutableElement property) {
-        Content pre = new HtmlTree(HtmlTag.PRE);
-        writer.addAnnotationInfo(property, pre);
-        addModifiers(property, pre);
-        Content propertylink = writer.getLink(new LinkInfoImpl(
-                configuration, LinkInfoImpl.Kind.MEMBER,
-                utils.getReturnType(property)));
-        pre.addContent(propertylink);
-        pre.addContent(" ");
-        if (configuration.linksource) {
-            Content propertyName = new StringContent(name(property));
-            writer.addSrcLink(property, propertyName, pre);
-        } else {
-            addName(name(property), pre);
-        }
-        return pre;
+        return new Signatures.MemberSignature(property, this)
+                .setType(utils.getReturnType(typeElement, property))
+                .setAnnotations(writer.getAnnotationInfo(property, true))
+                .toContent();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addDeprecated(ExecutableElement property, Content propertyDocTree) {
+    public void addDeprecated(ExecutableElement property, Content propertyContent) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addComments(ExecutableElement property, Content propertyDocTree) {
+    public void addPreview(ExecutableElement property, Content content) {
+    }
+
+    @Override
+    public void addComments(ExecutableElement property, Content propertyContent) {
         TypeElement holder = (TypeElement)property.getEnclosingElement();
         if (!utils.getFullBody(property).isEmpty()) {
             if (holder.equals(typeElement) ||
                     (!utils.isPublic(holder) || utils.isLinkable(holder))) {
-                writer.addInlineComment(property, propertyDocTree);
+                writer.addInlineComment(property, propertyContent);
             } else {
-                Content link =
-                        writer.getDocLink(LinkInfoImpl.Kind.PROPERTY_COPY,
-                        holder, property,
-                        utils.isIncluded(holder)
-                                ? holder.getSimpleName() : holder.getQualifiedName(),
-                            false);
-                Content codeLink = HtmlTree.CODE(link);
-                Content descfrmLabel = HtmlTree.SPAN(HtmlStyle.descfrmTypeLabel,
-                        utils.isClass(holder)
-                                ? contents.descfrmClassLabel
-                                : contents.descfrmInterfaceLabel);
-                descfrmLabel.addContent(Contents.SPACE);
-                descfrmLabel.addContent(codeLink);
-                propertyDocTree.addContent(HtmlTree.DIV(HtmlStyle.block, descfrmLabel));
-                writer.addInlineComment(property, propertyDocTree);
+                if (!utils.hasHiddenTag(holder) && !utils.hasHiddenTag(property)) {
+                    Content link =
+                            writer.getDocLink(HtmlLinkInfo.Kind.PLAIN,
+                                    holder, property,
+                                    utils.isIncluded(holder)
+                                            ? holder.getSimpleName() : holder.getQualifiedName());
+                    var codeLink = HtmlTree.CODE(link);
+                    var descriptionFromLabel = HtmlTree.SPAN(HtmlStyle.descriptionFromTypeLabel,
+                            utils.isClass(holder)
+                                    ? contents.descriptionFromClassLabel
+                                    : contents.descriptionFromInterfaceLabel);
+                    descriptionFromLabel.add(Entity.NO_BREAK_SPACE);
+                    descriptionFromLabel.add(codeLink);
+                    propertyContent.add(HtmlTree.DIV(HtmlStyle.block, descriptionFromLabel));
+                }
+                writer.addInlineComment(property, propertyContent);
             }
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addTags(ExecutableElement property, Content propertyDocTree) {
-        writer.addTagsInfo(property, propertyDocTree);
+    public void addTags(ExecutableElement property, Content propertyContent) {
+        writer.addTagsInfo(property, propertyContent);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Content getPropertyDetails(Content propertyDetailsTree) {
-        if (configuration.allowTag(HtmlTag.SECTION)) {
-            HtmlTree htmlTree = HtmlTree.SECTION(getMemberTree(propertyDetailsTree));
-            return htmlTree;
-        }
-        return getMemberTree(propertyDetailsTree);
+    public Content getPropertyDetails(Content memberDetailsHeader, Content memberDetails) {
+        return writer.getDetailsListItem(
+                HtmlTree.SECTION(HtmlStyle.propertyDetails)
+                        .setId(HtmlIds.PROPERTY_DETAIL)
+                        .add(memberDetailsHeader)
+                        .add(memberDetails));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Content getPropertyDoc(Content propertyDocTree,
-            boolean isLastContent) {
-        return getMemberTree(propertyDocTree, isLastContent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addSummaryLabel(Content memberTree) {
-        Content label = HtmlTree.HEADING(HtmlConstants.SUMMARY_HEADING,
+    public void addSummaryLabel(Content content) {
+        var label = HtmlTree.HEADING(Headings.TypeDeclaration.SUMMARY_HEADING,
                 contents.propertySummaryLabel);
-        memberTree.addContent(label);
+        content.add(label);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public TableHeader getSummaryTableHeader(Element member) {
         return new TableHeader(contents.typeLabel, contents.propertyLabel,
                 contents.descriptionLabel);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected Table createSummaryTable() {
-        String summary = resources.getText("doclet.Member_Table_Summary",
-            resources.getText("doclet.Property_Summary"),
-            resources.getText("doclet.properties"));
-
-        return new Table(configuration.htmlVersion, HtmlStyle.memberSummary)
-                .setSummary(summary)
+    protected Table<Element> createSummaryTable() {
+        return new Table<Element>(HtmlStyle.summaryTable)
                 .setCaption(contents.properties)
                 .setHeader(getSummaryTableHeader(typeElement))
-                .setColumnStyles(HtmlStyle.colFirst, HtmlStyle.colSecond, HtmlStyle.colLast)
-                .setRowScopeColumn(1)
-                .setUseTBody(false);
+                .setColumnStyles(HtmlStyle.colFirst, HtmlStyle.colSecond, HtmlStyle.colLast);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void addSummaryAnchor(TypeElement typeElement, Content memberTree) {
-        memberTree.addContent(links.createAnchor(SectionName.PROPERTY_SUMMARY));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addInheritedSummaryAnchor(TypeElement typeElement, Content inheritedTree) {
-        inheritedTree.addContent(links.createAnchor(
-                SectionName.PROPERTIES_INHERITANCE,
-                configuration.getClassName(typeElement)));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addInheritedSummaryLabel(TypeElement typeElement, Content inheritedTree) {
+    public void addInheritedSummaryLabel(TypeElement typeElement, Content content) {
         Content classLink = writer.getPreQualifiedClassLink(
-                LinkInfoImpl.Kind.MEMBER, typeElement, false);
+                HtmlLinkInfo.Kind.PLAIN, typeElement);
         Content label;
-        if (configuration.summarizeOverriddenMethods) {
-            label = new StringContent(utils.isClass(typeElement)
+        if (options.summarizeOverriddenMethods()) {
+            label = Text.of(utils.isClass(typeElement)
                     ? resources.getText("doclet.Properties_Declared_In_Class")
                     : resources.getText("doclet.Properties_Declared_In_Interface"));
         } else {
-            label = new StringContent(utils.isClass(typeElement)
+            label = Text.of(utils.isClass(typeElement)
                     ? resources.getText("doclet.Properties_Inherited_From_Class")
                     : resources.getText("doclet.Properties_Inherited_From_Interface"));
         }
-        Content labelHeading = HtmlTree.HEADING(HtmlConstants.INHERITED_SUMMARY_HEADING,
-                label);
-        labelHeading.addContent(Contents.SPACE);
-        labelHeading.addContent(classLink);
-        inheritedTree.addContent(labelHeading);
+        var labelHeading =
+                HtmlTree.HEADING(Headings.TypeDeclaration.INHERITED_SUMMARY_HEADING, label)
+                        .setId(htmlIds.forInheritedProperties(typeElement))
+                        .add(Entity.NO_BREAK_SPACE)
+                        .add(classLink);
+        content.add(labelHeading);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addSummaryLink(LinkInfoImpl.Kind context, TypeElement typeElement, Element member,
-            Content tdSummary) {
-        Content memberLink = HtmlTree.SPAN(HtmlStyle.memberNameLink,
-                writer.getDocLink(context, typeElement,
+    protected void addSummaryLink(HtmlLinkInfo.Kind context, TypeElement typeElement, Element member,
+                                  Content content) {
+        Content memberLink = writer.getDocLink(context, typeElement,
                 member,
-                utils.getPropertyLabel(name(member)),
-                false,
-                true));
+                Text.of(utils.getPropertyLabel(name(member))),
+                HtmlStyle.memberNameLink,
+                true);
 
-        Content code = HtmlTree.CODE(memberLink);
-        tdSummary.addContent(code);
+        var code = HtmlTree.CODE(memberLink);
+        content.add(code);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addInheritedSummaryLink(TypeElement typeElement, Element member, Content linksTree) {
+    protected void addInheritedSummaryLink(TypeElement typeElement, Element member, Content target) {
         String mname = name(member);
-        Content content = writer.getDocLink(LinkInfoImpl.Kind.MEMBER, typeElement, member,
-                utils.isProperty(mname) ? utils.getPropertyName(mname) : mname,
-                false, true);
-        linksTree.addContent(content);
+        Content content = writer.getDocLink(HtmlLinkInfo.Kind.PLAIN, typeElement, member,
+                utils.isProperty(mname) ? utils.getPropertyName(mname) : mname, true);
+        target.add(content);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void addSummaryType(Element member, Content tdSummaryType) {
-        addModifierAndType(member, utils.getReturnType((ExecutableElement)member), tdSummaryType);
+    protected void addSummaryType(Element member, Content content) {
+        addModifiersAndType(member, utils.getReturnType(typeElement, (ExecutableElement)member), content);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected Content getDeprecatedLink(Element member) {
-        return writer.getDocLink(LinkInfoImpl.Kind.MEMBER, member,
+    protected Content getSummaryLink(Element member) {
+        return writer.getDocLink(HtmlLinkInfo.Kind.SHOW_PREVIEW, member,
                 utils.getFullyQualifiedName(member));
     }
+
 }

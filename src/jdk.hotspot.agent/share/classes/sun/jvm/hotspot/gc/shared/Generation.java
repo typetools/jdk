@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,16 +30,15 @@ import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.memory.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 /** <P> The (supported) Generation hierarchy currently looks like this: </P>
 
     <ul>
     <li> Generation
       <ul>
-      <li> CardGeneration
-        <ul>
-        <li> TenuredGeneration
-        </ul>
+      <li> TenuredGeneration
       <li> DefNewGeneration
       </ul>
     </ul>
@@ -58,7 +57,6 @@ public abstract class Generation extends VMObject {
   private static int NAME_DEF_NEW;
   private static int NAME_PAR_NEW;
   private static int NAME_MARK_SWEEP_COMPACT;
-  private static int NAME_CONCURRENT_MARK_SWEEP;
   private static int NAME_OTHER;
 
   static {
@@ -81,9 +79,7 @@ public abstract class Generation extends VMObject {
 
     // constants from Generation::Name
     NAME_DEF_NEW = db.lookupIntConstant("Generation::DefNew").intValue();
-    NAME_PAR_NEW = db.lookupIntConstant("Generation::ParNew").intValue();
     NAME_MARK_SWEEP_COMPACT = db.lookupIntConstant("Generation::MarkSweepCompact").intValue();
-    NAME_CONCURRENT_MARK_SWEEP = db.lookupIntConstant("Generation::ConcurrentMarkSweep").intValue();
     NAME_OTHER = db.lookupIntConstant("Generation::Other").intValue();
   }
 
@@ -93,9 +89,7 @@ public abstract class Generation extends VMObject {
 
   public static class Name {
     public static final Name DEF_NEW = new Name("DefNew");
-    public static final Name PAR_NEW = new Name("ParNew");
     public static final Name MARK_SWEEP_COMPACT = new Name("MarkSweepCompact");
-    public static final Name CONCURRENT_MARK_SWEEP = new Name("ConcurrentMarkSweep");
     public static final Name OTHER = new Name("Other");
 
     private Name(String value) {
@@ -115,12 +109,8 @@ public abstract class Generation extends VMObject {
   static Generation.Name nameForEnum(int value) {
      if (value == NAME_DEF_NEW) {
         return Name.DEF_NEW;
-     } else if (value == NAME_PAR_NEW) {
-        return Name.PAR_NEW;
      } else if (value == NAME_MARK_SWEEP_COMPACT) {
         return Name.MARK_SWEEP_COMPACT;
-     } else if (value == NAME_CONCURRENT_MARK_SWEEP) {
-        return Name.CONCURRENT_MARK_SWEEP;
      } else if (value == NAME_OTHER) {
         return Name.OTHER;
      } else {
@@ -172,7 +162,7 @@ public abstract class Generation extends VMObject {
   }
 
   protected VirtualSpace virtualSpace() {
-    return (VirtualSpace) VMObjectFactory.newObject(VirtualSpace.class, addr.addOffsetTo(virtualSpaceFieldOffset));
+    return VMObjectFactory.newObject(VirtualSpace.class, addr.addOffsetTo(virtualSpaceFieldOffset));
   }
 
   public abstract String name();
@@ -184,6 +174,7 @@ public abstract class Generation extends VMObject {
 
   /** Iteration - do not use for time critical operations */
   public abstract void spaceIterate(SpaceClosure blk, boolean usedOnly);
+  public abstract void liveRegionsIterate(LiveRegionsClosure closure);
 
   public void print() { printOn(System.out); }
   public abstract void printOn(PrintStream tty);
@@ -200,6 +191,6 @@ public abstract class Generation extends VMObject {
   }
 
   private StatRecord getStatRecord() {
-    return (StatRecord) VMObjectFactory.newObject(Generation.StatRecord.class, addr.addOffsetTo(statRecordField.getOffset()));
+    return VMObjectFactory.newObject(StatRecord.class, addr.addOffsetTo(statRecordField.getOffset()));
   }
 }

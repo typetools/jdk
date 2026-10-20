@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -291,7 +291,7 @@ public class Jdb extends LocalProcess implements Finalizable {
                 jdbCommand += lineSeparator;
             } else {
                 // we don't want to log the line separator
-                logCmd = jdbCommand.substring(0, jdbCommand.length() - 1);
+                logCmd = jdbCommand.substring(0, jdbCommand.length() - lineSeparator.length());
             }
             launcher.getLog().display("Sending command: " + logCmd);
 
@@ -399,8 +399,14 @@ public class Jdb extends LocalProcess implements Finalizable {
      * @param count number of prompt instances to wait for.
      */
     public String[] receiveReply(int startPos, boolean compoundPromptOnly, int count) {
-
-        int found = waitForPrompt(startPos, compoundPromptOnly, count);
+        nsk.share.Failure e = null;
+        try {
+            waitForPrompt(startPos, compoundPromptOnly, count);
+        } catch (nsk.share.Failure nsf) {
+            e = nsf;
+            launcher.getLog().display("receiveReply FAILED due to \"" + e + "\".");
+            launcher.getLog().display("Pending reply output follows:");
+        }
 
         String reply = stdoutBuffer.substring(startPos, stdoutBuffer.length());
         String[] replyArr = toStringArray(reply);
@@ -410,6 +416,7 @@ public class Jdb extends LocalProcess implements Finalizable {
             launcher.getLog().display("reply[" + i + "]: " + replyArr[i]);
         }
 
+        if (e != null) throw e;
         return replyArr;
     }
 
@@ -443,7 +450,7 @@ public class Jdb extends LocalProcess implements Finalizable {
         long max = getLauncher().getJdbArgumentHandler().getWaitTime() * 60 * 1000;  // maximum time to wait.
 
         if (count <= 0) {
-            throw new TestBug("Wrong number of promts count in Jdb.waitForPrompt(): " + count);
+            throw new TestBug("Wrong number of prompts count in Jdb.waitForPrompt(): " + count);
         }
 
         Object dummy = new Object();
@@ -691,7 +698,7 @@ public class Jdb extends LocalProcess implements Finalizable {
             int i = string.indexOf(lineSeparator, ind);
             if (i >= 0) {
                 v.add(string.substring(ind, i));
-                ind = i + 1;
+                ind = i + lineSeparator.length();
             } else {
                 v.add(string.substring(ind));
                 break;
@@ -796,17 +803,9 @@ public class Jdb extends LocalProcess implements Finalizable {
     }
 
     /**
-     * Returns as string array all id's for a given <i>threadName</i>.
+     * Returns as string array all id's for a given thread name of <i>threadName</i>.
      */
-    public String[] getThreadIds(String threadName) {
-
-        if (!threadName.startsWith("(")) {
-            threadName = "(" + threadName;
-        }
-        if (!threadName.endsWith(")")) {
-            threadName = threadName + ")";
-        }
-
+    public String[] getThreadIdsByName(String threadName) {
         Vector<String> v = new Vector<String>();
         String[] reply = receiveReplyFor(JdbCommand.threads);
         Paragrep grep = new Paragrep(reply);
@@ -814,9 +813,43 @@ public class Jdb extends LocalProcess implements Finalizable {
         String[] found = grep.findStrings(threadName);
         for (int i = 0; i < found.length; i++) {
             String string = found[i];
-            int j = string.indexOf(threadName);
+            // Check for "(java.lang.Thread)" or "(java.lang.VirtualThread)"
+            String searchString = "Thread)";
+            int j = string.indexOf(searchString);
             if (j >= 0) {
-               j += threadName.length();
+               j += searchString.length(); // The threadID is right after the thread type
+               String threadId = string.substring(j, string.indexOf(" ", j));
+               v.add(threadId);
+            }
+        }
+
+        String[] result = new String[v.size()];
+        v.toArray(result);
+        return result;
+    }
+
+    /**
+     * Returns as string array all id's for a given class type of <i>threadType</i>.
+     */
+    public String[] getThreadIds(String threadType) {
+
+        if (!threadType.startsWith("(")) {
+            threadType = "(" + threadType;
+        }
+        if (!threadType.endsWith(")")) {
+            threadType = threadType + ")";
+        }
+
+        Vector<String> v = new Vector<String>();
+        String[] reply = receiveReplyFor(JdbCommand.threads);
+        Paragrep grep = new Paragrep(reply);
+
+        String[] found = grep.findStrings(threadType);
+        for (int i = 0; i < found.length; i++) {
+            String string = found[i];
+            int j = string.indexOf(threadType);
+            if (j >= 0) {
+               j += threadType.length();
                String threadId = string.substring(j, string.indexOf(" ", j));
                v.add(threadId);
             }

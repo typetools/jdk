@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,10 +32,9 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.ObjectStreamException;
-import java.lang.ref.Reference;
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Locale;
 import java.security.MessageDigest;
@@ -46,6 +45,8 @@ import java.security.spec.InvalidKeySpecException;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.PBEKeySpec;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import jdk.internal.ref.CleanerFactory;
 
@@ -61,6 +62,7 @@ import jdk.internal.ref.CleanerFactory;
  */
 final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
 
+    @java.io.Serial
     static final long serialVersionUID = -2234868909660948157L;
 
     private char[] passwd;
@@ -68,16 +70,18 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
     private int iterCount;
     private byte[] key;
 
-    private Mac prf;
+    // The following fields are not Serializable. See writeReplace method.
+    private transient Mac prf;
+    private transient Cleaner.Cleanable cleaner;
 
     private static byte[] getPasswordBytes(char[] passwd) {
-        Charset utf8 = Charset.forName("UTF-8");
         CharBuffer cb = CharBuffer.wrap(passwd);
-        ByteBuffer bb = utf8.encode(cb);
+        ByteBuffer bb = UTF_8.encode(cb);
 
         int len = bb.limit();
         byte[] passwdBytes = new byte[len];
         bb.get(passwdBytes, 0, len);
+        bb.clear().put(new byte[len]);
 
         return passwdBytes;
     }
@@ -90,54 +94,45 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
      */
     PBKDF2KeyImpl(PBEKeySpec keySpec, String prfAlgo)
         throws InvalidKeySpecException {
-        char[] passwd = keySpec.getPassword();
-        if (passwd == null) {
-            // Should allow an empty password.
-            this.passwd = new char[0];
-        } else {
-            this.passwd = passwd.clone();
-        }
+        this.passwd = keySpec.getPassword();
         // Convert the password from char[] to byte[]
         byte[] passwdBytes = getPasswordBytes(this.passwd);
 
-        this.salt = keySpec.getSalt();
-        if (salt == null) {
-            throw new InvalidKeySpecException("Salt not found");
-        }
-        this.iterCount = keySpec.getIterationCount();
-        if (iterCount == 0) {
-            throw new InvalidKeySpecException("Iteration count not found");
-        } else if (iterCount < 0) {
-            throw new InvalidKeySpecException("Iteration count is negative");
-        }
-        int keyLength = keySpec.getKeyLength();
-        if (keyLength == 0) {
-            throw new InvalidKeySpecException("Key length not found");
-        } else if (keyLength < 0) {
-            throw new InvalidKeySpecException("Key length is negative");
-        }
         try {
-            this.prf = Mac.getInstance(prfAlgo);
-            // SunPKCS11 requires a non-empty PBE password
-            if (passwdBytes.length == 0 &&
-                this.prf.getProvider().getName().startsWith("SunPKCS11")) {
-                this.prf = Mac.getInstance(prfAlgo, SunJCE.getInstance());
+            this.salt = keySpec.getSalt();
+            if (salt == null) {
+                throw new InvalidKeySpecException("Salt not found");
             }
+            this.iterCount = keySpec.getIterationCount();
+            if (iterCount == 0) {
+                throw new InvalidKeySpecException("Iteration count not found");
+            } else if (iterCount < 0) {
+                throw new InvalidKeySpecException("Iteration count is negative");
+            }
+            int keyLength = keySpec.getKeyLength();
+            if (keyLength == 0) {
+                throw new InvalidKeySpecException("Key length not found");
+            } else if (keyLength < 0) {
+                throw new InvalidKeySpecException("Key length is negative");
+            }
+            this.prf = Mac.getInstance(prfAlgo, SunJCE.getInstance());
+            this.key = deriveKey(prf, passwdBytes, salt, iterCount, keyLength);
         } catch (NoSuchAlgorithmException nsae) {
             // not gonna happen; re-throw just in case
-            InvalidKeySpecException ike = new InvalidKeySpecException();
-            ike.initCause(nsae);
-            throw ike;
+            throw new InvalidKeySpecException(nsae);
+        } finally {
+            Arrays.fill(passwdBytes, (byte) 0x00);
+            if (key == null) {
+                Arrays.fill(passwd, '\0');
+            }
         }
-        this.key = deriveKey(prf, passwdBytes, salt, iterCount, keyLength);
-
         // Use the cleaner to zero the key when no longer referenced
         final byte[] k = this.key;
         final char[] p = this.passwd;
-        CleanerFactory.cleaner().register(this,
+        cleaner = CleanerFactory.cleaner().register(this,
                 () -> {
-                    java.util.Arrays.fill(k, (byte)0x00);
-                    java.util.Arrays.fill(p, '0');
+                    Arrays.fill(k, (byte) 0x00);
+                    Arrays.fill(p, '\0');
                 });
     }
 
@@ -153,6 +148,7 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
             byte[] ti = new byte[hlen];
             // SecretKeySpec cannot be used, since password can be empty here.
             SecretKey macKey = new SecretKey() {
+                @java.io.Serial
                 private static final long serialVersionUID = 7874493593505141603L;
                 @Override
                 public String getAlgorithm() {
@@ -164,7 +160,7 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
                 }
                 @Override
                 public byte[] getEncoded() {
-                    return password;
+                    return password.clone();
                 }
                 @Override
                 public int hashCode() {
@@ -172,6 +168,7 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
                       prf.getAlgorithm().toLowerCase(Locale.ENGLISH).hashCode();
                 }
                 @Override
+                @Pure
                 public boolean equals(Object obj) {
                     if (this == obj) return true;
                     if (this.getClass() != obj.getClass()) return false;
@@ -209,17 +206,13 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
                 }
             }
         } catch (GeneralSecurityException gse) {
-            throw new RuntimeException("Error deriving PBKDF2 keys");
+            throw new RuntimeException("Error deriving PBKDF2 keys", gse);
         }
         return key;
     }
 
     public byte[] getEncoded() {
-        // The key is zeroized by finalize()
-        // The reachability fence ensures finalize() isn't called early
-        byte[] result = key.clone();
-        Reference.reachabilityFence(this);
-        return result;
+        return key.clone();
     }
 
     public String getAlgorithm() {
@@ -230,12 +223,12 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
         return iterCount;
     }
 
+    public void clear() {
+        cleaner.clean();
+    }
+
     public char[] getPassword() {
-        // The password is zeroized by finalize()
-        // The reachability fence ensures finalize() isn't called early
-        char[] result = passwd.clone();
-        Reference.reachabilityFence(this);
-        return result;
+        return passwd.clone();
     }
 
     public byte[] getSalt() {
@@ -274,8 +267,8 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
         if (!(that.getFormat().equalsIgnoreCase("RAW")))
             return false;
         byte[] thatEncoded = that.getEncoded();
-        boolean ret = MessageDigest.isEqual(key, that.getEncoded());
-        java.util.Arrays.fill(thatEncoded, (byte)0x00);
+        boolean ret = MessageDigest.isEqual(key, thatEncoded);
+        Arrays.fill(thatEncoded, (byte)0x00);
         return ret;
     }
 
@@ -287,8 +280,9 @@ final class PBKDF2KeyImpl implements javax.crypto.interfaces.PBEKey {
      * @throws ObjectStreamException if a new object representing
      * this PBE key could not be created
      */
+    @java.io.Serial
     private Object writeReplace() throws ObjectStreamException {
-            return new KeyRep(KeyRep.Type.SECRET, getAlgorithm(),
-                              getFormat(), getEncoded());
+        return new KeyRep(KeyRep.Type.SECRET, getAlgorithm(),
+                getFormat(), key);
     }
 }

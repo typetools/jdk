@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -206,7 +206,7 @@ public abstract class TestAssembler {
 
     private StackSlot deoptRescue;
 
-    public ValueKindFactory<TestValueKind> valueKindFactory = new ValueKindFactory<TestAssembler.TestValueKind>() {
+    public ValueKindFactory<TestValueKind> valueKindFactory = new ValueKindFactory<>() {
         public TestValueKind getValueKind(JavaKind javaKind) {
             return (TestValueKind) TestAssembler.this.getValueKind(javaKind);
         }
@@ -316,8 +316,9 @@ public abstract class TestAssembler {
         Site[] finishedSites = sites.toArray(new Site[0]);
         byte[] finishedData = data.finish();
         DataPatch[] finishedDataPatches = dataPatches.toArray(new DataPatch[0]);
-        return new HotSpotCompiledNmethod(method.getName(), finishedCode, finishedCode.length, finishedSites, new Assumption[0], new ResolvedJavaMethod[]{method}, new Comment[0], finishedData, 16,
-                        finishedDataPatches, false, frameSize, deoptRescue, method, 0, id, 0L, false);
+        int dataSectionAlignment = 8; // CodeBuffer::SECT_CONSTS code section alignment
+        return new HotSpotCompiledNmethod(method.getName(), finishedCode, finishedCode.length, finishedSites, new Assumption[0], new ResolvedJavaMethod[]{method}, new Comment[0], finishedData, dataSectionAlignment,
+                        finishedDataPatches, false, frameSize, deoptRescue, method, -1, id, 0L, false);
     }
 
     protected static class Buffer {
@@ -389,7 +390,7 @@ public abstract class TestAssembler {
     public abstract void emitLoad(AllocatableValue av, Object prim);
 
     /**
-     * Emit a call to a fixed address <code>addr</code>
+     * Emit a call to a fixed address <code>addr</code>.
      */
     public abstract void emitCall(long addr);
 

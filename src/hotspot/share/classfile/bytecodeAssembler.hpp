@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_BYTECODEASSEMBLER_HPP
-#define SHARE_VM_CLASSFILE_BYTECODEASSEMBLER_HPP
+#ifndef SHARE_CLASSFILE_BYTECODEASSEMBLER_HPP
+#define SHARE_CLASSFILE_BYTECODEASSEMBLER_HPP
 
 #include "memory/allocation.hpp"
 #include "oops/method.hpp"
@@ -125,6 +125,7 @@ class BytecodeCPEntry {
 class BytecodeConstantPool : ResourceObj {
  private:
   typedef ResourceHashtable<BytecodeCPEntry, u2,
+      256, AnyObj::RESOURCE_AREA, mtInternal,
       &BytecodeCPEntry::hash, &BytecodeCPEntry::equals> IndexHash;
 
   ConstantPool* _orig;
@@ -211,4 +212,4 @@ class BytecodeAssembler : StackObj {
   void _return(BasicType bt);
 };
 
-#endif // SHARE_VM_CLASSFILE_BYTECODEASSEMBLER_HPP
+#endif // SHARE_CLASSFILE_BYTECODEASSEMBLER_HPP

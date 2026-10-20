@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,11 +57,11 @@ class BsdThread implements ThreadProxy {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if ((obj == null) || !(obj instanceof BsdThread)) {
+        if (!(obj instanceof BsdThread other)) {
             return false;
         }
 
-        return (((BsdThread) obj).unique_thread_id == unique_thread_id);
+        return (other.unique_thread_id == unique_thread_id);
     }
 
     public int hashCode() {
@@ -75,8 +75,12 @@ class BsdThread implements ThreadProxy {
     public ThreadContext getContext() throws IllegalThreadStateException {
         long[] data = debugger.getThreadIntegerRegisterSet(unique_thread_id);
         ThreadContext context = BsdThreadContextFactory.createThreadContext(debugger);
-        for (int i = 0; i < data.length; i++) {
-            context.setRegister(i, data[i]);
+        // null means we failed to get the register set for some reason. The caller
+        // is responsible for dealing with the set of null registers in that case.
+        if (data != null) {
+            for (int i = 0; i < data.length; i++) {
+                context.setRegister(i, data[i]);
+            }
         }
         return context;
     }

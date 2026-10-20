@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,11 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.io.IOException;
@@ -40,9 +45,11 @@ import java.io.InvalidObjectException;
  * @see DirectoryStream
  */
 
+@AnnotatedFor({"nullness"})
 public final class DirectoryIteratorException
     extends ConcurrentModificationException
 {
+    @java.io.Serial
     private static final long serialVersionUID = -6012699886086212874L;
 
     /**
@@ -55,6 +62,7 @@ public final class DirectoryIteratorException
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public DirectoryIteratorException(IOException cause) {
         super(Objects.requireNonNull(cause));
     }
@@ -64,6 +72,7 @@ public final class DirectoryIteratorException
      *
      * @return  the cause
      */
+    @Pure
     @Override
     public IOException getCause() {
         return (IOException)super.getCause();
@@ -72,10 +81,21 @@ public final class DirectoryIteratorException
     /**
      * Called to read the object from a stream.
      *
+     * @param   s
+     *          the {@code ObjectInputStream} to read
+     *
      * @throws  InvalidObjectException
      *          if the object is invalid or has a cause that is not
      *          an {@code IOException}
+     *
+     * @throws  IOException
+     *          if an I/O error occurs
+     *
+     * @throws  ClassNotFoundException
+     *          if the class of a serialized object could not be
+     *          found
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException
     {

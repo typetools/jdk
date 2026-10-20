@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,14 +25,31 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -42,8 +59,11 @@ import java.util.stream.StreamSupport;
 /**
  * The root interface in the <i>collection hierarchy</i>.  A collection
  * represents a group of objects, known as its <i>elements</i>.  Some
- * collections allow duplicate elements and others do not.  Some are ordered
- * and others unordered.  The JDK does not provide any <i>direct</i>
+ * collections allow duplicate elements and others do not.  Some are ordered,
+ * and others are unordered. Collections that have a defined
+ * <a href="SequencedCollection.html#encounter">encounter order</a>
+ * are generally subtypes of the {@link SequencedCollection} interface.
+ * The JDK does not provide any <i>direct</i>
  * implementations of this interface: it provides implementations of more
  * specific subinterfaces like {@code Set} and {@code List}.  This interface
  * is typically used to pass collections around and manipulate them where
@@ -130,8 +150,9 @@ import java.util.stream.StreamSupport;
  * Other examples of view collections include collections that provide a
  * different representation of the same elements, for example, as
  * provided by {@link List#subList List.subList},
- * {@link NavigableSet#subSet NavigableSet.subSet}, or
- * {@link Map#entrySet Map.entrySet}.
+ * {@link NavigableSet#subSet NavigableSet.subSet},
+ * {@link Map#entrySet Map.entrySet}, or
+ * {@link SequencedCollection#reversed SequencedCollection.reversed}.
  * Any changes made to the backing collection are visible in the view collection.
  * Correspondingly, any changes made to the view collection &mdash; if changes
  * are permitted &mdash; are written through to the backing collection.
@@ -197,6 +218,39 @@ import java.util.stream.StreamSupport;
  * or if the only reference to the backing collection is through an
  * unmodifiable view, the view can be considered effectively immutable.
  *
+ * <h2><a id="serializable">Serializability of Collections</a></h2>
+ *
+ * <p>Serializability of collections is optional. As such, none of the collections
+ * interfaces are declared to implement the {@link java.io.Serializable} interface.
+ * However, serializability is regarded as being generally useful, so most collection
+ * implementations are serializable.
+ *
+ * <p>The collection implementations that are public classes (such as {@code ArrayList}
+ * or {@code HashMap}) are declared to implement the {@code Serializable} interface if they
+ * are in fact serializable. Some collections implementations are not public classes,
+ * such as the <a href="#unmodifiable">unmodifiable collections.</a> In such cases, the
+ * serializability of such collections is described in the specification of the method
+ * that creates them, or in some other suitable place. In cases where the serializability
+ * of a collection is not specified, there is no guarantee about the serializability of such
+ * collections. In particular, many <a href="#view">view collections</a> are not serializable,
+ * even if the original collection is serializable.
+ *
+ * <p>A collection implementation that implements the {@code Serializable} interface cannot
+ * be guaranteed to be serializable. The reason is that in general, collections
+ * contain elements of other types, and it is not possible to determine statically
+ * whether instances of some element type are actually serializable. For example, consider
+ * a serializable {@code Collection<E>}, where {@code E} does not implement the
+ * {@code Serializable} interface. The collection may be serializable, if it contains only
+ * elements of some serializable subtype of {@code E}, or if it is empty. Collections are
+ * thus said to be <i>conditionally serializable,</i> as the serializability of the collection
+ * as a whole depends on whether the collection itself is serializable and on whether all
+ * contained elements are also serializable.
+ *
+ * <p>An additional case occurs with instances of {@link SortedSet} and {@link SortedMap}.
+ * These collections can be created with a {@link Comparator} that imposes an ordering on
+ * the set elements or map keys. Such a collection is serializable only if the provided
+ * {@code Comparator} is also serializable.
+ *
  * <p>This interface is a member of the
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
@@ -228,7 +282,7 @@ import java.util.stream.StreamSupport;
  */
 
 @CFComment("lock/nullness: Subclasses of this interface/class may opt to prohibit null elements")
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
 public interface Collection<E> extends Iterable<E> {
     // Query Operations
 
@@ -240,7 +294,7 @@ public interface Collection<E> extends Iterable<E> {
      * @return the number of elements in this collection
      */
     @Pure
-    @NonNegative int size(@GuardSatisfied Collection<E> this);
+    @NonNegative int size(@MaybeModifiable @GuardSatisfied Collection<E> this);
 
     /**
      * Returns {@code true} if this collection contains no elements.
@@ -248,7 +302,8 @@ public interface Collection<E> extends Iterable<E> {
      * @return {@code true} if this collection contains no elements
      */
     @Pure
-    boolean isEmpty(@GuardSatisfied Collection<E> this);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean isEmpty(@MaybeModifiable @GuardSatisfied Collection<E> this);
 
     /**
      * Returns {@code true} if this collection contains the specified element.
@@ -261,14 +316,17 @@ public interface Collection<E> extends Iterable<E> {
      *         element
      * @throws ClassCastException if the type of the specified element
      *         is incompatible with this collection
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified element is null and this
      *         collection does not permit null elements
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      */
-    @CFComment({"lock: not true, because map could contain nulls:  AssertParametersNonNull(\"get(#1)\")"})
+    @CFComment({"lock: not true, because map could contain nulls:  AssertParametersNonNull(\"get(#1)\")",
+                "Nullness: `o` is not @Nullable because this collection might forbid null",
+                "(though I think a nicer specification would be to return false in that case)"})
     @Pure
-    boolean contains(@GuardSatisfied Collection<E> this, @GuardSatisfied Object o);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean contains(@MaybeModifiable @GuardSatisfied Collection<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this collection.  There are no
@@ -279,7 +337,7 @@ public interface Collection<E> extends Iterable<E> {
      * @return an {@code Iterator} over the elements in this collection
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @MaybeModifiable @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@MaybeModifiable @PolyGrowShrink @PolyNonEmpty Collection<E> this);
 
     /**
      * Returns an array containing all of the elements in this collection.
@@ -308,7 +366,7 @@ public interface Collection<E> extends Iterable<E> {
     "methods, because the most useful type for toArray is not expressible",
     "in the surface syntax that the nullness annotations support."})
     @SideEffectFree
-    @PolyNull Object[] toArray(Collection<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(@MaybeModifiable Collection<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this collection;
@@ -361,8 +419,7 @@ public interface Collection<E> extends Iterable<E> {
      *         runtime component type} of the specified array
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
-    <T> @Nullable T [] toArray(@PolyNull T[] a);
+    <T extends @UnknownSignedness Object> @Nullable T[] toArray(@MaybeModifiable Collection<E> this, @PolyNull T[] a);
 
     /**
      * Returns an array containing all of the elements in this collection,
@@ -399,7 +456,8 @@ public interface Collection<E> extends Iterable<E> {
      * @throws NullPointerException if the generator function is null
      * @since 11
      */
-    default <T> T[] toArray(IntFunction<T[]> generator) {
+    @SideEffectFree
+    default <T> T[] toArray(@MaybeModifiable Collection<E> this, IntFunction<T[]> generator) {
         return toArray(generator.apply(0));
     }
 
@@ -438,8 +496,10 @@ public interface Collection<E> extends Iterable<E> {
      * @throws IllegalStateException if the element cannot be added at this
      *         time due to insertion restrictions
      */
-    boolean add(@GuardSatisfied Collection<E> this, E e);
-
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean add(@IteratorPolyMod @Growable @GuardSatisfied Collection<E> this, E e);
     /**
      * Removes a single instance of the specified element from this
      * collection, if it is present (optional operation).  More formally,
@@ -453,15 +513,16 @@ public interface Collection<E> extends Iterable<E> {
      * @return {@code true} if an element was removed as a result of this call
      * @throws ClassCastException if the type of the specified element
      *         is incompatible with this collection
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified element is null and this
      *         collection does not permit null elements
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this collection
      */
-    boolean remove(@GuardSatisfied Collection<E> this, Object o);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean remove(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink Collection<E> this, @UnknownSignedness Object o);
 
     // Bulk Operations
 
@@ -475,16 +536,16 @@ public interface Collection<E> extends Iterable<E> {
      * @throws ClassCastException if the types of one or more elements
      *         in the specified collection are incompatible with this
      *         collection
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if the specified collection contains one
      *         or more null elements and this collection does not permit null
      *         elements
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
+     *         ({@linkplain Collection##optional-restrictions optional})
      *         or if the specified collection is null.
      * @see    #contains(Object)
      */
     @Pure
-    boolean containsAll(@GuardSatisfied Collection<E> this, @GuardSatisfied Collection<?> c);
+    boolean containsAll(@MaybeModifiable @GuardSatisfied Collection<E> this, @GuardSatisfied Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Adds all of the elements in the specified collection to this collection
@@ -492,7 +553,9 @@ public interface Collection<E> extends Iterable<E> {
      * the specified collection is modified while the operation is in progress.
      * (This implies that the behavior of this call is undefined if the
      * specified collection is this collection, and this collection is
-     * nonempty.)
+     * nonempty.) If the specified collection has a defined
+     * <a href="SequencedCollection.html#encounter">encounter order</a>,
+     * processing of its elements generally occurs in that order.
      *
      * @param c collection containing elements to be added to this collection
      * @return {@code true} if this collection changed as a result of the call
@@ -510,8 +573,9 @@ public interface Collection<E> extends Iterable<E> {
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
-    boolean addAll(@GuardSatisfied Collection<E> this, Collection<? extends E> c);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean addAll(@Growable @GuardSatisfied Collection<E> this, Collection<? extends E> c);
     /**
      * Removes all of this collection's elements that are also contained in the
      * specified collection (optional operation).  After this call returns,
@@ -526,17 +590,18 @@ public interface Collection<E> extends Iterable<E> {
      * @throws ClassCastException if the types of one or more elements
      *         in this collection are incompatible with the specified
      *         collection
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if this collection contains one or more
      *         null elements and the specified collection does not support
      *         null elements
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
+     *         ({@linkplain Collection##optional-restrictions optional})
      *         or if the specified collection is null
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied Collection<E> this, Collection<?> c);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean removeAll(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
     /**
      * Removes all of the elements of this collection that satisfy the given
      * predicate.  Errors or runtime exceptions thrown during iteration or by
@@ -559,7 +624,9 @@ public interface Collection<E> extends Iterable<E> {
      *         supported.
      * @since 1.8
      */
-    default boolean removeIf(Predicate<? super E> filter) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default boolean removeIf(@IteratorPolyMod @Shrinkable @CanShrink Collection<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         boolean removed = false;
         final Iterator<E> each = iterator();
@@ -585,17 +652,18 @@ public interface Collection<E> extends Iterable<E> {
      * @throws ClassCastException if the types of one or more elements
      *         in this collection are incompatible with the specified
      *         collection
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         ({@linkplain Collection##optional-restrictions optional})
      * @throws NullPointerException if this collection contains one or more
      *         null elements and the specified collection does not permit null
      *         elements
-     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
+     *         ({@linkplain Collection##optional-restrictions optional})
      *         or if the specified collection is null
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@GuardSatisfied Collection<E> this, Collection<?> c);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean retainAll(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink Collection<E> this, Collection<? extends @UnknownSignedness Object> c);
     /**
      * Removes all of the elements from this collection (optional operation).
      * The collection will be empty after this method returns.
@@ -603,8 +671,9 @@ public interface Collection<E> extends Iterable<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this collection
      */
-    void clear(@GuardSatisfied Collection<E> this);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    void clear(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink Collection<E> this);
 
     // Comparison and hashing
 
@@ -642,7 +711,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see List#equals(Object)
      */
     @Pure
-    boolean equals(@GuardSatisfied Collection<E> this, @GuardSatisfied @Nullable Object o);
+    boolean equals(@MaybeModifiable @GuardSatisfied Collection<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o);
 
     /**
      * Returns the hash code value for this collection.  While the
@@ -660,7 +729,7 @@ public interface Collection<E> extends Iterable<E> {
      * @see Object#equals(Object)
      */
     @Pure
-    int hashCode(@GuardSatisfied Collection<E> this);
+    int hashCode(@MaybeModifiable @GuardSatisfied Collection<E> this);
 
     /**
      * Creates a {@link Spliterator} over the elements in this collection.
@@ -714,7 +783,7 @@ public interface Collection<E> extends Iterable<E> {
      */
     @SideEffectFree
     @Override
-    default Spliterator<E> spliterator() {
+    default Spliterator<E> spliterator(@MaybeModifiable Collection<E> this) {
         return Spliterators.spliterator(this, 0);
     }
 
@@ -733,7 +802,8 @@ public interface Collection<E> extends Iterable<E> {
      * @return a sequential {@code Stream} over the elements in this collection
      * @since 1.8
      */
-    default Stream<E> stream() {
+    @DoesNotUnrefineReceiver("modifiability")
+    default @PolyNonEmpty Stream<E> stream(@MaybeModifiable @PolyNonEmpty Collection<E> this) {
         return StreamSupport.stream(spliterator(), false);
     }
 
@@ -754,7 +824,8 @@ public interface Collection<E> extends Iterable<E> {
      * collection
      * @since 1.8
      */
-    default Stream<E> parallelStream() {
+    @DoesNotUnrefineReceiver("modifiability")
+    default Stream<E> parallelStream(@MaybeModifiable Collection<E> this) {
         return StreamSupport.stream(spliterator(), true);
     }
 }

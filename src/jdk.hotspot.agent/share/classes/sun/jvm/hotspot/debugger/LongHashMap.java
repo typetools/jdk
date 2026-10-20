@@ -24,6 +24,9 @@
 
 package sun.jvm.hotspot.debugger;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.*;
 
 /**
@@ -109,7 +112,8 @@ public class LongHashMap
          * @return <tt>true</tt> if the specified object is equal to this map
          *         entry.
          */
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Entry))
                 return false;
             Entry e = (Entry)o;
@@ -256,6 +260,7 @@ public class LongHashMap
      * key.
      * @param key key whose presence in this Map is to be tested.
      */
+    @Pure
     public boolean containsKey(long key) {
         return getEntry(key) != null;
     }
@@ -285,6 +290,7 @@ public class LongHashMap
      * @return <tt>true</tt> if this map maps one or more keys to the
      *         specified value.
      */
+    @Pure
     public boolean containsValue(Object value) {
         Entry tab[] = table;
 

@@ -25,7 +25,10 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
@@ -72,21 +75,31 @@ import java.util.function.LongConsumer;
 public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
 
     /**
-     * Performs the given action for each remaining element, in the order
-     * elements occur when iterating, until all elements have been processed
-     * or the action throws an exception.  Errors or runtime exceptions
-     * thrown by the action are relayed to the caller.
+     * Performs the given action for each remaining element until all elements
+     * have been processed or the action throws an exception.  Actions are
+     * performed in the order of iteration, if that order is specified.
+     * Exceptions thrown by the action are relayed to the caller.
+     * <p>
+     * The behavior of an iterator is unspecified if the action modifies the
+     * source of elements in any way (even by calling the {@link #remove remove}
+     * method or other mutator methods of {@code Iterator} subtypes),
+     * unless an overriding class has specified a concurrent modification policy.
+     * <p>
+     * Subsequent behavior of an iterator is unspecified if the action throws an
+     * exception.
      *
      * @param action The action to be performed for each element
      * @throws NullPointerException if the specified action is null
      */
     @SuppressWarnings("overloads")
+    @DoesNotUnrefineReceiver("modifiability")
     void forEachRemaining(T_CONS action);
 
     /**
      * An Iterator specialized for {@code int} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfInt extends PrimitiveIterator<Integer, IntConsumer> {
 
         /**
@@ -95,25 +108,20 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code int} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        int nextInt();
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        int nextInt(@NonEmpty OfInt this);
 
         /**
-         * Performs the given action for each remaining element until all elements
-         * have been processed or the action throws an exception.  Actions are
-         * performed in the order of iteration, if that order is specified.
-         * Exceptions thrown by the action are relayed to the caller.
-         *
+         * {@inheritDoc}
          * @implSpec
          * <p>The default implementation behaves as if:
          * <pre>{@code
          *     while (hasNext())
          *         action.accept(nextInt());
          * }</pre>
-         *
-         * @param action The action to be performed for each element
-         * @throws NullPointerException if the specified action is null
          */
-        @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(IntConsumer action) {
             Objects.requireNonNull(action);
             while (hasNext())
@@ -127,6 +135,8 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextInt()}, and returns that boxed result.
          */
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         default Integer next(PrimitiveIterator.@GuardSatisfied OfInt this) {
             if (Tripwire.ENABLED)
                 Tripwire.trip(getClass(), "{0} calling PrimitiveIterator.OfInt.nextInt()");
@@ -143,6 +153,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * and then passed to {@link #forEachRemaining}.
          */
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(Consumer<? super Integer> action) {
             if (action instanceof IntConsumer) {
                 forEachRemaining((IntConsumer) action);
@@ -162,6 +173,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
      * An Iterator specialized for {@code long} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfLong extends PrimitiveIterator<Long, LongConsumer> {
 
         /**
@@ -170,25 +182,20 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code long} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        long nextLong();
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        long nextLong(@NonEmpty OfLong this);
 
         /**
-         * Performs the given action for each remaining element until all elements
-         * have been processed or the action throws an exception.  Actions are
-         * performed in the order of iteration, if that order is specified.
-         * Exceptions thrown by the action are relayed to the caller.
-         *
+         * {@inheritDoc}
          * @implSpec
          * <p>The default implementation behaves as if:
          * <pre>{@code
          *     while (hasNext())
          *         action.accept(nextLong());
          * }</pre>
-         *
-         * @param action The action to be performed for each element
-         * @throws NullPointerException if the specified action is null
          */
-        @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(LongConsumer action) {
             Objects.requireNonNull(action);
             while (hasNext())
@@ -202,6 +209,8 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextLong()}, and returns that boxed result.
          */
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         default Long next(PrimitiveIterator.@GuardSatisfied OfLong this) {
             if (Tripwire.ENABLED)
                 Tripwire.trip(getClass(), "{0} calling PrimitiveIterator.OfLong.nextLong()");
@@ -218,6 +227,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * and then passed to {@link #forEachRemaining}.
          */
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(Consumer<? super Long> action) {
             if (action instanceof LongConsumer) {
                 forEachRemaining((LongConsumer) action);
@@ -236,6 +246,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
      * An Iterator specialized for {@code double} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public static interface OfDouble extends PrimitiveIterator<Double, DoubleConsumer> {
 
         /**
@@ -244,25 +255,20 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * @return the next {@code double} element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
-        double nextDouble();
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        double nextDouble(@NonEmpty OfDouble this);
 
         /**
-         * Performs the given action for each remaining element until all elements
-         * have been processed or the action throws an exception.  Actions are
-         * performed in the order of iteration, if that order is specified.
-         * Exceptions thrown by the action are relayed to the caller.
-         *
+         * {@inheritDoc}
          * @implSpec
          * <p>The default implementation behaves as if:
          * <pre>{@code
          *     while (hasNext())
          *         action.accept(nextDouble());
          * }</pre>
-         *
-         * @param action The action to be performed for each element
-         * @throws NullPointerException if the specified action is null
          */
-        @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(DoubleConsumer action) {
             Objects.requireNonNull(action);
             while (hasNext())
@@ -276,6 +282,8 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #nextDouble()}, and returns that boxed result.
          */
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         default Double next(PrimitiveIterator.@GuardSatisfied OfDouble this) {
             if (Tripwire.ENABLED)
                 Tripwire.trip(getClass(), "{0} calling PrimitiveIterator.OfDouble.nextLong()");
@@ -293,6 +301,7 @@ public interface PrimitiveIterator<T, T_CONS> extends Iterator<T> {
          * {@link #forEachRemaining}.
          */
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         default void forEachRemaining(Consumer<? super Double> action) {
             if (action instanceof DoubleConsumer) {
                 forEachRemaining((DoubleConsumer) action);

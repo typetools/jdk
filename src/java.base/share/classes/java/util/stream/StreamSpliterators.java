@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,8 @@
  * questions.
  */
 package java.util.stream;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -185,7 +187,7 @@ class StreamSpliterators {
         abstract void initPartialTraversalState();
 
         @Override
-        public Spliterator<P_OUT> trySplit() {
+        public @Nullable Spliterator<P_OUT> trySplit() {
             if (isParallel && buffer == null && !finished) {
                 init();
 
@@ -217,19 +219,17 @@ class StreamSpliterators {
 
         @Override
         public final long estimateSize() {
-            init();
+            long exactSizeIfKnown = getExactSizeIfKnown();
             // Use the estimate of the wrapped spliterator
             // Note this may not be accurate if there are filter/flatMap
             // operations filtering or adding elements to the stream
-            return spliterator.estimateSize();
+            return exactSizeIfKnown == -1 ? spliterator.estimateSize() : exactSizeIfKnown;
         }
 
         @Override
         public final long getExactSizeIfKnown() {
             init();
-            return StreamOpFlag.SIZED.isKnown(ph.getStreamAndOpFlags())
-                   ? spliterator.getExactSizeIfKnown()
-                   : -1;
+            return ph.exactOutputSizeIfKnown(spliterator);
         }
 
         @Override
@@ -254,7 +254,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Comparator<? super P_OUT> getComparator() {
+        public @Nullable Comparator<? super P_OUT> getComparator() {
             if (!hasCharacteristics(SORTED))
                 throw new IllegalStateException();
             return null;
@@ -348,7 +348,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Spliterator.OfInt trySplit() {
+        public Spliterator.@Nullable OfInt trySplit() {
             return (Spliterator.OfInt) super.trySplit();
         }
 
@@ -406,7 +406,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Spliterator.OfLong trySplit() {
+        public Spliterator.@Nullable OfLong trySplit() {
             return (Spliterator.OfLong) super.trySplit();
         }
 
@@ -464,7 +464,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Spliterator.OfDouble trySplit() {
+        public Spliterator.@Nullable OfDouble trySplit() {
             return (Spliterator.OfDouble) super.trySplit();
         }
 
@@ -517,7 +517,7 @@ class StreamSpliterators {
 
         @Override
         @SuppressWarnings("unchecked")
-        public T_SPLITR trySplit() {
+        public @Nullable T_SPLITR trySplit() {
             return (T_SPLITR) get().trySplit();
         }
 
@@ -542,7 +542,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             return get().getComparator();
         }
 
@@ -574,6 +574,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfInt
                 extends OfPrimitive<Integer, IntConsumer, Spliterator.OfInt>
                 implements Spliterator.OfInt {
@@ -583,6 +584,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfLong
                 extends OfPrimitive<Long, LongConsumer, Spliterator.OfLong>
                 implements Spliterator.OfLong {
@@ -592,6 +594,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfDouble
                 extends OfPrimitive<Double, DoubleConsumer, Spliterator.OfDouble>
                 implements Spliterator.OfDouble {
@@ -631,7 +634,7 @@ class StreamSpliterators {
 
         protected abstract T_SPLITR makeSpliterator(T_SPLITR s, long sliceOrigin, long sliceFence, long origin, long fence);
 
-        public T_SPLITR trySplit() {
+        public @Nullable T_SPLITR trySplit() {
             if (sliceOrigin >= fence)
                 return null;
 
@@ -817,6 +820,7 @@ class StreamSpliterators {
             protected abstract T_CONS emptyConsumer();
         }
 
+        @SuppressWarnings("overloads")
         static final class OfInt extends OfPrimitive<Integer, Spliterator.OfInt, IntConsumer>
                 implements Spliterator.OfInt {
             OfInt(Spliterator.OfInt s, long sliceOrigin, long sliceFence) {
@@ -841,6 +845,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfLong extends OfPrimitive<Long, Spliterator.OfLong, LongConsumer>
                 implements Spliterator.OfLong {
             OfLong(Spliterator.OfLong s, long sliceOrigin, long sliceFence) {
@@ -865,6 +870,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfDouble extends OfPrimitive<Double, Spliterator.OfDouble, DoubleConsumer>
                 implements Spliterator.OfDouble {
             OfDouble(Spliterator.OfDouble s, long sliceOrigin, long sliceFence) {
@@ -972,7 +978,7 @@ class StreamSpliterators {
                 return unlimited ?  PermitStatus.UNLIMITED : PermitStatus.NO_MORE;
         }
 
-        public final T_SPLITR trySplit() {
+        public final @Nullable T_SPLITR trySplit() {
             // Stop splitting when there are no more limit permits
             if (permits.get() == 0)
                 return null;
@@ -1130,6 +1136,7 @@ class StreamSpliterators {
             protected abstract T_BUFF bufferCreate(int initialCapacity);
         }
 
+        @SuppressWarnings("overloads")
         static final class OfInt
                 extends OfPrimitive<Integer, IntConsumer, ArrayBuffer.OfInt, Spliterator.OfInt>
                 implements Spliterator.OfInt, IntConsumer {
@@ -1165,6 +1172,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfLong
                 extends OfPrimitive<Long, LongConsumer, ArrayBuffer.OfLong, Spliterator.OfLong>
                 implements Spliterator.OfLong, LongConsumer {
@@ -1200,6 +1208,7 @@ class StreamSpliterators {
             }
         }
 
+        @SuppressWarnings("overloads")
         static final class OfDouble
                 extends OfPrimitive<Double, DoubleConsumer, ArrayBuffer.OfDouble, Spliterator.OfDouble>
                 implements Spliterator.OfDouble, DoubleConsumer {
@@ -1295,7 +1304,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Spliterator<T> trySplit() {
+        public @Nullable Spliterator<T> trySplit() {
             Spliterator<T> split = s.trySplit();
             return (split != null) ? new DistinctSpliterator<>(split, seen) : null;
         }
@@ -1313,7 +1322,7 @@ class StreamSpliterators {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             return s.getComparator();
         }
     }
@@ -1362,7 +1371,7 @@ class StreamSpliterators {
             }
 
             @Override
-            public Spliterator<T> trySplit() {
+            public @Nullable Spliterator<T> trySplit() {
                 if (estimate == 0)
                     return null;
                 return new InfiniteSupplyingSpliterator.OfRef<>(estimate >>>= 1, s);
@@ -1387,7 +1396,7 @@ class StreamSpliterators {
             }
 
             @Override
-            public Spliterator.OfInt trySplit() {
+            public Spliterator.@Nullable OfInt trySplit() {
                 if (estimate == 0)
                     return null;
                 return new InfiniteSupplyingSpliterator.OfInt(estimate = estimate >>> 1, s);
@@ -1412,7 +1421,7 @@ class StreamSpliterators {
             }
 
             @Override
-            public Spliterator.OfLong trySplit() {
+            public Spliterator.@Nullable OfLong trySplit() {
                 if (estimate == 0)
                     return null;
                 return new InfiniteSupplyingSpliterator.OfLong(estimate = estimate >>> 1, s);
@@ -1437,7 +1446,7 @@ class StreamSpliterators {
             }
 
             @Override
-            public Spliterator.OfDouble trySplit() {
+            public Spliterator.@Nullable OfDouble trySplit() {
                 if (estimate == 0)
                     return null;
                 return new InfiniteSupplyingSpliterator.OfDouble(estimate = estimate >>> 1, s);

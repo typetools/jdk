@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,39 +25,56 @@
 
 package java.util;
 
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.dataflow.qual.Deterministic;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * <p>Hash table and linked list implementation of the {@code Set} interface,
- * with predictable iteration order.  This implementation differs from
+ * with well-defined encounter order.  This implementation differs from
  * {@code HashSet} in that it maintains a doubly-linked list running through
- * all of its entries.  This linked list defines the iteration ordering,
- * which is the order in which elements were inserted into the set
- * (<i>insertion-order</i>).  Note that insertion order is <i>not</i> affected
- * if an element is <i>re-inserted</i> into the set.  (An element {@code e}
- * is reinserted into a set {@code s} if {@code s.add(e)} is invoked when
- * {@code s.contains(e)} would return {@code true} immediately prior to
- * the invocation.)
+ * all of its entries.  This linked list defines the encounter order (iteration
+ * order), which is the order in which elements were inserted into the set
+ * (<i>insertion-order</i>). The least recently inserted element (the eldest) is
+ * first, and the youngest element is last. Note that encounter order is <i>not</i> affected
+ * if an element is <i>re-inserted</i> into the set with the {@code add} method.
+ * (An element {@code e} is reinserted into a set {@code s} if {@code s.add(e)} is
+ * invoked when {@code s.contains(e)} would return {@code true} immediately prior to
+ * the invocation.) The reverse-ordered view of this set is in the opposite order, with
+ * the youngest element appearing first and the eldest element appearing last. The encounter
+ * order of elements already in the set can be changed by using the
+ * {@link #addFirst addFirst} and {@link #addLast addLast} methods.
  *
  * <p>This implementation spares its clients from the unspecified, generally
  * chaotic ordering provided by {@link HashSet}, without incurring the
  * increased cost associated with {@link TreeSet}.  It can be used to
  * produce a copy of a set that has the same order as the original, regardless
  * of the original set's implementation:
- * <pre>
- *     void foo(Set s) {
- *         Set copy = new LinkedHashSet(s);
+ * <pre>{@code
+ *     void foo(Set<String> s) {
+ *         Set<String> copy = new LinkedHashSet<>(s);
  *         ...
  *     }
- * </pre>
+ * }</pre>
  * This technique is particularly useful if a module takes a set on input,
  * copies it, and later returns results whose order is determined by that of
  * the copy.  (Clients generally appreciate having things returned in the same
  * order they were presented.)
  *
- * <p>This class provides all of the optional {@code Set} operations, and
- * permits null elements.  Like {@code HashSet}, it provides constant-time
+ * <p>This class provides all of the optional {@link Set} and {@link SequencedSet}
+ * operations, and it permits null elements. Like {@code HashSet}, it provides constant-time
  * performance for the basic operations ({@code add}, {@code contains} and
  * {@code remove}), assuming the hash function disperses elements
  * properly among the buckets.  Performance is likely to be just slightly
@@ -119,23 +136,28 @@ import org.checkerframework.framework.qual.CFComment;
  */
 
 @CFComment({"lock/nullness: This class permits null elements"})
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 public class LinkedHashSet<E>
     extends HashSet<E>
-    implements Set<E>, Cloneable, java.io.Serializable {
+    implements SequencedSet<E>, Cloneable, java.io.Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = -2851667679971038690L;
 
     /**
      * Constructs a new, empty linked hash set with the specified initial
      * capacity and load factor.
      *
+     * @apiNote
+     * To create a {@code LinkedHashSet} with an initial capacity that accommodates
+     * an expected number of elements, use {@link #newLinkedHashSet(int) newLinkedHashSet}.
+     *
      * @param      initialCapacity the initial capacity of the linked hash set
      * @param      loadFactor      the load factor of the linked hash set
      * @throws     IllegalArgumentException  if the initial capacity is less
      *               than zero, or if the load factor is nonpositive
      */
-    public LinkedHashSet(int initialCapacity, float loadFactor) {
+    public @Modifiable @IteratorPolyMod LinkedHashSet(int initialCapacity, float loadFactor) {
         super(initialCapacity, loadFactor, true);
     }
 
@@ -143,11 +165,15 @@ public class LinkedHashSet<E>
      * Constructs a new, empty linked hash set with the specified initial
      * capacity and the default load factor (0.75).
      *
+     * @apiNote
+     * To create a {@code LinkedHashSet} with an initial capacity that accommodates
+     * an expected number of elements, use {@link #newLinkedHashSet(int) newLinkedHashSet}.
+     *
      * @param   initialCapacity   the initial capacity of the LinkedHashSet
      * @throws  IllegalArgumentException if the initial capacity is less
      *              than zero
      */
-    public LinkedHashSet(int initialCapacity) {
+    public @Modifiable @IteratorPolyMod LinkedHashSet(int initialCapacity) {
         super(initialCapacity, .75f, true);
     }
 
@@ -155,7 +181,8 @@ public class LinkedHashSet<E>
      * Constructs a new, empty linked hash set with the default initial
      * capacity (16) and load factor (0.75).
      */
-    public LinkedHashSet() {
+    @SideEffectFree
+    public @Modifiable @IteratorPolyMod LinkedHashSet() {
         super(16, .75f, true);
     }
 
@@ -169,8 +196,8 @@ public class LinkedHashSet<E>
      *           this set
      * @throws NullPointerException if the specified collection is null
      */
-    public LinkedHashSet(Collection<? extends E> c) {
-        super(Math.max(2*c.size(), 11), .75f, true);
+    public @Modifiable @IteratorPolyMod LinkedHashSet(Collection<? extends E> c) {
+        super(HashMap.calculateHashMapCapacity(Math.max(c.size(), 12)), .75f, true);
         addAll(c);
     }
 
@@ -194,7 +221,149 @@ public class LinkedHashSet<E>
      * @since 1.8
      */
     @Override
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.DISTINCT | Spliterator.ORDERED);
+    }
+
+    /**
+     * Creates a new, empty LinkedHashSet suitable for the expected number of elements.
+     * The returned set uses the default load factor of 0.75, and its initial capacity is
+     * generally large enough so that the expected number of elements can be added
+     * without resizing the set.
+     *
+     * @param numElements    the expected number of elements
+     * @param <T>         the type of elements maintained by the new set
+     * @return the newly created set
+     * @throws IllegalArgumentException if numElements is negative
+     * @since 19
+     */
+    public static <T> @Modifiable LinkedHashSet<T> newLinkedHashSet(int numElements) {
+        if (numElements < 0) {
+            throw new IllegalArgumentException("Negative number of elements: " + numElements);
+        }
+        return new LinkedHashSet<>(HashMap.calculateHashMapCapacity(numElements));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Deterministic
+    LinkedHashMap<E, Object> map() {
+        return (LinkedHashMap<E, Object>) map;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * If this set already contains the element, it is relocated if necessary so that it is
+     * first in encounter order.
+     *
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addFirst(@SeqGrowable LinkedHashSet<E> this, E e) {
+        map().putFirst(e, PRESENT);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * If this set already contains the element, it is relocated if necessary so that it is
+     * last in encounter order.
+     *
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addLast(@SeqGrowable LinkedHashSet<E> this, E e) {
+        map().putLast(e, PRESENT);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getFirst() {
+        return map().sequencedKeySet().getFirst();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getLast() {
+        return map().sequencedKeySet().getLast();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeFirst(@Shrinkable LinkedHashSet<E> this) {
+        return map().sequencedKeySet().removeFirst();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeLast(@Shrinkable LinkedHashSet<E> this) {
+        return map().sequencedKeySet().removeLast();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Modifications to the reversed view are permitted and will be propagated to this set.
+     * In addition, modifications to this set will be visible in the reversed view.
+     *
+     * @return {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
+    public SequencedSet<E> reversed() {
+        class ReverseLinkedHashSetView extends AbstractSet<E> implements SequencedSet<E> {
+            @Pure
+            public int size()                  { return LinkedHashSet.this.size(); }
+            @SideEffectFree
+            public Iterator<E> iterator()      { return map().sequencedKeySet().reversed().iterator(); }
+            public boolean add(@Growable ReverseLinkedHashSetView this, E e)            { return LinkedHashSet.this.add(e); }
+            public void addFirst(@SeqGrowable ReverseLinkedHashSetView this, E e)       { LinkedHashSet.this.addLast(e); }
+            public void addLast(@SeqGrowable ReverseLinkedHashSetView this, E e)        { LinkedHashSet.this.addFirst(e); }
+            @Pure
+            public E getFirst()                { return LinkedHashSet.this.getLast(); }
+            @Pure
+            public E getLast()                 { return LinkedHashSet.this.getFirst(); }
+            public E removeFirst(@Shrinkable ReverseLinkedHashSetView this)             { return LinkedHashSet.this.removeLast(); }
+            public E removeLast(@Shrinkable ReverseLinkedHashSetView this)              { return LinkedHashSet.this.removeFirst(); }
+            @SideEffectFree
+            public SequencedSet<E> reversed()  { return LinkedHashSet.this; }
+            @Pure
+            @SideEffectFree
+            public Object[] toArray() { return map().keysToArray(new Object[map.size()], true); }
+            public <T> T[] toArray(T[] a) { return map().keysToArray(map.prepareArray(a), true); }
+        }
+
+        return new ReverseLinkedHashSetView();
     }
 }

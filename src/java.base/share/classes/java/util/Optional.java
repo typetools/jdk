@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,14 +28,17 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.optional.qual.EnsuresPresent;
+import org.checkerframework.checker.optional.qual.EnsuresPresentIf;
+import org.checkerframework.checker.optional.qual.OptionalCreator;
+import org.checkerframework.checker.optional.qual.OptionalEliminator;
+import org.checkerframework.checker.optional.qual.OptionalPropagator;
 import org.checkerframework.checker.optional.qual.Present;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.Covariant;
-import org.checkerframework.framework.qual.EnsuresQualifier;
-import org.checkerframework.framework.qual.EnsuresQualifierIf;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -55,10 +58,11 @@ import java.util.stream.Stream;
  * {@link #ifPresent(Consumer) ifPresent()} (performs an
  * action if a value is present).
  *
- * <p>This is a <a href="../lang/doc-files/ValueBased.html">value-based</a>
- * class; use of identity-sensitive operations (including reference equality
- * ({@code ==}), identity hash code, or synchronization) on instances of
- * {@code Optional} may have unpredictable results and should be avoided.
+ * <p>This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
  *
  * @apiNote
  * {@code Optional} is primarily intended for use as a method return type where
@@ -83,11 +87,12 @@ import java.util.stream.Stream;
 })
 @AnnotatedFor({"lock", "nullness", "optional"})
 @Covariant(0)
+@jdk.internal.ValueBased
 public final @NonNull class Optional<T> {
     /**
      * Common instance for {@code empty()}.
      */
-    private static final Optional<?> EMPTY = new Optional<>();
+    private static final Optional<?> EMPTY = new Optional<>(null);
 
     /**
      * If non-null, the value; if null, indicates no value is present
@@ -95,29 +100,20 @@ public final @NonNull class Optional<T> {
     private final @Nullable T value;
 
     /**
-     * Constructs an empty instance.
-     *
-     * @implNote Generally only one empty instance, {@link Optional#EMPTY},
-     * should exist per VM.
-     */
-    private Optional() {
-        this.value = null;
-    }
-
-    /**
      * Returns an empty {@code Optional} instance.  No value is present for this
      * {@code Optional}.
      *
      * @apiNote
      * Though it may be tempting to do so, avoid testing if an object is empty
-     * by comparing with {@code ==} against instances returned by
+     * by comparing with {@code ==} or {@code !=} against instances returned by
      * {@code Optional.empty()}.  There is no guarantee that it is a singleton.
-     * Instead, use {@link #isPresent()}.
+     * Instead, use {@link #isEmpty()} or {@link #isPresent()}.
      *
      * @param <T> The type of the non-existent value
      * @return an empty {@code Optional}
      */
-    @SideEffectFree
+    @OptionalCreator
+    @Pure
     public static<T> Optional<T> empty() {
         @SuppressWarnings("unchecked")
         Optional<T> t = (Optional<T>) EMPTY;
@@ -127,11 +123,12 @@ public final @NonNull class Optional<T> {
     /**
      * Constructs an instance with the described value.
      *
-     * @param value the non-{@code null} value to describe
-     * @throws NullPointerException if value is {@code null}
+     * @param value the value to describe; it's the caller's responsibility to
+     *        ensure the value is non-{@code null} unless creating the singleton
+     *        instance returned by {@code empty()}.
      */
     private Optional(@NonNull T value) {
-        this.value = Objects.requireNonNull(value);
+        this.value = value;
     }
 
     /**
@@ -143,9 +140,10 @@ public final @NonNull class Optional<T> {
      * @return an {@code Optional} with the value present
      * @throws NullPointerException if value is {@code null}
      */
+    @OptionalCreator
     @SideEffectFree
     public static <T> @Present Optional<T> of(@NonNull T value) {
-        return new Optional<>(value);
+        return new Optional<>(Objects.requireNonNull(value));
     }
 
     /**
@@ -157,9 +155,12 @@ public final @NonNull class Optional<T> {
      * @return an {@code Optional} with a present value if the specified value
      *         is non-{@code null}, otherwise an empty {@code Optional}
      */
+    @OptionalCreator
     @SideEffectFree
-    public static <T> Optional<T> ofNullable(@Nullable T value) {
-        return value == null ? empty() : of(value);
+    @SuppressWarnings("unchecked")
+    public static <T> Optional<@NonNull T> ofNullable(@Nullable T value) {
+        return value == null ? (Optional<T>) EMPTY
+                             : new Optional<>(value);
     }
 
     /**
@@ -172,6 +173,7 @@ public final @NonNull class Optional<T> {
      * @return the non-{@code null} value described by this {@code Optional}
      * @throws NoSuchElementException if no value is present
      */
+    @OptionalEliminator
     @Pure
     public @NonNull T get(@Present Optional<T> this) {
         if (value == null) {
@@ -185,8 +187,9 @@ public final @NonNull class Optional<T> {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @OptionalEliminator
     @Pure
-    @EnsuresQualifierIf(result = true, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = true, expression = "this")
     public boolean isPresent() {
         return value != null;
     }
@@ -199,7 +202,7 @@ public final @NonNull class Optional<T> {
      * @since   11
      */
     @Pure
-    @EnsuresQualifierIf(result = false, expression = "this", qualifier = Present.class)
+    @EnsuresPresentIf(result = false, expression = "this")
     public boolean isEmpty() {
         return value == null;
     }
@@ -212,6 +215,7 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if value is present and the given action is
      *         {@code null}
      */
+    @OptionalEliminator
     public void ifPresent(Consumer<? super T> action) {
         if (value != null) {
             action.accept(value);
@@ -230,6 +234,7 @@ public final @NonNull class Optional<T> {
      *         action is {@code null}.
      * @since 9
      */
+    @OptionalEliminator
     public void ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction) {
         if (value != null) {
             action.accept(value);
@@ -249,9 +254,10 @@ public final @NonNull class Optional<T> {
      *         given predicate, otherwise an empty {@code Optional}
      * @throws NullPointerException if the predicate is {@code null}
      */
+    @OptionalPropagator
     public Optional<T> filter(Predicate<? super T> predicate) {
         Objects.requireNonNull(predicate);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return this;
         } else {
             return predicate.test(value) ? this : empty();
@@ -291,9 +297,12 @@ public final @NonNull class Optional<T> {
      *         present, otherwise an empty {@code Optional}
      * @throws NullPointerException if the mapping function is {@code null}
      */
+    @CFComment({"@SideEffectFree: the mapper must not have side effects."})
+    @OptionalPropagator
+    @SideEffectFree
     public <U> Optional<U> map(Function<? super T, ? extends @Nullable U> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return empty();
         } else {
             return Optional.ofNullable(mapper.apply(value));
@@ -319,9 +328,10 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if the mapping function is {@code null} or
      *         returns a {@code null} result
      */
+    @OptionalPropagator
     public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
+        if (isEmpty()) {
             return empty();
         } else {
             @SuppressWarnings("unchecked")
@@ -343,6 +353,7 @@ public final @NonNull class Optional<T> {
      *         produces a {@code null} result
      * @since 9
      */
+    @OptionalPropagator
     public Optional<T> or(Supplier<? extends Optional<? extends T>> supplier) {
         Objects.requireNonNull(supplier);
         if (isPresent()) {
@@ -371,7 +382,7 @@ public final @NonNull class Optional<T> {
      */
     @SideEffectFree
     public Stream<T> stream() {
-        if (!isPresent()) {
+        if (isEmpty()) {
             return Stream.empty();
         } else {
             return Stream.of(value);
@@ -386,6 +397,7 @@ public final @NonNull class Optional<T> {
      *        May be {@code null}.
      * @return the value, if present, otherwise {@code other}
      */
+    @OptionalEliminator
     @Pure
     public @PolyNull T orElse(@PolyNull T other) {
         return value != null ? value : other;
@@ -401,6 +413,7 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if no value is present and the supplying
      *         function is {@code null}
      */
+    @OptionalEliminator
     public @PolyNull T orElseGet(Supplier<? extends @PolyNull T> supplier) {
         return value != null ? value : supplier.get();
     }
@@ -413,8 +426,9 @@ public final @NonNull class Optional<T> {
      * @throws NoSuchElementException if no value is present
      * @since 10
      */
+    @OptionalEliminator
     @Pure
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
+    @EnsuresPresent("this")
     public T orElseThrow(@Present Optional<T> this) {
         if (value == null) {
             throw new NoSuchElementException("No value present");
@@ -439,8 +453,11 @@ public final @NonNull class Optional<T> {
      * @throws NullPointerException if no value is present and the exception
      *          supplying function is {@code null}
      */
-    @EnsuresQualifier(expression = "this", qualifier = Present.class)
-    public <X extends Throwable> T orElseThrow(@Present Optional<T> this, Supplier<? extends X> exceptionSupplier) throws X {
+    @CFComment({"optional: orElseThrow(Supplier) does not throw NoSuchElementException, so its receiver is @MaybePresent.",
+                "Contrast with orElseThrow(), defined just above, whose receiver is @Present."})
+    @EnsuresPresent("this")
+    @OptionalEliminator
+    public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
         if (value != null) {
             return value;
         } else {
@@ -469,12 +486,8 @@ public final @NonNull class Optional<T> {
             return true;
         }
 
-        if (!(obj instanceof Optional)) {
-            return false;
-        }
-
-        Optional<?> other = (Optional<?>) obj;
-        return Objects.equals(value, other.value);
+        return obj instanceof Optional<?> other
+                && Objects.equals(value, other.value);
     }
 
     /**
@@ -484,6 +497,7 @@ public final @NonNull class Optional<T> {
      * @return hash code value of the present value or {@code 0} if no value is
      *         present
      */
+    @OptionalEliminator
     @Pure
     @Override
     public int hashCode() {
@@ -506,7 +520,7 @@ public final @NonNull class Optional<T> {
     @Override
     public String toString() {
         return value != null
-            ? String.format("Optional[%s]", value)
+            ? ("Optional[" + value + "]")
             : "Optional.empty";
     }
 }

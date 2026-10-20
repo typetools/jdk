@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,15 @@
 
 package java.util;
 
+import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -48,20 +51,6 @@ import java.util.function.Supplier;
  * hash code of an object, returning a string for an object, comparing two
  * objects, and checking if indexes or sub-range values are out of bounds.
  *
- * @apiNote
- * Static methods such as {@link Objects#checkIndex},
- * {@link Objects#checkFromToIndex}, and {@link Objects#checkFromIndexSize} are
- * provided for the convenience of checking if values corresponding to indexes
- * and sub-ranges are out of bounds.
- * Variations of these static methods support customization of the runtime
- * exception, and corresponding exception detail message, that is thrown when
- * values are out of bounds.  Such methods accept a functional interface
- * argument, instances of {@code BiFunction}, that maps out-of-bound values to a
- * runtime exception.  Care should be taken when using such methods in
- * combination with an argument that is a lambda expression, method reference or
- * class that capture values.  In such cases the cost of capture, related to
- * functional interface allocation, may exceed the cost of checking bounds.
- *
  * @since 1.7
  */
 @AnnotatedFor({"index", "interning", "lock", "nullness"})
@@ -74,10 +63,11 @@ public final @UsesObjectEquals class Objects {
      * Returns {@code true} if the arguments are equal to each other
      * and {@code false} otherwise.
      * Consequently, if both arguments are {@code null}, {@code true}
-     * is returned and if exactly one argument is {@code null}, {@code
-     * false} is returned.  Otherwise, equality is determined by using
-     * the {@link Object#equals equals} method of the first
-     * argument.
+     * is returned.  Otherwise, if the first argument is not {@code
+     * null}, equality is determined by calling the {@link
+     * Object#equals equals} method of the first argument with the
+     * second argument of this method. Otherwise, {@code false} is
+     * returned.
      *
      * @param a an object
      * @param b an object to be compared with {@code a} for equality
@@ -86,7 +76,8 @@ public final @UsesObjectEquals class Objects {
      * @see Object#equals(Object)
      */
     @Pure
-    public static boolean equals(@GuardSatisfied @Nullable Object a, @GuardSatisfied @Nullable Object b) {
+    @EqualsMethod
+    public static boolean equals(@GuardSatisfied @Nullable @UnknownSignedness Object a, @GuardSatisfied @Nullable @UnknownSignedness Object b) {
         return (a == b) || (a != null && a.equals(b));
     }
 
@@ -108,7 +99,7 @@ public final @UsesObjectEquals class Objects {
     * @see Objects#equals(Object, Object)
     */
     @Pure
-    public static boolean deepEquals(@GuardSatisfied @Nullable Object a, @GuardSatisfied @Nullable Object b) {
+    public static boolean deepEquals(@GuardSatisfied @Nullable @UnknownSignedness Object a, @GuardSatisfied @Nullable @UnknownSignedness Object b) {
         if (a == b)
             return true;
         else if (a == null || b == null)
@@ -127,7 +118,7 @@ public final @UsesObjectEquals class Objects {
      * @see Object#hashCode
      */
     @Pure
-    public static int hashCode(@GuardSatisfied @Nullable Object o) {
+    public static int hashCode(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return o != null ? o.hashCode() : 0;
     }
 
@@ -158,7 +149,7 @@ public final @UsesObjectEquals class Objects {
     * @see List#hashCode
     */
     @Pure
-    public static int hash(@GuardSatisfied @Nullable Object... values) {
+    public static int hash(@GuardSatisfied @Nullable @UnknownSignedness Object... values) {
         return Arrays.hashCode(values);
     }
 
@@ -173,7 +164,7 @@ public final @UsesObjectEquals class Objects {
      * @see String#valueOf(Object)
      */
     @SideEffectFree
-    public static String toString(@GuardSatisfied @Nullable Object o) {
+    public static String toString(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return String.valueOf(o);
     }
 
@@ -191,8 +182,32 @@ public final @UsesObjectEquals class Objects {
      * @see Objects#toString(Object)
      */
     @SideEffectFree
-    public static String toString(@GuardSatisfied @Nullable Object o, String nullDefault) {
+    public static @PolyNull String toString(@GuardSatisfied @Nullable @UnknownSignedness Object o, @PolyNull String nullDefault) {
         return (o != null) ? o.toString() : nullDefault;
+    }
+
+    /**
+     * {@return a string equivalent to the string returned by {@code
+     * Object.toString} if that method and {@code hashCode} are not
+     * overridden}
+     *
+     * @implNote
+     * This method constructs a string for an object without calling
+     * any overridable methods of the object.
+     *
+     * @implSpec
+     * The method returns a string equivalent to:<br>
+     * {@code o.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(o))}
+     *
+     * @param o an object
+     * @throws NullPointerException if the argument is null
+     * @see Object#toString
+     * @see System#identityHashCode(Object)
+     * @since 19
+     */
+    public static String toIdentityString(Object o) {
+        requireNonNull(o);
+        return o.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(o));
     }
 
     /**
@@ -216,7 +231,7 @@ public final @UsesObjectEquals class Objects {
      * @see Comparator
      */
     @Pure
-    public static <T> int compare(@GuardSatisfied @Nullable T a, @GuardSatisfied @Nullable T b, @GuardSatisfied Comparator<? super T> c) {
+    public static <T> int compare(@GuardSatisfied @Nullable @UnknownSignedness T a, @GuardSatisfied @Nullable @UnknownSignedness T b, @GuardSatisfied Comparator<? super T> c) {
         return (a == b) ? 0 :  c.compare(a, b);
     }
 
@@ -237,6 +252,7 @@ public final @UsesObjectEquals class Objects {
      */
     @CFComment({"lock: TODO: treat like other nullness assertion methods in the Checker Framework."})
     @EnsuresNonNull("#1")
+    @ForceInline
     public static <T> @NonNull T requireNonNull(@NonNull T obj) {
         if (obj == null)
             throw new NullPointerException();
@@ -264,7 +280,8 @@ public final @UsesObjectEquals class Objects {
      */
     @EnsuresNonNull("#1")
     @SideEffectFree
-    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull T obj, @Nullable String message) {
+    @ForceInline
+    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @Nullable String message) {
         if (obj == null)
             throw new NullPointerException(message);
         return obj;
@@ -284,9 +301,9 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=false)
     @Pure
-    public static boolean isNull(@GuardSatisfied @Nullable Object obj) {
+    @EnsuresNonNullIf(expression={"#1"}, result=false)
+    public static boolean isNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj == null;
     }
 
@@ -304,9 +321,9 @@ public final @UsesObjectEquals class Objects {
      * @see java.util.function.Predicate
      * @since 1.8
      */
-    @EnsuresNonNullIf(expression={"#1"}, result=true)
     @Pure
-    public static boolean nonNull(@GuardSatisfied @Nullable Object obj) {
+    @EnsuresNonNullIf(expression={"#1"}, result=true)
+    public static boolean nonNull(@GuardSatisfied @Nullable @UnknownSignedness Object obj) {
         return obj != null;
     }
 
@@ -368,9 +385,9 @@ public final @UsesObjectEquals class Objects {
      * @throws NullPointerException if {@code obj} is {@code null}
      * @since 1.8
      */
-    @EnsuresNonNull("#1")
     @Pure
-    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull T obj, @GuardSatisfied Supplier<String> messageSupplier) {
+    @EnsuresNonNull("#1")
+    public static <T> @NonNull T requireNonNull(@GuardSatisfied @NonNull @UnknownSignedness T obj, @GuardSatisfied Supplier<String> messageSupplier) {
         if (obj == null)
             throw new NullPointerException(messageSupplier == null ?
                                            null : messageSupplier.get());
@@ -453,4 +470,82 @@ public final @UsesObjectEquals class Objects {
         return Preconditions.checkFromIndexSize(fromIndex, size, length, null);
     }
 
+    /**
+     * Checks if the {@code index} is within the bounds of the range from
+     * {@code 0} (inclusive) to {@code length} (exclusive).
+     *
+     * <p>The {@code index} is defined to be out of bounds if any of the
+     * following inequalities is true:
+     * <ul>
+     *  <li>{@code index < 0}</li>
+     *  <li>{@code index >= length}</li>
+     *  <li>{@code length < 0}, which is implied from the former inequalities</li>
+     * </ul>
+     *
+     * @param index the index
+     * @param length the upper-bound (exclusive) of the range
+     * @return {@code index} if it is within bounds of the range
+     * @throws IndexOutOfBoundsException if the {@code index} is out of bounds
+     * @since 16
+     */
+    @ForceInline
+    @Pure
+    public static
+    long checkIndex(long index, long length) {
+        return Preconditions.checkIndex(index, length, null);
+    }
+
+    /**
+     * Checks if the sub-range from {@code fromIndex} (inclusive) to
+     * {@code toIndex} (exclusive) is within the bounds of range from {@code 0}
+     * (inclusive) to {@code length} (exclusive).
+     *
+     * <p>The sub-range is defined to be out of bounds if any of the following
+     * inequalities is true:
+     * <ul>
+     *  <li>{@code fromIndex < 0}</li>
+     *  <li>{@code fromIndex > toIndex}</li>
+     *  <li>{@code toIndex > length}</li>
+     *  <li>{@code length < 0}, which is implied from the former inequalities</li>
+     * </ul>
+     *
+     * @param fromIndex the lower-bound (inclusive) of the sub-range
+     * @param toIndex the upper-bound (exclusive) of the sub-range
+     * @param length the upper-bound (exclusive) the range
+     * @return {@code fromIndex} if the sub-range within bounds of the range
+     * @throws IndexOutOfBoundsException if the sub-range is out of bounds
+     * @since 16
+     */
+    @Pure
+    public static
+    long checkFromToIndex(long fromIndex, long toIndex, long length) {
+        return Preconditions.checkFromToIndex(fromIndex, toIndex, length, null);
+    }
+
+    /**
+     * Checks if the sub-range from {@code fromIndex} (inclusive) to
+     * {@code fromIndex + size} (exclusive) is within the bounds of range from
+     * {@code 0} (inclusive) to {@code length} (exclusive).
+     *
+     * <p>The sub-range is defined to be out of bounds if any of the following
+     * inequalities is true:
+     * <ul>
+     *  <li>{@code fromIndex < 0}</li>
+     *  <li>{@code size < 0}</li>
+     *  <li>{@code fromIndex + size > length}, taking into account integer overflow</li>
+     *  <li>{@code length < 0}, which is implied from the former inequalities</li>
+     * </ul>
+     *
+     * @param fromIndex the lower-bound (inclusive) of the sub-interval
+     * @param size the size of the sub-range
+     * @param length the upper-bound (exclusive) of the range
+     * @return {@code fromIndex} if the sub-range within bounds of the range
+     * @throws IndexOutOfBoundsException if the sub-range is out of bounds
+     * @since 16
+     */
+    @Pure
+    public static
+    long checkFromIndexSize(long fromIndex, long size, long length) {
+        return Preconditions.checkFromIndexSize(fromIndex, size, length, null);
+    }
 }

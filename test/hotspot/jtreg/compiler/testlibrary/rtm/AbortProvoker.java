@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 package compiler.testlibrary.rtm;
 
 import jdk.test.lib.Asserts;
-import sun.hotspot.WhiteBox;
+import jdk.test.whitebox.WhiteBox;
 
 import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
@@ -98,7 +98,9 @@ public abstract class AbortProvoker implements CompilableTest {
     public static void verifyMonitorState(Object monitor,
             boolean shouldBeInflated) {
         if (!shouldBeInflated && WHITE_BOX.isMonitorInflated(monitor)) {
-            WHITE_BOX.forceSafepoint();
+            boolean did_deflation = WHITE_BOX.deflateIdleMonitors();
+            Asserts.assertEQ(did_deflation, true,
+                             "deflateIdleMonitors() should have worked.");
         }
         Asserts.assertEQ(WHITE_BOX.isMonitorInflated(monitor), shouldBeInflated,
                 "Monitor in a wrong state.");

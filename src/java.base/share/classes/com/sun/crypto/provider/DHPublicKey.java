@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.math.BigInteger;
 import java.security.KeyRep;
 import java.security.InvalidKeyException;
-import java.security.ProviderException;
 import java.security.PublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import sun.security.util.*;
@@ -54,6 +53,7 @@ import sun.security.util.*;
 final class DHPublicKey implements PublicKey,
 javax.crypto.interfaces.DHPublicKey, Serializable {
 
+    @java.io.Serial
     static final long serialVersionUID = 7647557958927458271L;
 
     // the public key
@@ -74,7 +74,9 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
     // the private-value length (optional)
     private int l;
 
-    private int DH_data[] = { 1, 2, 840, 113549, 1, 3, 1 };
+    // Note: this OID is used by DHPrivateKey as well.
+    static ObjectIdentifier DH_OID =
+            ObjectIdentifier.of(KnownOIDs.DiffieHellman);
 
     /**
      * Make a DH public key out of a public value <code>y</code>, a prime
@@ -100,21 +102,15 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
      * @param p the prime modulus
      * @param g the base generator
      * @param l the private-value length
-     *
-     * @exception ProviderException if the key cannot be encoded
      */
     DHPublicKey(BigInteger y, BigInteger p, BigInteger g, int l) {
         this.y = y;
         this.p = p;
         this.g = g;
         this.l = l;
-        try {
-            this.key = new DerValue(DerValue.tag_Integer,
-                                    this.y.toByteArray()).toByteArray();
-            this.encodedKey = getEncoded();
-        } catch (IOException e) {
-            throw new ProviderException("Cannot produce ASN.1 encoding", e);
-        }
+        this.key = new DerValue(DerValue.tag_Integer,
+                this.y.toByteArray()).toByteArray();
+        this.encodedKey = getEncoded();
     }
 
     /**
@@ -204,39 +200,35 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
      */
     public synchronized byte[] getEncoded() {
         if (this.encodedKey == null) {
-            try {
-                DerOutputStream algid = new DerOutputStream();
+            DerOutputStream algid = new DerOutputStream();
 
-                // store oid in algid
-                algid.putOID(new ObjectIdentifier(DH_data));
+            // store oid in algid
+            algid.putOID(DH_OID);
 
-                // encode parameters
-                DerOutputStream params = new DerOutputStream();
-                params.putInteger(this.p);
-                params.putInteger(this.g);
-                if (this.l != 0) {
-                    params.putInteger(this.l);
-                }
-                // wrap parameters into SEQUENCE
-                DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
-                                                      params.toByteArray());
-                // store parameter SEQUENCE in algid
-                algid.putDerValue(paramSequence);
-
-                // wrap algid into SEQUENCE, and store it in key encoding
-                DerOutputStream tmpDerKey = new DerOutputStream();
-                tmpDerKey.write(DerValue.tag_Sequence, algid);
-
-                // store key data
-                tmpDerKey.putBitString(this.key);
-
-                // wrap algid and key into SEQUENCE
-                DerOutputStream derKey = new DerOutputStream();
-                derKey.write(DerValue.tag_Sequence, tmpDerKey);
-                this.encodedKey = derKey.toByteArray();
-            } catch (IOException e) {
-                return null;
+            // encode parameters
+            DerOutputStream params = new DerOutputStream();
+            params.putInteger(this.p);
+            params.putInteger(this.g);
+            if (this.l != 0) {
+                params.putInteger(this.l);
             }
+            // wrap parameters into SEQUENCE
+            DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
+                    params.toByteArray());
+            // store parameter SEQUENCE in algid
+            algid.putDerValue(paramSequence);
+
+            // wrap algid into SEQUENCE, and store it in key encoding
+            DerOutputStream tmpDerKey = new DerOutputStream();
+            tmpDerKey.write(DerValue.tag_Sequence, algid);
+
+            // store key data
+            tmpDerKey.putBitString(this.key);
+
+            // wrap algid and key into SEQUENCE
+            DerOutputStream derKey = new DerOutputStream();
+            derKey.write(DerValue.tag_Sequence, tmpDerKey);
+            this.encodedKey = derKey.toByteArray();
         }
         return this.encodedKey.clone();
     }
@@ -322,6 +314,7 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
      * @throws java.io.ObjectStreamException if a new object representing
      * this DH public key could not be created
      */
+    @java.io.Serial
     private Object writeReplace() throws java.io.ObjectStreamException {
         return new KeyRep(KeyRep.Type.PUBLIC,
                         getAlgorithm(),

@@ -21,10 +21,7 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id: DOMDigestMethod.java 1788465 2017-03-24 15:10:51Z coheigea $
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
@@ -35,18 +32,21 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import javax.xml.crypto.*;
+import javax.xml.crypto.dom.DOMCryptoContext;
 import javax.xml.crypto.dsig.*;
 import javax.xml.crypto.dsig.spec.DigestMethodParameterSpec;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.spec.AlgorithmParameterSpec;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 /**
  * DOM-based abstract implementation of DigestMethod.
  *
  */
-public abstract class DOMDigestMethod extends BaseStructure
+public abstract class DOMDigestMethod extends DOMStructure
     implements DigestMethod {
 
     static final String SHA224 =
@@ -153,7 +153,6 @@ public abstract class DOMDigestMethod extends BaseStructure
         }
     }
 
-    @Override
     public final AlgorithmParameterSpec getParameterSpec() {
         return params;
     }
@@ -181,17 +180,21 @@ public abstract class DOMDigestMethod extends BaseStructure
      * This method invokes the abstract {@link #marshalParams marshalParams}
      * method to marshal any algorithm-specific parameters.
      */
-    public static void marshal(XmlWriter xwriter, DigestMethod digest, String prefix)
+    @Override
+    public void marshal(Node parent, String prefix, DOMCryptoContext context)
         throws MarshalException
     {
-        xwriter.writeStartElement(prefix, "DigestMethod", XMLSignature.XMLNS);
-        xwriter.writeAttribute("", "", "Algorithm", digest.getAlgorithm());
+        Document ownerDoc = DOMUtils.getOwnerDocument(parent);
 
-        // this is totally over-engineered - nothing implements marshalParams.
-        if (digest.getParameterSpec() != null && digest instanceof DOMDigestMethod) {
-            ( (DOMDigestMethod) digest).marshalParams(xwriter, prefix);
+        Element dmElem = DOMUtils.createElement(ownerDoc, "DigestMethod",
+                                                XMLSignature.XMLNS, prefix);
+        DOMUtils.setAttribute(dmElem, "Algorithm", getAlgorithm());
+
+        if (params != null) {
+            marshalParams(dmElem, prefix);
         }
-        xwriter.writeEndElement(); // "DigestMethod"
+
+        parent.appendChild(dmElem);
     }
 
     @Override
@@ -231,10 +234,10 @@ public abstract class DOMDigestMethod extends BaseStructure
      * parameters. Subclasses should override it if they have parameters.
      *
      * @param parent the parent element to append the parameters to
-     * @param the namespace prefix to use
+     * @param prefix the namespace prefix to use
      * @throws MarshalException if the parameters cannot be marshalled
      */
-    void marshalParams(XmlWriter xwriter, String prefix)
+    void marshalParams(Element parent, String prefix)
         throws MarshalException
     {
         throw new MarshalException("no parameters should " +
@@ -256,11 +259,9 @@ public abstract class DOMDigestMethod extends BaseStructure
         SHA1(Element dmElem) throws MarshalException {
             super(dmElem);
         }
-        @Override
         public String getAlgorithm() {
             return DigestMethod.SHA1;
         }
-        @Override
         String getMessageDigestAlgorithm() {
             return "SHA-1";
         }
@@ -292,11 +293,9 @@ public abstract class DOMDigestMethod extends BaseStructure
         SHA256(Element dmElem) throws MarshalException {
             super(dmElem);
         }
-        @Override
         public String getAlgorithm() {
             return DigestMethod.SHA256;
         }
-        @Override
         String getMessageDigestAlgorithm() {
             return "SHA-256";
         }
@@ -310,11 +309,9 @@ public abstract class DOMDigestMethod extends BaseStructure
         SHA384(Element dmElem) throws MarshalException {
             super(dmElem);
         }
-        @Override
         public String getAlgorithm() {
             return SHA384;
         }
-        @Override
         String getMessageDigestAlgorithm() {
             return "SHA-384";
         }
@@ -328,11 +325,9 @@ public abstract class DOMDigestMethod extends BaseStructure
         SHA512(Element dmElem) throws MarshalException {
             super(dmElem);
         }
-        @Override
         public String getAlgorithm() {
             return DigestMethod.SHA512;
         }
-        @Override
         String getMessageDigestAlgorithm() {
             return "SHA-512";
         }

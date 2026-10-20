@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.callback;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code CallbackHandler} does not
  * recognize a particular {@code Callback}.
@@ -33,12 +36,14 @@ package javax.security.auth.callback;
  */
 public class UnsupportedCallbackException extends Exception {
 
+    @java.io.Serial
     private static final long serialVersionUID = -6873556327655666839L;
 
     /**
      * @serial
      */
-    private Callback callback;
+    @SuppressWarnings("serial") // Not statically typed as Serializable
+    private final Callback callback;
 
     /**
      * Constructs an {@code UnsupportedCallbackException}
@@ -46,6 +51,7 @@ public class UnsupportedCallbackException extends Exception {
      *
      * @param callback the unrecognized {@code Callback}.
      */
+    @SideEffectFree
     public UnsupportedCallbackException(Callback callback) {
         super();
         this.callback = callback;
@@ -60,7 +66,8 @@ public class UnsupportedCallbackException extends Exception {
      *
      * @param msg the detail message.
      */
-    public UnsupportedCallbackException(Callback callback, String msg) {
+    @SideEffectFree
+    public UnsupportedCallbackException(Callback callback, @Nullable String msg) {
         super(msg);
         this.callback = callback;
     }

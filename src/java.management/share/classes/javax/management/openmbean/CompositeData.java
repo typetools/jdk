@@ -32,7 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 // java import
 //
 import java.util.Collection;
@@ -97,6 +96,7 @@ public interface CompositeData {
      *
      * @return true if this {@code CompositeData} contains the key.
      */
+    @Pure
     public boolean containsKey(String key) ;
 
     /**
@@ -107,6 +107,7 @@ public interface CompositeData {
      *
      * @return true if this {@code CompositeData} contains the value.
      */
+    @Pure
     public boolean containsValue(Object value) ;
 
     /**

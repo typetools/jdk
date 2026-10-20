@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
@@ -41,9 +42,18 @@ import java.io.IOException;
 public class FileSystemException
     extends IOException
 {
+    @java.io.Serial
     static final long serialVersionUID = -3055425747967319812L;
 
+    /**
+     *  String identifying the file or {@code null} if not known.
+     */
     private final @Nullable String file;
+
+    /**
+     *  String identifying the other file or {@code null} if there isn't
+     *  another file or if not known.
+     */
     private final @Nullable String other;
 
     /**
@@ -54,6 +64,7 @@ public class FileSystemException
      * @param   file
      *          a string identifying the file or {@code null} if not known.
      */
+    @SideEffectFree
     public FileSystemException(@Nullable String file) {
         super((String)null);
         this.file = file;
@@ -73,6 +84,7 @@ public class FileSystemException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
+    @SideEffectFree
     public FileSystemException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(reason);
         this.file = file;
@@ -109,6 +121,7 @@ public class FileSystemException
     /**
      * Returns the detail message string.
      */
+    @SideEffectFree
     @Override
     public @Nullable String getMessage() {
         if (file == null && other == null)

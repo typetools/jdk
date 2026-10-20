@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 // java import
 import java.io.Serializable;
 
@@ -55,6 +54,7 @@ public class Attribute implements Serializable   {
     /**
      * @serial Attribute value
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private Object value= null;
 
 

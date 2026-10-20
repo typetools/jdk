@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ import java.util.*;
 import javax.lang.model.element.PackageElement;
 
 import jdk.javadoc.internal.doclets.toolkit.BaseConfiguration;
+import jdk.javadoc.internal.doclets.toolkit.BaseOptions;
 import jdk.javadoc.internal.doclets.toolkit.DocletException;
 import jdk.javadoc.internal.doclets.toolkit.Messages;
 import jdk.javadoc.internal.doclets.toolkit.Resources;
@@ -45,15 +46,7 @@ import jdk.javadoc.internal.doclets.toolkit.util.Utils;
  * {@link ConstantsSummaryBuilder} to build a constant summary, all it has to
  * do is implement the ConstantsSummaryWriter interface and pass it to the
  * builder using a WriterFactory.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
  */
-
 public abstract class AbstractBuilder {
     public static class Context {
         /**
@@ -78,6 +71,7 @@ public abstract class AbstractBuilder {
      * The configuration used in this run of the doclet.
      */
     protected final BaseConfiguration configuration;
+    protected final BaseOptions options;
 
     protected final BuilderFactory builderFactory;
     protected final Messages messages;
@@ -97,9 +91,10 @@ public abstract class AbstractBuilder {
      */
     public AbstractBuilder(Context c) {
         this.configuration = c.configuration;
+        this.options = configuration.getOptions();
         this.builderFactory = configuration.getBuilderFactory();
         this.messages = configuration.getMessages();
-        this.resources = configuration.getResources();
+        this.resources = configuration.getDocResources();
         this.utils = configuration.utils;
         this.containingPackagesSeen = c.containingPackagesSeen;
     }

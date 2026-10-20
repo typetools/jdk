@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_SPACEDECORATOR_HPP
-#define SHARE_VM_GC_SHARED_SPACEDECORATOR_HPP
+#ifndef SHARE_GC_SHARED_SPACEDECORATOR_HPP
+#define SHARE_GC_SHARED_SPACEDECORATOR_HPP
 
-#include "gc/parallel/mutableSpace.hpp"
-#include "gc/shared/space.hpp"
+#include "memory/allStatic.hpp"
+#include "memory/memRegion.hpp"
 #include "utilities/globalDefinitions.hpp"
 
 class SpaceDecorator: public AllStatic {
@@ -63,7 +63,7 @@ class SpaceDecorator: public AllStatic {
 // spaces are resized after an expansion.
 //   The class SpaceMangler keeps a pointer to the top of the allocated
 // area and provides the methods for doing the piece meal mangling.
-// Methods for doing sparces and full checking of the mangling are
+// Methods for doing spaces and full checking of the mangling are
 // included.  The full checking is done if DEBUG_MANGLING is defined.
 //   GenSpaceMangler is used with the GenCollectedHeap collectors and
 // MutableSpaceMangler is used with the ParallelScavengeHeap collectors.
@@ -83,12 +83,12 @@ class SpaceMangler: public CHeapObj<mtGC> {
 
  public:
 
-  // Setting _top_for_allocations to NULL at initialization
+  // Setting _top_for_allocations to null at initialization
   // makes it always below top so that mangling done as part
   // of the initialize() call of a space does nothing (as it
   // should since the mangling is done as part of the constructor
   // for the space.
-  SpaceMangler() : _top_for_allocations(NULL) {}
+  SpaceMangler() : _top_for_allocations(nullptr) {}
 
   // Methods for top and end that delegate to the specific
   // space type.
@@ -98,7 +98,7 @@ class SpaceMangler: public CHeapObj<mtGC> {
   // Return true if q matches the mangled pattern.
   static bool is_mangled(HeapWord* q) PRODUCT_RETURN0;
 
-  // Used to save the an address in a space for later use during mangling.
+  // Used to save the address in a space for later use during mangling.
   void set_top_for_allocations(HeapWord* v);
 
   // Overwrites the unused portion of this space.
@@ -120,6 +120,7 @@ class SpaceMangler: public CHeapObj<mtGC> {
 };
 
 class ContiguousSpace;
+class MutableSpace;
 
 // For use with GenCollectedHeap's
 class GenSpaceMangler: public SpaceMangler {
@@ -127,8 +128,8 @@ class GenSpaceMangler: public SpaceMangler {
 
   ContiguousSpace* sp() { return _sp; }
 
-  HeapWord* top() const { return _sp->top(); }
-  HeapWord* end() const { return _sp->end(); }
+  HeapWord* top() const;
+  HeapWord* end() const;
 
  public:
   GenSpaceMangler(ContiguousSpace* sp) : SpaceMangler(), _sp(sp) {}
@@ -140,11 +141,11 @@ class MutableSpaceMangler: public SpaceMangler {
 
   MutableSpace* sp() { return _sp; }
 
-  HeapWord* top() const { return _sp->top(); }
-  HeapWord* end() const { return _sp->end(); }
+  HeapWord* top() const;
+  HeapWord* end() const;
 
  public:
   MutableSpaceMangler(MutableSpace* sp) : SpaceMangler(), _sp(sp) {}
 };
 
-#endif // SHARE_VM_GC_SHARED_SPACEDECORATOR_HPP
+#endif // SHARE_GC_SHARED_SPACEDECORATOR_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an error occurred while attempting to bind a
  * socket to a local address and port.  Typically, the port is
@@ -34,6 +37,7 @@ package java.net;
  */
 
 public class BindException extends SocketException {
+    @java.io.Serial
     private static final long serialVersionUID = -5945005768251722951L;
 
     /**
@@ -43,12 +47,14 @@ public class BindException extends SocketException {
      * description of this error.
      * @param msg the detail message
      */
-    public BindException(String msg) {
+    @SideEffectFree
+    public BindException(@Nullable String msg) {
         super(msg);
     }
 
     /**
      * Construct a new BindException with no detailed message.
      */
+    @SideEffectFree
     public BindException() {}
 }

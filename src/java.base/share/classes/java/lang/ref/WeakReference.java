@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@ package java.lang.ref;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
-
+import org.checkerframework.framework.qual.CFComment;
 
 /**
  * Weak reference objects, which do not prevent their referents from being
@@ -43,13 +43,14 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * weakly-reachable objects to be finalizable.  At the same time or at some
  * later time it will enqueue those newly-cleared weak references that are
  * registered with reference queues.
+ * @param <T> the type of the referent
  *
  * @author   Mark Reinhold
  * @since    1.2
  */
 
 @AnnotatedFor({"nullness"})
-public class WeakReference<T> extends Reference<T> {
+public non-sealed class WeakReference<T> extends Reference<T> {
 
     /**
      * Creates a new weak reference that refers to the given object.  The new
@@ -69,6 +70,8 @@ public class WeakReference<T> extends Reference<T> {
      * @param q the queue with which the reference is to be registered,
      *          or {@code null} if registration is not required
      */
+    @CFComment({"Nullness: q is @NonNull because it is sometimes required to be non-null.",
+                "To treat it as @Nullable, see https://checkerframework.org/manual/#nullness-jdk-conservative ."})
     public WeakReference(@Nullable T referent, ReferenceQueue<? super T> q) {
         super(referent, q);
     }

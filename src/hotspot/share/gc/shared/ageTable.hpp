@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SHARED_AGETABLE_HPP
-#define SHARE_VM_GC_SHARED_AGETABLE_HPP
+#ifndef SHARE_GC_SHARED_AGETABLE_HPP
+#define SHARE_GC_SHARED_AGETABLE_HPP
 
-#include "oops/markOop.hpp"
+#include "oops/markWord.hpp"
 #include "oops/oop.hpp"
-#include "runtime/perfData.hpp"
+#include "runtime/perfDataTypes.hpp"
 
-/* Copyright (c) 1992, 2018, Oracle and/or its affiliates, and Stanford University.
+/* Copyright (c) 1992, 2021, Oracle and/or its affiliates, and Stanford University.
    See the LICENSE file for license information. */
 
 // Age table for adaptive feedback-mediated tenuring (scavenging)
@@ -41,7 +41,7 @@ class AgeTable {
 
  public:
   // constants
-  enum { table_size = markOopDesc::max_age + 1 };
+  enum { table_size = markWord::max_age + 1 };
 
   // instance variables
   size_t sizes[table_size];
@@ -63,15 +63,16 @@ class AgeTable {
 
   // Merge another age table with the current one.  Used
   // for parallel young generation gc.
-  void merge(AgeTable* subTable);
+  void merge(const AgeTable* subTable);
 
   // Calculate new tenuring threshold based on age information.
   uint compute_tenuring_threshold(size_t desired_survivor_size);
   void print_age_table(uint tenuring_threshold);
+  void print_on(outputStream* st, uint tenuring_threshold);
 
  private:
-
+  bool _use_perf_data;
   PerfVariable* _perf_sizes[table_size];
 };
 
-#endif // SHARE_VM_GC_SHARED_AGETABLE_HPP
+#endif // SHARE_GC_SHARED_AGETABLE_HPP

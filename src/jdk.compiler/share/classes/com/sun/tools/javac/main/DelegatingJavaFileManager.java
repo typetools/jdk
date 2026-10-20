@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package com.sun.tools.javac.main;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,9 +53,8 @@ public class DelegatingJavaFileManager implements JavaFileManager {
                                                  JavaFileManager releaseFM,
                                                  JavaFileManager originalFM) {
         context.put(JavaFileManager.class, (JavaFileManager) null);
-        JavaFileManager nue = originalFM instanceof StandardJavaFileManager
-                ? new DelegatingSJFM(releaseFM,
-                                                        (StandardJavaFileManager) originalFM)
+        JavaFileManager nue = originalFM instanceof StandardJavaFileManager standardJavaFileManager
+                ? new DelegatingSJFM(releaseFM, standardJavaFileManager)
                 : new DelegatingJavaFileManager(releaseFM, originalFM);
         context.put(JavaFileManager.class, nue);
     }
@@ -117,6 +118,12 @@ public class DelegatingJavaFileManager implements JavaFileManager {
     }
 
     @Override
+    public JavaFileObject getJavaFileForOutputForOriginatingFiles(Location location, String className, Kind kind,
+                                               FileObject... originatingFiles) throws IOException {
+        return delegate(location).getJavaFileForOutputForOriginatingFiles(location, className, kind, originatingFiles);
+    }
+
+    @Override
     public FileObject getFileForInput(Location location, String packageName,
                                       String relativeName) throws IOException {
         return delegate(location).getFileForInput(location, packageName, relativeName);
@@ -126,6 +133,12 @@ public class DelegatingJavaFileManager implements JavaFileManager {
     public FileObject getFileForOutput(Location location, String packageName, String relativeName,
                                        FileObject sibling) throws IOException {
         return delegate(location).getFileForOutput(location, packageName, relativeName, sibling);
+    }
+
+    @Override
+    public FileObject getFileForOutputForOriginatingFiles(Location location, String packageName, String relativeName,
+                                       FileObject... originatingFiles) throws IOException {
+        return delegate(location).getFileForOutputForOriginatingFiles(location, packageName, relativeName, originatingFiles);
     }
 
     @Override
@@ -169,6 +182,7 @@ public class DelegatingJavaFileManager implements JavaFileManager {
     }
 
     @Override
+    @Pure
     public boolean contains(Location location, FileObject fo) throws IOException {
         return delegate(location).contains(location, fo);
     }
@@ -204,6 +218,13 @@ public class DelegatingJavaFileManager implements JavaFileManager {
             return baseSJFM.getJavaFileObjectsFromFiles(files);
         }
 
+        @Override
+        public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths
+                                                  (Collection<? extends Path> paths) {
+            return baseSJFM.getJavaFileObjectsFromPaths(paths);
+        }
+
+        @Deprecated(since = "13")
         @Override
         public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths
                                                   (Iterable<? extends Path> paths) {

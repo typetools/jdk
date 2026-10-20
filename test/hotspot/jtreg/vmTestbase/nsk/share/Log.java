@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,6 +75,7 @@ public class Log extends FinalizableObject {
      *
      * @deprecated  Tests should not use this field directly.
      */
+    @Deprecated
     protected PrintStream out = null;
 
     /**
@@ -185,14 +186,14 @@ public class Log extends FinalizableObject {
      *
      * @deprecated  Extending test class with Log is obsolete.
      */
+    @Deprecated
     protected Log() {
         // install finalizer to print errors summary at exit
-        Finalizer finalizer = new Finalizer(this);
-        finalizer.activate();
-
+        registerCleanup();
         // Don't log exceptions from this method. It would just add unnecessary logs.
         loggedExceptions.add("nsk.share.jdi.SerialExecutionDebugger.executeTests");
     }
+
 
     /**
      * Incarnate new Log for the given <code>stream</code> and
@@ -311,6 +312,7 @@ public class Log extends FinalizableObject {
      *              <code>display()</code> and <code>complain()</code>
      *              are enough for testing purposes.
      */
+    @Deprecated
     public synchronized void println(String message) {
         doPrint(message);
         if (!verbose() && isVerboseOnErrorEnabled()) {
@@ -327,6 +329,7 @@ public class Log extends FinalizableObject {
      *              <code>display()</code> and <code>complain()</code>
      *              are enough for testing purposes.
      */
+    @Deprecated
     public synchronized void comment(String message) {
         if (!verbose()) {
             doPrint(message);
@@ -464,13 +467,21 @@ public class Log extends FinalizableObject {
      *
      * @deprecated  This method is obsolete.
      */
+    @Deprecated
     protected synchronized void logTo(PrintStream stream) {
-        finalize(); // flush older log stream
+        cleanup(); // flush older log stream
         out = stream;
         verbose = true;
     }
 
     /////////////////////////////////////////////////////////////////
+
+    /**
+     * Clear all messages from log buffer.
+     */
+    public synchronized void clearLogBuffer() {
+        logBuffer.clear();
+    }
 
     /**
      * Print all messages from log buffer which were hidden because
@@ -593,8 +604,13 @@ public class Log extends FinalizableObject {
 
     /**
      * Print errors summary if mode is verbose, flush and cancel output stream.
+     *
+     * This is replacement of the finalize() method and is called when this
+     * Log instance becomes unreachable.
+     *
      */
-    protected void finalize() {
+    @Override
+    public void cleanup() {
         if (verbose() && isErrorsSummaryEnabled()) {
             printErrorsSummary();
         }
@@ -607,7 +623,7 @@ public class Log extends FinalizableObject {
      * Perform finalization at the exit.
      */
     public void finalizeAtExit() {
-        finalize();
+        cleanup();
     }
 
     /**

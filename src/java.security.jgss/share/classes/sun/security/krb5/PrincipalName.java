@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,7 +40,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import sun.security.krb5.internal.*;
 import sun.security.util.*;
 import java.net.*;
-import java.util.Vector;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -95,6 +95,11 @@ public class PrincipalName implements Cloneable {
      * Unique ID
      */
     public static final int KRB_NT_UID = 5;
+
+    /**
+     * Enterprise name (alias)
+     */
+    public static final int KRB_NT_ENTERPRISE = 10;
 
     /**
      * TGS Name
@@ -159,7 +164,7 @@ public class PrincipalName implements Cloneable {
         this.realmDeduced = false;
     }
 
-    // This method is called by Windows NativeCred.c
+    // Warning: called by NativeCreds.c
     public PrincipalName(String[] nameParts, String realm) throws RealmException {
         this(KRB_NT_UNKNOWN, nameParts, new Realm(realm));
     }
@@ -185,7 +190,7 @@ public class PrincipalName implements Cloneable {
     public Object clone() {
         try {
             PrincipalName pName = (PrincipalName) super.clone();
-            UNSAFE.putObject(this, NAME_STRINGS_OFFSET, nameStrings.clone());
+            UNSAFE.putReference(this, NAME_STRINGS_OFFSET, nameStrings.clone());
             return pName;
         } catch (CloneNotSupportedException ex) {
             throw new AssertionError("Should never happen");
@@ -273,15 +278,14 @@ public class PrincipalName implements Cloneable {
             if (subDer.getTag() != DerValue.tag_SequenceOf) {
                 throw new Asn1Exception(Krb5.ASN1_BAD_ID);
             }
-            Vector<String> v = new Vector<>();
+            ArrayList<String> v = new ArrayList<>();
             DerValue subSubDer;
             while(subDer.getData().available() > 0) {
                 subSubDer = subDer.getData().getDerValue();
                 String namePart = new KerberosString(subSubDer).toString();
-                v.addElement(namePart);
+                v.add(namePart);
             }
-            nameStrings = new String[v.size()];
-            v.copyInto(nameStrings);
+            nameStrings = v.toArray(new String[0]);
             validateNameStrings(nameStrings);
         } else  {
             throw new Asn1Exception(Krb5.ASN1_BAD_ID);
@@ -329,7 +333,7 @@ public class PrincipalName implements Cloneable {
     // Code repetition, realm parsed again by class Realm
     private static String[] parseName(String name) {
 
-        Vector<String> tempStrings = new Vector<>();
+        ArrayList<String> tempStrings = new ArrayList<>();
         String temp = name;
         int i = 0;
         int componentStart = 0;
@@ -349,7 +353,7 @@ public class PrincipalName implements Cloneable {
                 else {
                     if (componentStart <= i) {
                         component = temp.substring(componentStart, i);
-                        tempStrings.addElement(component);
+                        tempStrings.add(component);
                     }
                     componentStart = i + 1;
                 }
@@ -366,7 +370,7 @@ public class PrincipalName implements Cloneable {
                     } else {
                         if (componentStart < i) {
                             component = temp.substring(componentStart, i);
-                            tempStrings.addElement(component);
+                            tempStrings.add(component);
                         }
                         componentStart = i + 1;
                         break;
@@ -378,11 +382,10 @@ public class PrincipalName implements Cloneable {
 
         if (i == temp.length()) {
             component = temp.substring(componentStart, i);
-            tempStrings.addElement(component);
+            tempStrings.add(component);
         }
 
-        String[] result = new String[tempStrings.size()];
-        tempStrings.copyInto(result);
+        String[] result = tempStrings.toArray(new String[0]);
         return result;
     }
 
@@ -414,26 +417,37 @@ public class PrincipalName implements Cloneable {
         case KRB_NT_SRV_HST:
             if (nameParts.length >= 2) {
                 String hostName = nameParts[1];
+                Boolean option;
                 try {
-                    // RFC4120 does not recommend canonicalizing a hostname.
-                    // However, for compatibility reason, we will try
-                    // canonicalize it and see if the output looks better.
-
-                    String canonicalized = (InetAddress.getByName(hostName)).
-                            getCanonicalHostName();
-
-                    // Looks if canonicalized is a longer format of hostName,
-                    // we accept cases like
-                    //     bunny -> bunny.rabbit.hole
-                    if (canonicalized.toLowerCase(Locale.ENGLISH).startsWith(
-                                hostName.toLowerCase(Locale.ENGLISH)+".")) {
-                        hostName = canonicalized;
-                    }
-                } catch (UnknownHostException | SecurityException e) {
-                    // not canonicalized or no permission to do so, use old
+                    // If true, try canonicalizing and accept it if it starts
+                    // with the short name. Otherwise, never. Default true.
+                    option = Config.getInstance().getBooleanObject(
+                            "libdefaults", "dns_canonicalize_hostname");
+                } catch (KrbException e) {
+                    option = null;
                 }
-                if (hostName.endsWith(".")) {
-                    hostName = hostName.substring(0, hostName.length() - 1);
+                if (option != Boolean.FALSE) {
+                    try {
+                        // RFC4120 does not recommend canonicalizing a hostname.
+                        // However, for compatibility reason, we will try
+                        // canonicalizing it and see if the output looks better.
+
+                        String canonicalized = (InetAddress.getByName(hostName)).
+                                getCanonicalHostName();
+
+                        // Looks if canonicalized is a longer format of hostName,
+                        // we accept cases like
+                        //     bunny -> bunny.rabbit.hole
+                        if (canonicalized.toLowerCase(Locale.ENGLISH).startsWith(
+                                hostName.toLowerCase(Locale.ENGLISH) + ".")) {
+                            hostName = canonicalized;
+                        }
+                    } catch (UnknownHostException | SecurityException e) {
+                        // not canonicalized or no permission to do so, use old
+                    }
+                    if (hostName.endsWith(".")) {
+                        hostName = hostName.substring(0, hostName.length() - 1);
+                    }
                 }
                 nameParts[1] = hostName.toLowerCase(Locale.ENGLISH);
             }
@@ -462,6 +476,7 @@ public class PrincipalName implements Cloneable {
         case KRB_NT_SRV_INST:
         case KRB_NT_SRV_XHST:
         case KRB_NT_UID:
+        case KRB_NT_ENTERPRISE:
             nameStrings = nameParts;
             nameType = type;
             if (realm != null) {
@@ -475,6 +490,7 @@ public class PrincipalName implements Cloneable {
         }
     }
 
+    // Warning: called by nativeccache.c
     public PrincipalName(String name, int type) throws RealmException {
         this(name, type, (String)null);
     }
@@ -524,7 +540,6 @@ public class PrincipalName implements Cloneable {
     public byte[][] toByteArray() {
         byte[][] result = new byte[nameStrings.length][];
         for (int i = 0; i < nameStrings.length; i++) {
-            result[i] = new byte[nameStrings[i].length()];
             result[i] = nameStrings[i].getBytes();
         }
         return result;
@@ -555,7 +570,9 @@ public class PrincipalName implements Cloneable {
         for (int i = 0; i < nameStrings.length; i++) {
             if (i > 0)
                 str.append("/");
-            str.append(nameStrings[i]);
+            String n = nameStrings[i];
+            n = n.replace("@", "\\@");
+            str.append(n);
         }
         str.append("@");
         str.append(nameRealm.toString());

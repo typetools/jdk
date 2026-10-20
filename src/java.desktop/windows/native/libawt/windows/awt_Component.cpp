@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,7 @@
 #include "awt_Win32GraphicsDevice.h"
 #include "Hashtable.h"
 #include "ComCtl32Util.h"
+#include "math.h"
 
 #include <Region.h>
 
@@ -603,7 +604,7 @@ AwtComponent::CreateHWnd(JNIEnv *env, LPCWSTR title,
     /*
       * Fix for 4046446.
       */
-    SetWindowPos(GetHWnd(), 0, x, y, w, h, SWP_NOZORDER | SWP_NOCOPYBITS | SWP_NOACTIVATE);
+    Reshape(x, y, w, h);
 
     /* Set default colors. */
     m_colorForeground = colorForeground;
@@ -1087,6 +1088,7 @@ void SpyWinMessage(HWND hwnd, UINT message, LPCTSTR szComment) {
         WIN_MSG(WM_DESTROY)
         WIN_MSG(WM_MOVE)
         WIN_MSG(WM_SIZE)
+        WIN_MSG(WM_DPICHANGED)
         WIN_MSG(WM_ACTIVATE)
         WIN_MSG(WM_SETFOCUS)
         WIN_MSG(WM_KILLFOCUS)
@@ -1332,7 +1334,7 @@ void SpyWinMessage(HWND hwnd, UINT message, LPCTSTR szComment) {
         WIN_MSG(WM_AWT_CREATE_PRINTED_PIXELS)
         WIN_MSG(WM_AWT_OBJECTLISTCLEANUP)
         default:
-            sprintf(szBuf, "0x%8.8x(%s):Unknown message 0x%8.8x\n",
+            snprintf(szBuf, sizeof(szBuf), "0x%8.8x(%s):Unknown message 0x%8.8x\n",
                 hwnd, szComment, message);
             break;
     }
@@ -1374,7 +1376,7 @@ LRESULT AwtComponent::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
       {
             HDC hDC;
             // First, release the DCs scheduled for deletion
-            ReleaseDCList(GetHWnd(), passiveDCList);
+            ReleaseDCList(passiveDCList);
 
             GetDCReturnStruct *returnStruct = new GetDCReturnStruct;
             returnStruct->gdiLimitReached = FALSE;
@@ -1402,7 +1404,7 @@ LRESULT AwtComponent::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
       {
             HDC hDC = (HDC)wParam;
             MoveDCToPassiveList(hDC, GetHWnd());
-            ReleaseDCList(GetHWnd(), passiveDCList);
+            ReleaseDCList(passiveDCList);
             mr = mrConsume;
             break;
       }
@@ -1411,7 +1413,7 @@ LRESULT AwtComponent::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
             // Called during Component destruction.  Gets current list of
             // DC's associated with Component and releases each DC.
             ReleaseDCList(GetHWnd(), activeDCList);
-            ReleaseDCList(GetHWnd(), passiveDCList);
+            ReleaseDCList(passiveDCList);
             mr = mrConsume;
             break;
       }
@@ -1505,9 +1507,9 @@ LRESULT AwtComponent::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
       case WM_SIZE:
       {
           RECT r;
-          // fix 4128317 : use GetClientRect for full 32-bit int precision and
+          // fix 4128317 : use GetWindowRect for full 32-bit int precision and
           // to avoid negative client area dimensions overflowing 16-bit params - robi
-          ::GetClientRect( GetHWnd(), &r );
+          ::GetWindowRect(GetHWnd(), &r);
           mr = WmSize(static_cast<UINT>(wParam), r.right - r.left, r.bottom - r.top);
           //mr = WmSize(wParam, LOWORD(lParam), HIWORD(lParam));
           SetCompositionWindow(r);
@@ -2191,7 +2193,7 @@ void AwtComponent::PaintUpdateRgn(const RECT *insets)
         // Fix 4745222: If we don't ValidateRgn,  windows will keep sending
         // WM_PAINT messages until we do. This causes java to go into
         // a tight loop that increases CPU to 100% and starves main
-        // thread which needs to complete initialization, but cant.
+        // thread which needs to complete initialization, but can't.
         ::ValidateRgn(GetHWnd(), NULL);
 
         return;
@@ -2233,8 +2235,8 @@ void AwtComponent::PaintUpdateRgn(const RECT *insets)
          */
         RECT* r = (RECT*)(buffer + rgndata->rdh.dwSize);
         RECT* un[2] = {0, 0};
-    DWORD i;
-    for (i = 0; i < rgndata->rdh.nCount; i++, r++) {
+        DWORD i;
+        for (i = 0; i < rgndata->rdh.nCount; i++, r++) {
             int width = r->right-r->left;
             int height = r->bottom-r->top;
             if (width > 0 && height > 0) {
@@ -2246,13 +2248,22 @@ void AwtComponent::PaintUpdateRgn(const RECT *insets)
                 }
             }
         }
+        // The Windows may request to update the small region of pixels that
+        // cannot be represented in the user's space, in this case, we will
+        // request to repaint the smallest non-empty bounding box in the user's
+        // space
+        int screen = GetScreenImOn();
+        Devices::InstanceAccess devices;
+        AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
+        float scaleX = (device == NULL) ? 1 : device->GetScaleX();
+        float scaleY = (device == NULL) ? 1 : device->GetScaleY();
         for(i = 0; i < 2; i++) {
             if (un[i] != 0) {
-                DoCallback("handleExpose", "(IIII)V",
-                           ScaleDownX(un[i]->left),
-                           ScaleDownY(un[i]->top),
-                           ScaleDownX(un[i]->right - un[i]->left),
-                           ScaleDownY(un[i]->bottom - un[i]->top));
+                int x1 = floor(un[i]->left / scaleX);
+                int y1 = floor(un[i]->top / scaleY);
+                int x2 = ceil(un[i]->right / scaleX);
+                int y2 = ceil(un[i]->bottom  / scaleY);
+                DoCallback("handleExpose", "(IIII)V", x1, y1, x2 - x1, y2 - y1);
             }
         }
         delete [] buffer;
@@ -2951,7 +2962,7 @@ KeyMapEntry keyMapTable[] = {
 // (see NT4 DDK src/input/inc/vkoem.h for OEM VK_ values).
 struct DynamicKeyMapEntry {
     UINT windowsKey;            // OEM VK codes known in advance
-    UINT javaKey;               // depends on input langauge (kbd layout)
+    UINT javaKey;               // depends on input language (kbd layout)
 };
 
 static DynamicKeyMapEntry dynamicKeyMapTable[] = {
@@ -3088,7 +3099,7 @@ AwtComponent::BuildDynamicKeyMapTable()
     //   1. Map windows VK to ANSI character (cannot map to unicode
     //      directly, since ::ToUnicode is not implemented on win9x)
     //   2. Convert ANSI char to Unicode char
-    //   3. Map Unicode char to Java VK via two auxilary tables.
+    //   3. Map Unicode char to Java VK via two auxiliary tables.
 
     for (DynamicKeyMapEntry *dynamic = dynamicKeyMapTable;
          dynamic->windowsKey != 0;
@@ -3388,7 +3399,7 @@ static void
 resetKbdState( BYTE kstate[256]) {
     BYTE tmpState[256];
     WCHAR wc[2];
-    memmove(tmpState, kstate, sizeof(kstate));
+    memmove(tmpState, kstate, 256 * sizeof(BYTE));
     tmpState[VK_SHIFT] = 0;
     tmpState[VK_CONTROL] = 0;
     tmpState[VK_MENU] = 0;
@@ -3869,6 +3880,11 @@ void AwtComponent::SetCompositionWindow(RECT& r)
         return;
     }
     COMPOSITIONFORM cf = {CFS_DEFAULT, {0, 0}, {0, 0, 0, 0}};
+    LOGFONT lf;
+    HFONT hFont = (HFONT) GetStockObject(DEFAULT_GUI_FONT);
+    if (GetObject(hFont, sizeof(lf), (LPVOID)&lf) == sizeof(lf)) {
+        ImmSetCompositionFont(hIMC, &lf);
+    }
     ImmSetCompositionWindow(hIMC, &cf);
     ImmReleaseContext(hwnd, hIMC);
 }
@@ -3883,8 +3899,8 @@ void AwtComponent::OpenCandidateWindow(int x, int y)
     }
     HWND hTop = GetTopLevelParentForWindow(hWnd);
     ::ClientToScreen(hTop, &p);
-    int sx = ScaleUpX(x) - p.x;
-    int sy = ScaleUpY(y) - p.y;
+    int sx = ScaleUpAbsX(x) - p.x;
+    int sy = ScaleUpAbsY(y) - p.y;
     if (!m_bitsCandType) {
         SetCandidateWindow(m_bitsCandType, sx, sy);
         return;
@@ -3901,11 +3917,11 @@ void AwtComponent::SetCandidateWindow(int iCandType, int x, int y)
     HIMC hIMC = ImmGetContext(hwnd);
     if (hIMC) {
         CANDIDATEFORM cf;
-        cf.dwStyle = CFS_POINT;
+        cf.dwStyle = CFS_CANDIDATEPOS;
         ImmGetCandidateWindow(hIMC, 0, &cf);
         if (x != cf.ptCurrentPos.x || y != cf.ptCurrentPos.y) {
             cf.dwIndex = iCandType;
-            cf.dwStyle = CFS_POINT;
+            cf.dwStyle = CFS_CANDIDATEPOS;
             cf.ptCurrentPos = {x, y};
             cf.rcArea = {0, 0, 0, 0};
             ImmSetCandidateWindow(hIMC, &cf);
@@ -4022,7 +4038,7 @@ MsgRouting AwtComponent::WmImeComposition(WORD wChar, LPARAM flags)
             /* Send INPUT_METHOD_TEXT_CHANGED event to the WInputMethod which in turn sends
                the event to AWT EDT.
 
-               The last two paremeters are set to equal since we don't have recommendations for
+               The last two parameters are set to equal since we don't have recommendations for
                the visible position within the current composed text. See details at
                java.awt.event.InputMethodEvent.
             */
@@ -4101,7 +4117,7 @@ void AwtComponent::SendInputMethodEvent(jint id, jstring text,
     }
 
 
-    // attrubute value definition in WInputMethod.java must be equal to that in IMM.H
+    // attribute value definition in WInputMethod.java must be equal to that in IMM.H
     DASSERT(ATTR_INPUT==sun_awt_windows_WInputMethod_ATTR_INPUT);
     DASSERT(ATTR_TARGET_CONVERTED==sun_awt_windows_WInputMethod_ATTR_TARGET_CONVERTED);
     DASSERT(ATTR_CONVERTED==sun_awt_windows_WInputMethod_ATTR_CONVERTED);
@@ -4762,32 +4778,69 @@ void AwtComponent::FillAlpha(void *bitmapBits, SIZE &size, BYTE alpha)
     }
 }
 
+int AwtComponent::GetScreenImOn() {
+    HWND hWindow = GetAncestor(GetHWnd(), GA_ROOT);
+    AwtComponent *comp = AwtComponent::GetComponent(hWindow);
+    if (comp && comp->IsTopLevel()) {
+        return comp->GetScreenImOn();
+    }
+    return AwtWin32GraphicsDevice::DeviceIndexForWindow(hWindow);
+}
+
 int AwtComponent::ScaleUpX(int x) {
-    int screen = AwtWin32GraphicsDevice::DeviceIndexForWindow(GetHWnd());
+    int screen = GetScreenImOn();
     Devices::InstanceAccess devices;
     AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
     return device == NULL ? x : device->ScaleUpX(x);
 }
 
+int AwtComponent::ScaleUpAbsX(int x) {
+    int screen = GetScreenImOn();
+    Devices::InstanceAccess devices;
+    AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
+    return device == NULL ? x : device->ScaleUpAbsX(x);
+}
+
 int AwtComponent::ScaleUpY(int y) {
-    int screen = AwtWin32GraphicsDevice::DeviceIndexForWindow(GetHWnd());
+    int screen = GetScreenImOn();
     Devices::InstanceAccess devices;
     AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
     return device == NULL ? y : device->ScaleUpY(y);
 }
 
+int AwtComponent::ScaleUpAbsY(int y) {
+    int screen = GetScreenImOn();
+    Devices::InstanceAccess devices;
+    AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
+    return device == NULL ? y : device->ScaleUpAbsY(y);
+}
+
 int AwtComponent::ScaleDownX(int x) {
-    int screen = AwtWin32GraphicsDevice::DeviceIndexForWindow(GetHWnd());
+    int screen = GetScreenImOn();
     Devices::InstanceAccess devices;
     AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
     return device == NULL ? x : device->ScaleDownX(x);
 }
 
+int AwtComponent::ScaleDownAbsX(int x) {
+    int screen = GetScreenImOn();
+    Devices::InstanceAccess devices;
+    AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
+    return device == NULL ? x : device->ScaleDownAbsX(x);
+}
+
 int AwtComponent::ScaleDownY(int y) {
-    int screen = AwtWin32GraphicsDevice::DeviceIndexForWindow(GetHWnd());
+    int screen = GetScreenImOn();
     Devices::InstanceAccess devices;
     AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
     return device == NULL ? y : device->ScaleDownY(y);
+}
+
+int AwtComponent::ScaleDownAbsY(int y) {
+    int screen = GetScreenImOn();
+    Devices::InstanceAccess devices;
+    AwtWin32GraphicsDevice* device = devices->GetDevice(screen);
+    return device == NULL ? y : device->ScaleDownAbsY(y);
 }
 
 jintArray AwtComponent::CreatePrintedPixels(SIZE &loc, SIZE &size, int alpha) {
@@ -4907,7 +4960,7 @@ AwtComponent* AwtComponent::SearchChild(UINT id) {
     }
     /*
      * DASSERT(FALSE);
-     * This should not be happend if all children are recorded
+     * This should not be happening if all children are recorded
      */
     return NULL;        /* make compiler happy */
 }
@@ -5085,7 +5138,7 @@ void AwtComponent::SendMouseEvent(jint id, jlong when, jint x, jint y,
                                         id, when, modifiers,
                                         ScaleDownX(x + insets.left),
                                         ScaleDownY(y + insets.top),
-                                        ScaleDownX(xAbs), ScaleDownY(yAbs),
+                                        ScaleDownAbsX(xAbs), ScaleDownAbsY(yAbs),
                                         clickCount, popupTrigger, button);
 
     if (safe_ExceptionOccurred(env)) {
@@ -5158,8 +5211,8 @@ AwtComponent::SendMouseWheelEvent(jint id, jlong when, jint x, jint y,
                                              id, when, modifiers,
                                              ScaleDownX(x + insets.left),
                                              ScaleDownY(y + insets.top),
-                                             ScaleDownX(xAbs),
-                                             ScaleDownY(yAbs),
+                                             ScaleDownAbsX(xAbs),
+                                             ScaleDownAbsY(yAbs),
                                              clickCount, popupTrigger,
                                              scrollType, scrollAmount,
                                              roundedWheelRotation, preciseWheelRotation);
@@ -5669,8 +5722,8 @@ jobject AwtComponent::_GetLocationOnScreen(void *param)
         RECT rect;
         VERIFY(::GetWindowRect(p->GetHWnd(),&rect));
         result = JNU_NewObjectByName(env, "java/awt/Point", "(II)V",
-                                     p->ScaleDownX(rect.left),
-                                     p->ScaleDownY(rect.top));
+                                     p->ScaleDownAbsX(rect.left),
+                                     p->ScaleDownAbsY(rect.top));
     }
 ret:
     env->DeleteGlobalRef(self);
@@ -5835,7 +5888,7 @@ void AwtComponent::_NativeHandleEvent(void *param)
 
                 /* Check to see whether the keyCode or modifiers were changed
                    on the keyPressed event, and tweak the following keyTyped
-                   event (if any) accodingly.  */
+                   event (if any) accordingly.  */
                 switch (id) {
                 case java_awt_event_KeyEvent_KEY_PRESSED:
                 {
@@ -6526,12 +6579,12 @@ JNIEXPORT void JNICALL
 Java_java_awt_Component_initIDs(JNIEnv *env, jclass cls)
 {
     TRY;
-    jclass inputEventClazz = env->FindClass("java/awt/event/InputEvent");
-    CHECK_NULL(inputEventClazz);
-    jmethodID getButtonDownMasksID = env->GetStaticMethodID(inputEventClazz, "getButtonDownMasks", "()[I");
-    CHECK_NULL(getButtonDownMasksID);
-    jintArray obj = (jintArray)env->CallStaticObjectMethod(inputEventClazz, getButtonDownMasksID);
-    jint * tmp = env->GetIntArrayElements(obj, JNI_FALSE);
+    jboolean ignoreException;
+    jintArray obj = (jintArray)JNU_CallStaticMethodByName(env, &ignoreException,
+                                                          "java/awt/event/InputEvent",
+                                                          "getButtonDownMasks", "()[I").l;
+    CHECK_NULL(obj);
+    jint * tmp = env->GetIntArrayElements(obj, nullptr);
     CHECK_NULL(tmp);
     jsize len = env->GetArrayLength(obj);
     AwtComponent::masks = SAFE_SIZE_NEW_ARRAY(jint, len);
@@ -7431,6 +7484,19 @@ DCItem *DCList::RemoveAllDCs(HWND hWnd)
     return newListPtr;
 }
 
+/**
+ * Remove all DCs from the DC list.  Return the list of those
+ * DC's to the caller (which will then probably want to
+ * call ReleaseDC() for the returned DCs).
+ */
+DCItem *DCList::RemoveAllDCs()
+{
+    listLock.Enter();
+    DCItem *newListPtr = head;
+    head = NULL;
+    listLock.Leave();
+    return newListPtr;
+}
 
 /**
  * Realize palettes of all existing HDC objects
@@ -7453,8 +7519,7 @@ void MoveDCToPassiveList(HDC hDC, HWND hWnd) {
     }
 }
 
-void ReleaseDCList(HWND hwnd, DCList &list) {
-    DCItem *removedDCs = list.RemoveAllDCs(hwnd);
+static void ReleaseDCList(DCItem *removedDCs) {
     while (removedDCs) {
         DCItem *tmpDCList = removedDCs;
         DASSERT(::GetObjectType(tmpDCList->hDC) == OBJ_DC);
@@ -7467,4 +7532,12 @@ void ReleaseDCList(HWND hwnd, DCList &list) {
         removedDCs = removedDCs->next;
         delete tmpDCList;
     }
+}
+
+void ReleaseDCList(HWND hwnd, DCList &list) {
+    ReleaseDCList(list.RemoveAllDCs(hwnd));
+}
+
+void ReleaseDCList(DCList &list) {
+    ReleaseDCList(list.RemoveAllDCs());
 }

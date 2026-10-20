@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,8 @@ package jdk.jfr.internal.instrument;
 import java.io.IOException;
 
 import jdk.jfr.events.FileWriteEvent;
+import jdk.jfr.internal.event.EventConfiguration;
+import jdk.jfr.events.EventConfigurations;
 
 /**
  * See {@link JITracer} for an explanation of this code.
@@ -40,60 +42,66 @@ final class FileOutputStreamInstrumentor {
 
     private String path;
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public void write(int b) throws IOException {
-        FileWriteEvent event = FileWriteEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_WRITE;
+        if (!eventConfiguration.isEnabled()) {
             write(b);
             return;
         }
+        long bytesWritten = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             write(b);
-            event.bytesWritten = 1;
+            bytesWritten = 1;
         } finally {
-            event.path = path;
-            event.commit();
-            event.reset();
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                FileWriteEvent.commit(start, duration, path, bytesWritten);
+            }
         }
     }
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public void write(byte b[]) throws IOException {
-        FileWriteEvent event = FileWriteEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_WRITE;
+        if (!eventConfiguration.isEnabled()) {
             write(b);
             return;
         }
+        long bytesWritten = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             write(b);
-            event.bytesWritten = b.length;
+            bytesWritten = b.length;
         } finally {
-            event.path = path;
-            event.commit();
-            event.reset();
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                FileWriteEvent.commit(start, duration, path, bytesWritten);
+            }
         }
     }
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public void write(byte b[], int off, int len) throws IOException {
-        FileWriteEvent event = FileWriteEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_WRITE;
+        if (!eventConfiguration.isEnabled()) {
             write(b, off, len);
             return;
         }
+        long bytesWritten = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             write(b, off, len);
-            event.bytesWritten = len;
+            bytesWritten = len;
         } finally {
-            event.path = path;
-            event.commit();
-            event.reset();
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                FileWriteEvent.commit(start, duration, path, bytesWritten);
+            }
         }
     }
 }

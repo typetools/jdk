@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
- * Copyright 2009, 2015, Red Hat, Inc.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2009, 2021, Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,11 +23,17 @@
  *
  */
 
-#ifndef CPU_ZERO_VM_GLOBALDEFINITIONS_ZERO_HPP
-#define CPU_ZERO_VM_GLOBALDEFINITIONS_ZERO_HPP
+#ifndef CPU_ZERO_GLOBALDEFINITIONS_ZERO_HPP
+#define CPU_ZERO_GLOBALDEFINITIONS_ZERO_HPP
 
 #ifdef _LP64
 #define SUPPORTS_NATIVE_CX8
+#endif
+
+#define SUPPORT_MONITOR_COUNT
+
+#ifdef __APPLE__
+#define FFI_GO_CLOSURES 0
 #endif
 
 #include <ffi.h>
@@ -36,4 +42,4 @@
 // 32-bit integer argument values are extended to 64 bits.
 const bool CCallingConventionRequiresIntsAsLongs = false;
 
-#endif // CPU_ZERO_VM_GLOBALDEFINITIONS_ZERO_HPP
+#endif // CPU_ZERO_GLOBALDEFINITIONS_ZERO_HPP

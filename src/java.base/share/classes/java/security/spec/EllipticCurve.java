@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * This immutable class holds the necessary values needed to represent
@@ -79,9 +78,9 @@ public class EllipticCurve {
      * @param field the finite field that this elliptic curve is over.
      * @param a the first coefficient of this elliptic curve.
      * @param b the second coefficient of this elliptic curve.
-     * @exception NullPointerException if {@code field},
+     * @throws    NullPointerException if {@code field},
      * {@code a}, or {@code b} is null.
-     * @exception IllegalArgumentException if {@code a}
+     * @throws    IllegalArgumentException if {@code a}
      * or {@code b} is not null and not in {@code field}.
      */
     public EllipticCurve(ECField field, BigInteger a,
@@ -99,9 +98,9 @@ public class EllipticCurve {
      * @param seed the bytes used during curve generation for later
      * validation. Contents of this array are copied to protect against
      * subsequent modification.
-     * @exception NullPointerException if {@code field},
+     * @throws    NullPointerException if {@code field},
      * {@code a}, or {@code b} is null.
-     * @exception IllegalArgumentException if {@code a}
+     * @throws    IllegalArgumentException if {@code a}
      * or {@code b} is not null and not in {@code field}.
      */
     public EllipticCurve(ECField field, BigInteger a,
@@ -177,15 +176,11 @@ public class EllipticCurve {
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
         if (this == obj) return true;
-        if (obj instanceof EllipticCurve) {
-            EllipticCurve curve = (EllipticCurve) obj;
-            if ((field.equals(curve.field)) &&
-                (a.equals(curve.a)) &&
-                (b.equals(curve.b))) {
-                    return true;
-            }
-        }
-        return false;
+
+        return obj instanceof EllipticCurve other
+                && field.equals(other.field)
+                && a.equals(other.a)
+                && b.equals(other.b);
     }
 
     /**

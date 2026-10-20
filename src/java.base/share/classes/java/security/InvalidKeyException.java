@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,9 +26,12 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the exception for invalid Keys (invalid encoding, wrong
- * length, uninitialized, etc).
+ * length, uninitialized, etc.).
  *
  * @author Benjamin Renaud
  * @since 1.1
@@ -36,25 +39,28 @@ package java.security;
 
 public class InvalidKeyException extends KeyException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 5698479920593359816L;
 
     /**
-     * Constructs an InvalidKeyException with no detail message. A
-     * detail message is a String that describes this particular
+     * Constructs an {@code InvalidKeyException} with no detail message. A
+     * detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidKeyException() {
         super();
     }
 
     /**
-     * Constructs an InvalidKeyException with the specified detail
-     * message. A detail message is a String that describes this
+     * Constructs an {@code InvalidKeyException} with the specified detail
+     * message. A detail message is a {@code String} that describes this
      * particular exception.
      *
      * @param msg the detail message.
      */
-    public InvalidKeyException(String msg) {
+    @SideEffectFree
+    public InvalidKeyException(@Nullable String msg) {
         super(msg);
     }
 
@@ -69,7 +75,8 @@ public class InvalidKeyException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidKeyException(String message, Throwable cause) {
+    @SideEffectFree
+    public InvalidKeyException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +91,8 @@ public class InvalidKeyException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidKeyException(Throwable cause) {
+    @SideEffectFree
+    public InvalidKeyException(@Nullable Throwable cause) {
         super(cause);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,60 +27,59 @@ package jdk.javadoc.internal.doclets.toolkit.taglets;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.SeeTree;
+import jdk.javadoc.doclet.Taglet.Location;
+import jdk.javadoc.internal.doclets.toolkit.BaseConfiguration;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.CommentHelper;
-import jdk.javadoc.internal.doclets.toolkit.util.DocFinder;
-import jdk.javadoc.internal.doclets.toolkit.util.DocFinder.Input;
+import jdk.javadoc.internal.doclets.toolkit.util.DocFinder.Result;
 import jdk.javadoc.internal.doclets.toolkit.util.Utils;
 
-import static com.sun.source.doctree.DocTree.Kind.SEE;
-
 /**
- * A taglet that represents the @see tag.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
+ * A taglet that represents the {@code @see} tag.
  */
 public class SeeTaglet extends BaseTaglet implements InheritableTaglet {
 
     public SeeTaglet() {
-        super(SEE.tagName, false, EnumSet.allOf(Site.class));
+        super(DocTree.Kind.SEE, false, EnumSet.allOf(Location.class));
     }
 
     @Override
-    public void inherit(DocFinder.Input input, DocFinder.Output output) {
-        List<? extends DocTree> tags = input.utils.getSeeTrees(input.element);
-        if (!tags.isEmpty()) {
-            CommentHelper ch =  input.utils.getCommentHelper(input.element);
-            output.holder = input.element;
-            output.holderTag = tags.get(0);
-            output.inlineTags = input.isFirstSentence
-                    ? ch.getFirstSentenceTrees(input.utils.configuration, output.holderTag)
-                    : ch.getReference(output.holderTag);
-        }
+    public Output inherit(Element owner, DocTree tag, boolean isFirstSentence, BaseConfiguration configuration) {
+        CommentHelper ch = configuration.utils.getCommentHelper(owner);
+        var path = ch.getDocTreePath(tag);
+        configuration.getMessages().warning(path, "doclet.inheritDocWithinInappropriateTag");
+        return new Output(null, null, List.of(), true /* true, otherwise there will be an exception up the stack */);
     }
 
     @Override
-    public Content getTagletOutput(Element holder, TagletWriter writer) {
+    public Content getAllBlockTagOutput(Element holder, TagletWriter writer) {
         Utils utils = writer.configuration().utils;
-        List<? extends DocTree> tags = utils.getSeeTrees(holder);
+        List<? extends SeeTree> tags = utils.getSeeTrees(holder);
         Element e = holder;
-        if (tags.isEmpty() && utils.isExecutableElement(holder)) {
-            Input input = new DocFinder.Input(utils, holder, this);
-            DocFinder.Output inheritedDoc = DocFinder.search(writer.configuration(), input);
-            if (inheritedDoc.holder != null) {
-                tags = utils.getSeeTrees(inheritedDoc.holder);
-                e = inheritedDoc.holder;
+        if (utils.isMethod(holder)) {
+            var docFinder = utils.docFinder();
+            Optional<Documentation> result = docFinder.search((ExecutableElement) holder,
+                    m -> Result.fromOptional(extract(utils, m))).toOptional();
+            if (result.isPresent()) {
+                ExecutableElement m = result.get().method();
+                tags = utils.getSeeTrees(m);
+                e = m;
             }
         }
         return writer.seeTagOutput(e, tags);
+    }
+
+    private record Documentation(List<? extends SeeTree> seeTrees, ExecutableElement method) { }
+
+    private static Optional<Documentation> extract(Utils utils, ExecutableElement method) {
+        List<? extends SeeTree> tags = utils.getSeeTrees(method);
+        return tags.isEmpty() ? Optional.empty() : Optional.of(new Documentation(tags, method));
     }
 }

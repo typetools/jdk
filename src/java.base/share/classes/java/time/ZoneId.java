@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -117,7 +117,7 @@ import static java.util.Map.entry;
  * Similarly, a comparison of two IDs only examines the ID, whereas
  * a comparison of two rules examines the entire data set.
  *
- * <h3>Time-zone IDs</h3>
+ * <h2>Time-zone IDs</h2>
  * The ID is unique within the system.
  * There are three types of ID.
  * <p>
@@ -153,7 +153,7 @@ import static java.util.Map.entry;
  * The recommended format for region IDs from groups other than TZDB is 'group~region'.
  * Thus if IATA data were defined, Utrecht airport would be 'IATA~UTC'.
  *
- * <h3>Serialization</h3>
+ * <h2>Serialization</h2>
  * This class can be serialized and stores the string zone ID in the external form.
  * The {@code ZoneOffset} subclass uses a dedicated format that only stores the
  * offset from UTC/Greenwich.
@@ -166,22 +166,24 @@ import static java.util.Map.entry;
  * However, any call to {@code getRules} will fail with {@code ZoneRulesException}.
  * This approach is designed to allow a {@link ZonedDateTime} to be loaded and
  * queried, but not modified, on a Java Runtime with incomplete time-zone information.
- *
  * <p>
  * This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
- * class; use of identity-sensitive operations (including reference equality
- * ({@code ==}), identity hash code, or synchronization) on instances of
- * {@code ZoneId} may have unpredictable results and should be avoided.
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
  * The {@code equals} method should be used for comparisons.
  *
  * @implSpec
- * This abstract class has two implementations, both of which are immutable and thread-safe.
- * One implementation models region-based IDs, the other is {@code ZoneOffset} modelling
- * offset-based IDs. This difference is visible in serialization.
+ * This abstract sealed class permits two implementations, both of which are immutable and
+ * thread-safe. One implementation models region-based IDs, the other is {@code ZoneOffset}
+ * modelling offset-based IDs. This difference is visible in serialization.
  *
  * @since 1.8
+ * @sealedGraph
  */
-public abstract class ZoneId implements Serializable {
+@jdk.internal.ValueBased
+public abstract sealed class ZoneId implements Serializable permits ZoneOffset, ZoneRegion {
 
     /**
      * A map of zone overrides to enable the short time-zone names to be used.
@@ -260,6 +262,7 @@ public abstract class ZoneId implements Serializable {
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 8352817235686L;
 
     //-----------------------------------------------------------------------
@@ -344,7 +347,7 @@ public abstract class ZoneId implements Serializable {
      *  The rules of the returned {@code ZoneId} will be equivalent to the
      *  parsed {@code ZoneOffset}.
      * <li>All other IDs are parsed as region-based zone IDs. Region IDs must
-     *  match the regular expression <code>[A-Za-z][A-Za-z0-9~/._+-]+</code>
+     *  match the regular expression {@code [A-Za-z][A-Za-z0-9~/._+-]+}
      *  otherwise a {@code DateTimeException} is thrown. If the zone ID is not
      *  in the configured set of IDs, {@code ZoneRulesException} is thrown.
      *  The detailed format of the region ID depends on the group supplying the data.
@@ -378,7 +381,7 @@ public abstract class ZoneId implements Serializable {
     public static ZoneId ofOffset(String prefix, ZoneOffset offset) {
         Objects.requireNonNull(prefix, "prefix");
         Objects.requireNonNull(offset, "offset");
-        if (prefix.length() == 0) {
+        if (prefix.isEmpty()) {
             return offset;
         }
 
@@ -475,11 +478,7 @@ public abstract class ZoneId implements Serializable {
     /**
      * Constructor only accessible within the package.
      */
-    ZoneId() {
-        if (getClass() != ZoneOffset.class && getClass() != ZoneRegion.class) {
-            throw new AssertionError("Invalid subclass");
-        }
-    }
+    ZoneId() {}
 
     //-----------------------------------------------------------------------
     /**
@@ -592,6 +591,11 @@ public abstract class ZoneId implements Serializable {
         return this;
     }
 
+    /**
+     * Get the effective offset for an instant at the given epochSecond.
+     */
+    /* package-private */ abstract ZoneOffset getOffset(long epochSecond);
+
     //-----------------------------------------------------------------------
     /**
      * Checks if this time-zone ID is equal to another time-zone ID.
@@ -608,11 +612,8 @@ public abstract class ZoneId implements Serializable {
         if (this == obj) {
            return true;
         }
-        if (obj instanceof ZoneId) {
-            ZoneId other = (ZoneId) obj;
-            return getId().equals(other.getId());
-        }
-        return false;
+        return (obj instanceof ZoneId other)
+                && getId().equals(other.getId());
     }
 
     /**
@@ -632,6 +633,7 @@ public abstract class ZoneId implements Serializable {
      * @param s the stream to read
      * @throws InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s) throws InvalidObjectException {
         throw new InvalidObjectException("Deserialization via serialization delegate");
     }
@@ -649,7 +651,7 @@ public abstract class ZoneId implements Serializable {
     //-----------------------------------------------------------------------
     /**
      * Writes the object using a
-     * <a href="../../serialized-form.html#java.time.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(7);  // identifies a ZoneId (not ZoneOffset)
@@ -663,6 +665,7 @@ public abstract class ZoneId implements Serializable {
      * @return the instance of {@code Ser}, not null
      */
     // this is here for serialization Javadoc
+    @java.io.Serial
     private Object writeReplace() {
         return new Ser(Ser.ZONE_REGION_TYPE, this);
     }

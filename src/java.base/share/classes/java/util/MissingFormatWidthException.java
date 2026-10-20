@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the format width is required.
  *
@@ -34,8 +37,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class MissingFormatWidthException extends IllegalFormatException {
+public non-sealed class MissingFormatWidthException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 15560123L;
 
     private String s;
@@ -47,6 +51,7 @@ public class MissingFormatWidthException extends IllegalFormatException {
      * @param  s
      *         The format specifier which does not have a width
      */
+    @SideEffectFree
     public MissingFormatWidthException(String s) {
         if (s == null)
             throw new NullPointerException();
@@ -62,6 +67,7 @@ public class MissingFormatWidthException extends IllegalFormatException {
         return s;
     }
 
+    @Pure
     public String getMessage() {
         return s;
     }

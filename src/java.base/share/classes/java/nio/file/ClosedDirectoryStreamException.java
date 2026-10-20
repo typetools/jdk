@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an attempt is made to invoke an operation on
  * a directory stream that is closed.
@@ -35,11 +37,13 @@ package java.nio.file;
 public class ClosedDirectoryStreamException
     extends IllegalStateException
 {
+    @java.io.Serial
     static final long serialVersionUID = 4228386650900895400L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ClosedDirectoryStreamException() {
     }
 }

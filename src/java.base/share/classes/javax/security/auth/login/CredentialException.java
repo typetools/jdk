@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * A generic credential exception.
  *
@@ -32,12 +35,14 @@ package javax.security.auth.login;
  */
 public class CredentialException extends LoginException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -4772893876810601859L;
 
     /**
      * Constructs a CredentialException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CredentialException() {
         super();
     }
@@ -49,7 +54,8 @@ public class CredentialException extends LoginException {
      *
      * @param msg the detail message.
      */
-    public CredentialException(String msg) {
+    @SideEffectFree
+    public CredentialException(@Nullable String msg) {
         super(msg);
     }
 }

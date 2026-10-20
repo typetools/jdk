@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.NotSerializableException;
 import java.io.IOException;
 
@@ -45,6 +48,7 @@ import java.io.IOException;
 
 public class InvalidPropertiesFormatException extends IOException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 7763056076009360219L;
 
     /**
@@ -54,7 +58,9 @@ public class InvalidPropertiesFormatException extends IOException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link Throwable#getCause()} method).
      */
-    public InvalidPropertiesFormatException(Throwable cause) {
+    @SideEffectFree
+    @SuppressWarnings("purity.call") // initCause affects only the new object
+    public InvalidPropertiesFormatException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.initCause(cause);
     }
@@ -66,7 +72,8 @@ public class InvalidPropertiesFormatException extends IOException {
     * @param   message   the detail message. The detail message is saved for
     *          later retrieval by the {@link Throwable#getMessage()} method.
     */
-    public InvalidPropertiesFormatException(String message) {
+    @SideEffectFree
+    public InvalidPropertiesFormatException(@Nullable String message) {
         super(message);
     }
 
@@ -74,6 +81,7 @@ public class InvalidPropertiesFormatException extends IOException {
      * Throws NotSerializableException, since InvalidPropertiesFormatException
      * objects are not intended to be serializable.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream out)
         throws NotSerializableException
     {
@@ -84,6 +92,7 @@ public class InvalidPropertiesFormatException extends IOException {
      * Throws NotSerializableException, since InvalidPropertiesFormatException
      * objects are not intended to be serializable.
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream in)
         throws NotSerializableException
     {

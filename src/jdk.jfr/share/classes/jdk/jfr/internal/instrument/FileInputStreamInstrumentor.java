@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,9 @@ package jdk.jfr.internal.instrument;
 
 import java.io.IOException;
 
+import jdk.jfr.events.EventConfigurations;
 import jdk.jfr.events.FileReadEvent;
+import jdk.jfr.internal.event.EventConfiguration;
 
 /**
  * See {@link JITracer} for an explanation of this code.
@@ -40,76 +42,78 @@ final class FileInputStreamInstrumentor {
 
     private String path;
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public int read() throws IOException {
-        FileReadEvent event = FileReadEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_READ;
+        if (!eventConfiguration.isEnabled()) {
             return read();
         }
         int result = 0;
+        boolean endOfFile = false;
+        long bytesRead = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             result = read();
             if (result < 0) {
-                event.endOfFile = true;
+                endOfFile = true;
             } else {
-                event.bytesRead = 1;
+                bytesRead = 1;
             }
         } finally {
-            event.path = path;
-            event.commit();
-            event.reset();
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                FileReadEvent.commit(start, duration, path, bytesRead, endOfFile);
+            }
         }
         return result;
     }
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public int read(byte b[]) throws IOException {
-        FileReadEvent event = FileReadEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_READ;
+        if (!eventConfiguration.isEnabled()) {
             return read(b);
         }
         int bytesRead = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             bytesRead = read(b);
         } finally {
-            if (bytesRead < 0) {
-                event.endOfFile = true;
-            } else {
-                event.bytesRead = bytesRead;
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                if (bytesRead < 0) {
+                    FileReadEvent.commit(start, duration, path, 0L, true);
+                } else {
+                    FileReadEvent.commit(start, duration, path, bytesRead, false);
+                }
             }
-            event.path = path;
-            event.commit();
-            event.reset();
         }
         return bytesRead;
     }
 
-    @SuppressWarnings("deprecation")
     @JIInstrumentationMethod
     public int read(byte b[], int off, int len) throws IOException {
-        FileReadEvent event = FileReadEvent.EVENT.get();
-        if (!event.isEnabled()) {
+        EventConfiguration eventConfiguration = EventConfigurations.FILE_READ;
+        if (!eventConfiguration.isEnabled()) {
             return read(b, off, len);
         }
         int bytesRead = 0;
+        long start = 0;
         try {
-            event.begin();
+            start = EventConfiguration.timestamp();
             bytesRead = read(b, off, len);
         } finally {
-            if (bytesRead < 0) {
-                event.endOfFile = true;
-            } else {
-                event.bytesRead = bytesRead;
+            long duration = EventConfiguration.timestamp() - start;
+            if (eventConfiguration.shouldCommit(duration)) {
+                if (bytesRead < 0) {
+                    FileReadEvent.commit(start, duration, path, 0L, true);
+                } else {
+                    FileReadEvent.commit(start, duration, path, bytesRead, false);
+                }
             }
-            event.path = path;
-            event.commit();
-            event.reset();
         }
         return bytesRead;
     }
-
 }

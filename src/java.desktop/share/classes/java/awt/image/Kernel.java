@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@ package java.awt.image;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * The {@code Kernel} class defines a matrix that describes how a
  * specified pixel and its surrounding pixels affect the value
@@ -45,7 +44,7 @@ public @UsesObjectEquals class Kernel implements Cloneable {
     private int  height;
     private int  xOrigin;
     private int  yOrigin;
-    private float data[];
+    private float[] data;
 
     private static native void initIDs();
     static {
@@ -67,7 +66,7 @@ public @UsesObjectEquals class Kernel implements Cloneable {
      *         is less than the product of {@code width} and
      *         {@code height}
      */
-    public Kernel(int width, int height, float data[]) {
+    public Kernel(int width, int height, float[] data) {
         this.width  = width;
         this.height = height;
         this.xOrigin  = (width-1)>>1;

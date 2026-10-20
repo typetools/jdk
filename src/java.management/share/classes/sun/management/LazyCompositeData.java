@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,15 +52,18 @@ import javax.management.openmbean.TabularType;
 public abstract class LazyCompositeData
         implements CompositeData, Serializable {
 
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private CompositeData compositeData;
 
     // Implementation of the CompositeData interface
     @Override
+    @Pure
     public boolean containsKey(String key) {
         return compositeData().containsKey(key);
     }
 
     @Override
+    @Pure
     public boolean containsValue(Object value) {
         return compositeData().containsValue(value);
     }

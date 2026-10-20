@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.*;
+import java.util.Objects;
 
 import sun.security.util.*;
 
@@ -48,12 +49,12 @@ import sun.security.util.*;
  * @author Amit Kapoor
  * @author Hemma Prafullchandra
  */
-public class GeneralSubtree {
+public class GeneralSubtree implements DerEncoder {
     private static final byte TAG_MIN = 0;
     private static final byte TAG_MAX = 1;
     private static final int  MIN_DEFAULT = 0;
 
-    private GeneralName name;
+    private final GeneralName name;
     private int         minimum = MIN_DEFAULT;
     private int         maximum = -1;
 
@@ -67,7 +68,7 @@ public class GeneralSubtree {
      * @param max the maximum BaseDistance
      */
     public GeneralSubtree(GeneralName name, int min, int max) {
-        this.name = name;
+        this.name = Objects.requireNonNull(name);
         this.minimum = min;
         this.maximum = max;
     }
@@ -160,9 +161,8 @@ public class GeneralSubtree {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object other) {
-        if (!(other instanceof GeneralSubtree))
+        if (!(other instanceof GeneralSubtree otherGS))
             return false;
-        GeneralSubtree otherGS = (GeneralSubtree)other;
         if (this.name == null) {
             if (otherGS.name != null) {
                 return false;
@@ -173,9 +173,7 @@ public class GeneralSubtree {
         }
         if (this.minimum != otherGS.minimum)
             return false;
-        if (this.maximum != otherGS.maximum)
-            return false;
-        return true;
+        return this.maximum == otherGS.maximum;
     }
 
     /**
@@ -204,7 +202,8 @@ public class GeneralSubtree {
      *
      * @param out the DerOutputStream to encode this object to.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) {
         DerOutputStream seq = new DerOutputStream();
 
         name.encode(seq);

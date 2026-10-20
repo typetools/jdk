@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serial;
 import java.util.Locale;
 
 /**
@@ -47,11 +49,11 @@ import java.util.Locale;
  */
 class MimeType implements Externalizable, Cloneable {
 
-    /*
-     * serialization support
+    /**
+     * Use serialVersionUID from JDK 1.2 for interoperability.
      */
-
-    static final long serialVersionUID = -6568722458793895906L;
+    @Serial
+    private static final long serialVersionUID = -6568722458793895906L;
 
     /**
      * Constructor for externalization; this constructor should not be called
@@ -328,9 +330,12 @@ MimeTypeParameterList(rawdata.substring(semIndex));
 ClassNotFoundException {
         String s = in.readUTF();
         if (s == null || s.length() == 0) { // long mime type
-            byte[] ba = new byte[in.readInt()];
-            in.readFully(ba);
-            s = new String(ba);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int len = in.readInt();
+            while (len-- > 0) {
+                baos.write(in.readByte());
+            }
+            s = baos.toString();
         }
         try {
             parse(s);
@@ -354,9 +359,9 @@ ClassNotFoundException {
         return newObj;
     }
 
-    private String    primaryType;
-    private String    subType;
-    private MimeTypeParameterList parameters;
+    private transient String    primaryType;
+    private transient String    subType;
+    private transient MimeTypeParameterList parameters;
 
     //    below here be scary parsing related things
 

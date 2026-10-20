@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,6 +38,7 @@ import java.security.spec.NamedParameterSpec;
 import javax.crypto.KeyAgreementSpi;
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
+import javax.crypto.spec.SecretKeySpec;
 import java.util.function.Function;
 
 public class XDHKeyAgreement extends KeyAgreementSpi {
@@ -186,7 +187,7 @@ public class XDHKeyAgreement extends KeyAgreementSpi {
             throw new IllegalStateException("Not initialized correctly");
         }
         int secretLen = this.secret.length;
-        if (offset + secretLen > sharedSecret.length) {
+        if (secretLen > sharedSecret.length - offset) {
             throw new ShortBufferException("Need " + secretLen
                 + " bytes, only " + (sharedSecret.length - offset)
                 + " available");
@@ -202,7 +203,15 @@ public class XDHKeyAgreement extends KeyAgreementSpi {
             throws IllegalStateException, NoSuchAlgorithmException,
             InvalidKeyException {
 
-        throw new NoSuchAlgorithmException("Not supported");
+        if (algorithm == null) {
+            throw new NoSuchAlgorithmException("Algorithm must not be null");
+        }
+
+        if (!(algorithm.equals("TlsPremasterSecret"))) {
+            throw new NoSuchAlgorithmException(
+                    "Only supported for algorithm TlsPremasterSecret");
+        }
+        return new SecretKeySpec(engineGenerateSecret(), algorithm);
     }
 
     static class X25519 extends XDHKeyAgreement {

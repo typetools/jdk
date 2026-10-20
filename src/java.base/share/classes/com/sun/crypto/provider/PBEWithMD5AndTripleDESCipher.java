@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,9 @@
 
 package com.sun.crypto.provider;
 
-import java.io.UnsupportedEncodingException;
 import java.security.*;
 import java.security.spec.*;
 import javax.crypto.*;
-import javax.crypto.spec.*;
 
 /**
  * This class implements a proprietary password-based encryption algorithm.
@@ -88,7 +86,7 @@ public final class PBEWithMD5AndTripleDESCipher extends CipherSpi {
         }
     }
 
-     /**
+    /**
      * Sets the padding mechanism of this cipher. This algorithm only uses
      * PKCS #5 padding.
      *
@@ -196,10 +194,7 @@ public final class PBEWithMD5AndTripleDESCipher extends CipherSpi {
         try {
             core.init(opmode, key, (AlgorithmParameterSpec) null, random);
         } catch (InvalidAlgorithmParameterException ie) {
-            InvalidKeyException ike =
-                new InvalidKeyException("requires PBE parameters");
-            ike.initCause(ie);
-            throw ike;
+            throw new InvalidKeyException("requires PBE parameters", ie);
         }
     }
 

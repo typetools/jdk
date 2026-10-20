@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when a conversion and flag are incompatible.
  *
@@ -34,9 +36,10 @@ package java.util;
  *
  * @since 1.5
  */
-public class FormatFlagsConversionMismatchException
+public non-sealed class FormatFlagsConversionMismatchException
     extends IllegalFormatException
 {
+    @java.io.Serial
     private static final long serialVersionUID = 19120414L;
 
     private String f;
@@ -53,6 +56,7 @@ public class FormatFlagsConversionMismatchException
      * @param  c
      *         The conversion
      */
+    @SideEffectFree
     public FormatFlagsConversionMismatchException(String f, char c) {
         if (f == null)
             throw new NullPointerException();
@@ -78,6 +82,7 @@ public class FormatFlagsConversionMismatchException
         return c;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Conversion = " + c + ", Flags = " + f;
     }

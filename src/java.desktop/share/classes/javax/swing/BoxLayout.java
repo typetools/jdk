@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,16 +36,12 @@ import java.io.PrintStream;
  * vertically or horizontally. The components will not wrap so, for
  * example, a vertical arrangement of components will stay vertically
  * arranged when the frame is resized.
- * <table class="borderless" style="float:right">
- * <caption>Example:</caption>
- *    <TR>
- *      <TD style="text-align:center">
- *         <P STYLE="TEXT-ALIGN:CENTER"><IMG SRC="doc-files/BoxLayout-1.gif"
- *          alt="The following text describes this graphic."
- *          WIDTH="191" HEIGHT="201" STYLE="FLOAT:BOTTOM; BORDER:0">
- *      </TD>
- *    </TR>
- * </TABLE>
+ * <div style="float:right;text-align:center">
+ *   <p><b>Example:</b>
+ *   <p><img src="doc-files/BoxLayout-1.gif"
+ *      alt="The following text describes this graphic."
+ *      width="191" height="201">
+ * </div>
  * <p>
  * Nesting multiple panels with different combinations of horizontal and
  * vertical gives an effect similar to GridBagLayout, without the
@@ -117,7 +113,7 @@ import java.io.PrintStream;
  * <p>
  * For further information and examples see
  * <a
- href="http://docs.oracle.com/javase/tutorial/uiswing/layout/box.html">How to Use BoxLayout</a>,
+ href="https://docs.oracle.com/javase/tutorial/uiswing/layout/box.html">How to Use BoxLayout</a>,
  * a section in <em>The Java Tutorial.</em>
  * <p>
  * <strong>Warning:</strong>
@@ -125,7 +121,7 @@ import java.io.PrintStream;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the {@code java.beans} package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -173,7 +169,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *              {@code BoxLayout.X_AXIS, BoxLayout.Y_AXIS,
      *              BoxLayout.LINE_AXIS} or {@code BoxLayout.PAGE_AXIS}
      *
-     * @exception AWTError  if the value of {@code axis} is invalid
+     * @throws AWTError  if the value of {@code axis} is invalid
      */
     @ConstructorProperties({"target", "axis"})
     public BoxLayout(Container target, int axis) {
@@ -238,7 +234,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the affected container
      *
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      */
     public synchronized void invalidateLayout(Container target) {
@@ -284,7 +280,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container that needs to be laid out
      * @return the dimensions &gt;= 0 &amp;&amp; &lt;= Integer.MAX_VALUE
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      * @see Container
      * @see #minimumLayoutSize
@@ -310,7 +306,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container that needs to be laid out
      * @return the dimensions &gt;= 0 &amp;&amp; &lt;= Integer.MAX_VALUE
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      * @see #preferredLayoutSize
      * @see #maximumLayoutSize
@@ -335,7 +331,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container that needs to be laid out
      * @return the dimensions &gt;= 0 &amp;&amp; &lt;= Integer.MAX_VALUE
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      * @see #preferredLayoutSize
      * @see #minimumLayoutSize
@@ -362,7 +358,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container
      * @return the alignment &gt;= 0.0f &amp;&amp; &lt;= 1.0f
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      */
     public synchronized float getLayoutAlignmentX(Container target) {
@@ -379,7 +375,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container
      * @return the alignment &gt;= 0.0f &amp;&amp; &lt;= 1.0f
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      */
     public synchronized float getLayoutAlignmentY(Container target) {
@@ -394,7 +390,7 @@ public class BoxLayout implements LayoutManager2, Serializable {
      *
      * @param target  the container to lay out
      *
-     * @exception AWTError  if the target isn't the container specified to the
+     * @throws AWTError  if the target isn't the container specified to the
      *                      BoxLayout constructor
      */
     public void layoutContainer(Container target) {
@@ -502,9 +498,9 @@ public class BoxLayout implements LayoutManager2, Serializable {
 
     /**
      * Given one of the 4 axis values, resolve it to an absolute axis.
-     * The relative axis values, PAGE_AXIS and LINE_AXIS are converted
-     * to their absolute couterpart given the target's ComponentOrientation
-     * value.  The absolute axes, X_AXIS and Y_AXIS are returned unmodified.
+     * The relative axis values, PAGE_AXIS and LINE_AXIS, are converted
+     * to their absolute counterpart given the target's ComponentOrientation
+     * value.  The absolute axes, X_AXIS and Y_AXIS, are returned unmodified.
      *
      * @param axis the axis to resolve
      * @param o the ComponentOrientation to resolve against

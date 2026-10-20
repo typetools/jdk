@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,7 +63,6 @@ import javax.print.attribute.standard.DialogTypeSelection;
 import javax.print.attribute.standard.JobName;
 import javax.print.attribute.standard.Sides;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -83,6 +82,7 @@ import java.util.Properties;
 
 import sun.awt.CharsetString;
 import sun.awt.FontConfiguration;
+import sun.awt.OSInfo;
 import sun.awt.PlatformFont;
 import sun.awt.SunToolkit;
 import sun.font.FontAccess;
@@ -137,7 +137,7 @@ public class PSPrinterJob extends RasterPrinterJob {
     private static final int LOWNIBBLE_MASK = 0x0000000f;
     private static final int HINIBBLE_MASK =  0x000000f0;
     private static final int HINIBBLE_SHIFT = 4;
-    private static final byte hexDigits[] = {
+    private static final byte[] hexDigits = {
         (byte)'0', (byte)'1', (byte)'2', (byte)'3',
         (byte)'4', (byte)'5', (byte)'6', (byte)'7',
         (byte)'8', (byte)'9', (byte)'A', (byte)'B',
@@ -334,14 +334,18 @@ public class PSPrinterJob extends RasterPrinterJob {
 
     /* Class static initialiser block */
     static {
-       //enable priviledges so initProps can access system properties,
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
+       //enable privileges so initProps can access system properties,
         // open the property file, etc.
         java.security.AccessController.doPrivileged(
                             new java.security.PrivilegedAction<Object>() {
             public Object run() {
                 mFontProps = initProps();
-                String osName = System.getProperty("os.name");
-                isMac = osName.startsWith("Mac");
+                isMac = OSInfo.getOSType() == OSInfo.OSType.MACOSX;
                 return null;
             }
         });
@@ -388,11 +392,10 @@ public class PSPrinterJob extends RasterPrinterJob {
                 }
 
                 // Load property file
-                InputStream in =
-                    new BufferedInputStream(new FileInputStream(f.getPath()));
                 Properties props = new Properties();
-                props.load(in);
-                in.close();
+                try (FileInputStream in = new FileInputStream(f.getPath())) {
+                    props.load(in);
+                }
                 return props;
             } catch (Exception e){
                 return (Properties)null;
@@ -414,7 +417,7 @@ public class PSPrinterJob extends RasterPrinterJob {
      * print job interactively.
      * @return false if the user cancels the dialog and
      *         true otherwise.
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -503,6 +506,7 @@ public class PSPrinterJob extends RasterPrinterJob {
      * this method is called to mark the start of a
      * document.
      */
+    @SuppressWarnings("removal")
     protected void startDoc() throws PrinterException {
 
         // A security check has been performed in the
@@ -607,7 +611,7 @@ public class PSPrinterJob extends RasterPrinterJob {
             int cnt = Integer.parseInt(mFontProps.getProperty("font.num", "9"));
             for (int i = 0; i < cnt; i++){
                 mPSStream.println("    /" + mFontProps.getProperty
-                           ("font." + String.valueOf(i), "Courier ISOF"));
+                           ("font." + i, "Courier ISOF"));
             }
         }
         mPSStream.println("] D");
@@ -732,7 +736,7 @@ public class PSPrinterJob extends RasterPrinterJob {
                  * Spool to the printer.
                  */
                 String fileName = spoolFile.getAbsolutePath();
-                String execCmd[] = printExecCmd(mDestination, mOptions,
+                String[] execCmd = printExecCmd(mDestination, mOptions,
                                mNoJobSheet, getJobNameInt(),
                                                 1, fileName);
 
@@ -757,6 +761,7 @@ public class PSPrinterJob extends RasterPrinterJob {
     /**
      * Invoked if the application cancelled the printjob.
      */
+    @SuppressWarnings("removal")
     protected void abortDoc() {
         if (mPSStream != null && mDestType != RasterPrinterJob.STREAM) {
             mPSStream.close();
@@ -778,6 +783,7 @@ public class PSPrinterJob extends RasterPrinterJob {
      * this method is called after that last page
      * has been imaged.
      */
+    @SuppressWarnings("removal")
     protected void endDoc() throws PrinterException {
         if (mPSStream != null) {
             mPSStream.println(EOF_COMMENT);
@@ -847,6 +853,7 @@ public class PSPrinterJob extends RasterPrinterJob {
                             paperWidth + " " + paperHeight + "]");
 
             final PrintService pservice = getPrintService();
+            @SuppressWarnings("removal")
             Boolean isPS = java.security.AccessController.doPrivileged(
                 new java.security.PrivilegedAction<Boolean>() {
                     public Boolean run() {
@@ -1301,9 +1308,7 @@ public class PSPrinterJob extends RasterPrinterJob {
                                       bb, true);
                         bb.flip();
                         len = bb.limit();
-                    } catch(IllegalStateException xx){
-                        continue;
-                    } catch(CoderMalfunctionError xx){
+                    } catch (IllegalStateException | CoderMalfunctionError xx){
                         continue;
                     }
                     /* The width to fit to may either be specified,
@@ -1590,19 +1595,19 @@ public class PSPrinterJob extends RasterPrinterJob {
         int COPIES  = 0x8;
         int NOSHEET = 0x10;
         int pFlags = 0;
-        String execCmd[];
+        String[] execCmd;
         int ncomps = 2; // minimum number of print args
         int n = 0;
 
-        if (printer != null && !printer.equals("") && !printer.equals("lp")) {
+        if (printer != null && !printer.isEmpty() && !printer.equals("lp")) {
             pFlags |= PRINTER;
             ncomps+=1;
         }
-        if (options != null && !options.equals("")) {
+        if (options != null && !options.isEmpty()) {
             pFlags |= OPTIONS;
             ncomps+=1;
         }
-        if (jobTitle != null && !jobTitle.equals("")) {
+        if (jobTitle != null && !jobTitle.isEmpty()) {
             pFlags |= JOBTITLE;
             ncomps+=1;
         }
@@ -1618,8 +1623,8 @@ public class PSPrinterJob extends RasterPrinterJob {
             ncomps+=1; // for jobsheet
         }
 
-        String osname = System.getProperty("os.name");
-        if (osname.equals("Linux") || osname.contains("OS X")) {
+        if (OSInfo.getOSType() == OSInfo.OSType.LINUX ||
+                OSInfo.getOSType() == OSInfo.OSType.MACOSX) {
             execCmd = new String[ncomps];
             execCmd[n++] = "/usr/bin/lpr";
             if ((pFlags & PRINTER) != 0) {

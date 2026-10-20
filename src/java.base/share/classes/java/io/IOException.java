@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -33,20 +34,20 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * class is the general class of exceptions produced by failed or
  * interrupted I/O operations.
  *
- * @author  unascribed
  * @see     java.io.InputStream
  * @see     java.io.OutputStream
  * @since   1.0
  */
 @AnnotatedFor({"nullness"})
-public
-class IOException extends Exception {
+public class IOException extends Exception {
+    @java.io.Serial
     static final long serialVersionUID = 7818375828146090155L;
 
     /**
      * Constructs an {@code IOException} with {@code null}
      * as its error detail message.
      */
+    @SideEffectFree
     public IOException() {
         super();
     }
@@ -58,6 +59,7 @@ class IOException extends Exception {
      *        The detail message (which is saved for later retrieval
      *        by the {@link #getMessage()} method)
      */
+    @SideEffectFree
     public IOException(@Nullable String message) {
         super(message);
     }
@@ -81,6 +83,7 @@ class IOException extends Exception {
      *
      * @since 1.6
      */
+    @SideEffectFree
     public IOException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
@@ -99,6 +102,7 @@ class IOException extends Exception {
      *
      * @since 1.6
      */
+    @SideEffectFree
     public IOException(@Nullable Throwable cause) {
         super(cause);
     }

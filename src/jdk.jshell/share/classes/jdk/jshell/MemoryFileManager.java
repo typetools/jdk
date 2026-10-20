@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package jdk.jshell;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -73,7 +75,7 @@ class MemoryFileManager implements JavaFileManager {
         return this.stdFileManager.getLocationAsPaths(loc);
     }
 
-    static abstract class MemoryJavaFileObject extends SimpleJavaFileObject {
+    abstract static class MemoryJavaFileObject extends SimpleJavaFileObject {
 
         public MemoryJavaFileObject(String name, JavaFileObject.Kind kind) {
             super(URI.create("string:///" + name.replace('.', '/')
@@ -560,6 +562,7 @@ class MemoryFileManager implements JavaFileManager {
     }
 
     @Override
+    @Pure
     public boolean contains(Location location, FileObject file) throws IOException {
         return stdFileManager.contains(location, file);
     }

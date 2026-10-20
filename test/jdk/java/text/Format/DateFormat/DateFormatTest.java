@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 /**
  * @test
  * @bug 4052223 4089987 4469904 4326988 4486735 8008577 8045998 8140571
+ *      8190748 8216969
  * @summary test DateFormat and SimpleDateFormat.
  * @library /java/text/testlib
  * @modules jdk.localedata
@@ -341,7 +342,7 @@ public class DateFormatTest extends IntlTest
     // Test pattern with runs things together
     public void TestRunTogetherPattern985()
     {
-        String format = "yyyyMMddHHmmssSSS";
+        String format = "yyyyMMddHHmmssSSSzzzz";
         String now, then;
 
         SimpleDateFormat formatter = new SimpleDateFormat(format);
@@ -412,7 +413,7 @@ public class DateFormatTest extends IntlTest
     public void TestCzechMonths459()
     {
         // Use Czech, which has month names with shared prefixes for June and July
-        DateFormat fmt = DateFormat.getDateInstance(DateFormat.FULL, new Locale("cs", "", ""));
+        DateFormat fmt = DateFormat.getDateInstance(DateFormat.FULL, Locale.of("cs"));
         //((SimpleDateFormat)fmt).applyPattern("MMMM d yyyy");
         logln("Pattern " + ((SimpleDateFormat)fmt).toPattern());
 
@@ -987,7 +988,7 @@ test commented out pending API-change approval
      */
     public void TestBuddhistEraBugId4469904() {
         String era = "\u0e1e.\u0e28.";
-        Locale loc = new Locale("th", "TH");
+        Locale loc = Locale.of("th", "TH");
         Calendar cal = Calendar.getInstance(Locale.US);
         cal.set(2001, 7, 23);
         Date date = cal.getTime();
@@ -1204,5 +1205,19 @@ test commented out pending API-change approval
             // Restore the initial time zone
             TimeZone.setDefault(initialTimeZone);
         }
+    }
+
+    public void Test8216969() throws Exception {
+        Locale locale = Locale.of("ru");
+        String format = "\u0434\u0435\u043a";
+        String standalone = "\u0434\u0435\u043a.";
+
+        // Check that format form is used so that the dot is parsed correctly.
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMM.yyyy", locale);
+        System.out.println(simpleDateFormat.parse("28 " + format + ".2018"));
+
+        // Check that standalone form is used.
+        simpleDateFormat = new SimpleDateFormat("MMM", locale);
+        System.out.println(simpleDateFormat.parse(standalone));
     }
 }

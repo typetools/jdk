@@ -27,6 +27,10 @@
  */
 package javax.xml.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
@@ -51,12 +55,13 @@ public class KeySelectorException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code KeySelectorException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public KeySelectorException() {
         super();
     }
@@ -67,7 +72,8 @@ public class KeySelectorException extends Exception {
      *
      * @param message the detail message
      */
-    public KeySelectorException(String message) {
+    @SideEffectFree
+    public KeySelectorException(@Nullable String message) {
         super(message);
     }
 
@@ -82,7 +88,8 @@ public class KeySelectorException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public KeySelectorException(String message, Throwable cause) {
+    @SideEffectFree
+    public KeySelectorException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -97,7 +104,8 @@ public class KeySelectorException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public KeySelectorException(Throwable cause) {
+    @SideEffectFree
+    public KeySelectorException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -111,7 +119,8 @@ public class KeySelectorException extends Exception {
      * @return the cause of this {@code KeySelectorException} or
      *         {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

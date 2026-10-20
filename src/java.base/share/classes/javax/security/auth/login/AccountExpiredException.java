@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a user account has expired.
  *
@@ -39,12 +42,14 @@ package javax.security.auth.login;
  */
 public class AccountExpiredException extends AccountException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -6064064890162661560L;
 
     /**
      * Constructs a AccountExpiredException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public AccountExpiredException() {
         super();
     }
@@ -56,7 +61,8 @@ public class AccountExpiredException extends AccountException {
      *
      * @param msg the detail message.
      */
-    public AccountExpiredException(String msg) {
+    @SideEffectFree
+    public AccountExpiredException(@Nullable String msg) {
         super(msg);
     }
 }

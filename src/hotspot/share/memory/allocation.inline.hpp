@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,28 +22,27 @@
  *
  */
 
-#ifndef SHARE_VM_MEMORY_ALLOCATION_INLINE_HPP
-#define SHARE_VM_MEMORY_ALLOCATION_INLINE_HPP
+#ifndef SHARE_MEMORY_ALLOCATION_INLINE_HPP
+#define SHARE_MEMORY_ALLOCATION_INLINE_HPP
+
+#include "memory/allocation.hpp"
 
 #include "runtime/atomic.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/os.hpp"
-#include "services/memTracker.hpp"
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
 // Explicit C-heap memory management
 
 #ifndef PRODUCT
-// Increments unsigned long value for statistics (not atomic on MP).
+// Increments unsigned long value for statistics (not atomic on MP, but avoids word-tearing on 32 bit).
 inline void inc_stat_counter(volatile julong* dest, julong add_value) {
-#if defined(SPARC) || defined(X86)
-  // Sparc and X86 have atomic jlong (8 bytes) instructions
-  julong value = Atomic::load(dest);
-  value += add_value;
-  Atomic::store(value, dest);
-#else
-  // possible word-tearing during load/store
+#ifdef _LP64
   *dest += add_value;
+#else
+  julong value = Atomic::load(dest);
+  Atomic::store(dest, value + add_value);
 #endif
 }
 #endif
@@ -51,35 +50,33 @@ inline void inc_stat_counter(volatile julong* dest, julong add_value) {
 template <class E>
 size_t MmapArrayAllocator<E>::size_for(size_t length) {
   size_t size = length * sizeof(E);
-  int alignment = os::vm_allocation_granularity();
+  size_t alignment = os::vm_allocation_granularity();
   return align_up(size, alignment);
 }
 
 template <class E>
 E* MmapArrayAllocator<E>::allocate_or_null(size_t length, MEMFLAGS flags) {
   size_t size = size_for(length);
-  int alignment = os::vm_allocation_granularity();
 
-  char* addr = os::reserve_memory(size, NULL, alignment, flags);
-  if (addr == NULL) {
-    return NULL;
+  char* addr = os::reserve_memory(size, !ExecMem, flags);
+  if (addr == nullptr) {
+    return nullptr;
   }
 
   if (os::commit_memory(addr, size, !ExecMem)) {
     return (E*)addr;
   } else {
     os::release_memory(addr, size);
-    return NULL;
+    return nullptr;
   }
 }
 
 template <class E>
 E* MmapArrayAllocator<E>::allocate(size_t length, MEMFLAGS flags) {
   size_t size = size_for(length);
-  int alignment = os::vm_allocation_granularity();
 
-  char* addr = os::reserve_memory(size, NULL, alignment, flags);
-  if (addr == NULL) {
+  char* addr = os::reserve_memory(size, !ExecMem, flags);
+  if (addr == nullptr) {
     vm_exit_out_of_memory(size, OOM_MMAP_ERROR, "Allocator (reserve)");
   }
 
@@ -104,7 +101,12 @@ E* MallocArrayAllocator<E>::allocate(size_t length, MEMFLAGS flags) {
   return (E*)AllocateHeap(size_for(length), flags);
 }
 
-template<class E>
+template <class E>
+E* MallocArrayAllocator<E>::reallocate(E* addr, size_t new_length, MEMFLAGS flags) {
+  return (E*)ReallocateHeap((char*)addr, size_for(new_length), flags);
+}
+
+template <class E>
 void MallocArrayAllocator<E>::free(E* addr) {
   FreeHeap(addr);
 }
@@ -134,35 +136,44 @@ E* ArrayAllocator<E>::allocate(size_t length, MEMFLAGS flags) {
 }
 
 template <class E>
+E* ArrayAllocator<E>::reallocate_malloc(E* addr, size_t new_length, MEMFLAGS flags) {
+  return MallocArrayAllocator<E>::reallocate(addr, new_length, flags);
+}
+
+template <class E>
 E* ArrayAllocator<E>::reallocate(E* old_addr, size_t old_length, size_t new_length, MEMFLAGS flags) {
+  if (should_use_malloc(old_length) && should_use_malloc(new_length)) {
+    return reallocate_malloc(old_addr, new_length, flags);
+  }
+
   E* new_addr = (new_length > 0)
       ? allocate(new_length, flags)
-      : NULL;
+      : nullptr;
 
-  if (new_addr != NULL && old_addr != NULL) {
+  if (new_addr != nullptr && old_addr != nullptr) {
     memcpy(new_addr, old_addr, MIN2(old_length, new_length) * sizeof(E));
   }
 
-  if (old_addr != NULL) {
+  if (old_addr != nullptr) {
     free(old_addr, old_length);
   }
 
   return new_addr;
 }
 
-template<class E>
+template <class E>
 void ArrayAllocator<E>::free_malloc(E* addr, size_t length) {
   MallocArrayAllocator<E>::free(addr);
 }
 
-template<class E>
+template <class E>
 void ArrayAllocator<E>::free_mmap(E* addr, size_t length) {
   MmapArrayAllocator<E>::free(addr, length);
 }
 
-template<class E>
+template <class E>
 void ArrayAllocator<E>::free(E* addr, size_t length) {
-  if (addr != NULL) {
+  if (addr != nullptr) {
     if (should_use_malloc(length)) {
       free_malloc(addr, length);
     } else {
@@ -171,4 +182,4 @@ void ArrayAllocator<E>::free(E* addr, size_t length) {
   }
 }
 
-#endif // SHARE_VM_MEMORY_ALLOCATION_INLINE_HPP
+#endif // SHARE_MEMORY_ALLOCATION_INLINE_HPP

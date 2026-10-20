@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package javax.naming.directory;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.Vector;
 import java.util.Enumeration;
@@ -137,6 +139,7 @@ public interface Attribute extends Cloneable, java.io.Serializable {
       * @see java.lang.Object#equals
       * @see BasicAttribute#equals
       */
+    @Pure
     boolean contains(Object attrVal);
     /**
       * Adds a new value to the attribute.
@@ -335,6 +338,11 @@ public interface Attribute extends Cloneable, java.io.Serializable {
 
     /**
      * Use serialVersionUID from JNDI 1.1.1 for interoperability.
+     *
+     * @deprecated A {@code serialVersionUID} field in an interface is
+     * ineffectual. Do not use; no replacement.
      */
+    @Deprecated
+    @SuppressWarnings("serial")
     static final long serialVersionUID = 8707690322213556804L;
 }

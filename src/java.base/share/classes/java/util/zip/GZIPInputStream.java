@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.SequenceInputStream;
@@ -49,8 +50,7 @@ import java.io.EOFException;
  *
  */
 @AnnotatedFor({"index", "mustcall"})
-public
-class GZIPInputStream extends InflaterInputStream {
+public class GZIPInputStream extends InflaterInputStream {
     /**
      * CRC-32 for uncompressed data.
      */
@@ -77,13 +77,13 @@ class GZIPInputStream extends InflaterInputStream {
      * @param in the input stream
      * @param size the input buffer size
      *
-     * @exception ZipException if a GZIP format error has occurred or the
+     * @throws    ZipException if a GZIP format error has occurred or the
      *                         compression method used is unsupported
-     * @exception IOException if an I/O error has occurred
-     * @exception IllegalArgumentException if {@code size <= 0}
+     * @throws    IOException if an I/O error has occurred
+     * @throws    IllegalArgumentException if {@code size <= 0}
      */
     public @MustCallAlias GZIPInputStream(@MustCallAlias InputStream in, @Positive int size) throws IOException {
-        super(in, new Inflater(true), size);
+        super(in, in != null ? new Inflater(true) : null, size);
         usesDefaultInflater = true;
         readHeader(in);
     }
@@ -92,30 +92,41 @@ class GZIPInputStream extends InflaterInputStream {
      * Creates a new input stream with a default buffer size.
      * @param in the input stream
      *
-     * @exception ZipException if a GZIP format error has occurred or the
+     * @throws    ZipException if a GZIP format error has occurred or the
      *                         compression method used is unsupported
-     * @exception IOException if an I/O error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public @MustCallAlias GZIPInputStream(@MustCallAlias InputStream in) throws IOException {
         this(in, 512);
     }
 
     /**
-     * Reads uncompressed data into an array of bytes. If <code>len</code> is not
-     * zero, the method will block until some input can be decompressed; otherwise,
-     * no bytes are read and <code>0</code> is returned.
+     * Reads uncompressed data into an array of bytes, returning the number of inflated
+     * bytes. If {@code len} is not zero, the method will block until some input can be
+     * decompressed; otherwise, no bytes are read and {@code 0} is returned.
+     * <p>
+     * If this method returns a nonzero integer <i>n</i> then {@code buf[off]}
+     * through {@code buf[off+}<i>n</i>{@code -1]} contain the uncompressed
+     * data.  The content of elements {@code buf[off+}<i>n</i>{@code ]} through
+     * {@code buf[off+}<i>len</i>{@code -1]} is undefined, contrary to the
+     * specification of the {@link java.io.InputStream InputStream} superclass,
+     * so an implementation is free to modify these elements during the inflate
+     * operation. If this method returns {@code -1} or throws an exception then
+     * the content of {@code buf[off]} through {@code buf[off+}<i>len</i>{@code
+     * -1]} is undefined.
+     *
      * @param buf the buffer into which the data is read
-     * @param off the start offset in the destination array <code>b</code>
+     * @param off the start offset in the destination array {@code buf}
      * @param len the maximum number of bytes read
-     * @return  the actual number of bytes read, or -1 if the end of the
+     * @return  the actual number of bytes inflated, or -1 if the end of the
      *          compressed input stream is reached
      *
-     * @exception  NullPointerException If <code>buf</code> is <code>null</code>.
-     * @exception  IndexOutOfBoundsException If <code>off</code> is negative,
-     * <code>len</code> is negative, or <code>len</code> is greater than
-     * <code>buf.length - off</code>
-     * @exception ZipException if the compressed input data is corrupt.
-     * @exception IOException if an I/O error has occurred.
+     * @throws     NullPointerException If {@code buf} is {@code null}.
+     * @throws     IndexOutOfBoundsException If {@code off} is negative,
+     * {@code len} is negative, or {@code len} is greater than
+     * {@code buf.length - off}
+     * @throws    ZipException if the compressed input data is corrupt.
+     * @throws    IOException if an I/O error has occurred.
      *
      */
     public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] buf, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) throws IOException {
@@ -138,7 +149,7 @@ class GZIPInputStream extends InflaterInputStream {
     /**
      * Closes this input stream and releases any system resources associated
      * with the stream.
-     * @exception IOException if an I/O error has occurred
+     * @throws    IOException if an I/O error has occurred
      */
     public void close() throws IOException {
         if (!closed) {
@@ -151,7 +162,7 @@ class GZIPInputStream extends InflaterInputStream {
     /**
      * GZIP header magic number.
      */
-    public static final int GZIP_MAGIC = 0x8b1f;
+    public static final @SignedPositive int GZIP_MAGIC = 0x8b1f;
 
     /*
      * File header flags.

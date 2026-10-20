@@ -55,6 +55,8 @@
 
 package jdk.internal.joptsimple.internal;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,6 +67,7 @@ public class SimpleOptionNameMap<V> implements OptionNameMap<V> {
     private final Map<String, V> map = new HashMap<>();
 
     @Override
+    @Pure
     public boolean contains( String key ) {
         return map.containsKey( key );
     }

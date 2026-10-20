@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.nio.file;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.file.spi.FileSystemProvider;
@@ -40,6 +41,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 import jdk.internal.misc.VM;
+import sun.nio.fs.DefaultFileSystemProvider;
 
 /**
  * Factory methods for file systems. This class defines the {@link #getDefault
@@ -88,19 +90,9 @@ import jdk.internal.misc.VM;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullness"})
 public final @UsesObjectEquals class FileSystems {
     private FileSystems() { }
-
-    // Built-in file system provider
-    private static final FileSystemProvider builtinFileSystemProvider =
-        sun.nio.fs.DefaultFileSystemProvider.create();
-
-    // built-in file system
-    private static class BuiltinFileSystemHolder {
-        static final FileSystem builtinFileSystem =
-            builtinFileSystemProvider.getFileSystem(URI.create("file:///"));
-    }
 
     // lazy initialization of default file system
     private static class DefaultFileSystemHolder {
@@ -109,6 +101,7 @@ public final @UsesObjectEquals class FileSystems {
         // returns default file system
         private static FileSystem defaultFileSystem() {
             // load default provider
+            @SuppressWarnings("removal")
             FileSystemProvider provider = AccessController
                 .doPrivileged(new PrivilegedAction<>() {
                     public FileSystemProvider run() {
@@ -122,7 +115,8 @@ public final @UsesObjectEquals class FileSystems {
 
         // returns default provider
         private static FileSystemProvider getDefaultProvider() {
-            FileSystemProvider provider = builtinFileSystemProvider;
+            // start with the platform's default file system provider
+            FileSystemProvider provider = DefaultFileSystemProvider.instance();
 
             // if the property java.nio.file.spi.DefaultFileSystemProvider is
             // set then its value is the name of the default provider (or a list)
@@ -193,7 +187,8 @@ public final @UsesObjectEquals class FileSystems {
         if (VM.isModuleSystemInited()) {
             return DefaultFileSystemHolder.defaultFileSystem;
         } else {
-            return BuiltinFileSystemHolder.builtinFileSystem;
+            // always use the platform's default file system during startup
+            return DefaultFileSystemProvider.theFileSystem();
         }
     }
 
@@ -237,6 +232,9 @@ public final @UsesObjectEquals class FileSystems {
      */
     public static FileSystem getFileSystem(URI uri) {
         String scheme = uri.getScheme();
+        if (scheme == null) {
+            throw new IllegalArgumentException(uri.toString());
+        }
         for (FileSystemProvider provider: FileSystemProvider.installedProviders()) {
             if (scheme.equalsIgnoreCase(provider.getScheme())) {
                 return provider.getFileSystem(uri);
@@ -262,12 +260,10 @@ public final @UsesObjectEquals class FileSystems {
      * <p> <b>Usage Example:</b>
      * Suppose there is a provider identified by the scheme {@code "memory"}
      * installed:
-     * <pre>
-     *   Map&lt;String,String&gt; env = new HashMap&lt;&gt;();
-     *   env.put("capacity", "16G");
-     *   env.put("blockSize", "4k");
-     *   FileSystem fs = FileSystems.newFileSystem(URI.create("memory:///?name=logfs"), env);
-     * </pre>
+     * {@snippet lang=java :
+     *     FileSystem fs = FileSystems.newFileSystem(URI.create("memory:///?name=logfs"),
+     *                                               Map.of("capacity", "16G", "blockSize", "4k"));
+     * }
      *
      * @param   uri
      *          the URI identifying the file system
@@ -336,7 +332,7 @@ public final @UsesObjectEquals class FileSystems {
      *          if a security manager is installed and it denies an unspecified
      *          permission required by the file system provider implementation
      */
-    public static FileSystem newFileSystem(URI uri, Map<String,?> env, ClassLoader loader)
+    public static FileSystem newFileSystem(URI uri, Map<String,?> env, @Nullable ClassLoader loader)
         throws IOException
     {
         String scheme = uri.getScheme();
@@ -376,14 +372,13 @@ public final @UsesObjectEquals class FileSystems {
      * systems where the contents of one or more files is treated as a file
      * system.
      *
-     * <p> This method iterates over the {@link FileSystemProvider#installedProviders()
-     * installed} providers. It invokes, in turn, each provider's {@link
-     * FileSystemProvider#newFileSystem(Path,Map) newFileSystem(Path,Map)} method
-     * with an empty map. If a provider returns a file system then the iteration
-     * terminates and the file system is returned. If none of the installed
-     * providers return a {@code FileSystem} then an attempt is made to locate
-     * the provider using the given class loader. If a provider returns a file
-     * system then the lookup terminates and the file system is returned.
+     * <p> This method first attempts to locate an installed provider in exactly
+     * the same manner as the {@link #newFileSystem(Path, Map, ClassLoader)
+     * newFileSystem(Path, Map, ClassLoader)} method with an empty map. If none
+     * of the installed providers return a {@code FileSystem} then an attempt is
+     * made to locate the provider using the given class loader. If a provider
+     * returns a file system then the lookup terminates and the file system is
+     * returned.
      *
      * @param   path
      *          the path to the file
@@ -404,13 +399,134 @@ public final @UsesObjectEquals class FileSystems {
      *          permission
      */
     public static FileSystem newFileSystem(Path path,
-                                           ClassLoader loader)
+                                           @Nullable ClassLoader loader)
+        throws IOException
+    {
+        return newFileSystem(path, Map.of(), loader);
+    }
+
+    /**
+     * Constructs a new {@code FileSystem} to access the contents of a file as a
+     * file system.
+     *
+     * <p> This method makes use of specialized providers that create pseudo file
+     * systems where the contents of one or more files is treated as a file
+     * system.
+     *
+     * <p> This method first attempts to locate an installed provider in exactly
+     * the same manner as the {@link #newFileSystem(Path,Map,ClassLoader)
+     * newFileSystem(Path, Map, ClassLoader)} method. If found, the provider's
+     * {@link FileSystemProvider#newFileSystem(Path, Map) newFileSystem(Path, Map)}
+     * method is invoked to construct the new file system.
+     *
+     * @param   path
+     *          the path to the file
+     * @param   env
+     *          a map of provider specific properties to configure the file system;
+     *          may be empty
+     *
+     * @return  a new file system
+     *
+     * @throws  ProviderNotFoundException
+     *          if a provider supporting this file type cannot be located
+     * @throws  ServiceConfigurationError
+     *          when an error occurs while loading a service provider
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          if a security manager is installed and it denies an unspecified
+     *          permission
+     *
+     * @since 13
+     */
+    public static FileSystem newFileSystem(Path path, Map<String,?> env)
+        throws IOException
+    {
+        return newFileSystem(path, env, null);
+    }
+
+    /**
+     * Constructs a new {@code FileSystem} to access the contents of a file as a
+     * file system.
+     *
+     * <p> This method makes use of specialized providers that create pseudo file
+     * systems where the contents of one or more files is treated as a file
+     * system.
+     *
+     * <p> This method first attempts to locate an installed provider in exactly
+     * the same manner as the {@link #newFileSystem(Path,Map,ClassLoader)
+     * newFileSystem(Path, Map, ClassLoader)} method. If found, the provider's
+     * {@link FileSystemProvider#newFileSystem(Path, Map) newFileSystem(Path, Map)}
+     * method is invoked with an empty map to construct the new file system.
+     *
+     * @param   path
+     *          the path to the file
+     *
+     * @return  a new file system
+     *
+     * @throws  ProviderNotFoundException
+     *          if a provider supporting this file type cannot be located
+     * @throws  ServiceConfigurationError
+     *          when an error occurs while loading a service provider
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          if a security manager is installed and it denies an unspecified
+     *          permission
+     *
+     * @since 13
+     */
+    public static FileSystem newFileSystem(Path path) throws IOException {
+        return newFileSystem(path, Map.of(), null);
+    }
+
+    /**
+     * Constructs a new {@code FileSystem} to access the contents of a file as a
+     * file system.
+     *
+     * <p> This method makes use of specialized providers that create pseudo file
+     * systems where the contents of one or more files is treated as a file
+     * system.
+     *
+     * <p> This method iterates over the {@link FileSystemProvider#installedProviders()
+     * installed} providers. It invokes, in turn, each provider's {@link
+     * FileSystemProvider#newFileSystem(Path,Map) newFileSystem(Path,Map)}
+     * method. If a provider returns a file system then the iteration
+     * terminates and the file system is returned.
+     * If none of the installed providers return a {@code FileSystem} then
+     * an attempt is made to locate the provider using the given class loader.
+     * If a provider returns a file
+     * system, then the lookup terminates and the file system is returned.
+     *
+     * @param   path
+     *          the path to the file
+     * @param   env
+     *          a map of provider specific properties to configure the file system;
+     *          may be empty
+     * @param   loader
+     *          the class loader to locate the provider or {@code null} to only
+     *          attempt to locate an installed provider
+     *
+     * @return  a new file system
+     *
+     * @throws  ProviderNotFoundException
+     *          if a provider supporting this file type cannot be located
+     * @throws  ServiceConfigurationError
+     *          when an error occurs while loading a service provider
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          if a security manager is installed and it denies an unspecified
+     *          permission
+     *
+     * @since 13
+     */
+    public static FileSystem newFileSystem(Path path, Map<String,?> env,
+                                           @Nullable ClassLoader loader)
         throws IOException
     {
         if (path == null)
             throw new NullPointerException();
-        Map<String,?> env = Collections.emptyMap();
-
         // check installed providers
         for (FileSystemProvider provider: FileSystemProvider.installedProviders()) {
             try {

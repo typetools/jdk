@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,10 @@
  */
 
 package java.nio.file;
+
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -102,7 +106,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @see FileSystem#newWatchService
  */
-
+@AnnotatedFor({"mustcall", "nullness"})
+@InheritableMustCall({})
 public interface WatchService
     extends Closeable
 {
@@ -136,14 +141,14 @@ public interface WatchService
      * @throws  ClosedWatchServiceException
      *          if this watch service is closed
      */
-    WatchKey poll();
+    @Nullable WatchKey poll();
 
     /**
      * Retrieves and removes the next watch key, waiting if necessary up to the
      * specified wait time if none are yet present.
      *
      * @param   timeout
-     *          how to wait before giving up, in units of unit
+     *          how long to wait before giving up, in units of unit
      * @param   unit
      *          a {@code TimeUnit} determining how to interpret the timeout
      *          parameter
@@ -156,7 +161,7 @@ public interface WatchService
      * @throws  InterruptedException
      *          if interrupted while waiting
      */
-    WatchKey poll(long timeout, TimeUnit unit)
+    @Nullable WatchKey poll(long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**

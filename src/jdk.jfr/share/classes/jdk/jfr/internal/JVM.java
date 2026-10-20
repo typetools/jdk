@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,12 @@
 
 package jdk.jfr.internal;
 
-import java.io.IOException;
 import java.util.List;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.jfr.Event;
+import jdk.jfr.internal.event.EventConfiguration;
+import jdk.jfr.internal.event.EventWriter;
 
 /**
  * Interface against the JVM.
@@ -38,12 +39,17 @@ import jdk.jfr.Event;
 public final class JVM {
     private static final JVM jvm = new JVM();
 
-    // JVM signals file changes by doing Object#notifu on this object
-    static final Object FILE_DELTA_CHANGE = new Object();
+    static final long RESERVED_CLASS_ID_LIMIT = 500;
 
-    static final long RESERVED_CLASS_ID_LIMIT = 400;
+    private static class ChunkRotationMonitor {}
 
-    private volatile boolean recording;
+    /*
+     * The JVM uses the chunk rotation monitor to notify Java that a rotation is warranted.
+     * The monitor type is used to exclude jdk.JavaMonitorWait events from being generated
+     * when Object.wait() is called on this monitor.
+     */
+    public static final Object CHUNK_ROTATION_MONITOR = new ChunkRotationMonitor();
+
     private volatile boolean nativeOK;
 
     private static native void registerNatives();
@@ -69,6 +75,15 @@ public final class JVM {
     }
 
     /**
+     * Marks current chunk as final
+     * <p>
+     * This allows streaming clients to read the chunk header and
+     * close the stream when no more data will be written into
+     * the current repository.
+     */
+    public native void markChunkFinal();
+
+    /**
      * Begin recording events
      *
      * Requires that JFR has been started with {@link #createNativeJFR()}
@@ -76,26 +91,9 @@ public final class JVM {
     public native void beginRecording();
 
     /**
-     * Return ticks
-     *
-     * @return the time, in ticks
-     *
+     * Return true if the JVM is recording
      */
-    @HotSpotIntrinsicCandidate
-    public static native long counterTime();
-
-
-    /**
-     * Emits native periodic event.
-     *
-     * @param eventTypeId type id
-     *
-     * @param timestamp commit time for event
-     * @param when when it is being done {@link Periodic.When}
-     *
-     * @return true if the event was committed
-     */
-    public native boolean emitEvent(long eventTypeId, long timestamp, long when);
+    public native boolean isRecording();
 
     /**
      * End recording events, which includes flushing data in thread buffers
@@ -106,11 +104,32 @@ public final class JVM {
     public native void endRecording();
 
     /**
-     * Return a list of all classes deriving from {@link Event}
+     * Return ticks
+     *
+     * @return the time, in ticks
+     *
+     */
+    @IntrinsicCandidate
+    public static native long counterTime();
+
+    /**
+     * Emits native periodic event.
+     *
+     * @param eventTypeId type id
+     *
+     * @param timestamp commit time for event
+     * @param periodicType when it is being done {@link PeriodicType.When}
+     *
+     * @return true if the event was committed
+     */
+    public native boolean emitEvent(long eventTypeId, long timestamp, long periodicType);
+
+    /**
+     * Return a list of all classes deriving from {@link jdk.internal.event.Event}
      *
      * @return list of event classes.
      */
-    public native List<Class<? extends Event>> getAllEventClasses();
+    public native List<Class<? extends jdk.internal.event.Event>> getAllEventClasses();
 
     /**
      * Return a count of the number of unloaded classes deriving from {@link Event}
@@ -127,11 +146,8 @@ public final class JVM {
      *
      * @return a unique class identifier
      */
-   @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static native long getClassId(Class<?> clazz);
-
-    // temporary workaround until we solve intrinsics supporting epoch shift tagging
-    public static native long getClassIdNonIntrinsic(Class<?> clazz);
 
     /**
      * Return process identifier.
@@ -177,6 +193,17 @@ public final class JVM {
     public static native void log(int tagSetId, int level, String message);
 
     /**
+     * Log an event to jfr+event or jfr+event+system.
+     * <p>
+     * Caller should ensure that message is not null or too large to handle.
+     *
+     * @param level log level
+     * @param lines lines to log
+     * @param system if lines should be written to jfr+event+system
+     */
+    public static native void logEvent(int level, String[] lines, boolean system);
+
+    /**
      * Subscribe to LogLevel updates for LogTag
      *
      * @param lt the log tag to subscribe
@@ -188,8 +215,10 @@ public final class JVM {
      * Call to invoke event tagging and retransformation of the passed classes
      *
      * @param classes
+     *
+     * @throws IllegalStateException if wrong JVMTI phase.
      */
-    public native synchronized void retransformClasses(Class<?>[] classes);
+     public synchronized native void retransformClasses(Class<?>[] classes);
 
     /**
      * Enable event
@@ -238,17 +267,15 @@ public final class JVM {
     public native void setMemorySize(long size) throws IllegalArgumentException;
 
     /**
+     * Set period for method samples, in milliseconds.
+     *
+     * Setting period to 0 turns off the method sampler.
+     *
+     * @param periodMillis the sampling period
+     */
+    public native void setMethodSamplingPeriod(long type, long periodMillis);
 
     /**
-     * Set interval for method samples, in milliseconds.
-     *
-     * Setting interval to 0 turns off the method sampler.
-     *
-     * @param intervalMillis the sampling interval
-     */
-    public native void setMethodSamplingInterval(long type, long intervalMillis);
-
-      /**
      * Sets the file where data should be written.
      *
      * Requires that JFR has been started with {@link #createNativeJFR()}
@@ -270,8 +297,6 @@ public final class JVM {
      *
      * @param file the file where data should be written, or null if it should
      *        not be copied out (in memory).
-     *
-     * @throws IOException
      */
     public native void setOutput(String file);
 
@@ -282,15 +307,6 @@ public final class JVM {
      * @param force, true to force initialization, false otherwise
      */
     public native void setForceInstrumentation(boolean force);
-
-    /**
-     * Turn on/off thread sampling.
-     *
-     * @param sampleThreads true if threads should be sampled, false otherwise.
-     *
-     * @throws IllegalStateException if state can't be changed.
-     */
-    public native void setSampleThreads(boolean sampleThreads) throws IllegalStateException;
 
     /**
      * Turn on/off compressed integers.
@@ -350,24 +366,8 @@ public final class JVM {
      * Requires that JFR has been started with {@link #createNativeJFR()}
      *
      * @param bytes binary representation of metadata descriptor
-     *
-     * @param binary representation of descriptor
      */
     public native void storeMetadataDescriptor(byte[] bytes);
-
-    public void endRecording_() {
-        endRecording();
-        recording = false;
-    }
-
-    public void beginRecording_() {
-        beginRecording();
-        recording = true;
-    }
-
-    public boolean isRecording() {
-        return recording;
-    }
 
     /**
      * If the JVM supports JVM TI and retransformation has not been disabled this
@@ -430,8 +430,8 @@ public final class JVM {
     public native double getTimeConversionFactor();
 
     /**
-     * Return a unique identifier for a class. Compared to {@link #getClassId()}
-     * , this method does not tag the class as being "in-use".
+     * Return a unique identifier for a class. Compared to {@link #getClassId(Class)},
+     * this method does not tag the class as being "in-use".
      *
      * @param clazz class
      *
@@ -444,8 +444,8 @@ public final class JVM {
      *
      * @return thread local EventWriter
      */
-    @HotSpotIntrinsicCandidate
-    public static native Object getEventWriter();
+    @IntrinsicCandidate
+    public static native EventWriter getEventWriter();
 
     /**
      * Create a new EventWriter
@@ -460,17 +460,41 @@ public final class JVM {
     public static native boolean flush(EventWriter writer, int uncommittedSize, int requestedSize);
 
     /**
-     * Sets the location of the disk repository, to be used at an emergency
-     * dump.
+     * Flushes all thread buffers to disk and the constant pool data needed to read
+     * them.
+     * <p>
+     * When the method returns, the chunk header should be updated with valid
+     * pointers to the metadata event, last check point event, correct file size and
+     * the generation id.
+     *
+     */
+    public native void flush();
+
+    /**
+     * Sets the location of the disk repository.
      *
      * @param dirText
      */
     public native void setRepositoryLocation(String dirText);
 
     /**
+     * Sets the path to emergency dump.
+     *
+     * @param dumpPathText
+     */
+    public native void setDumpPath(String dumpPathText);
+
+    /**
+     * Gets the path to emergency dump.
+     *
+     * @return The path to emergency dump.
+     */
+    public native String getDumpPath();
+
+   /**
     * Access to VM termination support.
     *
-    *@param errorMsg descriptive message to be include in VM termination sequence
+    * @param errorMsg descriptive message to be include in VM termination sequence
     */
     public native void abort(String errorMsg);
 
@@ -483,19 +507,12 @@ public final class JVM {
      *
      * @param s string constant to be added, not null
      *
-     * @return the current epoch of this insertion attempt
+     * @return true, if the string was successfully added.
      */
-    public static native boolean addStringConstant(boolean epoch, long id, String s);
-    /**
-     * Gets the address of the jboolean epoch.
-     *
-     * The epoch alternates every checkpoint.
-     *
-     * @return The address of the jboolean.
-     */
-    public native long getEpochAddress();
+    public static native boolean addStringConstant(long id, String s);
 
     public native void uncaughtException(Thread thread, Throwable t);
+
     /**
      * Sets cutoff for event.
      *
@@ -510,10 +527,118 @@ public final class JVM {
     public native boolean setCutoff(long eventTypeId, long cutoffTicks);
 
     /**
+     * Sets the event emission rate in event sample size per time unit.
+     *
+     * Determines how events are throttled.
+     *
+     * @param eventTypeId the id of the event type
+     * @param eventSampleSize event sample size
+     * @param period_ms time period in milliseconds
+     * @return true, if it could be set
+     */
+    public native boolean setThrottle(long eventTypeId, long eventSampleSize, long period_ms);
+
+    /**
      * Emit old object sample events.
      *
      * @param cutoff the cutoff in ticks
      * @param emitAll emit all samples in old object queue
+     * @param skipBFS don't use BFS when searching for path to GC root
      */
-    public native void emitOldObjectSamples(long cutoff, boolean emitAll);
+    public native void emitOldObjectSamples(long cutoff, boolean emitAll, boolean skipBFS);
+
+    /**
+     * Test if a chunk rotation is warranted.
+     *
+     * @return if it is time to perform a chunk rotation
+     */
+    public native boolean shouldRotateDisk();
+
+    /**
+     * Exclude a thread from the jfr system
+     *
+     */
+    public native void exclude(Thread thread);
+
+    /**
+     * Include a thread back into the jfr system
+     *
+     */
+    public native void include(Thread thread);
+
+    /**
+     * Test if a thread is currently excluded from the jfr system.
+     *
+     * @return is thread currently excluded
+     */
+    public native boolean isExcluded(Thread thread);
+
+    /**
+     * Test if a class is excluded from the jfr system.
+     *
+     * @param eventClass the class, not {@code null}
+     *
+     * @return is class excluded
+     */
+    public native boolean isExcluded(Class<? extends jdk.internal.event.Event> eventClass);
+
+    /**
+     * Test if a class is instrumented.
+     *
+     * @param eventClass the class, not {@code null}
+     *
+     * @return is class instrumented
+     */
+    public native boolean isInstrumented(Class<? extends jdk.internal.event.Event> eventClass);
+
+    /**
+     * Get the start time in nanos from the header of the current chunk
+     *
+     * @return start time of the recording in nanos, -1 in case of in-memory
+     */
+    public native long getChunkStartNanos();
+
+    /**
+     * Stores an EventConfiguration to the configuration field of an event class.
+     *
+     * @param eventClass the class, not {@code null}
+     *
+     * @param configuration the configuration, may be {@code null}
+     *
+     * @return if the field could be set
+     */
+    public native boolean setConfiguration(Class<? extends jdk.internal.event.Event> eventClass, EventConfiguration configuration);
+
+    /**
+     * Retrieves the EventConfiguration for an event class.
+     *
+     * @param eventClass the class, not {@code null}
+     *
+     * @return the configuration, may be {@code null}
+     */
+    public native Object getConfiguration(Class<? extends jdk.internal.event.Event> eventClass);
+
+    /**
+     * Returns the id for the Java types defined in metadata.xml.
+     *
+     * @param name the name of the type
+     *
+     * @return the id, or a negative value if it does not exists.
+     */
+    public native long getTypeId(String name);
+
+    /**
+     * Returns {@code true}, if the JVM is running in a container, {@code false} otherwise.
+     * <p>
+     * If -XX:-UseContainerSupport has been specified, this method returns {@code false},
+     * which is questionable, but Container.metrics() returns {@code null}, so events
+     * can't be emitted anyway.
+     */
+    public native boolean isContainerized();
+
+    /**
+     * Returns the total amount of memory of the host system whether or not this
+     * JVM runs in a container.
+     */
+    public native long hostTotalMemory();
 }

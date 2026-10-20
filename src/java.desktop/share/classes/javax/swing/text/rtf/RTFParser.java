@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -90,7 +90,7 @@ abstract class RTFParser extends AbstractFilter
   public abstract void endgroup();
 
   // table of non-text characters in rtf
-  static final boolean rtfSpecialsTable[];
+  static final boolean[] rtfSpecialsTable;
   static {
     rtfSpecialsTable = noSpecialsTable.clone();
     rtfSpecialsTable['\n'] = true;
@@ -191,7 +191,7 @@ abstract class RTFParser extends AbstractFilter
           break;
         }
         if (!Character.isLetter(ch)) {
-          char newstring[] = new char[1];
+          char[] newstring = new char[1];
           newstring[0] = ch;
           if (!handleKeyword(new String(newstring))) {
             warning("Unknown keyword: " + newstring + " (" + (byte)ch + ")");
@@ -233,25 +233,52 @@ abstract class RTFParser extends AbstractFilter
           currentCharacters.append(ch);
         } else {
           /* TODO: Test correct behavior of \bin keyword */
+
           if (pendingKeyword.equals("bin")) {  /* magic layer-breaking kwd */
-            long parameter = Long.parseLong(currentCharacters.toString());
+            long parameter = 0L;
+            try {
+              parameter = Long.parseLong(currentCharacters.toString());
+            } catch (NumberFormatException e) {
+              warning("Illegal number format " + currentCharacters.toString()
+                              + " in \bin tag");
+              pendingKeyword = null;
+              currentCharacters = new StringBuffer();
+              state = S_text;
+              // Delimiters here are interpreted as text too
+              if (!Character.isWhitespace(ch))
+                write(ch);
+              break;
+            }
             pendingKeyword = null;
             state = S_inblob;
+            int maxBytes = 4 * 1024 * 1024;
             binaryBytesLeft = parameter;
-            if (binaryBytesLeft > Integer.MAX_VALUE)
-                binaryBuf = new ByteArrayOutputStream(Integer.MAX_VALUE);
-            else
-                binaryBuf = new ByteArrayOutputStream((int)binaryBytesLeft);
+
+            if (binaryBytesLeft > maxBytes) {
+              binaryBuf = new ByteArrayOutputStream(maxBytes);
+            } else if (binaryBytesLeft < 0) {
+              binaryBytesLeft = 0;
+              binaryBuf = new ByteArrayOutputStream((int)binaryBytesLeft);
+            } else {
+              binaryBuf = new ByteArrayOutputStream((int) binaryBytesLeft);
+            }
             savedSpecials = specialsTable;
             specialsTable = allSpecialsTable;
             break;
           }
 
-          int parameter = Integer.parseInt(currentCharacters.toString());
-          ok = handleKeyword(pendingKeyword, parameter);
-          if (!ok)
-            warning("Unknown keyword: " + pendingKeyword +
-                    " (param " + currentCharacters + ")");
+          int parameter = 0;
+          try {
+            parameter = Integer.parseInt(currentCharacters.toString());
+            ok = handleKeyword(pendingKeyword, parameter);
+            if (!ok) {
+                warning("Unknown keyword: " + pendingKeyword +
+                        " (param " + currentCharacters + ")");
+            }
+          } catch (NumberFormatException e) {
+            warning("Illegal number format " + currentCharacters.toString()
+                    + " in " + pendingKeyword + " tag");
+          }
           pendingKeyword = null;
           currentCharacters = new StringBuffer();
           state = S_text;
@@ -280,14 +307,16 @@ abstract class RTFParser extends AbstractFilter
         }
         break;
       case S_inblob:
-        binaryBuf.write(ch);
-        binaryBytesLeft --;
+        if (binaryBytesLeft > 0) {
+          binaryBuf.write(ch);
+          binaryBytesLeft--;
+        }
         if (binaryBytesLeft == 0) {
-            state = S_text;
-            specialsTable = savedSpecials;
-            savedSpecials = null;
-            handleBinaryBlob(binaryBuf.toByteArray());
-            binaryBuf = null;
+          state = S_text;
+          specialsTable = savedSpecials;
+          savedSpecials = null;
+          handleBinaryBlob(binaryBuf.toByteArray());
+          binaryBuf = null;
         }
       }
   }

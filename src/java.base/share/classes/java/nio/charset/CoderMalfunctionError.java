@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.nio.charset;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Error thrown when the {@link CharsetDecoder#decodeLoop decodeLoop} method of
@@ -39,6 +41,7 @@ public class CoderMalfunctionError
     extends Error
 {
 
+    @java.io.Serial
     private static final long serialVersionUID = -1151412348057794301L;
 
     /**
@@ -47,7 +50,8 @@ public class CoderMalfunctionError
      * @param  cause
      *         The unexpected exception that was thrown
      */
-    public CoderMalfunctionError(Exception cause) {
+    @SideEffectFree
+    public CoderMalfunctionError(@Nullable Exception cause) {
         super(cause);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,87 +34,81 @@ import com.sun.source.doctree.DocTree;
 
 /**
  * The interface for writing member summary output.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
- * @author Bhavesh Patel (Modified)
  */
-
 public interface MemberSummaryWriter {
 
     /**
-     * Get the member summary header for the given class.
+     * Returns the member summary header for the given class.
      *
      * @param typeElement the class the summary belongs to
-     * @param memberSummaryTree the content tree to which the member summary will be added
-     * @return a content tree for the member summary header
+     * @param content     the content to which the member summary will be added
+     *
+     * @return the member summary header
      */
-    public Content getMemberSummaryHeader(TypeElement typeElement,
-            Content memberSummaryTree);
+    Content getMemberSummaryHeader(TypeElement typeElement, Content content);
 
     /**
-     * Get the summary table for the given class.
+     * Returns the summary table for the given class.
      *
      * @param typeElement the class the summary table belongs to
-     * @return a content tree for the member summary table
+     *
+     * @return the summary table
      */
-    public Content getSummaryTableTree(TypeElement typeElement);
+    Content getSummaryTable(TypeElement typeElement);
 
     /**
-     * Add the member summary for the given class and member.
+     * Adds the member summary for the given class and member.
+     *
+     * @param typeElement        the class the summary belongs to
+     * @param member             the member that is documented
+     * @param firstSentenceTrees the tags for the sentence being documented
+     */
+    void addMemberSummary(TypeElement typeElement, Element member,
+                          List<? extends DocTree> firstSentenceTrees);
+
+    /**
+     * Returns the inherited member summary header for the given class.
      *
      * @param typeElement the class the summary belongs to
-     * @param member the member that is documented
-     * @param firstSentenceTags the tags for the sentence being documented
-     */
-    public void addMemberSummary(TypeElement typeElement, Element member,
-            List<? extends DocTree> firstSentenceTags);
-
-    /**
-     * Get the inherited member summary header for the given class.
      *
-     * @param typeElement the class the summary belongs to
-     * @return a content tree containing the inherited summary header
+     * @return the inherited member summary header
      */
-    public Content getInheritedSummaryHeader(TypeElement typeElement);
+    Content getInheritedSummaryHeader(TypeElement typeElement);
 
     /**
-     * Add the inherited member summary for the given class and member.
+     * Adds the inherited member summary for the given class and member.
      *
      * @param typeElement the class the inherited member belongs to
      * @param member the inherited member that is being documented
      * @param isFirst true if this is the first member in the list
      * @param isLast true if this is the last member in the list
-     * @param linksTree the content tree to which the links will be added
+     * @param content the content to which the links will be added
      */
-    public void addInheritedMemberSummary(TypeElement typeElement,
-        Element member, boolean isFirst, boolean isLast,
-        Content linksTree);
+    void addInheritedMemberSummary(TypeElement typeElement,
+                                   Element member, boolean isFirst, boolean isLast,
+                                   Content content);
 
     /**
-     * Get inherited summary links.
+     * Returns the inherited summary links.
      *
-     * @return a content tree containing the inherited summary links
+     * @return the inherited summary links
      */
-    public Content getInheritedSummaryLinksTree();
+    Content getInheritedSummaryLinks();
 
     /**
-     * Add the member tree to the member summary tree.
+     * Adds the given summary to the list of summaries.
      *
-     * @param memberSummaryTree the content tree representing the member summary
-     * @param memberTree the content tree representing the member
+     * @param summariesList the list of summaries
+     * @param content       the summary
      */
-    public void addMemberTree(Content memberSummaryTree, Content memberTree);
+    void addSummary(Content summariesList, Content content);
 
     /**
-     * Get the member tree.
+     * Returns the member content.
      *
-     * @param memberTree the content tree representing the member
-     * @return a content tree for the member
+     * @param memberContent the content representing the member
+     *
+     * @return the member content
      */
-    public Content getMemberTree(Content memberTree);
+    Content getMember(Content memberContent);
 }

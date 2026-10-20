@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_GC_PARALLEL_MUTABLENUMASPACE_HPP
-#define SHARE_VM_GC_PARALLEL_MUTABLENUMASPACE_HPP
+#ifndef SHARE_GC_PARALLEL_MUTABLENUMASPACE_HPP
+#define SHARE_GC_PARALLEL_MUTABLENUMASPACE_HPP
 
 #include "gc/parallel/mutableSpace.hpp"
 #include "gc/shared/gcUtil.hpp"
+#include "runtime/globals.hpp"
+#include "utilities/growableArray.hpp"
 #include "utilities/macros.hpp"
 
 /*
@@ -65,21 +67,17 @@ class MutableNUMASpace : public MutableSpace {
   class LGRPSpace : public CHeapObj<mtGC> {
     int _lgrp_id;
     MutableSpace* _space;
-    MemRegion _invalid_region;
     AdaptiveWeightedAverage *_alloc_rate;
     bool _allocation_failed;
 
     struct SpaceStats {
       size_t _local_space, _remote_space, _unbiased_space, _uncommited_space;
-      size_t _large_pages, _small_pages;
 
       SpaceStats() {
         _local_space = 0;
         _remote_space = 0;
         _unbiased_space = 0;
         _uncommited_space = 0;
-        _large_pages = 0;
-        _small_pages = 0;
       }
     };
 
@@ -89,22 +87,13 @@ class MutableNUMASpace : public MutableSpace {
     char* last_page_scanned()            { return _last_page_scanned; }
     void set_last_page_scanned(char* p)  { _last_page_scanned = p;    }
    public:
-    LGRPSpace(int l, size_t alignment) : _lgrp_id(l), _last_page_scanned(NULL), _allocation_failed(false) {
+    LGRPSpace(int l, size_t alignment) : _lgrp_id(l), _allocation_failed(false), _last_page_scanned(nullptr) {
       _space = new MutableSpace(alignment);
       _alloc_rate = new AdaptiveWeightedAverage(NUMAChunkResizeWeight);
     }
     ~LGRPSpace() {
       delete _space;
       delete _alloc_rate;
-    }
-
-    void add_invalid_region(MemRegion r) {
-      if (!_invalid_region.is_empty()) {
-      _invalid_region.set_start(MIN2(_invalid_region.start(), r.start()));
-      _invalid_region.set_end(MAX2(_invalid_region.end(), r.end()));
-      } else {
-      _invalid_region = r;
-      }
     }
 
     static bool equals(void* lgrp_id_value, LGRPSpace* p) {
@@ -128,8 +117,6 @@ class MutableNUMASpace : public MutableSpace {
       alloc_rate()->sample(alloc_rate_sample);
     }
 
-    MemRegion invalid_region() const                { return _invalid_region;      }
-    void set_invalid_region(MemRegion r)            { _invalid_region = r;         }
     int lgrp_id() const                             { return _lgrp_id;             }
     MutableSpace* space() const                     { return _space;               }
     AdaptiveWeightedAverage* alloc_rate() const     { return _alloc_rate;          }
@@ -160,13 +147,9 @@ class MutableNUMASpace : public MutableSpace {
   void set_base_space_size(size_t v)                 { _base_space_size = v;      }
   size_t base_space_size() const                     { return _base_space_size;   }
 
-  // Check if the NUMA topology has changed. Add and remove spaces if needed.
-  // The update can be forced by setting the force parameter equal to true.
-  bool update_layout(bool force);
   // Bias region towards the lgrp.
   void bias_region(MemRegion mr, int lgrp_id);
-  // Free pages in a given region.
-  void free_region(MemRegion mr);
+
   // Get current chunk size.
   size_t current_chunk_size(int i);
   // Get default chunk size (equally divide the space).
@@ -180,22 +163,17 @@ class MutableNUMASpace : public MutableSpace {
   // |----bottom_region--|---intersection---|------top_region------|
   void select_tails(MemRegion new_region, MemRegion intersection,
                     MemRegion* bottom_region, MemRegion *top_region);
-  // Try to merge the invalid region with the bottom or top region by decreasing
-  // the intersection area. Return the invalid_region aligned to the page_size()
-  // boundary if it's inside the intersection. Return non-empty invalid_region
-  // if it lies inside the intersection (also page-aligned).
-  // |------------------new_region---------------------------------|
-  // |----------------|-------invalid---|--------------------------|
-  // |----bottom_region--|---intersection---|------top_region------|
-  void merge_regions(MemRegion new_region, MemRegion* intersection,
-                     MemRegion *invalid_region);
 
- public:
+public:
   GrowableArray<LGRPSpace*>* lgrp_spaces() const     { return _lgrp_spaces;       }
   MutableNUMASpace(size_t alignment);
   virtual ~MutableNUMASpace();
   // Space initialization.
-  virtual void initialize(MemRegion mr, bool clear_space, bool mangle_space, bool setup_pages = SetupPages);
+  virtual void initialize(MemRegion mr,
+                          bool clear_space,
+                          bool mangle_space,
+                          bool setup_pages = SetupPages,
+                          WorkerThreads* pretouch_workers = nullptr);
   // Update space layout if necessary. Do all adaptive resizing job.
   virtual void update();
   // Update allocation rate averages.
@@ -215,13 +193,12 @@ class MutableNUMASpace : public MutableSpace {
   virtual size_t free_in_words() const;
 
   using MutableSpace::capacity_in_words;
-  virtual size_t capacity_in_words(Thread* thr) const;
+
   virtual size_t tlab_capacity(Thread* thr) const;
   virtual size_t tlab_used(Thread* thr) const;
   virtual size_t unsafe_max_tlab_alloc(Thread* thr) const;
 
-  // Allocation (return NULL if full)
-  virtual HeapWord* allocate(size_t word_size);
+  // Allocation (return null if full)
   virtual HeapWord* cas_allocate(size_t word_size);
 
   // Debugging
@@ -232,4 +209,4 @@ class MutableNUMASpace : public MutableSpace {
   virtual void set_top(HeapWord* value);
 };
 
-#endif // SHARE_VM_GC_PARALLEL_MUTABLENUMASPACE_HPP
+#endif // SHARE_GC_PARALLEL_MUTABLENUMASPACE_HPP

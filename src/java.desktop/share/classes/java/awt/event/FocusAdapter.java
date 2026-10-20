@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,13 +47,19 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  *
  * @see FocusEvent
  * @see FocusListener
- * @see <a href="http://docs.oracle.com/javase/tutorial/uiswing/events/focuslistener.html">Tutorial: Writing a Focus Listener</a>
+ * @see <a href="https://docs.oracle.com/javase/tutorial/uiswing/events/focuslistener.html">Tutorial: Writing a Focus Listener</a>
  *
  * @author Carl Quinn
  * @since 1.1
  */
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class FocusAdapter implements FocusListener {
+
+    /**
+     * Constructs a {@code FocusAdapter}.
+     */
+    protected FocusAdapter() {}
+
     /**
      * Invoked when a component gains the keyboard focus.
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,16 +36,16 @@ import java.util.Locale;
  * interfaces (SPIs).
  * <p>
  * Locale sensitive  service provider interfaces are interfaces that
- * correspond to locale sensitive classes in the <code>java.text</code>
- * and <code>java.util</code> packages. The interfaces enable the
+ * correspond to locale sensitive classes in the {@code java.text}
+ * and {@code java.util} packages. The interfaces enable the
  * construction of locale sensitive objects and the retrieval of
  * localized names for these packages. Locale sensitive factory methods
- * and methods for name retrieval in the <code>java.text</code> and
- * <code>java.util</code> packages use implementations of the provider
+ * and methods for name retrieval in the {@code java.text} and
+ * {@code java.util} packages use implementations of the provider
  * interfaces to offer support for locales beyond the set of locales
  * supported by the Java runtime environment itself.
  *
- * <h3>Packaging of Locale Sensitive Service Provider Implementations</h3>
+ * <h2>Packaging of Locale Sensitive Service Provider Implementations</h2>
  * Implementations of these locale sensitive services can be made available
  * by adding them to the application's class path. A provider identifies itself with a
  * provider-configuration file in the resource directory META-INF/services,
@@ -71,17 +71,17 @@ import java.util.Locale;
  * <pre>
  * META-INF/services/java.text.spi.DateFormatProvider
  * </pre>
- * And the file <code>java.text.spi.DateFormatProvider</code> should have
+ * And the file {@code java.text.spi.DateFormatProvider} should have
  * a line such as:
  * <pre>
- * <code>com.foo.DateFormatProviderImpl</code>
+ * {@code com.foo.DateFormatProviderImpl}
  * </pre>
  * which is the fully qualified class name of the class implementing
- * <code>DateFormatProvider</code>.
- * <h4>Invocation of Locale Sensitive Services</h4>
+ * {@code DateFormatProvider}.
+ * <h3>Invocation of Locale Sensitive Services</h3>
  * <p>
  * Locale sensitive factory methods and methods for name retrieval in the
- * <code>java.text</code> and <code>java.util</code> packages invoke
+ * {@code java.text} and {@code java.util} packages invoke
  * service provider methods when needed to support the requested locale.
  * The methods first check whether the Java runtime environment itself
  * supports the requested locale, and use its support if available.
@@ -89,14 +89,14 @@ import java.util.Locale;
  * methods of installed providers for the appropriate interface to find one that
  * supports the requested locale. If such a provider is found, its other
  * methods are called to obtain the requested object or name.  When checking
- * whether a locale is supported, the <a href="../Locale.html#def_extensions">
- * locale's extensions</a> are ignored by default. (If locale's extensions should
+ * whether a locale is supported, the {@linkplain Locale##def_extensions
+ * locale's extensions} are ignored by default. (If locale's extensions should
  * also be checked, the {@code isSupportedLocale} method must be overridden.)
  * If neither the Java runtime environment itself nor an installed provider
  * supports the requested locale, the methods go through a list of candidate
  * locales and repeat the availability check for each until a match is found.
  * The algorithm used for creating a list of candidate locales is same as
- * the one used by <code>ResourceBundle</code> by default (see
+ * the one used by {@code ResourceBundle} by default (see
  * {@link java.util.ResourceBundle.Control#getCandidateLocales getCandidateLocales}
  * for the details).  Even if a locale is resolved from the candidate list,
  * methods that return requested objects or names are invoked with the original
@@ -107,7 +107,7 @@ import java.util.Locale;
  * Providers of names (but not providers of other objects) are allowed to
  * return null for some name requests even for locales that they claim to
  * support by including them in their return value for
- * <code>getAvailableLocales</code>. Similarly, the Java runtime
+ * {@code getAvailableLocales}. Similarly, the Java runtime
  * environment itself may not have all names for all locales that it
  * supports. This is because the sets of objects for which names are
  * requested can be large and vary over time, so that it's not always
@@ -116,23 +116,26 @@ import java.util.Locale;
  * described above as if the locale was not supported.
  * <p>
  * The search order of locale sensitive services can
- * be configured by using the "java.locale.providers" system property.
+ * be configured by using the {@systemProperty java.locale.providers} system property.
  * This system property declares the user's preferred order for looking up
- * the locale sensitive services separated by a comma. It is only read at
- * the Java runtime startup, so the later call to System.setProperty() won't
- * affect the order.
- * <p>
- * Java Runtime Environment provides the following four locale providers:
+ * the locale sensitive services separated by a comma. As this property value is
+ * read and cached only at the initialization of this class, users should specify the
+ * property on the java launcher command line. Setting it at runtime with
+ * {@link System#setProperty(String, String)} is discouraged and it may not affect
+ * the order.
+ * JDK Reference Implementation provides the following four
+ * locale providers:
  * <ul>
  * <li> "CLDR": A provider based on Unicode Consortium's
  * <a href="http://cldr.unicode.org/">CLDR Project</a>.
  * <li> "COMPAT": represents the locale sensitive services that is compatible
- * with the prior JDK releases up to JDK8 (same as JDK8's "JRE").
+ * with the prior JDK releases up to JDK 8 (same as JDK 8's "JRE"). This
+ * provider is deprecated and will be removed in the future release of JDK.
  * <li> "SPI": represents the locale sensitive services implementing the subclasses of
  * this {@code LocaleServiceProvider} class.
  * <li> "HOST": A provider that reflects the user's custom settings in the
  * underlying operating system. This provider may not be available, depending
- * on the Java Runtime Environment implementation.
+ * on the JDK Reference Implementation.
  * <li> "JRE": represents a synonym to "COMPAT". This name
  * is deprecated and will be removed in the future release of JDK.
  * </ul>
@@ -156,6 +159,7 @@ import java.util.Locale;
 public abstract @UsesObjectEquals class LocaleServiceProvider {
 
     private static Void checkPermission() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new RuntimePermission("localeServiceProvider"));
@@ -176,23 +180,22 @@ public abstract @UsesObjectEquals class LocaleServiceProvider {
     }
 
     /**
-     * Returns an array of all locales for which this locale service provider
-     * can provide localized objects or names. This information is used to
-     * compose {@code getAvailableLocales()} values of the locale-dependent
-     * services, such as {@code DateFormat.getAvailableLocales()}.
+     * {@return an array of all locales for which this locale service provider
+     * can provide localized objects or names}
+     *
+     * This information is used to compose {@code getAvailableLocales()}
+     * values of the locale-dependent services, such as
+     * {@code DateFormat.getAvailableLocales()}.
      *
      * <p>The array returned by this method should not include two or more
      * {@code Locale} objects only differing in their extensions.
-     *
-     * @return An array of all locales for which this locale service provider
-     * can provide localized objects or names.
      */
     public abstract Locale[] getAvailableLocales();
 
     /**
      * Returns {@code true} if the given {@code locale} is supported by
      * this locale service provider. The given {@code locale} may contain
-     * <a href="../Locale.html#def_extensions">extensions</a> that should be
+     * {@linkplain Locale##def_extensions extensions} that should be
      * taken into account for the support determination.
      *
      * <p>The default implementation returns {@code true} if the given {@code locale}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_C1_C1_VALUESTACK_HPP
-#define SHARE_VM_C1_C1_VALUESTACK_HPP
+#ifndef SHARE_C1_C1_VALUESTACK_HPP
+#define SHARE_C1_C1_VALUESTACK_HPP
 
 #include "c1/c1_Instruction.hpp"
 
@@ -47,7 +47,7 @@ class ValueStack: public CompilationResourceObj {
 
   Values   _locals;                              // the locals
   Values   _stack;                               // the expression stack
-  Values   _locks;                               // the monitor stack (holding the locked values)
+  Values*  _locks;                               // the monitor stack (holding the locked values)
 
   Value check(ValueTag tag, Value t) {
     assert(tag == t->type()->tag() || tag == objectTag && t->type()->tag() == addressTag, "types must correspond");
@@ -55,16 +55,18 @@ class ValueStack: public CompilationResourceObj {
   }
 
   Value check(ValueTag tag, Value t, Value h) {
-    assert(h == NULL, "hi-word of doubleword value must be NULL");
+    assert(h == nullptr, "hi-word of doubleword value must be null");
     return check(tag, t);
   }
 
   // helper routine
-  static void apply(Values list, ValueVisitor* f);
+  static void apply(const Values& list, ValueVisitor* f);
 
   // for simplified copying
   ValueStack(ValueStack* copy_from, Kind kind, int bci);
 
+  int locals_size_for_copy(Kind kind) const;
+  int stack_size_for_copy(Kind kind) const;
  public:
   // creation
   ValueStack(IRScope* scope, ValueStack* caller_state);
@@ -90,24 +92,24 @@ class ValueStack: public CompilationResourceObj {
 
   int locals_size() const                        { return _locals.length(); }
   int stack_size() const                         { return _stack.length(); }
-  int locks_size() const                         { return _locks.length(); }
+  int locks_size() const                         { return _locks == nullptr ? 0 : _locks->length(); }
   bool stack_is_empty() const                    { return _stack.is_empty(); }
-  bool no_active_locks() const                   { return _locks.is_empty(); }
+  bool no_active_locks() const                   { return _locks == nullptr || _locks->is_empty(); }
   int total_locks_size() const;
 
   // locals access
-  void clear_locals();                           // sets all locals to NULL;
+  void clear_locals();                           // sets all locals to null;
 
   void invalidate_local(int i) {
     assert(!_locals.at(i)->type()->is_double_word() ||
-           _locals.at(i + 1) == NULL, "hi-word of doubleword value must be NULL");
-    _locals.at_put(i, NULL);
+           _locals.at(i + 1) == nullptr, "hi-word of doubleword value must be null");
+    _locals.at_put(i, nullptr);
   }
 
   Value local_at(int i) const {
     Value x = _locals.at(i);
-    assert(x == NULL || !x->type()->is_double_word() ||
-           _locals.at(i + 1) == NULL, "hi-word of doubleword value must be NULL");
+    assert(x == nullptr || !x->type()->is_double_word() ||
+           _locals.at(i + 1) == nullptr, "hi-word of doubleword value must be null");
     return x;
   }
 
@@ -116,15 +118,15 @@ class ValueStack: public CompilationResourceObj {
     // double word local and kill it.
     if (i > 0) {
       Value prev = _locals.at(i - 1);
-      if (prev != NULL && prev->type()->is_double_word()) {
-        _locals.at_put(i - 1, NULL);
+      if (prev != nullptr && prev->type()->is_double_word()) {
+        _locals.at_put(i - 1, nullptr);
       }
     }
 
     _locals.at_put(i, x);
     if (x->type()->is_double_word()) {
-      // hi-word of doubleword value is always NULL
-      _locals.at_put(i + 1, NULL);
+      // hi-word of doubleword value is always null
+      _locals.at_put(i + 1, nullptr);
     }
   }
 
@@ -132,7 +134,7 @@ class ValueStack: public CompilationResourceObj {
   Value stack_at(int i) const {
     Value x = _stack.at(i);
     assert(!x->type()->is_double_word() ||
-           _stack.at(i + 1) == NULL, "hi-word of doubleword value must be NULL");
+           _stack.at(i + 1) == nullptr, "hi-word of doubleword value must be null");
     return x;
   }
 
@@ -162,8 +164,8 @@ class ValueStack: public CompilationResourceObj {
   void fpush(Value t)                            { _stack.push(check(floatTag  , t)); }
   void apush(Value t)                            { _stack.push(check(objectTag , t)); }
   void rpush(Value t)                            { _stack.push(check(addressTag, t)); }
-  void lpush(Value t)                            { _stack.push(check(longTag   , t)); _stack.push(NULL); }
-  void dpush(Value t)                            { _stack.push(check(doubleTag , t)); _stack.push(NULL); }
+  void lpush(Value t)                            { _stack.push(check(longTag   , t)); _stack.push(nullptr); }
+  void dpush(Value t)                            { _stack.push(check(doubleTag , t)); _stack.push(nullptr); }
 
   void push(ValueType* type, Value t) {
     switch (type->tag()) {
@@ -192,7 +194,7 @@ class ValueStack: public CompilationResourceObj {
       case doubleTag : return dpop();
       case objectTag : return apop();
       case addressTag: return rpop();
-      default        : ShouldNotReachHere(); return NULL;
+      default        : ShouldNotReachHere(); return nullptr;
     }
   }
 
@@ -201,7 +203,7 @@ class ValueStack: public CompilationResourceObj {
   // locks access
   int lock  (Value obj);
   int unlock();
-  Value lock_at(int i) const                     { return _locks.at(i); }
+  Value lock_at(int i) const                     { return _locks->at(i); }
 
   // SSA form IR support
   void setup_phi_for_stack(BlockBegin* b, int index);
@@ -235,7 +237,7 @@ class ValueStack: public CompilationResourceObj {
 //     do something with value and index
 //   }
 // }
-// as an invariant, state is NULL now
+// as an invariant, state is null now
 
 
 // construct a unique variable name with the line number where the macro is used
@@ -244,14 +246,14 @@ class ValueStack: public CompilationResourceObj {
 #define temp_var     temp_var2(__LINE__)
 
 #define for_each_state(state)  \
-  for (; state != NULL; state = state->caller_state())
+  for (; state != nullptr; state = state->caller_state())
 
 #define for_each_local_value(state, index, value)                                              \
   int temp_var = state->locals_size();                                                         \
   for (index = 0;                                                                              \
        index < temp_var && (value = state->local_at(index), true);                             \
-       index += (value == NULL || value->type()->is_illegal() ? 1 : value->type()->size()))    \
-    if (value != NULL)
+       index += (value == nullptr || value->type()->is_illegal() ? 1 : value->type()->size())) \
+    if (value != nullptr)
 
 
 #define for_each_stack_value(state, index, value)                                              \
@@ -266,7 +268,7 @@ class ValueStack: public CompilationResourceObj {
   for (index = 0;                                                                              \
        index < temp_var && (value = state->lock_at(index), true);                              \
        index++)                                                                                \
-    if (value != NULL)
+    if (value != nullptr)
 
 
 // Macro definition for simple iteration of all state values of a ValueStack
@@ -299,7 +301,7 @@ class ValueStack: public CompilationResourceObj {
 }
 
 
-// Macro definition for simple iteration of all phif functions of a block, i.e all
+// Macro definition for simple iteration of all phi functions of a block, i.e all
 // phi functions of the ValueStack where the block matches.
 // Use the following code pattern to iterate all phi functions of a block:
 //
@@ -315,20 +317,20 @@ class ValueStack: public CompilationResourceObj {
   Value value;                                                                                 \
   {                                                                                            \
     for_each_stack_value(cur_state, cur_index, value) {                                        \
-      Phi* v_phi = value->as_Phi();                                                      \
-      if (v_phi != NULL && v_phi->block() == v_block) {                                        \
+      Phi* v_phi = value->as_Phi();                                                            \
+      if (v_phi != nullptr && v_phi->block() == v_block) {                                     \
         v_code;                                                                                \
       }                                                                                        \
     }                                                                                          \
   }                                                                                            \
   {                                                                                            \
     for_each_local_value(cur_state, cur_index, value) {                                        \
-      Phi* v_phi = value->as_Phi();                                                      \
-      if (v_phi != NULL && v_phi->block() == v_block) {                                        \
+      Phi* v_phi = value->as_Phi();                                                            \
+      if (v_phi != nullptr && v_phi->block() == v_block) {                                     \
         v_code;                                                                                \
       }                                                                                        \
     }                                                                                          \
   }                                                                                            \
 }
 
-#endif // SHARE_VM_C1_C1_VALUESTACK_HPP
+#endif // SHARE_C1_C1_VALUESTACK_HPP

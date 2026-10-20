@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, SAP SE. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,14 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
+#include "gc/shared/barrierSetNMethod.hpp"
 #include "interpreter/interp_masm.hpp"
+#include "oops/compressedOops.hpp"
+#include "runtime/jniHandles.hpp"
+#include "runtime/stubRoutines.hpp"
+#include "utilities/macros.hpp"
 
 #define __ masm->
 
@@ -47,7 +53,7 @@ void BarrierSetAssembler::load_at(MacroAssembler* masm, DecoratorSet decorators,
   case T_OBJECT: {
     if (UseCompressedOops && in_heap) {
       __ z_llgf(dst, addr);
-      if (L_handle_null != NULL) { // Label provided.
+      if (L_handle_null != nullptr) { // Label provided.
         __ compareU32_and_branch(dst, (intptr_t)0, Assembler::bcondEqual, *L_handle_null);
         __ oop_decoder(dst, dst, false);
       } else {
@@ -55,7 +61,7 @@ void BarrierSetAssembler::load_at(MacroAssembler* masm, DecoratorSet decorators,
       }
     } else {
       __ z_lg(dst, addr);
-      if (L_handle_null != NULL) {
+      if (L_handle_null != nullptr) {
         __ compareU64_and_branch(dst, (intptr_t)0, Assembler::bcondEqual, *L_handle_null);
       }
     }
@@ -79,7 +85,7 @@ void BarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet decorators
     if (UseCompressedOops && in_heap) {
       if (val == noreg) {
         __ clear_mem(addr, 4);
-      } else if (Universe::narrow_oop_mode() == Universe::UnscaledNarrowOop) {
+      } else if (CompressedOops::mode() == CompressedOops::UnscaledNarrowOop) {
         __ z_st(val, addr);
       } else {
         Register tmp = (tmp1 != Z_R1) ? tmp1 : tmp2; // Avoid tmp == Z_R1 (see oop_encoder).
@@ -102,11 +108,42 @@ void BarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet decorators
 void BarrierSetAssembler::resolve_jobject(MacroAssembler* masm, Register value, Register tmp1, Register tmp2) {
   NearLabel Ldone;
   __ z_ltgr(tmp1, value);
-  __ z_bre(Ldone);          // Use NULL result as-is.
+  __ z_bre(Ldone);          // Use null result as-is.
 
-  __ z_nill(value, ~JNIHandles::weak_tag_mask);
+  __ z_nill(value, ~JNIHandles::tag_mask);
   __ z_lg(value, 0, value); // Resolve (untagged) jobject.
 
-  __ verify_oop(value);
+  __ verify_oop(value, FILE_AND_LINE);
   __ bind(Ldone);
+}
+
+void BarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler* masm, Register jni_env,
+                                                        Register obj, Register tmp, Label& slowpath) {
+  __ z_nill(obj, ~JNIHandles::tag_mask);
+  __ z_lg(obj, 0, obj); // Resolve (untagged) jobject.
+}
+
+void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm) {
+  BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
+  if (bs_nm == nullptr) {
+    return;
+  }
+
+  __ block_comment("nmethod_entry_barrier (nmethod_entry_barrier) {");
+
+    // Load jump addr:
+    __ load_const(Z_R1_scratch, (uint64_t)StubRoutines::zarch::nmethod_entry_barrier()); // 2*6 bytes
+
+    // Load value from current java object:
+    __ z_lg(Z_R0_scratch, in_bytes(bs_nm->thread_disarmed_guard_value_offset()), Z_thread); // 6 bytes
+
+    // Compare to current patched value:
+    __ z_cfi(Z_R0_scratch, /* to be patched */ -1); // 6 bytes (2 + 4 byte imm val)
+
+    // Conditional Jump
+    __ z_larl(Z_R14, (Assembler::instr_len((unsigned long)LARL_ZOPC) + Assembler::instr_len((unsigned long)BCR_ZOPC)) / 2); // 6 bytes
+    __ z_bcr(Assembler::bcondNotEqual, Z_R1_scratch); // 2 bytes
+
+    // Fall through to method body.
+  __ block_comment("} nmethod_entry_barrier (nmethod_entry_barrier)");
 }

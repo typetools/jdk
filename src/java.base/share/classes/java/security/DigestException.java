@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the generic Message Digest exception.
  *
@@ -33,25 +36,28 @@ package java.security;
  */
 public class DigestException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 5821450303093652515L;
 
     /**
-     * Constructs a DigestException with no detail message.  (A
-     * detail message is a String that describes this particular
+     * Constructs a {@code DigestException} with no detail message.  (A
+     * detail message is a {@code String} that describes this particular
      * exception.)
      */
+    @SideEffectFree
     public DigestException() {
         super();
     }
 
     /**
-     * Constructs a DigestException with the specified detail
-     * message.  (A detail message is a String that describes this
+     * Constructs a {@code DigestException} with the specified detail
+     * message.  (A detail message is a {@code String} that describes this
      * particular exception.)
      *
      * @param msg the detail message.
      */
-   public DigestException(String msg) {
+    @SideEffectFree
+   public DigestException(@Nullable String msg) {
        super(msg);
     }
 
@@ -66,7 +72,8 @@ public class DigestException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public DigestException(String message, Throwable cause) {
+    @SideEffectFree
+    public DigestException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -81,7 +88,8 @@ public class DigestException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public DigestException(Throwable cause) {
+    @SideEffectFree
+    public DigestException(@Nullable Throwable cause) {
         super(cause);
     }
 }

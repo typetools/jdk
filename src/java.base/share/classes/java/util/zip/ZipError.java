@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an unrecoverable error has occurred.
  *
@@ -32,13 +35,15 @@ package java.util.zip;
  * @since   1.6
  */
 public class ZipError extends InternalError {
+    @java.io.Serial
     private static final long serialVersionUID = 853973422266861979L;
 
     /**
      * Constructs a ZipError with the given detail message.
      * @param s the {@code String} containing a detail message
      */
-    public ZipError(String s) {
+    @SideEffectFree
+    public ZipError(@Nullable String s) {
         super(s);
     }
 }

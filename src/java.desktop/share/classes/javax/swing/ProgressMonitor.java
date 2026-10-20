@@ -71,7 +71,7 @@ import javax.swing.text.*;
  *
  * For further documentation and examples see
  * <a
- href="http://docs.oracle.com/javase/tutorial/uiswing/components/progress.html">How to Monitor Progress</a>,
+ href="https://docs.oracle.com/javase/tutorial/uiswing/components/progress.html">How to Monitor Progress</a>,
  * a section in <em>The Java Tutorial.</em>
  *
  * @see ProgressMonitorInputStream
@@ -794,7 +794,7 @@ public class ProgressMonitor implements Accessible
          * @return this component's locale.  If this component does not have
          * a locale, the locale of its parent is returned.
          *
-         * @exception IllegalComponentStateException
+         * @throws IllegalComponentStateException
          * If the Component does not have its own locale and has not yet been
          * added to a containment hierarchy such that the locale can be
          * determined from the containing parent.
@@ -927,7 +927,7 @@ public class ProgressMonitor implements Accessible
         }
 
         /**
-         * Returns the number of characters (valid indicies)
+         * Returns the number of characters (valid indices)
          *
          * @return the number of characters
          */

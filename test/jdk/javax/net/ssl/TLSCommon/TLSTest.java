@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -206,20 +208,22 @@ public class TLSTest {
                     keyType.getTrustedCert(), keyType.getEndCert(),
                     keyType.getPrivateKey(), keyType.getKeyType());
             SSLServerSocketFactory sslssf = ctx.getServerSocketFactory();
+            InetSocketAddress socketAddress =
+                    new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
             SSLServerSocket sslServerSocket
-                    = (SSLServerSocket) sslssf.createServerSocket(port);
+                    = (SSLServerSocket) sslssf.createServerSocket();
+            sslServerSocket.bind(socketAddress);
             port = sslServerSocket.getLocalPort();
             System.out.println("Server listining on port: " + port);
             // specify the enabled server cipher suites
             sslServerSocket.setEnabledCipherSuites(new String[]{this.cipher});
             sslServerSocket.setEnabledProtocols(new String[]{tlsProtocol});
+            sslServerSocket.setSoTimeout(25000);
             /*
              * Signal Client, the server is ready to accept client request.
              */
             latch.countDown();
             try (SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept()) {
-                sslSocket.setNeedClientAuth(false);
-                sslSocket.setSoTimeout(5000);
                 try (InputStream sslIS = sslSocket.getInputStream();
                         OutputStream sslOS = sslSocket.getOutputStream();) {
                     sslIS.read();

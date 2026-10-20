@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate is not yet valid exception. This is thrown whenever
  * the current {@code Date} or the specified {@code Date}
@@ -36,6 +39,7 @@ package java.security.cert;
  */
 public class CertificateNotYetValidException extends CertificateException {
 
+    @java.io.Serial
     static final long serialVersionUID = 4355919900041064702L;
 
     /**
@@ -43,6 +47,7 @@ public class CertificateNotYetValidException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateNotYetValidException() {
         super();
     }
@@ -54,7 +59,8 @@ public class CertificateNotYetValidException extends CertificateException {
      *
      * @param message the detail message.
      */
-    public CertificateNotYetValidException(String message) {
+    @SideEffectFree
+    public CertificateNotYetValidException(@Nullable String message) {
         super(message);
     }
 }

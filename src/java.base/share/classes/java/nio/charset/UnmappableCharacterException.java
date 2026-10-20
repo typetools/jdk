@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Checked exception thrown when an input character (or byte) sequence
@@ -38,8 +39,12 @@ public class UnmappableCharacterException
     extends CharacterCodingException
 {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7026962371537706123L;
 
+    /**
+     * The length of the input character (or byte) sequence.
+     */
     private int inputLength;
 
     /**
@@ -47,6 +52,7 @@ public class UnmappableCharacterException
      * given length.
      * @param inputLength the length of the input
      */
+    @SideEffectFree
     public UnmappableCharacterException(int inputLength) {
         this.inputLength = inputLength;
     }
@@ -63,6 +69,7 @@ public class UnmappableCharacterException
      * Returns the message.
      * @return the message
      */
+    @SideEffectFree
     public String getMessage() {
         return "Input length = " + inputLength;
     }

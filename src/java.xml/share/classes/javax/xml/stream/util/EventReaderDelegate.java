@@ -25,6 +25,8 @@
 
 package javax.xml.stream.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.stream.XMLStreamException;
@@ -87,6 +89,7 @@ public class EventReaderDelegate implements XMLEventReader {
     return reader.next();
   }
 
+  @Pure
   public boolean hasNext()
   {
     return reader.hasNext();

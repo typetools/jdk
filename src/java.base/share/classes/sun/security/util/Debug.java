@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package sun.security.util;
 
 import java.io.PrintStream;
 import java.math.BigInteger;
+import java.util.HexFormat;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.Locale;
@@ -86,10 +87,12 @@ public class Debug {
         System.err.println("pkcs11keystore");
         System.err.println("              PKCS11 KeyStore debugging");
         System.err.println("pkcs12        PKCS12 KeyStore debugging");
+        System.err.println("properties    Security property and configuration file debugging");
         System.err.println("sunpkcs11     SunPKCS11 provider debugging");
         System.err.println("scl           permissions SecureClassLoader assigns");
         System.err.println("securerandom  SecureRandom");
         System.err.println("ts            timestamping");
+        System.err.println("x509          X.509 certificate debugging");
         System.err.println();
         System.err.println("The following can be used with access:");
         System.err.println();
@@ -121,6 +124,10 @@ public class Debug {
         System.err.println("ocsp          dump the OCSP protocol exchanges");
         System.err.println("verbose       verbose debugging");
         System.err.println();
+        System.err.println("The following can be used with x509:");
+        System.err.println();
+        System.err.println("ava           embed non-printable/non-escaped characters in AVA components as hex strings");
+        System.err.println();
         System.err.println("Note: Separate multiple options with a comma");
         System.exit(0);
     }
@@ -138,7 +145,7 @@ public class Debug {
 
     /**
      * Get a Debug object corresponding to whether or not the given
-     * option is set. Set the prefix to be prefix.
+     * option is set. Set the prefix to prefix.
      */
     public static Debug getInstance(String option, String prefix)
     {
@@ -160,10 +167,10 @@ public class Debug {
         if (args == null)
             return false;
         else {
-            if (args.indexOf("all") != -1)
+            if (args.contains("all"))
                 return true;
             else
-                return (args.indexOf(option) != -1);
+                return (args.contains(option));
         }
     }
 
@@ -213,7 +220,7 @@ public class Debug {
     }
 
     /**
-     * PrintStream for debug methods. Currently only System.err is supported.
+     * PrintStream for debug methods. Currently, only System.err is supported.
      */
     public PrintStream getPrintStream() {
         return System.err;
@@ -261,7 +268,7 @@ public class Debug {
     private static String marshal(String args) {
         if (args != null) {
             StringBuilder target = new StringBuilder();
-            StringBuffer source = new StringBuffer(args);
+            StringBuilder source = new StringBuilder(args);
 
             // obtain the "permission=<classname>" options
             // the syntax of classname: IDENTIFIER.IDENTIFIER
@@ -273,7 +280,7 @@ public class Debug {
                 "[a-zA-Z_$][a-zA-Z0-9_$]*([.][a-zA-Z_$][a-zA-Z0-9_$]*)*";
             Pattern pattern = Pattern.compile(reg);
             Matcher matcher = pattern.matcher(source);
-            StringBuffer left = new StringBuffer();
+            StringBuilder left = new StringBuilder();
             while (matcher.find()) {
                 String matched = matcher.group();
                 target.append(matched.replaceFirst(keyReg, keyStr));
@@ -297,7 +304,7 @@ public class Debug {
             reg = keyReg + "[^, ;]*";
             pattern = Pattern.compile(reg);
             matcher = pattern.matcher(source);
-            left = new StringBuffer();
+            left = new StringBuilder();
             while (matcher.find()) {
                 String matched = matcher.group();
                 target.append(matched.replaceFirst(keyReg, keyStr));
@@ -318,22 +325,11 @@ public class Debug {
         return null;
     }
 
-    private static final char[] hexDigits = "0123456789abcdef".toCharArray();
-
     public static String toString(byte[] b) {
         if (b == null) {
             return "(null)";
         }
-        StringBuilder sb = new StringBuilder(b.length * 3);
-        for (int i = 0; i < b.length; i++) {
-            int k = b[i] & 0xff;
-            if (i != 0) {
-                sb.append(':');
-            }
-            sb.append(hexDigits[k >>> 4]);
-            sb.append(hexDigits[k & 0xf]);
-        }
-        return sb.toString();
+        return HexFormat.ofDelimiter(":").formatHex(b);
     }
 
 }

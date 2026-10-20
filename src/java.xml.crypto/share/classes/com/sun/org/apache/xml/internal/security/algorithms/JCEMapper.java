@@ -38,8 +38,7 @@ public class JCEMapper {
     private static final com.sun.org.slf4j.internal.Logger LOG =
         com.sun.org.slf4j.internal.LoggerFactory.getLogger(JCEMapper.class);
 
-    private static Map<String, Algorithm> algorithmsMap =
-        new ConcurrentHashMap<String, Algorithm>();
+    private static Map<String, Algorithm> algorithmsMap = new ConcurrentHashMap<>();
 
     private static String providerName;
 
@@ -183,6 +182,10 @@ public class JCEMapper {
              new Algorithm("RSA", "SHA3-512withRSAandMGF1", "Signature")
         );
         algorithmsMap.put(
+             XMLSignature.ALGO_ID_SIGNATURE_RSA_PSS,
+             new Algorithm("RSA", "RSASSA-PSS", "Signature")
+        );
+        algorithmsMap.put(
             XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA1,
             new Algorithm("EC", "SHA1withECDSA", "Signature")
         );
@@ -205,6 +208,14 @@ public class JCEMapper {
         algorithmsMap.put(
             XMLSignature.ALGO_ID_SIGNATURE_ECDSA_RIPEMD160,
             new Algorithm("EC", "RIPEMD160withECDSA", "Signature")
+        );
+        algorithmsMap.put(
+            XMLSignature.ALGO_ID_SIGNATURE_EDDSA_ED25519,
+            new Algorithm("Ed25519", "Ed25519", "Signature")
+        );
+        algorithmsMap.put(
+            XMLSignature.ALGO_ID_SIGNATURE_EDDSA_ED448,
+            new Algorithm("Ed448", "Ed448", "Signature")
         );
         algorithmsMap.put(
             XMLSignature.ALGO_ID_MAC_HMAC_NOT_RECOMMENDED_MD5,

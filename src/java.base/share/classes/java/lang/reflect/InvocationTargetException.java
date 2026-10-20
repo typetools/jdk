@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,19 +26,13 @@
 package java.lang.reflect;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * InvocationTargetException is a checked exception that wraps
  * an exception thrown by an invoked method or constructor.
- *
- * <p>As of release 1.4, this exception has been retrofitted to conform to
- * the general purpose exception-chaining mechanism.  The "target exception"
- * that is provided at construction time and accessed via the
- * {@link #getTargetException()} method is now known as the <i>cause</i>,
- * and may be accessed via the {@link Throwable#getCause()} method,
- * as well as the aforementioned "legacy method."
  *
  * @see Method
  * @see Constructor
@@ -49,9 +43,10 @@ public class InvocationTargetException extends ReflectiveOperationException {
     /**
      * Use serialVersionUID from JDK 1.1.X for interoperability
      */
+    @java.io.Serial
     private static final long serialVersionUID = 4085088731926701167L;
 
-     /**
+    /**
      * This field holds the target if the
      * InvocationTargetException(Throwable target) constructor was
      * used to instantiate the object
@@ -59,14 +54,16 @@ public class InvocationTargetException extends ReflectiveOperationException {
      * @serial
      *
      */
-    private Throwable target;
+    private final Throwable target;
 
     /**
      * Constructs an {@code InvocationTargetException} with
      * {@code null} as the target exception.
      */
+    @SideEffectFree
     protected InvocationTargetException() {
         super((Throwable)null);  // Disallow initCause
+        this.target = null;
     }
 
     /**
@@ -96,7 +93,8 @@ public class InvocationTargetException extends ReflectiveOperationException {
     /**
      * Get the thrown target exception.
      *
-     * <p>This method predates the general-purpose exception chaining facility.
+     * @apiNote
+     * This method predates the general-purpose exception chaining facility.
      * The {@link Throwable#getCause()} method is now the preferred means of
      * obtaining this information.
      *
@@ -113,6 +111,8 @@ public class InvocationTargetException extends ReflectiveOperationException {
      * @return  the cause of this exception.
      * @since   1.4
      */
+    @Pure
+    @Override
     public @Nullable Throwable getCause() {
         return target;
     }

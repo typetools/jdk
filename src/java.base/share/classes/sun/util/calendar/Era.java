@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,7 +54,7 @@ import java.util.TimeZone;
  *                           Taisho           1912-07-30T00:00:00 local time
  *                           Showa            1926-12-25T00:00:00 local time
  *                           Heisei           1989-01-08T00:00:00 local time
- *                           NewEra           2019-05-01T00:00:00 local time
+ *                           Reiwa            2019-05-01T00:00:00 local time
  *   -----------------------------------------------------------------------
  * }</pre>
  *
@@ -85,9 +85,9 @@ public final class Era {
         this.abbr = abbr;
         this.since = since;
         this.localTime = localTime;
-        Gregorian gcal = CalendarSystem.getGregorianCalendar();
-        BaseCalendar.Date d = (BaseCalendar.Date) gcal.newCalendarDate(null);
-        gcal.getCalendarDate(since, d);
+        Gregorian gCal = CalendarSystem.getGregorianCalendar();
+        BaseCalendar.Date d = gCal.newCalendarDate(null);
+        gCal.getCalendarDate(since, d);
         sinceDate = new ImmutableGregorianDate(d);
     }
 
@@ -100,10 +100,6 @@ public final class Era {
     }
 
     public String getAbbreviation() {
-        return abbr;
-    }
-
-    public String getDiaplayAbbreviation(Locale locale) {
         return abbr;
     }
 
@@ -126,10 +122,9 @@ public final class Era {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof Era)) {
+        if (!(o instanceof Era that)) {
             return false;
         }
-        Era that = (Era) o;
         return name.equals(that.name)
             && abbr.equals(that.abbr)
             && since == that.since

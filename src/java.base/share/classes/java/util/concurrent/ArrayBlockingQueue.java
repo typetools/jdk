@@ -35,12 +35,29 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.ref.WeakReference;
 import java.util.AbstractQueue;
@@ -90,7 +107,7 @@ import java.util.function.Predicate;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullness", "modifiability"})
 public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         implements BlockingQueue<E>, java.io.Serializable {
 
@@ -108,6 +125,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     private static final long serialVersionUID = -817911632652898426L;
 
     /** The queued items */
+    @SuppressWarnings("serial") // Conditionally serializable
     final Object[] items;
 
     /** items index for next take, poll, peek or remove */
@@ -128,9 +146,11 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     final ReentrantLock lock;
 
     /** Condition for waiting takes */
+    @SuppressWarnings("serial")  // Classes implementing Condition may be serializable.
     private final Condition notEmpty;
 
     /** Condition for waiting puts */
+    @SuppressWarnings("serial")  // Classes implementing Condition may be serializable.
     private final Condition notFull;
 
     /**
@@ -258,7 +278,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @param capacity the capacity of this queue
      * @throws IllegalArgumentException if {@code capacity < 1}
      */
-    public ArrayBlockingQueue(int capacity) {
+    public @Modifiable @IteratorPolyMod ArrayBlockingQueue(int capacity) {
         this(capacity, false);
     }
 
@@ -272,7 +292,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      *        if {@code false} the access order is unspecified.
      * @throws IllegalArgumentException if {@code capacity < 1}
      */
-    public ArrayBlockingQueue(int capacity, boolean fair) {
+    public @Modifiable @IteratorPolyMod ArrayBlockingQueue(int capacity, boolean fair) {
         if (capacity <= 0)
             throw new IllegalArgumentException();
         this.items = new Object[capacity];
@@ -297,7 +317,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public ArrayBlockingQueue(int capacity, boolean fair,
+    public @Modifiable @IteratorPolyMod ArrayBlockingQueue(int capacity, boolean fair,
                               Collection<? extends E> c) {
         this(capacity, fair);
 
@@ -330,7 +350,10 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws IllegalStateException if this queue is full
      * @throws NullPointerException if the specified element is null
      */
-    public boolean add(E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable ArrayBlockingQueue<E> this, E e) {
         return super.add(e);
     }
 
@@ -343,7 +366,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    public boolean offer(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable ArrayBlockingQueue<E> this, E e) {
         Objects.requireNonNull(e);
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -366,7 +391,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    public void put(E e) throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void put(@Growable ArrayBlockingQueue<E> this, E e) throws InterruptedException {
         Objects.requireNonNull(e);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -387,8 +414,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean offer(E e, long timeout, TimeUnit unit)
-        throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable ArrayBlockingQueue<E> this, E e, long timeout, TimeUnit unit)        throws InterruptedException {
 
         Objects.requireNonNull(e);
         long nanos = unit.toNanos(timeout);
@@ -407,7 +435,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
-    public E poll() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -417,7 +447,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
-    public E take() throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E take(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this) throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -429,7 +461,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
-    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -445,7 +479,8 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
-    public E peek() {
+    @Pure
+    public @Nullable E peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -514,7 +549,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return {@code true} if this queue changed as a result of the call
      */
     @CFComment("probably accepts null in practice, but docs at best imply this")
-    public boolean remove(Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @CanShrink ArrayBlockingQueue<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -547,7 +584,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return {@code true} if this queue contains the specified element
      */
     @CFComment("probably accepts null in practice, but docs at best imply this")
-    public boolean contains(Object o) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied @UnknownSignedness Object o) {
         if (o == null) return false;
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -582,7 +621,8 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
-    public @PolyNull Object[] toArray(ArrayBlockingQueue<@PolyNull E> this) {
+    @SideEffectFree
+    public @PolyNull @PolySigned Object[] toArray(ArrayBlockingQueue<@PolyNull @PolySigned E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -633,7 +673,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws NullPointerException if the specified array is null
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -656,6 +696,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
         }
     }
 
+    @SideEffectFree
     public String toString() {
         return Helpers.collectionToString(this);
     }
@@ -664,7 +705,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * Atomically removes all of the elements from this queue.
      * The queue will be empty after this call returns.
      */
-    public void clear() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -684,7 +727,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     }
 
     /**
-     * Nulls out slots starting at array index i, upto index end.
+     * Nulls out slots starting at array index i, up to index end.
      * Condition i == end means "full" - the entire array is cleared.
      */
     private static void circularClear(Object[] items, int i, int end) {
@@ -703,7 +746,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, @Growable Collection<? super E> c) {
         return drainTo(c, Integer.MAX_VALUE);
     }
 
@@ -713,7 +758,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c, int maxElements) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, @Growable Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -765,7 +812,8 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue in proper sequence
      */
-    public Iterator<E> iterator() {
+    @SideEffectFree
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty ArrayBlockingQueue<E> this) {
         return new Itr();
     }
 
@@ -1188,6 +1236,8 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
          * fields (i.e. nextItem) that are not modified by update operations
          * triggered by queue modifications.
          */
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             if (nextItem != null)
                 return true;
@@ -1217,7 +1267,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
             }
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty Itr this) {
             final E e = nextItem;
             if (e == null)
                 throw new NoSuchElementException();
@@ -1275,6 +1327,8 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
             }
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             final ReentrantLock lock = ArrayBlockingQueue.this.lock;
             lock.lock();
@@ -1443,6 +1497,7 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return Spliterators.spliterator
             (this, (Spliterator.ORDERED |
@@ -1476,7 +1531,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeIf(Predicate<? super E> filter) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeIf(@Shrinkable @CanShrink ArrayBlockingQueue<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -1484,7 +1541,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<?> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeAll(@Shrinkable @CanShrink ArrayBlockingQueue<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1492,7 +1551,9 @@ public class ArrayBlockingQueue<E extends Object> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<?> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean retainAll(@Shrinkable @GuardSatisfied @CanShrink ArrayBlockingQueue<E> this, Collection<? extends @Nullable @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }

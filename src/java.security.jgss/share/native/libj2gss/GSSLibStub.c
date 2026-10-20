@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,8 @@ const int TYPE_CRED_NAME = 10;
 const int TYPE_CRED_TIME = 11;
 const int TYPE_CRED_USAGE = 12;
 
+static jclass tlsCBCl = NULL;
+
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    init
@@ -46,7 +48,6 @@ Java_sun_security_jgss_wrapper_GSSLibStub_init(JNIEnv *env,
                                                jboolean jDebug) {
     const char *libName;
     int failed;
-    char *error = NULL;
 
     if (!jDebug) {
       JGSS_DEBUG = 0;
@@ -68,6 +69,17 @@ Java_sun_security_jgss_wrapper_GSSLibStub_init(JNIEnv *env,
     /* initialize global function table */
     failed = loadNative(libName);
     (*env)->ReleaseStringUTFChars(env, jlibName, libName);
+
+    if (tlsCBCl == NULL) {
+
+        /* initialize TLS Channel Binding class wrapper */
+        jclass cl = (*env)->FindClass(env,
+                    "sun/security/jgss/krb5/internal/TlsChannelBindingImpl");
+        if (cl == NULL) {           /* exception thrown */
+            return JNI_FALSE;
+        }
+        tlsCBCl = (*env)->NewGlobalRef(env, cl);
+    }
 
     if (!failed) {
         return JNI_TRUE;
@@ -154,11 +166,13 @@ void deleteGSSCB(gss_channel_bindings_t cb) {
   if (cb == GSS_C_NO_CHANNEL_BINDINGS) return;
 
   /* release initiator address */
-  if (cb->initiator_addrtype != GSS_C_AF_NULLADDR) {
+  if (cb->initiator_addrtype != GSS_C_AF_NULLADDR &&
+      cb->initiator_addrtype != GSS_C_AF_UNSPEC) {
     resetGSSBuffer(&(cb->initiator_address));
   }
   /* release acceptor address */
-  if (cb->acceptor_addrtype != GSS_C_AF_NULLADDR) {
+  if (cb->acceptor_addrtype != GSS_C_AF_NULLADDR &&
+      cb->acceptor_addrtype != GSS_C_AF_UNSPEC) {
     resetGSSBuffer(&(cb->acceptor_address));
   }
   /* release application data */
@@ -184,14 +198,24 @@ gss_channel_bindings_t newGSSCB(JNIEnv *env, jobject jcb) {
 
   cb = malloc(sizeof(struct gss_channel_bindings_struct));
   if (cb == NULL) {
-    throwOutOfMemoryError(env,NULL);
+    gssThrowOutOfMemoryError(env, NULL);
     return NULL;
   }
 
   // initialize addrtype in CB first
-  cb->initiator_addrtype = GSS_C_AF_NULLADDR;
-  cb->acceptor_addrtype = GSS_C_AF_NULLADDR;
+  // LDAP TLS Channel Binding requires GSS_C_AF_UNSPEC address type
+  // for unspecified initiator and acceptor addresses.
+  // GSS_C_AF_NULLADDR value should be used for unspecified address
+  // in all other cases.
 
+  if ((*env)->IsInstanceOf(env, jcb, tlsCBCl)) {
+      // TLS Channel Binding requires unspecified addrtype=0
+      cb->initiator_addrtype = GSS_C_AF_UNSPEC;
+      cb->acceptor_addrtype = GSS_C_AF_UNSPEC;
+  } else {
+      cb->initiator_addrtype = GSS_C_AF_NULLADDR;
+      cb->acceptor_addrtype = GSS_C_AF_NULLADDR;
+  }
   // addresses needs to be initialized to empty
   memset(&cb->initiator_address, 0, sizeof(cb->initiator_address));
   memset(&cb->acceptor_address, 0, sizeof(cb->acceptor_address));
@@ -912,7 +936,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_initContext(JNIEnv *env,
   // this is to work with both MIT and Solaris. Former deletes half-built
   // context if error occurs
   if (contextHdl != contextHdlSave) {
-    (*env)->SetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext,
+    (*env)->CallVoidMethod(env, jcontextSpi, MID_NativeGSSContext_setContext,
                          ptr_to_jlong(contextHdl));
     TRACE1("[GSSLibStub_initContext] set pContext=%" PRIuPTR "", (uintptr_t)contextHdl);
   }
@@ -982,7 +1006,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   OM_uint32 aFlags;
   OM_uint32 aTime;
   gss_cred_id_t delCred;
-  jobject jsrcName=GSS_C_NO_NAME;
+  jobject jsrcName = NULL;
   jobject jdelCred;
   jobject jMech;
   jboolean setTarget;
@@ -1032,7 +1056,7 @@ Java_sun_security_jgss_wrapper_GSSLibStub_acceptContext(JNIEnv *env,
   // this is to work with both MIT and Solaris. Former deletes half-built
   // context if error occurs
   if (contextHdl != contextHdlSave) {
-    (*env)->SetLongField(env, jcontextSpi, FID_NativeGSSContext_pContext,
+    (*env)->CallVoidMethod(env, jcontextSpi, MID_NativeGSSContext_setContext,
                          ptr_to_jlong(contextHdl));
     TRACE1("[GSSLibStub_acceptContext] set pContext=%" PRIuPTR "", (uintptr_t)contextHdl);
   }
@@ -1164,6 +1188,9 @@ Java_sun_security_jgss_wrapper_GSSLibStub_inquireContext(JNIEnv *env,
   OM_uint32 time;
   OM_uint32 flags;
   int isInitiator, isEstablished;
+#if defined (_WIN32) && defined (_MSC_VER)
+  __declspec(align(8))
+#endif
   jlong result[6];
   jlongArray jresult;
 

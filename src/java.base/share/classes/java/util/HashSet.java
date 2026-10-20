@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,14 +26,29 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.InvalidObjectException;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * This class implements the {@code Set} interface, backed by a hash table
@@ -94,23 +109,24 @@ import jdk.internal.misc.SharedSecrets;
  * @since   1.2
  */
 
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
 public class HashSet<E>
     extends AbstractSet<E>
     implements Set<E>, Cloneable, java.io.Serializable
 {
+    @java.io.Serial
     static final long serialVersionUID = -5024744406713321676L;
 
-    private transient HashMap<E,Object> map;
+    transient HashMap<E,Object> map;
 
     // Dummy value to associate with an Object in the backing Map
-    private static final Object PRESENT = new Object();
+    static final Object PRESENT = new Object();
 
     /**
      * Constructs a new, empty set; the backing {@code HashMap} instance has
      * default initial capacity (16) and load factor (0.75).
      */
-    public HashSet() {
+    public @Modifiable @IteratorPolyMod HashSet() {
         map = new HashMap<>();
     }
 
@@ -123,8 +139,8 @@ public class HashSet<E>
      * @param c the collection whose elements are to be placed into this set
      * @throws NullPointerException if the specified collection is null
      */
-    public HashSet(Collection<? extends E> c) {
-        map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
+    public @Modifiable @IteratorPolyMod @PolyNonEmpty HashSet(@PolyNonEmpty Collection<? extends E> c) {
+        map = HashMap.newHashMap(Math.max(c.size(), 12));
         addAll(c);
     }
 
@@ -132,12 +148,16 @@ public class HashSet<E>
      * Constructs a new, empty set; the backing {@code HashMap} instance has
      * the specified initial capacity and the specified load factor.
      *
+     * @apiNote
+     * To create a {@code HashSet} with an initial capacity that accommodates
+     * an expected number of elements, use {@link #newHashSet(int) newHashSet}.
+     *
      * @param      initialCapacity   the initial capacity of the hash map
      * @param      loadFactor        the load factor of the hash map
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero, or if the load factor is nonpositive
      */
-    public HashSet(@NonNegative int initialCapacity, float loadFactor) {
+    public @Modifiable @IteratorPolyMod HashSet(@NonNegative int initialCapacity, float loadFactor) {
         map = new HashMap<>(initialCapacity, loadFactor);
     }
 
@@ -145,11 +165,15 @@ public class HashSet<E>
      * Constructs a new, empty set; the backing {@code HashMap} instance has
      * the specified initial capacity and default load factor (0.75).
      *
+     * @apiNote
+     * To create a {@code HashSet} with an initial capacity that accommodates
+     * an expected number of elements, use {@link #newHashSet(int) newHashSet}.
+     *
      * @param      initialCapacity   the initial capacity of the hash table
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero
      */
-    public HashSet(@NonNegative int initialCapacity) {
+    public @Modifiable @IteratorPolyMod HashSet(@NonNegative int initialCapacity) {
         map = new HashMap<>(initialCapacity);
     }
 
@@ -166,7 +190,7 @@ public class HashSet<E>
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero, or if the load factor is nonpositive
      */
-    HashSet(int initialCapacity, float loadFactor, boolean dummy) {
+    @Modifiable @IteratorPolyMod HashSet(int initialCapacity, float loadFactor, boolean dummy) {
         map = new LinkedHashMap<>(initialCapacity, loadFactor);
     }
 
@@ -178,7 +202,7 @@ public class HashSet<E>
      * @see ConcurrentModificationException
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty HashSet<E> this) {
         return map.keySet().iterator();
     }
 
@@ -198,6 +222,7 @@ public class HashSet<E>
      * @return {@code true} if this set contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied HashSet<E> this) {
         return map.isEmpty();
     }
@@ -212,7 +237,8 @@ public class HashSet<E>
      * @return {@code true} if this set contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable Object o) {
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.containsKey(o);
     }
 
@@ -228,7 +254,10 @@ public class HashSet<E>
      * @return {@code true} if this set did not already contain the specified
      * element
      */
-    public boolean add(@GuardSatisfied HashSet<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable @GuardSatisfied HashSet<E> this, E e) {
         return map.put(e, PRESENT)==null;
     }
 
@@ -244,7 +273,9 @@ public class HashSet<E>
      * @param o object to be removed from this set, if present
      * @return {@code true} if the set contained the specified element
      */
-    public boolean remove(@GuardSatisfied HashSet<E> this, @Nullable Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @GuardSatisfied HashSet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return map.remove(o)==PRESENT;
     }
 
@@ -252,7 +283,9 @@ public class HashSet<E>
      * Removes all of the elements from this set.
      * The set will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied HashSet<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied HashSet<E> this) {
         map.clear();
     }
 
@@ -264,7 +297,7 @@ public class HashSet<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public Object clone(@GuardSatisfied HashSet<E> this) {
+    public @Modifiable @IteratorPolyMod Object clone(@GuardSatisfied HashSet<E> this) {
         try {
             HashSet<E> newSet = (HashSet<E>) super.clone();
             newSet.map = (HashMap<E, Object>) map.clone();
@@ -284,6 +317,7 @@ public class HashSet<E>
      *             (int), followed by all of its elements (each an Object) in
      *             no particular order.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         // Write out any hidden serialization magic
@@ -305,10 +339,11 @@ public class HashSet<E>
      * Reconstitute the {@code HashSet} instance from a stream (that is,
      * deserialize it).
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
-        // Read in any hidden serialization magic
-        s.defaultReadObject();
+        // Consume and ignore stream fields (currently zero).
+        s.readFields();
 
         // Read capacity and verify non-negative.
         int capacity = s.readInt();
@@ -323,12 +358,13 @@ public class HashSet<E>
             throw new InvalidObjectException("Illegal load factor: " +
                                              loadFactor);
         }
+        // Clamp load factor to range of 0.25...4.0.
+        loadFactor = Math.clamp(loadFactor, 0.25f, 4.0f);
 
         // Read size and verify non-negative.
         int size = s.readInt();
         if (size < 0) {
-            throw new InvalidObjectException("Illegal size: " +
-                                             size);
+            throw new InvalidObjectException("Illegal size: " + size);
         }
 
         // Set the capacity according to the size and load factor ensuring that
@@ -344,7 +380,7 @@ public class HashSet<E>
                      .checkArray(s, Map.Entry[].class, HashMap.tableSizeFor(capacity));
 
         // Create backing HashMap
-        map = (((HashSet<?>)this) instanceof LinkedHashSet ?
+        map = (this instanceof LinkedHashSet ?
                new LinkedHashMap<>(capacity, loadFactor) :
                new HashMap<>(capacity, loadFactor));
 
@@ -368,7 +404,40 @@ public class HashSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     public Spliterator<E> spliterator() {
         return new HashMap.KeySpliterator<>(map, 0, -1, 0, 0);
     }
+
+    @Override
+    @SideEffectFree
+    public Object[] toArray() {
+        return map.keysToArray(new Object[map.size()]);
+    }
+
+    @Override
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
+        return map.keysToArray(map.prepareArray(a));
+    }
+
+    /**
+     * Creates a new, empty HashSet suitable for the expected number of elements.
+     * The returned set uses the default load factor of 0.75, and its initial capacity is
+     * generally large enough so that the expected number of elements can be added
+     * without resizing the set.
+     *
+     * @param numElements    the expected number of elements
+     * @param <T>         the type of elements maintained by the new set
+     * @return the newly created set
+     * @throws IllegalArgumentException if numElements is negative
+     * @since 19
+     */
+    public static <T> HashSet<T> newHashSet(int numElements) {
+        if (numElements < 0) {
+            throw new IllegalArgumentException("Negative number of elements: " + numElements);
+        }
+        return new HashSet<>(HashMap.calculateHashMapCapacity(numElements));
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,15 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1HRPRINTER_HPP
-#define SHARE_VM_GC_G1_G1HRPRINTER_HPP
+#ifndef SHARE_GC_G1_G1HRPRINTER_HPP
+#define SHARE_GC_G1_G1HRPRINTER_HPP
 
 #include "gc/g1/heapRegion.hpp"
 #include "logging/log.hpp"
 
 #define SKIP_RETIRED_FULL_REGIONS 1
+
+class FreeRegionList;
 
 class G1HRPrinter {
 
@@ -86,6 +88,8 @@ public:
     }
   }
 
+  void cleanup(FreeRegionList* free_list);
+
   void post_compaction(HeapRegion* hr) {
     if (is_active()) {
       print("POST-COMPACTION", hr);
@@ -98,6 +102,18 @@ public:
     }
   }
 
+  void active(HeapRegion* hr) {
+    if (is_active()) {
+      print("ACTIVE", hr);
+    }
+  }
+
+  void inactive(HeapRegion* hr) {
+    if (is_active()) {
+      print("INACTIVE", hr);
+    }
+  }
+
   void uncommit(HeapRegion* hr) {
     if (is_active()) {
       print("UNCOMMIT", hr);
@@ -105,4 +121,4 @@ public:
   }
 };
 
-#endif // SHARE_VM_GC_G1_G1HRPRINTER_HPP
+#endif // SHARE_GC_G1_G1HRPRINTER_HPP

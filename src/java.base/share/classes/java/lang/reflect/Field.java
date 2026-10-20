@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,17 +35,19 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.FieldAccessor;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.Stable;
 import sun.reflect.generics.repository.FieldRepository;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.scope.ClassScope;
 import java.lang.annotation.Annotation;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 import sun.reflect.annotation.AnnotationParser;
 import sun.reflect.annotation.AnnotationSupport;
@@ -82,22 +84,24 @@ import sun.reflect.annotation.TypeAnnotationParser;
 @AnnotatedFor({"interning", "lock", "nullness"})
 public final
 class Field extends AccessibleObject implements Member {
-
-    private Class<?>            clazz;
-    private int                 slot;
+    private final Class<?>            clazz;
+    private final int                 slot;
     // This is guaranteed to be interned by the VM in the 1.4
     // reflection implementation
-    private String              name;
-    private Class<?>            type;
-    private int                 modifiers;
+    private final String              name;
+    private final Class<?>            type;
+    private final int                 modifiers;
+    private final boolean             trustedFinal;
     // Generics and annotations support
-    private transient String    signature;
+    private final transient String    signature;
     // generic info repository; lazily initialized
-    private transient FieldRepository genericInfo;
-    private byte[]              annotations;
+    private transient volatile FieldRepository genericInfo;
+    private final byte[]              annotations;
     // Cached field accessor created without override
+    @Stable
     private FieldAccessor fieldAccessor;
     // Cached field accessor created with override
+    @Stable
     private FieldAccessor overrideFieldAccessor;
     // For sharing of FieldAccessors. This branching structure is
     // currently only two levels deep (i.e., one root Field and
@@ -120,25 +124,27 @@ class Field extends AccessibleObject implements Member {
 
     // Accessor for generic info repository
     private FieldRepository getGenericInfo() {
+        var genericInfo = this.genericInfo;
         // lazily initialize repository if necessary
         if (genericInfo == null) {
             // create and cache generic info repository
             genericInfo = FieldRepository.make(getGenericSignature(),
                                                getFactory());
+            this.genericInfo = genericInfo;
         }
         return genericInfo; //return cached repository
     }
 
 
     /**
-     * Package-private constructor used by ReflectAccess to enable
-     * instantiation of these objects in Java code from the java.lang
-     * package via sun.reflect.LangReflectAccess.
+     * Package-private constructor
      */
+    @SuppressWarnings("deprecation")
     Field(Class<?> declaringClass,
           String name,
           Class<?> type,
           int modifiers,
+          boolean trustedFinal,
           int slot,
           String signature,
           byte[] annotations)
@@ -147,6 +153,7 @@ class Field extends AccessibleObject implements Member {
         this.name = name;
         this.type = type;
         this.modifiers = modifiers;
+        this.trustedFinal = trustedFinal;
         this.slot = slot;
         this.signature = signature;
         this.annotations = annotations;
@@ -168,7 +175,7 @@ class Field extends AccessibleObject implements Member {
         if (this.root != null)
             throw new IllegalArgumentException("Can not copy a non-root Field");
 
-        Field res = new Field(clazz, name, type, modifiers, slot, signature, annotations);
+        Field res = new Field(clazz, name, type, modifiers, trustedFinal, slot, signature, annotations);
         res.root = this;
         // Might as well eagerly propagate this if already present
         res.fieldAccessor = fieldAccessor;
@@ -218,6 +225,9 @@ class Field extends AccessibleObject implements Member {
      * be used to decode the modifiers.
      *
      * @see Modifier
+     * @see #accessFlags()
+     * @jls 8.3 Field Declarations
+     * @jls 9.3 Field (Constant) Declarations
      */
     @Pure
     public int getModifiers(@GuardSatisfied Field this) {
@@ -225,12 +235,26 @@ class Field extends AccessibleObject implements Member {
     }
 
     /**
+     * {@return an unmodifiable set of the {@linkplain AccessFlag
+     * access flags} for this field, possibly empty}
+     * @see #getModifiers()
+     * @jvms 4.5 Fields
+     * @since 20
+     */
+    @Override
+    @SideEffectFree
+    public Set<AccessFlag> accessFlags() {
+        return AccessFlag.maskToAccessFlags(getModifiers(), AccessFlag.Location.FIELD);
+    }
+
+    /**
      * Returns {@code true} if this field represents an element of
-     * an enumerated type; returns {@code false} otherwise.
+     * an enumerated class; returns {@code false} otherwise.
      *
      * @return {@code true} if and only if this field represents an element of
-     * an enumerated type.
+     * an enumerated class.
      * @since 1.5
+     * @jls 8.9.1 Enum Constants
      */
     @Pure
     public boolean isEnumConstant(@GuardSatisfied Field this) {
@@ -244,6 +268,9 @@ class Field extends AccessibleObject implements Member {
      * @return true if and only if this field is a synthetic
      * field as defined by the Java Language Specification.
      * @since 1.5
+     * @see <a
+     * href="{@docRoot}/java.base/java/lang/reflect/package-summary.html#LanguageJvmModel">Java
+     * programming language and JVM modeling in core reflection</a>
      */
     @Pure
     public boolean isSynthetic(@GuardSatisfied Field this) {
@@ -267,9 +294,9 @@ class Field extends AccessibleObject implements Member {
      * Returns a {@code Type} object that represents the declared type for
      * the field represented by this {@code Field} object.
      *
-     * <p>If the {@code Type} is a parameterized type, the
-     * {@code Type} object returned must accurately reflect the
-     * actual type parameters used in the source code.
+     * <p>If the declared type of the field is a parameterized type,
+     * the {@code Type} object returned must accurately reflect the
+     * actual type arguments used in the source code.
      *
      * <p>If the type of the underlying field is a type variable or a
      * parameterized type, it is created. Otherwise, it is resolved.
@@ -278,10 +305,10 @@ class Field extends AccessibleObject implements Member {
      *     the field represented by this {@code Field} object
      * @throws GenericSignatureFormatError if the generic field
      *     signature does not conform to the format specified in
-     *     <cite>The Java&trade; Virtual Machine Specification</cite>
+     *     <cite>The Java Virtual Machine Specification</cite>
      * @throws TypeNotPresentException if the generic type
      *     signature of the underlying field refers to a non-existent
-     *     type declaration
+     *     class or interface declaration
      * @throws MalformedParameterizedTypeException if the generic
      *     signature of the underlying field refers to a parameterized type
      *     that cannot be instantiated for any reason
@@ -304,8 +331,7 @@ class Field extends AccessibleObject implements Member {
      */
     @Pure
     public boolean equals(@GuardSatisfied Field this, @GuardSatisfied @Nullable Object obj) {
-        if (obj != null && obj instanceof Field) {
-            Field other = (Field)obj;
+        if (obj instanceof Field other) {
             return (getDeclaringClass() == other.getDeclaringClass())
                 && (getName() == other.getName())
                 && (getType() == other.getType());
@@ -424,15 +450,15 @@ class Field extends AccessibleObject implements Member {
      * {@code obj}; primitive values are wrapped in an appropriate
      * object before being returned
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not an
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof).
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      */
     @SideEffectFree
@@ -444,8 +470,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().get(obj);
+        } else {
+            return getOverrideFieldAccessor().get(obj);
         }
-        return getFieldAccessor(obj).get(obj);
     }
 
     /**
@@ -455,18 +483,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the {@code boolean} field
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code boolean} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -479,8 +507,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getBoolean(obj);
+        } else {
+            return getOverrideFieldAccessor().getBoolean(obj);
         }
-        return getFieldAccessor(obj).getBoolean(obj);
     }
 
     /**
@@ -490,18 +520,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the {@code byte} field
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code byte} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -514,8 +544,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getByte(obj);
+        } else {
+            return getOverrideFieldAccessor().getByte(obj);
         }
-        return getFieldAccessor(obj).getByte(obj);
     }
 
     /**
@@ -527,18 +559,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code char}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code char} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see Field#get
      */
@@ -551,8 +583,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getChar(obj);
+        } else {
+            return getOverrideFieldAccessor().getChar(obj);
         }
-        return getFieldAccessor(obj).getChar(obj);
     }
 
     /**
@@ -564,18 +598,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code short}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code short} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -588,8 +622,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getShort(obj);
+        } else {
+            return getOverrideFieldAccessor().getShort(obj);
         }
-        return getFieldAccessor(obj).getShort(obj);
     }
 
     /**
@@ -601,18 +637,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code int}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code int} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -625,8 +661,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getInt(obj);
+        } else {
+            return getOverrideFieldAccessor().getInt(obj);
         }
-        return getFieldAccessor(obj).getInt(obj);
     }
 
     /**
@@ -638,18 +676,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code long}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code long} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -662,8 +700,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getLong(obj);
+        } else {
+            return getOverrideFieldAccessor().getLong(obj);
         }
-        return getFieldAccessor(obj).getLong(obj);
     }
 
     /**
@@ -675,18 +715,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code float}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code float} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see Field#get
      */
@@ -699,8 +739,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getFloat(obj);
+        } else {
+            return getOverrideFieldAccessor().getFloat(obj);
         }
-        return getFieldAccessor(obj).getFloat(obj);
     }
 
     /**
@@ -712,18 +754,18 @@ class Field extends AccessibleObject implements Member {
      * from
      * @return the value of the field converted to type {@code double}
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
      *              field is inaccessible.
-     * @exception IllegalArgumentException  if the specified object is not
+     * @throws    IllegalArgumentException  if the specified object is not
      *              an instance of the class or interface declaring the
      *              underlying field (or a subclass or implementor
      *              thereof), or if the field value cannot be
      *              converted to the type {@code double} by a
      *              widening conversion.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#get
      */
@@ -736,8 +778,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            return getFieldAccessor().getDouble(obj);
+        } else {
+            return getOverrideFieldAccessor().getDouble(obj);
         }
-        return getFieldAccessor(obj).getDouble(obj);
     }
 
     /**
@@ -761,10 +805,21 @@ class Field extends AccessibleObject implements Member {
      * the underlying field is inaccessible, the method throws an
      * {@code IllegalAccessException}.
      *
-     * <p>If the underlying field is final, the method throws an
-     * {@code IllegalAccessException} unless {@code setAccessible(true)}
-     * has succeeded for this {@code Field} object
-     * and the field is non-static. Setting a final field in this way
+     * <p>If the underlying field is final, this {@code Field} object has
+     * <em>write</em> access if and only if the following conditions are met:
+     * <ul>
+     * <li>{@link #setAccessible(boolean) setAccessible(true)} has succeeded for
+     *     this {@code Field} object;</li>
+     * <li>the field is non-static; and</li>
+     * <li>the field's declaring class is not a {@linkplain Class#isHidden()
+     *     hidden class}; and</li>
+     * <li>the field's declaring class is not a {@linkplain Class#isRecord()
+     *     record class}.</li>
+     * </ul>
+     * If any of the above checks is not met, this method throws an
+     * {@code IllegalAccessException}.
+     *
+     * <p> Setting a final field in this way
      * is meaningful only during deserialization or reconstruction of
      * instances of classes with blank final fields, before they are
      * made available for access by other parts of a program. Use in
@@ -794,29 +849,31 @@ class Field extends AccessibleObject implements Member {
      * @param value the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      */
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
-    public void set(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj,
-            @GuardSatisfied @Interned Object value)
+    public void set(@GuardSatisfied Field this, @GuardSatisfied @UnknownInitialization Object obj, @GuardSatisfied @Interned Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().set(obj, value);
+        } else {
+            getOverrideFieldAccessor().set(obj, value);
         }
-        getFieldAccessor(obj).set(obj, value);
     }
 
     /**
@@ -830,16 +887,17 @@ class Field extends AccessibleObject implements Member {
      * @param z   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -851,8 +909,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setBoolean(obj, z);
+        } else {
+            getOverrideFieldAccessor().setBoolean(obj, z);
         }
-        getFieldAccessor(obj).setBoolean(obj, z);
     }
 
     /**
@@ -866,16 +926,17 @@ class Field extends AccessibleObject implements Member {
      * @param b   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -887,8 +948,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setByte(obj, b);
+        } else {
+            getOverrideFieldAccessor().setByte(obj, b);
         }
-        getFieldAccessor(obj).setByte(obj, b);
     }
 
     /**
@@ -902,16 +965,17 @@ class Field extends AccessibleObject implements Member {
      * @param c   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -923,8 +987,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setChar(obj, c);
+        } else {
+            getOverrideFieldAccessor().setChar(obj, c);
         }
-        getFieldAccessor(obj).setChar(obj, c);
     }
 
     /**
@@ -938,16 +1004,17 @@ class Field extends AccessibleObject implements Member {
      * @param s   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -959,8 +1026,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setShort(obj, s);
+        } else {
+            getOverrideFieldAccessor().setShort(obj, s);
         }
-        getFieldAccessor(obj).setShort(obj, s);
     }
 
     /**
@@ -974,16 +1043,17 @@ class Field extends AccessibleObject implements Member {
      * @param i   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -995,8 +1065,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setInt(obj, i);
+        } else {
+            getOverrideFieldAccessor().setInt(obj, i);
         }
-        getFieldAccessor(obj).setInt(obj, i);
     }
 
     /**
@@ -1010,16 +1082,17 @@ class Field extends AccessibleObject implements Member {
      * @param l   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -1031,8 +1104,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setLong(obj, l);
+        } else {
+            getOverrideFieldAccessor().setLong(obj, l);
         }
-        getFieldAccessor(obj).setLong(obj, l);
     }
 
     /**
@@ -1046,16 +1121,17 @@ class Field extends AccessibleObject implements Member {
      * @param f   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -1067,8 +1143,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setFloat(obj, f);
+        } else {
+            getOverrideFieldAccessor().setFloat(obj, f);
         }
-        getFieldAccessor(obj).setFloat(obj, f);
     }
 
     /**
@@ -1082,16 +1160,17 @@ class Field extends AccessibleObject implements Member {
      * @param d   the new value for the field of {@code obj}
      * being modified
      *
-     * @exception IllegalAccessException    if this {@code Field} object
+     * @throws    IllegalAccessException    if this {@code Field} object
      *              is enforcing Java language access control and the underlying
-     *              field is either inaccessible or final.
-     * @exception IllegalArgumentException  if the specified object is not an
+     *              field is either inaccessible or final;
+     *              or if this {@code Field} object has no write access.
+     * @throws    IllegalArgumentException  if the specified object is not an
      *              instance of the class or interface declaring the underlying
      *              field (or a subclass or implementor thereof),
      *              or if an unwrapping conversion fails.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the field is an instance field.
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
      * @see       Field#set
      */
@@ -1103,8 +1182,10 @@ class Field extends AccessibleObject implements Member {
         if (!override) {
             Class<?> caller = Reflection.getCallerClass();
             checkAccess(caller, obj);
+            getFieldAccessor().setDouble(obj, d);
+        } else {
+            getOverrideFieldAccessor().setDouble(obj, d);
         }
-        getFieldAccessor(obj).setDouble(obj, d);
     }
 
     // check access to field
@@ -1117,66 +1198,89 @@ class Field extends AccessibleObject implements Member {
     }
 
     // security check is done before calling this method
-    private FieldAccessor getFieldAccessor(Object obj)
-        throws IllegalAccessException
-    {
-        boolean ov = override;
-        FieldAccessor a = (ov) ? overrideFieldAccessor : fieldAccessor;
-        return (a != null) ? a : acquireFieldAccessor(ov);
+    private FieldAccessor getFieldAccessor() {
+        FieldAccessor a = fieldAccessor;
+        return (a != null) ? a : acquireFieldAccessor();
+    }
+
+    private FieldAccessor getOverrideFieldAccessor() {
+        FieldAccessor a = overrideFieldAccessor;
+        return (a != null) ? a : acquireOverrideFieldAccessor();
     }
 
     // NOTE that there is no synchronization used here. It is correct
     // (though not efficient) to generate more than one FieldAccessor
     // for a given Field. However, avoiding synchronization will
     // probably make the implementation more scalable.
-    private FieldAccessor acquireFieldAccessor(boolean overrideFinalCheck) {
+    private FieldAccessor acquireFieldAccessor() {
         // First check to see if one has been created yet, and take it
         // if so
-        FieldAccessor tmp = null;
-        if (root != null) tmp = root.getFieldAccessor(overrideFinalCheck);
+        Field root = this.root;
+        FieldAccessor tmp = root == null ? null : root.fieldAccessor;
         if (tmp != null) {
-            if (overrideFinalCheck)
-                overrideFieldAccessor = tmp;
-            else
-                fieldAccessor = tmp;
+            fieldAccessor = tmp;
         } else {
             // Otherwise fabricate one and propagate it up to the root
-            tmp = reflectionFactory.newFieldAccessor(this, overrideFinalCheck);
-            setFieldAccessor(tmp, overrideFinalCheck);
+            tmp = reflectionFactory.newFieldAccessor(this, false);
+            setFieldAccessor(tmp);
         }
-
         return tmp;
     }
 
-    // Returns FieldAccessor for this Field object, not looking up
-    // the chain to the root
-    private FieldAccessor getFieldAccessor(boolean overrideFinalCheck) {
-        return (overrideFinalCheck)? overrideFieldAccessor : fieldAccessor;
+    private FieldAccessor acquireOverrideFieldAccessor() {
+        // First check to see if one has been created yet, and take it
+        // if so
+        Field root = this.root;
+        FieldAccessor tmp = root == null ? null : root.overrideFieldAccessor;
+        if (tmp != null) {
+            overrideFieldAccessor = tmp;
+        } else {
+            // Otherwise fabricate one and propagate it up to the root
+            tmp = reflectionFactory.newFieldAccessor(this, true);
+            setOverrideFieldAccessor(tmp);
+        }
+        return tmp;
     }
 
-    // Sets the FieldAccessor for this Field object and
+    // Sets the fieldAccessor for this Field object and
     // (recursively) its root
-    private void setFieldAccessor(FieldAccessor accessor, boolean overrideFinalCheck) {
-        if (overrideFinalCheck)
-            overrideFieldAccessor = accessor;
-        else
-            fieldAccessor = accessor;
+    private void setFieldAccessor(FieldAccessor accessor) {
+        fieldAccessor = accessor;
         // Propagate up
+        Field root = this.root;
         if (root != null) {
-            root.setFieldAccessor(accessor, overrideFinalCheck);
+            root.setFieldAccessor(accessor);
+        }
+    }
+
+    // Sets the overrideFieldAccessor for this Field object and
+    // (recursively) its root
+    private void setOverrideFieldAccessor(FieldAccessor accessor) {
+        overrideFieldAccessor = accessor;
+        // Propagate up
+        Field root = this.root;
+        if (root != null) {
+            root.setOverrideFieldAccessor(accessor);
         }
     }
 
     @Override
-    Field getRoot() {
+    /* package-private */ Field getRoot() {
         return root;
     }
 
+    /* package-private */ boolean isTrustedFinal() {
+        return trustedFinal;
+    }
+
     /**
+     * {@inheritDoc}
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
     @SideEffectFree
+    @Override
     public <T extends Annotation> @Nullable T getAnnotation(@GuardSatisfied Field this, Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
         return annotationClass.cast(declaredAnnotations().get(annotationClass));
@@ -1184,9 +1288,11 @@ class Field extends AccessibleObject implements Member {
 
     /**
      * {@inheritDoc}
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.8
      */
+    @SideEffectFree
     @Override
     public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);
@@ -1198,6 +1304,7 @@ class Field extends AccessibleObject implements Member {
      * {@inheritDoc}
      */
     @SideEffectFree
+    @Override
     public Annotation[] getDeclaredAnnotations(@GuardSatisfied Field this)  {
         return AnnotationParser.toArray(declaredAnnotations());
     }
@@ -1236,6 +1343,7 @@ class Field extends AccessibleObject implements Member {
      *
      * @since 1.8
      */
+    @SideEffectFree
     public AnnotatedType getAnnotatedType() {
         return TypeAnnotationParser.buildAnnotatedType(getTypeAnnotationBytes0(),
                                                        SharedSecrets.getJavaLangAccess().

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a credential was not found.
  *
@@ -35,12 +38,14 @@ package javax.security.auth.login;
  */
 public class CredentialNotFoundException extends CredentialException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7779934467214319475L;
 
     /**
      * Constructs a CredentialNotFoundException with no detail message.
      * A detail message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public CredentialNotFoundException() {
         super();
     }
@@ -52,7 +57,8 @@ public class CredentialNotFoundException extends CredentialException {
      *
      * @param msg the detail message.
      */
-    public CredentialNotFoundException(String msg) {
+    @SideEffectFree
+    public CredentialNotFoundException(@Nullable String msg) {
         super(msg);
     }
 }

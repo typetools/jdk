@@ -34,12 +34,12 @@ import jdk.internal.org.objectweb.asm.Opcodes;
 
 final class ConstructorWriter extends MethodVisitor {
 
-    private boolean useInputParameter;
-    private String shortClassName;
-    private String fullClassName;
+    private final boolean useInputParameter;
+    private final String shortClassName;
+    private final String fullClassName;
 
     ConstructorWriter(Class<?> classToChange, boolean useInputParameter) {
-        super(Opcodes.ASM5);
+        super(Opcodes.ASM7);
         this.useInputParameter = useInputParameter;
         shortClassName = classToChange.getSimpleName();
         fullClassName = classToChange.getName().replace('.', '/');

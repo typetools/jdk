@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,12 +24,16 @@
 
 package sun.jvm.hotspot.gc.shared;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.*;
 import java.util.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.memory.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 /** <P> A Space describes a heap area. Class Space is an abstract base
     class. </P>
@@ -89,9 +93,6 @@ public abstract class Space extends VMObject {
     return handle.addOffsetToAsOopHandle(size);
   }
 
-  /** returns all MemRegions where live objects are */
-  public abstract List/*<MemRegion>*/ getLiveRegions();
-
   /** Returned value is in bytes */
   public long capacity() { return end().minus(bottom()); }
   /** Returned value is in bytes */
@@ -100,6 +101,7 @@ public abstract class Space extends VMObject {
   public abstract long free();
 
   /** Testers */
+  @Pure
   public boolean contains(Address p) {
     return (bottom().lessThanOrEqual(p) && end().greaterThan(p));
   }

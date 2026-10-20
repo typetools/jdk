@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,68 +22,90 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_OPAQUENODE_HPP
-#define SHARE_VM_OPTO_OPAQUENODE_HPP
+#ifndef SHARE_OPTO_OPAQUENODE_HPP
+#define SHARE_OPTO_OPAQUENODE_HPP
 
 #include "opto/node.hpp"
 #include "opto/opcodes.hpp"
+#include "subnode.hpp"
 
 //------------------------------Opaque1Node------------------------------------
 // A node to prevent unwanted optimizations.  Allows constant folding.
 // Stops value-numbering, Ideal calls or Identity functions.
 class Opaque1Node : public Node {
   virtual uint hash() const ;                  // { return NO_HASH; }
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   public:
-  Opaque1Node(Compile* C, Node *n) : Node(NULL, n) {
+  Opaque1Node(Compile* C, Node *n) : Node(nullptr, n) {
     // Put it on the Macro nodes list to removed during macro nodes expansion.
     init_flags(Flag_is_macro);
+    init_class_id(Class_Opaque1);
     C->add_macro_node(this);
   }
   // Special version for the pre-loop to hold the original loop limit
   // which is consumed by range check elimination.
-  Opaque1Node(Compile* C, Node *n, Node* orig_limit) : Node(NULL, n, orig_limit) {
+  Opaque1Node(Compile* C, Node *n, Node* orig_limit) : Node(nullptr, n, orig_limit) {
     // Put it on the Macro nodes list to removed during macro nodes expansion.
     init_flags(Flag_is_macro);
+    init_class_id(Class_Opaque1);
     C->add_macro_node(this);
   }
-  Node* original_loop_limit() { return req()==3 ? in(2) : NULL; }
+  Node* original_loop_limit() { return req()==3 ? in(2) : nullptr; }
   virtual int Opcode() const;
   virtual const Type *bottom_type() const { return TypeInt::INT; }
   virtual Node* Identity(PhaseGVN* phase);
 };
 
-//------------------------------Opaque2Node------------------------------------
-// A node to prevent unwanted optimizations.  Allows constant folding.  Stops
-// value-numbering, most Ideal calls or Identity functions.  This Node is
-// specifically designed to prevent the pre-increment value of a loop trip
-// counter from being live out of the bottom of the loop (hence causing the
-// pre- and post-increment values both being live and thus requiring an extra
-// temp register and an extra move).  If we "accidentally" optimize through
-// this kind of a Node, we'll get slightly pessimal, but correct, code.  Thus
-// it's OK to be slightly sloppy on optimizations here.
-class Opaque2Node : public Node {
-  virtual uint hash() const ;                  // { return NO_HASH; }
-  virtual uint cmp( const Node &n ) const;
+// Opaque nodes specific to range check elimination handling
+class OpaqueLoopInitNode : public Opaque1Node {
   public:
-  Opaque2Node( Compile* C, Node *n ) : Node(0,n) {
-    // Put it on the Macro nodes list to removed during macro nodes expansion.
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
+  OpaqueLoopInitNode(Compile* C, Node *n) : Opaque1Node(C, n) {
   }
   virtual int Opcode() const;
-  virtual const Type *bottom_type() const { return TypeInt::INT; }
+};
+
+class OpaqueLoopStrideNode : public Opaque1Node {
+  public:
+  OpaqueLoopStrideNode(Compile* C, Node *n) : Opaque1Node(C, n) {
+  }
+  virtual int Opcode() const;
+};
+
+class OpaqueZeroTripGuardNode : public Opaque1Node {
+public:
+  // This captures the test that returns true when the loop is entered. It depends on whether the loop goes up or down.
+  // This is used by CmpINode::Value.
+  BoolTest::mask _loop_entered_mask;
+  OpaqueZeroTripGuardNode(Compile* C, Node* n, BoolTest::mask loop_entered_test) :
+          Opaque1Node(C, n), _loop_entered_mask(loop_entered_test) {
+  }
+
+  DEBUG_ONLY(CountedLoopNode* guarded_loop() const);
+  virtual int Opcode() const;
+  virtual uint size_of() const {
+    return sizeof(*this);
+  }
+
+  IfNode* if_node() const;
 };
 
 //------------------------------Opaque3Node------------------------------------
 // A node to prevent unwanted optimizations. Will be optimized only during
 // macro nodes expansion.
-class Opaque3Node : public Opaque2Node {
+class Opaque3Node : public Node {
   int _opt; // what optimization it was used for
+  virtual uint hash() const;
+  virtual bool cmp(const Node &n) const;
   public:
   enum { RTM_OPT };
-  Opaque3Node(Compile* C, Node *n, int opt) : Opaque2Node(C, n), _opt(opt) {}
+  Opaque3Node(Compile* C, Node* n, int opt) : Node(0, n), _opt(opt) {
+    // Put it on the Macro nodes list to removed during macro nodes expansion.
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
   virtual int Opcode() const;
+  virtual const Type* bottom_type() const { return TypeInt::INT; }
+  virtual Node* Identity(PhaseGVN* phase);
   bool rtm_opt() const { return (_opt == RTM_OPT); }
 };
 
@@ -97,10 +119,11 @@ class Opaque3Node : public Opaque2Node {
 // GraphKit::must_be_not_null().
 class Opaque4Node : public Node {
   public:
-  Opaque4Node(Compile* C, Node *tst, Node* final_tst) : Node(NULL, tst, final_tst) {
-    // Put it on the Opaque4 nodes list to be removed after all optimizations
-    C->add_opaque4_node(this);
+  Opaque4Node(Compile* C, Node *tst, Node* final_tst) : Node(nullptr, tst, final_tst) {
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
   }
+
   virtual int Opcode() const;
   virtual const Type *bottom_type() const { return TypeInt::BOOL; }
   virtual const Type* Value(PhaseGVN* phase) const;
@@ -117,10 +140,10 @@ class ProfileBooleanNode : public Node {
   bool _consumed;
   bool _delay_removal;
   virtual uint hash() const ;                  // { return NO_HASH; }
-  virtual uint cmp( const Node &n ) const;
+  virtual bool cmp( const Node &n ) const;
   public:
   ProfileBooleanNode(Node *n, uint false_cnt, uint true_cnt) : Node(0, n),
-          _false_cnt(false_cnt), _true_cnt(true_cnt), _delay_removal(true), _consumed(false) {}
+          _false_cnt(false_cnt), _true_cnt(true_cnt), _consumed(false), _delay_removal(true) {}
 
   uint false_count() const { return _false_cnt; }
   uint  true_count() const { return  _true_cnt; }
@@ -133,5 +156,4 @@ class ProfileBooleanNode : public Node {
   virtual const Type *bottom_type() const { return TypeInt::BOOL; }
 };
 
-#endif // SHARE_VM_OPTO_OPAQUENODE_HPP
-
+#endif // SHARE_OPTO_OPAQUENODE_HPP

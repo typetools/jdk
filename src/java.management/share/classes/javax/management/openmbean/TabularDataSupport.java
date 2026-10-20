@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,9 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
-// java import
-//
 import com.sun.jmx.mbeanserver.GetPropertyAction;
 import com.sun.jmx.mbeanserver.Util;
 import java.io.IOException;
@@ -51,10 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jdk.internal.misc.SharedSecrets;
-
-// jmx import
-//
+import jdk.internal.access.SharedSecrets;
 
 
 /**
@@ -92,6 +86,7 @@ public class TabularDataSupport
      * @serial This tabular data instance's contents: a {@link HashMap}
      */
     // field cannot be final because of clone method
+    @SuppressWarnings("serial") // Conditionally serializable
     private Map<Object,CompositeData> dataMap;
 
     /**
@@ -159,6 +154,7 @@ public class TabularDataSupport
         // Since LinkedHashMap was introduced in SE 1.4, it's conceivable even
         // if very unlikely that we might be the server of a 1.3 client.  In
         // that case you'll need to set this property.  See CR 6334663.
+        @SuppressWarnings("removal")
         String useHashMapProp = AccessController.doPrivileged(
                 new GetPropertyAction("jmx.tabular.data.hash.map"));
         boolean useHashMap = "true".equalsIgnoreCase(useHashMapProp);
@@ -166,8 +162,8 @@ public class TabularDataSupport
         // Construct the empty contents HashMap
         //
         this.dataMap = useHashMap ?
-            new HashMap<Object,CompositeData>(initialCapacity, loadFactor) :
-            new LinkedHashMap<Object, CompositeData>(initialCapacity, loadFactor);
+            new HashMap<>(initialCapacity, loadFactor) :
+            new LinkedHashMap<>(initialCapacity, loadFactor);
     }
 
 
@@ -230,6 +226,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object key) {
 
         // if key is not an array of Object instances, return false
@@ -253,6 +250,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} indexes a row value with the specified key.
      */
+    @Pure
     public boolean containsKey(Object[] key) {
 
         return  ( key == null ? false : dataMap.containsKey(Arrays.asList(key)));
@@ -267,6 +265,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(CompositeData value) {
 
         return dataMap.containsValue(value);
@@ -280,6 +279,7 @@ public class TabularDataSupport
      *
      * @return  {@code true} if this {@code TabularData} instance contains the specified row value.
      */
+    @Pure
     public boolean containsValue(Object value) {
 
         return dataMap.containsValue(value);
@@ -516,7 +516,7 @@ public class TabularDataSupport
 
         // create the list of indexes corresponding to each value
         List<List<?>> indexes =
-            new ArrayList<List<?>>(values.length + 1);
+            new ArrayList<>(values.length + 1);
 
         // Check all elements in values and build index list
         //
@@ -681,7 +681,7 @@ public class TabularDataSupport
     public Object clone() {
         try {
             TabularDataSupport c = (TabularDataSupport) super.clone();
-            c.dataMap = new HashMap<Object,CompositeData>(c.dataMap);
+            c.dataMap = new HashMap<>(c.dataMap);
             return c;
         }
         catch (CloneNotSupportedException e) {
@@ -748,7 +748,7 @@ public class TabularDataSupport
             }
         }
 
-        // All tests for equality were successfull
+        // All tests for equality were successful
         //
         return true;
     }

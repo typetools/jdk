@@ -36,7 +36,7 @@ import sun.reflect.misc.*;
  * is the delegate used by default for classes about
  * which no information is available. The {@code DefaultPersistenceDelegate}
  * provides, version resilient, public API-based persistence for
- * classes that follow the JavaBeans&trade; conventions without any class specific
+ * classes that follow the JavaBeans conventions without any class specific
  * configuration.
  * <p>
  * The key assumptions are that the class has a nullary constructor
@@ -332,7 +332,7 @@ public class DefaultPersistenceDelegate extends PersistenceDelegate {
                 }
             }
 
-            // Asssume the listeners are in the same order and that there are no gaps.
+            // Assume the listeners are in the same order and that there are no gaps.
             // Eventually, this may need to do true differencing.
             String addListenerMethodName = d.getAddListenerMethod().getName();
             for (int i = newL.length; i < oldL.length; i++) {

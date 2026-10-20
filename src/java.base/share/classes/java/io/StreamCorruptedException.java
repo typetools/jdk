@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,15 +25,20 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when control information that was read from an object stream
  * violates internal consistency checks.
  *
- * @author  unascribed
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class StreamCorruptedException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 8983558202217591746L;
 
     /**
@@ -41,13 +46,15 @@ public class StreamCorruptedException extends ObjectStreamException {
      *
      * @param reason  String describing the reason for the exception.
      */
-    public StreamCorruptedException(String reason) {
+    @SideEffectFree
+    public StreamCorruptedException(@Nullable String reason) {
         super(reason);
     }
 
     /**
      * Create a StreamCorruptedException and list no reason why thrown.
      */
+    @SideEffectFree
     public StreamCorruptedException() {
         super();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -431,7 +431,7 @@ public class BytecodeName {
         return true;
     }
     private static String quoteDisplay(String s) {
-        // TO DO:  Replace wierd characters in s by C-style escapes.
+        // TO DO:  Replace weird characters in s by C-style escapes.
         return "'"+s.replaceAll("['\\\\]", "\\\\$0")+"'";
     }
 
@@ -451,7 +451,7 @@ public class BytecodeName {
      * @return true if the name is non-empty and all of its characters are safe
      */
     public static boolean isSafeBytecodeName(String s) {
-        if (s.length() == 0)  return false;
+        if (s.isEmpty())  return false;
         // check occurrences of each DANGEROUS char
         for (char xc : DANGEROUS_CHARS_A) {
             if (xc == ESCAPE_C)  continue;  // not really that dangerous
@@ -476,7 +476,7 @@ public class BytecodeName {
     }
 
     private static String mangle(String s) {
-        if (s.length() == 0)
+        if (s.isEmpty())
             return NULL_ESCAPE;
 
         // build this lazily, when we first need an escape:

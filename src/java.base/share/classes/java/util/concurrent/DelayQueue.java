@@ -35,12 +35,29 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.util.AbstractQueue;
@@ -53,18 +70,41 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * An unbounded {@linkplain BlockingQueue blocking queue} of
- * {@code Delayed} elements, in which an element can only be taken
- * when its delay has expired.  The <em>head</em> of the queue is that
- * {@code Delayed} element whose delay expired furthest in the
- * past.  If no delay has expired there is no head and {@code poll}
- * will return {@code null}. Expiration occurs when an element's
- * {@code getDelay(TimeUnit.NANOSECONDS)} method returns a value less
- * than or equal to zero.  Even though unexpired elements cannot be
- * removed using {@code take} or {@code poll}, they are otherwise
- * treated as normal elements. For example, the {@code size} method
- * returns the count of both expired and unexpired elements.
- * This queue does not permit null elements.
+ * An unbounded {@linkplain BlockingQueue blocking queue} of {@link Delayed}
+ * elements, in which an element generally becomes eligible for removal when its
+ * delay has expired.
+ *
+ * <p><a id="expired">An element is considered <em>expired</em> when its
+ * {@code getDelay(TimeUnit.NANOSECONDS)} method would return a value less than
+ * or equal to zero.</a>
+ *
+ * <p><a id="head">An element is considered the <em>head</em> of the queue if it
+ * is the element with the earliest expiration time, whether in the past or the
+ * future, if there is such an element.</a>
+ *
+ * <p><a id="expired-head">An element is considered the <em>expired head</em> of
+ * the queue if it is the <em>expired</em> element with the earliest expiration
+ * time in the past, if there is such an element.
+ * The <em>expired head</em>, when present, is also the <em>head</em>.</a>
+ *
+ * <p>While this class implements the {@code BlockingQueue} interface, it
+ * intentionally violates the general contract of {@code BlockingQueue}, in that
+ * the following methods disregard the presence of unexpired elements and only
+ * ever remove the <em>expired head</em>:
+ *
+ * <ul>
+ * <li> {@link #poll()}
+ * <li> {@link #poll(long,TimeUnit)}
+ * <li> {@link #take()}
+ * <li> {@link #remove()}
+ * </ul>
+ *
+ * <p>All other methods operate on both expired and unexpired elements.
+ * For example, the {@link #size()} method returns the count of all elements.
+ * Method {@link #peek()} may return the (non-null) <em>head</em> even when
+ * {@code take()} would block waiting for that element to expire.
+ *
+ * <p>This queue does not permit null elements.
  *
  * <p>This class and its iterator implement all of the <em>optional</em>
  * methods of the {@link Collection} and {@link Iterator} interfaces.
@@ -80,7 +120,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullness", "modifiability"})
 public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     implements BlockingQueue<E> {
 
@@ -115,7 +155,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     /**
      * Creates a new {@code DelayQueue} that is initially empty.
      */
-    public DelayQueue() {}
+    public @Modifiable @IteratorPolyMod DelayQueue() {}
 
     /**
      * Creates a {@code DelayQueue} initially containing the elements of the
@@ -125,7 +165,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public DelayQueue(Collection<? extends E> c) {
+    public @Modifiable @IteratorPolyMod DelayQueue(Collection<? extends E> c) {
         this.addAll(c);
     }
 
@@ -136,7 +176,10 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
-    public boolean add(E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable DelayQueue<E> this, E e) {
         return offer(e);
     }
 
@@ -147,7 +190,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return {@code true}
      * @throws NullPointerException if the specified element is null
      */
-    public boolean offer(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable DelayQueue<E> this, E e) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -169,7 +214,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @param e the element to add
      * @throws NullPointerException {@inheritDoc}
      */
-    public void put(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void put(@Growable DelayQueue<E> this, E e) {
         offer(e);
     }
 
@@ -183,18 +230,23 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return {@code true}
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean offer(E e, long timeout, TimeUnit unit) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable DelayQueue<E> this, E e, long timeout, TimeUnit unit) {
         return offer(e);
     }
 
     /**
-     * Retrieves and removes the head of this queue, or returns {@code null}
-     * if this queue has no elements with an expired delay.
+     * Retrieves and removes the <a href="#expired-head">expired head</a> of
+     * this queue, or returns {@code null} if this queue has no
+     * <a href="#expired">expired elements</a>.
      *
-     * @return the head of this queue, or {@code null} if this
+     * @return the <em>expired head</em> of this queue, or {@code null} if this
      *         queue has no elements with an expired delay
      */
-    public @Nullable E poll() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -208,13 +260,16 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     }
 
     /**
-     * Retrieves and removes the head of this queue, waiting if necessary
-     * until an element with an expired delay is available on this queue.
+     * Retrieves and removes the <a href="#expired-head">expired head</a> of
+     * this queue, waiting if necessary until an
+     * <a href="#expired">expired element</a> is available on this queue.
      *
-     * @return the head of this queue
+     * @return the <em>expired head</em> of this queue
      * @throws InterruptedException {@inheritDoc}
      */
-    public E take() throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E take(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -249,16 +304,19 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     }
 
     /**
-     * Retrieves and removes the head of this queue, waiting if necessary
-     * until an element with an expired delay is available on this queue,
+     * Retrieves and removes the <a href="#expired-head">expired head</a> of
+     * this queue, waiting if necessary until an
+     * <a href="#expired">expired element</a> is available on this queue,
      * or the specified wait time expires.
      *
-     * @return the head of this queue, or {@code null} if the
+     * @return the <em>expired head</em> of this queue, or {@code null} if the
      *         specified waiting time elapses before an element with
      *         an expired delay becomes available
      * @throws InterruptedException {@inheritDoc}
      */
-    public @Nullable E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -300,15 +358,30 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     }
 
     /**
-     * Retrieves, but does not remove, the head of this queue, or
-     * returns {@code null} if this queue is empty.  Unlike
-     * {@code poll}, if no expired elements are available in the queue,
-     * this method returns the element that will expire next,
-     * if one exists.
+     * Retrieves and removes the <a href="#expired-head">expired head</a> of
+     * this queue, or throws an exception if this queue has no
+     * <a href="#expired">expired elements</a>.
      *
-     * @return the head of this queue, or {@code null} if this
+     * @return the <em>expired head</em> of this queue
+     * @throws NoSuchElementException if this queue has no elements with an
+     *         expired delay
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E remove(@Shrinkable DelayQueue<E> this) {
+        return super.remove();
+    }
+
+    /**
+     * Retrieves, but does not remove, the <a href="#head">head</a> of this
+     * queue, or returns {@code null} if this queue is empty.
+     * Unlike {@code poll}, if no expired elements are available in the queue,
+     * this method returns the element that will expire next, if one exists.
+     *
+     * @return the <em>head</em> of this queue, or {@code null} if this
      *         queue is empty
      */
+    @Pure
     public @Nullable E peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -336,7 +409,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, @Growable Collection<? super E> c) {
         return drainTo(c, Integer.MAX_VALUE);
     }
 
@@ -346,7 +421,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @throws NullPointerException          {@inheritDoc}
      * @throws IllegalArgumentException      {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c, int maxElements) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, @Growable Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -376,7 +453,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * Elements with an unexpired delay are not waited for; they are
      * simply discarded from the queue.
      */
-    public void clear() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -410,7 +489,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return an array containing all of the elements in this queue
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(DelayQueue<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(DelayQueue<@PolyNull @PolySigned E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -455,8 +534,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      *         this queue
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -470,7 +548,9 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * Removes a single instance of the specified element from this
      * queue, if it is present, whether or not it has expired.
      */
-    public boolean remove(Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @CanShrink DelayQueue<E> this, @UnknownSignedness Object o) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -509,7 +589,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return an iterator over the elements in this queue
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty DelayQueue<E> this) {
         return new Itr(toArray());
     }
 
@@ -526,17 +606,23 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
             this.array = array;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < array.length;
         }
 
         @SuppressWarnings("unchecked")
-        public E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty Itr this) {
             if (cursor >= array.length)
                 throw new NoSuchElementException();
             return (E)array[lastRet = cursor++];
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastRet < 0)
                 throw new IllegalStateException();

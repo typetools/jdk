@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -108,12 +108,12 @@ import java.util.Objects;
  * as well as a zone offset.
  * For example, the value "13:45:30.123456789+02:00" can be stored
  * in an {@code OffsetTime}.
- *
  * <p>
  * This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
- * class; use of identity-sensitive operations (including reference equality
- * ({@code ==}), identity hash code, or synchronization) on instances of
- * {@code OffsetTime} may have unpredictable results and should be avoided.
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
  * The {@code equals} method should be used for comparisons.
  *
  * @implSpec
@@ -121,6 +121,7 @@ import java.util.Objects;
  *
  * @since 1.8
  */
+@jdk.internal.ValueBased
 public final class OffsetTime
         implements Temporal, TemporalAdjuster, Comparable<OffsetTime>, Serializable {
 
@@ -144,6 +145,7 @@ public final class OffsetTime
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 7264499704384272492L;
 
     /**
@@ -1182,18 +1184,18 @@ public final class OffsetTime
     @Override
     public long until(Temporal endExclusive, TemporalUnit unit) {
         OffsetTime end = OffsetTime.from(endExclusive);
-        if (unit instanceof ChronoUnit) {
+        if (unit instanceof ChronoUnit chronoUnit) {
             long nanosUntil = end.toEpochNano() - toEpochNano();  // no overflow
-            switch ((ChronoUnit) unit) {
-                case NANOS: return nanosUntil;
-                case MICROS: return nanosUntil / 1000;
-                case MILLIS: return nanosUntil / 1000_000;
-                case SECONDS: return nanosUntil / NANOS_PER_SECOND;
-                case MINUTES: return nanosUntil / NANOS_PER_MINUTE;
-                case HOURS: return nanosUntil / NANOS_PER_HOUR;
-                case HALF_DAYS: return nanosUntil / (12 * NANOS_PER_HOUR);
-            }
-            throw new UnsupportedTemporalTypeException("Unsupported unit: " + unit);
+            return switch (chronoUnit) {
+                case NANOS     -> nanosUntil;
+                case MICROS    -> nanosUntil / 1000;
+                case MILLIS    -> nanosUntil / 1000_000;
+                case SECONDS   -> nanosUntil / NANOS_PER_SECOND;
+                case MINUTES   -> nanosUntil / NANOS_PER_MINUTE;
+                case HOURS     -> nanosUntil / NANOS_PER_HOUR;
+                case HALF_DAYS -> nanosUntil / (12 * NANOS_PER_HOUR);
+                default -> throw new UnsupportedTemporalTypeException("Unsupported unit: " + unit);
+            };
         }
         return unit.between(this, end);
     }
@@ -1288,6 +1290,7 @@ public final class OffsetTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(OffsetTime other) {
         if (offset.equals(other.offset)) {
             return time.compareTo(other.time);
@@ -1311,6 +1314,7 @@ public final class OffsetTime
      * @param other  the other time to compare to, not null
      * @return true if this is after the instant of the specified time
      */
+    @Pure
     public boolean isAfter(OffsetTime other) {
         return toEpochNano() > other.toEpochNano();
     }
@@ -1326,6 +1330,7 @@ public final class OffsetTime
      * @param other  the other time to compare to, not null
      * @return true if this is before the instant of the specified time
      */
+    @Pure
     public boolean isBefore(OffsetTime other) {
         return toEpochNano() < other.toEpochNano();
     }
@@ -1341,6 +1346,7 @@ public final class OffsetTime
      * @param other  the other time to compare to, not null
      * @return true if this is equal to the instant of the specified time
      */
+    @Pure
     public boolean isEqual(OffsetTime other) {
         return toEpochNano() == other.toEpochNano();
     }
@@ -1366,11 +1372,9 @@ public final class OffsetTime
         if (this == obj) {
             return true;
         }
-        if (obj instanceof OffsetTime) {
-            OffsetTime other = (OffsetTime) obj;
-            return time.equals(other.time) && offset.equals(other.offset);
-        }
-        return false;
+        return (obj instanceof OffsetTime other)
+                && time.equals(other.time)
+                && offset.equals(other.offset);
     }
 
     /**
@@ -1408,16 +1412,17 @@ public final class OffsetTime
     //-----------------------------------------------------------------------
     /**
      * Writes the object using a
-     * <a href="../../serialized-form.html#java.time.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(9);  // identifies an OffsetTime
-     *  // the <a href="../../serialized-form.html#java.time.LocalTime">time</a> excluding the one byte header
-     *  // the <a href="../../serialized-form.html#java.time.ZoneOffset">offset</a> excluding the one byte header
+     *  // the <a href="{@docRoot}/serialized-form.html#java.time.LocalTime">time</a> excluding the one byte header
+     *  // the <a href="{@docRoot}/serialized-form.html#java.time.ZoneOffset">offset</a> excluding the one byte header
      * </pre>
      *
      * @return the instance of {@code Ser}, not null
      */
+    @java.io.Serial
     private Object writeReplace() {
         return new Ser(Ser.OFFSET_TIME_TYPE, this);
     }
@@ -1428,6 +1433,7 @@ public final class OffsetTime
      * @param s the stream to read
      * @throws InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s) throws InvalidObjectException {
         throw new InvalidObjectException("Deserialization via serialization delegate");
     }

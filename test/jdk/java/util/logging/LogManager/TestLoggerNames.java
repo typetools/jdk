@@ -1,5 +1,3 @@
-import org.checkerframework.checker.signature.qual.BinaryName;
-
 /*
  * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -22,6 +20,9 @@ import org.checkerframework.checker.signature.qual.BinaryName;
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+import org.checkerframework.checker.signature.qual.BinaryName;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -135,7 +136,8 @@ public class TestLoggerNames {
 
 
     public static void main(String[] args) throws InterruptedException {
-        LogManager.getLogManager().addLogger(new TestLogger("com.foo.bar.zzz", null));
+        TestLogger test = new TestLogger("com.foo.bar.zzz", null);
+        LogManager.getLogManager().addLogger(test);
         try {
             Logger.getLogger(null);
             throw new RuntimeException("Logger.getLogger(null) didn't throw expected NPE");
@@ -146,7 +148,9 @@ public class TestLoggerNames {
         loggers.add(Logger.getLogger("one.two.addMeAChild"));
         loggers.add(Logger.getLogger("aaa.bbb.replaceMe"));
         loggers.add(Logger.getLogger("bbb.aaa.addMeAChild"));
-        TestLogger test = (TestLogger)Logger.getLogger("com.foo.bar.zzz");
+        if (test != Logger.getLogger("com.foo.bar.zzz")) {
+            throw new AssertionError("wrong logger returned");
+        }
         loggers.add(Logger.getLogger("ddd.aaa.addMeAChild"));
 
         checkLoggerNames(loggers);

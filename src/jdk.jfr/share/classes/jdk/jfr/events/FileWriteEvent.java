@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,15 +38,11 @@ import jdk.jfr.internal.Type;
 @Description("Writing data to a file")
 public final class FileWriteEvent extends AbstractJDKEvent {
 
-    public static final ThreadLocal<FileWriteEvent> EVENT =
-        new ThreadLocal<>() {
-            @Override protected FileWriteEvent initialValue() {
-                return new FileWriteEvent();
-            }
-        };
+    // The order of these fields must be the same as the parameters in
+    // commit(..., String, long)
 
     @Label("Path")
-    @Description("Full path of the file")
+    @Description("Full path of the file, or N/A if a file descriptor was used to create the stream, for example System.out and System.err")
     public String path;
 
     @Label("Bytes Written")
@@ -54,8 +50,7 @@ public final class FileWriteEvent extends AbstractJDKEvent {
     @DataAmount
     public long bytesWritten;
 
-    public void reset() {
-        path = null;
-        bytesWritten = 0;
+    public static void commit(long start, long duration, String path, long bytesWritten) {
+        // Generated
     }
 }

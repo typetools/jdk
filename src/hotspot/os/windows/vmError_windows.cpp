@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,28 +23,20 @@
  */
 
 #include "precompiled.hpp"
-#include "memory/metaspaceShared.hpp"
+#include "cds/metaspaceShared.hpp"
 #include "runtime/arguments.hpp"
+#include "runtime/javaThread.hpp"
 #include "runtime/os.hpp"
-#include "runtime/thread.hpp"
 #include "utilities/vmError.hpp"
-
-int VMError::get_resetted_sigflags(int sig) {
-  return -1;
-}
-
-address VMError::get_resetted_sighandler(int sig) {
-  return NULL;
-}
 
 LONG WINAPI crash_handler(struct _EXCEPTION_POINTERS* exceptionInfo) {
   DWORD exception_code = exceptionInfo->ExceptionRecord->ExceptionCode;
-  VMError::report_and_die(NULL, exception_code, NULL, exceptionInfo->ExceptionRecord,
+  VMError::report_and_die(nullptr, exception_code, nullptr, exceptionInfo->ExceptionRecord,
                           exceptionInfo->ContextRecord);
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void VMError::reset_signal_handlers() {
+void VMError::install_secondary_signal_handler() {
   SetUnhandledExceptionFilter(crash_handler);
 }
 
@@ -57,7 +49,7 @@ void VMError::check_failing_cds_access(outputStream* st, const void* siginfo) {
     if (er->ExceptionCode == EXCEPTION_IN_PAGE_ERROR &&
         er->NumberParameters >= 2) {
       const void* const fault_addr = (const void*) er->ExceptionInformation[1];
-      if (fault_addr != NULL) {
+      if (fault_addr != nullptr) {
         if (MetaspaceShared::is_in_shared_metaspace(fault_addr)) {
           st->print("Error accessing class data sharing archive. "
             "Mapped file inaccessible during execution, possible disk/network problem.");
@@ -74,3 +66,9 @@ void VMError::check_failing_cds_access(outputStream* st, const void* siginfo) {
 void VMError::reporting_started() {}
 void VMError::interrupt_reporting_thread() {}
 
+void VMError::raise_fail_fast(void* exrecord, void* context) {
+  DWORD flags = (exrecord == nullptr) ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0;
+  RaiseFailFastException(static_cast<PEXCEPTION_RECORD>(exrecord),
+                         static_cast<PCONTEXT>(context),
+                         flags);
+}

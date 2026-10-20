@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -73,12 +74,9 @@ public class DetectMutableStaticFields {
     private final String[] packagesToSeekFor = new String[] {
         "javax.tools",
         "javax.lang.model",
-        "com.sun.javadoc",
         "com.sun.source",
         "com.sun.tools.classfile",
-        "com.sun.tools.doclets",
         "com.sun.tools.javac",
-        "com.sun.tools.javadoc",
         "com.sun.tools.javah",
         "com.sun.tools.javap",
         "jdk.javadoc"
@@ -91,7 +89,6 @@ public class DetectMutableStaticFields {
 
     static {
         ignore("javax/tools/ToolProvider", "instance");
-        ignore("jdk/javadoc/internal/tool/Start", "versionRB");
         ignore("com/sun/tools/javah/JavahTask", "versionRB");
         ignore("com/sun/tools/classfile/Dependencies$DefaultFilter", "instance");
         ignore("com/sun/tools/javap/JavapTask", "versionRB");
@@ -182,7 +179,11 @@ public class DetectMutableStaticFields {
             int index = className.lastIndexOf('.');
             String pckName = index == -1 ? "" : className.substring(0, index);
             if (shouldAnalyzePackage(pckName)) {
-                analyzeClassFile(ClassFile.read(file.openInputStream()));
+                ClassFile classFile;
+                try (InputStream input = file.openInputStream()) {
+                    classFile = ClassFile.read(input);
+                }
+                analyzeClassFile(classFile);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,8 +41,14 @@ public interface DHPublicKey extends DHKey, java.security.PublicKey {
     /**
      * The class fingerprint that is set to indicate serialization
      * compatibility since J2SE 1.4.
+     *
+     * @deprecated A {@code serialVersionUID} field in an interface is
+     * ineffectual. Do not use; no replacement.
      */
-    static final long serialVersionUID = -6628103563352519193L;
+    @Deprecated
+    @SuppressWarnings("serial")
+    @java.io.Serial
+    long serialVersionUID = -6628103563352519193L;
 
     /**
      * Returns the public value, <code>y</code>.

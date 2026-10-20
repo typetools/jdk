@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,26 +25,44 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.UnaryOperator;
 
 /**
- * An ordered collection (also known as a <i>sequence</i>).  The user of this
- * interface has precise control over where in the list each element is
- * inserted.  The user can access elements by their integer index (position in
- * the list), and search for elements in the list.<p>
+ * An ordered collection, where the user has precise control over where in the
+ * list each element is inserted.  The user can access elements by their integer
+ * index (position in the list), and search for elements in the list.<p>
  *
  * Unlike sets, lists typically allow duplicate elements.  More formally,
  * lists typically allow pairs of elements {@code e1} and {@code e2}
@@ -117,11 +135,15 @@ import java.util.function.UnaryOperator;
  * <li>They are serializable if all elements are serializable.
  * <li>The order of elements in the list is the same as the order of the
  * provided arguments, or of the elements in the provided array.
+ * <li>The lists and their {@link #subList(int, int) subList} views implement the
+ * {@link RandomAccess} interface.
  * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
- * Callers should make no assumptions about the identity of the returned instances.
- * Factories are free to create new instances or reuse existing ones. Therefore,
- * identity-sensitive operations on these instances (reference equality ({@code ==}),
- * identity hash code, and synchronization) are unreliable and should be avoided.
+ * Programmers should treat instances that are {@linkplain #equals(Object) equal}
+ * as interchangeable and should not use them for synchronization, or
+ * unpredictable behavior may occur. For example, in a future release,
+ * synchronization may fail. Callers should make no assumptions about the
+ * identity of the returned instances. Factories are free to
+ * create new instances or reuse existing ones.
  * <li>They are serialized as specified on the
  * <a href="{@docRoot}/serialized-form.html#java.util.CollSer">Serialized Form</a>
  * page.
@@ -149,8 +171,8 @@ import java.util.function.UnaryOperator;
  */
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
-public interface List<E> extends Collection<E> {
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
+public interface List<E> extends SequencedCollection<E> {
     // Query Operations
 
     /**
@@ -161,7 +183,7 @@ public interface List<E> extends Collection<E> {
      * @return the number of elements in this list
      */
     @Pure
-    @NonNegative int size(@GuardSatisfied List<E> this);
+    @NonNegative int size(@MaybeModifiable @GuardSatisfied List<E> this);
 
     /**
      * Returns {@code true} if this list contains no elements.
@@ -169,7 +191,8 @@ public interface List<E> extends Collection<E> {
      * @return {@code true} if this list contains no elements
      */
     @Pure
-    boolean isEmpty(@GuardSatisfied List<E> this);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean isEmpty(@MaybeModifiable @GuardSatisfied List<E> this);
 
     /**
      * Returns {@code true} if this list contains the specified element.
@@ -187,7 +210,8 @@ public interface List<E> extends Collection<E> {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean contains(@GuardSatisfied List<E> this, Object o);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean contains(@MaybeModifiable @GuardSatisfied List<E> this, @UnknownSignedness Object o);
 
     /**
      * Returns an iterator over the elements in this list in proper sequence.
@@ -195,7 +219,7 @@ public interface List<E> extends Collection<E> {
      * @return an iterator over the elements in this list in proper sequence
      */
     @SideEffectFree
-    Iterator<E> iterator();
+    @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty List<E> this);
 
     /**
      * Returns an array containing all of the elements in this list in proper
@@ -214,7 +238,7 @@ public interface List<E> extends Collection<E> {
      * @see Arrays#asList(Object[])
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(List<@PolyNull E> this);
+    @PolyNull @PolySigned Object[] toArray(@MaybeModifiable List<@PolyNull @PolySigned E> this);
 
     /**
      * Returns an array containing all of the elements in this list in
@@ -255,8 +279,7 @@ public interface List<E> extends Collection<E> {
      *         this list
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
-    <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a);
+    <T extends @UnknownSignedness Object> @Nullable T[] toArray(@MaybeModifiable List<E> this, @PolyNull T[] a);
 
 
     // Modification Operations
@@ -284,7 +307,10 @@ public interface List<E> extends Collection<E> {
      *         prevents it from being added to this list
      */
     @ReleasesNoLocks
-    boolean add(@GuardSatisfied List<E> this, E e);
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean add(@IteratorPolyMod @Growable @GuardSatisfied List<E> this, E e);
 
     /**
      * Removes the first occurrence of the specified element from this list,
@@ -307,8 +333,9 @@ public interface List<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this list
      */
-    boolean remove(@GuardSatisfied List<E> this, Object o);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean remove(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink List<E> this, @UnknownSignedness Object o);
 
     // Bulk Modification Operations
 
@@ -331,7 +358,7 @@ public interface List<E> extends Collection<E> {
      * @see #contains(Object)
      */
     @Pure
-    boolean containsAll(@GuardSatisfied List<E> this, Collection<?> c);
+    boolean containsAll(@MaybeModifiable @GuardSatisfied List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Appends all of the elements in the specified collection to the end of
@@ -354,7 +381,10 @@ public interface List<E> extends Collection<E> {
      *         specified collection prevents it from being added to this list
      * @see #add(Object)
      */
-    boolean addAll(@GuardSatisfied List<E> this, Collection<? extends E> c);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean addAll(@Growable @GuardSatisfied List<E> this, Collection<? extends E> c);
 
     /**
      * Inserts all of the elements in the specified collection into this
@@ -383,7 +413,10 @@ public interface List<E> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index > size()})
      */
-    boolean addAll(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean addAll(@IteratorPolyMod @Growable @GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, Collection<? extends E> c);
 
     /**
      * Removes from this list all of its elements that are contained in the
@@ -403,7 +436,9 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean removeAll(@GuardSatisfied List<E> this, Collection<?> c);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean removeAll(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Retains only the elements in this list that are contained in the
@@ -425,7 +460,9 @@ public interface List<E> extends Collection<E> {
      * @see #remove(Object)
      * @see #contains(Object)
      */
-    boolean retainAll(@GuardSatisfied List<E> this, Collection<?> c);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    boolean retainAll(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink List<E> this, Collection<? extends @UnknownSignedness Object> c);
 
     /**
      * Replaces each element of this list with the result of applying the
@@ -456,7 +493,8 @@ public interface List<E> extends Collection<E> {
      *         (<a href="Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
-    default void replaceAll(UnaryOperator<E> operator) {
+    @DoesNotUnrefineReceiver("modifiability")
+    default void replaceAll(@IteratorPolyMod @Replaceable List<E> this, UnaryOperator<E> operator) {
         Objects.requireNonNull(operator);
         final ListIterator<E> li = this.listIterator();
         while (li.hasNext()) {
@@ -524,7 +562,9 @@ public interface List<E> extends Collection<E> {
      * @since 1.8
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    default void sort(Comparator<? super E> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void sort(@IteratorPolyMod @Replaceable List<E> this, Comparator<? super E> c) {
         Object[] a = this.toArray();
         Arrays.sort(a, (Comparator) c);
         ListIterator<E> i = this.listIterator();
@@ -541,7 +581,9 @@ public interface List<E> extends Collection<E> {
      * @throws UnsupportedOperationException if the {@code clear} operation
      *         is not supported by this list
      */
-    void clear(@GuardSatisfied List<E> this);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    void clear(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink List<E> this);
 
 
     // Comparison and hashing
@@ -561,7 +603,7 @@ public interface List<E> extends Collection<E> {
      * @return {@code true} if the specified object is equal to this list
      */
     @Pure
-    boolean equals(@GuardSatisfied List<E> this, @Nullable Object o);
+    boolean equals(@MaybeModifiable @GuardSatisfied List<E> this, @Nullable Object o);
 
     /**
      * Returns the hash code value for this list.  The hash code of a list
@@ -581,7 +623,7 @@ public interface List<E> extends Collection<E> {
      * @see #equals(Object)
      */
     @Pure
-    int hashCode(@GuardSatisfied List<E> this);
+    int hashCode(@MaybeModifiable @GuardSatisfied List<E> this);
 
 
     // Positional Access Operations
@@ -595,7 +637,7 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index >= size()})
      */
     @Pure
-    E get(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index);
+    E get(@MaybeModifiable @GuardSatisfied List<E> this, @IndexFor({"this"}) int index);
 
     /**
      * Replaces the element at the specified position in this list with the
@@ -615,7 +657,10 @@ public interface List<E> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index >= size()})
      */
-    E set(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index, E element);
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    E set(@IteratorPolyMod @Replaceable @GuardSatisfied List<E> this, @IndexFor({"this"}) int index, E element);
 
     /**
      * Inserts the specified element at the specified position in this list
@@ -637,8 +682,10 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index > size()})
      */
     @ReleasesNoLocks
-    void add(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
-
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    void add(@IteratorPolyMod @Growable @GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int index, E element);
     /**
      * Removes the element at the specified position in this list (optional
      * operation).  Shifts any subsequent elements to the left (subtracts one
@@ -653,7 +700,9 @@ public interface List<E> extends Collection<E> {
      *         ({@code index < 0 || index >= size()})
      */
     @ReleasesNoLocks
-    E remove(@GuardSatisfied List<E> this, @IndexFor({"this"}) int index);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    E remove(@IteratorPolyMod @Shrinkable @GuardSatisfied @CanShrink List<E> this, @IndexFor({"this"}) int index);
 
 
     // Search Operations
@@ -675,8 +724,8 @@ public interface List<E> extends Collection<E> {
      *         list does not permit null elements
      *         (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @GTENegativeOne @Pure
-    int indexOf(@GuardSatisfied List<E> this, Object o);
+    @Pure
+    @GTENegativeOne int indexOf(@MaybeModifiable @GuardSatisfied List<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
     /**
      * Returns the index of the last occurrence of the specified element
@@ -695,8 +744,8 @@ public interface List<E> extends Collection<E> {
      *         list does not permit null elements
      *         (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @GTENegativeOne @Pure
-    int lastIndexOf(@GuardSatisfied List<E> this, Object o);
+    @Pure
+    @GTENegativeOne int lastIndexOf(@MaybeModifiable @GuardSatisfied List<E> this, @GuardSatisfied @UnknownSignedness Object o);
 
 
     // List Iterators
@@ -708,7 +757,7 @@ public interface List<E> extends Collection<E> {
      * @return a list iterator over the elements in this list (in proper
      *         sequence)
      */
-    ListIterator<E> listIterator();
+    @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty List<E> this);
 
     /**
      * Returns a list iterator over the elements in this list (in proper
@@ -725,7 +774,7 @@ public interface List<E> extends Collection<E> {
      * @throws IndexOutOfBoundsException if the index is out of range
      *         ({@code index < 0 || index > size()})
      */
-    ListIterator<E> listIterator(@IndexOrHigh({"this"}) int index);
+    @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty List<E> this, @IndexOrHigh({"this"}) int index);
 
     // View
 
@@ -764,7 +813,7 @@ public interface List<E> extends Collection<E> {
      *         fromIndex > toIndex})
      */
     @SideEffectFree
-    List<E> subList(@GuardSatisfied List<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex);
+    @PolyGrowShrink @PolyModifiable List<E> subList(@PolyModifiable @GuardSatisfied @PolyGrowShrink List<E> this, @IndexOrHigh({"this"}) int fromIndex, @IndexOrHigh({"this"}) int toIndex);
 
     /**
      * Creates a {@link Spliterator} over the elements in this list.
@@ -809,6 +858,141 @@ public interface List<E> extends Collection<E> {
         }
     }
 
+    // ========== SequencedCollection ==========
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls {@code add(0, e)}.
+     *
+     * @throws NullPointerException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void addFirst(@SeqGrowable List<E> this, E e) {
+        this.add(0, e);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface calls {@code add(e)}.
+     *
+     * @throws NullPointerException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default void addLast(@SeqGrowable List<E> this, E e) {
+        this.add(e);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code get(0)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    default E getFirst() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.get(0);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code get(size() - 1)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @Pure
+    default E getLast() {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.get(this.size() - 1);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code remove(0)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default E removeFirst(@Shrinkable List<E> this) {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.remove(0);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * If this List is not empty, the implementation in this interface returns the result
+     * of calling {@code remove(size() - 1)}. Otherwise, it throws {@code NoSuchElementException}.
+     *
+     * @throws NoSuchElementException {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default E removeLast(@Shrinkable List<E> this) {
+        if (this.isEmpty()) {
+            throw new NoSuchElementException();
+        } else {
+            return this.remove(this.size() - 1);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns an instance of a reverse-ordered
+     * List that delegates its operations to this List.
+     *
+     * @return a reverse-ordered view of this collection, as a {@code List}
+     * @since 21
+     */
+    @SideEffectFree
+    default List<E> reversed() {
+        return ReverseOrderListView.of(this, true); // we must assume it's modifiable
+    }
+
+    // ========== static methods ==========
+
     /**
      * Returns an unmodifiable list containing zero elements.
      *
@@ -819,8 +1003,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of() {
-        return ImmutableCollections.emptyList();
+    @SideEffectFree
+    @SuppressWarnings("unchecked")
+    static <E> @Unmodifiable List<E> of() {
+        return (List<E>) ImmutableCollections.EMPTY_LIST;
     }
 
     /**
@@ -835,7 +1021,8 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1) {
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1) {
         return new ImmutableCollections.List12<>(e1);
     }
 
@@ -852,7 +1039,8 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2) {
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2) {
         return new ImmutableCollections.List12<>(e1, e2);
     }
 
@@ -870,8 +1058,9 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3);
     }
 
     /**
@@ -889,8 +1078,9 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4);
     }
 
     /**
@@ -909,8 +1099,9 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5);
     }
 
     /**
@@ -930,9 +1121,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5,
-                                                e6);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6);
     }
 
     /**
@@ -953,9 +1145,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5,
-                                                e6, e7);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7);
     }
 
     /**
@@ -977,9 +1170,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5,
-                                                e6, e7, e8);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8);
     }
 
     /**
@@ -1002,9 +1196,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5,
-                                                e6, e7, e8, e9);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8, e9);
     }
 
     /**
@@ -1028,9 +1223,10 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
-    static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
-        return new ImmutableCollections.ListN<>(e1, e2, e3, e4, e5,
-                                                e6, e7, e8, e9, e10);
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @NonEmpty List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8, e9, e10);
     }
 
     /**
@@ -1058,18 +1254,21 @@ public interface List<E> extends Collection<E> {
      *
      * @since 9
      */
+    @SideEffectFree
     @SafeVarargs
     @SuppressWarnings("varargs")
-    static <E> List<E> of(E... elements) {
+    static <E extends Object> @Unmodifiable @PolyNonEmpty List<E> of(E @PolyNonEmpty... elements) {
         switch (elements.length) { // implicit null check of elements
             case 0:
-                return ImmutableCollections.emptyList();
+                @SuppressWarnings("unchecked")
+                var list = (List<E>) ImmutableCollections.EMPTY_LIST;
+                return list;
             case 1:
                 return new ImmutableCollections.List12<>(elements[0]);
             case 2:
                 return new ImmutableCollections.List12<>(elements[0], elements[1]);
             default:
-                return new ImmutableCollections.ListN<>(elements);
+                return ImmutableCollections.listFromArray(elements);
         }
     }
 
@@ -1089,7 +1288,8 @@ public interface List<E> extends Collection<E> {
      * @throws NullPointerException if coll is null, or if it contains any nulls
      * @since 10
      */
-    static <E> List<E> copyOf(Collection<? extends E> coll) {
+    @SideEffectFree
+    static <E extends Object> @Unmodifiable @PolyNonEmpty List<E> copyOf(@MaybeModifiable @PolyNonEmpty Collection<? extends E> coll) {
         return ImmutableCollections.listCopy(coll);
     }
 }

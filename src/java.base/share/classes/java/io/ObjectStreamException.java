@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,17 +26,18 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Superclass of all exceptions specific to Object Stream classes.
  *
- * @author  unascribed
  * @since   1.1
  */
 @AnnotatedFor({"nullness"})
 public abstract class ObjectStreamException extends IOException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 7260898174833392607L;
 
     /**
@@ -44,14 +45,40 @@ public abstract class ObjectStreamException extends IOException {
      *
      * @param message the detailed message for the exception
      */
+    @SideEffectFree
     protected ObjectStreamException(@Nullable String message) {
         super(message);
     }
 
     /**
+     * Create an ObjectStreamException with the specified message and
+     * cause.
+     *
+     * @param message the detailed message for the exception
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    protected ObjectStreamException(@Nullable String message, @Nullable Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
      * Create an ObjectStreamException.
      */
+    @SideEffectFree
     protected ObjectStreamException() {
         super();
+    }
+
+    /**
+     * Create an ObjectStreamException with the specified cause.
+     *
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    protected ObjectStreamException(@Nullable Throwable cause) {
+        super(cause);
     }
 }

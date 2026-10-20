@@ -41,7 +41,7 @@ import java.lang.annotation.Native;
  * (see {@link GraphicsDevice#isDisplayChangeSupported}).
  * <p>
  * For more information on full-screen exclusive mode API, see the
- * <a href="http://docs.oracle.com/javase/tutorial/extra/fullscreen/index.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/extra/fullscreen/index.html">
  * Full-Screen Exclusive Mode API Tutorial</a>.
  *
  * @see GraphicsDevice
@@ -135,6 +135,7 @@ public final class DisplayMode {
      * @param  dm the display mode to compare to
      * @return whether the two display modes are equal
      */
+    @Pure
     public boolean equals(DisplayMode dm) {
         if (dm == null) {
             return false;

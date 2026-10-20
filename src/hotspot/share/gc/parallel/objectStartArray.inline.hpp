@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP
-#define SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP
+#ifndef SHARE_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP
+#define SHARE_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP
 
 #include "gc/parallel/objectStartArray.hpp"
 
@@ -42,7 +42,7 @@ HeapWord* ObjectStartArray::object_start(HeapWord* addr) const {
   HeapWord* next = scroll_forward;
   while (next <= addr) {
     scroll_forward = next;
-    next += oop(next)->size();
+    next += cast_to_oop(next)->size();
   }
   assert(scroll_forward <= addr, "wrong order for current and arg");
   assert(addr <= next, "wrong order for arg and next");
@@ -50,4 +50,4 @@ HeapWord* ObjectStartArray::object_start(HeapWord* addr) const {
 }
 
 
-#endif // SHARE_VM_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP
+#endif // SHARE_GC_PARALLEL_OBJECTSTARTARRAY_INLINE_HPP

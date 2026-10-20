@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@
 
 package javax.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate Parsing Exception. This is thrown whenever
  * invalid DER encoded certificate is parsed or unsupported DER features
@@ -41,9 +44,11 @@ package javax.security.cert;
  * @author Hemma Prafullchandra
  * @deprecated Use the classes in {@code java.security.cert} instead.
  */
-@Deprecated(since="9")
+@SuppressWarnings("removal")
+@Deprecated(since="9", forRemoval=true)
 public class CertificateParsingException extends CertificateException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -8449352422951136229L;
 
     /**
@@ -51,6 +56,7 @@ public class CertificateParsingException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateParsingException() {
         super();
     }
@@ -62,7 +68,8 @@ public class CertificateParsingException extends CertificateException {
      *
      * @param message the detail message.
      */
-    public CertificateParsingException(String message) {
+    @SideEffectFree
+    public CertificateParsingException(@Nullable String message) {
         super(message);
     }
 }

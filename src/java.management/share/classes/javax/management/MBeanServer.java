@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,10 @@
 
 package javax.management;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 // java import
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Set;
 import java.io.ObjectInputStream;
@@ -398,14 +397,12 @@ public interface MBeanServer extends MBeanServerConnection {
 
     /**
      * {@inheritDoc}
-      * @throws RuntimeOperationsException {@inheritDoc}
      */
     public Set<ObjectInstance> queryMBeans(@Nullable ObjectName name, @Nullable QueryExp query);
 
     /**
      * {@inheritDoc}
-      * @throws RuntimeOperationsException {@inheritDoc}
-    */
+     */
     public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query);
 
     // doc comment inherited from MBeanServerConnection

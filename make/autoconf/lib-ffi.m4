@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,10 @@
 ################################################################################
 AC_DEFUN_ONCE([LIB_SETUP_LIBFFI],
 [
+  UTIL_ARG_ENABLE(NAME: libffi-bundling, DEFAULT: false,
+      RESULT: ENABLE_LIBFFI_BUNDLING,
+      DESC: [enable bundling of libffi.so to make the built JDK runnable on more systems])
+
   AC_ARG_WITH(libffi, [AS_HELP_STRING([--with-libffi],
       [specify prefix directory for the libffi package
       (expecting the libraries under PATH/lib and the headers under PATH/include)])])
@@ -35,8 +39,6 @@ AC_DEFUN_ONCE([LIB_SETUP_LIBFFI],
       [specify directory for the libffi include files])])
   AC_ARG_WITH(libffi-lib, [AS_HELP_STRING([--with-libffi-lib],
       [specify directory for the libffi library])])
-  AC_ARG_ENABLE(libffi-bundling, [AS_HELP_STRING([--enable-libffi-bundling],
-      [enable bundling of libffi.so to make the built JDK runnable on more systems])])
 
   if test "x$NEEDS_LIB_FFI" = xfalse; then
     if (test "x${with_libffi}" != x && test "x${with_libffi}" != xno) || \
@@ -85,6 +87,20 @@ AC_DEFUN_ONCE([LIB_SETUP_LIBFFI],
           [LIBFFI_FOUND=no]
       )
     fi
+    # on macos we need a special case for system's libffi as
+    # headers are located only in sdk in $SYSROOT and in ffi subfolder
+    if test "x$LIBFFI_FOUND" = xno; then
+      if test "x$SYSROOT" != "x"; then
+        AC_CHECK_HEADER([$SYSROOT/usr/include/ffi/ffi.h],
+            [
+              LIBFFI_FOUND=yes
+              LIBFFI_CFLAGS="-I${SYSROOT}/usr/include/ffi"
+              LIBFFI_LIBS=-lffi
+            ],
+            [LIBFFI_FOUND=no]
+        )
+      fi
+    fi
     if test "x$LIBFFI_FOUND" = xno; then
       HELP_MSG_MISSING_DEPENDENCY([ffi])
       AC_MSG_ERROR([Could not find libffi! $HELP_MSG])
@@ -114,20 +130,6 @@ AC_DEFUN_ONCE([LIB_SETUP_LIBFFI],
       AC_MSG_ERROR([Found libffi but could not link and compile with it. $HELP_MSG])
     fi
 
-    AC_MSG_CHECKING([if libffi should be bundled])
-    if test "x$enable_libffi_bundling" = "x"; then
-      AC_MSG_RESULT([no])
-      ENABLE_LIBFFI_BUNDLING=false
-    elif  test "x$enable_libffi_bundling" = "xno"; then
-      AC_MSG_RESULT([no, forced])
-      ENABLE_LIBFFI_BUNDLING=false
-    elif  test "x$enable_libffi_bundling" = "xyes"; then
-      AC_MSG_RESULT([yes, forced])
-      ENABLE_LIBFFI_BUNDLING=true
-    else
-      AC_MSG_ERROR([Invalid value for --enable-libffi-bundling])
-    fi
-
     # Find the libffi.so.X to bundle
     if test "x${ENABLE_LIBFFI_BUNDLING}" = "xtrue"; then
       AC_MSG_CHECKING([for libffi lib file location])
@@ -147,7 +149,7 @@ AC_DEFUN_ONCE([LIB_SETUP_LIBFFI],
           else
             AC_MSG_ERROR([Could not locate libffi.so.? for bundling])
           fi
-        elif test "x${OPENJDK_TARGET_CPU}" = "xx86_64"; then
+        elif test "x${OPENJDK_TARGET_CPU}" = "xx86_64" || test "x${OPENJDK_TARGET_CPU}" = "xaarch64"; then
           if test -e ${SYSROOT}/usr/lib64/libffi.so.? ; then
             LIBFFI_LIB_FILE="${SYSROOT}/usr/lib64/libffi.so.?"
           elif test -e ${SYSROOT}/usr/lib/x86_64-linux-gnu/libffi.so.? ; then

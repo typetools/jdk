@@ -21,10 +21,7 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id: DOMCanonicalXMLC14NMethod.java 1788465 2017-03-24 15:10:51Z coheigea $
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
@@ -44,7 +41,6 @@ import com.sun.org.apache.xml.internal.security.c14n.InvalidCanonicalizerExcepti
  */
 public final class DOMCanonicalXMLC14NMethod extends ApacheCanonicalizer {
 
-    @Override
     public void init(TransformParameterSpec params)
         throws InvalidAlgorithmParameterException {
         if (params != null) {
@@ -53,7 +49,6 @@ public final class DOMCanonicalXMLC14NMethod extends ApacheCanonicalizer {
         }
     }
 
-    @Override
     public Data transform(Data data, XMLCryptoContext xc)
         throws TransformException {
 
@@ -64,10 +59,8 @@ public final class DOMCanonicalXMLC14NMethod extends ApacheCanonicalizer {
             DOMSubTreeData subTree = (DOMSubTreeData) data;
             if (subTree.excludeComments()) {
                 try {
-                    apacheCanonicalizer = Canonicalizer.getInstance
+                    canonicalizer = Canonicalizer.getInstance
                         (CanonicalizationMethod.INCLUSIVE);
-                    boolean secVal = Utils.secureValidation(xc);
-                    apacheCanonicalizer.setSecureValidation(secVal);
                 } catch (InvalidCanonicalizerException ice) {
                     throw new TransformException
                         ("Couldn't find Canonicalizer for: " +

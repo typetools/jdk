@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package javax.xml.xpath;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -40,7 +44,9 @@ import java.io.InvalidClassException;
  * @since 1.5
  */
 public class XPathException extends Exception {
-
+    /**
+     * Serializable fields.
+     */
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField( "cause", Throwable.class )
     };
@@ -64,6 +70,7 @@ public class XPathException extends Exception {
      * @throws NullPointerException When {@code message} is
      *   {@code null}.
      */
+    @SideEffectFree
     public XPathException(String message) {
         super(message);
         if ( message == null ) {
@@ -82,6 +89,7 @@ public class XPathException extends Exception {
      *
      * @throws NullPointerException if {@code cause} is {@code null}.
      */
+    @SideEffectFree
     public XPathException(Throwable cause) {
         super(cause);
         if ( cause == null ) {
@@ -94,7 +102,8 @@ public class XPathException extends Exception {
      *
      * @return Cause of this XPathException.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return super.getCause();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an ICMP Port Unreachable message has been
  * received on a connected datagram.
@@ -33,6 +36,7 @@ package java.net;
  */
 
 public class PortUnreachableException extends SocketException {
+    @java.io.Serial
     private static final long serialVersionUID = 8462541992376507323L;
 
     /**
@@ -40,7 +44,8 @@ public class PortUnreachableException extends SocketException {
      * detail message.
      * @param msg the detail message
      */
-    public PortUnreachableException(String msg) {
+    @SideEffectFree
+    public PortUnreachableException(@Nullable String msg) {
         super(msg);
     }
 
@@ -48,5 +53,6 @@ public class PortUnreachableException extends SocketException {
      * Construct a new {@code PortUnreachableException} with no
      * detailed message.
      */
+    @SideEffectFree
     public PortUnreachableException() {}
 }

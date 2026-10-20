@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 
 package java.nio.file;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.security.BasicPermission;
 
@@ -66,7 +69,9 @@ import java.security.BasicPermission;
  * @see Files#createLink
  * @see Files#createSymbolicLink
  */
+@AnnotatedFor({"nullness"})
 public final class LinkPermission extends BasicPermission {
+    @java.io.Serial
     static final long serialVersionUID = -1441492453772213220L;
 
     private void checkName(String name) {
@@ -101,10 +106,10 @@ public final class LinkPermission extends BasicPermission {
      * @throws  IllegalArgumentException
      *          if name is empty or invalid, or actions is a non-empty string
      */
-    public LinkPermission(String name, String actions) {
+    public LinkPermission(String name, @Nullable String actions) {
         super(name);
         checkName(name);
-        if (actions != null && actions.length() > 0) {
+        if (actions != null && !actions.isEmpty()) {
             throw new IllegalArgumentException("actions: " + actions);
         }
     }

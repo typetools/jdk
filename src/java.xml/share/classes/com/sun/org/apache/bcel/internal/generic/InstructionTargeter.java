@@ -21,28 +21,31 @@
 
 package com.sun.org.apache.bcel.internal.generic;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
- * Denote that a class targets InstructionHandles within an InstructionList. Namely
- * the following implementers:
+ * Denote that a class targets InstructionHandles within an InstructionList. Namely the following implementers:
  *
  * @see BranchHandle
  * @see LocalVariableGen
  * @see CodeExceptionGen
- * @version $Id: InstructionTargeter.java 1747278 2016-06-07 17:28:43Z britter $
  */
 public interface InstructionTargeter {
+
+    // static final InstructionTargeter[] EMPTY_ARRAY = new InstructionTargeter[0];
 
     /**
      * Checks whether this targeter targets the specified instruction handle.
      */
+    @Pure
     boolean containsTarget(InstructionHandle ih);
 
     /**
      * Replaces the target of this targeter from this old handle to the new handle.
      *
-     * @param old_ih the old handle
-     * @param new_ih the new handle
-     * @throws ClassGenException if old_ih is not targeted by this object
+     * @param oldIh the old handle
+     * @param newIh the new handle
+     * @throws ClassGenException if oldIh is not targeted by this object
      */
-    void updateTarget(InstructionHandle old_ih, InstructionHandle new_ih) throws ClassGenException;
+    void updateTarget(InstructionHandle oldIh, InstructionHandle newIh) throws ClassGenException;
 }

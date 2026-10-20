@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 
 package java.lang.annotation;
+
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.lang.reflect.Method;
 
 /**
@@ -39,6 +42,7 @@ import java.lang.reflect.Method;
  * @since 1.5
  */
 public class AnnotationTypeMismatchException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = 8125925355765570191L;
 
     /**
@@ -64,6 +68,7 @@ public class AnnotationTypeMismatchException extends RuntimeException {
      *        as well.  The exact format of the string is unspecified,
      *        may be {@code null}.
      */
+    @SideEffectFree
     public AnnotationTypeMismatchException(Method element, String foundType) {
         super("Incorrectly typed data found for annotation element " + element
               + " (Found data of type " + foundType + ")");

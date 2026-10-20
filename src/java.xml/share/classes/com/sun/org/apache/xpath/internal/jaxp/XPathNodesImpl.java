@@ -25,6 +25,8 @@
 
 package com.sun.org.apache.xpath.internal.jaxp;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Iterator;
 import javax.xml.xpath.XPathException;
 import javax.xml.xpath.XPathNodes;
@@ -56,6 +58,7 @@ public class XPathNodesImpl implements XPathNodes {
         NodeSetIterator(Class<E> elementType) {
             this.elementType = elementType;
         }
+        @Pure
         public boolean hasNext() {
             if (nodeList != null) {
                 return currentIndex < nodeList.getLength();

@@ -35,6 +35,10 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception thrown when an error or other exception is encountered
  * in the course of completing a result or task.
@@ -42,6 +46,7 @@ package java.util.concurrent;
  * @since 1.8
  * @author Doug Lea
  */
+@AnnotatedFor({"nullness"})
 public class CompletionException extends RuntimeException {
     private static final long serialVersionUID = 7830266012832686185L;
 
@@ -50,6 +55,7 @@ public class CompletionException extends RuntimeException {
      * The cause is not initialized, and may subsequently be
      * initialized by a call to {@link #initCause(Throwable) initCause}.
      */
+    @SideEffectFree
     protected CompletionException() { }
 
     /**
@@ -59,7 +65,8 @@ public class CompletionException extends RuntimeException {
      *
      * @param message the detail message
      */
-    protected CompletionException(String message) {
+    @SideEffectFree
+    protected CompletionException(@Nullable String message) {
         super(message);
     }
 
@@ -71,7 +78,8 @@ public class CompletionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
-    public CompletionException(String message, Throwable cause) {
+    @SideEffectFree
+    public CompletionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +92,8 @@ public class CompletionException extends RuntimeException {
      * @param  cause the cause (which is saved for later retrieval by the
      *         {@link #getCause()} method)
      */
-    public CompletionException(Throwable cause) {
+    @SideEffectFree
+    public CompletionException(@Nullable Throwable cause) {
         super(cause);
     }
 }

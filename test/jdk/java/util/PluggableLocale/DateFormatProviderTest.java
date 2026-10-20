@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -20,18 +20,41 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 /*
- *
+ * @test
+ * @bug 4052440 7003643 8062588 8210406
+ * @summary DateFormatProvider tests
+ * @library providersrc/foobarutils
+ *          providersrc/fooprovider
+ * @modules java.base/sun.util.locale.provider
+ *          java.base/sun.util.resources
+ * @build com.foobar.Utils
+ *        com.foo.*
+ * @run main/othervm -Djava.locale.providers=JRE,SPI DateFormatProviderTest
  */
 
-import java.text.*;
-import java.util.*;
-import sun.util.locale.provider.*;
-import sun.util.resources.*;
+import java.text.DateFormat;
+import java.text.Format;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+import java.util.Set;
+
+import com.foo.DateFormatProviderImpl;
+
+import sun.util.locale.provider.LocaleProviderAdapter;
+import sun.util.locale.provider.ResourceBundleBasedAdapter;
 
 public class DateFormatProviderTest extends ProviderTest {
 
-    com.foo.DateFormatProviderImpl dfp = new com.foo.DateFormatProviderImpl();
+    DateFormatProviderImpl dfp = new DateFormatProviderImpl();
     List<Locale> availloc = Arrays.asList(DateFormat.getAvailableLocales());
     List<Locale> providerloc = Arrays.asList(dfp.getAvailableLocales());
     List<Locale> jreloc = Arrays.asList(LocaleProviderAdapter.forJRE().getAvailableLocales());
@@ -126,9 +149,9 @@ public class DateFormatProviderTest extends ProviderTest {
     // Check that fallback correctly occurs with locales with variant including '_'s
     // This test assumes that the provider supports the ja_JP_osaka locale, and JRE does not.
     void extendedVariantTest() {
-        Locale[] testlocs = {new Locale("ja", "JP", "osaka_extended"),
-                             new Locale("ja", "JP", "osaka_extended_further"),
-                             new Locale("ja", "JP", "osaka_")};
+        Locale[] testlocs = {Locale.of("ja", "JP", "osaka_extended"),
+                             Locale.of("ja", "JP", "osaka_extended_further"),
+                             Locale.of("ja", "JP", "osaka_")};
         for (Locale test: testlocs) {
             DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, test);
             DateFormat provider = dfp.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, test);

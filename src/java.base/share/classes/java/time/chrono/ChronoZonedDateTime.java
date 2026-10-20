@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -103,7 +103,7 @@ import java.util.Objects;
  * The chronology defines how the calendar system operates and the meaning of
  * the standard fields.
  *
- * <h3>When to use this interface</h3>
+ * <h2>When to use this interface</h2>
  * The design of the API encourages the use of {@code ZonedDateTime} rather than this
  * interface, even in the case where the application needs to deal with multiple
  * calendar systems. The rationale for this is explored in detail in {@link ChronoLocalDate}.
@@ -195,26 +195,25 @@ public interface ChronoZonedDateTime<D extends ChronoLocalDate>
 
     @Override
     default int get(TemporalField field) {
-        if (field instanceof ChronoField) {
-            switch ((ChronoField) field) {
-                case INSTANT_SECONDS:
+        if (field instanceof ChronoField chronoField) {
+            return switch (chronoField) {
+                case INSTANT_SECONDS ->
                     throw new UnsupportedTemporalTypeException("Invalid field 'InstantSeconds' for get() method, use getLong() instead");
-                case OFFSET_SECONDS:
-                    return getOffset().getTotalSeconds();
-            }
-            return toLocalDateTime().get(field);
+                case OFFSET_SECONDS -> getOffset().getTotalSeconds();
+                default -> toLocalDateTime().get(field);
+            };
         }
         return Temporal.super.get(field);
     }
 
     @Override
     default long getLong(TemporalField field) {
-        if (field instanceof ChronoField) {
-            switch ((ChronoField) field) {
-                case INSTANT_SECONDS: return toEpochSecond();
-                case OFFSET_SECONDS: return getOffset().getTotalSeconds();
-            }
-            return toLocalDateTime().getLong(field);
+        if (field instanceof ChronoField chronoField) {
+            return switch (chronoField) {
+                case INSTANT_SECONDS -> toEpochSecond();
+                case OFFSET_SECONDS -> getOffset().getTotalSeconds();
+                default -> toLocalDateTime().getLong(field);
+            };
         }
         return field.getFrom(this);
     }

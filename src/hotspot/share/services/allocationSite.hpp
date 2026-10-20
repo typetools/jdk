@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,25 +22,26 @@
  *
  */
 
-#ifndef SHARE_VM_SERVICES_ALLOCATION_SITE_HPP
-#define SHARE_VM_SERVICES_ALLOCATION_SITE_HPP
+#ifndef SHARE_SERVICES_ALLOCATIONSITE_HPP
+#define SHARE_SERVICES_ALLOCATIONSITE_HPP
 
+#include "memory/allocation.hpp"
 #include "utilities/nativeCallStack.hpp"
 
 // Allocation site represents a code path that makes a memory
 // allocation
-template <class E> class AllocationSite {
+class AllocationSite {
  private:
-  NativeCallStack  _call_stack;
-  E                e;
+  const NativeCallStack  _call_stack;
+  const MEMFLAGS         _flag;
  public:
-  AllocationSite(const NativeCallStack& stack) : _call_stack(stack) { }
-  int hash() const { return _call_stack.hash(); }
+  AllocationSite(const NativeCallStack& stack, MEMFLAGS flag) : _call_stack(stack), _flag(flag) { }
+
   bool equals(const NativeCallStack& stack) const {
     return _call_stack.equals(stack);
   }
 
-  bool equals(const AllocationSite<E>& other) const {
+  bool equals(const AllocationSite& other) const {
     return other.equals(_call_stack);
   }
 
@@ -48,9 +49,7 @@ template <class E> class AllocationSite {
     return &_call_stack;
   }
 
-  // Information regarding this allocation
-  E* data()             { return &e; }
-  const E* peek() const { return &e; }
+  MEMFLAGS flag() const { return _flag; }
 };
 
-#endif  // SHARE_VM_SERVICES_ALLOCATION_SITE_HPP
+#endif // SHARE_SERVICES_ALLOCATIONSITE_HPP

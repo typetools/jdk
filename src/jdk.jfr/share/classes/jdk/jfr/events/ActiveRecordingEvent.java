@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,9 @@ import jdk.jfr.internal.Type;
 @StackTrace(false)
 public final class ActiveRecordingEvent extends AbstractJDKEvent {
 
+    // The order of these fields must be the same as the parameters in
+    // commit(... , long, String, String, long, long, long, long, long)
+
     @Label("Id")
     public long id;
 
@@ -49,9 +52,16 @@ public final class ActiveRecordingEvent extends AbstractJDKEvent {
     @Label("Destination")
     public String destination;
 
+    @Label("To Disk")
+    public boolean disk;
+
     @Label("Max Age")
     @Timespan(Timespan.MILLISECONDS)
     public long maxAge;
+
+    @Label("Flush Interval")
+    @Timespan(Timespan.MILLISECONDS)
+    public long flushInterval;
 
     @Label("Max Size")
     @DataAmount
@@ -64,4 +74,14 @@ public final class ActiveRecordingEvent extends AbstractJDKEvent {
     @Label("Recording Duration")
     @Timespan(Timespan.MILLISECONDS)
     public long recordingDuration;
+
+    public static boolean enabled() {
+        return false; // Generated
+    }
+
+    public static void commit(long timestamp, long duration, long id, String name,
+                              String destination, boolean disk, long maxAge, long flushInterval,
+                              long maxSize, long recordingStart, long recordingDuration) {
+        // Generated
+    }
 }

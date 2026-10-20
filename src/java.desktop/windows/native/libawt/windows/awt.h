@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,6 @@
 
 #ifndef _AWT_H_
 #define _AWT_H_
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-#endif
 
 #ifndef _WIN32_IE
 #define _WIN32_IE 0x0600
@@ -337,7 +333,7 @@ class JavaStringBuffer
 protected:
     LPWSTR m_pStr;
     jsize  m_dwSize;
-    LPWSTR getNonEmptyString() {
+    LPCWSTR getNonEmptyString() {
         return (NULL==m_pStr)
                 ? L""
                 : m_pStr;
@@ -378,9 +374,9 @@ public:
         m_pStr = (LPWSTR)SAFE_SIZE_ARRAY_REALLOC(safe_Realloc, m_pStr, m_dwSize+1, sizeof(WCHAR) );
     }
     //we are in UNICODE now, so LPWSTR:=:LPTSTR
-    operator LPWSTR() { return getNonEmptyString(); }
+    operator LPCWSTR() { return getNonEmptyString(); }
     operator LPARAM() { return (LPARAM)getNonEmptyString(); }
-    void *GetData() { return (void *)getNonEmptyString(); }
+    const void *GetData() { return (const void *)getNonEmptyString(); }
     jsize  GetSize() { return m_dwSize; }
 };
 

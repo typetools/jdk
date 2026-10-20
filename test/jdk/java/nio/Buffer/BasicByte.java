@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,20 @@
 
 // -- This file was mechanically generated: Do not edit! -- //
 
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import java.nio.*;
+
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Random;
+
+
+
+
 
 
 public class BasicByte
@@ -87,6 +100,18 @@ public class BasicByte
         }
     }
 
+    private static void absBulkGet(ByteBuffer b) {
+        int n = b.capacity();
+        int len = n - 7*2;
+        byte[] a = new byte[n + 7];
+        b.position(42);
+        b.get(7, a, 7, len);
+        ck(b, b.position() == 42);
+        for (int i = 0; i < len; i++) {
+            ck(b, (long)a[i + 7], (long)((byte)ic(i)));
+        }
+    }
+
     private static void relPut(ByteBuffer b) {
         int n = b.capacity();
         b.clear();
@@ -134,6 +159,20 @@ public class BasicByte
                      + " put into same buffer");
             }
         }
+    }
+
+    private static void absBulkPutArray(ByteBuffer b) {
+        int n = b.capacity();
+        b.clear();
+        int lim = n - 7;
+        int len = lim - 7;
+        b.limit(lim);
+        byte[] a = new byte[len + 7];
+        for (int i = 0; i < len; i++)
+            a[i + 7] = (byte)ic(i);
+        b.position(42);
+        b.put(7, a, 7, len);
+        ck(b, b.position() == 42);
     }
 
     //6231529
@@ -443,6 +482,73 @@ public class BasicByte
                 }
             }
         }
+
+        // mapped buffers
+        try {
+            for (MappedByteBuffer bb : mappedBuffers()) {
+                try {
+                    int offset = bb.alignmentOffset(1, 4);
+                    ck(bb, offset >= 0);
+                } catch (UnsupportedOperationException e) {
+                    System.out.println("Not applicable, UOE thrown: ");
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        // alignment identities
+        final int maxPow2 = 12;
+        ByteBuffer bb = ByteBuffer.allocateDirect(1 << maxPow2); // cap 4096
+
+        Random rnd = new Random();
+        long seed = rnd.nextLong();
+        rnd = new Random(seed);
+
+        for (int i = 0; i < 100; i++) {
+            // 1 == 2^0 <= unitSize == 2^k <= bb.capacity()/2
+            int unitSize = 1 << rnd.nextInt(maxPow2);
+            // 0 <= index < 2*unitSize
+            int index = rnd.nextInt(unitSize << 1);
+            int value = bb.alignmentOffset(index, unitSize);
+            try {
+                if (value < 0 || value >= unitSize) {
+                    throw new RuntimeException(value + " < 0 || " +
+                        value + " >= " + unitSize);
+                }
+                if (value <= index &&
+                    bb.alignmentOffset(index - value, unitSize) != 0)
+                    throw new RuntimeException("Identity 1");
+                if (bb.alignmentOffset(index + (unitSize - value),
+                    unitSize) != 0)
+                    throw new RuntimeException("Identity 2");
+            } catch (RuntimeException re) {
+                System.err.format("seed %d, index %d, unitSize %d, value %d%n",
+                    seed, index, unitSize, value);
+                throw re;
+            }
+        }
+    }
+
+    private static MappedByteBuffer[] mappedBuffers() throws IOException {
+        return new MappedByteBuffer[]{
+                createMappedBuffer(new byte[]{0, 1, 2, 3}),
+                createMappedBuffer(new byte[]{0, 1, 2, -3,
+                    45, 6, 7, 78, 3, -7, 6, 7, -128, 127}),
+        };
+    }
+
+    private static MappedByteBuffer createMappedBuffer(byte[] contents)
+        throws IOException {
+        Path tempFile = Files.createTempFile("mbb", null);
+        tempFile.toFile().deleteOnExit();
+        Files.write(tempFile, contents);
+        try (FileChannel fc = FileChannel.open(tempFile)) {
+            MappedByteBuffer map =
+                fc.map(FileChannel.MapMode.READ_ONLY, 0, contents.length);
+            map.load();
+            return map;
+        }
     }
 
 
@@ -450,6 +556,10 @@ public class BasicByte
                              ByteBuffer xb, ByteBuffer yb,
                              byte x, byte y) {
         fail(problem + String.format(": x=%s y=%s", x, y), xb, yb);
+    }
+
+    private static void catchNullArgument(Buffer b, Runnable thunk) {
+        tryCatch(b, NullPointerException.class, thunk);
     }
 
     private static void catchIllegalArgument(Buffer b, Runnable thunk) {
@@ -476,7 +586,10 @@ public class BasicByte
             if (ex.isAssignableFrom(x.getClass())) {
                 caught = true;
             } else {
-                fail(x.getMessage() + " not expected");
+                String s = x.getMessage();
+                if (s == null)
+                    s = x.getClass().getName();
+                fail(s + " not expected");
             }
         }
         if (!caught) {
@@ -512,6 +625,63 @@ public class BasicByte
 
         bulkPutBuffer(b);
         relGet(b);
+
+        absBulkPutArray(b);
+        absBulkGet(b);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -611,6 +781,31 @@ public class BasicByte
                      + " negative limit");
             }
         }
+
+        // Exceptions in absolute bulk and slice operations
+
+        catchNullArgument(b, () -> b.get(7, null, 0, 42));
+        catchNullArgument(b, () -> b.put(7, (byte[])null, 0, 42));
+
+        byte[] tmpa = new byte[42];
+        catchIndexOutOfBounds(b, () -> b.get(7, tmpa, -1, 42));
+        catchIndexOutOfBounds(b, () -> b.get(7, tmpa, 42, 1));
+        catchIndexOutOfBounds(b, () -> b.get(7, tmpa, 41, -1));
+        catchIndexOutOfBounds(b, () -> b.get(-1, tmpa, 0, 1));
+        catchIndexOutOfBounds(b, () -> b.get(b.limit(), tmpa, 0, 1));
+        catchIndexOutOfBounds(b, () -> b.get(b.limit() - 41, tmpa, 0, 42));
+
+        catchIndexOutOfBounds(b, () -> b.put(7, tmpa, -1, 42));
+        catchIndexOutOfBounds(b, () -> b.put(7, tmpa, 42, 1));
+        catchIndexOutOfBounds(b, () -> b.put(7, tmpa, 41, -1));
+        catchIndexOutOfBounds(b, () -> b.put(-1, tmpa, 0, 1));
+        catchIndexOutOfBounds(b, () -> b.put(b.limit(), tmpa, 0, 1));
+        catchIndexOutOfBounds(b, () -> b.put(b.limit() - 41, tmpa, 0, 42));
+
+        catchIndexOutOfBounds(b, () -> b.slice(-1, 7));
+        catchIndexOutOfBounds(b, () -> b.slice(b.limit() + 1, 7));
+        catchIndexOutOfBounds(b, () -> b.slice(0, -1));
+        catchIndexOutOfBounds(b, () -> b.slice(7, b.limit() - 7 + 1));
 
         // Values
 
@@ -776,6 +971,20 @@ public class BasicByte
                  + sb.arrayOffset() + " != " + sb2.arrayOffset(), sb, sb2);
         }
 
+        int bPos = b.position();
+        int bLim = b.limit();
+
+        b.position(7);
+        b.limit(42);
+        ByteBuffer rsb = b.slice();
+        b.position(0);
+        b.limit(b.capacity());
+        ByteBuffer asb = b.slice(7, 35);
+        checkSlice(rsb, asb);
+
+        b.position(bPos);
+        b.limit(bLim);
+
 
 
         // Views
@@ -819,6 +1028,7 @@ public class BasicByte
         catchReadOnlyBuffer(b, () -> absPut(rb));
         catchReadOnlyBuffer(b, () -> bulkPutArray(rb));
         catchReadOnlyBuffer(b, () -> bulkPutBuffer(rb));
+        catchReadOnlyBuffer(b, () -> absBulkPutArray(rb));
 
         // put(ByteBuffer) should not change source position
         final ByteBuffer src = ByteBuffer.allocate(1);
@@ -928,6 +1138,13 @@ public class BasicByte
 
 
 
+
+
+
+
+
+
+
     public static void test(final byte [] ba) {
         int offset = 47;
         int length = 900;
@@ -974,6 +1191,26 @@ public class BasicByte
 
     }
 
+    public static void testToString() {
+        final int cap = 10;
+
+
+        ByteBuffer direct1 = ByteBuffer.allocateDirect(cap);
+        if (!direct1.toString().equals(Basic.toString(direct1))) {
+           fail("Direct buffer toString is incorrect: "
+                  + direct1.toString() + " vs " + Basic.toString(direct1));
+        }
+
+
+
+        ByteBuffer nondirect1 = ByteBuffer.allocate(cap);
+        if (!nondirect1.toString().equals(Basic.toString(nondirect1))) {
+           fail("Heap buffer toString is incorrect: "
+                  + nondirect1.toString() + " vs " + Basic.toString(nondirect1));
+        }
+
+    }
+
     public static void test() {
         testAllocate();
         test(0, ByteBuffer.allocate(7 * 1024), false);
@@ -995,6 +1232,8 @@ public class BasicByte
 
 
 
+
+        testToString();
     }
 
 }

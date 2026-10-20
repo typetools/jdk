@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when an attempt is made to create a file or
  * directory and a file of that name already exists.
@@ -32,9 +36,11 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class FileAlreadyExistsException
     extends FileSystemException
 {
+    @java.io.Serial
     static final long serialVersionUID = 7579540934498831181L;
 
     /**
@@ -43,7 +49,8 @@ public class FileAlreadyExistsException
      * @param   file
      *          a string identifying the file or {@code null} if not known
      */
-    public FileAlreadyExistsException(String file) {
+    @SideEffectFree
+    public FileAlreadyExistsException(@Nullable String file) {
         super(file);
     }
 
@@ -57,7 +64,8 @@ public class FileAlreadyExistsException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public FileAlreadyExistsException(String file, String other, String reason) {
+    @SideEffectFree
+    public FileAlreadyExistsException(@Nullable String file, @Nullable String other, @Nullable String reason) {
         super(file, other, reason);
     }
 }

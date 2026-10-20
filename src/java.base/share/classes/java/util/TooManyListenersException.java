@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,12 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * <p>
- * The <code> TooManyListenersException </code> Exception is used as part of
+ * The {@code  TooManyListenersException } Exception is used as part of
  * the Java Event model to annotate and implement a unicast special case of
  * a multicast Event Source.
  * </p>
@@ -48,6 +51,7 @@ package java.util;
  */
 
 public class TooManyListenersException extends Exception {
+    @java.io.Serial
     private static final long serialVersionUID = 5074640544770687831L;
 
     /**
@@ -55,6 +59,7 @@ public class TooManyListenersException extends Exception {
      * A detail message is a String that describes this particular exception.
      */
 
+    @SideEffectFree
     public TooManyListenersException() {
         super();
     }
@@ -65,7 +70,8 @@ public class TooManyListenersException extends Exception {
      * @param s the detail message
      */
 
-    public TooManyListenersException(String s) {
+    @SideEffectFree
+    public TooManyListenersException(@Nullable String s) {
         super(s);
     }
 }

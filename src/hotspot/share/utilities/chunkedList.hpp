@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_CHUNKED_LIST_HPP
-#define SHARE_VM_UTILITIES_CHUNKED_LIST_HPP
+#ifndef SHARE_UTILITIES_CHUNKEDLIST_HPP
+#define SHARE_UTILITIES_CHUNKEDLIST_HPP
 
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
@@ -44,7 +44,7 @@ template <class T, MEMFLAGS F> class ChunkedList : public CHeapObj<F> {
   }
 
  public:
-  ChunkedList<T, F>() : _top(_values), _next_used(NULL), _next_free(NULL) {}
+  ChunkedList<T, F>() : _top(_values), _next_used(nullptr), _next_free(nullptr) {}
 
   bool is_full() const {
     return _top == end();
@@ -78,4 +78,4 @@ template <class T, MEMFLAGS F> class ChunkedList : public CHeapObj<F> {
   }
 };
 
-#endif // SHARE_VM_UTILITIES_CHUNKED_LIST_HPP
+#endif // SHARE_UTILITIES_CHUNKEDLIST_HPP

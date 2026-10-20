@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,17 @@
 
 package java.util;
 
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * A specialized {@link Set} implementation for use with enum types.  All of
@@ -75,16 +82,20 @@ import jdk.internal.misc.SharedSecrets;
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
  *
+ * @param <E> the enum type of elements maintained by this set
+ *
  * @author Josh Bloch
  * @since 1.5
  * @see EnumMap
  */
-@AnnotatedFor({"nullness", "index"})
-@SuppressWarnings("serial") // No serialVersionUID due to usage of
-                            // serial proxy pattern
-public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
-    implements Cloneable, java.io.Serializable
+@AnnotatedFor({"nullness", "index", "modifiability"})
+public abstract sealed class EnumSet<E extends Enum<E>> extends AbstractSet<E>
+    implements Cloneable, java.io.Serializable permits JumboEnumSet, RegularEnumSet
 {
+    // declare EnumSet.class serialization compatibility with JDK 8
+    @java.io.Serial
+    private static final long serialVersionUID = 1009687484059888093L;
+
     /**
      * The class of all the elements of this set.
      */
@@ -95,7 +106,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      */
     final transient Enum<?>[] universe;
 
-    EnumSet(Class<E>elementType, Enum<?>[] universe) {
+    @Modifiable @IteratorPolyMod EnumSet(Class<E>elementType, Enum<?>[] universe) {
         this.elementType = elementType;
         this.universe    = universe;
     }
@@ -109,7 +120,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return An empty enum set of the specified type.
      * @throws NullPointerException if {@code elementType} is null
      */
-    public static <E extends Enum<E>> EnumSet<E> noneOf(Class<E> elementType) {
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> noneOf(Class<E> elementType) {
         Enum<?>[] universe = getUniverse(elementType);
         if (universe == null)
             throw new ClassCastException(elementType + " not an enum");
@@ -130,7 +141,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return An enum set containing all the elements in the specified type.
      * @throws NullPointerException if {@code elementType} is null
      */
-    public static <E extends Enum<E>> EnumSet<E> allOf(Class<E> elementType) {
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> allOf(Class<E> elementType) {
         EnumSet<E> result = noneOf(elementType);
         result.addAll();
         return result;
@@ -140,8 +151,9 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * Adds all of the elements from the appropriate enum type to this enum
      * set, which is empty prior to the call.
      */
-    abstract void addAll();
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    abstract void addAll(@Growable EnumSet<E> this);
     /**
      * Creates an enum set with the same element type as the specified enum
      * set, initially containing the same elements (if any).
@@ -151,7 +163,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return A copy of the specified enum set.
      * @throws NullPointerException if {@code s} is null
      */
-    public static <E extends Enum<E>> EnumSet<E> copyOf(EnumSet<E> s) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> copyOf(EnumSet<E> s) {
         return s.clone();
     }
 
@@ -169,7 +182,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      *     {@code EnumSet} instance and contains no elements
      * @throws NullPointerException if {@code c} is null
      */
-    public static <E extends Enum<E>> EnumSet<E> copyOf(Collection<E> c) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> copyOf(Collection<E> c) {
         if (c instanceof EnumSet) {
             return ((EnumSet<E>)c).clone();
         } else {
@@ -194,7 +208,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return The complement of the specified set in this set
      * @throws NullPointerException if {@code s} is null
      */
-    public static <E extends Enum<E>> EnumSet<E> complementOf(EnumSet<E> s) {
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> complementOf(EnumSet<E> s) {
         EnumSet<E> result = copyOf(s);
         result.complement();
         return result;
@@ -214,7 +228,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if {@code e} is null
      * @return an enum set initially containing the specified element
      */
-    public static <E extends Enum<E>> EnumSet<E> of(E e) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E e) {
         EnumSet<E> result = noneOf(e.getDeclaringClass());
         result.add(e);
         return result;
@@ -235,7 +250,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
-    public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E e1, E e2) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
         result.add(e2);
@@ -258,7 +274,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
-    public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2, E e3) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E e1, E e2, E e3) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
         result.add(e2);
@@ -283,7 +300,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
-    public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2, E e3, E e4) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E e1, E e2, E e3, E e4) {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
         result.add(e1);
         result.add(e2);
@@ -310,7 +328,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @throws NullPointerException if any parameters are null
      * @return an enum set initially containing the specified elements
      */
-    public static <E extends Enum<E>> EnumSet<E> of(E e1, E e2, E e3, E e4,
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E e1, E e2, E e3, E e4,
                                                     E e5)
     {
         EnumSet<E> result = noneOf(e1.getDeclaringClass());
@@ -337,7 +355,8 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return an enum set initially containing the specified elements
      */
     @SafeVarargs
-    public static <E extends Enum<E>> EnumSet<E> of(E first, E... rest) {
+    @SideEffectFree
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> of(E first, E... rest) {
         EnumSet<E> result = noneOf(first.getDeclaringClass());
         result.add(first);
         for (E e : rest)
@@ -359,7 +378,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * @return an enum set initially containing all of the elements in the
      *         range defined by the two specified endpoints
      */
-    public static <E extends Enum<E>> EnumSet<E> range(E from, E to) {
+    public static <E extends Enum<E>> @Modifiable @IteratorPolyMod EnumSet<E> range(E from, E to) {
         if (from.compareTo(to) > 0)
             throw new IllegalArgumentException(from + " > " + to);
         EnumSet<E> result = noneOf(from.getDeclaringClass());
@@ -371,15 +390,17 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      * Adds the specified range to this enum set, which is empty prior
      * to the call.
      */
-    abstract void addRange(E from, E to);
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    abstract void addRange(@Growable EnumSet<E> this, E from, E to);
     /**
      * Returns a copy of this set.
      *
      * @return a copy of this set
      */
     @SuppressWarnings("unchecked")
-    public EnumSet<E> clone() {
+    @SideEffectFree
+    public @Modifiable @IteratorPolyMod EnumSet<E> clone() {
         try {
             return (EnumSet<E>) super.clone();
         } catch(CloneNotSupportedException e) {
@@ -390,8 +411,9 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     /**
      * Complements the contents of this enum set.
      */
-    abstract void complement();
-
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    abstract void complement(@Growable @Shrinkable EnumSet<E> this);
     /**
      * Throws an exception if e is not of the correct type for this enum set.
      */
@@ -452,6 +474,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
          * held by this proxy
          */
         @SuppressWarnings("unchecked")
+        @java.io.Serial
         private Object readResolve() {
             // instead of cast to E, we should perhaps use elementType.cast()
             // to avoid injection of forged stream, but it will slow the
@@ -462,27 +485,41 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
             return result;
         }
 
+        @java.io.Serial
         private static final long serialVersionUID = 362491234563181265L;
     }
 
     /**
      * Returns a
-     * <a href="../../serialized-form.html#java.util.EnumSet.SerializationProxy">
+     * <a href="{@docRoot}/serialized-form.html#java.util.EnumSet.SerializationProxy">
      * SerializationProxy</a>
      * representing the state of this instance.
      *
      * @return a {@link SerializationProxy}
      * representing the state of this instance
      */
+    @java.io.Serial
     Object writeReplace() {
         return new SerializationProxy<>(this);
     }
 
     /**
+     * Throws {@code InvalidObjectException}.
      * @param s the stream
      * @throws java.io.InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
+        throws java.io.InvalidObjectException {
+        throw new java.io.InvalidObjectException("Proxy required");
+    }
+
+    /**
+     * Throws {@code InvalidObjectException}.
+     * @throws java.io.InvalidObjectException always
+     */
+    @java.io.Serial
+    private void readObjectNoData()
         throws java.io.InvalidObjectException {
         throw new java.io.InvalidObjectException("Proxy required");
     }

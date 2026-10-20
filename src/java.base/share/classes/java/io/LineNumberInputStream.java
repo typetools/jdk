@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,10 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.util.Objects;
 
 /**
  * This class is an input stream filter that provides the added
@@ -55,8 +58,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 @AnnotatedFor({"index"})
 @Deprecated
-public
-class LineNumberInputStream extends FilterInputStream {
+public class LineNumberInputStream extends FilterInputStream {
     int pushBack = -1;
     int lineNumber;
     int markLineNumber;
@@ -68,7 +70,7 @@ class LineNumberInputStream extends FilterInputStream {
      *
      * @param      in   the underlying input stream.
      */
-    public LineNumberInputStream(InputStream in) {
+    public @MustCallAlias LineNumberInputStream(@MustCallAlias InputStream in) {
         super(in);
     }
 
@@ -91,7 +93,7 @@ class LineNumberInputStream extends FilterInputStream {
      *
      * @return     the next byte of data, or {@code -1} if the end of this
      *             stream is reached.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterInputStream#in
      * @see        java.io.LineNumberInputStream#getLineNumber()
      */
@@ -132,16 +134,15 @@ class LineNumberInputStream extends FilterInputStream {
      * @return     the total number of bytes read into the buffer, or
      *             {@code -1} if there is no more data because the end of
      *             this stream has been reached.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.LineNumberInputStream#read()
      */
-    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte b[], @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
+    public @GTENegativeOne @LTEqLengthOf({"#1"}) int read(byte[] b, @IndexOrHigh({"#1"}) int off, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) throws IOException {
         if (b == null) {
             throw new NullPointerException();
-        } else if ((off < 0) || (off > b.length) || (len < 0) ||
-                   ((off + len) > b.length) || ((off + len) < 0)) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+        }
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
             return 0;
         }
 
@@ -158,9 +159,7 @@ class LineNumberInputStream extends FilterInputStream {
                 if (c == -1) {
                     break;
                 }
-                if (b != null) {
-                    b[off + i] = (byte)c;
-                }
+                b[off + i] = (byte)c;
             }
         } catch (IOException ee) {
         }
@@ -181,7 +180,7 @@ class LineNumberInputStream extends FilterInputStream {
      *
      * @param      n   the number of bytes to be skipped.
      * @return     the actual number of bytes skipped.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterInputStream#in
      */
     public @NonNegative long skip(long n) throws IOException {
@@ -242,7 +241,7 @@ class LineNumberInputStream extends FilterInputStream {
      *
      * @return     the number of bytes that can be read from this input stream
      *             without blocking.
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterInputStream#in
      */
     public @NonNegative int available() throws IOException {
@@ -289,7 +288,7 @@ class LineNumberInputStream extends FilterInputStream {
      * which, if it happens within readlimit bytes, allows the outer
      * code to reset the stream and try another parser.
      *
-     * @exception  IOException  if an I/O error occurs.
+     * @throws     IOException  if an I/O error occurs.
      * @see        java.io.FilterInputStream#in
      * @see        java.io.LineNumberInputStream#mark(int)
      */

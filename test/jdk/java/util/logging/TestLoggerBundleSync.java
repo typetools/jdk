@@ -1,5 +1,3 @@
-import org.checkerframework.checker.signature.qual.BinaryName;
-
 /*
  * Copyright (c) 2013, 2016, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -22,6 +20,8 @@ import org.checkerframework.checker.signature.qual.BinaryName;
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+import org.checkerframework.checker.signature.qual.BinaryName;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -57,7 +57,7 @@ import java.util.logging.Logger;
  *          reproduce intermittent issues can be a good idea.
  * @modules java.logging
  *          java.management
- * @run main/othervm TestLoggerBundleSync
+ * @run main/othervm -Djava.security.manager=allow TestLoggerBundleSync
  * @author danielfuchs
  */
 public class TestLoggerBundleSync {

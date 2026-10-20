@@ -90,9 +90,7 @@ public class BytecodeDescriptor {
             i[0] = endc+1;
             String name = str.substring(begc, endc).replace('/', '.');
             try {
-                return (loader == null)
-                    ? Class.forName(name, false, null)
-                    : loader.loadClass(name);
+                return Class.forName(name, false, loader);
             } catch (ClassNotFoundException ex) {
                 throw new TypeNotPresentException(name, ex);
             }
@@ -112,20 +110,14 @@ public class BytecodeDescriptor {
         } else if (type == int.class) {
             return "I";
         }
-        StringBuilder sb = new StringBuilder();
-        unparseSig(type, sb);
-        return sb.toString();
-    }
-
-    public static String unparse(MethodType type) {
-        return unparseMethod(type.returnType(), type.parameterArray());
+        return type.descriptorString();
     }
 
     public static String unparse(Object type) {
         if (type instanceof Class<?>)
             return unparse((Class<?>) type);
         if (type instanceof MethodType)
-            return unparse((MethodType) type);
+            return ((MethodType) type).toMethodDescriptorString();
         return (String) type;
     }
 
@@ -156,11 +148,7 @@ public class BytecodeDescriptor {
         } else if (t == Object.class) {
             sb.append("Ljava/lang/Object;");
         } else {
-            boolean lsemi = (!t.isArray());
-            if (lsemi)  sb.append('L');
-            sb.append(t.getName().replace('.', '/'));
-            if (lsemi)  sb.append(';');
+            sb.append(t.descriptorString());
         }
     }
-
 }

@@ -27,6 +27,10 @@
  */
 package javax.xml.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import javax.xml.crypto.dsig.Manifest;
@@ -60,12 +64,13 @@ public class NoSuchMechanismException extends RuntimeException {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code NoSuchMechanismException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public NoSuchMechanismException() {
         super();
     }
@@ -76,7 +81,8 @@ public class NoSuchMechanismException extends RuntimeException {
      *
      * @param message the detail message
      */
-    public NoSuchMechanismException(String message) {
+    @SideEffectFree
+    public NoSuchMechanismException(@Nullable String message) {
         super(message);
     }
 
@@ -91,7 +97,8 @@ public class NoSuchMechanismException extends RuntimeException {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public NoSuchMechanismException(String message, Throwable cause) {
+    @SideEffectFree
+    public NoSuchMechanismException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -105,7 +112,8 @@ public class NoSuchMechanismException extends RuntimeException {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public NoSuchMechanismException(Throwable cause) {
+    @SideEffectFree
+    public NoSuchMechanismException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -119,7 +127,8 @@ public class NoSuchMechanismException extends RuntimeException {
      * @return the cause of this {@code NoSuchMechanismException} or
      *         {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

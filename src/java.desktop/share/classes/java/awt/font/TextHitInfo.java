@@ -39,13 +39,13 @@
  */
 
 package java.awt.font;
-import java.lang.String;
-
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import java.lang.String;
 
 /**
  * The {@code TextHitInfo} class represents a character position in a
@@ -166,6 +166,7 @@ public final class TextHitInfo {
      * has the same {@code charIndex} and {@code isLeadingEdge}
      * as this {@code TextHitInfo}.
      */
+    @Pure
     public boolean equals(TextHitInfo hitInfo) {
         return hitInfo != null && charIndex == hitInfo.charIndex &&
             isLeadingEdge == hitInfo.isLeadingEdge;

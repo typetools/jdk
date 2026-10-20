@@ -29,8 +29,8 @@
 // functionality (aka ILE layer) to close some functional gaps that exist in
 // the PASE layer.
 
-#ifndef OS_AIX_VM_LIBO4_HPP
-#define OS_AIX_VM_LIBO4_HPP
+#ifndef OS_AIX_LIBO4_HPP
+#define OS_AIX_LIBO4_HPP
 
 class libo4 {
 public:
@@ -45,7 +45,7 @@ public:
   //
   // See libo4.h for details on this API.
   //
-  // Specify NULL for numbers you are not interested in.
+  // Specify null for numbers you are not interested in.
   //
   // Returns false if an error happened. Activate OsMisc trace for
   // trace output.
@@ -61,7 +61,7 @@ public:
   //
   // See libo4.h for details on this API.
   //
-  // Specify NULL for numbers you are not interested in.
+  // Specify null for numbers you are not interested in.
   //
   // Returns false if an error happened. Activate OsMisc trace for
   // trace output.
@@ -87,4 +87,4 @@ public:
   static bool removeEscapeMessageFromJoblogByContext(const void* context);
 };
 
-#endif // OS_AIX_VM_LIBO4_HPP
+#endif // OS_AIX_LIBO4_HPP

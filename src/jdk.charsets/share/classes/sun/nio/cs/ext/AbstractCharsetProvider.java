@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,13 +25,14 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.ref.SoftReference;
 import java.nio.charset.Charset;
 import java.nio.charset.spi.CharsetProvider;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -68,19 +69,11 @@ public class AbstractCharsetProvider
     private String packagePrefix;
 
     protected AbstractCharsetProvider() {
-        packagePrefix = "sun.nio.cs";
+        packagePrefix = "sun.nio.cs.";
     }
 
     protected AbstractCharsetProvider(String pkgPrefixName) {
-        packagePrefix = pkgPrefixName;
-    }
-
-    /* Add an entry to the given map, but only if no mapping yet exists
-     * for the given name.
-     */
-    private static <K,V> void put(Map<K,V> m, K name, V value) {
-        if (!m.containsKey(name))
-            m.put(name, value);
+        packagePrefix = pkgPrefixName.concat(".");
     }
 
     private static <K,V> void remove(Map<K,V> m, K name) {
@@ -92,10 +85,10 @@ public class AbstractCharsetProvider
      */
     protected void charset(String name, String className, String[] aliases) {
         synchronized (this) {
-            put(classMap, name, className);
+            classMap.putIfAbsent(name, className);
             for (int i = 0; i < aliases.length; i++)
-                put(aliasMap, aliases[i], name);
-            put(aliasNameMap, name, aliases);
+                aliasMap.putIfAbsent(aliases[i], name);
+            aliasNameMap.putIfAbsent(name, aliases);
             cache.clear();
         }
     }
@@ -144,7 +137,7 @@ public class AbstractCharsetProvider
         // Instantiate the charset and cache it
         try {
 
-            Class<?> c = Class.forName(packagePrefix + "." + cln,
+            Class<?> c = Class.forName(packagePrefix.concat(cln),
                                        true,
                                        this.getClass().getClassLoader());
 
@@ -179,6 +172,7 @@ public class AbstractCharsetProvider
         return new Iterator<Charset>() {
                 Iterator<String> i = ks.iterator();
 
+                @Pure
                 public boolean hasNext() {
                     return i.hasNext();
                 }

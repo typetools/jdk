@@ -49,12 +49,19 @@ public abstract class PhysicalFont extends Font2D {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object o) {
-        return (o != null && o.getClass() == this.getClass() &&
-                ((Font2D)o).fullName.equals(this.fullName));
+        if (o == null || o.getClass() != this.getClass()) {
+            return false;
+        }
+        PhysicalFont other = (PhysicalFont)o;
+        return
+           (this.fullName.equals(other.fullName)) &&
+            ((this.platName == null && other.platName == null) ||
+             (this.platName != null && this.platName.equals(other.platName)));
     }
 
     public int hashCode() {
-        return fullName.hashCode();
+        return fullName.hashCode() +
+               (platName != null ? platName.hashCode() : 0);
     }
 
     /**

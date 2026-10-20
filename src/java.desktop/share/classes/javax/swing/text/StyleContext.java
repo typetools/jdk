@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,21 +22,40 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing.text;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.awt.*;
-import java.util.*;
-import java.io.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Toolkit;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.Serializable;
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Vector;
+import java.util.WeakHashMap;
 
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
-import javax.swing.event.ChangeEvent;
-import java.lang.ref.WeakReference;
-import java.util.WeakHashMap;
 
 import sun.font.FontUtilities;
 
@@ -59,7 +78,7 @@ import sun.font.FontUtilities;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -298,7 +317,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param old the old attribute set
@@ -327,7 +346,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param old the old attribute set
@@ -355,7 +374,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param old the old set of attributes
@@ -383,7 +402,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param old the old attribute set
@@ -411,7 +430,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param old the old attribute set
@@ -451,7 +470,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * <p>
      * This method is thread safe, although most Swing methods
      * are not. Please see
-     * <A HREF="http://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
+     * <A HREF="https://docs.oracle.com/javase/tutorial/uiswing/concurrency/index.html">Concurrency
      * in Swing</A> for more information.
      *
      * @param a the set to reclaim
@@ -566,7 +585,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * Context-specific handling of writing out attributes
      * @param out the output stream
      * @param a the attribute set
-     * @exception IOException on any I/O error
+     * @throws IOException on any I/O error
      */
     public void writeAttributes(ObjectOutputStream out,
                                   AttributeSet a) throws IOException {
@@ -578,9 +597,9 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * @param in the object stream to read the attribute data from.
      * @param a  the attribute set to place the attribute
      *   definitions in.
-     * @exception ClassNotFoundException passed upward if encountered
+     * @throws ClassNotFoundException passed upward if encountered
      *  when reading the object stream.
-     * @exception IOException passed upward if encountered when
+     * @throws IOException passed upward if encountered when
      *  reading the object stream.
      */
     public void readAttributes(ObjectInputStream in,
@@ -592,7 +611,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * Writes a set of attributes to the given object stream
      * for the purpose of serialization.  This will take
      * special care to deal with static attribute keys that
-     * have been registered wit the
+     * have been registered with the
      * <code>registerStaticAttributeKey</code> method.
      * Any attribute key not registered as a static key
      * will be serialized directly.  All values are expected
@@ -600,7 +619,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      *
      * @param out the output stream
      * @param a the attribute set
-     * @exception IOException on any I/O error
+     * @throws IOException on any I/O error
      */
     public static void writeAttributeSet(ObjectOutputStream out,
                                          AttributeSet a) throws IOException {
@@ -647,9 +666,9 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * @param in the object stream to read the attribute data from.
      * @param a  the attribute set to place the attribute
      *   definitions in.
-     * @exception ClassNotFoundException passed upward if encountered
+     * @throws ClassNotFoundException passed upward if encountered
      *  when reading the object stream.
-     * @exception IOException passed upward if encountered when
+     * @throws IOException passed upward if encountered when
      *  reading the object stream.
      */
     public static void readAttributeSet(ObjectInputStream in,
@@ -723,6 +742,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
         return key.getClass().getName() + "." + key.toString();
     }
 
+    @Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws IOException
     {
@@ -732,6 +752,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
         s.defaultWriteObject();
     }
 
+    @Serial
     private void readObject(ObjectInputStream s)
       throws ClassNotFoundException, IOException
     {
@@ -789,7 +810,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * The storage format is key, value, key, value, etc.  The size
      * of the set is the length of the array divided by two.  By
      * default, this is the class that will be used to store attributes
-     * when held in the compact sharable form.
+     * when held in the compact shareable form.
      */
     public class SmallAttributeSet implements AttributeSet {
 
@@ -886,7 +907,8 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return    <code>true</code> if the objects are equal;
          *            <code>false</code> otherwise.
          */
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof AttributeSet) {
                 AttributeSet attrs = (AttributeSet) obj;
                 return ((getAttributeCount() == attrs.getAttributeCount()) &&
@@ -942,6 +964,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return true if the same
          * @see AttributeSet#isEqual
          */
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             if (attr instanceof SmallAttributeSet) {
                 return attr == this;
@@ -1020,7 +1043,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
         }
 
         /**
-         * If not overriden, the resolving parent defaults to
+         * If not overridden, the resolving parent defaults to
          * the parent element.
          *
          * @return the attributes from the parent
@@ -1040,7 +1063,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
     /**
      * An enumeration of the keys in a SmallAttributeSet.
      */
-    class KeyEnumeration implements Enumeration<Object> {
+    static class KeyEnumeration implements Enumeration<Object> {
 
         KeyEnumeration(Object[] attr) {
             this.attr = attr;
@@ -1062,7 +1085,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * Returns the next element of this enumeration.
          *
          * @return     the next element of this enumeration.
-         * @exception  NoSuchElementException  if no more elements exist.
+         * @throws  NoSuchElementException  if no more elements exist.
          * @since      1.0
          */
         public Object nextElement() {
@@ -1082,7 +1105,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * Sorts the key strings so that they can be very quickly compared
      * in the attribute set searches.
      */
-    class KeyBuilder {
+    static class KeyBuilder {
 
         public void initialize(AttributeSet a) {
             if (a instanceof SmallAttributeSet) {
@@ -1257,7 +1280,8 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return    <code>true</code> if the objects are equal;
          *            <code>false</code> otherwise.
          */
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             if (obj instanceof FontKey) {
                 FontKey font = (FontKey)obj;
                 return (size == font.size) && (style == font.style) && (family == font.family);
@@ -1280,7 +1304,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
      * future Swing releases. The current serialization support is
      * appropriate for short term storage or RMI between applications running
      * the same version of Swing.  As of 1.4, support for long term storage
-     * of all JavaBeans&trade;
+     * of all JavaBeans
      * has been added to the <code>java.beans</code> package.
      * Please see {@link java.beans.XMLEncoder}.
      */
@@ -1454,6 +1478,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
          * @return true if the same
          * @see AttributeSet#isEqual
          */
+        @Pure
         public boolean isEqual(AttributeSet attr) {
             return attributes.isEqual(attr);
         }
@@ -1517,7 +1542,7 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
 
         /**
          * Gets attributes from the parent.
-         * If not overriden, the resolving parent defaults to
+         * If not overridden, the resolving parent defaults to
          * the parent element.
          *
          * @return the attributes from the parent
@@ -1612,11 +1637,13 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
 
         // --- serialization ---------------------------------------------
 
+        @Serial
         private void writeObject(ObjectOutputStream s) throws IOException {
             s.defaultWriteObject();
             writeAttributeSet(s, attributes);
         }
 
+        @Serial
         private void readObject(ObjectInputStream s)
             throws ClassNotFoundException, IOException
         {

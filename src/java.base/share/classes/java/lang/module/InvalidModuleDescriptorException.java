@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,21 +25,25 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when reading a module descriptor and the module descriptor is found
  * to be malformed or otherwise cannot be interpreted as a module descriptor.
  *
  * @see ModuleDescriptor#read
  * @since 9
- * @spec JPMS
  */
 public class InvalidModuleDescriptorException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = 4863390386809347380L;
 
     /**
      * Constructs an {@code InvalidModuleDescriptorException} with no detail
      * message.
      */
+    @SideEffectFree
     public InvalidModuleDescriptorException() {
     }
 
@@ -50,7 +54,8 @@ public class InvalidModuleDescriptorException extends RuntimeException {
      * @param msg
      *        The detail message; can be {@code null}
      */
-    public InvalidModuleDescriptorException(String msg) {
+    @SideEffectFree
+    public InvalidModuleDescriptorException(@Nullable String msg) {
         super(msg);
     }
 }

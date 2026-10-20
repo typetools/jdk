@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Unchecked exception thrown when an attempt is made to invoke a method on an
  * object created by one file system provider with a parameter created by a
@@ -32,14 +36,17 @@ package java.nio.file;
  *
  * @since 1.7
  */
+@AnnotatedFor({"nullness"})
 public class ProviderMismatchException
     extends java.lang.IllegalArgumentException
 {
+    @java.io.Serial
     static final long serialVersionUID = 4990847485741612530L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ProviderMismatchException() {
     }
 
@@ -49,7 +56,8 @@ public class ProviderMismatchException
      * @param   msg
      *          the detail message
      */
-    public ProviderMismatchException(String msg) {
+    @SideEffectFree
+    public ProviderMismatchException(@Nullable String msg) {
         super(msg);
     }
 }

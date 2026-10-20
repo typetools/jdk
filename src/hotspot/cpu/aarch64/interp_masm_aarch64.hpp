@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2015, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,14 +23,14 @@
  *
  */
 
-#ifndef CPU_AARCH64_VM_INTERP_MASM_AARCH64_64_HPP
-#define CPU_AARCH64_VM_INTERP_MASM_AARCH64_64_HPP
+#ifndef CPU_AARCH64_INTERP_MASM_AARCH64_HPP
+#define CPU_AARCH64_INTERP_MASM_AARCH64_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "interpreter/invocationCounter.hpp"
 #include "runtime/frame.hpp"
 
-// This file specializes the assember with interpreter-specific macros
+// This file specializes the assembler with interpreter-specific macros
 
 typedef ByteSize (*OffsetFunction)(uint);
 
@@ -38,8 +38,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
  protected:
 
  protected:
-  using MacroAssembler::call_VM_leaf_base;
-
   // Interpreter specific version of call_VM_base
   using MacroAssembler::call_VM_leaf_base;
 
@@ -78,11 +76,37 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void restore_locals() {
     ldr(rlocals, Address(rfp, frame::interpreter_frame_locals_offset * wordSize));
+    lea(rlocals, Address(rfp, rlocals, Address::lsl(3)));
   }
 
   void restore_constant_pool_cache() {
     ldr(rcpool, Address(rfp, frame::interpreter_frame_cache_offset * wordSize));
   }
+
+  void restore_sp_after_call() {
+    Label L;
+    ldr(rscratch1, Address(rfp, frame::interpreter_frame_extended_sp_offset * wordSize));
+#ifdef ASSERT
+    cbnz(rscratch1, L);
+    stop("SP is null");
+#endif
+    bind(L);
+    mov(sp, rscratch1);
+  }
+
+  void check_extended_sp(const char* msg = "check extended SP") {
+#ifdef ASSERT
+    Label L;
+    ldr(rscratch1, Address(rfp, frame::interpreter_frame_extended_sp_offset * wordSize));
+    cmp(sp, rscratch1);
+    br(EQ, L);
+    stop(msg);
+    bind(L);
+#endif
+  }
+
+#define check_extended_sp()                                             \
+  check_extended_sp("SP does not match extended SP in frame at " __FILE__ ":" XSTR(__LINE__))
 
   void get_dispatch();
 
@@ -105,12 +129,12 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void get_constant_pool_cache(Register reg) {
     get_constant_pool(reg);
-    ldr(reg, Address(reg, ConstantPool::cache_offset_in_bytes()));
+    ldr(reg, Address(reg, ConstantPool::cache_offset()));
   }
 
   void get_cpool_and_tags(Register cpool, Register tags) {
     get_constant_pool(cpool);
-    ldr(tags, Address(cpool, ConstantPool::tags_offset_in_bytes()));
+    ldr(tags, Address(cpool, ConstantPool::tags_offset()));
   }
 
   void get_unsigned_2_byte_index_at_bcp(Register reg, int bcp_offset);
@@ -125,6 +149,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // load cpool->resolved_klass_at(index);
   void load_resolved_klass_at_offset(Register cpool, Register index, Register klass, Register temp);
+
+  void load_resolved_method_at_index(int byte_no, Register method, Register cache);
 
   void pop_ptr(Register r = r0);
   void pop_i(Register r = r0);
@@ -149,7 +175,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void empty_expression_stack() {
     ldr(esp, Address(rfp, frame::interpreter_frame_monitor_block_top_offset * wordSize));
-    // NULL last_sp until next java call
+    // null last_sp until next java call
     str(zr, Address(rfp, frame::interpreter_frame_last_sp_offset * wordSize));
   }
 
@@ -262,7 +288,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void profile_virtual_call(Register receiver, Register mdp,
                             Register scratch2,
                             bool receiver_can_be_null = false);
-  void profile_called_method(Register method, Register mdp, Register reg2) NOT_JVMCI_RETURN;
   void profile_ret(Register return_bci, Register mdp);
   void profile_null_seen(Register mdp);
   void profile_typecheck(Register mdp, Register klass, Register scratch);
@@ -278,7 +303,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // Debugging
   // only if +VerifyOops && state == atos
-  void verify_oop(Register reg, TosState state = atos);
+#define interp_verify_oop(reg, state) _interp_verify_oop(reg, state, __FILE__, __LINE__);
+  void _interp_verify_oop(Register reg, TosState state, const char* file, int line);
   // only if +VerifyFPU  && (state == ftos || state == dtos)
   void verify_FPU(int stack_depth, TosState state = ftos);
 
@@ -293,6 +319,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
     set_last_Java_frame(esp, rfp, (address) pc(), rscratch1);
     MacroAssembler::_call_Unimplemented(call_site);
   }
+
+  void load_resolved_indy_entry(Register cache, Register index);
 };
 
-#endif // CPU_AARCH64_VM_INTERP_MASM_AARCH64_64_HPP
+#endif // CPU_AARCH64_INTERP_MASM_AARCH64_HPP

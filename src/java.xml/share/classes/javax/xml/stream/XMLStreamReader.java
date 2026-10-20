@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package javax.xml.stream;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
@@ -85,7 +87,7 @@ import javax.xml.namespace.QName;
  *       <td> getProperty(), hasNext(), require(), close(),
  *            getNamespaceURI(), isStartElement(),
  *            isEndElement(), isCharacters(), isWhiteSpace(),
- *            getNamespaceContext(), getEventType(),getLocation(),
+ *            getNamespaceContext(), getEventType(), getLocation(),
  *            hasText(), hasName()
  *       </td>
  *     </tr>
@@ -197,7 +199,6 @@ public interface XMLStreamReader extends XMLStreamConstants {
    *  with  two separate events: START_ELEMENT, END_ELEMENT - This preserves
    *   parsing equivalency of empty element to {@code <tag></tag>}.
    *
-   * This method will throw an IllegalStateException if it is called after hasNext() returns false.
    * @see javax.xml.stream.events.XMLEvent
    * @return the integer code corresponding to the current parse event
    * @throws java.util.NoSuchElementException if this is called when hasNext() returns false
@@ -257,6 +258,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
    * return buf.toString();
    * </pre>
    *
+   * @return the content of a text-only element
    * @throws XMLStreamException if the current event is not a START_ELEMENT
    * or if a non text element is encountered
    */
@@ -268,7 +270,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
    * until a START_ELEMENT or END_ELEMENT is reached.
    * If other than white space characters, COMMENT, PROCESSING_INSTRUCTION, START_ELEMENT, END_ELEMENT
    * are encountered, an exception is thrown. This method should
-   * be used when processing element-only content seperated by white space.
+   * be used when processing element-only content separated by white space.
    *
    * <br> Precondition: none
    * <br> Postcondition: the current event is START_ELEMENT or END_ELEMENT
@@ -308,6 +310,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
    * @return true if there are more events, false otherwise
    * @throws XMLStreamException if there is a fatal error detecting the next state
    */
+  @Pure
   public boolean hasNext() throws XMLStreamException;
 
   /**
@@ -537,7 +540,7 @@ public interface XMLStreamReader extends XMLStreamConstants {
   public char[] getTextCharacters();
 
   /**
-   * Gets the the text associated with a CHARACTERS, SPACE or CDATA event.
+   * Gets the text associated with a CHARACTERS, SPACE or CDATA event.
    * Text starting a "sourceStart" is copied into "target" starting at "targetStart".
    * Up to "length" characters are copied.  The number of characters actually copied is returned.
    *

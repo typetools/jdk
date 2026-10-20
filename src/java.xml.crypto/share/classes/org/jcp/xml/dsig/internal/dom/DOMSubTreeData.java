@@ -21,12 +21,11 @@
  * under the License.
  */
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id$
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
+
+import org.checkerframework.dataflow.qual.Pure;
 
 import javax.xml.crypto.NodeSetData;
 import java.util.ArrayList;
@@ -82,7 +81,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             this.withComments = !excludeComments;
         }
 
-        @Override
+        @Pure
         public boolean hasNext() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);
@@ -91,7 +90,6 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             return li.hasNext();
         }
 
-        @Override
         public Node next() {
             if (nodeSet == null) {
                 nodeSet = dereferenceSameDocumentURI(root);
@@ -104,7 +102,6 @@ public class DOMSubTreeData implements NodeSetData<Node> {
             }
         }
 
-        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -131,7 +128,7 @@ public class DOMSubTreeData implements NodeSetData<Node> {
          *
          * @param node the node to traverse
          * @param nodeSet the set of nodes traversed so far
-         * @param the previous sibling node
+         * @param prevSibling the previous sibling node
          */
         @SuppressWarnings("fallthrough")
         private void nodeSetMinusCommentNodes(Node node, List<Node> nodeSet,

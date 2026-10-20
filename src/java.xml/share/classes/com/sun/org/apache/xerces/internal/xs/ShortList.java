@@ -20,6 +20,8 @@
 
 package com.sun.org.apache.xerces.internal.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.List;
 
 /**
@@ -43,6 +45,7 @@ public interface ShortList extends List<Short> {
      * @return  True if this list contains the <code>unsigned short</code>
      *   <code>item</code>.
      */
+    @Pure
     public boolean contains(short item);
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,6 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * This immutable class defines an elliptic curve (EC) prime
@@ -45,14 +44,14 @@ import java.util.Arrays;
  */
 public class ECFieldFp implements ECField {
 
-    private BigInteger p;
+    private final BigInteger p;
 
     /**
      * Creates an elliptic curve prime finite field
      * with the specified prime {@code p}.
      * @param p the prime.
-     * @exception NullPointerException if {@code p} is null.
-     * @exception IllegalArgumentException if {@code p}
+     * @throws    NullPointerException if {@code p} is null.
+     * @throws    IllegalArgumentException if {@code p}
      * is not positive.
      */
     public ECFieldFp(BigInteger p) {
@@ -69,7 +68,7 @@ public class ECFieldFp implements ECField {
      */
     public int getFieldSize() {
         return p.bitLength();
-    };
+    }
 
     /**
      * Returns the prime {@code p} of this prime finite field.
@@ -90,10 +89,9 @@ public class ECFieldFp implements ECField {
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
         if (this == obj)  return true;
-        if (obj instanceof ECFieldFp) {
-            return (p.equals(((ECFieldFp)obj).p));
-        }
-        return false;
+
+        return obj instanceof ECFieldFp other
+                && p.equals(other.p);
     }
 
     /**

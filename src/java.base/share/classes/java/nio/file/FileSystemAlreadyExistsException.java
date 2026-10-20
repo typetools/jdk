@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Runtime exception thrown when an attempt is made to create a file system that
  * already exists.
@@ -32,14 +36,17 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class FileSystemAlreadyExistsException
     extends RuntimeException
 {
+    @java.io.Serial
     static final long serialVersionUID = -5438419127181131148L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public FileSystemAlreadyExistsException() {
     }
 
@@ -49,7 +56,8 @@ public class FileSystemAlreadyExistsException
      * @param   msg
      *          the detail message
      */
-    public FileSystemAlreadyExistsException(String msg) {
+    @SideEffectFree
+    public FileSystemAlreadyExistsException(@Nullable String msg) {
         super(msg);
     }
 }

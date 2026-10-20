@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,22 +32,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
-// java import
-//
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-// jmx import
 import java.util.TreeSet;
-//
 
 
 /**
@@ -68,6 +61,7 @@ public class CompositeDataSupport
      * respective values.
      *         A {@link SortedMap} is used for faster retrieval of elements.
      */
+    @SuppressWarnings("serial") // Conditionally serializable
     private final SortedMap<String, Object> contents;
 
     /**
@@ -138,7 +132,7 @@ public class CompositeDataSupport
                     "], itemValues[" + itemValues.length + "]");
         }
 
-        SortedMap<String, Object> map = new TreeMap<String, Object>();
+        SortedMap<String, Object> map = new TreeMap<>();
         for (int i = 0; i < itemNames.length; i++) {
             String name = itemNames[i];
             if (name == null || name.equals(""))
@@ -187,7 +181,7 @@ public class CompositeDataSupport
         if (items == null || items.isEmpty())
             throw new IllegalArgumentException("Null or empty items map");
 
-        SortedMap<String, Object> map = new TreeMap<String, Object>();
+        SortedMap<String, Object> map = new TreeMap<>();
         for (Object key : items.keySet()) {
             if (key == null || key.equals(""))
                 throw new IllegalArgumentException("Null or empty item name");
@@ -219,9 +213,9 @@ public class CompositeDataSupport
         // This is just a comparison, but we do it this way for a better
         // exception message.
         if (!namesFromType.equals(namesFromItems)) {
-            Set<String> extraFromType = new TreeSet<String>(namesFromType);
+            Set<String> extraFromType = new TreeSet<>(namesFromType);
             extraFromType.removeAll(namesFromItems);
-            Set<String> extraFromItems = new TreeSet<String>(namesFromItems);
+            Set<String> extraFromItems = new TreeSet<>(namesFromItems);
             extraFromItems.removeAll(namesFromType);
             if (!extraFromType.isEmpty() || !extraFromItems.isEmpty()) {
                 throw new OpenDataException(
@@ -305,6 +299,7 @@ public class CompositeDataSupport
      * an item whose name is {@code key}.
      * If {@code key} is a null or empty String, this method simply returns false.
      */
+    @Pure
     public boolean containsKey(String key) {
 
         if ( (key == null) || (key.trim().equals("")) ) {
@@ -318,6 +313,7 @@ public class CompositeDataSupport
      * contains an item
      * whose value is {@code value}.
      */
+    @Pure
     public boolean containsValue(Object value) {
 
         return contents.containsValue(value);

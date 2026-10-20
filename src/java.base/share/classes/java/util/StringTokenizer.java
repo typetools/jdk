@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,8 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.MinLen;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -101,13 +103,11 @@ import java.lang.*;
  *     test
  * </pre></blockquote>
  *
- * @author  unascribed
  * @see     java.io.StreamTokenizer
  * @since   1.0
  */
 @AnnotatedFor({"index", "interning", "lock", "nullness"})
-public
-@UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
+public @UsesObjectEquals class StringTokenizer implements Enumeration<Object> {
     private int currentPosition;
     private int newPosition;
     private int maxPosition;
@@ -183,9 +183,11 @@ public
      * <p>
      * If the {@code returnDelims} flag is {@code true}, then
      * the delimiter characters are also returned as tokens. Each
-     * delimiter is returned as a string of length one. If the flag is
-     * {@code false}, the delimiter characters are skipped and only
-     * serve as separators between tokens.
+     * delimiter is returned as a string consisting of a single
+     * <a href="../lang/Character.html#unicode">Unicode code point</a>
+     * of the delimiter (which may be one or two {@code char}s). If the
+     * flag is {@code false}, the delimiter characters are skipped
+     * and only serve as separators between tokens.
      * <p>
      * Note that if {@code delim} is {@code null}, this constructor does
      * not throw an exception. However, trying to invoke other methods on the
@@ -196,7 +198,7 @@ public
      * @param   delim          the delimiters.
      * @param   returnDelims   flag indicating whether to return the delimiters
      *                         as tokens.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str, @Nullable String delim, boolean returnDelims) {
         currentPosition = 0;
@@ -222,7 +224,7 @@ public
      *
      * @param   str     a string to be parsed.
      * @param   delim   the delimiters.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str, @Nullable String delim) {
         this(str, delim, false);
@@ -237,7 +239,7 @@ public
      * not be treated as tokens.
      *
      * @param   str   a string to be parsed.
-     * @exception NullPointerException if str is {@code null}
+     * @throws    NullPointerException if str is {@code null}
      */
     public StringTokenizer(String str) {
         this(str, " \t\n\r\f", false);
@@ -321,6 +323,7 @@ public
      *          in the string after the current position; {@code false}
      *          otherwise.
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreTokens() {
         /*
          * Temporarily store this position and use it in the following
@@ -335,10 +338,10 @@ public
      * Returns the next token from this string tokenizer.
      *
      * @return     the next token from this string tokenizer.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
      */
-    public @MinLen(1) String nextToken() {
+    public @MinLen(1) String nextToken(@NonEmpty StringTokenizer this) {
         /*
          * If next position already computed in hasMoreElements() and
          * delimiters have changed between the computation and this invocation,
@@ -370,11 +373,11 @@ public
      *
      * @param      delim   the new delimiters.
      * @return     the next token, after switching to the new delimiter set.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
-     * @exception NullPointerException if delim is {@code null}
+     * @throws    NullPointerException if delim is {@code null}
      */
-    public @MinLen(1) String nextToken(String delim) {
+    public @MinLen(1) String nextToken(@NonEmpty StringTokenizer this, String delim) {
         delimiters = delim;
 
         /* delimiter string specified, so set the appropriate flag. */
@@ -394,6 +397,7 @@ public
      * @see     java.util.Enumeration
      * @see     java.util.StringTokenizer#hasMoreTokens()
      */
+    @EnsuresNonEmptyIf(result = true, expression = "this")
     public boolean hasMoreElements() {
         return hasMoreTokens();
     }
@@ -405,12 +409,12 @@ public
      * {@code Enumeration} interface.
      *
      * @return     the next token in the string.
-     * @exception  NoSuchElementException  if there are no more tokens in this
+     * @throws     NoSuchElementException  if there are no more tokens in this
      *               tokenizer's string.
      * @see        java.util.Enumeration
      * @see        java.util.StringTokenizer#nextToken()
      */
-    public Object nextElement() {
+    public Object nextElement(@NonEmpty StringTokenizer this) {
         return nextToken();
     }
 

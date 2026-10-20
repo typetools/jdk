@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
 
 package nsk.share.jdi;
 
+import jdk.test.lib.Platform;
 import nsk.share.*;
 import nsk.share.jpda.*;
 
@@ -92,6 +93,7 @@ public class Binder extends DebugeeBinder {
      *              <code>Binder(ArgumentHandler,Log)</code>
      *              constructor.
      */
+    @Deprecated
     public Binder (String args[]) {
         this(args, new Log(System.err));
     }
@@ -104,6 +106,7 @@ public class Binder extends DebugeeBinder {
      *              <code>Binder(ArgumentHandler,Log)</code>
      *              constructor.
      */
+    @Deprecated
     public Binder (String args[], Log log) {
         this(new ArgumentHandler(args), log);
     }
@@ -126,9 +129,7 @@ public class Binder extends DebugeeBinder {
     public Debugee makeLocalDebugee(Process process) {
         LocalLaunchedDebugee debugee = new LocalLaunchedDebugee(process, this);
 
-        Finalizer finalizer = new Finalizer(debugee);
-        finalizer.activate();
-
+        debugee.registerCleanup();
         return debugee;
     }
 
@@ -201,8 +202,6 @@ public class Binder extends DebugeeBinder {
                 debugee = localLaunchDebugee(vmm, classToExecute, classPath);
             } else if (argumentHandler.isAttachingConnector()) {
                 debugee = localLaunchAndAttachDebugee(vmm, classToExecute, classPath);
-            } else if (argumentHandler.isLaunchingConnector()) {
-                debugee = localLaunchDebugee(vmm, classToExecute, classPath);
             } else if (argumentHandler.isListeningConnector()) {
                 debugee = localLaunchAndListenDebugee(vmm, classToExecute, classPath);
             } else {
@@ -696,10 +695,22 @@ public class Binder extends DebugeeBinder {
         Connector.Argument arg;
 
         arg = (Connector.StringArgument) arguments.get("quote");
-        String quote = arg.value();
+        String quote = "\0";
+        arg.setValue(quote);
 
-        String cmdline = classToExecute + " " +
-                ArgumentHandler.joinArguments(argumentHandler.getRawArguments(), quote);
+        String[] rawArgs = argumentHandler.getRawArguments();
+        if (Platform.isWindows()) {
+            // " has to be escaped on windows
+            rawArgs = Arrays.stream(rawArgs)
+                            .map(s -> s.replace("\"", "\\\""))
+                            .toArray(String[]::new);
+        }
+
+        String cmdline = classToExecute + " " + ArgumentHandler.joinArguments(rawArgs, quote);
+
+        if(System.getProperty("main.wrapper") != null) {
+            cmdline = MainWrapper.class.getName() + " " + System.getProperty("main.wrapper") + " " + cmdline;
+        }
 
         arg = (Connector.StringArgument) arguments.get("main");
         arg.setValue(cmdline);
@@ -726,12 +737,22 @@ public class Binder extends DebugeeBinder {
             arg.setValue(argumentHandler.getLaunchExecName());
         }
 
+        // This flag is needed so VirtualMachine.allThreads() includes known vthreads.
+        arg = (Connector.StringArgument) arguments.get("includevirtualthreads");
+        arg.setValue("y");
+
         String vmArgs = "";
 
         String vmUserArgs = argumentHandler.getLaunchOptions();
 
         if (vmUserArgs != null) {
             vmArgs = vmUserArgs;
+        }
+
+        boolean vthreadMode = "Virtual".equals(System.getProperty("main.wrapper"));
+        if (vthreadMode) {
+            /* Some tests need more carrier threads than the default provided. */
+            vmArgs += " -Djdk.virtualThreadScheduler.parallelism=15";
         }
 
 /*
@@ -919,8 +940,7 @@ public class Binder extends DebugeeBinder {
 
         RemoteLaunchedDebugee debugee = new RemoteLaunchedDebugee(this);
 
-        Finalizer finalizer = new Finalizer(debugee);
-        finalizer.activate();
+        debugee.registerCleanup();
 
         return debugee;
     }
@@ -933,8 +953,7 @@ public class Binder extends DebugeeBinder {
         ManualLaunchedDebugee debugee = new ManualLaunchedDebugee(this);
         debugee.launchDebugee(cmd);
 
-        Finalizer finalizer = new Finalizer(debugee);
-        finalizer.activate();
+        debugee.registerCleanup();
 
         return debugee;
     }

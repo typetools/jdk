@@ -50,7 +50,7 @@ import javax.swing.*;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -346,7 +346,7 @@ public class DefaultFormatter extends JFormattedTextField.AbstractFormatter
      * Subclasses should override this if they want cursor navigation
      * to skip certain characters. A return value of false indicates
      * the character at <code>offset</code> should be skipped when
-     * navigating throught the field.
+     * navigating through the field.
      */
     boolean isNavigatable(int offset) {
         return true;
@@ -660,7 +660,7 @@ public class DefaultFormatter extends JFormattedTextField.AbstractFormatter
         /** Position the cursor should be adjusted from.  If this is -1
          * the cursor position will be adjusted based on the direction of
          * the replace (-1: offset, 1: offset + text.length()), otherwise
-         * the cursor position is adusted from this position.
+         * the cursor position is adjusted from this position.
          */
         int cursorPosition;
 

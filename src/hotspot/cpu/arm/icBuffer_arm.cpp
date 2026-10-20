@@ -23,8 +23,7 @@
  */
 
 #include "precompiled.hpp"
-#include "asm/assembler.hpp"
-#include "assembler_arm.inline.hpp"
+#include "asm/assembler.inline.hpp"
 #include "code/icBuffer.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/bytecodes.hpp"
@@ -35,7 +34,7 @@
 #define __ masm->
 
 int InlineCacheBuffer::ic_stub_code_size() {
-  return (AARCH64_ONLY(8) NOT_AARCH64(4)) * Assembler::InstructionSize;
+  return (4 * Assembler::InstructionSize);
 }
 
 void InlineCacheBuffer::assemble_ic_buffer_code(address code_begin, void* cached_value, address entry_point) {

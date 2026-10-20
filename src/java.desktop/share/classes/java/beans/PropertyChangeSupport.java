@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package java.beans;
 
 import org.checkerframework.checker.fenum.qual.FenumTop;
@@ -35,11 +36,12 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import java.io.Serializable;
-import java.io.ObjectStreamField;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map.Entry;
 
@@ -52,7 +54,7 @@ import java.util.Map.Entry;
  * or for a property specified by name.
  * <p>
  * Here is an example of {@code PropertyChangeSupport} usage that follows
- * the rules and recommendations laid out in the JavaBeans&trade; specification:
+ * the rules and recommendations laid out in the JavaBeans specification:
  * <pre>
  * public class MyBean {
  *     private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
@@ -443,11 +445,16 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     }
 
     /**
+     * Writes serializable fields to stream.
+     *
+     * @param  s the {@code ObjectOutputStream} to write
+     * @throws IOException if an I/O error occurs
      * @serialData Null terminated list of {@code PropertyChangeListeners}.
      * <p>
      * At serialization time we skip non-serializable listeners and
      * only serialize the serializable listeners.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         Hashtable<String, PropertyChangeSupport> children = null;
         PropertyChangeListener[] listeners = null;
@@ -482,6 +489,15 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
         s.writeObject(null);
     }
 
+    /**
+     * Reads the {@code ObjectInputStream}.
+     *
+     * @param  s the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
+     */
+    @Serial
     private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
         this.map = new PropertyChangeListenerMap();
 
@@ -511,10 +527,15 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     private @NotOnlyInitialized Object source;
 
     /**
-     * @serialField children                                   Hashtable
-     * @serialField source                                     Object
+     * @serialField children Hashtable
+     *              The list of {@code PropertyChangeListeners}
+     * @serialField source Object
+     *              The object to be provided as the "source" for any generated
+     *              events
      * @serialField propertyChangeSupportSerializedDataVersion int
+     *              The version
      */
+    @Serial
     private static final ObjectStreamField[] serialPersistentFields = {
             new ObjectStreamField("children", Hashtable.class),
             new ObjectStreamField("source", Object.class),
@@ -522,9 +543,10 @@ public @UsesObjectEquals class PropertyChangeSupport implements Serializable {
     };
 
     /**
-     * Serialization version ID, so we're compatible with JDK 1.1
+     * Use serialVersionUID from JDK 1.1 for interoperability.
      */
-    static final long serialVersionUID = 6401253773779951803L;
+    @Serial
+    private static final long serialVersionUID = 6401253773779951803L;
 
     /**
      * This is a {@link ChangeListenerMap ChangeListenerMap} implementation

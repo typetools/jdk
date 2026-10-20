@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when a character with an invalid Unicode code
  * point as defined by {@link Character#isValidCodePoint} is passed to the
@@ -36,8 +38,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class IllegalFormatCodePointException extends IllegalFormatException {
+public non-sealed class IllegalFormatCodePointException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 19080630L;
 
     private int c;
@@ -49,6 +52,7 @@ public class IllegalFormatCodePointException extends IllegalFormatException {
      * @param  c
      *         The illegal Unicode code point
      */
+    @SideEffectFree
     public IllegalFormatCodePointException(int c) {
         this.c = c;
     }
@@ -63,6 +67,7 @@ public class IllegalFormatCodePointException extends IllegalFormatException {
         return c;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return String.format("Code point = %#x", c);
     }

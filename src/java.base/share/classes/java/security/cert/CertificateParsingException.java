@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate Parsing Exception. This is thrown whenever an
  * invalid DER-encoded certificate is parsed or unsupported DER features
@@ -35,6 +38,7 @@ package java.security.cert;
  */
 public class CertificateParsingException extends CertificateException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7989222416793322029L;
 
     /**
@@ -42,6 +46,7 @@ public class CertificateParsingException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateParsingException() {
         super();
     }
@@ -53,7 +58,8 @@ public class CertificateParsingException extends CertificateException {
      *
      * @param message the detail message.
      */
-    public CertificateParsingException(String message) {
+    @SideEffectFree
+    public CertificateParsingException(@Nullable String message) {
         super(message);
     }
 
@@ -68,7 +74,8 @@ public class CertificateParsingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CertificateParsingException(String message, Throwable cause) {
+    @SideEffectFree
+    public CertificateParsingException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +91,8 @@ public class CertificateParsingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CertificateParsingException(Throwable cause) {
+    @SideEffectFree
+    public CertificateParsingException(@Nullable Throwable cause) {
         super(cause);
     }
 }

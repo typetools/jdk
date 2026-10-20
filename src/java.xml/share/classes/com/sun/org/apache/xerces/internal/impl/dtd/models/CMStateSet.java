@@ -27,7 +27,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 /**
  * This class is a very simple bitset class. The DFA content model code needs
  * to support a bit set, but the java BitSet class is way, way overkill. Our

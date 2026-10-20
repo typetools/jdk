@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that user authentication failed.
  *
@@ -36,12 +39,14 @@ package javax.security.auth.login;
  */
 public class FailedLoginException extends LoginException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 802556922354616286L;
 
     /**
      * Constructs a FailedLoginException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public FailedLoginException() {
         super();
     }
@@ -53,7 +58,8 @@ public class FailedLoginException extends LoginException {
      *
      * @param msg the detail message.
      */
-    public FailedLoginException(String msg) {
+    @SideEffectFree
+    public FailedLoginException(@Nullable String msg) {
         super(msg);
     }
 }

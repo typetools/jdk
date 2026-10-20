@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,11 @@
  */
 
 package sun.util;
+
+import org.checkerframework.dataflow.qual.Pure;
+
+import sun.nio.cs.ISO_8859_1;
+import sun.nio.cs.UTF_8;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -54,6 +59,7 @@ public class PropertyResourceBundleCharset extends Charset {
     }
 
     @Override
+    @Pure
     public boolean contains(Charset cs) {
         return false;
     }
@@ -70,7 +76,7 @@ public class PropertyResourceBundleCharset extends Charset {
 
     private final class PropertiesFileDecoder extends CharsetDecoder {
 
-        private CharsetDecoder cdUTF_8 = StandardCharsets.UTF_8.newDecoder()
+        private CharsetDecoder cdUTF_8 = UTF_8.INSTANCE.newDecoder()
                                 .onMalformedInput(CodingErrorAction.REPORT)
                                 .onUnmappableCharacter(CodingErrorAction.REPORT);
         private CharsetDecoder cdISO_8859_1 = null;
@@ -94,11 +100,11 @@ public class PropertyResourceBundleCharset extends Charset {
             }
 
             // Invalid or unmappable UTF-8 sequence detected.
-            // Switching to the ISO 8859-1 decorder.
+            // Switching to the ISO 8859-1 decoder.
             assert cr.isMalformed() || cr.isUnmappable();
             in.reset();
             out.reset();
-            cdISO_8859_1 = StandardCharsets.ISO_8859_1.newDecoder();
+            cdISO_8859_1 = ISO_8859_1.INSTANCE.newDecoder();
             return cdISO_8859_1.decode(in, out, false);
         }
     }

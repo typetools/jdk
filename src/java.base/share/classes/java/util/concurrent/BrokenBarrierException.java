@@ -35,6 +35,10 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception thrown when a thread tries to wait upon a barrier that is
  * in a broken state, or which enters the broken state while the thread
@@ -45,6 +49,7 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor({"nullness"})
 public class BrokenBarrierException extends Exception {
     private static final long serialVersionUID = 7117394618823254244L;
 
@@ -52,6 +57,7 @@ public class BrokenBarrierException extends Exception {
      * Constructs a {@code BrokenBarrierException} with no specified detail
      * message.
      */
+    @SideEffectFree
     public BrokenBarrierException() {}
 
     /**
@@ -60,7 +66,8 @@ public class BrokenBarrierException extends Exception {
      *
      * @param message the detail message
      */
-    public BrokenBarrierException(String message) {
+    @SideEffectFree
+    public BrokenBarrierException(@Nullable String message) {
         super(message);
     }
 }

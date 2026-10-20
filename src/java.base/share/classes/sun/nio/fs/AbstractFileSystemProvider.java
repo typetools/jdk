@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package sun.nio.fs;
 
 import java.nio.file.Path;
 import java.nio.file.LinkOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.spi.FileSystemProvider;
 import java.io.IOException;
 import java.util.Map;
@@ -73,7 +72,7 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
         throws IOException
     {
         String[] s = split(attribute);
-        if (s[0].length() == 0)
+        if (s[0].isEmpty())
             throw new IllegalArgumentException(attribute);
         DynamicFileAttributeView view = getFileAttributeView(file, s[0], options);
         if (view == null)
@@ -86,7 +85,7 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
         throws IOException
     {
         String[] s = split(attributes);
-        if (s[0].length() == 0)
+        if (s[0].isEmpty())
             throw new IllegalArgumentException(attributes);
         DynamicFileAttributeView view = getFileAttributeView(file, s[0], options);
         if (view == null)
@@ -111,47 +110,9 @@ public abstract class AbstractFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Tests whether a file is a directory.
-     *
-     * @return  {@code true} if the file is a directory; {@code false} if
-     *          the file does not exist, is not a directory, or it cannot
-     *          be determined if the file is a directory or not.
+     * Returns a path name as bytes for a Unix domain socket.
+     * Different encodings may be used for these names on some platforms.
+     * If path is empty, then an empty byte[] is returned.
      */
-    public boolean isDirectory(Path file) {
-        try {
-            return readAttributes(file, BasicFileAttributes.class).isDirectory();
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
-
-    /**
-     * Tests whether a file is a regular file with opaque content.
-     *
-     * @return  {@code true} if the file is a regular file; {@code false} if
-     *          the file does not exist, is not a regular file, or it
-     *          cannot be determined if the file is a regular file or not.
-     */
-    public boolean isRegularFile(Path file) {
-        try {
-            return readAttributes(file, BasicFileAttributes.class).isRegularFile();
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
-
-    /**
-     * Checks the existence of a file.
-     *
-     * @return  {@code true} if the file exists; {@code false} if the file does
-     *          not exist or its existence cannot be determined.
-     */
-    public boolean exists(Path file) {
-        try {
-            checkAccess(file);
-            return true;
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
+    public abstract byte[] getSunPathForSocketFile(Path path);
 }

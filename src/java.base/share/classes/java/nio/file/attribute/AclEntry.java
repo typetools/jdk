@@ -64,6 +64,8 @@ import java.util.*;
  * <p> ACL entries are immutable and are safe for use by multiple concurrent
  * threads.
  *
+ * @spec https://www.rfc-editor.org/info/rfc3530
+ *      RFC 3530: Network File System (NFS) version 4 Protocol
  * @since 1.7
  */
 
@@ -350,9 +352,8 @@ public final class AclEntry {
     public boolean equals(@Nullable Object ob) {
         if (ob == this)
             return true;
-        if (ob == null || !(ob instanceof AclEntry))
+        if (!(ob instanceof AclEntry other))
             return false;
-        AclEntry other = (AclEntry)ob;
         if (this.type != other.type)
             return false;
         if (!this.who.equals(other.who))

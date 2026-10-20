@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,21 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when an instance is required to have a Serializable interface.
  * The serialization runtime or the class of the instance can throw
  * this exception. The argument should be the name of the class.
  *
- * @author  unascribed
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class NotSerializableException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 2906642554793891381L;
 
     /**
@@ -42,13 +47,15 @@ public class NotSerializableException extends ObjectStreamException {
      *
      * @param classname Class of the instance being serialized/deserialized.
      */
-    public NotSerializableException(String classname) {
+    @SideEffectFree
+    public NotSerializableException(@Nullable String classname) {
         super(classname);
     }
 
     /**
      *  Constructs a NotSerializableException object.
      */
+    @SideEffectFree
     public NotSerializableException() {
         super();
     }

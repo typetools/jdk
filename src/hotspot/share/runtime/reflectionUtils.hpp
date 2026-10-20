@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_REFLECTIONUTILS_HPP
-#define SHARE_VM_RUNTIME_REFLECTIONUTILS_HPP
+#ifndef SHARE_RUNTIME_REFLECTIONUTILS_HPP
+#define SHARE_RUNTIME_REFLECTIONUTILS_HPP
 
-#include "memory/allocation.hpp"
+#include "memory/allStatic.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/objArrayOop.hpp"
 #include "oops/oopsHierarchy.hpp"
@@ -48,7 +48,7 @@ class KlassStream {
  protected:
   InstanceKlass*      _klass;           // current klass/interface iterated over
   InstanceKlass*      _base_klass;      // initial klass/interface to iterate over
-  Array<Klass*>*      _interfaces;      // transitive interfaces for initial class
+  Array<InstanceKlass*>*_interfaces;    // transitive interfaces for initial class
   int                 _interface_index; // current interface being processed
   bool                _local_only;      // process initial class/interface only
   bool                _classes_only;    // process classes only (no interfaces)
@@ -70,7 +70,6 @@ class KlassStream {
   virtual void next() = 0;
 
   // accessors
-  InstanceKlass* klass() const      { return _klass; }
   int index() const                 { return _index; }
   bool base_class_search_defaults() const { return _base_class_search_defaults; }
   void base_class_search_defaults(bool b) { _base_class_search_defaults = b; }
@@ -121,7 +120,7 @@ class MethodStream : public KlassStream {
 
 class FieldStream : public KlassStream {
  private:
-  int length() { return _klass->java_fields_count(); }
+  int length();
 
   fieldDescriptor _fd_buf;
 
@@ -232,4 +231,4 @@ class FilteredFieldStream : public FieldStream {
   }
 };
 
-#endif // SHARE_VM_RUNTIME_REFLECTIONUTILS_HPP
+#endif // SHARE_RUNTIME_REFLECTIONUTILS_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a {@code refresh} operation failed.
  *
@@ -36,12 +39,14 @@ package javax.security.auth;
  */
 public class RefreshFailedException extends Exception {
 
+    @java.io.Serial
     private static final long serialVersionUID = 5058444488565265840L;
 
     /**
      * Constructs a RefreshFailedException with no detail message. A detail
      * message is a String that describes this particular exception.
      */
+    @SideEffectFree
     public RefreshFailedException() {
         super();
     }
@@ -53,7 +58,8 @@ public class RefreshFailedException extends Exception {
      *
      * @param msg the detail message.
      */
-    public RefreshFailedException(String msg) {
+    @SideEffectFree
+    public RefreshFailedException(@Nullable String msg) {
         super(msg);
     }
 }

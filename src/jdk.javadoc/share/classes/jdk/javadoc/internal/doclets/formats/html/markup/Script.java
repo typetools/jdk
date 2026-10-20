@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.formats.html.markup;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.IOException;
 import java.io.Writer;
 
@@ -34,11 +35,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
 
 /**
  * A builder for HTML script elements.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
  */
 public class Script  {
     private final StringBuilder sb;
@@ -103,26 +99,22 @@ public class Script  {
      * Returns a "live" view of the script as a {@code Content} object.
      * Any later modifications to the script will be reflected in the
      * object that is returned.
-     * @return the script, as a {@code Content} object.
+     * @return the script
      */
     public Content asContent() {
         ScriptContent scriptContent = new ScriptContent(sb);
-        HtmlTree tree = new HtmlTree(HtmlTag.SCRIPT) {
+        var script = new HtmlTree(TagName.SCRIPT) {
             @Override
-            public void addContent(CharSequence s) {
-                throw new UnsupportedOperationException();
-            }
-            @Override
-            public void addContent(Content c) {
+            public HtmlTree add(Content c) {
                 if (c != scriptContent) {
                     throw new IllegalArgumentException();
                 }
-                super.addContent(scriptContent);
+                return super.add(scriptContent);
             }
         };
-        tree.addAttr(HtmlAttr.TYPE, "text/javascript");
-        tree.addContent(scriptContent);
-        return tree;
+        script.put(HtmlAttr.TYPE, "text/javascript");
+        script.add(scriptContent);
+        return script;
     }
 
     /**
@@ -201,19 +193,15 @@ public class Script  {
         }
 
         @Override
-        public void addContent(Content content) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addContent(CharSequence code) {
+        public ScriptContent add(CharSequence code) {
             sb.append(code);
+            return this;
         }
 
         @Override
-        public boolean write(Writer writer, boolean atNewline) throws IOException {
+        public boolean write(Writer writer, String newline, boolean atNewline) throws IOException {
             String s = sb.toString();
-            writer.write(s.replace("\n", DocletConstants.NL));
+            writer.write(s.replace("\n", newline));
             return s.endsWith("\n");
         }
 

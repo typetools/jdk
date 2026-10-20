@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 
 package java.lang.reflect;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Thrown when {@link java.lang.reflect.Executable#getParameters the
@@ -53,12 +56,14 @@ public class MalformedParametersException extends RuntimeException {
     /**
      * Version for serialization.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 20130919L;
 
     /**
      * Create a {@code MalformedParametersException} with an empty
      * reason.
      */
+    @SideEffectFree
     public MalformedParametersException() {}
 
     /**
@@ -66,7 +71,8 @@ public class MalformedParametersException extends RuntimeException {
      *
      * @param reason The reason for the exception.
      */
-    public MalformedParametersException(String reason) {
+    @SideEffectFree
+    public MalformedParametersException(@Nullable String reason) {
         super(reason);
     }
 }

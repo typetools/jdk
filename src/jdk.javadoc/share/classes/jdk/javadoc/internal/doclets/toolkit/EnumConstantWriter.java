@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,91 +25,87 @@
 
 package jdk.javadoc.internal.doclets.toolkit;
 
-import java.io.*;
-
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
 /**
  * The interface for writing enum constant output.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
- * @author Bhavesh Patel (Modified)
  */
-
-public interface EnumConstantWriter {
+public interface EnumConstantWriter extends MemberWriter {
 
     /**
-     * Get the enum constants details tree header.
+     * Get the enum constants details header.
      *
      * @param typeElement the class being documented
-     * @param memberDetailsTree the content tree representing member details
-     * @return content tree for the enum constants details header
+     * @param memberDetails the content representing member details
+     * @return a content for the enum constants details header
      */
-    public Content getEnumConstantsDetailsTreeHeader(TypeElement typeElement,
-            Content memberDetailsTree);
+    Content getEnumConstantsDetailsHeader(TypeElement typeElement,
+                                          Content memberDetails);
 
     /**
-     * Get the enum constants documentation tree header.
+     * Get the enum constants documentation header.
      *
      * @param enumConstant the enum constant being documented
-     * @param enumConstantsDetailsTree the content tree representing enum constant details
-     * @return content tree for the enum constant documentation header
+     * @param enumConstantsDetails the content representing enum constant details
+     * @return the enum constant documentation header
      */
-    public Content getEnumConstantsTreeHeader(VariableElement enumConstant,
-            Content enumConstantsDetailsTree);
+    Content getEnumConstantsHeader(VariableElement enumConstant,
+                                   Content enumConstantsDetails);
 
     /**
      * Get the signature for the given enum constant.
      *
      * @param enumConstant the enum constant being documented
-     * @return content tree for the enum constant signature
+     * @return the enum constant signature
      */
-    public Content getSignature(VariableElement enumConstant);
+    Content getSignature(VariableElement enumConstant);
 
     /**
      * Add the deprecated output for the given enum constant.
      *
      * @param enumConstant the enum constant being documented
-     * @param enumConstantsTree content tree to which the deprecated information will be added
+     * @param content the content to which the deprecated information will be added
      */
-    public void addDeprecated(VariableElement enumConstant, Content enumConstantsTree);
+    void addDeprecated(VariableElement enumConstant, Content content);
+
+    /**
+     * Add the preview output for the given member.
+     *
+     * @param member the member being documented
+     * @param content the content to which the preview information will be added
+     */
+    void addPreview(VariableElement member, Content content);
 
     /**
      * Add the comments for the given enum constant.
      *
      * @param enumConstant the enum constant being documented
-     * @param enumConstantsTree the content tree to which the comments will be added
+     * @param enumConstants the content to which the comments will be added
      */
-    public void addComments(VariableElement enumConstant, Content enumConstantsTree);
+    void addComments(VariableElement enumConstant, Content enumConstants);
 
     /**
      * Add the tags for the given enum constant.
      *
      * @param enumConstant the enum constant being documented
-     * @param enumConstantsTree the content tree to which the tags will be added
+     * @param content the content to which the tags will be added
      */
-    public void addTags(VariableElement enumConstant, Content enumConstantsTree);
+    void addTags(VariableElement enumConstant, Content content);
 
     /**
-     * Get the enum constants details tree.
+     * Get the enum constants details.
      *
-     * @param memberDetailsTree the content tree representing member details
-     * @return content tree for the enum constant details
+     * @param memberDetailsHeader member details header
+     * @param content the content representing member details
+     * @return the enum constant details
      */
-    public Content getEnumConstantsDetails(Content memberDetailsTree);
+    Content getEnumConstantsDetails(Content memberDetailsHeader, Content content);
 
     /**
-     * Get the enum constants documentation.
+     * Gets the member header.
      *
-     * @param enumConstantsTree the content tree representing enum constants documentation
-     * @param isLastContent true if the content to be added is the last content
-     * @return content tree for the enum constants documentation
+     * @return the member header
      */
-    public Content getEnumConstants(Content enumConstantsTree, boolean isLastContent);
+    Content getMemberHeader();
 }

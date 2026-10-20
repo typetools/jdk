@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,11 @@
 
 package sun.nio.cs;
 
+import org.checkerframework.dataflow.qual.Pure;
+
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -46,6 +51,7 @@ public class US_ASCII
         return "ASCII";
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return (cs instanceof US_ASCII);
     }
@@ -58,6 +64,8 @@ public class US_ASCII
         return new Encoder(this);
     }
 
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
     private static class Decoder extends CharsetDecoder {
 
         private Decoder(Charset cs) {
@@ -68,33 +76,28 @@ public class US_ASCII
                                             CharBuffer dst)
         {
             byte[] sa = src.array();
-            int sp = src.arrayOffset() + src.position();
-            int sl = src.arrayOffset() + src.limit();
-            assert (sp <= sl);
-            sp = (sp <= sl ? sp : sl);
-            char[] da = dst.array();
-            int dp = dst.arrayOffset() + dst.position();
-            int dl = dst.arrayOffset() + dst.limit();
-            assert (dp <= dl);
-            dp = (dp <= dl ? dp : dl);
+            int soff = src.arrayOffset();
+            int sp = soff + src.position();
+            int sl = soff + src.limit();
 
-            try {
-                while (sp < sl) {
-                    byte b = sa[sp];
-                    if (b >= 0) {
-                        if (dp >= dl)
-                            return CoderResult.OVERFLOW;
-                        da[dp++] = (char)b;
-                        sp++;
-                        continue;
-                    }
-                    return CoderResult.malformedForLength(1);
+            char[] da = dst.array();
+            int doff = dst.arrayOffset();
+            int dp = doff + dst.position();
+            int dl = doff + dst.limit();
+
+            // ASCII only loop
+            int n = JLA.decodeASCII(sa, sp, da, dp, Math.min(sl - sp, dl - dp));
+            sp += n;
+            dp += n;
+            src.position(sp - soff);
+            dst.position(dp - doff);
+            if (sp < sl) {
+                if (dp >= dl) {
+                    return CoderResult.OVERFLOW;
                 }
-                return CoderResult.UNDERFLOW;
-            } finally {
-                src.position(sp - src.arrayOffset());
-                dst.position(dp - dst.arrayOffset());
+                return CoderResult.malformedForLength(1);
             }
+            return CoderResult.UNDERFLOW;
         }
 
         private CoderResult decodeBufferLoop(ByteBuffer src,
@@ -158,6 +161,10 @@ public class US_ASCII
             int dl = dst.arrayOffset() + dst.limit();
             assert (dp <= dl);
             dp = (dp <= dl ? dp : dl);
+
+            int n = JLA.encodeASCII(sa, sp, da, dp, Math.min(sl - sp, dl - dp));
+            sp += n;
+            dp += n;
 
             try {
                 while (sp < sl) {

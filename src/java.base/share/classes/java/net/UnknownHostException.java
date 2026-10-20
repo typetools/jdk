@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,11 @@
 
 package java.net;
 
-import java.io.IOException;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.io.IOException;
 
 /**
  * Thrown to indicate that the IP address of a host could not be determined.
@@ -36,8 +37,8 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author  Jonathan Payne
  * @since   1.0
  */
-public
-class UnknownHostException extends IOException {
+public class UnknownHostException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = -4639126076052875403L;
 
     /**
@@ -46,6 +47,7 @@ class UnknownHostException extends IOException {
      *
      * @param   message   the detail message.
      */
+    @SideEffectFree
     public UnknownHostException(@Nullable String message) {
         super(message);
     }
@@ -54,6 +56,7 @@ class UnknownHostException extends IOException {
      * Constructs a new {@code UnknownHostException} with no detail
      * message.
      */
+    @SideEffectFree
     public UnknownHostException() {
     }
 }

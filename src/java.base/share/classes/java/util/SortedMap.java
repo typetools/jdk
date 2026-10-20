@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,12 +26,21 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link Map} that further provides a <em>total ordering</em> on its keys.
@@ -120,7 +129,7 @@ import org.checkerframework.framework.qual.CFComment;
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
 @AnnotatedFor({"lock", "nullness"})
-public interface SortedMap<K,V> extends Map<K,V> {
+public @SeqUngrowable interface SortedMap<K,V> extends SequencedMap<K,V> {
     /**
      * Returns the comparator used to order the keys in this map, or
      * {@code null} if this map uses the {@linkplain Comparable
@@ -163,7 +172,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         outside the bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> subMap(@GuardSatisfied SortedMap<K, V> this, @GuardSatisfied K fromKey, @GuardSatisfied K toKey);
+    @PolyModifiable SortedMap<K,V> subMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, @GuardSatisfied K fromKey, @GuardSatisfied K toKey);
 
     /**
      * Returns a view of the portion of this map whose keys are
@@ -191,7 +200,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> headMap(@GuardSatisfied SortedMap<K, V> this, K toKey);
+    @PolyModifiable SortedMap<K,V> headMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, K toKey);
 
     /**
      * Returns a view of the portion of this map whose keys are
@@ -219,7 +228,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         bounds of the range
      */
     @SideEffectFree
-    SortedMap<K,V> tailMap(@GuardSatisfied SortedMap<K, V> this, K fromKey);
+    @PolyModifiable SortedMap<K,V> tailMap(@PolyModifiable @GuardSatisfied SortedMap<K, V> this, K fromKey);
 
     /**
      * Returns the first (lowest) key currently in this map.
@@ -227,8 +236,8 @@ public interface SortedMap<K,V> extends Map<K,V> {
      * @return the first (lowest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
-    @KeyFor("this") K firstKey(@GuardSatisfied SortedMap<K, V> this);
+    @Pure
+    @KeyFor("this") K firstKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
      * Returns the last (highest) key currently in this map.
@@ -236,8 +245,8 @@ public interface SortedMap<K,V> extends Map<K,V> {
      * @return the last (highest) key currently in this map
      * @throws NoSuchElementException if this map is empty
      */
-    @SideEffectFree
-    @KeyFor("this") K lastKey(@GuardSatisfied SortedMap<K, V> this);
+    @Pure
+    @KeyFor("this") K lastKey(@GuardSatisfied @NonEmpty SortedMap<K, V> this);
 
     /**
      * Returns a {@link Set} view of the keys contained in this map.
@@ -257,7 +266,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         ascending order
      */
     @SideEffectFree
-    Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Set<@KeyFor({"this"}) K> keySet(@PolyShrinkable @GuardSatisfied SortedMap<K, V> this);
 
     /**
      * Returns a {@link Collection} view of the values contained in this map.
@@ -278,7 +287,7 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         sorted in ascending key order
      */
     @SideEffectFree
-    Collection<V> values(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable @GuardSatisfied SortedMap<K, V> this);
 
     /**
      * Returns a {@link Set} view of the mappings contained in this map.
@@ -299,5 +308,55 @@ public interface SortedMap<K,V> extends Map<K,V> {
      *         sorted in ascending key order
      */
     @SideEffectFree
-    Set<Map.Entry<@KeyFor({"this"}) K, V>> entrySet(@GuardSatisfied SortedMap<K, V> this);
+    @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<@KeyFor({"this"}) K, V>> entrySet(@PolyModifiable @GuardSatisfied SortedMap<K, V> this);
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * map's comparison method determines the position of mappings, so explicit positioning
+     * is not supported.
+     *
+     * @implSpec
+     * The implementation in this interface always throws {@code UnsupportedOperationException}.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+     default @Nullable V putFirst(@SeqGrowable SortedMap<K,V> this, K k, V v) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * map's comparison method determines the position of mappings, so explicit positioning
+     * is not supported.
+     *
+     * @implSpec
+     * The implementation in this interface always throws {@code UnsupportedOperationException}.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    default @Nullable V putLast(@SeqGrowable SortedMap<K,V> this, K k, V v) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec
+     * The implementation in this interface returns an instance of a reverse-ordered
+     * SortedMap that delegates its operations to this SortedMap.
+     *
+     * @return a reverse-ordered view of this map, as a {@code SortedMap}
+     * @since 21
+     */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
+    default @PolyModifiable SortedMap<K, V> reversed(@PolyModifiable SortedMap<K, V> this) {
+        return ReverseOrderSortedMapView.of(this);
+    }
 }

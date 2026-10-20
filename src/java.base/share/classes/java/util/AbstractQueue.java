@@ -35,8 +35,18 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * This class provides skeletal implementations of some {@link Queue}
@@ -64,7 +74,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "nullness", "modifiability"})
 public abstract class AbstractQueue<E>
     extends AbstractCollection<E>
     implements Queue<E> {
@@ -72,7 +82,7 @@ public abstract class AbstractQueue<E>
     /**
      * Constructor for use by subclasses.
      */
-    protected AbstractQueue() {
+    protected @Modifiable AbstractQueue() {
     }
 
     /**
@@ -95,7 +105,10 @@ public abstract class AbstractQueue<E>
      * @throws IllegalArgumentException if some property of this element
      *         prevents it from being added to this queue
      */
-    public boolean add(@GuardSatisfied AbstractQueue<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable @GuardSatisfied AbstractQueue<E> this, E e) {
         if (offer(e))
             return true;
         else
@@ -113,7 +126,9 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E remove(@GuardSatisfied AbstractQueue<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E remove(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink AbstractQueue<E> this) {
         E x = poll();
         if (x != null)
             return x;
@@ -132,7 +147,8 @@ public abstract class AbstractQueue<E>
      * @return the head of this queue
      * @throws NoSuchElementException if this queue is empty
      */
-    public E element() {
+    @Pure
+    public E element(@GuardSatisfied @NonEmpty AbstractQueue<E> this) {
         E x = peek();
         if (x != null)
             return x;
@@ -147,7 +163,9 @@ public abstract class AbstractQueue<E>
      * <p>This implementation repeatedly invokes {@link #poll poll} until it
      * returns {@code null}.
      */
-    public void clear(@GuardSatisfied AbstractQueue<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink AbstractQueue<E> this) {
         while (poll() != null)
             ;
     }
@@ -181,7 +199,9 @@ public abstract class AbstractQueue<E>
      *         this time due to insertion restrictions
      * @see #add(Object)
      */
-    public boolean addAll(@GuardSatisfied AbstractQueue<E> this, Collection<? extends E> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean addAll(@Growable @GuardSatisfied AbstractQueue<E> this, Collection<? extends E> c) {
         if (c == null)
             throw new NullPointerException();
         if (c == this)

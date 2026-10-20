@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,9 @@
  * questions.
  */
 package jdk.tools.jlink.internal;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.lang.module.ModuleDescriptor;
 import java.nio.ByteBuffer;
@@ -54,7 +57,7 @@ public class ResourcePoolManager {
     static Attributes readModuleAttributes(ResourcePoolModule mod) {
         String p = "/" + mod.name() + "/module-info.class";
         Optional<ResourcePoolEntry> content = mod.findEntry(p);
-        if (!content.isPresent()) {
+        if (content.isEmpty()) {
               throw new PluginException("module-info.class not found for " +
                   mod.name() + " module");
         }
@@ -74,7 +77,7 @@ public class ResourcePoolManager {
                 Resources.canEncapsulate(path);
     }
 
-    class ResourcePoolModuleImpl implements ResourcePoolModule {
+    static class ResourcePoolModuleImpl implements ResourcePoolModule {
 
         final Map<String, ResourcePoolEntry> moduleContent = new LinkedHashMap<>();
         // lazily initialized
@@ -183,6 +186,7 @@ public class ResourcePoolManager {
         }
 
         @Override
+        @Pure
         public boolean contains(ResourcePoolEntry data) {
             return ResourcePoolManager.this.contains(data);
         }
@@ -387,6 +391,7 @@ public class ResourcePoolManager {
      * @param data The module data to check existence for.
      * @return The module data or null if not found.
      */
+    @Pure
     public boolean contains(ResourcePoolEntry data) {
         Objects.requireNonNull(data);
         return findEntry(data.path()).isPresent();
@@ -432,7 +437,8 @@ public class ResourcePoolManager {
         }
 
         @Override
-        public boolean equals(Object other) {
+        @Pure
+        public boolean equals(@Nullable Object other) {
             if (!(other instanceof CompressedModuleData)) {
                 return false;
             }

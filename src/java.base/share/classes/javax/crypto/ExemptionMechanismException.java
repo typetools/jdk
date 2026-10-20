@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -35,25 +38,28 @@ import java.security.GeneralSecurityException;
 
 public class ExemptionMechanismException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 1572699429277957109L;
 
     /**
-     * Constructs a ExemptionMechanismException with no detailed message.
-     * (A detailed message is a String that describes this particular
-     * exception.)
+     * Constructs an {@code ExemptionMechanismException} with no detailed
+     * message. (A detailed message is a {@code String} that describes this
+     * particular exception.)
      */
+    @SideEffectFree
     public ExemptionMechanismException() {
         super();
     }
 
     /**
-     * Constructs a ExemptionMechanismException with the specified
-     * detailed message. (A detailed message is a String that describes
+     * Constructs an {@code ExemptionMechanismException} with the specified
+     * detailed message. (A detailed message is a {@code String}  that describes
      * this particular exception.)
      *
      * @param msg the detailed message.
      */
-   public ExemptionMechanismException(String msg) {
+    @SideEffectFree
+   public ExemptionMechanismException(@Nullable String msg) {
        super(msg);
     }
 }

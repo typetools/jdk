@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,11 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
- * A runtime exception for Provider exceptions (such as
+ * A runtime exception for {@code Provider} exceptions (such as
  * misconfiguration errors or unrecoverable internal errors),
  * which may be subclassed by Providers to
  * throw specialized, provider-specific runtime errors.
@@ -36,25 +39,28 @@ package java.security;
  */
 public class ProviderException extends RuntimeException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 5256023526693665674L;
 
     /**
-     * Constructs a ProviderException with no detail message. A
-     * detail message is a String that describes this particular
+     * Constructs a {@code ProviderException} with no detail message. A
+     * detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public ProviderException() {
         super();
     }
 
     /**
-     * Constructs a ProviderException with the specified detail
-     * message. A detail message is a String that describes this
+     * Constructs a {@code ProviderException} with the specified detail
+     * message. A detail message is a {@code String} that describes this
      * particular exception.
      *
      * @param s the detail message.
      */
-    public ProviderException(String s) {
+    @SideEffectFree
+    public ProviderException(@Nullable String s) {
         super(s);
     }
 
@@ -69,7 +75,8 @@ public class ProviderException extends RuntimeException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public ProviderException(String message, Throwable cause) {
+    @SideEffectFree
+    public ProviderException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +91,8 @@ public class ProviderException extends RuntimeException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public ProviderException(Throwable cause) {
+    @SideEffectFree
+    public ProviderException(@Nullable Throwable cause) {
         super(cause);
     }
 }

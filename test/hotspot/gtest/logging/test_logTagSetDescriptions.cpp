@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,8 +48,9 @@ TEST_VM(LogTagSetDescriptions, describe) {
 }
 
 TEST_VM(LogTagSetDescriptions, command_line_help) {
-  const char* filename = "logtagset_descriptions";
-  FILE* fp = fopen(filename, "w+");
+  ResourceMark rm;
+  const char* filename = prepend_temp_dir("logtagset_descriptions");
+  FILE* fp = os::fopen(filename, "w+");
   ASSERT_NE((void*)NULL, fp);
   fileStream stream(fp);
   LogConfiguration::print_command_line_help(&stream);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 
@@ -48,6 +49,7 @@ public class HashAttributeSet implements AttributeSet, Serializable {
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = 5311560590283707917L;
 
     /**
@@ -75,6 +77,7 @@ public class HashAttributeSet implements AttributeSet, Serializable {
      *             This does not guarantee equality of serialized forms since
      *             the order in which the attributes are written is not defined.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
 
         s.defaultWriteObject();
@@ -92,6 +95,7 @@ public class HashAttributeSet implements AttributeSet, Serializable {
      * @throws ClassNotFoundException if the class is not found
      * @throws IOException if an I/O exception has occurred
      */
+    @Serial
     private void readObject(ObjectInputStream s)
         throws ClassNotFoundException, IOException {
 
@@ -347,10 +351,8 @@ public class HashAttributeSet implements AttributeSet, Serializable {
      *         value
      */
     public boolean containsValue(Attribute attribute) {
-        return
-           attribute != null &&
-           attribute instanceof Attribute &&
-           attribute.equals(attrMap.get(attribute.getCategory()));
+        return attribute != null &&
+                attribute.equals(attrMap.get(attribute.getCategory()));
     }
 
     /**
@@ -445,11 +447,10 @@ public class HashAttributeSet implements AttributeSet, Serializable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        if (object == null || !(object instanceof AttributeSet)) {
+        if (!(object instanceof AttributeSet aset)) {
             return false;
         }
 
-        AttributeSet aset = (AttributeSet)object;
         if (aset.size() != size()) {
             return false;
         }

@@ -27,6 +27,10 @@
  */
 package javax.xml.crypto.dsig;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
@@ -53,12 +57,13 @@ public class TransformException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code TransformException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public TransformException() {
         super();
     }
@@ -69,7 +74,8 @@ public class TransformException extends Exception {
      *
      * @param message the detail message
      */
-    public TransformException(String message) {
+    @SideEffectFree
+    public TransformException(@Nullable String message) {
         super(message);
     }
 
@@ -84,7 +90,8 @@ public class TransformException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public TransformException(String message, Throwable cause) {
+    @SideEffectFree
+    public TransformException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -99,7 +106,8 @@ public class TransformException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public TransformException(Throwable cause) {
+    @SideEffectFree
+    public TransformException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -113,7 +121,8 @@ public class TransformException extends Exception {
      * @return the cause of this {@code TransformException} or
      *         {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

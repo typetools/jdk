@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,7 @@ class UnsafeObjectFieldAccessorImpl extends UnsafeFieldAccessorImpl {
 
     public Object get(Object obj) throws IllegalArgumentException {
         ensureObj(obj);
-        return unsafe.getObject(obj, fieldOffset);
+        return unsafe.getReference(obj, fieldOffset);
     }
 
     public boolean getBoolean(Object obj) throws IllegalArgumentException {
@@ -77,11 +77,11 @@ class UnsafeObjectFieldAccessorImpl extends UnsafeFieldAccessorImpl {
             throwFinalFieldIllegalAccessException(value);
         }
         if (value != null) {
-            if (!field.getType().isAssignableFrom(value.getClass())) {
+            if (!field.getType().isInstance(value)) {
                 throwSetIllegalArgumentException(value);
             }
         }
-        unsafe.putObject(obj, fieldOffset, value);
+        unsafe.putReference(obj, fieldOffset, value);
     }
 
     public void setBoolean(Object obj, boolean z)

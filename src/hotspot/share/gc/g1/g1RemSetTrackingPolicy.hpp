@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_GC_G1_G1REMSETTRACKINGPOLICY_HPP
-#define SHARE_VM_GC_G1_G1REMSETTRACKINGPOLICY_HPP
+#ifndef SHARE_GC_G1_G1REMSETTRACKINGPOLICY_HPP
+#define SHARE_GC_G1_G1REMSETTRACKINGPOLICY_HPP
 
 #include "gc/g1/heapRegion.hpp"
 #include "gc/g1/heapRegionType.hpp"
@@ -46,7 +46,7 @@ public:
   bool update_humongous_before_rebuild(HeapRegion* r, bool is_live);
   // Update remembered set tracking state before we are going to rebuild remembered
   // sets. Called at safepoint in the remark pause.
-  bool update_before_rebuild(HeapRegion* r, size_t live_bytes);
+  bool update_before_rebuild(HeapRegion* r, size_t live_bytes_below_tams);
   // Update remembered set tracking state after rebuild is complete, i.e. the cleanup
   // pause. Called at safepoint.
   void update_after_rebuild(HeapRegion* r);
@@ -54,5 +54,4 @@ public:
   void update_at_free(HeapRegion* r);
 };
 
-#endif /* SHARE_VM_GC_G1_G1REMSETTRACKINGPOLICY_HPP */
-
+#endif // SHARE_GC_G1_G1REMSETTRACKINGPOLICY_HPP

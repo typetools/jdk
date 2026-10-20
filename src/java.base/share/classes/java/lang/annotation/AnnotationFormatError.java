@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang.annotation;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when the annotation parser attempts to read an annotation
  * from a class file and determines that the annotation is malformed.
@@ -37,6 +40,7 @@ package java.lang.annotation;
  * @since   1.5
  */
 public class AnnotationFormatError extends Error {
+    @java.io.Serial
     private static final long serialVersionUID = -4256701562333669892L;
 
     /**
@@ -45,7 +49,8 @@ public class AnnotationFormatError extends Error {
      *
      * @param   message   the detail message.
      */
-    public AnnotationFormatError(String message) {
+    @SideEffectFree
+    public AnnotationFormatError(@Nullable String message) {
         super(message);
     }
 
@@ -59,7 +64,8 @@ public class AnnotationFormatError extends Error {
      * @param  cause the cause (A {@code null} value is permitted, and
      *     indicates that the cause is nonexistent or unknown.)
      */
-    public AnnotationFormatError(String message, Throwable cause) {
+    @SideEffectFree
+    public AnnotationFormatError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -73,7 +79,8 @@ public class AnnotationFormatError extends Error {
      * @param  cause the cause (A {@code null} value is permitted, and
      *     indicates that the cause is nonexistent or unknown.)
      */
-    public AnnotationFormatError(Throwable cause) {
+    @SideEffectFree
+    public AnnotationFormatError(@Nullable Throwable cause) {
         super(cause);
     }
 }

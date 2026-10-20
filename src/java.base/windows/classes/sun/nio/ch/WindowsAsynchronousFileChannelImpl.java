@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
 import java.io.IOException;
 import java.io.FileDescriptor;
-import jdk.internal.misc.SharedSecrets;
-import jdk.internal.misc.JavaIOFileDescriptorAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.access.JavaIOFileDescriptorAccess;
 
 /**
  * Windows implementation of AsynchronousFileChannel using overlapped I/O.
@@ -228,7 +228,6 @@ public class WindowsAsynchronousFileChannelImpl
         @Override
         public void run() {
             long overlapped = 0L;
-            boolean pending = false;
             try {
                 begin();
 
@@ -242,7 +241,6 @@ public class WindowsAsynchronousFileChannelImpl
                                      overlapped);
                     if (n == IOStatus.UNAVAILABLE) {
                         // I/O is pending
-                        pending = true;
                         return;
                     }
                     // acquired lock immediately
@@ -253,9 +251,9 @@ public class WindowsAsynchronousFileChannelImpl
                 // lock failed or channel closed
                 removeFromFileLockTable(fli);
                 result.setFailure(toIOException(x));
-            } finally {
-                if (!pending && overlapped != 0L)
+                if (overlapped != 0L)
                     ioCache.remove(overlapped);
+            } finally {
                 end();
             }
 
@@ -301,8 +299,10 @@ public class WindowsAsynchronousFileChannelImpl
         if (!shared && !writing)
             throw new NonWritableChannelException();
 
+        long len = (size != 0) ? size : Long.MAX_VALUE - Math.max(0, position);
+
         // add to lock table
-        FileLockImpl fli = addToFileLockTable(position, size, shared);
+        FileLockImpl fli = addToFileLockTable(position, len, shared);
         if (fli == null) {
             Throwable exc = new ClosedChannelException();
             if (handler == null)
@@ -333,6 +333,9 @@ public class WindowsAsynchronousFileChannelImpl
             throw new NonReadableChannelException();
         if (!shared && !writing)
             throw new NonWritableChannelException();
+
+        if (size == 0)
+            size = Long.MAX_VALUE - Math.max(0, position);
 
         // add to lock table
         final FileLockImpl fli = addToFileLockTable(position, size, shared);
@@ -448,13 +451,12 @@ public class WindowsAsynchronousFileChannelImpl
             } catch (Throwable x) {
                 // failed to initiate read
                 result.setFailure(toIOException(x));
+                if (overlapped != 0L)
+                    ioCache.remove(overlapped);
             } finally {
-                if (!pending) {
+                if (!pending)
                     // release resources
-                    if (overlapped != 0L)
-                        ioCache.remove(overlapped);
                     releaseBufferIfSubstituted();
-                }
                 end();
             }
 
@@ -628,9 +630,9 @@ public class WindowsAsynchronousFileChannelImpl
                 result.setFailure(toIOException(x));
 
                 // release resources
+                releaseBufferIfSubstituted();
                 if (overlapped != 0L)
                     ioCache.remove(overlapped);
-                releaseBufferIfSubstituted();
 
             } finally {
                 end();

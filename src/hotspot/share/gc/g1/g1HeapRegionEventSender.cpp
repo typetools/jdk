@@ -24,9 +24,11 @@
 
 #include "precompiled.hpp"
 #include "gc/g1/g1CollectedHeap.hpp"
+#include "gc/g1/g1HeapRegionEventSender.hpp"
 #include "gc/g1/heapRegion.hpp"
-#include "g1HeapRegionEventSender.hpp"
+#include "gc/shared/gc_globals.hpp"
 #include "jfr/jfrEvents.hpp"
+#include "runtime/vmThread.hpp"
 
 class DumpEventInfoClosure : public HeapRegionClosure {
 public:
@@ -41,9 +43,17 @@ public:
   }
 };
 
+class VM_G1SendHeapRegionInfoEvents : public VM_Operation {
+  virtual void doit() {
+    DumpEventInfoClosure c;
+    G1CollectedHeap::heap()->heap_region_iterate(&c);
+  }
+  virtual VMOp_Type type() const { return VMOp_HeapIterateOperation; }
+};
 
 void G1HeapRegionEventSender::send_events() {
-  DumpEventInfoClosure c;
-
-  G1CollectedHeap::heap()->heap_region_iterate(&c);
+  if (UseG1GC) {
+    VM_G1SendHeapRegionInfoEvents op;
+    VMThread::execute(&op);
+  }
 }

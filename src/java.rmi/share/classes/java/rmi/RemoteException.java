@@ -25,6 +25,10 @@
 
 package java.rmi;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * A {@code RemoteException} is the common superclass for a number of
  * communication-related exceptions that may occur during the execution of a
@@ -60,11 +64,12 @@ public class RemoteException extends java.io.IOException {
      *
      * @serial
      */
-    public Throwable detail;
+    public @Nullable Throwable detail;
 
     /**
      * Constructs a {@code RemoteException}.
      */
+    @SideEffectFree
     public RemoteException() {
         initCause(null);  // Disallow subsequent initCause
     }
@@ -75,7 +80,8 @@ public class RemoteException extends java.io.IOException {
      *
      * @param s the detail message
      */
-    public RemoteException(String s) {
+    @SideEffectFree
+    public RemoteException(@Nullable String s) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
     }
@@ -88,7 +94,8 @@ public class RemoteException extends java.io.IOException {
      * @param s the detail message
      * @param cause the cause
      */
-    public RemoteException(String s, Throwable cause) {
+    @SideEffectFree
+    public RemoteException(@Nullable String s, @Nullable Throwable cause) {
         super(s);
         initCause(null);  // Disallow subsequent initCause
         detail = cause;
@@ -100,6 +107,7 @@ public class RemoteException extends java.io.IOException {
      *
      * @return the detail message
      */
+    @SideEffectFree
     public String getMessage() {
         if (detail == null) {
             return super.getMessage();
@@ -116,7 +124,8 @@ public class RemoteException extends java.io.IOException {
      * @return  the cause, which may be {@code null}.
      * @since   1.4
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return detail;
     }
 }

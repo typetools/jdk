@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,7 @@ import javax.swing.tree.TreePath;
  * used to notify tree model listeners of the change.
  * For more information and examples see
  * <a
- href="http://docs.oracle.com/javase/tutorial/uiswing/events/treemodellistener.html">How to Write a Tree Model Listener</a>,
+ href="https://docs.oracle.com/javase/tutorial/uiswing/events/treemodellistener.html">How to Write a Tree Model Listener</a>,
  * a section in <em>The Java Tutorial.</em>
  * <p>
  * <strong>Warning:</strong>
@@ -42,7 +42,7 @@ import javax.swing.tree.TreePath;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -294,14 +294,13 @@ public class TreeModelEvent extends EventObject {
     public String toString() {
         StringBuilder   sb = new StringBuilder();
 
-        sb.append(getClass().getName() + " " +
-                  Integer.toString(hashCode()));
+        sb.append(getClass().getName() + " " + hashCode());
         if(path != null)
             sb.append(" path " + path);
         if(childIndices != null) {
             sb.append(" indices [ ");
             for(int counter = 0; counter < childIndices.length; counter++)
-                sb.append(Integer.toString(childIndices[counter])+ " ");
+                sb.append(childIndices[counter] + " ");
             sb.append("]");
         }
         if(children != null) {

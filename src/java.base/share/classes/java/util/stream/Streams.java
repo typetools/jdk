@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -31,7 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
  * Utility methods for operating on and creating streams.
@@ -91,7 +93,7 @@ final class Streams {
         }
 
         @Override
-        @HotSpotIntrinsicCandidate
+        @IntrinsicCandidate
         public void forEachRemaining(IntConsumer consumer) {
             Objects.requireNonNull(consumer);
 
@@ -123,12 +125,12 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super Integer> getComparator() {
+        public @Nullable Comparator<? super Integer> getComparator() {
             return null;
         }
 
         @Override
-        public Spliterator.OfInt trySplit() {
+        public Spliterator.@Nullable OfInt trySplit() {
             long size = estimateSize();
             return size <= 1
                    ? null
@@ -246,12 +248,12 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super Long> getComparator() {
+        public @Nullable Comparator<? super Long> getComparator() {
             return null;
         }
 
         @Override
-        public Spliterator.OfLong trySplit() {
+        public Spliterator.@Nullable OfLong trySplit() {
             long size = estimateSize();
             return size <= 1
                    ? null
@@ -302,7 +304,7 @@ final class Streams {
         // count == -2 for one element held by first
 
         @Override
-        public S trySplit() {
+        public @Nullable S trySplit() {
             return null;
         }
 
@@ -706,7 +708,7 @@ final class Streams {
         }
 
         @Override
-        public T_SPLITR trySplit() {
+        public @Nullable T_SPLITR trySplit() {
             @SuppressWarnings("unchecked")
             T_SPLITR ret = beforeSplit ? aSpliterator : (T_SPLITR) bSpliterator.trySplit();
             beforeSplit = false;
@@ -762,7 +764,7 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             if (beforeSplit)
                 throw new IllegalStateException();
             return bSpliterator.getComparator();
@@ -804,6 +806,7 @@ final class Streams {
             }
         }
 
+        @SuppressWarnings("overloads")
         static class OfInt
                 extends ConcatSpliterator.OfPrimitive<Integer, IntConsumer, Spliterator.OfInt>
                 implements Spliterator.OfInt {
@@ -812,6 +815,7 @@ final class Streams {
             }
         }
 
+        @SuppressWarnings("overloads")
         static class OfLong
                 extends ConcatSpliterator.OfPrimitive<Long, LongConsumer, Spliterator.OfLong>
                 implements Spliterator.OfLong {
@@ -820,6 +824,7 @@ final class Streams {
             }
         }
 
+        @SuppressWarnings("overloads")
         static class OfDouble
                 extends ConcatSpliterator.OfPrimitive<Double, DoubleConsumer, Spliterator.OfDouble>
                 implements Spliterator.OfDouble {

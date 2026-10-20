@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when there is a format specifier which does not
  * have a corresponding argument or if an argument index refers to an argument
@@ -36,8 +38,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class MissingFormatArgumentException extends IllegalFormatException {
+public non-sealed class MissingFormatArgumentException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 19190115L;
 
     private String s;
@@ -49,6 +52,7 @@ public class MissingFormatArgumentException extends IllegalFormatException {
      * @param  s
      *         Format specifier which does not have a corresponding argument
      */
+    @SideEffectFree
     public MissingFormatArgumentException(String s) {
         if (s == null)
             throw new NullPointerException();
@@ -64,6 +68,7 @@ public class MissingFormatArgumentException extends IllegalFormatException {
         return s;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Format specifier '" + s + "'";
     }

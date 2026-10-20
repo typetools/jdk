@@ -35,6 +35,10 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * A {@link BlockingQueue} in which producers may wait for consumers
  * to receive elements.  A {@code TransferQueue} may be useful for
@@ -65,6 +69,7 @@ package java.util.concurrent;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
+@AnnotatedFor({"nullness", "modifiability"})
 public interface TransferQueue<E> extends BlockingQueue<E> {
     /**
      * Transfers the element to a waiting consumer immediately, if possible.
@@ -83,7 +88,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    boolean tryTransfer(E e);
+    boolean tryTransfer(@Growable TransferQueue<E> this, E e);
 
     /**
      * Transfers the element to a consumer, waiting if necessary to do so.
@@ -102,7 +107,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    void transfer(E e) throws InterruptedException;
+    void transfer(@Growable TransferQueue<E> this, E e) throws InterruptedException;
 
     /**
      * Transfers the element to a consumer if it is possible to do so
@@ -131,7 +136,7 @@ public interface TransferQueue<E> extends BlockingQueue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    boolean tryTransfer(E e, long timeout, TimeUnit unit)
+    boolean tryTransfer(@Growable TransferQueue<E> this, E e, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,20 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * The {@code Stack} class represents a last-in-first-out
@@ -46,17 +57,18 @@ import org.checkerframework.framework.qual.CFComment;
  * <pre>   {@code
  *   Deque<Integer> stack = new ArrayDeque<Integer>();}</pre>
  *
+ * @param <E> Type of component elements
+ *
  * @author  Jonathan Payne
  * @since   1.0
  */
 @CFComment({"lock/nullness: permit null elements"})
-@AnnotatedFor({"lock", "nullness"})
-public
-class Stack<E> extends Vector<E> {
+@AnnotatedFor({"lock", "nullness", "modifiability"})
+public class Stack<E> extends Vector<E> {
     /**
      * Creates an empty Stack.
      */
-    public Stack() {
+    public @Modifiable @IteratorPolyMod Stack() {
     }
 
     /**
@@ -69,7 +81,9 @@ class Stack<E> extends Vector<E> {
      * @return  the {@code item} argument.
      * @see     java.util.Vector#addElement
      */
-    public E push(@GuardSatisfied Stack<E> this, E item) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E push(@Growable @GuardSatisfied Stack<E> this, E item) {
         addElement(item);
 
         return item;
@@ -83,7 +97,9 @@ class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
-    public synchronized E pop(@GuardSatisfied Stack<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public synchronized E pop(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink Stack<E> this) {
         E       obj;
         int     len = size();
 
@@ -101,6 +117,7 @@ class Stack<E> extends Vector<E> {
      *          of the {@code Vector} object).
      * @throws  EmptyStackException  if this stack is empty.
      */
+    @Pure
     public synchronized E peek() {
         int     len = size();
 
@@ -115,6 +132,8 @@ class Stack<E> extends Vector<E> {
      * @return  {@code true} if and only if this stack contains
      *          no items; {@code false} otherwise.
      */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean empty() {
         return size() == 0;
     }
@@ -133,6 +152,7 @@ class Stack<E> extends Vector<E> {
      *          the object is located; the return value {@code -1}
      *          indicates that the object is not on the stack.
      */
+    @Pure
     public synchronized int search(Object o) {
         int i = lastIndexOf(o);
 
@@ -143,5 +163,6 @@ class Stack<E> extends Vector<E> {
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = 1224463164541339165L;
 }

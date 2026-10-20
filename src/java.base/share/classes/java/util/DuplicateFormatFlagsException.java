@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when duplicate flags are provided in the format
  * specifier.
@@ -35,8 +37,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class DuplicateFormatFlagsException extends IllegalFormatException {
+public non-sealed class DuplicateFormatFlagsException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 18890531L;
 
     private String flags;
@@ -47,6 +50,7 @@ public class DuplicateFormatFlagsException extends IllegalFormatException {
      * @param  f
      *         The set of format flags which contain a duplicate flag.
      */
+    @SideEffectFree
     public DuplicateFormatFlagsException(String f) {
         if (f == null)
             throw new NullPointerException();
@@ -62,6 +66,7 @@ public class DuplicateFormatFlagsException extends IllegalFormatException {
         return flags;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return String.format("Flags = '%s'", flags);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Base class for character conversion exceptions.
  *
@@ -33,11 +36,13 @@ package java.io;
 public class CharConversionException
     extends java.io.IOException
 {
+    @java.io.Serial
     private static final long serialVersionUID = -8680016352018427031L;
 
     /**
      * This provides no detailed message.
      */
+    @SideEffectFree
     public CharConversionException() {
     }
     /**
@@ -45,7 +50,8 @@ public class CharConversionException
      *
      * @param s the detailed message associated with the exception.
      */
-    public CharConversionException(String s) {
+    @SideEffectFree
+    public CharConversionException(@Nullable String s) {
         super(s);
     }
 }

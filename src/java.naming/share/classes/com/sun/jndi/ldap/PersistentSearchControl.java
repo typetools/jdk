@@ -26,6 +26,7 @@
 package com.sun.jndi.ldap;
 
 import org.checkerframework.checker.interning.qual.Interned;
+
 import java.io.IOException;
 
 /**
@@ -47,7 +48,7 @@ import java.io.IOException;
  * @see EntryChangeResponseControl
  * @author Vincent Ryan
  */
-final public class PersistentSearchControl extends BasicControl {
+public final class PersistentSearchControl extends BasicControl {
 
     /**
      * The persistent search control's assigned object identifier

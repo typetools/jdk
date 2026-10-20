@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2018 SAP SE. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,10 +30,15 @@
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "interp_masm_ppc.hpp"
 #include "interpreter/interpreterRuntime.hpp"
+#include "oops/methodData.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/safepointMechanism.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "runtime/vm_version.hpp"
+#include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 // Implementation of InterpreterMacroAssembler.
 
@@ -48,6 +53,11 @@
 void InterpreterMacroAssembler::null_check_throw(Register a, int offset, Register temp_reg) {
   address exception_entry = Interpreter::throw_NullPointerException_entry();
   MacroAssembler::null_check_throw(a, offset, temp_reg, exception_entry);
+}
+
+void InterpreterMacroAssembler::load_klass_check_null_throw(Register dst, Register src, Register temp_reg) {
+  null_check_throw(src, oopDesc::klass_offset_in_bytes(), temp_reg);
+  load_klass(dst, src);
 }
 
 void InterpreterMacroAssembler::jump_to_entry(address entry, Register Rscratch) {
@@ -217,11 +227,11 @@ void InterpreterMacroAssembler::dispatch_Lbyte_code(TosState state, Register byt
   // Calc dispatch table address.
   load_dispatch_table(R11_scratch1, table);
 
-  if (SafepointMechanism::uses_thread_local_poll() && generate_poll) {
+  if (generate_poll) {
     address *sfpt_tbl = Interpreter::safept_table(state);
     if (table != sfpt_tbl) {
       Label dispatch;
-      ld(R0, in_bytes(Thread::polling_page_offset()), R16_thread);
+      ld(R0, in_bytes(JavaThread::polling_word_offset()), R16_thread);
       // Armed page has poll_bit set, if poll bit is cleared just continue.
       andi_(R0, R0, SafepointMechanism::poll_bit());
       beq(CCR0, dispatch);
@@ -470,31 +480,49 @@ void InterpreterMacroAssembler::get_u4(Register Rdst, Register Rsrc, int offset,
 #endif
 }
 
+void InterpreterMacroAssembler::load_resolved_indy_entry(Register cache, Register index) {
+  // Get index out of bytecode pointer, get_cache_entry_pointer_at_bcp
+  get_cache_index_at_bcp(index, 1, sizeof(u4));
+
+  // Get address of invokedynamic array
+  ld_ptr(cache, in_bytes(ConstantPoolCache::invokedynamic_entries_offset()), R27_constPoolCache);
+  // Scale the index to be the entry index * sizeof(ResolvedInvokeDynamicInfo)
+  sldi(index, index, log2i_exact(sizeof(ResolvedIndyEntry)));
+  add(cache, cache, index);
+}
+
 // Load object from cpool->resolved_references(index).
-void InterpreterMacroAssembler::load_resolved_reference_at_index(Register result, Register index, Label *L_handle_null) {
-  assert_different_registers(result, index);
+// Kills:
+//   - index
+void InterpreterMacroAssembler::load_resolved_reference_at_index(Register result, Register index,
+                                                                 Register tmp1, Register tmp2,
+                                                                 Label *L_handle_null) {
+  assert_different_registers(result, index, tmp1, tmp2);
+  assert(index->is_nonvolatile(), "needs to survive C-call in resolve_oop_handle");
   get_constant_pool(result);
 
   // Convert from field index to resolved_references() index and from
   // word index to byte offset. Since this is a java object, it can be compressed.
-  Register tmp = index;  // reuse
-  sldi(tmp, index, LogBytesPerHeapOop);
+  sldi(index, index, LogBytesPerHeapOop);
   // Load pointer for resolved_references[] objArray.
-  ld(result, ConstantPool::cache_offset_in_bytes(), result);
-  ld(result, ConstantPoolCache::resolved_references_offset_in_bytes(), result);
-  resolve_oop_handle(result);
+  ld(result, ConstantPool::cache_offset(), result);
+  ld(result, ConstantPoolCache::resolved_references_offset(), result);
+  resolve_oop_handle(result, tmp1, tmp2, MacroAssembler::PRESERVATION_NONE);
 #ifdef ASSERT
   Label index_ok;
   lwa(R0, arrayOopDesc::length_offset_in_bytes(), result);
   sldi(R0, R0, LogBytesPerHeapOop);
-  cmpd(CCR0, tmp, R0);
+  cmpd(CCR0, index, R0);
   blt(CCR0, index_ok);
-  stop("resolved reference index out of bounds", 0x09256);
+  stop("resolved reference index out of bounds");
   bind(index_ok);
 #endif
   // Add in the index.
-  add(result, tmp, result);
-  load_heap_oop(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT), result, tmp, R0, false, 0, L_handle_null);
+  add(result, index, result);
+  load_heap_oop(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT), result,
+                tmp1, tmp2,
+                MacroAssembler::PRESERVATION_NONE,
+                0, L_handle_null);
 }
 
 // load cpool->resolved_klass_at(index)
@@ -508,12 +536,24 @@ void InterpreterMacroAssembler::load_resolved_klass_at_offset(Register Rcpool, R
   lhz(Roffset, sizeof(ConstantPool) + 2, Roffset); // Roffset = resolved_klass_index
 #endif
 
-  ld(Rklass, ConstantPool::resolved_klasses_offset_in_bytes(), Rcpool); // Rklass = Rcpool->_resolved_klasses
+  ld(Rklass, ConstantPool::resolved_klasses_offset(), Rcpool); // Rklass = Rcpool->_resolved_klasses
 
   sldi(Roffset, Roffset, LogBytesPerWord);
   addi(Roffset, Roffset, Array<Klass*>::base_offset_in_bytes());
   isync(); // Order load of instance Klass wrt. tags.
   ldx(Rklass, Rklass, Roffset);
+}
+
+void InterpreterMacroAssembler::load_resolved_method_at_index(int byte_no,
+                                                              Register cache,
+                                                              Register method) {
+  const int method_offset = in_bytes(
+    ConstantPoolCache::base_offset() +
+      ((byte_no == TemplateTable::f2_byte)
+       ? ConstantPoolCacheEntry::f2_offset()
+       : ConstantPoolCacheEntry::f1_offset()));
+
+  ld(method, method_offset, cache); // get f1 Method*
 }
 
 // Generate a subtype check: branch to ok_is_subtype if sub_klass is
@@ -606,12 +646,12 @@ void InterpreterMacroAssembler::get_constant_pool(Register Rdst) {
 
 void InterpreterMacroAssembler::get_constant_pool_cache(Register Rdst) {
   get_constant_pool(Rdst);
-  ld(Rdst, ConstantPool::cache_offset_in_bytes(), Rdst);
+  ld(Rdst, ConstantPool::cache_offset(), Rdst);
 }
 
 void InterpreterMacroAssembler::get_cpool_and_tags(Register Rcpool, Register Rtags) {
   get_constant_pool(Rcpool);
-  ld(Rtags, ConstantPool::tags_offset_in_bytes(), Rcpool);
+  ld(Rtags, ConstantPool::tags_offset(), Rcpool);
 }
 
 // Unlock if synchronized method.
@@ -661,7 +701,7 @@ void InterpreterMacroAssembler::unlock_if_synchronized_method(TosState state,
     addi(Rmonitor_base, Rmonitor_base,
          -(frame::ijava_state_size + frame::interpreter_frame_monitor_size_in_bytes())); // Monitor base
 
-    ld(R0, BasicObjectLock::obj_offset_in_bytes(), Rmonitor_base);
+    ld(R0, BasicObjectLock::obj_offset(), Rmonitor_base);
     cmpdi(CCR0, R0, 0);
     bne(CCR0, Lunlock);
 
@@ -700,7 +740,7 @@ void InterpreterMacroAssembler::unlock_if_synchronized_method(TosState state,
       ble(CCR0, Lno_unlock);
 
       addi(Rcurrent_obj_addr, Rmonitor_base,
-           BasicObjectLock::obj_offset_in_bytes() - frame::interpreter_frame_monitor_size_in_bytes());
+           in_bytes(BasicObjectLock::obj_offset()) - frame::interpreter_frame_monitor_size_in_bytes());
       // Check if any monitor is on stack, bail out if not
       srdi(Riterations, Riterations, exact_log2(delta));
       mtctr(Riterations);
@@ -735,7 +775,7 @@ void InterpreterMacroAssembler::unlock_if_synchronized_method(TosState state,
       // Stack unrolling. Unlock object and if requested, install illegal_monitor_exception.
       // Unlock does not block, so don't have to worry about the frame.
       Register Rmonitor_addr = R11_scratch1;
-      addi(Rmonitor_addr, Rcurrent_obj_addr, -BasicObjectLock::obj_offset_in_bytes() + delta);
+      addi(Rmonitor_addr, Rcurrent_obj_addr, -in_bytes(BasicObjectLock::obj_offset()) + delta);
       unlock_object(Rmonitor_addr);
       if (install_monitor_exception) {
         call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::new_illegal_monitor_state_exception));
@@ -756,18 +796,8 @@ void InterpreterMacroAssembler::merge_frames(Register Rsender_sp, Register retur
   ld(Rscratch1, 0, R1_SP); // *SP
   ld(Rsender_sp, _ijava_state_neg(sender_sp), Rscratch1); // top_frame_sp
   ld(Rscratch2, 0, Rscratch1); // **SP
-#ifdef ASSERT
-  {
-    Label Lok;
-    ld(R0, _ijava_state_neg(ijava_reserved), Rscratch1);
-    cmpdi(CCR0, R0, 0x5afe);
-    beq(CCR0, Lok);
-    stop("frame corrupted (remove activation)", 0x5afe);
-    bind(Lok);
-  }
-#endif
   if (return_pc!=noreg) {
-    ld(return_pc, _abi(lr), Rscratch1); // LR
+    ld(return_pc, _abi0(lr), Rscratch1); // LR
   }
 
   // Merge top frames.
@@ -814,6 +844,7 @@ void InterpreterMacroAssembler::narrow(Register result) {
 
 // Remove activation.
 //
+// Apply stack watermark barrier.
 // Unlock the receiver if this is a synchronized method.
 // Unlock any Java monitors from synchronized blocks.
 // Remove the activation from the stack.
@@ -829,6 +860,23 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
                                                   bool throw_monitor_exception,
                                                   bool install_monitor_exception) {
   BLOCK_COMMENT("remove_activation {");
+
+  // The below poll is for the stack watermark barrier. It allows fixing up frames lazily,
+  // that would normally not be safe to use. Such bad returns into unsafe territory of
+  // the stack, will call InterpreterRuntime::at_unwind.
+  Label slow_path;
+  Label fast_path;
+  safepoint_poll(slow_path, R11_scratch1, true /* at_return */, false /* in_nmethod */);
+  b(fast_path);
+  bind(slow_path);
+  push(state);
+  set_last_Java_frame(R1_SP, noreg);
+  call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::at_unwind), R16_thread);
+  reset_last_Java_frame();
+  pop(state);
+  align(32);
+  bind(fast_path);
+
   unlock_if_synchronized_method(state, throw_monitor_exception, install_monitor_exception);
 
   // Save result (push state before jvmti call and pop it afterwards) and notify jvmti.
@@ -844,7 +892,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
     // call could have a smaller SP, so that this compare succeeds for an
     // inner call of the method annotated with ReservedStack.
     ld_ptr(R0, JavaThread::reserved_stack_activation_offset(), R16_thread);
-    ld_ptr(R11_scratch1, _abi(callers_sp), R1_SP); // Load frame pointer.
+    ld_ptr(R11_scratch1, _abi0(callers_sp), R1_SP); // Load frame pointer.
     cmpld(CCR0, R11_scratch1, R0);
     blt_predict_taken(CCR0, no_reserved_zone_enabling);
 
@@ -858,10 +906,10 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
   }
 
   verify_oop(R17_tos, state);
-  verify_thread();
 
   merge_frames(/*top_frame_sp*/ R21_sender_SP, /*return_pc*/ R0, R11_scratch1, R12_scratch2);
   mtlr(R0);
+  pop_cont_fastpath();
   BLOCK_COMMENT("} remove_activation");
 }
 
@@ -873,94 +921,103 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
 //   object  - Address of the object to be locked.
 //
 void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
-  if (UseHeavyMonitors) {
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter),
-            monitor, /*check_for_exceptions=*/true);
+  if (LockingMode == LM_MONITOR) {
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), monitor);
   } else {
-    // template code:
+    // template code (for LM_LEGACY):
     //
-    // markOop displaced_header = obj->mark().set_unlocked();
+    // markWord displaced_header = obj->mark().set_unlocked();
     // monitor->lock()->set_displaced_header(displaced_header);
-    // if (Atomic::cmpxchg(/*ex=*/monitor, /*addr*/obj->mark_addr(), /*cmp*/displaced_header) == displaced_header) {
+    // if (Atomic::cmpxchg(/*addr*/obj->mark_addr(), /*cmp*/displaced_header, /*ex=*/monitor) == displaced_header) {
     //   // We stored the monitor address into the object's mark word.
     // } else if (THREAD->is_lock_owned((address)displaced_header))
     //   // Simple recursive case.
-    //   monitor->lock()->set_displaced_header(NULL);
+    //   monitor->lock()->set_displaced_header(nullptr);
     // } else {
     //   // Slow path.
     //   InterpreterRuntime::monitorenter(THREAD, monitor);
     // }
 
-    const Register displaced_header = R7_ARG5;
+    const Register header           = R7_ARG5;
     const Register object_mark_addr = R8_ARG6;
     const Register current_header   = R9_ARG7;
     const Register tmp              = R10_ARG8;
 
-    Label done;
+    Label count_locking, done;
     Label cas_failed, slow_case;
 
-    assert_different_registers(displaced_header, object_mark_addr, current_header, tmp);
+    assert_different_registers(header, object_mark_addr, current_header, tmp);
 
-    // markOop displaced_header = obj->mark().set_unlocked();
+    // markWord displaced_header = obj->mark().set_unlocked();
 
-    // Load markOop from object into displaced_header.
-    ld(displaced_header, oopDesc::mark_offset_in_bytes(), object);
+    // Load markWord from object into header.
+    ld(header, oopDesc::mark_offset_in_bytes(), object);
 
-    if (UseBiasedLocking) {
-      biased_locking_enter(CCR0, object, displaced_header, tmp, current_header, done, &slow_case);
+    if (DiagnoseSyncOnValueBasedClasses != 0) {
+      load_klass(tmp, object);
+      lwz(tmp, in_bytes(Klass::access_flags_offset()), tmp);
+      testbitdi(CCR0, R0, tmp, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
+      bne(CCR0, slow_case);
     }
 
-    // Set displaced_header to be (markOop of object | UNLOCK_VALUE).
-    ori(displaced_header, displaced_header, markOopDesc::unlocked_value);
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      fast_lock(object, /* mark word */ header, tmp, slow_case);
+      b(count_locking);
+    } else if (LockingMode == LM_LEGACY) {
 
-    // monitor->lock()->set_displaced_header(displaced_header);
+      // Set displaced_header to be (markWord of object | UNLOCK_VALUE).
+      ori(header, header, markWord::unlocked_value);
 
-    // Initialize the box (Must happen before we update the object mark!).
-    std(displaced_header, BasicObjectLock::lock_offset_in_bytes() +
-        BasicLock::displaced_header_offset_in_bytes(), monitor);
+      // monitor->lock()->set_displaced_header(displaced_header);
+      const int lock_offset = in_bytes(BasicObjectLock::lock_offset());
+      const int mark_offset = lock_offset +
+                              BasicLock::displaced_header_offset_in_bytes();
 
-    // if (Atomic::cmpxchg(/*ex=*/monitor, /*addr*/obj->mark_addr(), /*cmp*/displaced_header) == displaced_header) {
+      // Initialize the box (Must happen before we update the object mark!).
+      std(header, mark_offset, monitor);
 
-    // Store stack address of the BasicObjectLock (this is monitor) into object.
-    addi(object_mark_addr, object, oopDesc::mark_offset_in_bytes());
+      // if (Atomic::cmpxchg(/*addr*/obj->mark_addr(), /*cmp*/displaced_header, /*ex=*/monitor) == displaced_header) {
 
-    // Must fence, otherwise, preceding store(s) may float below cmpxchg.
-    // CmpxchgX sets CCR0 to cmpX(current, displaced).
-    cmpxchgd(/*flag=*/CCR0,
-             /*current_value=*/current_header,
-             /*compare_value=*/displaced_header, /*exchange_value=*/monitor,
-             /*where=*/object_mark_addr,
-             MacroAssembler::MemBarRel | MacroAssembler::MemBarAcq,
-             MacroAssembler::cmpxchgx_hint_acquire_lock(),
-             noreg,
-             &cas_failed,
-             /*check without membar and ldarx first*/true);
+      // Store stack address of the BasicObjectLock (this is monitor) into object.
+      addi(object_mark_addr, object, oopDesc::mark_offset_in_bytes());
 
-    // If the compare-and-exchange succeeded, then we found an unlocked
-    // object and we have now locked it.
-    b(done);
-    bind(cas_failed);
+      // Must fence, otherwise, preceding store(s) may float below cmpxchg.
+      // CmpxchgX sets CCR0 to cmpX(current, displaced).
+      cmpxchgd(/*flag=*/CCR0,
+               /*current_value=*/current_header,
+               /*compare_value=*/header, /*exchange_value=*/monitor,
+               /*where=*/object_mark_addr,
+               MacroAssembler::MemBarRel | MacroAssembler::MemBarAcq,
+               MacroAssembler::cmpxchgx_hint_acquire_lock(),
+               noreg,
+               &cas_failed,
+               /*check without membar and ldarx first*/true);
 
-    // } else if (THREAD->is_lock_owned((address)displaced_header))
-    //   // Simple recursive case.
-    //   monitor->lock()->set_displaced_header(NULL);
+      // If the compare-and-exchange succeeded, then we found an unlocked
+      // object and we have now locked it.
+      b(count_locking);
+      bind(cas_failed);
 
-    // We did not see an unlocked object so try the fast recursive case.
+      // } else if (THREAD->is_lock_owned((address)displaced_header))
+      //   // Simple recursive case.
+      //   monitor->lock()->set_displaced_header(nullptr);
 
-    // Check if owner is self by comparing the value in the markOop of object
-    // (current_header) with the stack pointer.
-    sub(current_header, current_header, R1_SP);
+      // We did not see an unlocked object so try the fast recursive case.
 
-    assert(os::vm_page_size() > 0xfff, "page size too small - change the constant");
-    load_const_optimized(tmp, ~(os::vm_page_size()-1) | markOopDesc::lock_mask_in_place);
+      // Check if owner is self by comparing the value in the markWord of object
+      // (current_header) with the stack pointer.
+      sub(current_header, current_header, R1_SP);
 
-    and_(R0/*==0?*/, current_header, tmp);
-    // If condition is true we are done and hence we can store 0 in the displaced
-    // header indicating it is a recursive lock.
-    bne(CCR0, slow_case);
-    std(R0/*==0!*/, BasicObjectLock::lock_offset_in_bytes() +
-        BasicLock::displaced_header_offset_in_bytes(), monitor);
-    b(done);
+      assert(os::vm_page_size() > 0xfff, "page size too small - change the constant");
+      load_const_optimized(tmp, ~(os::vm_page_size()-1) | markWord::lock_mask_in_place);
+
+      and_(R0/*==0?*/, current_header, tmp);
+      // If condition is true we are done and hence we can store 0 in the displaced
+      // header indicating it is a recursive lock.
+      bne(CCR0, slow_case);
+      std(R0/*==0!*/, mark_offset, monitor);
+      b(count_locking);
+    }
 
     // } else {
     //   // Slow path.
@@ -969,10 +1026,16 @@ void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
     // None of the above fast optimizations worked so we have to get into the
     // slow case of monitor enter.
     bind(slow_case);
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter),
-            monitor, /*check_for_exceptions=*/true);
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter_obj), object);
+    } else {
+      call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), monitor);
+    }
+    b(done);
     // }
     align(32, 12);
+    bind(count_locking);
+    inc_held_monitor_count(current_header /*tmp*/);
     bind(done);
   }
 }
@@ -984,93 +1047,108 @@ void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
 //             which must be initialized with the object to lock.
 //
 // Throw IllegalMonitorException if object is not locked by current thread.
-void InterpreterMacroAssembler::unlock_object(Register monitor, bool check_for_exceptions) {
-  if (UseHeavyMonitors) {
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit),
-            monitor, check_for_exceptions);
+void InterpreterMacroAssembler::unlock_object(Register monitor) {
+  if (LockingMode == LM_MONITOR) {
+    call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), monitor);
   } else {
 
-    // template code:
+    // template code (for LM_LEGACY):
     //
-    // if ((displaced_header = monitor->displaced_header()) == NULL) {
-    //   // Recursive unlock. Mark the monitor unlocked by setting the object field to NULL.
-    //   monitor->set_obj(NULL);
-    // } else if (Atomic::cmpxchg(displaced_header, obj->mark_addr(), monitor) == monitor) {
+    // if ((displaced_header = monitor->displaced_header()) == nullptr) {
+    //   // Recursive unlock. Mark the monitor unlocked by setting the object field to null.
+    //   monitor->set_obj(nullptr);
+    // } else if (Atomic::cmpxchg(obj->mark_addr(), monitor, displaced_header) == monitor) {
     //   // We swapped the unlocked mark in displaced_header into the object's mark word.
-    //   monitor->set_obj(NULL);
+    //   monitor->set_obj(nullptr);
     // } else {
     //   // Slow path.
-    //   InterpreterRuntime::monitorexit(THREAD, monitor);
+    //   InterpreterRuntime::monitorexit(monitor);
     // }
 
     const Register object           = R7_ARG5;
-    const Register displaced_header = R8_ARG6;
+    const Register header           = R8_ARG6;
     const Register object_mark_addr = R9_ARG7;
     const Register current_header   = R10_ARG8;
 
     Label free_slot;
     Label slow_case;
 
-    assert_different_registers(object, displaced_header, object_mark_addr, current_header);
+    assert_different_registers(object, header, object_mark_addr, current_header);
 
-    if (UseBiasedLocking) {
-      // The object address from the monitor is in object.
-      ld(object, BasicObjectLock::obj_offset_in_bytes(), monitor);
-      assert(oopDesc::mark_offset_in_bytes() == 0, "offset of _mark is not 0");
-      biased_locking_exit(CCR0, object, displaced_header, free_slot);
+    if (LockingMode != LM_LIGHTWEIGHT) {
+      // Test first if we are in the fast recursive case.
+      ld(header, in_bytes(BasicObjectLock::lock_offset()) +
+                 BasicLock::displaced_header_offset_in_bytes(), monitor);
+
+      // If the displaced header is zero, we have a recursive unlock.
+      cmpdi(CCR0, header, 0);
+      beq(CCR0, free_slot); // recursive unlock
     }
 
-    // Test first if we are in the fast recursive case.
-    ld(displaced_header, BasicObjectLock::lock_offset_in_bytes() +
-           BasicLock::displaced_header_offset_in_bytes(), monitor);
-
-    // If the displaced header is zero, we have a recursive unlock.
-    cmpdi(CCR0, displaced_header, 0);
-    beq(CCR0, free_slot); // recursive unlock
-
-    // } else if (Atomic::cmpxchg(displaced_header, obj->mark_addr(), monitor) == monitor) {
+    // } else if (Atomic::cmpxchg(obj->mark_addr(), monitor, displaced_header) == monitor) {
     //   // We swapped the unlocked mark in displaced_header into the object's mark word.
-    //   monitor->set_obj(NULL);
+    //   monitor->set_obj(nullptr);
 
     // If we still have a lightweight lock, unlock the object and be done.
 
     // The object address from the monitor is in object.
-    if (!UseBiasedLocking) { ld(object, BasicObjectLock::obj_offset_in_bytes(), monitor); }
-    addi(object_mark_addr, object, oopDesc::mark_offset_in_bytes());
+    ld(object, in_bytes(BasicObjectLock::obj_offset()), monitor);
 
-    // We have the displaced header in displaced_header. If the lock is still
-    // lightweight, it will contain the monitor address and we'll store the
-    // displaced header back into the object's mark word.
-    // CmpxchgX sets CCR0 to cmpX(current, monitor).
-    cmpxchgd(/*flag=*/CCR0,
-             /*current_value=*/current_header,
-             /*compare_value=*/monitor, /*exchange_value=*/displaced_header,
-             /*where=*/object_mark_addr,
-             MacroAssembler::MemBarRel,
-             MacroAssembler::cmpxchgx_hint_release_lock(),
-             noreg,
-             &slow_case);
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      // Check for non-symmetric locking. This is allowed by the spec and the interpreter
+      // must handle it.
+      Register tmp = current_header;
+      // First check for lock-stack underflow.
+      lwz(tmp, in_bytes(JavaThread::lock_stack_top_offset()), R16_thread);
+      cmplwi(CCR0, tmp, (unsigned)LockStack::start_offset());
+      ble(CCR0, slow_case);
+      // Then check if the top of the lock-stack matches the unlocked object.
+      addi(tmp, tmp, -oopSize);
+      ldx(tmp, tmp, R16_thread);
+      cmpd(CCR0, tmp, object);
+      bne(CCR0, slow_case);
+
+      ld(header, oopDesc::mark_offset_in_bytes(), object);
+      andi_(R0, header, markWord::monitor_value);
+      bne(CCR0, slow_case);
+      fast_unlock(object, header, slow_case);
+    } else {
+      addi(object_mark_addr, object, oopDesc::mark_offset_in_bytes());
+
+      // We have the displaced header in displaced_header. If the lock is still
+      // lightweight, it will contain the monitor address and we'll store the
+      // displaced header back into the object's mark word.
+      // CmpxchgX sets CCR0 to cmpX(current, monitor).
+      cmpxchgd(/*flag=*/CCR0,
+               /*current_value=*/current_header,
+               /*compare_value=*/monitor, /*exchange_value=*/header,
+               /*where=*/object_mark_addr,
+               MacroAssembler::MemBarRel,
+               MacroAssembler::cmpxchgx_hint_release_lock(),
+               noreg,
+               &slow_case);
+    }
     b(free_slot);
 
     // } else {
     //   // Slow path.
-    //   InterpreterRuntime::monitorexit(THREAD, monitor);
+    //   InterpreterRuntime::monitorexit(monitor);
 
     // The lock has been converted into a heavy lock and hence
     // we need to get into the slow case.
     bind(slow_case);
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit),
-            monitor, check_for_exceptions);
+    call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), monitor);
     // }
 
     Label done;
     b(done); // Monitor register may be overwritten! Runtime has already freed the slot.
 
-    // Exchange worked, do monitor->set_obj(NULL);
+    // Exchange worked, do monitor->set_obj(nullptr);
     align(32, 12);
     bind(free_slot);
     li(R0, 0);
-    std(R0, BasicObjectLock::obj_offset_in_bytes(), monitor);
+    std(R0, in_bytes(BasicObjectLock::obj_offset()), monitor);
+    dec_held_monitor_count(current_header /*tmp*/);
     bind(done);
   }
 }
@@ -1100,7 +1178,6 @@ void InterpreterMacroAssembler::call_from_interpreter(Register Rtarget_method, R
     // compiled code in threads for which the event is enabled. Check here for
     // interp_only_mode if these events CAN be enabled.
     Label done;
-    verify_thread();
     cmpwi(CCR0, Rinterp_only, 0);
     beq(CCR0, done);
     ld(Rtarget_addr, in_bytes(Method::interpreter_entry_offset()), Rtarget_method);
@@ -1128,7 +1205,7 @@ void InterpreterMacroAssembler::call_from_interpreter(Register Rtarget_method, R
   // to meet the abi scratch requirements.
   // The max_stack pointer will get restored by means of the GR_Lmax_stack local in
   // the return entry of the interpreter.
-  addi(Rscratch2, R15_esp, Interpreter::stackElementSize - frame::abi_reg_args_size);
+  addi(Rscratch2, R15_esp, Interpreter::stackElementSize - frame::top_ijava_frame_abi_size);
   clrrdi(Rscratch2, Rscratch2, exact_log2(frame::alignment_in_bytes)); // round towards smaller address
   resize_frame_absolute(Rscratch2, Rscratch2, R0);
 
@@ -1140,7 +1217,7 @@ void InterpreterMacroAssembler::call_from_interpreter(Register Rtarget_method, R
 #ifdef ASSERT
   ld(Rscratch1, _ijava_state_neg(top_frame_sp), Rscratch2); // Rscratch2 contains fp
   cmpd(CCR0, R21_sender_SP, Rscratch1);
-  asm_assert_eq("top_frame_sp incorrect", 0x951);
+  asm_assert_eq("top_frame_sp incorrect");
 #endif
 
   bctr();
@@ -1185,95 +1262,6 @@ void InterpreterMacroAssembler::verify_method_data_pointer() {
 
   bind(verify_continue);
 #endif
-}
-
-void InterpreterMacroAssembler::test_invocation_counter_for_mdp(Register invocation_count,
-                                                                Register method_counters,
-                                                                Register Rscratch,
-                                                                Label &profile_continue) {
-  assert(ProfileInterpreter, "must be profiling interpreter");
-  // Control will flow to "profile_continue" if the counter is less than the
-  // limit or if we call profile_method().
-  Label done;
-
-  // If no method data exists, and the counter is high enough, make one.
-  lwz(Rscratch, in_bytes(MethodCounters::interpreter_profile_limit_offset()), method_counters);
-
-  cmpdi(CCR0, R28_mdx, 0);
-  // Test to see if we should create a method data oop.
-  cmpd(CCR1, Rscratch, invocation_count);
-  bne(CCR0, done);
-  bge(CCR1, profile_continue);
-
-  // Build it now.
-  call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::profile_method));
-  set_method_data_pointer_for_bcp();
-  b(profile_continue);
-
-  align(32, 12);
-  bind(done);
-}
-
-void InterpreterMacroAssembler::test_backedge_count_for_osr(Register backedge_count, Register method_counters,
-                                                            Register target_bcp, Register disp, Register Rtmp) {
-  assert_different_registers(backedge_count, target_bcp, disp, Rtmp, R4_ARG2);
-  assert(UseOnStackReplacement,"Must UseOnStackReplacement to test_backedge_count_for_osr");
-
-  Label did_not_overflow;
-  Label overflow_with_error;
-
-  lwz(Rtmp, in_bytes(MethodCounters::interpreter_backward_branch_limit_offset()), method_counters);
-  cmpw(CCR0, backedge_count, Rtmp);
-
-  blt(CCR0, did_not_overflow);
-
-  // When ProfileInterpreter is on, the backedge_count comes from the
-  // methodDataOop, which value does not get reset on the call to
-  // frequency_counter_overflow(). To avoid excessive calls to the overflow
-  // routine while the method is being compiled, add a second test to make sure
-  // the overflow function is called only once every overflow_frequency.
-  if (ProfileInterpreter) {
-    const int overflow_frequency = 1024;
-    andi_(Rtmp, backedge_count, overflow_frequency-1);
-    bne(CCR0, did_not_overflow);
-  }
-
-  // Overflow in loop, pass branch bytecode.
-  subf(R4_ARG2, disp, target_bcp); // Compute branch bytecode (previous bcp).
-  call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::frequency_counter_overflow), R4_ARG2, true);
-
-  // Was an OSR adapter generated?
-  cmpdi(CCR0, R3_RET, 0);
-  beq(CCR0, overflow_with_error);
-
-  // Has the nmethod been invalidated already?
-  lbz(Rtmp, nmethod::state_offset(), R3_RET);
-  cmpwi(CCR0, Rtmp, nmethod::in_use);
-  bne(CCR0, overflow_with_error);
-
-  // Migrate the interpreter frame off of the stack.
-  // We can use all registers because we will not return to interpreter from this point.
-
-  // Save nmethod.
-  const Register osr_nmethod = R31;
-  mr(osr_nmethod, R3_RET);
-  set_top_ijava_frame_at_SP_as_last_Java_frame(R1_SP, R11_scratch1);
-  call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::OSR_migration_begin), R16_thread);
-  reset_last_Java_frame();
-  // OSR buffer is in ARG1
-
-  // Remove the interpreter frame.
-  merge_frames(/*top_frame_sp*/ R21_sender_SP, /*return_pc*/ R0, R11_scratch1, R12_scratch2);
-
-  // Jump to the osr code.
-  ld(R11_scratch1, nmethod::osr_entry_point_offset(), osr_nmethod);
-  mtlr(R0);
-  mtctr(R11_scratch1);
-  bctr();
-
-  align(32, 12);
-  bind(overflow_with_error);
-  bind(did_not_overflow);
 }
 
 // Store a value at some constant offset from the method data pointer.
@@ -1747,7 +1735,7 @@ void InterpreterMacroAssembler::record_klass_in_profile_helper(
   }
 
   // In the fall-through case, we found no matching receiver, but we
-  // observed the receiver[start_row] is NULL.
+  // observed the receiver[start_row] is null.
 
   // Fill in the receiver field and increment the count.
   int recvr_offset = in_bytes(VirtualCallData::receiver_offset(start_row));
@@ -1834,7 +1822,7 @@ void InterpreterMacroAssembler::profile_arguments_type(Register callee,
     if (MethodData::profile_arguments()) {
       Label done;
       int off_to_args = in_bytes(TypeEntriesAtCall::args_data_offset());
-      add(R28_mdx, off_to_args, R28_mdx);
+      addi(R28_mdx, R28_mdx, off_to_args);
 
       for (int i = 0; i < TypeProfileArgsLimit; i++) {
         if (i > 0 || MethodData::profile_return()) {
@@ -1903,15 +1891,15 @@ void InterpreterMacroAssembler::profile_return_type(Register ret, Register tmp1,
     if (MethodData::profile_return_jsr292_only()) {
       // If we don't profile all invoke bytecodes we must make sure
       // it's a bytecode we indeed profile. We can't go back to the
-      // begining of the ProfileData we intend to update to check its
+      // beginning of the ProfileData we intend to update to check its
       // type because we're right after it and we don't known its
       // length.
       lbz(tmp1, 0, R14_bcp);
-      lbz(tmp2, Method::intrinsic_id_offset_in_bytes(), R19_method);
+      lbz(tmp2, in_bytes(Method::intrinsic_id_offset()), R19_method);
       cmpwi(CCR0, tmp1, Bytecodes::_invokedynamic);
       cmpwi(CCR1, tmp1, Bytecodes::_invokehandle);
       cror(CCR0, Assembler::equal, CCR1, Assembler::equal);
-      cmpwi(CCR1, tmp2, vmIntrinsics::_compiledLambdaForm);
+      cmpwi(CCR1, tmp2, static_cast<int>(vmIntrinsics::_compiledLambdaForm));
       cror(CCR0, Assembler::equal, CCR1, Assembler::equal);
       bne(CCR0, profile_continue);
     }
@@ -2160,7 +2148,7 @@ void InterpreterMacroAssembler::check_and_forward_exception(Register Rscratch1, 
   li(Rtmp, 0);
   mr_if_needed(R3, Rexception);
   std(Rtmp, thread_(pending_exception)); // Clear exception in thread
-  if (Interpreter::rethrow_exception_entry() != NULL) {
+  if (Interpreter::rethrow_exception_entry() != nullptr) {
     // Already got entry address.
     load_dispatch_table(Rtmp, (address*)Interpreter::rethrow_exception_entry());
   } else {
@@ -2229,8 +2217,17 @@ void InterpreterMacroAssembler::save_interpreter_state(Register scratch) {
   // Other entries should be unchanged.
 }
 
-void InterpreterMacroAssembler::restore_interpreter_state(Register scratch, bool bcp_and_mdx_only) {
-  ld(scratch, 0, R1_SP);
+void InterpreterMacroAssembler::restore_interpreter_state(Register scratch, bool bcp_and_mdx_only, bool restore_top_frame_sp) {
+  ld_ptr(scratch, _abi0(callers_sp), R1_SP);   // Load frame pointer.
+  if (restore_top_frame_sp) {
+    // After thawing the top frame of a continuation we reach here with frame::java_abi.
+    // therefore we have to restore top_frame_sp before the assertion below.
+    assert(!bcp_and_mdx_only, "chose other registers");
+    Register tfsp = R18_locals;
+    Register scratch2 = R26_monitor;
+    ld(tfsp, _ijava_state_neg(top_frame_sp), scratch);
+    resize_frame_absolute(tfsp, scratch2, R0);
+  }
   ld(R14_bcp, _ijava_state_neg(bcp), scratch); // Changed by VM code (exception).
   if (ProfileInterpreter) { ld(R28_mdx, _ijava_state_neg(mdx), scratch); } // Changed by VM code.
   if (!bcp_and_mdx_only) {
@@ -2240,23 +2237,17 @@ void InterpreterMacroAssembler::restore_interpreter_state(Register scratch, bool
     // Following ones are stack addresses and don't require reload.
     ld(R15_esp, _ijava_state_neg(esp), scratch);
     ld(R18_locals, _ijava_state_neg(locals), scratch);
+    sldi(R18_locals, R18_locals, Interpreter::logStackElementSize);
+    add(R18_locals, R18_locals, scratch);
     ld(R26_monitor, _ijava_state_neg(monitors), scratch);
   }
 #ifdef ASSERT
   {
     Label Lok;
     subf(R0, R1_SP, scratch);
-    cmpdi(CCR0, R0, frame::abi_reg_args_size + frame::ijava_state_size);
+    cmpdi(CCR0, R0, frame::top_ijava_frame_abi_size + frame::ijava_state_size);
     bge(CCR0, Lok);
-    stop("frame too small (restore istate)", 0x5432);
-    bind(Lok);
-  }
-  {
-    Label Lok;
-    ld(R0, _ijava_state_neg(ijava_reserved), scratch);
-    cmpdi(CCR0, R0, 0x5afe);
-    beq(CCR0, Lok);
-    stop("frame corrupted (restore istate)", 0x5afe);
+    stop("frame too small (restore istate)");
     bind(Lok);
   }
 #endif
@@ -2271,7 +2262,7 @@ void InterpreterMacroAssembler::get_method_counters(Register method,
   cmpdi(CCR0, Rcounters, 0);
   bne(CCR0, has_counters);
   call_VM(noreg, CAST_FROM_FN_PTR(address,
-                                  InterpreterRuntime::build_method_counters), method, false);
+                                  InterpreterRuntime::build_method_counters), method);
   ld(Rcounters, in_bytes(Method::method_counters_offset()), method);
   cmpdi(CCR0, Rcounters, 0);
   beq(CCR0, skip); // No MethodCounters, OutOfMemory.
@@ -2283,7 +2274,7 @@ void InterpreterMacroAssembler::get_method_counters(Register method,
 void InterpreterMacroAssembler::increment_invocation_counter(Register Rcounters,
                                                              Register iv_be_count,
                                                              Register Rtmp_r0) {
-  assert(UseCompiler || LogTouchedMethods, "incrementing must be useful");
+  assert(UseCompiler, "incrementing must be useful");
   Register invocation_count = iv_be_count;
   Register backedge_count   = Rtmp_r0;
   int delta = InvocationCounter::count_increment;
@@ -2319,7 +2310,7 @@ void InterpreterMacroAssembler::increment_invocation_counter(Register Rcounters,
 }
 
 void InterpreterMacroAssembler::verify_oop(Register reg, TosState state) {
-  if (state == atos) { MacroAssembler::verify_oop(reg); }
+  if (state == atos) { MacroAssembler::verify_oop(reg, FILE_AND_LINE); }
 }
 
 // Local helper function for the verify_oop_or_return_address macro.
@@ -2400,8 +2391,7 @@ void InterpreterMacroAssembler::notify_method_entry() {
     lwz(R0, in_bytes(JavaThread::interp_only_mode_offset()), R16_thread);
     cmpwi(CCR0, R0, 0);
     beq(CCR0, jvmti_post_done);
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_entry),
-            /*check_exceptions=*/true);
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_entry));
 
     bind(jvmti_post_done);
   }
@@ -2436,8 +2426,7 @@ void InterpreterMacroAssembler::notify_method_exit(bool is_native_method, TosSta
     cmpwi(CCR0, R0, 0);
     beq(CCR0, jvmti_post_done);
     if (!is_native_method) { push(state); } // Expose tos to GC.
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_exit),
-            /*check_exceptions=*/check_exceptions);
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_exit), check_exceptions);
     if (!is_native_method) { pop(state); }
 
     align(32, 12);

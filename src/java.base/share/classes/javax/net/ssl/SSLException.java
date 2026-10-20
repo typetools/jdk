@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -36,9 +39,8 @@ import java.io.IOException;
  * @since 1.4
  * @author David Brownell
  */
-public
-class SSLException extends IOException
-{
+public class SSLException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = 4511006460650708967L;
 
     /**
@@ -47,8 +49,8 @@ class SSLException extends IOException
      *
      * @param reason describes the problem.
      */
-    public SSLException(String reason)
-    {
+    @SideEffectFree
+    public SSLException(@Nullable String reason) {
         super(reason);
     }
 
@@ -64,9 +66,9 @@ class SSLException extends IOException
      *          unknown.)
      * @since 1.5
      */
-    public SSLException(String message, Throwable cause) {
-        super(message);
-        initCause(cause);
+    @SideEffectFree
+    public SSLException(@Nullable String message, @Nullable Throwable cause) {
+        super(message, cause);
     }
 
     /**
@@ -81,8 +83,8 @@ class SSLException extends IOException
      *          unknown.)
      * @since 1.5
      */
-    public SSLException(Throwable cause) {
-        super(cause == null ? null : cause.toString());
-        initCause(cause);
+    @SideEffectFree
+    public SSLException(@Nullable Throwable cause) {
+        super(cause);
     }
 }

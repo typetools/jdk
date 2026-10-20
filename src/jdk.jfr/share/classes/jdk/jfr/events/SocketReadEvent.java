@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,12 +39,8 @@ import jdk.jfr.internal.Type;
 @Description("Reading data from a socket")
 public final class SocketReadEvent extends AbstractJDKEvent {
 
-    public static final ThreadLocal<SocketReadEvent> EVENT =
-        new ThreadLocal<>() {
-            @Override protected SocketReadEvent initialValue() {
-                return new SocketReadEvent();
-            }
-        };
+    // The order of these fields must be the same as the parameters in
+    // commit(..., String, String, int, long, long, boolean)
 
     @Label("Remote Host")
     public String host;
@@ -68,12 +64,7 @@ public final class SocketReadEvent extends AbstractJDKEvent {
     @Description("If end of stream was reached")
     public boolean endOfStream;
 
-    public void reset() {
-        host = null;
-        address = null;
-        port = 0;
-        timeout = 0;
-        bytesRead = 0L;
-        endOfStream = false;
+    public static void commit(long start, long duration, String host, String address, int port, long timeout, long byteRead, boolean endOfStream) {
+        // Generated
     }
 }

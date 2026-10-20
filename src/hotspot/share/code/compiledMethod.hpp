@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef SHARE_VM_CODE_COMPILEDMETHOD_HPP
-#define SHARE_VM_CODE_COMPILEDMETHOD_HPP
+#ifndef SHARE_CODE_COMPILEDMETHOD_HPP
+#define SHARE_CODE_COMPILEDMETHOD_HPP
 
 #include "code/codeBlob.hpp"
 #include "code/pcDesc.hpp"
 #include "oops/metadata.hpp"
+#include "oops/method.hpp"
 
 class Dependencies;
 class ExceptionHandlerTable;
@@ -36,6 +37,9 @@ class AbstractCompiler;
 class xmlStream;
 class CompiledStaticCall;
 class NativeCallWrapper;
+class ScopeDesc;
+class CompiledIC;
+class MetadataClosure;
 
 // This class is used internally by nmethods, to cache
 // exception/pc/handler information.
@@ -48,7 +52,8 @@ class ExceptionCache : public CHeapObj<mtCode> {
   address  _pc[cache_size];
   address  _handler[cache_size];
   volatile int _count;
-  ExceptionCache* _next;
+  ExceptionCache* volatile _next;
+  ExceptionCache* _purge_list_next;
 
   inline address pc_at(int index);
   void set_pc_at(int index, address a)      { assert(index >= 0 && index < cache_size,""); _pc[index] = a; }
@@ -65,8 +70,10 @@ class ExceptionCache : public CHeapObj<mtCode> {
   ExceptionCache(Handle exception, address pc, address handler);
 
   Klass*    exception_type()                { return _exception_type; }
-  ExceptionCache* next()                    { return _next; }
-  void      set_next(ExceptionCache *ec)    { _next = ec; }
+  ExceptionCache* next();
+  void      set_next(ExceptionCache *ec);
+  ExceptionCache* purge_list_next()                 { return _purge_list_next; }
+  void      set_purge_list_next(ExceptionCache *ec) { _purge_list_next = ec; }
 
   address match(Handle exception, address pc);
   bool    match_exception_with_space(Handle exception) ;
@@ -88,7 +95,7 @@ class PcDescCache {
   typedef PcDesc* PcDescPtr;
   volatile PcDescPtr _pc_descs[cache_size]; // last cache_size pc_descs found
  public:
-  PcDescCache() { debug_only(_pc_descs[0] = NULL); }
+  PcDescCache() { debug_only(_pc_descs[0] = nullptr); }
   void    reset_to(PcDesc* initial_pc_desc);
   PcDesc* find_pc_desc(int pc_offset, bool approximate);
   void    add_pc_desc(PcDesc* pc_desc);
@@ -123,7 +130,7 @@ public:
   PcDesc* find_pc_desc(address pc, bool approximate, const PcDescSearch& search) {
     address base_address = search.code_begin();
     PcDesc* desc = _pc_desc_cache.last_pc_desc();
-    if (desc != NULL && desc->pc_offset() == pc - base_address) {
+    if (desc != nullptr && desc->pc_offset() == pc - base_address) {
       return desc;
     }
     return find_pc_desc_internal(pc, approximate, search);
@@ -133,25 +140,25 @@ public:
 
 class CompiledMethod : public CodeBlob {
   friend class VMStructs;
-  friend class NMethodSweeper;
-
+  friend class DeoptimizationScope;
   void init_defaults();
 protected:
-  enum MarkForDeoptimizationStatus {
+  enum DeoptimizationStatus : u1 {
     not_marked,
     deoptimize,
-    deoptimize_noupdate
+    deoptimize_noupdate,
+    deoptimize_done
   };
 
-  MarkForDeoptimizationStatus _mark_for_deoptimization_status; // Used for stack deoptimization
+  volatile DeoptimizationStatus _deoptimization_status; // Used for stack deoptimization
+  // Used to track in which deoptimize handshake this method will be deoptimized.
+  uint64_t                      _deoptimization_generation;
 
-  bool _is_far_code; // Code is far from CodeCache.
-                     // Have to use far call instructions to call it from code in CodeCache.
   // set during construction
   unsigned int _has_unsafe_access:1;         // May fault due to unsafe access.
   unsigned int _has_method_handle_invokes:1; // Has this method MethodHandle invokes?
-  unsigned int _lazy_critical_native:1;      // Lazy JNI critical native
   unsigned int _has_wide_vectors:1;          // Preserve wide vectors at safepoints
+  unsigned int _has_monitors:1;              // Fastpath monitor detection for continuations
 
   Method*   _method;
   address _scopes_data_begin;
@@ -165,22 +172,36 @@ protected:
   PcDescContainer _pc_desc_container;
   ExceptionCache * volatile _exception_cache;
 
+  void* _gc_data;
+
   virtual void flush() = 0;
+
+private:
+  DeoptimizationStatus deoptimization_status() const {
+    return Atomic::load(&_deoptimization_status);
+  }
+
 protected:
-  CompiledMethod(Method* method, const char* name, CompilerType type, const CodeBlobLayout& layout, int frame_complete_offset, int frame_size, ImmutableOopMapSet* oop_maps, bool caller_must_gc_arguments);
-  CompiledMethod(Method* method, const char* name, CompilerType type, int size, int header_size, CodeBuffer* cb, int frame_complete_offset, int frame_size, OopMapSet* oop_maps, bool caller_must_gc_arguments);
+  CompiledMethod(Method* method, const char* name, CompilerType type, const CodeBlobLayout& layout, int frame_complete_offset, int frame_size, ImmutableOopMapSet* oop_maps, bool caller_must_gc_arguments, bool compiled);
+  CompiledMethod(Method* method, const char* name, CompilerType type, int size, int header_size, CodeBuffer* cb, int frame_complete_offset, int frame_size, OopMapSet* oop_maps, bool caller_must_gc_arguments, bool compiled);
 
 public:
-  virtual bool is_compiled() const                { return true; }
+  // Only used by unit test.
+  CompiledMethod() {}
+
+  template<typename T>
+  T* gc_data() const                              { return reinterpret_cast<T*>(_gc_data); }
+  template<typename T>
+  void set_gc_data(T* gc_data)                    { _gc_data = reinterpret_cast<void*>(gc_data); }
 
   bool  has_unsafe_access() const                 { return _has_unsafe_access; }
   void  set_has_unsafe_access(bool z)             { _has_unsafe_access = z; }
 
+  bool  has_monitors() const                      { return _has_monitors; }
+  void  set_has_monitors(bool z)                  { _has_monitors = z; }
+
   bool  has_method_handle_invokes() const         { return _has_method_handle_invokes; }
   void  set_has_method_handle_invokes(bool z)     { _has_method_handle_invokes = z; }
-
-  bool  is_lazy_critical_native() const           { return _lazy_critical_native; }
-  void  set_lazy_critical_native(bool z)          { _lazy_critical_native = z; }
 
   bool  has_wide_vectors() const                  { return _has_wide_vectors; }
   void  set_has_wide_vectors(bool z)              { _has_wide_vectors = z; }
@@ -189,11 +210,7 @@ public:
                              // allowed to advance state
          in_use        = 0,  // executable nmethod
          not_used      = 1,  // not entrant, but revivable
-         not_entrant   = 2,  // marked for deoptimization but activations may still exist,
-                             // will be transformed to zombie when all activations are gone
-         zombie        = 3,  // no activations exist, nmethod is ready for purge
-         unloaded      = 4   // there should be no activations, should not be called,
-                             // will be transformed to zombie immediately
+         not_entrant   = 2,  // marked for deoptimization but activations may still exist
   };
 
   virtual bool  is_in_use() const = 0;
@@ -207,13 +224,12 @@ public:
   virtual bool make_not_entrant() = 0;
   virtual bool make_entrant() = 0;
   virtual address entry_point() const = 0;
-  virtual bool make_zombie() = 0;
   virtual bool is_osr_method() const = 0;
   virtual int osr_entry_bci() const = 0;
   Method* method() const                          { return _method; }
   virtual void print_pcs() = 0;
-  bool is_native_method() const { return _method != NULL && _method->is_native(); }
-  bool is_java_method() const { return _method != NULL && !_method->is_native(); }
+  bool is_native_method() const { return _method != nullptr && _method->is_native(); }
+  bool is_java_method() const { return _method != nullptr && !_method->is_native(); }
 
   // ScopeDesc retrieval operation
   PcDesc* pc_desc_at(address pc)   { return find_pc_desc(pc, false); }
@@ -227,15 +243,18 @@ public:
   bool is_at_poll_return(address pc);
   bool is_at_poll_or_poll_return(address pc);
 
-  bool  is_marked_for_deoptimization() const      { return _mark_for_deoptimization_status != not_marked; }
-  void  mark_for_deoptimization(bool inc_recompile_counts = true) {
-    _mark_for_deoptimization_status = (inc_recompile_counts ? deoptimize : deoptimize_noupdate);
-  }
+  bool  is_marked_for_deoptimization() const { return deoptimization_status() != not_marked; }
+  bool  has_been_deoptimized() const { return deoptimization_status() == deoptimize_done; }
+  void  set_deoptimized_done();
+
+  virtual void  make_deoptimized() { assert(false, "not supported"); };
+
   bool update_recompile_counts() const {
     // Update recompile counts when either the update is explicitly requested (deoptimize)
     // or the nmethod is not marked for deoptimization at all (not_marked).
     // The latter happens during uncommon traps when deoptimized nmethod is made not entrant.
-    return _mark_for_deoptimization_status != deoptimize_noupdate;
+    DeoptimizationStatus status = deoptimization_status();
+    return status != deoptimize_noupdate && status != deoptimize_done;
   }
 
   // tells whether frames described by this nmethod can be deoptimized
@@ -267,6 +286,8 @@ public:
   bool consts_contains(address addr) const { return consts_begin() <= addr && addr < consts_end(); }
   int consts_size() const { return consts_end() - consts_begin(); }
 
+  virtual int skipped_instructions_size() const = 0;
+
   virtual address stub_begin() const = 0;
   virtual address stub_end() const = 0;
   bool stub_contains(address addr) const { return stub_begin() <= addr && addr < stub_end(); }
@@ -286,13 +307,15 @@ public:
 
   virtual oop* oop_addr_at(int index) const = 0;
   virtual Metadata** metadata_addr_at(int index) const = 0;
-  virtual void    set_original_pc(const frame* fr, address pc) = 0;
 
+protected:
   // Exception cache support
-  // Note: _exception_cache may be read concurrently. We rely on memory_order_consume here.
+  // Note: _exception_cache may be read and cleaned concurrently.
   ExceptionCache* exception_cache() const         { return _exception_cache; }
+  ExceptionCache* exception_cache_acquire() const;
   void set_exception_cache(ExceptionCache *ec)    { _exception_cache = ec; }
-  void release_set_exception_cache(ExceptionCache *ec);
+
+public:
   address handler_for_exception_and_pc(Handle exception, address pc);
   void add_handler_for_exception_and_pc(Handle exception, address pc, address handler);
   void clean_exception_cache();
@@ -305,20 +328,27 @@ public:
   address deopt_mh_handler_begin() const  { return _deopt_mh_handler_begin; }
 
   address deopt_handler_begin() const { return _deopt_handler_begin; }
-  virtual address get_original_pc(const frame* fr) = 0;
+  address* deopt_handler_begin_addr() { return &_deopt_handler_begin; }
   // Deopt
   // Return true is the PC is one would expect if the frame is being deopted.
   inline bool is_deopt_pc(address pc);
-  bool is_deopt_mh_entry(address pc) { return pc == deopt_mh_handler_begin(); }
+  inline bool is_deopt_mh_entry(address pc);
   inline bool is_deopt_entry(address pc);
 
-  virtual bool can_convert_to_zombie() = 0;
+  // Accessor/mutator for the original pc of a frame before a frame was deopted.
+  address get_original_pc(const frame* fr) { return *orig_pc_addr(fr); }
+  void    set_original_pc(const frame* fr, address pc) { *orig_pc_addr(fr) = pc; }
+
+  virtual int orig_pc_offset() = 0;
+
+private:
+  address* orig_pc_addr(const frame* fr);
+
+public:
   virtual const char* compile_kind() const = 0;
   virtual int get_state() const = 0;
 
   const char* state() const;
-
-  bool is_far_code() const { return _is_far_code; }
 
   bool inlinecache_check_contains(address addr) const {
     return (addr >= code_begin() && addr < verified_entry_point());
@@ -327,31 +357,33 @@ public:
   void preserve_callee_argument_oops(frame fr, const RegisterMap *reg_map, OopClosure* f);
 
   // implicit exceptions support
-  virtual address continuation_for_implicit_exception(address pc) { return NULL; }
+  address continuation_for_implicit_div0_exception(address pc) { return continuation_for_implicit_exception(pc, true); }
+  address continuation_for_implicit_null_exception(address pc) { return continuation_for_implicit_exception(pc, false); }
 
   static address get_deopt_original_pc(const frame* fr);
 
-  // GC unloading support
-  // Cleans unloaded klasses and unloaded nmethods in inline caches
-  bool unload_nmethod_caches(bool parallel, bool class_unloading_occurred);
-
   // Inline cache support for class unloading and nmethod unloading
  private:
-  bool cleanup_inline_caches_impl(bool parallel, bool unloading_occurred, bool clean_all);
+  bool cleanup_inline_caches_impl(bool unloading_occurred, bool clean_all);
+
+  address continuation_for_implicit_exception(address pc, bool for_div0_check);
+
  public:
-  bool cleanup_inline_caches(bool clean_all = false) {
-    // Serial version used by sweeper and whitebox test
-    return cleanup_inline_caches_impl(false, false, clean_all);
-  }
+  // Serial version used by whitebox test
+  void cleanup_inline_caches_whitebox();
 
   virtual void clear_inline_caches();
-  void clear_ic_stubs();
+  void clear_ic_callsites();
+
+  // Execute nmethod barrier code, as if entering through nmethod call.
+  void run_nmethod_entry_barrier();
 
   // Verify and count cached icholder relocations.
   int  verify_icholder_relocations();
   void verify_oop_relocations();
 
-  virtual bool is_evol_dependent_on(Klass* dependee) = 0;
+  bool has_evol_metadata();
+
   // Fast breakpoint support. Tells if this compiled method is
   // dependent on the given method. Returns true if this nmethod
   // corresponds to the given method as well.
@@ -368,56 +400,28 @@ public:
   Method* attached_method(address call_pc);
   Method* attached_method_before_pc(address pc);
 
-  virtual void metadata_do(void f(Metadata*)) = 0;
+  virtual void metadata_do(MetadataClosure* f) = 0;
 
   // GC support
-
-  void set_unloading_next(CompiledMethod* next) { _unloading_next = next; }
-  CompiledMethod* unloading_next()              { return _unloading_next; }
-
  protected:
   address oops_reloc_begin() const;
- private:
-  void static clean_ic_if_metadata_is_dead(CompiledIC *ic);
 
-  void clean_ic_stubs();
+ private:
+  bool static clean_ic_if_metadata_is_dead(CompiledIC *ic);
 
  public:
-  virtual void do_unloading(BoolObjectClosure* is_alive);
-  //  The parallel versions are used by G1.
-  virtual bool do_unloading_parallel(BoolObjectClosure* is_alive, bool unloading_occurred);
-  virtual void do_unloading_parallel_postponed();
+  // GC unloading support
+  // Cleans unloaded klasses and unloaded nmethods in inline caches
 
-  static unsigned char global_unloading_clock()   { return _global_unloading_clock; }
-  static void increase_unloading_clock();
+  virtual bool is_unloading() = 0;
 
-  void set_unloading_clock(unsigned char unloading_clock);
-  unsigned char unloading_clock();
-
-protected:
-  virtual bool do_unloading_oops(address low_boundary, BoolObjectClosure* is_alive) = 0;
-#if INCLUDE_JVMCI
-  virtual bool do_unloading_jvmci() = 0;
-#endif
+  bool unload_nmethod_caches(bool class_unloading_occurred);
+  virtual void do_unloading(bool unloading_occurred) = 0;
 
 private:
-  // GC support to help figure out if an nmethod has been
-  // cleaned/unloaded by the current GC.
-  static unsigned char _global_unloading_clock;
-
-  volatile unsigned char _unloading_clock;   // Incremented after GC unloaded/cleaned the nmethod
-
   PcDesc* find_pc_desc(address pc, bool approximate) {
     return _pc_desc_container.find_pc_desc(pc, approximate, PcDescSearch(code_begin(), scopes_pcs_begin(), scopes_pcs_end()));
   }
-
-protected:
-  union {
-    // Used by G1 to chain nmethods.
-    CompiledMethod* _unloading_next;
-    // Used by non-G1 GCs to chain nmethods.
-    nmethod* _scavenge_root_link; // from CodeCache::scavenge_root_nmethods
-  };
 };
 
-#endif //SHARE_VM_CODE_COMPILEDMETHOD_HPP
+#endif // SHARE_CODE_COMPILEDMETHOD_HPP

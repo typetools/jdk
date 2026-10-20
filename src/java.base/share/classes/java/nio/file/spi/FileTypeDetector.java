@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.nio.file.spi;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.nio.file.Path;
@@ -50,10 +51,11 @@ import java.io.IOException;
  * @since 1.7
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "nullable"})
 public abstract @UsesObjectEquals class FileTypeDetector {
 
     private static Void checkPermission() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkPermission(new RuntimePermission("fileTypeDetector"));
@@ -78,7 +80,7 @@ public abstract @UsesObjectEquals class FileTypeDetector {
      * <p> The means by which this method determines the file type is highly
      * implementation specific. It may simply examine the file name, it may use
      * a file <a href="../attribute/package-summary.html">attribute</a>,
-     * or it may examines bytes in the file.
+     * or it may examine bytes in the file.
      *
      * <p> The probe result is the string form of the value of a
      * Multipurpose Internet Mail Extension (MIME) content type as
@@ -103,8 +105,10 @@ public abstract @UsesObjectEquals class FileTypeDetector {
      *          provider then the {@link SecurityManager#checkRead(String)} method
      *          is invoked to check read access to the file.
      *
+     * @spec https://www.rfc-editor.org/info/rfc2045
+     *      RFC 2045: Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies
      * @see java.nio.file.Files#probeContentType
      */
-    public abstract String probeContentType(Path path)
+    public abstract @Nullable String probeContentType(Path path)
         throws IOException;
 }

@@ -35,7 +35,15 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -247,6 +255,7 @@ public class ScheduledThreadPoolExecutor
             return unit.convert(time - System.nanoTime(), NANOSECONDS);
         }
 
+        @Pure
         public int compareTo(Delayed other) {
             if (other == this) // compare zero if same object
                 return 0;
@@ -1016,6 +1025,7 @@ public class ScheduledThreadPoolExecutor
         /**
          * Finds index of given object, or -1 if absent.
          */
+        @Pure
         private int indexOf(Object x) {
             if (x != null) {
                 if (x instanceof ScheduledFutureTask) {
@@ -1033,7 +1043,9 @@ public class ScheduledThreadPoolExecutor
             return -1;
         }
 
-        public boolean contains(Object x) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1043,7 +1055,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
-        public boolean remove(Object x) {
+        public boolean remove(@UnknownSignedness Object x) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1078,6 +1090,7 @@ public class ScheduledThreadPoolExecutor
         }
 
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             return size() == 0;
         }
@@ -1086,7 +1099,8 @@ public class ScheduledThreadPoolExecutor
             return Integer.MAX_VALUE;
         }
 
-        public RunnableScheduledFuture<?> peek() {
+        @Pure
+        public @Nullable RunnableScheduledFuture<?> peek() {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1127,6 +1141,7 @@ public class ScheduledThreadPoolExecutor
             offer(e);
         }
 
+        @EnsuresNonEmpty("this")
         public boolean add(Runnable e) {
             return offer(e);
         }
@@ -1151,7 +1166,7 @@ public class ScheduledThreadPoolExecutor
             return f;
         }
 
-        public RunnableScheduledFuture<?> poll() {
+        public @Nullable RunnableScheduledFuture<?> poll() {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1198,7 +1213,7 @@ public class ScheduledThreadPoolExecutor
             }
         }
 
-        public RunnableScheduledFuture<?> poll(long timeout, TimeUnit unit)
+        public @Nullable RunnableScheduledFuture<?> poll(long timeout, TimeUnit unit)
             throws InterruptedException {
             long nanos = unit.toNanos(timeout);
             final ReentrantLock lock = this.lock;
@@ -1296,7 +1311,7 @@ public class ScheduledThreadPoolExecutor
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             final ReentrantLock lock = this.lock;
             lock.lock();
             try {
@@ -1333,11 +1348,15 @@ public class ScheduledThreadPoolExecutor
                 this.array = array;
             }
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cursor < array.length;
             }
 
-            public Runnable next() {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public Runnable next(@NonEmpty Itr this) {
                 if (cursor >= array.length)
                     throw new NoSuchElementException();
                 return array[lastRet = cursor++];

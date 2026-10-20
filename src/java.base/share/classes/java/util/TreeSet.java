@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,13 +26,28 @@
 package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 /**
  * A {@link NavigableSet} implementation based on a {@link TreeMap}.
@@ -82,6 +97,10 @@ import org.checkerframework.framework.qual.CFComment;
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i>
  *
+ * <p>The {@link #addFirst addFirst} and {@link #addLast addLast} methods of this class
+ * throw {@code UnsupportedOperationException}. The encounter order of elements is determined
+ * by the comparison method; therefore, explicit positioning is not supported.
+ *
  * <p>This class is a member of the
  * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
@@ -99,14 +118,14 @@ import org.checkerframework.framework.qual.CFComment;
  */
 
 @CFComment({"lock/nullness: Subclasses of this interface/class may opt to prohibit null elements"})
-@AnnotatedFor({"lock", "nullness"})
-public class TreeSet<E> extends AbstractSet<E>
+@AnnotatedFor({"lock", "nullness", "modifiability"})
+public @SeqUngrowable class TreeSet<E> extends AbstractSet<E>
     implements NavigableSet<E>, Cloneable, java.io.Serializable
 {
     /**
      * The backing map.
      */
-    private transient NavigableMap<E,Object> m;
+    private transient @Growable @Shrinkable NavigableMap<E,Object> m;
 
     // Dummy value to associate with an Object in the backing Map
     private static final Object PRESENT = new Object();
@@ -114,7 +133,7 @@ public class TreeSet<E> extends AbstractSet<E>
     /**
      * Constructs a set backed by the specified navigable map.
      */
-    TreeSet(NavigableMap<E,Object> m) {
+    @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod TreeSet(NavigableMap<E,Object> m) {
         this.m = m;
     }
 
@@ -131,7 +150,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * integers), the {@code add} call will throw a
      * {@code ClassCastException}.
      */
-    public TreeSet() {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod TreeSet() {
         this(new TreeMap<>());
     }
 
@@ -148,7 +167,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *        If {@code null}, the {@linkplain Comparable natural
      *        ordering} of the elements will be used.
      */
-    public TreeSet(@Nullable Comparator<? super E> comparator) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod TreeSet(@Nullable Comparator<? super E> comparator) {
         this(new TreeMap<>(comparator));
     }
 
@@ -166,7 +185,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         not {@link Comparable}, or are not mutually comparable
      * @throws NullPointerException if the specified collection is null
      */
-    public TreeSet(Collection<? extends E> c) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod @PolyNonEmpty TreeSet(@PolyNonEmpty Collection<? extends E> c) {
         this();
         addAll(c);
     }
@@ -178,7 +197,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @param s sorted set whose elements will comprise the new set
      * @throws NullPointerException if the specified sorted set is null
      */
-    public TreeSet(SortedSet<E> s) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod @PolyNonEmpty TreeSet(@PolyNonEmpty SortedSet<E> s) {
         this(s.comparator());
         addAll(s);
     }
@@ -189,7 +208,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set in ascending order
      */
     @SideEffectFree
-    public Iterator<E> iterator() {
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty TreeSet<E> this) {
         return m.navigableKeySet().iterator();
     }
 
@@ -199,14 +218,18 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set in descending order
      * @since 1.6
      */
-    public Iterator<E> descendingIterator() {
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> descendingIterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty TreeSet<E> this) {
         return m.descendingKeySet().iterator();
     }
 
     /**
      * @since 1.6
      */
-    public NavigableSet<E> descendingSet() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @PolyModifiable NavigableSet<E> descendingSet(@PolyModifiable TreeSet<E> this) {
         return new TreeSet<>(m.descendingMap());
     }
 
@@ -227,6 +250,7 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     @EnsuresNonNullIf(expression={"pollFirst()", "pollLast()"}, result=false)
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied TreeSet<E> this) {
         return m.isEmpty();
     }
@@ -246,7 +270,8 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      */
     @Pure
-    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied Object o) {
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.containsKey(o);
     }
 
@@ -267,7 +292,10 @@ public class TreeSet<E> extends AbstractSet<E>
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
      */
-    public boolean add(@GuardSatisfied TreeSet<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable @GuardSatisfied TreeSet<E> this, E e) {
         return m.put(e, PRESENT)==null;
     }
 
@@ -288,7 +316,9 @@ public class TreeSet<E> extends AbstractSet<E>
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
      */
-    public boolean remove(@GuardSatisfied TreeSet<E> this, Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @GuardSatisfied TreeSet<E> this, @GuardSatisfied @UnknownSignedness Object o) {
         return m.remove(o)==PRESENT;
     }
 
@@ -296,7 +326,9 @@ public class TreeSet<E> extends AbstractSet<E>
      * Removes all of the elements from this set.
      * The set will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied TreeSet<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied TreeSet<E> this) {
         m.clear();
     }
 
@@ -311,16 +343,15 @@ public class TreeSet<E> extends AbstractSet<E>
      *         if any element is null and this set uses natural ordering, or
      *         its comparator does not permit null elements
      */
-    public  boolean addAll(@GuardSatisfied TreeSet<E> this, Collection<? extends E> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public  boolean addAll(@Growable @GuardSatisfied TreeSet<E> this, Collection<? extends E> c) {
         // Use linear-time version if applicable
         if (m.size()==0 && c.size() > 0 &&
             c instanceof SortedSet &&
-            m instanceof TreeMap) {
+                m instanceof TreeMap<E, Object> map) {
             SortedSet<? extends E> set = (SortedSet<? extends E>) c;
-            TreeMap<E,Object> map = (TreeMap<E, Object>) m;
-            Comparator<?> cc = set.comparator();
-            Comparator<? super E> mc = map.comparator();
-            if (cc==mc || (cc != null && cc.equals(mc))) {
+            if (Objects.equals(set.comparator(), map.comparator())) {
                 map.addAllForTreeSet(set, PRESENT);
                 return true;
             }
@@ -337,7 +368,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> subSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
+    public @PolyGrowShrink @PolyModifiable NavigableSet<E> subSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, boolean fromInclusive,
                                   @GuardSatisfied E toElement,   boolean toInclusive) {
         return new TreeSet<>(m.subMap(fromElement, fromInclusive,
                                        toElement,   toInclusive));
@@ -352,7 +383,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> headSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E toElement, boolean inclusive) {
+    public @PolyGrowShrink @PolyModifiable NavigableSet<E> headSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E toElement, boolean inclusive) {
         return new TreeSet<>(m.headMap(toElement, inclusive));
     }
 
@@ -365,7 +396,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @since 1.6
      */
     @SideEffectFree
-    public NavigableSet<E> tailSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, boolean inclusive) {
+    public @PolyGrowShrink @PolyModifiable NavigableSet<E> tailSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, boolean inclusive) {
         return new TreeSet<>(m.tailMap(fromElement, inclusive));
     }
 
@@ -377,7 +408,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> subSet(@GuardSatisfied TreeSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement) {
+    public @PolyGrowShrink @PolyModifiable SortedSet<E> subSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, @GuardSatisfied E fromElement, @GuardSatisfied E toElement) {
         return subSet(fromElement, true, toElement, false);
     }
 
@@ -389,7 +420,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> headSet(@GuardSatisfied TreeSet<E> this, E toElement) {
+    public @PolyGrowShrink @PolyModifiable SortedSet<E> headSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, E toElement) {
         return headSet(toElement, false);
     }
 
@@ -401,7 +432,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @SideEffectFree
-    public SortedSet<E> tailSet(@GuardSatisfied TreeSet<E> this, E fromElement) {
+    public @PolyGrowShrink @PolyModifiable SortedSet<E> tailSet(@PolyModifiable @GuardSatisfied @PolyGrowShrink TreeSet<E> this, E fromElement) {
         return tailSet(fromElement, true);
     }
 
@@ -413,16 +444,16 @@ public class TreeSet<E> extends AbstractSet<E>
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @SideEffectFree
-    public E first(@GuardSatisfied TreeSet<E> this) {
+    @Pure
+    public E first(@GuardSatisfied @NonEmpty TreeSet<E> this) {
         return m.firstKey();
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @SideEffectFree
-    public E last(@GuardSatisfied TreeSet<E> this) {
+    @Pure
+    public E last(@GuardSatisfied @NonEmpty TreeSet<E> this) {
         return m.lastKey();
     }
 
@@ -435,6 +466,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E lower(E e) {
         return m.lowerKey(e);
     }
@@ -446,6 +478,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E floor(E e) {
         return m.floorKey(e);
     }
@@ -457,6 +490,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E ceiling(E e) {
         return m.ceilingKey(e);
     }
@@ -468,6 +502,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         does not permit null elements
      * @since 1.6
      */
+    @Pure
     public @Nullable E higher(E e) {
         return m.higherKey(e);
     }
@@ -475,7 +510,9 @@ public class TreeSet<E> extends AbstractSet<E>
     /**
      * @since 1.6
      */
-    public @Nullable E pollFirst(@GuardSatisfied TreeSet<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E pollFirst(@Shrinkable @GuardSatisfied TreeSet<E> this) {
         Map.Entry<E,?> e = m.pollFirstEntry();
         return (e == null) ? null : e.getKey();
     }
@@ -483,9 +520,41 @@ public class TreeSet<E> extends AbstractSet<E>
     /**
      * @since 1.6
      */
-    public @Nullable E pollLast(@GuardSatisfied TreeSet<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E pollLast(@Shrinkable @GuardSatisfied TreeSet<E> this) {
         Map.Entry<E,?> e = m.pollLastEntry();
         return (e == null) ? null : e.getKey();
+    }
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * set's comparison method determines the position of elements, so explicit positioning
+     * is not supported.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addFirst(@SeqGrowable TreeSet<E> this, E e) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Throws {@code UnsupportedOperationException}. The encounter order induced by this
+     * set's comparison method determines the position of elements, so explicit positioning
+     * is not supported.
+     *
+     * @throws UnsupportedOperationException always
+     * @since 21
+     */
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addLast(@SeqGrowable TreeSet<E> this, E e) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -496,7 +565,7 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     @SideEffectFree
     @SuppressWarnings("unchecked")
-    public Object clone(@GuardSatisfied TreeSet<E> this) {
+    public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod Object clone(@GuardSatisfied TreeSet<E> this) {
         TreeSet<E> clone;
         try {
             clone = (TreeSet<E>) super.clone();
@@ -520,6 +589,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *             set's Comparator, or by the elements' natural ordering if
      *             the set has no Comparator).
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         // Write out any hidden stuff
@@ -540,6 +610,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * Reconstitute the {@code TreeSet} instance from a stream (that is,
      * deserialize it).
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         // Read in any hidden stuff
@@ -578,9 +649,12 @@ public class TreeSet<E> extends AbstractSet<E>
      * @return a {@code Spliterator} over the elements in this set
      * @since 1.8
      */
+    @SideEffectFree
+    @DoesNotUnrefineReceiver("modifiability")
     public Spliterator<E> spliterator() {
         return TreeMap.keySpliteratorFor(m);
     }
 
+    @java.io.Serial
     private static final long serialVersionUID = -2479143000061671589L;
 }

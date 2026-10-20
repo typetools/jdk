@@ -34,7 +34,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 
 @AnnotatedFor({"interning"})
-public @UsesObjectEquals class ZipConstants64 {
+@UsesObjectEquals class ZipConstants64 {
 
     /*
      * ZIP64 constants

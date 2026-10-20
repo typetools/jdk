@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,6 +38,9 @@
 
 package java.text;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an error has been reached unexpectedly
  * while parsing.
@@ -47,9 +50,9 @@ package java.text;
  * @author      Mark Davis
  * @since 1.1
  */
-public
-class ParseException extends Exception {
+public class ParseException extends Exception {
 
+    @java.io.Serial
     private static final long serialVersionUID = 2703218443322787634L;
 
     /**
@@ -60,7 +63,8 @@ class ParseException extends Exception {
      * @param s the detail message
      * @param errorOffset the position where the error is found while parsing.
      */
-    public ParseException(String s, int errorOffset) {
+    @SideEffectFree
+    public ParseException(@Nullable String s, int errorOffset) {
         super(s);
         this.errorOffset = errorOffset;
     }

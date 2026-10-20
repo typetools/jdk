@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the generic KeyStore exception.
  *
@@ -36,25 +39,28 @@ package java.security;
 
 public class KeyStoreException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -1119353179322377262L;
 
     /**
-     * Constructs a KeyStoreException with no detail message.  (A
-     * detail message is a String that describes this particular
+     * Constructs a {@code KeyStoreException} with no detail message.  (A
+     * detail message is a {@code String} that describes this particular
      * exception.)
      */
+    @SideEffectFree
     public KeyStoreException() {
         super();
     }
 
     /**
-     * Constructs a KeyStoreException with the specified detail
-     * message.  (A detail message is a String that describes this
+     * Constructs a {@code KeyStoreException} with the specified detail
+     * message.  (A detail message is a {@code String} that describes this
      * particular exception.)
      *
      * @param msg the detail message.
      */
-   public KeyStoreException(String msg) {
+    @SideEffectFree
+   public KeyStoreException(@Nullable String msg) {
        super(msg);
     }
 
@@ -69,7 +75,8 @@ public class KeyStoreException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyStoreException(String message, Throwable cause) {
+    @SideEffectFree
+    public KeyStoreException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +91,8 @@ public class KeyStoreException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyStoreException(Throwable cause) {
+    @SideEffectFree
+    public KeyStoreException(@Nullable Throwable cause) {
         super(cause);
     }
 }

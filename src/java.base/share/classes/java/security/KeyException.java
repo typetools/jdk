@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the basic key exception.
  *
@@ -38,24 +41,27 @@ package java.security;
 
 public class KeyException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7483676942812432108L;
 
     /**
-     * Constructs a KeyException with no detail message. A detail
-     * message is a String that describes this particular exception.
+     * Constructs a {@code KeyException} with no detail message. A detail
+     * message is a {@code String} that describes this particular exception.
      */
+    @SideEffectFree
     public KeyException() {
         super();
     }
 
     /**
-     * Constructs a KeyException with the specified detail message.
-     * A detail message is a String that describes this particular
+     * Constructs a {@code KeyException} with the specified detail message.
+     * A detail message is a {@code String} that describes this particular
      * exception.
      *
      * @param msg the detail message.
      */
-    public KeyException(String msg) {
+    @SideEffectFree
+    public KeyException(@Nullable String msg) {
         super(msg);
     }
 
@@ -70,7 +76,8 @@ public class KeyException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyException(String message, Throwable cause) {
+    @SideEffectFree
+    public KeyException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -85,7 +92,8 @@ public class KeyException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyException(Throwable cause) {
+    @SideEffectFree
+    public KeyException(@Nullable Throwable cause) {
         super(cause);
     }
 }

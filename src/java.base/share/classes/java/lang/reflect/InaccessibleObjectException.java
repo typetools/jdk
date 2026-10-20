@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,20 +25,24 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when Java language access checks cannot be suppressed.
  *
  * @see AccessibleObject#setAccessible(boolean)
  * @since 9
- * @spec JPMS
  */
 
 public class InaccessibleObjectException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = 4158786093378140901L;
 
     /**
      * Constructs an {@code InaccessibleObjectException} with no detail message.
      */
+    @SideEffectFree
     public InaccessibleObjectException() {
     }
 
@@ -49,7 +53,8 @@ public class InaccessibleObjectException extends RuntimeException {
      * @param msg
      *        The detail message
      */
-    public InaccessibleObjectException(String msg) {
+    @SideEffectFree
+    public InaccessibleObjectException(@Nullable String msg) {
         super(msg);
     }
 

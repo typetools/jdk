@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Common superclass of exceptions thrown by reflective operations in
  * core reflection.
@@ -33,6 +36,7 @@ package java.lang;
  * @since 1.7
  */
 public class ReflectiveOperationException extends Exception {
+    @java.io.Serial
     static final long serialVersionUID = 123456789L;
 
     /**
@@ -40,6 +44,7 @@ public class ReflectiveOperationException extends Exception {
      * message.  The cause is not initialized, and may subsequently be
      * initialized by a call to {@link #initCause}.
      */
+    @SideEffectFree
     public ReflectiveOperationException() {
         super();
     }
@@ -52,7 +57,8 @@ public class ReflectiveOperationException extends Exception {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-    public ReflectiveOperationException(String message) {
+    @SideEffectFree
+    public ReflectiveOperationException(@Nullable String message) {
         super(message);
     }
 
@@ -71,7 +77,8 @@ public class ReflectiveOperationException extends Exception {
      *         permitted, and indicates that the cause is nonexistent or
      *         unknown.)
      */
-    public ReflectiveOperationException(String message, Throwable cause) {
+    @SideEffectFree
+    public ReflectiveOperationException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -85,7 +92,8 @@ public class ReflectiveOperationException extends Exception {
      *         permitted, and indicates that the cause is nonexistent or
      *         unknown.)
      */
-    public ReflectiveOperationException(Throwable cause) {
+    @SideEffectFree
+    public ReflectiveOperationException(@Nullable Throwable cause) {
         super(cause);
     }
 }

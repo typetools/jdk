@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,30 +25,26 @@
 
 package jdk.javadoc.internal.doclets.toolkit.builders;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
-import jdk.javadoc.internal.doclets.toolkit.BaseConfiguration;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import jdk.javadoc.internal.doclets.toolkit.BaseOptions;
+import jdk.javadoc.internal.doclets.toolkit.CommentUtils;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.DocletException;
 import jdk.javadoc.internal.doclets.toolkit.PropertyWriter;
-import jdk.javadoc.internal.doclets.toolkit.util.VisibleMemberTable;
 
-import static jdk.javadoc.internal.doclets.toolkit.util.VisibleMemberTable.Kind.*;
+import static jdk.javadoc.internal.doclets.toolkit.util.VisibleMemberTable.Kind.PROPERTIES;
 
 /**
  * Builds documentation for a property.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
- * @author Bhavesh Patel (Modified)
  */
 public class PropertyBuilder extends AbstractMemberBuilder {
 
@@ -72,14 +68,14 @@ public class PropertyBuilder extends AbstractMemberBuilder {
      * Construct a new PropertyBuilder.
      *
      * @param context  the build context.
-     * @param typeElement the class whoses members are being documented.
+     * @param typeElement the class whose members are being documented.
      * @param writer the doclet specific writer.
      */
     private PropertyBuilder(Context context,
             TypeElement typeElement,
             PropertyWriter writer) {
         super(context, typeElement);
-        this.writer = writer;
+        this.writer = Objects.requireNonNull(writer);
         properties = getVisibleMembers(PROPERTIES);
     }
 
@@ -87,7 +83,7 @@ public class PropertyBuilder extends AbstractMemberBuilder {
      * Construct a new PropertyBuilder.
      *
      * @param context  the build context.
-     * @param typeElement the class whoses members are being documented.
+     * @param typeElement the class whose members are being documented.
      * @param writer the doclet specific writer.
      * @return the new PropertyBuilder
      */
@@ -107,82 +103,101 @@ public class PropertyBuilder extends AbstractMemberBuilder {
         return !properties.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void build(Content contentTree) throws DocletException {
-        buildPropertyDoc(contentTree);
+    public void build(Content target) throws DocletException {
+        buildPropertyDoc(target);
     }
 
     /**
      * Build the property documentation.
      *
-     * @param memberDetailsTree the content tree to which the documentation will be added
+     * @param detailsList the content to which the documentation will be added
      * @throws DocletException if there is a problem while building the documentation
      */
-    protected void buildPropertyDoc(Content memberDetailsTree) throws DocletException {
-        if (writer == null) {
-            return;
-        }
+    protected void buildPropertyDoc(Content detailsList) throws DocletException {
         if (hasMembersToDocument()) {
-            Content propertyDetailsTree = writer.getPropertyDetailsTreeHeader(typeElement,
-                    memberDetailsTree);
-            Element lastElement = properties.get(properties.size() - 1);
+            Content propertyDetailsHeader = writer.getPropertyDetailsHeader(detailsList);
+            Content memberList = writer.getMemberList();
+
             for (Element property : properties) {
                 currentProperty = (ExecutableElement)property;
-                Content propertyDocTree = writer.getPropertyDocTreeHeader(currentProperty,
-                        propertyDetailsTree);
+                Content propertyContent = writer.getPropertyHeaderContent(currentProperty);
 
-                buildSignature(propertyDocTree);
-                buildPropertyComments(propertyDocTree);
-                buildTagInfo(propertyDocTree);
+                buildSignature(propertyContent);
+                buildPropertyComments(propertyContent);
+                buildTagInfo(propertyContent);
 
-                propertyDetailsTree.addContent(writer.getPropertyDoc(
-                        propertyDocTree, currentProperty == lastElement));
+                memberList.add(writer.getMemberListItem(propertyContent));
             }
-            memberDetailsTree.addContent(
-                    writer.getPropertyDetails(propertyDetailsTree));
+            Content propertyDetails = writer.getPropertyDetails(propertyDetailsHeader, memberList);
+            detailsList.add(propertyDetails);
         }
     }
 
     /**
      * Build the signature.
      *
-     * @param propertyDocTree the content tree to which the documentation will be added
+     * @param propertyContent the content to which the documentation will be added
      */
-    protected void buildSignature(Content propertyDocTree) {
-        propertyDocTree.addContent(writer.getSignature(currentProperty));
+    protected void buildSignature(Content propertyContent) {
+        propertyContent.add(writer.getSignature(currentProperty));
     }
 
     /**
      * Build the deprecation information.
      *
-     * @param propertyDocTree the content tree to which the documentation will be added
+     * @param propertyContent the content to which the documentation will be added
      */
-    protected void buildDeprecationInfo(Content propertyDocTree) {
-        writer.addDeprecated(currentProperty, propertyDocTree);
+    protected void buildDeprecationInfo(Content propertyContent) {
+        writer.addDeprecated(currentProperty, propertyContent);
+    }
+
+    /**
+     * Build the preview information.
+     *
+     * @param propertyContent the content to which the documentation will be added
+     */
+    protected void buildPreviewInfo(Content propertyContent) {
+        writer.addPreview(currentProperty, propertyContent);
     }
 
     /**
      * Build the comments for the property.  Do nothing if
-     * {@link BaseConfiguration#nocomment} is set to true.
+     * {@link BaseOptions#noComment()} is set to true.
      *
-     * @param propertyDocTree the content tree to which the documentation will be added
+     * @param propertyContent the content to which the documentation will be added
      */
-    protected void buildPropertyComments(Content propertyDocTree) {
-        if (!configuration.nocomment) {
-            writer.addComments(currentProperty, propertyDocTree);
+    protected void buildPropertyComments(Content propertyContent) {
+        if (!options.noComment()) {
+            writer.addComments(currentProperty, propertyContent);
         }
     }
 
     /**
      * Build the tag information.
      *
-     * @param propertyDocTree the content tree to which the documentation will be added
+     * @param propertyContent the content to which the documentation will be added
      */
-    protected void buildTagInfo(Content propertyDocTree) {
-        writer.addTags(currentProperty, propertyDocTree);
+    protected void buildTagInfo(Content propertyContent) {
+        CommentUtils cmtUtils = configuration.cmtUtils;
+        DocCommentTree dct = utils.getDocCommentTree(currentProperty);
+        var fullBody = dct.getFullBody();
+        ArrayList<DocTree> blockTags = dct.getBlockTags().stream()
+                .filter(t -> t.getKind() != DocTree.Kind.RETURN)
+                .collect(Collectors.toCollection(ArrayList::new));
+        String sig = "#" + currentProperty.getSimpleName() + "()";
+        blockTags.add(cmtUtils.makeSeeTree(sig, currentProperty));
+        // The property method is used as a proxy for the property
+        // (which does not have an explicit element of its own.)
+        // Temporarily override the doc comment for the property method
+        // by removing the `@return` tag, which should not be displayed for
+        // the property.
+        CommentUtils.DocCommentInfo prev = cmtUtils.setDocCommentTree(currentProperty, fullBody, blockTags);
+        try {
+            writer.addTags(currentProperty, propertyContent);
+        } finally {
+            cmtUtils.setDocCommentInfo(currentProperty, prev);
+        }
     }
 
     /**

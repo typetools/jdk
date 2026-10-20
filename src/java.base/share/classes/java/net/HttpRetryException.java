@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -35,11 +38,18 @@ import java.io.IOException;
  * @author  Michael McMahon
  * @since   1.5
  */
-public
-class HttpRetryException extends IOException {
+public class HttpRetryException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = -9186022286469111381L;
 
+    /**
+     * The response code.
+     */
     private int responseCode;
+
+    /**
+     * The URL to be redirected to.
+     */
     private String location;
 
     /**
@@ -49,7 +59,8 @@ class HttpRetryException extends IOException {
      * @param   detail   the detail message.
      * @param   code   the HTTP response code from server.
      */
-    public HttpRetryException(String detail, int code) {
+    @SideEffectFree
+    public HttpRetryException(@Nullable String detail, int code) {
         super(detail);
         responseCode = code;
     }
@@ -62,7 +73,8 @@ class HttpRetryException extends IOException {
      * @param   code   the HTTP response code from server.
      * @param   location   the URL to be redirected to
      */
-    public HttpRetryException(String detail, int code, String location) {
+    @SideEffectFree
+    public HttpRetryException(@Nullable String detail, int code, String location) {
         super (detail);
         responseCode = code;
         this.location = location;
@@ -83,7 +95,7 @@ class HttpRetryException extends IOException {
      *
      * @return  The reason string
      */
-    public String getReason() {
+    public @Nullable String getReason() {
         return super.getMessage();
     }
 

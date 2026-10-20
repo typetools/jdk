@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,15 +31,13 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-
+import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.beans.VetoableChangeSupport;
-
-import java.beans.PropertyVetoException;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -62,7 +60,11 @@ import java.io.Serializable;
 @AnnotatedFor({"interning"})
 public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChild, BeanContextServicesListener, Serializable {
 
-    static final long serialVersionUID = 6328947014421475877L;
+    /**
+     * Use serialVersionUID from JDK 1.2 for interoperability.
+     */
+    @Serial
+    private static final long serialVersionUID = 6328947014421475877L;
 
     /**
      * construct a BeanContextChildSupport where this class has been
@@ -316,8 +318,11 @@ public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChi
 
     /**
      * Write the persistence state of the object.
+     *
+     * @param  oos the {@code ObjectOutputStream} to write
+     * @throws IOException if an I/O error occurs
      */
-
+    @Serial
     private void writeObject(ObjectOutputStream oos) throws IOException {
 
         /*
@@ -336,10 +341,14 @@ public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChi
 
     /**
      * Restore a persistent object, must wait for subsequent setBeanContext()
-     * to fully restore any resources obtained from the new nesting
-     * BeanContext
+     * to fully restore any resources obtained from the new nesting BeanContext.
+     *
+     * @param  ois the {@code ObjectInputStream} to read
+     * @throws ClassNotFoundException if the class of a serialized object could
+     *         not be found
+     * @throws IOException if an I/O error occurs
      */
-
+    @Serial
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
     }
@@ -352,6 +361,7 @@ public @UsesObjectEquals class BeanContextChildSupport implements BeanContextChi
      * The {@code BeanContext} in which
      * this {@code BeanContextChild} is nested.
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     public    BeanContextChild      beanContextChildPeer;
 
    /**

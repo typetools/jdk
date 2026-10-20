@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import jdk.internal.misc.JavaIOFileDescriptorAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaIOFileDescriptorAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.ref.PhantomCleanable;
 
 /**
@@ -202,7 +202,7 @@ public final class FileDescriptor {
      * be flushed into the FileDescriptor (for example, by invoking
      * OutputStream.flush) before that data will be affected by sync.
      *
-     * @exception SyncFailedException
+     * @throws    SyncFailedException
      *        Thrown when the buffers cannot be flushed,
      *        or because the system cannot guarantee that all the
      *        buffers have been synchronized with physical media.
@@ -230,7 +230,6 @@ public final class FileDescriptor {
      * The {@link #registerCleanup} method should be called for new fds.
      * @param fd the raw fd or -1 to indicate closed
      */
-    @SuppressWarnings("unchecked")
     synchronized void set(int fd) {
         if (fd == -1 && cleanup != null) {
             cleanup.clear();
@@ -246,7 +245,6 @@ public final class FileDescriptor {
      * The {@link #registerCleanup} method should be called for new handles.
      * @param handle the handle or -1 to indicate closed
      */
-    @SuppressWarnings("unchecked")
     void setHandle(long handle) {
         if (handle == -1 && cleanup != null) {
             cleanup.clear();
@@ -261,7 +259,6 @@ public final class FileDescriptor {
      * The cleanup should be registered after the handle is set in the FileDescriptor.
      * @param cleanable a PhantomCleanable to register
      */
-    @SuppressWarnings("unchecked")
     synchronized void registerCleanup(PhantomCleanable<FileDescriptor> cleanable) {
         Objects.requireNonNull(cleanable, "cleanable");
         if (cleanup != null) {
@@ -294,7 +291,6 @@ public final class FileDescriptor {
      * Package private to allow it to be used in java.io.
      * @throws IOException if close fails
      */
-    @SuppressWarnings("unchecked")
     synchronized void close() throws IOException {
         unregisterCleanup();
         close0();

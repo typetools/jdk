@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,27 +25,23 @@
 
 package sun.print;
 
-import java.lang.ref.SoftReference;
-import java.util.Hashtable;
+import sun.awt.image.SunWritableRaster;
+import sun.awt.image.ToolkitImage;
 import sun.font.CharToGlyphMapper;
 import sun.font.CompositeFont;
 import sun.font.Font2D;
 import sun.font.Font2DHandle;
-import sun.font.FontManager;
-import sun.font.FontManagerFactory;
 import sun.font.FontUtilities;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Paint;
 import java.awt.Polygon;
 import java.awt.Shape;
-
-import java.awt.geom.Path2D;
-import java.text.AttributedCharacterIterator;
-
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.font.TextAttribute;
@@ -55,10 +51,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
-import java.awt.geom.PathIterator;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
@@ -72,16 +69,15 @@ import java.awt.image.RenderedImage;
 import java.awt.image.SampleModel;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.VolatileImage;
-import sun.awt.image.ByteComponentRaster;
-import sun.awt.image.ToolkitImage;
-import sun.awt.image.SunWritableRaster;
 
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.awt.print.PrinterGraphics;
 import java.awt.print.PrinterJob;
 
+import java.lang.ref.SoftReference;
+import java.text.AttributedCharacterIterator;
+import java.util.Hashtable;
 import java.util.Map;
 
 public abstract class PathGraphics extends ProxyGraphics2D {
@@ -456,7 +452,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * @see         java.awt.Graphics#drawPolygon(int[], int[], int)
      * @since       1.1
      */
-    public void drawPolyline(int xPoints[], int yPoints[],
+    public void drawPolyline(int[] xPoints, int[] yPoints,
                              int nPoints) {
 
         if (nPoints == 2) {
@@ -486,13 +482,13 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * 1&nbsp;&le;&nbsp;<i>i</i>&nbsp;&le;&nbsp;{@code nPoints}.
      * The figure is automatically closed by drawing a line connecting
      * the final point to the first point, if those points are different.
-     * @param        xPoints   a an array of {@code x} coordinates.
-     * @param        yPoints   a an array of {@code y} coordinates.
-     * @param        nPoints   a the total number of points.
+     * @param        xPoints   an array of {@code x} coordinates.
+     * @param        yPoints   an array of {@code y} coordinates.
+     * @param        nPoints   the total number of points.
      * @see          java.awt.Graphics#fillPolygon
      * @see          java.awt.Graphics#drawPolyline
      */
-    public void drawPolygon(int xPoints[], int yPoints[],
+    public void drawPolygon(int[] xPoints, int[] yPoints,
                                      int nPoints) {
 
         draw(new Polygon(xPoints, yPoints, nPoints));
@@ -524,12 +520,12 @@ public abstract class PathGraphics extends ProxyGraphics2D {
      * <p>
      * The area inside the polygon is defined using an
      * even-odd fill rule, also known as the alternating rule.
-     * @param        xPoints   a an array of {@code x} coordinates.
-     * @param        yPoints   a an array of {@code y} coordinates.
-     * @param        nPoints   a the total number of points.
+     * @param        xPoints   an array of {@code x} coordinates.
+     * @param        yPoints   an array of {@code y} coordinates.
+     * @param        nPoints   the total number of points.
      * @see          java.awt.Graphics#drawPolygon(int[], int[], int)
      */
-    public void fillPolygon(int xPoints[], int yPoints[],
+    public void fillPolygon(int[] xPoints, int[] yPoints,
                             int nPoints) {
 
         fill(new Polygon(xPoints, yPoints, nPoints));
@@ -893,8 +889,8 @@ public abstract class PathGraphics extends ProxyGraphics2D {
              */
             Map<TextAttribute, ?> map = font.getAttributes();
             Object o = map.get(TextAttribute.TRACKING);
-            boolean tracking = o != null && (o instanceof Number) &&
-                (((Number)o).floatValue() != 0f);
+            boolean tracking = (o instanceof Number n) &&
+                (n.floatValue() != 0f);
 
             if (tracking) {
                 noPositionAdjustments = false;
@@ -1890,4 +1886,25 @@ public abstract class PathGraphics extends ProxyGraphics2D {
 
     }
 
+    protected boolean isCompositing(Composite composite) {
+
+        boolean isCompositing = false;
+
+        if (composite instanceof AlphaComposite) {
+            AlphaComposite alphaComposite = (AlphaComposite) composite;
+            float alpha = alphaComposite.getAlpha();
+            int rule = alphaComposite.getRule();
+
+            if (alpha != 1.0
+                    || (rule != AlphaComposite.SRC
+                        && rule != AlphaComposite.SRC_OVER))
+            {
+                isCompositing = true;
+            }
+
+        } else {
+            isCompositing = true;
+        }
+        return isCompositing;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file cannot be moved as an atomic file system
  * operation.
@@ -32,9 +36,11 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class AtomicMoveNotSupportedException
     extends FileSystemException
 {
+    @java.io.Serial
     static final long serialVersionUID = 5402760225333135579L;
 
     /**
@@ -47,9 +53,10 @@ public class AtomicMoveNotSupportedException
      * @param   reason
      *          a reason message with additional information or {@code null}
      */
-    public AtomicMoveNotSupportedException(String source,
-                                           String target,
-                                           String reason)
+    @SideEffectFree
+    public AtomicMoveNotSupportedException(@Nullable String source,
+                                           @Nullable String target,
+                                           @Nullable String reason)
     {
         super(source, target, reason);
     }

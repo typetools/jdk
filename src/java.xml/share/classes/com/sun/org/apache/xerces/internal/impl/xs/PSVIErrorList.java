@@ -20,6 +20,8 @@
 
 package com.sun.org.apache.xerces.internal.impl.xs;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.xs.StringList;
 import java.util.AbstractList;
 
@@ -44,6 +46,7 @@ final class PSVIErrorList extends AbstractList<String> implements StringList {
         fOffset = even ? 0 : 1;
     }
 
+    @Pure
     public boolean contains(String item) {
         if (item == null) {
             for (int i = 0; i < fLength; ++i) {

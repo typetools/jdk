@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception is thrown if a key in the keystore cannot be recovered.
  *
@@ -34,23 +37,26 @@ package java.security;
 
 public class UnrecoverableKeyException extends UnrecoverableEntryException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 7275063078190151277L;
 
     /**
-     * Constructs an UnrecoverableKeyException with no detail message.
+     * Constructs an {@code UnrecoverableKeyException} with no detail message.
      */
+    @SideEffectFree
     public UnrecoverableKeyException() {
         super();
     }
 
     /**
-     * Constructs an UnrecoverableKeyException with the specified detail
+     * Constructs an {@code UnrecoverableKeyException} with the specified detail
      * message, which provides more information about why this exception
      * has been thrown.
      *
      * @param msg the detail message.
      */
-   public UnrecoverableKeyException(String msg) {
+    @SideEffectFree
+   public UnrecoverableKeyException(@Nullable String msg) {
        super(msg);
     }
 }

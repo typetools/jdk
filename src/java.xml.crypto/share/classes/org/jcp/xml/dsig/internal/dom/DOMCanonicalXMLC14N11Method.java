@@ -21,10 +21,7 @@
  * under the License.
  */
 /*
- * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
- */
-/*
- * $Id$
+ * Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
  */
 package org.jcp.xml.dsig.internal.dom;
 
@@ -48,7 +45,6 @@ public final class DOMCanonicalXMLC14N11Method extends ApacheCanonicalizer {
     public static final String C14N_11_WITH_COMMENTS
         = "http://www.w3.org/2006/12/xml-c14n11#WithComments";
 
-    @Override
     public void init(TransformParameterSpec params)
         throws InvalidAlgorithmParameterException {
         if (params != null) {
@@ -57,7 +53,6 @@ public final class DOMCanonicalXMLC14N11Method extends ApacheCanonicalizer {
         }
     }
 
-    @Override
     public Data transform(Data data, XMLCryptoContext xc)
         throws TransformException {
 
@@ -68,9 +63,7 @@ public final class DOMCanonicalXMLC14N11Method extends ApacheCanonicalizer {
             DOMSubTreeData subTree = (DOMSubTreeData) data;
             if (subTree.excludeComments()) {
                 try {
-                    apacheCanonicalizer = Canonicalizer.getInstance(C14N_11);
-                    boolean secVal = Utils.secureValidation(xc);
-                    apacheCanonicalizer.setSecureValidation(secVal);
+                    canonicalizer = Canonicalizer.getInstance(C14N_11);
                 } catch (InvalidCanonicalizerException ice) {
                     throw new TransformException
                         ("Couldn't find Canonicalizer for: " +

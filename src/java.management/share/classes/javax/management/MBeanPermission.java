@@ -262,7 +262,7 @@ public class MBeanPermission extends Permission {
         if (actions == null)
             throw new IllegalArgumentException("MBeanPermission: " +
                                                "actions can't be null");
-        if (actions.equals(""))
+        if (actions.isEmpty())
             throw new IllegalArgumentException("MBeanPermission: " +
                                                "actions can't be empty");
 
@@ -285,7 +285,7 @@ public class MBeanPermission extends Permission {
             throw new IllegalArgumentException("MBeanPermission name " +
                                                "cannot be null");
 
-        if (name.equals(""))
+        if (name.isEmpty())
             throw new IllegalArgumentException("MBeanPermission name " +
                                                "cannot be empty");
 
@@ -316,7 +316,7 @@ public class MBeanPermission extends Permission {
                     //
                     String on = name.substring(openingBracket + 1,
                                                name.length() - 1);
-                    if (on.equals(""))
+                    if (on.isEmpty())
                         objectName = ObjectName.WILDCARD;
                     else if (on.equals("-"))
                         objectName = null;
@@ -365,7 +365,7 @@ public class MBeanPermission extends Permission {
         if (className == null || className.equals("-")) {
             classNamePrefix = null;
             classNameExactMatch = false;
-        } else if (className.equals("") || className.equals("*")) {
+        } else if (className.isEmpty() || className.equals("*")) {
             classNamePrefix = "";
             classNameExactMatch = false;
         } else if (className.endsWith(".*")) {
@@ -381,7 +381,7 @@ public class MBeanPermission extends Permission {
     private void setMember(String member) {
         if (member == null || member.equals("-"))
             this.member = null;
-        else if (member.equals(""))
+        else if (member.isEmpty())
             this.member = "*";
         else
             this.member = member;

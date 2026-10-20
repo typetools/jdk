@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,20 +31,22 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.ref.Cleaner.Cleanable;
-import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.util.Objects;
 
 import jdk.internal.ref.CleanerFactory;
+import jdk.internal.util.Preconditions;
 import sun.nio.ch.DirectBuffer;
+
+import static java.util.zip.ZipUtils.NIO_ACCESS;
 
 /**
  * This class provides support for general purpose compression using the
  * popular ZLIB compression library. The ZLIB compression library was
  * initially developed as part of the PNG graphics standard and is not
  * protected by patents. It is fully described in the specifications at
- * the <a href="package-summary.html#package.description">java.util.zip
+ * the <a href="package-summary.html#package-description">java.util.zip
  * package description</a>.
  * <p>
  * This class deflates sequences of bytes into ZLIB compressed data format.
@@ -93,13 +95,6 @@ import sun.nio.ch.DirectBuffer;
  * acquired by the subclass. Subclasses that override {@link #finalize()} in order
  * to perform cleanup should be modified to use alternative cleanup mechanisms such
  * as {@link java.lang.ref.Cleaner} and remove the overriding {@code finalize} method.
- *
- * @implSpec
- * If this {@code Deflater} has been subclassed and the {@code end} method has been
- * overridden, the {@code end} method will be called by the finalization when the
- * deflater is unreachable. But the subclasses should not depend on this specific
- * implementation; the finalization is not reliable and the {@code finalize} method
- * is deprecated to be removed.
  *
  * @see         Inflater
  * @author      David Connelly
@@ -210,8 +205,8 @@ public @UsesObjectEquals class Deflater {
     public Deflater(int level, boolean nowrap) {
         this.level = level;
         this.strategy = DEFAULT_STRATEGY;
-        this.zsRef = DeflaterZStreamRef.get(this,
-                                    init(level, DEFAULT_STRATEGY, nowrap));
+        this.zsRef = new DeflaterZStreamRef(this,
+                init(level, DEFAULT_STRATEGY, nowrap));
     }
 
     /**
@@ -237,16 +232,13 @@ public @UsesObjectEquals class Deflater {
      * One of the {@code setInput()} methods should be called whenever
      * {@code needsInput()} returns true indicating that more input data
      * is required.
-     * <p>
      * @param input the input data bytes
      * @param off the start offset of the data
      * @param len the length of the data
      * @see Deflater#needsInput
      */
     public void setInput(byte[] input, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
-        if (off < 0 || len < 0 || off > input.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, input.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             this.input = null;
             this.inputArray = input;
@@ -261,7 +253,6 @@ public @UsesObjectEquals class Deflater {
      * One of the {@code setInput()} methods should be called whenever
      * {@code needsInput()} returns true indicating that more input data
      * is required.
-     * <p>
      * @param input the input data bytes
      * @see Deflater#needsInput
      */
@@ -309,12 +300,10 @@ public @UsesObjectEquals class Deflater {
      * @param off the start offset of the data
      * @param len the length of the data
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(byte[] dictionary, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len) {
-        if (off < 0 || len < 0 || off > dictionary.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, dictionary.length, Preconditions.AIOOBE_FORMATTER);
         synchronized (zsRef) {
             ensureOpen();
             setDictionary(zsRef.address(), dictionary, off, len);
@@ -329,7 +318,7 @@ public @UsesObjectEquals class Deflater {
      * decompression.
      * @param dictionary the dictionary data bytes
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(byte[] dictionary) {
         setDictionary(dictionary, 0, dictionary.length);
@@ -347,7 +336,7 @@ public @UsesObjectEquals class Deflater {
      *
      * @param dictionary the dictionary data bytes
      * @see Inflater#inflate
-     * @see Inflater#getAdler
+     * @see Inflater#getAdler()
      */
     public void setDictionary(ByteBuffer dictionary) {
         synchronized (zsRef) {
@@ -355,11 +344,12 @@ public @UsesObjectEquals class Deflater {
             int remaining = Math.max(dictionary.limit() - position, 0);
             ensureOpen();
             if (dictionary.isDirect()) {
-                long address = ((DirectBuffer) dictionary).address();
+                NIO_ACCESS.acquireSession(dictionary);
                 try {
+                    long address = ((DirectBuffer) dictionary).address();
                     setDictionaryBuffer(zsRef.address(), address + position, remaining);
                 } finally {
-                    Reference.reachabilityFence(dictionary);
+                    NIO_ACCESS.releaseSession(dictionary);
                 }
             } else {
                 byte[] array = ZipUtils.getBufferArray(dictionary);
@@ -379,7 +369,7 @@ public @UsesObjectEquals class Deflater {
      * effect only after that invocation.
      *
      * @param strategy the new compression strategy
-     * @exception IllegalArgumentException if the compression strategy is
+     * @throws    IllegalArgumentException if the compression strategy is
      *                                     invalid
      */
     public void setStrategy(int strategy) {
@@ -408,7 +398,7 @@ public @UsesObjectEquals class Deflater {
      * take effect only after that invocation.
      *
      * @param level the new compression level (0-9)
-     * @exception IllegalArgumentException if the compression level is invalid
+     * @throws    IllegalArgumentException if the compression level is invalid
      */
     public void setLevel(int level) {
         if ((level < 0 || level > 9) && level != DEFAULT_COMPRESSION) {
@@ -513,6 +503,7 @@ public @UsesObjectEquals class Deflater {
      * @param output the buffer for the compressed data
      * @return the actual number of bytes of compressed data written to the
      *         output buffer
+     * @throws ReadOnlyBufferException if the given output buffer is read-only
      * @since 11
      */
     public int deflate(ByteBuffer output) {
@@ -571,9 +562,7 @@ public @UsesObjectEquals class Deflater {
      * @since 1.7
      */
     public @GTENegativeOne int deflate(byte[] output, @IndexOrHigh({"#1"}) int off, @IndexOrHigh({"#1"}) int len, int flush) {
-        if (off < 0 || len < 0 || off > output.length - len) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
+        Preconditions.checkFromIndexSize(off, len, output.length, Preconditions.AIOOBE_FORMATTER);
         if (flush != NO_FLUSH && flush != SYNC_FLUSH && flush != FULL_FLUSH) {
             throw new IllegalArgumentException();
         }
@@ -606,6 +595,7 @@ public @UsesObjectEquals class Deflater {
                 inputPos = input.position();
                 int inputRem = Math.max(input.limit() - inputPos, 0);
                 if (input.isDirect()) {
+                    NIO_ACCESS.acquireSession(input);
                     try {
                         long inputAddress = ((DirectBuffer) input).address();
                         result = deflateBufferBytes(zsRef.address(),
@@ -613,7 +603,7 @@ public @UsesObjectEquals class Deflater {
                             output, off, len,
                             flush, params);
                     } finally {
-                        Reference.reachabilityFence(input);
+                        NIO_ACCESS.releaseSession(input);
                     }
                 } else {
                     byte[] inputArray = ZipUtils.getBufferArray(input);
@@ -694,6 +684,7 @@ public @UsesObjectEquals class Deflater {
      *         the output buffer
      *
      * @throws IllegalArgumentException if the flush mode is invalid
+     * @throws ReadOnlyBufferException if the given output buffer is read-only
      * @since 11
      */
     public int deflate(ByteBuffer output, int flush) {
@@ -727,14 +718,15 @@ public @UsesObjectEquals class Deflater {
             if (input == null) {
                 inputPos = this.inputPos;
                 if (output.isDirect()) {
-                    long outputAddress = ((DirectBuffer) output).address();
+                    NIO_ACCESS.acquireSession(output);
                     try {
+                        long outputAddress = ((DirectBuffer) output).address();
                         result = deflateBytesBuffer(zsRef.address(),
                             inputArray, inputPos, inputLim - inputPos,
                             outputAddress + outputPos, outputRem,
                             flush, params);
                     } finally {
-                        Reference.reachabilityFence(output);
+                        NIO_ACCESS.releaseSession(output);
                     }
                 } else {
                     byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -748,17 +740,19 @@ public @UsesObjectEquals class Deflater {
                 inputPos = input.position();
                 int inputRem = Math.max(input.limit() - inputPos, 0);
                 if (input.isDirect()) {
-                    long inputAddress = ((DirectBuffer) input).address();
+                    NIO_ACCESS.acquireSession(input);
                     try {
+                        long inputAddress = ((DirectBuffer) input).address();
                         if (output.isDirect()) {
-                            long outputAddress = outputPos + ((DirectBuffer) output).address();
+                            NIO_ACCESS.acquireSession(output);
                             try {
+                                long outputAddress = outputPos + ((DirectBuffer) output).address();
                                 result = deflateBufferBuffer(zsRef.address(),
                                     inputAddress + inputPos, inputRem,
                                     outputAddress, outputRem,
                                     flush, params);
                             } finally {
-                                Reference.reachabilityFence(output);
+                                NIO_ACCESS.releaseSession(output);
                             }
                         } else {
                             byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -769,20 +763,21 @@ public @UsesObjectEquals class Deflater {
                                 flush, params);
                         }
                     } finally {
-                        Reference.reachabilityFence(input);
+                        NIO_ACCESS.releaseSession(input);
                     }
                 } else {
                     byte[] inputArray = ZipUtils.getBufferArray(input);
                     int inputOffset = ZipUtils.getBufferOffset(input);
                     if (output.isDirect()) {
-                        long outputAddress = ((DirectBuffer) output).address();
+                        NIO_ACCESS.acquireSession(output);
                         try {
+                            long outputAddress = ((DirectBuffer) output).address();
                             result = deflateBytesBuffer(zsRef.address(),
                                 inputArray, inputOffset + inputPos, inputRem,
                                 outputAddress + outputPos, outputRem,
                                 flush, params);
                         } finally {
-                            Reference.reachabilityFence(output);
+                            NIO_ACCESS.releaseSession(output);
                         }
                     } else {
                         byte[] outputArray = ZipUtils.getBufferArray(output);
@@ -907,25 +902,20 @@ public @UsesObjectEquals class Deflater {
         }
     }
 
-    /**
-     * Closes the compressor when garbage is collected.
-     *
-     * @deprecated The {@code finalize} method has been deprecated and will be
-     *     removed. It is implemented as a no-op. Subclasses that override
-     *     {@code finalize} in order to perform cleanup should be modified to use
-     *     alternative cleanup mechanisms and to remove the overriding {@code finalize}
-     *     method. The recommended cleanup for compressor is to explicitly call
-     *     {@code end} method when it is no longer in use. If the {@code end} is
-     *     not invoked explicitly the resource of the compressor will be released
-     *     when the instance becomes unreachable.
-     */
-    @Deprecated(since="9", forRemoval=true)
-    protected void finalize() {}
-
     private void ensureOpen() {
         assert Thread.holdsLock(zsRef);
         if (zsRef.address() == 0)
             throw new NullPointerException("Deflater has been closed");
+    }
+
+    /**
+     * Returns the value of 'finish' flag.
+     * 'finish' will be set to true if def.finish() method is called.
+     */
+    boolean shouldFinish() {
+        synchronized (zsRef) {
+            return finish;
+        }
     }
 
     private static native long init(int level, int strategy, boolean nowrap);
@@ -983,43 +973,5 @@ public @UsesObjectEquals class Deflater {
             }
         }
 
-        /*
-         * If {@code Deflater} has been subclassed and the {@code end} method is
-         * overridden, uses {@code finalizer} mechanism for resource cleanup. So
-         * {@code end} method can be called when the {@code Deflater} is unreachable.
-         * This mechanism will be removed when the {@code finalize} method is
-         * removed from {@code Deflater}.
-         */
-        static DeflaterZStreamRef get(Deflater owner, long addr) {
-            Class<?> clz = owner.getClass();
-            while (clz != Deflater.class) {
-                try {
-                    clz.getDeclaredMethod("end");
-                    return new FinalizableZStreamRef(owner, addr);
-                } catch (NoSuchMethodException nsme) {}
-                clz = clz.getSuperclass();
-            }
-            return new DeflaterZStreamRef(owner, addr);
-        }
-
-        private static class FinalizableZStreamRef extends DeflaterZStreamRef {
-            final Deflater owner;
-
-            FinalizableZStreamRef (Deflater owner, long addr) {
-                super(null, addr);
-                this.owner = owner;
-            }
-
-            @Override
-            void clean() {
-                run();
-            }
-
-            @Override
-            @SuppressWarnings("deprecation")
-            protected void finalize() {
-                owner.end();
-            }
-        }
     }
 }

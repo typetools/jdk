@@ -43,7 +43,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @author Vincent Ryan
  */
 @AnnotatedFor({"interning"})
-final public class ManageReferralControl extends BasicControl {
+public final class ManageReferralControl extends BasicControl {
 
     /**
      * The ManageReferral control's assigned object identifier

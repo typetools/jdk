@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.nio.file;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Unchecked exception thrown when path string cannot be converted into a
  * {@link Path} because the path string contains invalid characters, or
@@ -33,12 +36,22 @@ package java.nio.file;
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class InvalidPathException
     extends IllegalArgumentException
 {
+    @java.io.Serial
     static final long serialVersionUID = 4355821422286746137L;
 
+    /**
+     * The input string.
+     */
     private String input;
+
+    /**
+     * The index of the input string at which the error occurred or
+     * {@code -1} if not known.
+     */
     private int index;
 
     /**
@@ -56,6 +69,7 @@ public class InvalidPathException
      * @throws  IllegalArgumentException
      *          if the error index is less than {@code -1}
      */
+    @SideEffectFree
     public InvalidPathException(String input, String reason, int index) {
         super(reason);
         if ((input == null) || (reason == null))
@@ -76,6 +90,7 @@ public class InvalidPathException
      * @throws  NullPointerException
      *          if either the input or reason strings are {@code null}
      */
+    @SideEffectFree
     public InvalidPathException(String input, String reason) {
         this(input, reason, -1);
     }
@@ -118,6 +133,7 @@ public class InvalidPathException
      *
      * @return  a string describing the error
      */
+    @SideEffectFree
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
         sb.append(getReason());

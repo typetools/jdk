@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,9 @@
 
 #include "precompiled.hpp"
 #ifdef COMPILER2
-#include "asm/assembler.hpp"
-#include "assembler_arm.inline.hpp"
-#include "classfile/systemDictionary.hpp"
+#include "asm/assembler.inline.hpp"
 #include "code/vmreg.hpp"
+#include "compiler/oopMap.hpp"
 #include "interpreter/interpreter.hpp"
 #include "memory/resourceArea.hpp"
 #include "nativeInst_arm.hpp"
@@ -69,12 +68,10 @@
 void OptoRuntime::generate_exception_blob() {
   // allocate space for code
   ResourceMark rm;
-  int pad = VerifyThread ? 256 : 0;// Extra slop space for more verify code
 
   // setup code generation tools
-  // Measured 8/7/03 at 256 in 32bit debug build (no VerifyThread)
-  // Measured 8/7/03 at 528 in 32bit debug build (VerifyThread)
-  CodeBuffer buffer("exception_blob", 600+pad, 512);
+  // Measured 8/7/03 at 256 in 32bit debug build
+  CodeBuffer buffer("exception_blob", 600, 512);
   MacroAssembler* masm     = new MacroAssembler(&buffer);
 
   int framesize_in_words = 2; // FP + LR
@@ -126,15 +123,8 @@ void OptoRuntime::generate_exception_blob() {
 
   // Restore SP from its saved reg (FP) if the exception PC is a MethodHandle call site.
   __ ldr(Rtemp, Address(Rthread, JavaThread::is_method_handle_return_offset()));
-#ifdef AARCH64
-  Label skip;
-  __ cbz(Rtemp, skip);
-  __ mov(SP, Rmh_SP_save);
-  __ bind(skip);
-#else
   __ cmp(Rtemp, 0);
   __ mov(SP, Rmh_SP_save, ne);
-#endif
 
   // R0 contains handler address
   // Since this may be the deopt blob we must set R5 to look like we returned

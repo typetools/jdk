@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.io;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when the Serialization runtime detects one of the following
  * problems with a Class.
@@ -33,13 +36,17 @@ package java.io;
  *      descriptor read from the stream
  * <LI> The class contains unknown datatypes
  * <LI> The class does not have an accessible no-arg constructor
+ * <LI> The ObjectStreamClass of an enum constant does not represent
+ *      an enum type
+ * <LI> Other conditions given in the <cite>Java Object Serialization
+ *      Specification</cite>
  * </UL>
  *
- * @author  unascribed
  * @since   1.1
  */
 public class InvalidClassException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -4333316296251054416L;
 
     /**
@@ -54,7 +61,8 @@ public class InvalidClassException extends ObjectStreamException {
      *
      * @param reason  String describing the reason for the exception.
      */
-    public InvalidClassException(String reason) {
+    @SideEffectFree
+    public InvalidClassException(@Nullable String reason) {
         super(reason);
     }
 
@@ -64,14 +72,43 @@ public class InvalidClassException extends ObjectStreamException {
      * @param cname   a String naming the invalid class.
      * @param reason  a String describing the reason for the exception.
      */
-    public InvalidClassException(String cname, String reason) {
+    @SideEffectFree
+    public InvalidClassException(String cname, @Nullable String reason) {
         super(reason);
+        classname = cname;
+    }
+
+    /**
+     * Report an InvalidClassException for the reason and cause specified.
+     *
+     * @param reason  String describing the reason for the exception.
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    public InvalidClassException(@Nullable String reason, @Nullable Throwable cause) {
+        super(reason, cause);
+    }
+
+    /**
+     * Report an InvalidClassException for the reason and cause specified.
+     *
+     * @param cname   a String naming the invalid class.
+     * @param reason  String describing the reason for the exception.
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    public InvalidClassException(String cname, @Nullable String reason, @Nullable Throwable cause) {
+        super(reason, cause);
         classname = cname;
     }
 
     /**
      * Produce the message and include the classname, if present.
      */
+    @SideEffectFree
+    @Override
     public String getMessage() {
         if (classname == null)
             return super.getMessage();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown by a {@link ModuleFinder ModuleFinder} when an error occurs finding
  * a module. Also thrown by {@link
@@ -33,15 +36,16 @@ package java.lang.module;
  * reasons.
  *
  * @since 9
- * @spec JPMS
  */
 
 public class FindException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = -5817081036963388391L;
 
     /**
      * Constructs a {@code FindException} with no detail message.
      */
+    @SideEffectFree
     public FindException() {
     }
 
@@ -52,7 +56,8 @@ public class FindException extends RuntimeException {
      * @param msg
      *        The detail message; can be {@code null}
      */
-    public FindException(String msg) {
+    @SideEffectFree
+    public FindException(@Nullable String msg) {
         super(msg);
     }
 
@@ -62,7 +67,8 @@ public class FindException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
-    public FindException(Throwable cause) {
+    @SideEffectFree
+    public FindException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -75,7 +81,8 @@ public class FindException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
-    public FindException(String msg, Throwable cause) {
+    @SideEffectFree
+    public FindException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

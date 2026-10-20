@@ -34,7 +34,7 @@ import java.awt.*;
  * <code>java.awt.DefaultKeyboardFocusManager</code> instead.
  * <p>
  * Please see
- * <a href="http://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html">
  * How to Use the Focus Subsystem</a>,
  * a section in <em>The Java Tutorial</em>, and the
  * <a href="../../java/awt/doc-files/FocusSpec.html">Focus Specification</a>
@@ -63,6 +63,11 @@ public abstract class FocusManager extends DefaultKeyboardFocusManager {
         "FocusManagerClassName";
 
     private static boolean enabled = true;
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    protected FocusManager() {}
 
     /**
      * Returns the current <code>KeyboardFocusManager</code> instance

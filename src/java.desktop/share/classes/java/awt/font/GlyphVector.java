@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@
 package java.awt.font;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.Graphics2D;
@@ -111,6 +112,11 @@ import java.awt.font.GlyphJustificationInfo;
 
 @AnnotatedFor({"interning"})
 public abstract @UsesObjectEquals class GlyphVector implements Cloneable {
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    protected GlyphVector() {}
 
     //
     // methods associated with creation-time state
@@ -611,5 +617,6 @@ public abstract @UsesObjectEquals class GlyphVector implements Cloneable {
      *   {@code GlyphVector} equals this {@code GlyphVector};
      *   {@code false} otherwise.
      */
+    @Pure
     public abstract boolean equals(GlyphVector set);
 }

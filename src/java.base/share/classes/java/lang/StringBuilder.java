@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,11 +31,19 @@ import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.StreamCorruptedException;
 
 /**
  * A mutable sequence of characters.  This class provides an API compatible
@@ -92,20 +100,21 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see         java.lang.String
  * @since       1.5
  */
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "regex", "sideeffectsonly"})
 public final class StringBuilder
     extends AbstractStringBuilder
-    implements java.io.Serializable, Comparable<StringBuilder>, CharSequence
+    implements Appendable, java.io.Serializable, Comparable<StringBuilder>, CharSequence
 {
 
     /** use serialVersionUID for interoperability */
+    @Serial
     static final long serialVersionUID = 4383685877147921099L;
 
     /**
      * Constructs a string builder with no characters in it and an
      * initial capacity of 16 characters.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public StringBuilder() {
         super(16);
     }
@@ -118,7 +127,7 @@ public final class StringBuilder
      * @throws     NegativeArraySizeException  if the {@code capacity}
      *               argument is less than {@code 0}.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public StringBuilder(@NonNegative int capacity) {
         super(capacity);
     }
@@ -130,10 +139,9 @@ public final class StringBuilder
      *
      * @param   str   the initial contents of the buffer.
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public StringBuilder(String str) {
-        super(str.length() + 16);
-        append(str);
+        super(str);
     }
 
     /**
@@ -145,8 +153,7 @@ public final class StringBuilder
      * @param      seq   the sequence to copy.
      */
     public StringBuilder(CharSequence seq) {
-        this(seq.length() + 16);
-        append(seq);
+        super(seq);
     }
 
     /**
@@ -169,18 +176,21 @@ public final class StringBuilder
      *
      * @since 11
      */
+    @Pure
     @Override
     public int compareTo(StringBuilder another) {
         return super.compareTo(another);
     }
 
     @Override
-    public StringBuilder append(@Nullable Object obj) {
+    @SideEffectsOnly("this")
+    public StringBuilder append(@GuardSatisfied @Nullable Object obj) {
         return append(String.valueOf(obj));
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
+    @SideEffectsOnly("this")
     public StringBuilder append(@Nullable String str) {
         super.append(str);
         return this;
@@ -205,12 +215,14 @@ public final class StringBuilder
      * @param   sb   the {@code StringBuffer} to append.
      * @return  a reference to this object.
      */
+    @SideEffectsOnly("this")
     public StringBuilder append(@Nullable StringBuffer sb) {
         super.append(sb);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(@Nullable CharSequence s) {
         super.append(s);
         return this;
@@ -220,12 +232,14 @@ public final class StringBuilder
      * @throws     IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(@Nullable CharSequence s, @IndexOrHigh({"#1"}) int start, @IndexOrHigh({"#1"}) int end) {
         super.append(s, start, end);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(char[] str) {
         super.append(str);
         return this;
@@ -235,44 +249,51 @@ public final class StringBuilder
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(char[] str, @IndexOrHigh({"#1"}) int offset, @LTLengthOf(value={"#1"}, offset={"#2 - 1"}) @NonNegative int len) {
         super.append(str, offset, len);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(boolean b) {
         super.append(b);
         return this;
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
+    @SideEffectsOnly("this")
     public StringBuilder append(char c) {
         super.append(c);
         return this;
     }
 
     @Override
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
+    @SideEffectsOnly("this")
     public StringBuilder append(int i) {
         super.append(i);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(long lng) {
         super.append(lng);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(float f) {
         super.append(f);
         return this;
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder append(double d) {
         super.append(d);
         return this;
@@ -282,6 +303,7 @@ public final class StringBuilder
      * @since 1.5
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder appendCodePoint(int codePoint) {
         super.appendCodePoint(codePoint);
         return this;
@@ -291,6 +313,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder delete(@NonNegative int start, @NonNegative int end) {
         super.delete(start, end);
         return this;
@@ -300,6 +323,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder deleteCharAt(@NonNegative int index) {
         super.deleteCharAt(index);
         return this;
@@ -309,6 +333,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder replace(@NonNegative int start, @NonNegative int end, String str) {
         super.replace(start, end, str);
         return this;
@@ -318,6 +343,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int index, char[] str, @IndexOrHigh({"#2"}) int offset,
                                 @IndexOrHigh({"#2"}) int len)
     {
@@ -329,7 +355,8 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
-    public StringBuilder insert(@NonNegative int offset, @Nullable Object obj) {
+    @SideEffectsOnly("this")
+    public StringBuilder insert(@NonNegative int offset, @GuardSatisfied @Nullable Object obj) {
             super.insert(offset, obj);
             return this;
     }
@@ -338,6 +365,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, @Nullable String str) {
         super.insert(offset, str);
         return this;
@@ -347,6 +375,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, char[] str) {
         super.insert(offset, str);
         return this;
@@ -356,6 +385,7 @@ public final class StringBuilder
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int dstOffset, @Nullable CharSequence s) {
             super.insert(dstOffset, s);
             return this;
@@ -365,6 +395,7 @@ public final class StringBuilder
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int dstOffset, @Nullable CharSequence s,
                                 @NonNegative int start, @NonNegative int end)
     {
@@ -376,6 +407,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, boolean b) {
         super.insert(offset, b);
         return this;
@@ -385,6 +417,7 @@ public final class StringBuilder
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, char c) {
         super.insert(offset, c);
         return this;
@@ -394,6 +427,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, int i) {
         super.insert(offset, i);
         return this;
@@ -403,6 +437,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, long l) {
         super.insert(offset, l);
         return this;
@@ -412,6 +447,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, float f) {
         super.insert(offset, f);
         return this;
@@ -421,6 +457,7 @@ public final class StringBuilder
      * @throws StringIndexOutOfBoundsException {@inheritDoc}
      */
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder insert(@NonNegative int offset, double d) {
         super.insert(offset, d);
         return this;
@@ -451,18 +488,42 @@ public final class StringBuilder
     }
 
     @Override
+    @SideEffectsOnly("this")
     public StringBuilder reverse() {
         super.reverse();
         return this;
     }
 
+    /**
+     * @throws IllegalArgumentException {@inheritDoc}
+     *
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @Override
+    public StringBuilder repeat(int codePoint, int count) {
+        super.repeat(codePoint, count);
+        return this;
+    }
+
+    /**
+     * @throws IllegalArgumentException {@inheritDoc}
+     *
+     * @since 21
+     */
+    @SideEffectsOnly("this")
+    @Override
+    public StringBuilder repeat(CharSequence cs, int count) {
+        super.repeat(cs, count);
+        return this;
+    }
+
     @SideEffectFree
     @Override
-    @HotSpotIntrinsicCandidate
-    public String toString(@GuardSatisfied StringBuilder this) {
+    @IntrinsicCandidate
+    public @PolyRegex String toString(@GuardSatisfied @PolyRegex StringBuilder this) {
         // Create a copy, don't share the array
-        return isLatin1() ? StringLatin1.newString(value, 0, count)
-                          : StringUTF16.newString(value, 0, count);
+        return new String(this);
     }
 
     /**
@@ -475,9 +536,12 @@ public final class StringBuilder
      *             {@code char} array may be greater than the number of
      *             characters currently stored in the string builder, in which
      *             case extra characters are ignored.
+     *
+     * @param  s the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
+    @Serial
+    private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
         s.writeInt(count);
         char[] val = new char[capacity()];
@@ -490,15 +554,23 @@ public final class StringBuilder
     }
 
     /**
-     * readObject is called to restore the state of the StringBuffer from
+     * readObject is called to restore the state of the StringBuilder from
      * a stream.
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
-    private void readObject(java.io.ObjectInputStream s)
-        throws java.io.IOException, ClassNotFoundException {
+    @Serial
+    private void readObject(ObjectInputStream s)
+            throws IOException, ClassNotFoundException {
         s.defaultReadObject();
-        count = s.readInt();
+        int c = s.readInt();
         char[] val = (char[]) s.readObject();
+        if (c < 0 || c > val.length) {
+            throw new StreamCorruptedException("count value invalid");
+        }
         initBytes(val, 0, val.length);
+        count = c;
     }
-
 }

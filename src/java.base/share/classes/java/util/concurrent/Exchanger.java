@@ -60,8 +60,8 @@ import java.util.concurrent.locks.LockSupport;
  * <pre> {@code
  * class FillAndEmpty {
  *   Exchanger<DataBuffer> exchanger = new Exchanger<>();
- *   DataBuffer initialEmptyBuffer = ... a made-up type
- *   DataBuffer initialFullBuffer = ...
+ *   DataBuffer initialEmptyBuffer = ...; // a made-up type
+ *   DataBuffer initialFullBuffer = ...;
  *
  *   class FillingLoop implements Runnable {
  *     public void run() {
@@ -72,7 +72,7 @@ import java.util.concurrent.locks.LockSupport;
  *           if (currentBuffer.isFull())
  *             currentBuffer = exchanger.exchange(currentBuffer);
  *         }
- *       } catch (InterruptedException ex) { ... handle ... }
+ *       } catch (InterruptedException ex) { ... handle ...}
  *     }
  *   }
  *
@@ -388,7 +388,7 @@ public @UsesObjectEquals class Exchanger<V> {
                         else if (spins > 0) {
                             h ^= h << 1; h ^= h >>> 3; h ^= h << 10; // xorshift
                             if (h == 0)                // initialize hash
-                                h = SPINS | (int)t.getId();
+                                h = SPINS | (int)t.threadId();
                             else if (h < 0 &&          // approx 50% true
                                      (--spins & ((SPINS >>> 1) - 1)) == 0)
                                 Thread.yield();        // two yields per wait
@@ -493,7 +493,7 @@ public @UsesObjectEquals class Exchanger<V> {
             if (spins > 0) {
                 h ^= h << 1; h ^= h >>> 3; h ^= h << 10;
                 if (h == 0)
-                    h = SPINS | (int)t.getId();
+                    h = SPINS | (int)t.threadId();
                 else if (h < 0 && (--spins & ((SPINS >>> 1) - 1)) == 0)
                     Thread.yield();
             }
@@ -568,8 +568,8 @@ public @UsesObjectEquals class Exchanger<V> {
         Object item = (x == null) ? NULL_ITEM : x; // translate null args
         if (((a = arena) != null ||
              (v = slotExchange(item, false, 0L)) == null) &&
-            ((Thread.interrupted() || // disambiguates null return
-              (v = arenaExchange(item, false, 0L)) == null)))
+            (Thread.interrupted() || // disambiguates null return
+             (v = arenaExchange(item, false, 0L)) == null))
             throw new InterruptedException();
         return (v == NULL_ITEM) ? null : (V)v;
     }
@@ -624,8 +624,8 @@ public @UsesObjectEquals class Exchanger<V> {
         long ns = unit.toNanos(timeout);
         if ((arena != null ||
              (v = slotExchange(item, true, ns)) == null) &&
-            ((Thread.interrupted() ||
-              (v = arenaExchange(item, true, ns)) == null)))
+            (Thread.interrupted() ||
+             (v = arenaExchange(item, true, ns)) == null))
             throw new InterruptedException();
         if (v == TIMED_OUT)
             throw new TimeoutException();

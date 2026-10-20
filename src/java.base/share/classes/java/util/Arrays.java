@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,18 +31,32 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.SearchIndexFor;
 import org.checkerframework.checker.interning.qual.PolyInterned;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
+import org.checkerframework.checker.mustcall.qual.PolyMustCall;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.util.ArraysSupport;
+import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BinaryOperator;
@@ -87,18 +101,687 @@ import java.util.stream.StreamSupport;
  * @since  1.2
  */
 @AnnotatedFor({"index", "interning", "lock", "nullness", "signedness"})
-public class Arrays {
-
-    /**
-     * The minimum array length below which a parallel sorting
-     * algorithm will not further partition the sorting task. Using
-     * smaller sizes typically results in memory contention across
-     * tasks that makes parallel speedups unlikely.
-     */
-    private static final int MIN_ARRAY_SORT_GRAN = 1 << 13;
+public final class Arrays {
 
     // Suppresses default constructor, ensuring non-instantiability.
     private Arrays() {}
+
+    /*
+     * Sorting methods. Note that all public "sort" methods take the
+     * same form: performing argument checks if necessary, and then
+     * expanding arguments into those required for the internal
+     * implementation methods residing in other package-private
+     * classes (except for legacyMergeSort, included in this class).
+     */
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(int[] a) {
+        DualPivotQuicksort.sort(a, 0, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(int[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, 0, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(long[] a) {
+        DualPivotQuicksort.sort(a, 0, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(long[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, 0, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(short[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(short[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(char[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(char[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(byte[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(byte[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * <p>The {@code <} relation does not provide a total order on all float
+     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
+     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
+     * other value and all {@code Float.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(float[] a) {
+        DualPivotQuicksort.sort(a, 0, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * <p>The {@code <} relation does not provide a total order on all float
+     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
+     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
+     * other value and all {@code Float.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(float[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, 0, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * <p>The {@code <} relation does not provide a total order on all double
+     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
+     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
+     * other value and all {@code Double.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(double[] a) {
+        DualPivotQuicksort.sort(a, 0, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending order. The range
+     * to be sorted extends from the index {@code fromIndex}, inclusive, to
+     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
+     * the range to be sorted is empty.
+     *
+     * <p>The {@code <} relation does not provide a total order on all double
+     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
+     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
+     * other value and all {@code Double.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort
+     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     */
+    @SideEffectsOnly("#1")
+    public static void sort(double[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, 0, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(byte[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(byte[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(char[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(char[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(short[] a) {
+        DualPivotQuicksort.sort(a, 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(short[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(int[] a) {
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(int[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(long[] a) {
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(long[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * <p>The {@code <} relation does not provide a total order on all float
+     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
+     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
+     * other value and all {@code Float.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(float[] a) {
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * <p>The {@code <} relation does not provide a total order on all float
+     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
+     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
+     * other value and all {@code Float.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(float[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), fromIndex, toIndex);
+    }
+
+    /**
+     * Sorts the specified array into ascending numerical order.
+     *
+     * <p>The {@code <} relation does not provide a total order on all double
+     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
+     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
+     * other value and all {@code Double.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(double[] a) {
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), 0, a.length);
+    }
+
+    /**
+     * Sorts the specified range of the array into ascending numerical order.
+     * The range to be sorted extends from the index {@code fromIndex},
+     * inclusive, to the index {@code toIndex}, exclusive. If
+     * {@code fromIndex == toIndex}, the range to be sorted is empty.
+     *
+     * <p>The {@code <} relation does not provide a total order on all double
+     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
+     * value compares neither less than, greater than, nor equal to any value,
+     * even itself. This method uses the total order imposed by the method
+     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
+     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
+     * other value and all {@code Double.NaN} values are considered equal.
+     *
+     * @implNote The sorting algorithm is a Dual-Pivot Quicksort by
+     * Vladimir Yaroslavskiy, Jon Bentley and Josh Bloch. This algorithm
+     * offers O(n log(n)) performance on all data sets, and is typically
+     * faster than traditional (one-pivot) Quicksort implementations.
+     *
+     * @param a the array to be sorted
+     * @param fromIndex the index of the first element, inclusive, to be sorted
+     * @param toIndex the index of the last element, exclusive, to be sorted
+     *
+     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
+     * @throws ArrayIndexOutOfBoundsException
+     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
+     *
+     * @since 1.8
+     */
+    @SideEffectsOnly("#1")
+    public static void parallelSort(double[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        rangeCheck(a.length, fromIndex, toIndex);
+        DualPivotQuicksort.sort(a, ForkJoinPool.getCommonPoolParallelism(), fromIndex, toIndex);
+    }
+
+    /**
+     * Checks that {@code fromIndex} and {@code toIndex} are in
+     * the range and throws an exception if they aren't.
+     */
+    static void rangeCheck(int arrayLength, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+        if (fromIndex > toIndex) {
+            throw new IllegalArgumentException(
+                "fromIndex(" + fromIndex + ") > toIndex(" + toIndex + ")");
+        }
+        if (fromIndex < 0) {
+            throw new ArrayIndexOutOfBoundsException(fromIndex);
+        }
+        if (toIndex > arrayLength) {
+            throw new ArrayIndexOutOfBoundsException(toIndex);
+        }
+    }
 
     /**
      * A comparator that implements the natural ordering of a group of
@@ -117,6 +800,7 @@ public class Arrays {
      */
     static final class NaturalOrder implements Comparator<Object> {
         @SuppressWarnings("unchecked")
+        @Pure
         public int compare(Object first, Object second) {
             return ((Comparable<Object>)first).compareTo(second);
         }
@@ -124,863 +808,12 @@ public class Arrays {
     }
 
     /**
-     * Checks that {@code fromIndex} and {@code toIndex} are in
-     * the range and throws an exception if they aren't.
+     * The minimum array length below which a parallel sorting
+     * algorithm will not further partition the sorting task. Using
+     * smaller sizes typically results in memory contention across
+     * tasks that makes parallel speedups unlikely.
      */
-    static void rangeCheck(int arrayLength, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        if (fromIndex > toIndex) {
-            throw new IllegalArgumentException(
-                    "fromIndex(" + fromIndex + ") > toIndex(" + toIndex + ")");
-        }
-        if (fromIndex < 0) {
-            throw new ArrayIndexOutOfBoundsException(fromIndex);
-        }
-        if (toIndex > arrayLength) {
-            throw new ArrayIndexOutOfBoundsException(toIndex);
-        }
-    }
-
-    /*
-     * Sorting methods. Note that all public "sort" methods take the
-     * same form: Performing argument checks if necessary, and then
-     * expanding arguments into those required for the internal
-     * implementation methods residing in other package-private
-     * classes (except for legacyMergeSort, included in this class).
-     */
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(int[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(int[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(long[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(long[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(short[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(short[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(char[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(char[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(byte[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(byte[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>The {@code <} relation does not provide a total order on all float
-     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
-     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
-     * other value and all {@code Float.NaN} values are considered equal.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(float[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>The {@code <} relation does not provide a total order on all float
-     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
-     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
-     * other value and all {@code Float.NaN} values are considered equal.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(float[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>The {@code <} relation does not provide a total order on all double
-     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
-     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
-     * other value and all {@code Double.NaN} values are considered equal.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     */
-    public static void sort(double[] a) {
-        DualPivotQuicksort.sort(a, 0, a.length - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending order. The range
-     * to be sorted extends from the index {@code fromIndex}, inclusive, to
-     * the index {@code toIndex}, exclusive. If {@code fromIndex == toIndex},
-     * the range to be sorted is empty.
-     *
-     * <p>The {@code <} relation does not provide a total order on all double
-     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
-     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
-     * other value and all {@code Double.NaN} values are considered equal.
-     *
-     * <p>Implementation note: The sorting algorithm is a Dual-Pivot Quicksort
-     * by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch. This algorithm
-     * offers O(n log(n)) performance on many data sets that cause other
-     * quicksorts to degrade to quadratic performance, and is typically
-     * faster than traditional (one-pivot) Quicksort implementations.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     */
-    public static void sort(double[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(byte[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(byte[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(byte[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1);
-        else
-            new ArraysParallelSortHelpers.FJByte.Sorter
-                (null, a, new byte[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(byte[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(byte[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(byte[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1);
-        else
-            new ArraysParallelSortHelpers.FJByte.Sorter
-                (null, a, new byte[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(char[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(char[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(char[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJChar.Sorter
-                (null, a, new char[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-      @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(char[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(char[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(char[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJChar.Sorter
-                (null, a, new char[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(short[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(short[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(short[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJShort.Sorter
-                (null, a, new short[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(short[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(short[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(short[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJShort.Sorter
-                (null, a, new short[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(int[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(int[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(int[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJInt.Sorter
-                (null, a, new int[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(int[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(int[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(int[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJInt.Sorter
-                (null, a, new int[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(long[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(long[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(long[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJLong.Sorter
-                (null, a, new long[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(long[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(long[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(long[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJLong.Sorter
-                (null, a, new long[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>The {@code <} relation does not provide a total order on all float
-     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
-     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
-     * other value and all {@code Float.NaN} values are considered equal.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(float[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(float[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(float[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJFloat.Sorter
-                (null, a, new float[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * <p>The {@code <} relation does not provide a total order on all float
-     * values: {@code -0.0f == 0.0f} is {@code true} and a {@code Float.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Float#compareTo}: {@code -0.0f} is treated as less than value
-     * {@code 0.0f} and {@code Float.NaN} is considered greater than any
-     * other value and all {@code Float.NaN} values are considered equal.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(float[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(float[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(float[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJFloat.Sorter
-                (null, a, new float[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified array into ascending numerical order.
-     *
-     * <p>The {@code <} relation does not provide a total order on all double
-     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
-     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
-     * other value and all {@code Double.NaN} values are considered equal.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(double[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(double[]) Arrays.sort} method. The algorithm requires a
-     * working space no greater than the size of the original array. The
-     * {@link ForkJoinPool#commonPool() ForkJoin common pool} is used to
-     * execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(double[] a) {
-        int n = a.length, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, 0, n - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJDouble.Sorter
-                (null, a, new double[n], 0, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
-
-    /**
-     * Sorts the specified range of the array into ascending numerical order.
-     * The range to be sorted extends from the index {@code fromIndex},
-     * inclusive, to the index {@code toIndex}, exclusive. If
-     * {@code fromIndex == toIndex}, the range to be sorted is empty.
-     *
-     * <p>The {@code <} relation does not provide a total order on all double
-     * values: {@code -0.0d == 0.0d} is {@code true} and a {@code Double.NaN}
-     * value compares neither less than, greater than, nor equal to any value,
-     * even itself. This method uses the total order imposed by the method
-     * {@link Double#compareTo}: {@code -0.0d} is treated as less than value
-     * {@code 0.0d} and {@code Double.NaN} is considered greater than any
-     * other value and all {@code Double.NaN} values are considered equal.
-     *
-     * @implNote The sorting algorithm is a parallel sort-merge that breaks the
-     * array into sub-arrays that are themselves sorted and then merged. When
-     * the sub-array length reaches a minimum granularity, the sub-array is
-     * sorted using the appropriate {@link Arrays#sort(double[]) Arrays.sort}
-     * method. If the length of the specified array is less than the minimum
-     * granularity, then it is sorted using the appropriate {@link
-     * Arrays#sort(double[]) Arrays.sort} method. The algorithm requires a working
-     * space no greater than the size of the specified range of the original
-     * array. The {@link ForkJoinPool#commonPool() ForkJoin common pool} is
-     * used to execute any parallel tasks.
-     *
-     * @param a the array to be sorted
-     * @param fromIndex the index of the first element, inclusive, to be sorted
-     * @param toIndex the index of the last element, exclusive, to be sorted
-     *
-     * @throws IllegalArgumentException if {@code fromIndex > toIndex}
-     * @throws ArrayIndexOutOfBoundsException
-     *     if {@code fromIndex < 0} or {@code toIndex > a.length}
-     *
-     * @since 1.8
-     */
-    public static void parallelSort(double[] a, int fromIndex, int toIndex) {
-        rangeCheck(a.length, fromIndex, toIndex);
-        int n = toIndex - fromIndex, p, g;
-        if (n <= MIN_ARRAY_SORT_GRAN ||
-            (p = ForkJoinPool.getCommonPoolParallelism()) == 1)
-            DualPivotQuicksort.sort(a, fromIndex, toIndex - 1, null, 0, 0);
-        else
-            new ArraysParallelSortHelpers.FJDouble.Sorter
-                (null, a, new double[n], fromIndex, n, 0,
-                 ((g = n / (p << 2)) <= MIN_ARRAY_SORT_GRAN) ?
-                 MIN_ARRAY_SORT_GRAN : g).invoke();
-    }
+    private static final int MIN_ARRAY_SORT_GRAN = 1 << 13;
 
     /**
      * Sorts the specified array of objects into ascending order, according
@@ -1017,6 +850,7 @@ public class Arrays {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
+    @SideEffectsOnly("#1")
     public static <T extends Comparable<? super T>> void parallelSort(T[] a) {
         int n = a.length, p, g;
         if (n <= MIN_ARRAY_SORT_GRAN ||
@@ -1074,8 +908,9 @@ public class Arrays {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
+    @SideEffectsOnly("#1")
     public static <T extends Comparable<? super T>>
-    void parallelSort(T[] a, int fromIndex, int toIndex) {
+    void parallelSort(T[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
         rangeCheck(a.length, fromIndex, toIndex);
         int n = toIndex - fromIndex, p, g;
         if (n <= MIN_ARRAY_SORT_GRAN ||
@@ -1123,6 +958,7 @@ public class Arrays {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
+    @SideEffectsOnly("#1")
     public static <T> void parallelSort(T[] a, @Nullable Comparator<? super T> cmp) {
         if (cmp == null)
             cmp = NaturalOrder.INSTANCE;
@@ -1182,7 +1018,8 @@ public class Arrays {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static <T> void parallelSort(T[] a, int fromIndex, int toIndex,
+    @SideEffectsOnly("#1")
+    public static <T> void parallelSort(T[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                         Comparator<? super T> cmp) {
         rangeCheck(a.length, fromIndex, toIndex);
         if (cmp == null)
@@ -1210,6 +1047,7 @@ public class Arrays {
      * circular dependencies. To be removed in a future release.
      */
     static final class LegacyMergeSort {
+        @SuppressWarnings("removal")
         private static final boolean userRequested =
             java.security.AccessController.doPrivileged(
                 new sun.security.action.GetBooleanAction(
@@ -1258,7 +1096,8 @@ public class Arrays {
      *         ordering of the array elements is found to violate the
      *         {@link Comparable} contract
      */
-    public static void sort(@PolyInterned Object[] a) {
+    @SideEffectsOnly("#1")
+    public static void sort(@PolyInterned @PolyNull Object[] a) {
         if (LegacyMergeSort.userRequested)
             legacyMergeSort(a);
         else
@@ -1323,7 +1162,8 @@ public class Arrays {
      *         not <i>mutually comparable</i> (for example, strings and
      *         integers).
      */
-    public static void sort(@PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
+    @SideEffectsOnly("#1")
+    public static void sort(@PolyInterned @PolyNull Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex) {
         rangeCheck(a.length, fromIndex, toIndex);
         if (LegacyMergeSort.userRequested)
             legacyMergeSort(a, fromIndex, toIndex);
@@ -1398,7 +1238,7 @@ public class Arrays {
     /**
      * Swaps x[a] with x[b].
      */
-    private static void swap(Object[] x, int a, int b) {
+    private static void swap(@UnknownSignedness Object[] x, int a, int b) {
         Object t = x[a];
         x[a] = x[b];
         x[b] = t;
@@ -1447,7 +1287,8 @@ public class Arrays {
      * @throws IllegalArgumentException (optional) if the comparator is
      *         found to violate the {@link Comparator} contract
      */
-    public static <T> void sort(T[] a, @Nullable Comparator<? super T> c) {
+    @SideEffectsOnly("#1")
+    public static <T> void sort(@PolyNull @UnknownSignedness T[] a, @Nullable Comparator<? super T> c) {
         if (c == null) {
             sort(a);
         } else {
@@ -1519,6 +1360,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static <T> void sort(T[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                 Comparator<? super T> c) {
         if (c == null) {
@@ -1607,6 +1449,7 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static <T> void parallelPrefix(T[] array, BinaryOperator<T> op) {
         Objects.requireNonNull(op);
         if (array.length > 0)
@@ -1630,8 +1473,9 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
-    public static <T> void parallelPrefix(T[] array, int fromIndex,
-                                          int toIndex, BinaryOperator<T> op) {
+    @SideEffectsOnly("#1")
+    public static <T> void parallelPrefix(T[] array, @IndexOrHigh({"#1"}) int fromIndex,
+                                          @IndexOrHigh({"#1"}) int toIndex, BinaryOperator<T> op) {
         Objects.requireNonNull(op);
         rangeCheck(array.length, fromIndex, toIndex);
         if (fromIndex < toIndex)
@@ -1653,6 +1497,7 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelPrefix(long[] array, LongBinaryOperator op) {
         Objects.requireNonNull(op);
         if (array.length > 0)
@@ -1675,8 +1520,9 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
-    public static void parallelPrefix(long[] array, int fromIndex,
-                                      int toIndex, LongBinaryOperator op) {
+    @SideEffectsOnly("#1")
+    public static void parallelPrefix(long[] array, @IndexOrHigh({"#1"}) int fromIndex,
+                                      @IndexOrHigh({"#1"}) int toIndex, LongBinaryOperator op) {
         Objects.requireNonNull(op);
         rangeCheck(array.length, fromIndex, toIndex);
         if (fromIndex < toIndex)
@@ -1701,6 +1547,7 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelPrefix(double[] array, DoubleBinaryOperator op) {
         Objects.requireNonNull(op);
         if (array.length > 0)
@@ -1723,8 +1570,9 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
-    public static void parallelPrefix(double[] array, int fromIndex,
-                                      int toIndex, DoubleBinaryOperator op) {
+    @SideEffectsOnly("#1")
+    public static void parallelPrefix(double[] array, @IndexOrHigh({"#1"}) int fromIndex,
+                                      @IndexOrHigh({"#1"}) int toIndex, DoubleBinaryOperator op) {
         Objects.requireNonNull(op);
         rangeCheck(array.length, fromIndex, toIndex);
         if (fromIndex < toIndex)
@@ -1746,6 +1594,7 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelPrefix(int[] array, IntBinaryOperator op) {
         Objects.requireNonNull(op);
         if (array.length > 0)
@@ -1768,8 +1617,9 @@ public class Arrays {
      * @throws NullPointerException if the specified array or function is null
      * @since 1.8
      */
-    public static void parallelPrefix(int[] array, int fromIndex,
-                                      int toIndex, IntBinaryOperator op) {
+    @SideEffectsOnly("#1")
+    public static void parallelPrefix(int[] array, @IndexOrHigh({"#1"}) int fromIndex,
+                                      @IndexOrHigh({"#1"}) int toIndex, IntBinaryOperator op) {
         Objects.requireNonNull(op);
         rangeCheck(array.length, fromIndex, toIndex);
         if (fromIndex < toIndex)
@@ -1798,6 +1648,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(long[] a, long key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -1834,6 +1685,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(long[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    long key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -1879,6 +1731,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(int[] a, int key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -1915,6 +1768,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(int[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    int key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -1960,6 +1814,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(short[] a, short key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -1996,6 +1851,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(short[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    short key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2041,6 +1897,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(char[] a, char key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -2077,6 +1934,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(char[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    char key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2122,6 +1980,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(byte[] a, byte key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -2158,6 +2017,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(byte[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    byte key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2204,6 +2064,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(double[] a, double key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -2241,6 +2102,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(double[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    double key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2295,6 +2157,7 @@ public class Arrays {
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(float[] a, float key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -2332,6 +2195,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(float[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    float key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2394,6 +2258,7 @@ public class Arrays {
      * @throws ClassCastException if the search key is not comparable to the
      *         elements of the array.
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(@Nullable @PolyInterned Object[] a, @Nullable @PolyInterned Object key) {
         return binarySearch0(a, 0, a.length, key);
     }
@@ -2438,6 +2303,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static @SearchIndexFor({"#1"}) int binarySearch(@Nullable @PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                    @Nullable @PolyInterned Object key) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2497,6 +2363,7 @@ public class Arrays {
      *         or the search key is not comparable to the
      *         elements of the array using this comparator.
      */
+    @SideEffectFree
     public static <T> @SearchIndexFor({"#1"}) int binarySearch(T[] a, T key, @Nullable Comparator<? super T> c) {
         return binarySearch0(a, 0, a.length, key, c);
     }
@@ -2543,6 +2410,7 @@ public class Arrays {
      *         if {@code fromIndex < 0 or toIndex > a.length}
      * @since 1.6
      */
+    @SideEffectFree
     public static <T> @SearchIndexFor({"#1"}) int binarySearch(T[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                                        T key, @Nullable Comparator<? super T> c) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -2615,7 +2483,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2632,6 +2500,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(long[] a, int aFromIndex, int aToIndex,
                                  long[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -2688,7 +2557,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2705,6 +2574,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(int[] a, int aFromIndex, int aToIndex,
                                  int[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -2733,7 +2603,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    public static boolean equals(@PolySigned short @Nullable [] a, @PolySigned short a2 @Nullable []) {
+    public static boolean equals(@PolySigned short @Nullable [] a, @PolySigned short @Nullable [] a2) {
         if (a==a2)
             return true;
         if (a==null || a2==null)
@@ -2761,7 +2631,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2778,6 +2648,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(short[] a, int aFromIndex, int aToIndex,
                                  short[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -2806,7 +2677,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static boolean equals(@PolySigned char @Nullable [] a, @PolySigned char @Nullable [] a2) {
         if (a==a2)
             return true;
@@ -2835,7 +2706,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2852,6 +2723,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(char[] a, int aFromIndex, int aToIndex,
                                  char[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -2880,7 +2752,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     public static boolean equals(@PolySigned byte @Nullable [] a, @PolySigned byte @Nullable [] a2) {
         if (a==a2)
             return true;
@@ -2909,7 +2781,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2926,6 +2798,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(byte[] a, int aFromIndex, int aToIndex,
                                  byte[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -2982,7 +2855,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -2999,6 +2872,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(boolean[] a, int aFromIndex, int aToIndex,
                                  boolean[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -3023,9 +2897,9 @@ public class Arrays {
      * two array references are considered equal if both are {@code null}.
      *
      * Two doubles {@code d1} and {@code d2} are considered equal if:
-     * <pre>    {@code new Double(d1).equals(new Double(d2))}</pre>
+     * <pre>    {@code Double.valueOf(d1).equals(Double.valueOf(d2))}</pre>
      * (Unlike the {@code ==} operator, this method considers
-     * {@code NaN} equals to itself, and 0.0d unequal to -0.0d.)
+     * {@code NaN} equal to itself, and 0.0d unequal to -0.0d.)
      *
      * @param a one array to be tested for equality
      * @param a2 the other array to be tested for equality
@@ -3057,16 +2931,16 @@ public class Arrays {
      * in the same order.
      *
      * <p>Two doubles {@code d1} and {@code d2} are considered equal if:
-     * <pre>    {@code new Double(d1).equals(new Double(d2))}</pre>
+     * <pre>    {@code Double.valueOf(d1).equals(Double.valueOf(d2))}</pre>
      * (Unlike the {@code ==} operator, this method considers
-     * {@code NaN} equals to itself, and 0.0d unequal to -0.0d.)
+     * {@code NaN} equal to itself, and 0.0d unequal to -0.0d.)
      *
      * @param a the first array to be tested for equality
      * @param aFromIndex the index (inclusive) of the first element in the
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -3084,6 +2958,7 @@ public class Arrays {
      * @see Double#equals(Object)
      * @since 9
      */
+    @Pure
     public static boolean equals(double[] a, int aFromIndex, int aToIndex,
                                  double[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -3107,9 +2982,9 @@ public class Arrays {
      * two array references are considered equal if both are {@code null}.
      *
      * Two floats {@code f1} and {@code f2} are considered equal if:
-     * <pre>    {@code new Float(f1).equals(new Float(f2))}</pre>
+     * <pre>    {@code Float.valueOf(f1).equals(Float.valueOf(f2))}</pre>
      * (Unlike the {@code ==} operator, this method considers
-     * {@code NaN} equals to itself, and 0.0f unequal to -0.0f.)
+     * {@code NaN} equal to itself, and 0.0f unequal to -0.0f.)
      *
      * @param a one array to be tested for equality
      * @param a2 the other array to be tested for equality
@@ -3141,16 +3016,16 @@ public class Arrays {
      * in the same order.
      *
      * <p>Two floats {@code f1} and {@code f2} are considered equal if:
-     * <pre>    {@code new Float(f1).equals(new Float(f2))}</pre>
+     * <pre>    {@code Float.valueOf(f1).equals(Float.valueOf(f2))}</pre>
      * (Unlike the {@code ==} operator, this method considers
-     * {@code NaN} equals to itself, and 0.0f unequal to -0.0f.)
+     * {@code NaN} equal to itself, and 0.0f unequal to -0.0f.)
      *
      * @param a the first array to be tested for equality
      * @param aFromIndex the index (inclusive) of the first element in the
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -3168,6 +3043,7 @@ public class Arrays {
      * @see Float#equals(Object)
      * @since 9
      */
+    @Pure
     public static boolean equals(float[] a, int aFromIndex, int aToIndex,
                                  float[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -3198,7 +3074,7 @@ public class Arrays {
      * @return {@code true} if the two arrays are equal
      */
     @Pure
-    public static boolean equals(@PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a, @PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean equals(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a, @PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a2) {
         if (a==a2)
             return true;
         if (a==null || a2==null)
@@ -3234,7 +3110,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -3251,6 +3127,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static boolean equals(Object[] a, int aFromIndex, int aToIndex,
                                  Object[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -3290,7 +3167,8 @@ public class Arrays {
      * @throws NullPointerException if the comparator is {@code null}
      * @since 9
      */
-    public static <T> boolean equals(T[] a, T[] a2, Comparator<? super T> cmp) {
+    @Pure
+    public static <T> boolean equals(T @Nullable [] a, T @Nullable [] a2, Comparator<? super T> cmp) {
         Objects.requireNonNull(cmp);
         if (a==a2)
             return true;
@@ -3327,7 +3205,7 @@ public class Arrays {
      *                   first array to be tested
      * @param aToIndex the index (exclusive) of the last element in the
      *                 first array to be tested
-     * @param b the second array to be tested fro equality
+     * @param b the second array to be tested for equality
      * @param bFromIndex the index (inclusive) of the first element in the
      *                   second array to be tested
      * @param bToIndex the index (exclusive) of the last element in the
@@ -3346,6 +3224,7 @@ public class Arrays {
      *         if either array or the comparator is {@code null}
      * @since 9
      */
+    @Pure
     public static <T> boolean equals(T[] a, int aFromIndex, int aToIndex,
                                      T[] b, int bFromIndex, int bToIndex,
                                      Comparator<? super T> cmp) {
@@ -3375,6 +3254,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned long[] a, @PolySigned long val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3397,6 +3277,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned long[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolySigned long val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3410,6 +3291,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned int[] a, @PolySigned int val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3432,6 +3314,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned int[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolySigned int val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3445,6 +3328,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned short[] a, @PolySigned short val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3467,6 +3351,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned short[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolySigned short val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3480,6 +3365,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned char[] a, @PolySigned char val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3502,6 +3388,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned char[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolySigned char val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3515,6 +3402,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned byte[] a, @PolySigned byte val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3537,6 +3425,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(@PolySigned byte[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolySigned byte val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3550,6 +3439,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(boolean[] a, boolean val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3572,6 +3462,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(boolean[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,
                             boolean val) {
         rangeCheck(a.length, fromIndex, toIndex);
@@ -3586,6 +3477,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(double[] a, double val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3608,6 +3500,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(double[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex,double val){
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3621,6 +3514,7 @@ public class Arrays {
      * @param a the array to be filled
      * @param val the value to be stored in all elements of the array
      */
+    @SideEffectsOnly("#1")
     public static void fill(float[] a, float val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
@@ -3643,6 +3537,7 @@ public class Arrays {
      * @throws ArrayIndexOutOfBoundsException if {@code fromIndex < 0} or
      *         {@code toIndex > a.length}
      */
+    @SideEffectsOnly("#1")
     public static void fill(float[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, float val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
@@ -3658,7 +3553,8 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolyInterned Object[] a, @PolyNull @PolyInterned Object val) {
+    @SideEffectsOnly("#1")
+    public static void fill(@PolyInterned @PolyNull @PolySigned Object[] a, @PolyInterned @PolyNull @PolySigned Object val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
     }
@@ -3682,7 +3578,8 @@ public class Arrays {
      * @throws ArrayStoreException if the specified value is not of a
      *         runtime type that can be stored in the specified array
      */
-    public static void fill(@PolyNull @PolyInterned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyNull @PolyInterned Object val) {
+    @SideEffectsOnly("#1")
+    public static void fill(@PolyInterned @PolyNull @PolySigned Object[] a, @IndexOrHigh({"#1"}) int fromIndex, @IndexOrHigh({"#1"}) int toIndex, @PolyInterned @PolyNull @PolySigned Object val) {
         rangeCheck(a.length, fromIndex, toIndex);
         for (int i = fromIndex; i < toIndex; i++)
             a[i] = val;
@@ -3709,6 +3606,7 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     @SuppressWarnings("unchecked")
     public static <T> @Nullable T[] copyOf(T[] original, @NonNegative int newLength) {
         return (T[]) copyOf(original, newLength, original.getClass());
@@ -3738,7 +3636,8 @@ public class Arrays {
      *     an array of class {@code newType}
      * @since 1.6
      */
-    @HotSpotIntrinsicCandidate
+    @SideEffectFree
+    @IntrinsicCandidate
     public static <T,U> @Nullable T[] copyOf(U[] original, @NonNegative int newLength, Class<? extends T[]> newType) {
         @SuppressWarnings("unchecked")
         T[] copy = ((Object)newType == (Object)Object[].class)
@@ -3766,7 +3665,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned byte[] copyOf(@PolySigned byte[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         byte[] copy = new byte[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3790,7 +3693,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned short[] copyOf(@PolySigned short[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         short[] copy = new short[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3814,12 +3721,17 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned int[] copyOf(@PolySigned int[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         int[] copy = new int[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
     }
+
 
     /**
      * Copies the specified array, truncating or padding with zeros (if necessary)
@@ -3838,7 +3750,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned long[] copyOf(@PolySigned long[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         long[] copy = new long[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3850,7 +3766,7 @@ public class Arrays {
      * so the copy has the specified length.  For all indices that are valid
      * in both the original array and the copy, the two arrays will contain
      * identical values.  For any indices that are valid in the copy but not
-     * the original, the copy will contain {@code '\\u000'}.  Such indices
+     * the original, the copy will contain {@code '\u005cu0000'}.  Such indices
      * will exist if and only if the specified length is greater than that of
      * the original array.
      *
@@ -3862,7 +3778,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned char[] copyOf(@PolySigned char[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         char[] copy = new char[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3886,7 +3806,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static float[] copyOf(float[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         float[] copy = new float[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3910,7 +3834,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static double[] copyOf(double[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         double[] copy = new double[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3934,7 +3862,11 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static boolean[] copyOf(boolean[] original, @NonNegative int newLength) {
+        if (newLength == original.length) {
+            return original.clone();
+        }
         boolean[] copy = new boolean[newLength];
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
@@ -3971,6 +3903,7 @@ public class Arrays {
      * @since 1.6
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> @Nullable T[] copyOfRange(T[] original, @IndexOrHigh({"#1"}) int from, int to) {
         return copyOfRange(original, from, to, (Class<? extends T[]>) original.getClass());
     }
@@ -4008,7 +3941,8 @@ public class Arrays {
      *     an array of class {@code newType}.
      * @since 1.6
      */
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
+    @SideEffectFree
     public static <T,U> @Nullable T[] copyOfRange(U[] original, @IndexOrHigh({"#1"}) int from, int to, Class<? extends T[]> newType) {
         int newLength = to - from;
         if (newLength < 0)
@@ -4020,6 +3954,13 @@ public class Arrays {
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
         return copy;
+    }
+
+    @ForceInline
+    private static void checkLength(int from, int to) {
+        if (to < from) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
     }
 
     /**
@@ -4048,10 +3989,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned byte[] copyOfRange(@PolySigned byte[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeByte(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static byte[] copyOfRangeByte(byte[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         byte[] copy = new byte[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4084,10 +4034,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned short[] copyOfRange(@PolySigned short[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeShort(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static short[] copyOfRangeShort(short[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         short[] copy = new short[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4120,10 +4079,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned int[] copyOfRange(@PolySigned int[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeInt(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static int[] copyOfRangeInt(int[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         int[] copy = new int[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4156,10 +4124,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned long[] copyOfRange(@PolySigned long[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeLong(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static long[] copyOfRangeLong(long[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         long[] copy = new long[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4176,7 +4153,7 @@ public class Arrays {
      * subsequent elements in the copy.  The final index of the range
      * ({@code to}), which must be greater than or equal to {@code from},
      * may be greater than {@code original.length}, in which case
-     * {@code '\\u000'} is placed in all elements of the copy whose index is
+     * {@code '\u005cu0000'} is placed in all elements of the copy whose index is
      * greater than or equal to {@code original.length - from}.  The length
      * of the returned array will be {@code to - from}.
      *
@@ -4192,10 +4169,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static @PolySigned char[] copyOfRange(@PolySigned char[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeChar(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static char[] copyOfRangeChar(char[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         char[] copy = new char[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4228,10 +4214,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static float[] copyOfRange(float[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeFloat(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static float[] copyOfRangeFloat(float[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         float[] copy = new float[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4264,10 +4259,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static double[] copyOfRange(double[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeDouble(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static double[] copyOfRangeDouble(double[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         double[] copy = new double[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4300,10 +4304,19 @@ public class Arrays {
      * @throws NullPointerException if {@code original} is null
      * @since 1.6
      */
+    @SideEffectFree
     public static boolean[] copyOfRange(boolean[] original, @IndexOrHigh({"#1"}) int from, int to) {
+        // Tickle the JIT to fold special cases optimally
+        if (from != 0 || to != original.length)
+            return copyOfRangeBoolean(original, from, to);
+        else // from == 0 && to == original.length
+            return original.clone();
+    }
+
+    @ForceInline
+    private static boolean[] copyOfRangeBoolean(boolean[] original, int from, int to) {
+        checkLength(from, to);
         int newLength = to - from;
-        if (newLength < 0)
-            throw new IllegalArgumentException(from + " > " + to);
         boolean[] copy = new boolean[newLength];
         System.arraycopy(original, from, copy, 0,
                          Math.min(original.length - from, newLength));
@@ -4313,26 +4326,50 @@ public class Arrays {
     // Misc
 
     /**
-     * Returns a fixed-size list backed by the specified array.  (Changes to
-     * the returned list "write through" to the array.)  This method acts
-     * as bridge between array-based and collection-based APIs, in
-     * combination with {@link Collection#toArray}.  The returned list is
-     * serializable and implements {@link RandomAccess}.
+     * Returns a fixed-size list backed by the specified array. Changes made to
+     * the array will be visible in the returned list, and changes made to the
+     * list will be visible in the array. The returned list is
+     * {@link Serializable} and implements {@link RandomAccess}.
+     *
+     * <p>The returned list implements the optional {@code Collection} methods, except
+     * those that would change the size of the returned list. Those methods leave
+     * the list unchanged and throw {@link UnsupportedOperationException}.
+     *
+     * <p>If the specified array's actual component type differs from the type
+     * parameter T, this can result in operations on the returned list throwing an
+     * {@code ArrayStoreException}.
+     *
+     * @apiNote
+     * This method acts as bridge between array-based and collection-based
+     * APIs, in combination with {@link Collection#toArray}.
+     *
+     * <p>This method provides a way to wrap an existing array:
+     * <pre>{@code
+     *     Integer[] numbers = ...
+     *     ...
+     *     List<Integer> values = Arrays.asList(numbers);
+     * }</pre>
      *
      * <p>This method also provides a convenient way to create a fixed-size
      * list initialized to contain several elements:
-     * <pre>
-     *     List&lt;String&gt; stooges = Arrays.asList("Larry", "Moe", "Curly");
-     * </pre>
+     * <pre>{@code
+     *     List<String> stooges = Arrays.asList("Larry", "Moe", "Curly");
+     * }</pre>
+     *
+     * <p><em>The list returned by this method is modifiable.</em>
+     * To create an unmodifiable list, use
+     * {@link Collections#unmodifiableList Collections.unmodifiableList}
+     * or <a href="List.html#unmodifiable">Unmodifiable Lists</a>.
      *
      * @param <T> the class of the objects in the array
      * @param a the array by which the list will be backed
      * @return a list view of the specified array
+     * @throws NullPointerException if the specified array is {@code null}
      */
     @SafeVarargs
     @SideEffectFree
     @SuppressWarnings("varargs")
-    public static <T> List<T> asList(T... a) {
+    public static <T> @Replaceable @IteratorPolyMod @PolyNonEmpty List<T> asList(T @PolyNonEmpty... a) {
         return new ArrayList<>(a);
     }
 
@@ -4342,7 +4379,9 @@ public class Arrays {
     private static class ArrayList<E> extends AbstractList<E>
         implements RandomAccess, java.io.Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = -2764017481108945198L;
+        @SuppressWarnings("serial") // Conditionally serializable
         private final E[] a;
 
         ArrayList(E[] array) {
@@ -4357,11 +4396,10 @@ public class Arrays {
 
         @SideEffectFree
         @Override
-        public @PolyNull Object[] toArray(Arrays.ArrayList<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(Arrays.ArrayList<@PolyNull @PolySigned E> this) {
             return Arrays.copyOf(a, a.length, Object[].class);
         }
 
-        @SideEffectFree
         @Override
         @SuppressWarnings("unchecked")
         public <T> T[] toArray(T[] a) {
@@ -4376,6 +4414,7 @@ public class Arrays {
         }
 
         @Override
+        @Pure
         public E get(int index) {
             return a[index];
         }
@@ -4388,6 +4427,8 @@ public class Arrays {
         }
 
         @Override
+        @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             E[] a = this.a;
             if (o == null) {
@@ -4403,7 +4444,8 @@ public class Arrays {
         }
 
         @Override
-        public boolean contains(Object o) {
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
             return indexOf(o) >= 0;
         }
 
@@ -4450,12 +4492,16 @@ public class Arrays {
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return cursor < a.length;
         }
 
         @Override
-        public E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty ArrayItr<E> this) {
             int i = cursor;
             if (i >= a.length) {
                 throw new NoSuchElementException();
@@ -4482,16 +4528,15 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolySigned long a @Nullable []) {
-        if (a == null)
+    public static int hashCode(@PolySigned long @Nullable [] a) {
+        if (a == null) {
             return 0;
-
+        }
         int result = 1;
         for (long element : a) {
             int elementHash = (int)(element ^ (element >>> 32));
             result = 31 * result + elementHash;
         }
-
         return result;
     }
 
@@ -4512,15 +4557,15 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolySigned int a @Nullable []) {
-        if (a == null)
+    public static int hashCode(@PolySigned int @Nullable [] a) {
+        if (a == null) {
             return 0;
-
-        int result = 1;
-        for (int element : a)
-            result = 31 * result + element;
-
-        return result;
+        }
+        return switch (a.length) {
+            case 0 -> 1;
+            case 1 -> 31 + a[0];
+            default -> ArraysSupport.vectorizedHashCode(a, 0, a.length, 1, ArraysSupport.T_INT);
+        };
     }
 
     /**
@@ -4540,15 +4585,15 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolySigned short a @Nullable []) {
-        if (a == null)
+    public static int hashCode(@PolySigned short @Nullable [] a) {
+        if (a == null) {
             return 0;
-
-        int result = 1;
-        for (short element : a)
-            result = 31 * result + element;
-
-        return result;
+        }
+        return switch (a.length) {
+            case 0 -> 1;
+            case 1 -> 31 + (int)a[0];
+            default -> ArraysSupport.vectorizedHashCode(a, 0, a.length, 1, ArraysSupport.T_SHORT);
+        };
     }
 
     /**
@@ -4568,15 +4613,15 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolySigned char a @Nullable []) {
-        if (a == null)
+    public static int hashCode(@PolySigned char @Nullable [] a) {
+        if (a == null) {
             return 0;
-
-        int result = 1;
-        for (char element : a)
-            result = 31 * result + element;
-
-        return result;
+        }
+        return switch (a.length) {
+            case 0 -> 1;
+            case 1 -> 31 + (int)a[0];
+            default -> ArraysSupport.vectorizedHashCode(a, 0, a.length, 1, ArraysSupport.T_CHAR);
+        };
     }
 
     /**
@@ -4596,15 +4641,15 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolySigned byte a @Nullable []) {
-        if (a == null)
+    public static int hashCode(@PolySigned byte @Nullable [] a) {
+        if (a == null) {
             return 0;
-
-        int result = 1;
-        for (byte element : a)
-            result = 31 * result + element;
-
-        return result;
+        }
+        return switch (a.length) {
+            case 0 -> 1;
+            case 1 -> 31 + (int)a[0];
+            default -> ArraysSupport.vectorizedHashCode(a, 0, a.length, 1, ArraysSupport.T_BYTE);
+        };
     }
 
     /**
@@ -4624,7 +4669,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(boolean a @Nullable []) {
+    public static int hashCode(boolean @Nullable [] a) {
         if (a == null)
             return 0;
 
@@ -4652,7 +4697,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(float a @Nullable []) {
+    public static int hashCode(float @Nullable [] a) {
         if (a == null)
             return 0;
 
@@ -4680,7 +4725,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(double a @Nullable []) {
+    public static int hashCode(double @Nullable [] a) {
         if (a == null)
             return 0;
 
@@ -4714,7 +4759,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int hashCode(@PolyNull @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int hashCode(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a) {
         if (a == null)
             return 0;
 
@@ -4756,7 +4801,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static int deepHashCode(@PolyNull @PolyInterned Object a @GuardSatisfied  @Nullable []) {
+    public static int deepHashCode(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a) {
         if (a == null)
             return 0;
 
@@ -4830,7 +4875,7 @@ public class Arrays {
      * @since 1.5
      */
     @Pure
-    public static boolean deepEquals(@PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a1, @PolyNull @PolyInterned Object @GuardSatisfied  @Nullable [] a2) {
+    public static boolean deepEquals(@PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a1, @PolyInterned @PolyNull @PolySigned Object @GuardSatisfied  @Nullable [] a2) {
         if (a1 == a2)
             return true;
         if (a1 == null || a2==null)
@@ -5149,7 +5194,10 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String toString(@PolyNull @PolyInterned Object @Nullable [] a) {
+    @CFComment({"The @PolyMustCall annotations don't make sense, because toString",
+      "shouldn't care about MustCall types, especially of the array.  However,",
+      "without these annotations, calls to Arrays.toString yield a MustCall error."})
+    public static @MinLen(2) String toString(@PolyInterned @PolyMustCall @PolyNull @PolySigned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
@@ -5201,7 +5249,7 @@ public class Arrays {
      * @since 1.5
      */
     @SideEffectFree
-    public static @MinLen(2) String deepToString(@PolyNull @PolyInterned Object @Nullable [] a) {
+    public static @MinLen(2) String deepToString(@PolyInterned @PolyMustCall @PolyNull @PolySigned Object @PolyMustCall @Nullable [] a) {
         if (a == null)
             return "null";
 
@@ -5293,6 +5341,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static <T> void setAll(T[] array, IntFunction<? extends T> generator) {
         Objects.requireNonNull(generator);
         for (int i = 0; i < array.length; i++)
@@ -5323,6 +5372,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static <T> void parallelSetAll(T[] array, IntFunction<? extends T> generator) {
         Objects.requireNonNull(generator);
         IntStream.range(0, array.length).parallel().forEach(i -> { array[i] = generator.apply(i); });
@@ -5349,6 +5399,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void setAll(int[] array, IntUnaryOperator generator) {
         Objects.requireNonNull(generator);
         for (int i = 0; i < array.length; i++)
@@ -5378,6 +5429,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelSetAll(int[] array, IntUnaryOperator generator) {
         Objects.requireNonNull(generator);
         IntStream.range(0, array.length).parallel().forEach(i -> { array[i] = generator.applyAsInt(i); });
@@ -5404,6 +5456,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void setAll(long[] array, IntToLongFunction generator) {
         Objects.requireNonNull(generator);
         for (int i = 0; i < array.length; i++)
@@ -5433,6 +5486,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelSetAll(long[] array, IntToLongFunction generator) {
         Objects.requireNonNull(generator);
         IntStream.range(0, array.length).parallel().forEach(i -> { array[i] = generator.applyAsLong(i); });
@@ -5459,6 +5513,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void setAll(double[] array, IntToDoubleFunction generator) {
         Objects.requireNonNull(generator);
         for (int i = 0; i < array.length; i++)
@@ -5488,6 +5543,7 @@ public class Arrays {
      * @throws NullPointerException if the generator is null
      * @since 1.8
      */
+    @SideEffectsOnly("#1")
     public static void parallelSetAll(double[] array, IntToDoubleFunction generator) {
         Objects.requireNonNull(generator);
         IntStream.range(0, array.length).parallel().forEach(i -> { array[i] = generator.applyAsDouble(i); });
@@ -5828,7 +5884,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(boolean[] a, boolean[] b) {
+    @Pure
+    public static int compare(boolean @Nullable [] a, boolean @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -5860,8 +5917,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(boolean[], int, int, boolean[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -5904,6 +5961,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(boolean[] a, int aFromIndex, int aToIndex,
                               boolean[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -5964,7 +6022,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(byte[] a, byte[] b) {
+    @Pure
+    public static int compare(byte @Nullable [] a, byte @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -5995,8 +6054,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(byte[], int, int, byte[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -6039,6 +6098,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(byte[] a, int aFromIndex, int aToIndex,
                               byte[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6092,7 +6152,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compareUnsigned(@Unsigned byte[] a, @Unsigned byte[] b) {
+    @Pure
+    public static int compareUnsigned(@Unsigned byte @Nullable [] a, @Unsigned byte @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6159,6 +6220,7 @@ public class Arrays {
      *         if either array is null
      * @since 9
      */
+    @Pure
     public static int compareUnsigned(@Unsigned byte[] a, @IndexFor("#1") int aFromIndex, @IndexFor("#1") int aToIndex,
                                       @Unsigned byte[] b, @IndexFor("#3") int bFromIndex, @IndexFor("#3") int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6219,7 +6281,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(short[] a, short[] b) {
+    @Pure
+    public static int compare(short @Nullable [] a, short @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6250,8 +6313,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(short[], int, int, short[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -6294,6 +6357,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(short[] a, int aFromIndex, int aToIndex,
                               short[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6347,7 +6411,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compareUnsigned(@Unsigned short[] a, @Unsigned short[] b) {
+    @Pure
+    public static int compareUnsigned(@Unsigned short @Nullable [] a, @Unsigned short @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6413,6 +6478,7 @@ public class Arrays {
      *         if either array is null
      * @since 9
      */
+    @Pure
     public static int compareUnsigned(@Unsigned short[] a, @IndexFor("#1") int aFromIndex, @IndexFor("#1") int aToIndex,
                                       @Unsigned short[] b, @IndexFor("#3") int bFromIndex, @IndexFor("#3") int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6473,7 +6539,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(char[] a, char[] b) {
+    @Pure
+    public static int compare(char @Nullable [] a, char @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6504,8 +6571,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(char[], int, int, char[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -6548,6 +6615,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(char[] a, int aFromIndex, int aToIndex,
                               char[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6608,7 +6676,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(int[] a, int[] b) {
+    @Pure
+    public static int compare(int @Nullable [] a, int @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6639,8 +6708,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(int[], int, int, int[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -6683,6 +6752,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(int[] a, int aFromIndex, int aToIndex,
                               int[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6736,7 +6806,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compareUnsigned(@Unsigned int[] a, @Unsigned int[] b) {
+    @Pure
+    public static int compareUnsigned(@Unsigned int @Nullable [] a, @Unsigned int @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6802,6 +6873,7 @@ public class Arrays {
      *         if either array is null
      * @since 9
      */
+    @Pure
     public static int compareUnsigned(@Unsigned int[] a, @IndexFor("#1") int aFromIndex, @IndexFor("#1") int aToIndex,
                                       @Unsigned int[] b, @IndexFor("#3") int bFromIndex, @IndexFor("#3") int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6862,7 +6934,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(long[] a, long[] b) {
+    @Pure
+    public static int compare(long @Nullable [] a, long @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -6893,8 +6966,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(long[], int, int, long[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -6937,6 +7010,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(long[] a, int aFromIndex, int aToIndex,
                               long[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -6990,7 +7064,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compareUnsigned(@Unsigned long[] a, @Unsigned long[] b) {
+    @Pure
+    public static int compareUnsigned(@Unsigned long @Nullable [] a, @Unsigned long @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -7056,6 +7131,7 @@ public class Arrays {
      *         if either array is null
      * @since 9
      */
+    @Pure
     public static int compareUnsigned(@Unsigned long[] a, @IndexFor("#1") int aFromIndex, @IndexFor("#1") int aToIndex,
                                       @Unsigned long[] b, @IndexFor("#3") int bFromIndex, @IndexFor("#3") int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7116,7 +7192,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(float[] a, float[] b) {
+    @Pure
+    public static int compare(float @Nullable [] a, float @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -7147,8 +7224,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(float[], int, int, float[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -7191,6 +7268,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(float[] a, int aFromIndex, int aToIndex,
                               float[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7251,7 +7329,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static int compare(double[] a, double[] b) {
+    @Pure
+    public static int compare(double @Nullable [] a, double @Nullable [] b) {
         if (a == b)
             return 0;
         if (a == null || b == null)
@@ -7282,8 +7361,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(double[], int, int, double[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -7326,6 +7405,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int compare(double[] a, int aFromIndex, int aToIndex,
                               double[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7363,10 +7443,10 @@ public class Arrays {
      * and proper prefix.)
      *
      * <p>A {@code null} array reference is considered lexicographically less
-     * than a non-{@code null} array reference.  Two {@code null} array
+     * than a non-{@code null} array reference. Two {@code null} array
      * references are considered equal.
-     * A {@code null} array element is considered lexicographically than a
-     * non-{@code null} array element.  Two {@code null} array elements are
+     * A {@code null} array element is considered lexicographically less than a
+     * non-{@code null} array element. Two {@code null} array elements are
      * considered equal.
      *
      * <p>The comparison is consistent with {@link #equals(Object[], Object[]) equals},
@@ -7396,7 +7476,8 @@ public class Arrays {
      *         lexicographically greater than the second array
      * @since 9
      */
-    public static <T extends Comparable<? super T>> int compare(T[] a, T[] b) {
+    @Pure
+    public static <T extends @Nullable Comparable<? super T>> int compare(T @Nullable [] a, T @Nullable [] b) {
         if (a == b)
             return 0;
         // A null array is less than a non-null array
@@ -7441,8 +7522,8 @@ public class Arrays {
      * <p>The comparison is consistent with
      * {@link #equals(Object[], int, int, Object[], int, int) equals}, more
      * specifically the following holds for arrays {@code a} and {@code b} with
-     * specified ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively:
+     * specified ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively:
      * <pre>{@code
      *     Arrays.equals(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) ==
      *         (Arrays.compare(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0)
@@ -7486,7 +7567,8 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
-    public static <T extends Comparable<? super T>> int compare(
+    @Pure
+    public static <T extends @Nullable Comparable<? super T>> int compare(
             T[] a, int aFromIndex, int aToIndex,
             T[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7550,7 +7632,8 @@ public class Arrays {
      * @throws NullPointerException if the comparator is {@code null}
      * @since 9
      */
-    public static <T> int compare(T[] a, T[] b,
+    @Pure
+    public static <T> int compare(T @Nullable [] a, T @Nullable [] b,
                                   Comparator<? super T> cmp) {
         Objects.requireNonNull(cmp);
         if (a == b)
@@ -7626,6 +7709,7 @@ public class Arrays {
      *         if either array or the comparator is {@code null}
      * @since 9
      */
+    @Pure
     public static <T> int compare(
             T[] a, int aFromIndex, int aToIndex,
             T[] b, int bFromIndex, int bToIndex,
@@ -7698,6 +7782,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(boolean[] a, boolean[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -7724,8 +7809,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -7737,9 +7822,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -7768,6 +7853,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(boolean[] a, int aFromIndex, int aToIndex,
                                boolean[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7825,6 +7911,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(byte[] a, byte[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -7851,8 +7938,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -7864,9 +7951,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -7895,6 +7982,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(byte[] a, int aFromIndex, int aToIndex,
                                byte[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -7952,6 +8040,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(char[] a, char[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -7978,8 +8067,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -7991,9 +8080,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8022,6 +8111,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(char[] a, int aFromIndex, int aToIndex,
                                char[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8079,6 +8169,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(short[] a, short[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8105,8 +8196,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8118,9 +8209,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8149,6 +8240,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(short[] a, int aFromIndex, int aToIndex,
                                short[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8206,6 +8298,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(int[] a, int[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8232,8 +8325,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8245,9 +8338,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8276,6 +8369,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(int[] a, int aFromIndex, int aToIndex,
                                int[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8333,6 +8427,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(long[] a, long[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8359,8 +8454,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8372,9 +8467,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8403,6 +8498,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(long[] a, int aFromIndex, int aToIndex,
                                long[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8460,6 +8556,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(float[] a, float[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8486,8 +8583,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8499,9 +8596,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8530,6 +8627,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(float[] a, int aFromIndex, int aToIndex,
                                float[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8587,6 +8685,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(double[] a, double[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8613,8 +8712,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8626,9 +8725,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8657,6 +8756,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(double[] a, int aFromIndex, int aToIndex,
                                double[] b, int bFromIndex, int bToIndex) {
         rangeCheck(a.length, aFromIndex, aToIndex);
@@ -8714,6 +8814,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(Object[] a, Object[] b) {
         int length = Math.min(a.length, b.length); // Check null array refs
         if (a == b)
@@ -8744,8 +8845,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8757,9 +8858,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8788,6 +8889,7 @@ public class Arrays {
      *         if either array is {@code null}
      * @since 9
      */
+    @Pure
     public static int mismatch(
             Object[] a, int aFromIndex, int aToIndex,
             Object[] b, int bFromIndex, int bToIndex) {
@@ -8852,6 +8954,7 @@ public class Arrays {
      *         if either array or the comparator is {@code null}
      * @since 9
      */
+    @Pure
     public static <T> int mismatch(T[] a, T[] b, Comparator<? super T> cmp) {
         Objects.requireNonNull(cmp);
         int length = Math.min(a.length, b.length); // Check null array refs
@@ -8890,8 +8993,8 @@ public class Arrays {
      * Otherwise, there is no mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a common
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a common
      * prefix of length {@code pl} if the following expression is true:
      * <pre>{@code
      *     pl >= 0 &&
@@ -8903,9 +9006,9 @@ public class Arrays {
      * elements from each array mismatch.
      *
      * <p>Two non-{@code null} arrays, {@code a} and {@code b} with specified
-     * ranges [{@code aFromIndex}, {@code atoIndex}) and
-     * [{@code bFromIndex}, {@code btoIndex}) respectively, share a proper
-     * if the following expression is true:
+     * ranges [{@code aFromIndex}, {@code aToIndex}) and
+     * [{@code bFromIndex}, {@code bToIndex}) respectively, share a proper
+     * prefix if the following expression is true:
      * <pre>{@code
      *     (aToIndex - aFromIndex) != (bToIndex - bFromIndex) &&
      *     Arrays.equals(a, 0, Math.min(aToIndex - aFromIndex, bToIndex - bFromIndex),
@@ -8937,6 +9040,7 @@ public class Arrays {
      *         if either array or the comparator is {@code null}
      * @since 9
      */
+    @Pure
     public static <T> int mismatch(
             T[] a, int aFromIndex, int aToIndex,
             T[] b, int bFromIndex, int bToIndex,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,18 +27,32 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.ref.WeakReference;
 import java.lang.ref.ReferenceQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -145,7 +159,7 @@ import java.util.function.Consumer;
  * @see         java.lang.ref.WeakReference
  */
 @CFComment({"lock: permits null keys and values"})
-@AnnotatedFor({"lock", "index", "nullness"})
+@AnnotatedFor({"lock", "index", "nullness", "modifiability"})
 public class WeakHashMap<K,V>
     extends AbstractMap<K,V>
     implements Map<K,V> {
@@ -212,12 +226,16 @@ public class WeakHashMap<K,V>
      * Constructs a new, empty {@code WeakHashMap} with the given initial
      * capacity and the given load factor.
      *
+     * @apiNote
+     * To create a {@code WeakHashMap} with an initial capacity that accommodates
+     * an expected number of mappings, use {@link #newWeakHashMap(int) newWeakHashMap}.
+     *
      * @param  initialCapacity The initial capacity of the {@code WeakHashMap}
      * @param  loadFactor      The load factor of the {@code WeakHashMap}
      * @throws IllegalArgumentException if the initial capacity is negative,
      *         or if the load factor is nonpositive.
      */
-    public WeakHashMap(@NonNegative int initialCapacity, float loadFactor) {
+    public @Modifiable WeakHashMap(@NonNegative int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal Initial Capacity: "+
                                                initialCapacity);
@@ -227,9 +245,7 @@ public class WeakHashMap<K,V>
         if (loadFactor <= 0 || Float.isNaN(loadFactor))
             throw new IllegalArgumentException("Illegal Load factor: "+
                                                loadFactor);
-        int capacity = 1;
-        while (capacity < initialCapacity)
-            capacity <<= 1;
+        int capacity = HashMap.tableSizeFor(initialCapacity);
         table = newTable(capacity);
         this.loadFactor = loadFactor;
         threshold = (int)(capacity * loadFactor);
@@ -239,10 +255,14 @@ public class WeakHashMap<K,V>
      * Constructs a new, empty {@code WeakHashMap} with the given initial
      * capacity and the default load factor (0.75).
      *
+     * @apiNote
+     * To create a {@code WeakHashMap} with an initial capacity that accommodates
+     * an expected number of mappings, use {@link #newWeakHashMap(int) newWeakHashMap}.
+     *
      * @param  initialCapacity The initial capacity of the {@code WeakHashMap}
      * @throws IllegalArgumentException if the initial capacity is negative
      */
-    public WeakHashMap(@NonNegative int initialCapacity) {
+    public @Modifiable WeakHashMap(@NonNegative int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
@@ -250,7 +270,7 @@ public class WeakHashMap<K,V>
      * Constructs a new, empty {@code WeakHashMap} with the default initial
      * capacity (16) and load factor (0.75).
      */
-    public WeakHashMap() {
+    public @Modifiable WeakHashMap() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
     }
 
@@ -264,8 +284,8 @@ public class WeakHashMap<K,V>
      * @throws  NullPointerException if the specified map is null
      * @since   1.3
      */
-    public WeakHashMap(Map<? extends K, ? extends V> m) {
-        this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
+    public @Modifiable @PolyNonEmpty WeakHashMap(@PolyNonEmpty Map<? extends K, ? extends V> m) {
+        this(Math.max((int) Math.ceil(m.size() / (double)DEFAULT_LOAD_FACTOR),
                 DEFAULT_INITIAL_CAPACITY),
              DEFAULT_LOAD_FACTOR);
         putAll(m);
@@ -296,8 +316,14 @@ public class WeakHashMap<K,V>
      * Checks for equality of non-null reference x and possibly-null y.  By
      * default uses Object.equals.
      */
-    private static boolean eq(Object x, Object y) {
-        return x == y || x.equals(y);
+    private boolean matchesKey(Entry<K,V> e, Object key) {
+        // check if the given entry refers to the given key without
+        // keeping a strong reference to the entry's referent
+        if (e.refersTo(key)) return true;
+
+        // then check for equality if the referent is not cleared
+        Object k = e.get();
+        return k != null && key.equals(k);
     }
 
     /**
@@ -385,6 +411,7 @@ public class WeakHashMap<K,V>
      * because they are no longer referenced.
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied WeakHashMap<K, V> this) {
         return size() == 0;
     }
@@ -408,14 +435,14 @@ public class WeakHashMap<K,V>
      * @see #put(Object, Object)
      */
     @Pure
-    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    public @Nullable V get(@GuardSatisfied WeakHashMap<K, V> this, @UnknownSignedness @GuardSatisfied @Nullable Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
         while (e != null) {
-            if (e.hash == h && eq(k, e.get()))
+            if (e.hash == h && matchesKey(e, k))
                 return e.value;
             e = e.next;
         }
@@ -430,9 +457,9 @@ public class WeakHashMap<K,V>
      * @return {@code true} if there is a mapping for {@code key};
      *         {@code false} otherwise
      */
-    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
     @Pure
-    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object key) {
+    @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
+    public boolean containsKey(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         return getEntry(key) != null;
     }
 
@@ -446,7 +473,7 @@ public class WeakHashMap<K,V>
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
-        while (e != null && !(e.hash == h && eq(k, e.get())))
+        while (e != null && !(e.hash == h && matchesKey(e, k)))
             e = e.next;
         return e;
     }
@@ -464,14 +491,16 @@ public class WeakHashMap<K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     @EnsuresKeyFor(value={"#1"}, map={"this"})
-    public @Nullable V put(@GuardSatisfied WeakHashMap<K, V> this, K key, V value) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable V put(@Growable @Replaceable @GuardSatisfied WeakHashMap<K, V> this, K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
         int i = indexFor(h, tab.length);
 
         for (Entry<K,V> e = tab[i]; e != null; e = e.next) {
-            if (h == e.hash && eq(k, e.get())) {
+            if (h == e.hash && matchesKey(e, k)) {
                 V oldValue = e.value;
                 if (value != oldValue)
                     e.value = value;
@@ -482,7 +511,7 @@ public class WeakHashMap<K,V>
         modCount++;
         Entry<K,V> e = tab[i];
         tab[i] = new Entry<>(k, value, queue, h, e);
-        if (++size >= threshold)
+        if (++size > threshold)
             resize(tab.length * 2);
         return null;
     }
@@ -534,8 +563,7 @@ public class WeakHashMap<K,V>
             src[j] = null;
             while (e != null) {
                 Entry<K,V> next = e.next;
-                Object key = e.get();
-                if (key == null) {
+                if (e.refersTo(null)) {
                     e.next = null;  // Help GC
                     e.value = null; //  "   "
                     size--;
@@ -557,7 +585,9 @@ public class WeakHashMap<K,V>
      * @param m mappings to be stored in this map.
      * @throws  NullPointerException if the specified map is null.
      */
-    public void putAll(@GuardSatisfied WeakHashMap<K, V> this, Map<? extends K, ? extends V> m) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void putAll(@Growable @Replaceable @GuardSatisfied WeakHashMap<K, V> this, Map<? extends K, ? extends V> m) {
         int numKeysToBeAdded = m.size();
         if (numKeysToBeAdded == 0)
             return;
@@ -572,7 +602,7 @@ public class WeakHashMap<K,V>
          * to at most one extra resize.
          */
         if (numKeysToBeAdded > threshold) {
-            int targetCapacity = (int)(numKeysToBeAdded / loadFactor + 1);
+            int targetCapacity = (int)Math.ceil(numKeysToBeAdded / (double)loadFactor);
             if (targetCapacity > MAXIMUM_CAPACITY)
                 targetCapacity = MAXIMUM_CAPACITY;
             int newCapacity = table.length;
@@ -606,7 +636,9 @@ public class WeakHashMap<K,V>
      * @return the previous value associated with {@code key}, or
      *         {@code null} if there was no mapping for {@code key}
      */
-    public @Nullable V remove(@GuardSatisfied WeakHashMap<K, V> this, @Nullable Object key) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable V remove(@Shrinkable @GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object key) {
         Object k = maskNull(key);
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
@@ -616,7 +648,7 @@ public class WeakHashMap<K,V>
 
         while (e != null) {
             Entry<K,V> next = e.next;
-            if (h == e.hash && eq(k, e.get())) {
+            if (h == e.hash && matchesKey(e, k)) {
                 modCount++;
                 size--;
                 if (prev == e)
@@ -634,10 +666,9 @@ public class WeakHashMap<K,V>
 
     /** Special version of remove needed by Entry set */
     boolean removeMapping(Object o) {
-        if (!(o instanceof Map.Entry))
+        if (!(o instanceof Map.Entry<?, ?> entry))
             return false;
         Entry<K,V>[] tab = getTable();
-        Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
         Object k = maskNull(entry.getKey());
         int h = hash(k);
         int i = indexFor(h, tab.length);
@@ -666,7 +697,9 @@ public class WeakHashMap<K,V>
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied WeakHashMap<K, V> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied WeakHashMap<K, V> this) {
         // clear out ref queue. We don't need to expunge entries
         // since table is getting cleared.
         while (queue.poll() != null)
@@ -692,7 +725,7 @@ public class WeakHashMap<K,V>
      *         specified value
      */
     @Pure
-    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable Object value) {
+    public boolean containsValue(@GuardSatisfied WeakHashMap<K, V> this, @GuardSatisfied @Nullable @UnknownSignedness Object value) {
         if (value==null)
             return containsNullValue();
 
@@ -738,24 +771,28 @@ public class WeakHashMap<K,V>
         }
 
         @SuppressWarnings("unchecked")
+        @Pure
         public K getKey() {
             return (K) WeakHashMap.unmaskNull(get());
         }
 
+        @Pure
         public V getValue() {
             return value;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
             return oldValue;
         }
 
-        public boolean equals(Object o) {
-            if (!(o instanceof Map.Entry))
+        @Pure
+        public boolean equals(@Nullable Object o) {
+            if (!(o instanceof Map.Entry<?, ?> e))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
             K k1 = getKey();
             Object k2 = e.getKey();
             if (k1 == k2 || (k1 != null && k1.equals(k2))) {
@@ -767,12 +804,14 @@ public class WeakHashMap<K,V>
             return false;
         }
 
+        @Pure
         public int hashCode() {
             K k = getKey();
             V v = getValue();
             return Objects.hashCode(k) ^ Objects.hashCode(v);
         }
 
+        @SideEffectFree
         public String toString() {
             return getKey() + "=" + getValue();
         }
@@ -800,6 +839,8 @@ public class WeakHashMap<K,V>
             index = isEmpty() ? 0 : table.length;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             Entry<K,V>[] t = table;
 
@@ -822,6 +863,7 @@ public class WeakHashMap<K,V>
         }
 
         /** The common parts of next() across different types of iterators */
+        @SideEffectsOnly("this")
         protected Entry<K,V> nextEntry() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
@@ -835,6 +877,8 @@ public class WeakHashMap<K,V>
             return lastReturned;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -850,19 +894,25 @@ public class WeakHashMap<K,V>
     }
 
     private class ValueIterator extends HashIterator<V> {
-        public V next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public V next(@NonEmpty ValueIterator this) {
             return nextEntry().value;
         }
     }
 
     private class KeyIterator extends HashIterator<K> {
-        public K next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public K next(@NonEmpty KeyIterator this) {
             return nextEntry().getKey();
         }
     }
 
     private class EntryIterator extends HashIterator<Map.Entry<K,V>> {
-        public Map.Entry<K,V> next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public Map.Entry<K,V> next(@NonEmpty EntryIterator this) {
             return nextEntry();
         }
     }
@@ -885,7 +935,7 @@ public class WeakHashMap<K,V>
      * operations.
      */
     @SideEffectFree
-    public Set<@KeyFor({"this"}) K> keySet(@GuardSatisfied WeakHashMap<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<@KeyFor({"this"}) K> keySet(@PolyShrinkable @GuardSatisfied WeakHashMap<K, V> this) {
         Set<K> ks = keySet;
         if (ks == null) {
             ks = new KeySet();
@@ -905,11 +955,15 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsKey(o);
         }
 
-        public boolean remove(@Nullable Object o) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             if (containsKey(o)) {
                 WeakHashMap.this.remove(o);
                 return true;
@@ -918,6 +972,8 @@ public class WeakHashMap<K,V>
                 return false;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -942,7 +998,7 @@ public class WeakHashMap<K,V>
      * support the {@code add} or {@code addAll} operations.
      */
     @SideEffectFree
-    public Collection<V> values(@GuardSatisfied WeakHashMap<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable @GuardSatisfied WeakHashMap<K, V> this) {
         Collection<V> vs = values;
         if (vs == null) {
             vs = new Values();
@@ -962,10 +1018,14 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
-        public boolean contains(@Nullable Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
             return containsValue(o);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -991,7 +1051,7 @@ public class WeakHashMap<K,V>
      * {@code add} or {@code addAll} operations.
      */
     @SideEffectFree
-    public Set<Map.Entry<@KeyFor({"this"}) K,V>> entrySet(@GuardSatisfied WeakHashMap<K, V> this) {
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<@KeyFor({"this"}) K,V>> entrySet(@PolyModifiable @GuardSatisfied WeakHashMap<K, V> this) {
         Set<Map.Entry<K,V>> es = entrySet;
         return es != null ? es : (entrySet = new EntrySet());
     }
@@ -1002,15 +1062,17 @@ public class WeakHashMap<K,V>
             return new EntryIterator();
         }
 
-        public boolean contains(@Nullable Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-            Entry<K,V> candidate = getEntry(e.getKey());
-            return candidate != null && candidate.equals(e);
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@Nullable @UnknownSignedness Object o) {
+            return o instanceof Map.Entry<?, ?> e
+                    && getEntry(e.getKey()) != null
+                    && getEntry(e.getKey()).equals(e);
         }
 
-        public boolean remove(@Nullable Object o) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@Nullable @UnknownSignedness Object o) {
             return removeMapping(o);
         }
 
@@ -1019,6 +1081,8 @@ public class WeakHashMap<K,V>
             return WeakHashMap.this.size();
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             WeakHashMap.this.clear();
         }
@@ -1035,8 +1099,7 @@ public class WeakHashMap<K,V>
             return deepCopy().toArray();
         }
 
-        @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             return deepCopy().toArray(a);
         }
 
@@ -1048,6 +1111,7 @@ public class WeakHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
+    @DoesNotUnrefineReceiver("modifiability")
     public void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         int expectedModCount = modCount;
@@ -1070,11 +1134,12 @@ public class WeakHashMap<K,V>
 
     @SuppressWarnings("unchecked")
     @Override
-    public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+    @DoesNotUnrefineReceiver("modifiability")
+    public void replaceAll(@Replaceable WeakHashMap<K,V> this, BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
         int expectedModCount = modCount;
 
-        Entry<K, V>[] tab = getTable();;
+        Entry<K, V>[] tab = getTable();
         for (Entry<K, V> entry : tab) {
             while (entry != null) {
                 Object key = entry.get();
@@ -1137,7 +1202,7 @@ public class WeakHashMap<K,V>
             super(m, origin, fence, est, expectedModCount);
         }
 
-        public KeySpliterator<K,V> trySplit() {
+        public @Nullable KeySpliterator<K,V> trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null :
                 new KeySpliterator<>(map, lo, index = mid, est >>>= 1,
@@ -1217,7 +1282,7 @@ public class WeakHashMap<K,V>
             super(m, origin, fence, est, expectedModCount);
         }
 
-        public ValueSpliterator<K,V> trySplit() {
+        public @Nullable ValueSpliterator<K,V> trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null :
                 new ValueSpliterator<>(map, lo, index = mid, est >>>= 1,
@@ -1294,7 +1359,7 @@ public class WeakHashMap<K,V>
             super(m, origin, fence, est, expectedModCount);
         }
 
-        public EntrySpliterator<K,V> trySplit() {
+        public @Nullable EntrySpliterator<K,V> trySplit() {
             int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
             return (lo >= mid) ? null :
                 new EntrySpliterator<>(map, lo, index = mid, est >>>= 1,
@@ -1369,6 +1434,26 @@ public class WeakHashMap<K,V>
         public int characteristics() {
             return Spliterator.DISTINCT;
         }
+    }
+
+    /**
+     * Creates a new, empty WeakHashMap suitable for the expected number of mappings.
+     * The returned map uses the default load factor of 0.75, and its initial capacity is
+     * generally large enough so that the expected number of mappings can be added
+     * without resizing the map.
+     *
+     * @param numMappings the expected number of mappings
+     * @param <K>         the type of keys maintained by the new map
+     * @param <V>         the type of mapped values
+     * @return the newly created map
+     * @throws IllegalArgumentException if numMappings is negative
+     * @since 19
+     */
+    public static <K, V> WeakHashMap<K, V> newWeakHashMap(int numMappings) {
+        if (numMappings < 0) {
+            throw new IllegalArgumentException("Negative number of mappings: " + numMappings);
+        }
+        return new WeakHashMap<>(HashMap.calculateHashMapCapacity(numMappings));
     }
 
 }

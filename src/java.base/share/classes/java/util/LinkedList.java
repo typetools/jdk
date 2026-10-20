@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,18 +25,43 @@
 
 package java.util;
 
+import org.checkerframework.checker.index.qual.CanShrink;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.ReleasesNoLocks;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 /**
  * Doubly-linked list implementation of the {@code List} and {@code Deque}
@@ -92,7 +117,7 @@ import java.util.function.Consumer;
  */
 
 @CFComment({"lock/nullness: This class permits null elements"})
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "nullness", "index", "modifiability"})
 public class LinkedList<E>
     extends AbstractSequentialList<E>
     implements List<E>, Deque<E>, Cloneable, java.io.Serializable
@@ -120,7 +145,7 @@ public class LinkedList<E>
     /**
      * Constructs an empty list.
      */
-    public LinkedList() {
+    public @Modifiable @IteratorPolyMod LinkedList() {
     }
 
     /**
@@ -131,7 +156,7 @@ public class LinkedList<E>
      * @param  c the collection whose elements are to be placed into this list
      * @throws NullPointerException if the specified collection is null
      */
-    public LinkedList(Collection<? extends E> c) {
+    public @Modifiable @IteratorPolyMod @PolyNonEmpty LinkedList(@PolyNonEmpty Collection<? extends E> c) {
         this();
         addAll(c);
     }
@@ -255,7 +280,9 @@ public class LinkedList<E>
      * @return the first element in this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E getFirst(@GuardSatisfied LinkedList<E> this) {
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getFirst(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> f = first;
         if (f == null)
             throw new NoSuchElementException();
@@ -268,7 +295,9 @@ public class LinkedList<E>
      * @return the last element in this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E getLast(@GuardSatisfied LinkedList<E> this) {
+    @EnsuresNonEmpty("this")
+    @Pure
+    public E getLast(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         final Node<E> l = last;
         if (l == null)
             throw new NoSuchElementException();
@@ -281,7 +310,9 @@ public class LinkedList<E>
      * @return the first element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeFirst(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeFirst(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink LinkedList<E> this) {
         final Node<E> f = first;
         if (f == null)
             throw new NoSuchElementException();
@@ -294,7 +325,9 @@ public class LinkedList<E>
      * @return the last element from this list
      * @throws NoSuchElementException if this list is empty
      */
-    public E removeLast(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E removeLast(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink LinkedList<E> this) {
         final Node<E> l = last;
         if (l == null)
             throw new NoSuchElementException();
@@ -306,7 +339,10 @@ public class LinkedList<E>
      *
      * @param e the element to add
      */
-    public void addFirst(@GuardSatisfied LinkedList<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addFirst(@SeqGrowable @GuardSatisfied LinkedList<E> this, E e) {
         linkFirst(e);
     }
 
@@ -317,7 +353,10 @@ public class LinkedList<E>
      *
      * @param e the element to add
      */
-    public void addLast(@GuardSatisfied LinkedList<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void addLast(@SeqGrowable @GuardSatisfied LinkedList<E> this, E e) {
         linkLast(e);
     }
 
@@ -331,7 +370,8 @@ public class LinkedList<E>
      * @return {@code true} if this list contains the specified element
      */
     @Pure
-    public boolean contains(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable Object o) {
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return indexOf(o) >= 0;
     }
 
@@ -354,7 +394,10 @@ public class LinkedList<E>
      * @return {@code true} (as specified by {@link Collection#add})
      */
     @ReleasesNoLocks
-    public boolean add(@GuardSatisfied LinkedList<E> this, E e) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable @GuardSatisfied LinkedList<E> this, E e) {
         linkLast(e);
         return true;
     }
@@ -373,7 +416,9 @@ public class LinkedList<E>
      * @return {@code true} if this list contained the specified element
      */
     @ReleasesNoLocks
-    public boolean remove(@GuardSatisfied LinkedList<E> this, @Nullable Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) {
             for (Node<E> x = first; x != null; x = x.next) {
                 if (x.item == null) {
@@ -404,7 +449,9 @@ public class LinkedList<E>
      * @return {@code true} if this list changed as a result of the call
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean addAll(@GuardSatisfied LinkedList<E> this, Collection<? extends E> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean addAll(@Growable @GuardSatisfied LinkedList<E> this, Collection<? extends E> c) {
         return addAll(size, c);
     }
 
@@ -423,7 +470,9 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws NullPointerException if the specified collection is null
      */
-    public boolean addAll(@GuardSatisfied LinkedList<E> this, @NonNegative int index, Collection<? extends E> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean addAll(@Growable @GuardSatisfied LinkedList<E> this, @NonNegative int index, Collection<? extends E> c) {
         checkPositionIndex(index);
 
         Object[] a = c.toArray();
@@ -466,7 +515,9 @@ public class LinkedList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
-    public void clear(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this) {
         // Clearing all of the links between nodes is "unnecessary", but:
         // - helps a generational GC if the discarded nodes inhabit
         //   more than one generation
@@ -508,7 +559,10 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E set(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E set(@Replaceable @GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
         checkElementIndex(index);
         Node<E> x = node(index);
         E oldVal = x.item;
@@ -525,7 +579,10 @@ public class LinkedList<E>
      * @param element element to be inserted
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public void add(@GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void add(@Growable @GuardSatisfied LinkedList<E> this, @NonNegative int index, E element) {
         checkPositionIndex(index);
 
         if (index == size)
@@ -543,7 +600,9 @@ public class LinkedList<E>
      * @return the element previously at the specified position
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
-    public E remove(@GuardSatisfied LinkedList<E> this, @NonNegative int index) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E remove(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this, @NonNegative int index) {
         checkElementIndex(index);
         return unlink(node(index));
     }
@@ -615,7 +674,8 @@ public class LinkedList<E>
      *         this list, or -1 if this list does not contain the element
      */
     @Pure
-    public @GTENegativeOne int indexOf(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable Object o) {
+    @StaticallyExecutable
+    public @GTENegativeOne int indexOf(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         int index = 0;
         if (o == null) {
             for (Node<E> x = first; x != null; x = x.next) {
@@ -645,7 +705,8 @@ public class LinkedList<E>
      *         this list, or -1 if this list does not contain the element
      */
     @Pure
-    public @GTENegativeOne int lastIndexOf(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable Object o) {
+    @StaticallyExecutable
+    public @GTENegativeOne int lastIndexOf(@GuardSatisfied LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         int index = size;
         if (o == null) {
             for (Node<E> x = last; x != null; x = x.prev) {
@@ -671,6 +732,7 @@ public class LinkedList<E>
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
      */
+    @Pure
     public @Nullable E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
@@ -683,7 +745,8 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
      */
-    public E element() {
+    @Pure
+    public E element(@GuardSatisfied @NonEmpty LinkedList<E> this) {
         return getFirst();
     }
 
@@ -693,7 +756,9 @@ public class LinkedList<E>
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
      */
-    public @Nullable E poll(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this) {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
     }
@@ -705,7 +770,9 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
      */
-    public E remove(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E remove(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink LinkedList<E> this) {
         return removeFirst();
     }
 
@@ -716,7 +783,9 @@ public class LinkedList<E>
      * @return {@code true} (as specified by {@link Queue#offer})
      * @since 1.5
      */
-    public boolean offer(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable LinkedList<E> this, E e) {
         return add(e);
     }
 
@@ -728,7 +797,9 @@ public class LinkedList<E>
      * @return {@code true} (as specified by {@link Deque#offerFirst})
      * @since 1.6
      */
-    public boolean offerFirst(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offerFirst(@SeqGrowable LinkedList<E> this, E e) {
         addFirst(e);
         return true;
     }
@@ -740,7 +811,9 @@ public class LinkedList<E>
      * @return {@code true} (as specified by {@link Deque#offerLast})
      * @since 1.6
      */
-    public boolean offerLast(E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offerLast(@SeqGrowable LinkedList<E> this, E e) {
         addLast(e);
         return true;
     }
@@ -753,6 +826,7 @@ public class LinkedList<E>
      *         if this list is empty
      * @since 1.6
      */
+    @Pure
     public @Nullable E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
@@ -766,6 +840,7 @@ public class LinkedList<E>
      *         if this list is empty
      * @since 1.6
      */
+    @Pure
     public @Nullable E peekLast() {
         final Node<E> l = last;
         return (l == null) ? null : l.item;
@@ -779,7 +854,9 @@ public class LinkedList<E>
      *     this list is empty
      * @since 1.6
      */
-    public @Nullable E pollFirst(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E pollFirst(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this) {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
     }
@@ -792,7 +869,9 @@ public class LinkedList<E>
      *     this list is empty
      * @since 1.6
      */
-    public @Nullable E pollLast(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E pollLast(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this) {
         final Node<E> l = last;
         return (l == null) ? null : unlinkLast(l);
     }
@@ -806,7 +885,9 @@ public class LinkedList<E>
      * @param e the element to push
      * @since 1.6
      */
-    public void push(@GuardSatisfied LinkedList<E> this, E e) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void push(@SeqGrowable @GuardSatisfied LinkedList<E> this, E e) {
         addFirst(e);
     }
 
@@ -821,7 +902,9 @@ public class LinkedList<E>
      * @throws NoSuchElementException if this list is empty
      * @since 1.6
      */
-    public E pop(@GuardSatisfied LinkedList<E> this) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E pop(@Shrinkable @GuardSatisfied @NonEmpty @CanShrink LinkedList<E> this) {
         return removeFirst();
     }
 
@@ -834,7 +917,9 @@ public class LinkedList<E>
      * @return {@code true} if the list contained the specified element
      * @since 1.6
      */
-    public boolean removeFirstOccurrence(@GuardSatisfied LinkedList<E> this, @Nullable Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeFirstOccurrence(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return remove(o);
     }
 
@@ -847,7 +932,9 @@ public class LinkedList<E>
      * @return {@code true} if the list contained the specified element
      * @since 1.6
      */
-    public boolean removeLastOccurrence(@GuardSatisfied LinkedList<E> this, @Nullable Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeLastOccurrence(@Shrinkable @GuardSatisfied @CanShrink LinkedList<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) {
             for (Node<E> x = last; x != null; x = x.prev) {
                 if (x.item == null) {
@@ -887,7 +974,7 @@ public class LinkedList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see List#listIterator(int)
      */
-    public ListIterator<E> listIterator(@NonNegative int index) {
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty LinkedList<E> this, @NonNegative int index) {
         checkPositionIndex(index);
         return new ListItr(index);
     }
@@ -904,11 +991,15 @@ public class LinkedList<E>
             nextIndex = index;
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return nextIndex < size;
         }
 
-        public E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty ListItr this) {
             checkForComodification();
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -919,10 +1010,13 @@ public class LinkedList<E>
             return lastReturned.item;
         }
 
+        @Pure
         public boolean hasPrevious() {
             return nextIndex > 0;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E previous() {
             checkForComodification();
             if (!hasPrevious())
@@ -933,14 +1027,18 @@ public class LinkedList<E>
             return lastReturned.item;
         }
 
+        @Pure
         public int nextIndex() {
             return nextIndex;
         }
 
+        @Pure
         public int previousIndex() {
             return nextIndex - 1;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             checkForComodification();
             if (lastReturned == null)
@@ -956,6 +1054,8 @@ public class LinkedList<E>
             expectedModCount++;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -963,6 +1063,8 @@ public class LinkedList<E>
             lastReturned.item = e;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) {
             checkForComodification();
             lastReturned = null;
@@ -1006,7 +1108,8 @@ public class LinkedList<E>
     /**
      * @since 1.6
      */
-    public Iterator<E> descendingIterator() {
+    @SideEffectFree
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> descendingIterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty LinkedList<E> this) {
         return new DescendingIterator();
     }
 
@@ -1015,12 +1118,18 @@ public class LinkedList<E>
      */
     private class DescendingIterator implements Iterator<E> {
         private final ListItr itr = new ListItr(size());
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return itr.hasPrevious();
         }
-        public E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty DescendingIterator this) {
             return itr.previous();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove() {
             itr.remove();
         }
@@ -1042,7 +1151,7 @@ public class LinkedList<E>
      * @return a shallow copy of this {@code LinkedList} instance
      */
     @SideEffectFree
-    public Object clone(@GuardSatisfied LinkedList<E> this) {
+    public @Modifiable @IteratorPolyMod Object clone(@GuardSatisfied LinkedList<E> this) {
         LinkedList<E> clone = superClone();
 
         // Put clone into "virgin" state
@@ -1072,7 +1181,7 @@ public class LinkedList<E>
      *         in proper sequence
      */
     @SideEffectFree
-    public @PolyNull Object[] toArray(LinkedList<@PolyNull E> this) {
+    public @PolyNull @PolySigned Object[] toArray(LinkedList<@PolyNull @PolySigned E> this) {
         Object[] result = new Object[size];
         int i = 0;
         for (Node<E> x = first; x != null; x = x.next)
@@ -1118,9 +1227,8 @@ public class LinkedList<E>
      *         this list
      * @throws NullPointerException if the specified array is null
      */
-    @SideEffectFree
     @SuppressWarnings("unchecked")
-    public <T> @Nullable T @PolyNull [] toArray(T @PolyNull [] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         if (a.length < size)
             a = (T[])java.lang.reflect.Array.newInstance(
                                 a.getClass().getComponentType(), size);
@@ -1135,6 +1243,7 @@ public class LinkedList<E>
         return a;
     }
 
+    @java.io.Serial
     private static final long serialVersionUID = 876323262645176354L;
 
     /**
@@ -1145,6 +1254,7 @@ public class LinkedList<E>
      *             contains) is emitted (int), followed by all of its
      *             elements (each an Object) in the proper order.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         // Write out any hidden serialization magic
@@ -1163,6 +1273,7 @@ public class LinkedList<E>
      * (that is, deserializes it).
      */
     @SuppressWarnings("unchecked")
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         // Read in any hidden serialization magic
@@ -1231,7 +1342,7 @@ public class LinkedList<E>
 
         public long estimateSize() { return (long) getEst(); }
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node<E> p;
             int s = getEst();
             if (s > 1 && (p = current) != null) {
@@ -1287,4 +1398,350 @@ public class LinkedList<E>
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Modifications to the reversed view are permitted and will be propagated to this list.
+     * In addition, modifications to this list will be visible in the reversed view.
+     *
+     * @return {@inheritDoc}
+     * @since 21
+     */
+    @SideEffectFree
+    public LinkedList<E> reversed() {
+        return new ReverseOrderLinkedListView<>(this, super.reversed(), Deque.super.reversed());
+    }
+
+    // all operations are delegated to the reverse-ordered views.
+    // TODO audit all overridden methods
+    @SuppressWarnings("serial")
+    static class ReverseOrderLinkedListView<E> extends LinkedList<E> implements java.io.Externalizable {
+        final LinkedList<E> list;
+        final List<E> rlist;
+        final Deque<E> rdeque;
+
+        ReverseOrderLinkedListView(LinkedList<E> list, List<E> rlist, Deque<E> rdeque) {
+            this.list = list;
+            this.rlist = rlist;
+            this.rdeque = rdeque;
+        }
+
+        @SideEffectFree
+        public String toString() {
+            return rlist.toString();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<?> c) {
+            return rlist.retainAll(c);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<?> c) {
+            return rlist.removeAll(c);
+        }
+
+        @Pure
+        public boolean containsAll(Collection<?> c) {
+            return rlist.containsAll(c);
+        }
+
+        @Pure
+        public boolean isEmpty() {
+            return rlist.isEmpty();
+        }
+
+        public Stream<E> parallelStream() {
+            return rlist.parallelStream();
+        }
+
+        public Stream<E> stream() {
+            return rlist.stream();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeIf(Predicate<? super E> filter) {
+            return rlist.removeIf(filter);
+        }
+
+        @SideEffectFree
+        public <T> T[] toArray(IntFunction<T[]> generator) {
+            return rlist.toArray(generator);
+        }
+
+        public void forEach(Consumer<? super E> action) {
+            rlist.forEach(action);
+        }
+
+        @SideEffectFree
+        public Iterator<E> iterator() {
+            return rlist.iterator();
+        }
+
+        @Pure
+        public int hashCode() {
+            return rlist.hashCode();
+        }
+
+        @Pure
+        public boolean equals(@Nullable Object o) {
+            return rlist.equals(o);
+        }
+
+        @SideEffectFree
+        public List<E> subList(int fromIndex, int toIndex) {
+            return rlist.subList(fromIndex, toIndex);
+        }
+
+        public ListIterator<E> listIterator() {
+            return rlist.listIterator();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void sort(Comparator<? super E> c) {
+            rlist.sort(c);
+        }
+
+        @DoesNotUnrefineReceiver("modifiability")
+        public void replaceAll(UnaryOperator<E> operator) {
+            rlist.replaceAll(operator);
+        }
+
+        @SideEffectFree
+        public LinkedList<E> reversed() {
+            return list;
+        }
+
+        @SideEffectFree
+        public Spliterator<E> spliterator() {
+            return rlist.spliterator();
+        }
+
+        public <T> T[] toArray(T[] a) {
+            return rlist.toArray(a);
+        }
+
+        @SideEffectFree
+        public Object[] toArray() {
+            return rlist.toArray();
+        }
+
+        @SideEffectFree
+        public Iterator<E> descendingIterator() {
+            return rdeque.descendingIterator();
+        }
+
+        @SideEffectFree
+        public ListIterator<E> listIterator(int index) {
+            return rlist.listIterator(index);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeLastOccurrence(@Nullable Object o) {
+            return rdeque.removeLastOccurrence(o);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeFirstOccurrence(@Nullable Object o) {
+            return rdeque.removeFirstOccurrence(o);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E pop() {
+            return rdeque.pop();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void push(@SeqGrowable ReverseOrderLinkedListView<E> this, E e) {
+            rdeque.push(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollLast() {
+            return rdeque.pollLast();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollFirst() {
+            return rdeque.pollFirst();
+        }
+
+        @Pure
+        public @Nullable E peekLast() {
+            return rdeque.peekLast();
+        }
+
+        @Pure
+        public @Nullable E peekFirst() {
+            return rdeque.peekFirst();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean offerLast(@SeqGrowable ReverseOrderLinkedListView<E> this, E e) {
+            return rdeque.offerLast(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean offerFirst(@SeqGrowable ReverseOrderLinkedListView<E> this, E e) {
+            return rdeque.offerFirst(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean offer(E e) {
+            return rdeque.offer(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E remove() {
+            return rdeque.remove();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E poll() {
+            return rdeque.poll();
+        }
+
+        @Pure
+        public E element() {
+            return rdeque.element();
+        }
+
+        @Pure
+        public @Nullable E peek() {
+            return rdeque.peek();
+        }
+
+        @Pure
+        @StaticallyExecutable
+        public int lastIndexOf(@Nullable Object o) {
+            return rlist.lastIndexOf(o);
+        }
+
+        @Pure
+        @StaticallyExecutable
+        public int indexOf(@Nullable Object o) {
+            return rlist.indexOf(o);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E remove(int index) {
+            return rlist.remove(index);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void add(int index, E element) {
+            rlist.add(index, element);
+        }
+
+        @EnsuresNonEmpty("this")
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E set(int index, E element) {
+            return rlist.set(index, element);
+        }
+
+        @Pure
+        public E get(int index) {
+            return rlist.get(index);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void clear() {
+            rlist.clear();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean addAll(int index, Collection<? extends E> c) {
+            return rlist.addAll(index, c);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean addAll(Collection<? extends E> c) {
+            return rlist.addAll(c);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@Nullable Object o) {
+            return rlist.remove(o);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean add(E e) {
+            return rlist.add(e);
+        }
+
+        @Pure
+        public int size() {
+            return rlist.size();
+        }
+
+        @Pure
+        public boolean contains(@Nullable Object o) {
+            return rlist.contains(o);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void addLast(@SeqGrowable ReverseOrderLinkedListView<E> this, E e) {
+            rdeque.addLast(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void addFirst(@SeqGrowable ReverseOrderLinkedListView<E> this, E e) {
+            rdeque.addFirst(e);
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E removeLast() {
+            return rdeque.removeLast();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E removeFirst() {
+            return rdeque.removeFirst();
+        }
+
+        @Pure
+        public E getLast() {
+            return rdeque.getLast();
+        }
+
+        @Pure
+        public E getFirst() {
+            return rdeque.getFirst();
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            throw new java.io.InvalidObjectException("not serializable");
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            throw new java.io.InvalidObjectException("not serializable");
+        }
+    }
 }

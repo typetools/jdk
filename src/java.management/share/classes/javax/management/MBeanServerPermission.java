@@ -25,11 +25,13 @@
 
 package javax.management;
 
+import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -40,9 +42,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.StringTokenizer;
-
-import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 /** A Permission to perform actions related to MBeanServers.
     The <em>name</em> of the permission specifies the operation requested
@@ -79,21 +78,21 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 public class MBeanServerPermission extends BasicPermission {
     private static final long serialVersionUID = -5661980843569388590L;
 
-    private final static int
+    private static final int
         CREATE = 0,
         FIND = 1,
         NEW = 2,
         RELEASE = 3,
         N_NAMES = 4;
 
-    private final static String[] names = {
+    private static final String[] names = {
         "createMBeanServer",
         "findMBeanServer",
         "newMBeanServer",
         "releaseMBeanServer",
     };
 
-    private final static int
+    private static final int
         CREATE_MASK = 1<<CREATE,
         FIND_MASK = 1<<FIND,
         NEW_MASK = 1<<NEW,
@@ -108,7 +107,7 @@ public class MBeanServerPermission extends BasicPermission {
      * permissions, we should consider doing this differently,
      * e.g. with a Map.
      */
-    private final static String[] canonicalNames = new String[1 << N_NAMES];
+    private static final String[] canonicalNames = new String[1 << N_NAMES];
 
     /*
      * The target names mask.  This is not private to avoid having to

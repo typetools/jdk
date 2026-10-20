@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,21 +43,21 @@ public final class AccessDescription {
 
     private int myhash = -1;
 
-    private ObjectIdentifier accessMethod;
+    private final ObjectIdentifier accessMethod;
 
-    private GeneralName accessLocation;
+    private final GeneralName accessLocation;
 
     public static final ObjectIdentifier Ad_OCSP_Id =
-        ObjectIdentifier.newInternal(new int[] {1, 3, 6, 1, 5, 5, 7, 48, 1});
+        ObjectIdentifier.of(KnownOIDs.OCSP);
 
     public static final ObjectIdentifier Ad_CAISSUERS_Id =
-        ObjectIdentifier.newInternal(new int[] {1, 3, 6, 1, 5, 5, 7, 48, 2});
+        ObjectIdentifier.of(KnownOIDs.caIssuers);
 
     public static final ObjectIdentifier Ad_TIMESTAMPING_Id =
-        ObjectIdentifier.newInternal(new int[] {1, 3, 6, 1, 5, 5, 7, 48, 3});
+        ObjectIdentifier.of(KnownOIDs.AD_TimeStamping);
 
     public static final ObjectIdentifier Ad_CAREPOSITORY_Id =
-        ObjectIdentifier.newInternal(new int[] {1, 3, 6, 1, 5, 5, 7, 48, 5});
+        ObjectIdentifier.of(KnownOIDs.caRepository);
 
     public AccessDescription(ObjectIdentifier accessMethod, GeneralName accessLocation) {
         this.accessMethod = accessMethod;
@@ -78,7 +78,7 @@ public final class AccessDescription {
         return accessLocation;
     }
 
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream tmp = new DerOutputStream();
         tmp.putOID(accessMethod);
         accessLocation.encode(tmp);
@@ -95,10 +95,9 @@ public final class AccessDescription {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object obj) {
-        if (obj == null || (!(obj instanceof AccessDescription))) {
+        if (!(obj instanceof AccessDescription that)) {
             return false;
         }
-        AccessDescription that = (AccessDescription)obj;
 
         if (this == that) {
             return true;
@@ -108,7 +107,7 @@ public final class AccessDescription {
     }
 
     public String toString() {
-        String method = null;
+        String method;
         if (accessMethod.equals(Ad_CAISSUERS_Id)) {
             method = "caIssuers";
         } else if (accessMethod.equals(Ad_CAREPOSITORY_Id)) {

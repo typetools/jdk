@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,20 +25,27 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Runtime exception thrown when a provider of the required type cannot be found.
  *
  * @since 1.7
  */
 
+@AnnotatedFor({"nullness"})
 public class ProviderNotFoundException
     extends RuntimeException
 {
+    @java.io.Serial
     static final long serialVersionUID = -1880012509822920354L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public ProviderNotFoundException() {
     }
 
@@ -48,7 +55,8 @@ public class ProviderNotFoundException
      * @param   msg
      *          the detail message
      */
-    public ProviderNotFoundException(String msg) {
+    @SideEffectFree
+    public ProviderNotFoundException(@Nullable String msg) {
         super(msg);
     }
 }

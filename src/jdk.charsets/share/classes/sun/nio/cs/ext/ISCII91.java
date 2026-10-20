@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@
 
 package sun.nio.cs.ext;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.nio.charset.Charset;
 import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
@@ -52,6 +54,7 @@ public class ISCII91 extends Charset implements HistoricallyNamedCharset
         return "ISCII91";
     }
 
+    @Pure
     public boolean contains(Charset cs) {
         return ((cs.name().equals("US-ASCII"))
                 || (cs instanceof ISCII91));
@@ -489,25 +492,21 @@ public class ISCII91 extends Charset implements HistoricallyNamedCharset
             return CoderResult.UNDERFLOW;
         }
 
-        /*Rules:
-         * 1)ATR,EXT,following character to be replaced with '\ufffd'
-         * 2)Halant + Halant => '\u094d' (Virama) + '\u200c'(ZWNJ)
-         * 3)Halant + Nukta => '\u094d' (Virama) + '\u200d'(ZWJ)
-        */
+        /* Rules:
+         * 1) ATR,EXT,following character to be replaced with '\ufffd'
+         * 2) Halant + Halant => '\u094d' (Virama) + '\u200c'(ZWNJ)
+         * 3) Halant + Nukta => '\u094d' (Virama) + '\u200d'(ZWJ)
+         */
         private CoderResult decodeArrayLoop(ByteBuffer src,
                                              CharBuffer dst)
         {
             byte[] sa = src.array();
             int sp = src.arrayOffset() + src.position();
             int sl = src.arrayOffset() + src.limit();
-            assert (sp <= sl);
-            sp = (sp <= sl ? sp : sl);
 
             char[] da = dst.array();
             int dp = dst.arrayOffset() + dst.position();
             int dl = dst.arrayOffset() + dst.limit();
-            assert (dp <= dl);
-            dp = (dp <= dl ? dp : dl);
 
             try {
                 while (sp < sl) {
@@ -821,15 +820,10 @@ public class ISCII91 extends Charset implements HistoricallyNamedCharset
             char[] sa = src.array();
             int sp = src.arrayOffset() + src.position();
             int sl = src.arrayOffset() + src.limit();
-            assert (sp <= sl);
-            sp = (sp <= sl ? sp : sl);
+
             byte[] da = dst.array();
             int dp = dst.arrayOffset() + dst.position();
             int dl = dst.arrayOffset() + dst.limit();
-            assert (dp <= dl);
-            dp = (dp <= dl ? dp : dl);
-
-            int outputSize = 0;
 
             try {
                 char inputChar;

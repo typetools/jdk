@@ -21,6 +21,8 @@
 
 package com.sun.org.apache.xerces.internal.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * Synchronized symbol table.
  *
@@ -103,6 +105,7 @@ public final class SynchronizedSymbolTable
      *
      * @param symbol The symbol to look for.
      */
+    @Pure
     public boolean containsSymbol(String symbol) {
 
         synchronized (fSymbolTable) {
@@ -119,6 +122,7 @@ public final class SynchronizedSymbolTable
      * @param offset The offset into the buffer.
      * @param length The length of the symbol in the buffer.
      */
+    @Pure
     public boolean containsSymbol(char[] buffer, int offset, int length) {
 
         synchronized (fSymbolTable) {

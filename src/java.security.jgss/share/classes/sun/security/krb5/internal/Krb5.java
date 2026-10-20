@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@
  */
 
 package sun.security.krb5.internal;
+
+import sun.security.action.GetBooleanAction;
 
 import java.util.Hashtable;
 
@@ -70,6 +72,7 @@ public class Krb5 {
     public static final int TKT_OPTS_PRE_AUTHENT  = 10;
     public static final int TKT_OPTS_HW_AUTHENT   = 11;
     public static final int TKT_OPTS_DELEGATE     = 13;
+    public static final int TKT_OPTS_ENC_PA_REP   = 15;
     public static final int TKT_OPTS_MAX          = 31;
 
     // KDC Options
@@ -162,6 +165,10 @@ public class Krb5 {
 
     // S4U2user info
     public static final int PA_FOR_USER      = 129;
+    public static final int PA_PAC_OPTIONS   = 167;
+
+    // FAST (RFC 6806)
+    public static final int PA_REQ_ENC_PA_REP = 149;
 
     //-------------------------------+-------------
     //authorization data type        |ad-type value
@@ -243,6 +250,7 @@ public class Krb5 {
     public static final int KDC_ERR_KEY_EXPIRED          = 23;   //Password has expired - change password to reset
     public static final int KDC_ERR_PREAUTH_FAILED       = 24;   //Pre-authentication information was invalid
     public static final int KDC_ERR_PREAUTH_REQUIRED     = 25;   //Additional pre-authentication required
+    public static final int KDC_ERR_SVC_UNAVAILABLE      = 29;   //A service is not available
     public static final int KRB_AP_ERR_BAD_INTEGRITY     = 31;   //Integrity check on decrypted field failed
     public static final int KRB_AP_ERR_TKT_EXPIRED       = 32;   //Ticket expired
     public static final int KRB_AP_ERR_TKT_NYV           = 33;   //Ticket not yet valid
@@ -265,6 +273,7 @@ public class Krb5 {
     public static final int KRB_ERR_RESPONSE_TOO_BIG     = 52;   //Response too big for UDP, retry with TCP
     public static final int KRB_ERR_GENERIC              = 60;   //Generic error (description in e-text)
     public static final int KRB_ERR_FIELD_TOOLONG        = 61;   //Field is too long for this implementation
+    public static final int KRB_ERR_WRONG_REALM          = 68;   //Wrong realm
     public static final int KRB_CRYPTO_NOT_SUPPORT      = 100;    //Client does not support this crypto type
     public static final int KRB_AP_ERR_NOREALM          = 62;
     public static final int KRB_AP_ERR_GEN_CRED         = 63;
@@ -302,10 +311,10 @@ public class Krb5 {
         return errMsgList.get(i);
     }
 
+    // Warning: used by NativeCreds.c
+    public static final boolean DEBUG = GetBooleanAction
+            .privilegedGetProperty("sun.security.krb5.debug");
 
-    public static final boolean DEBUG =
-        java.security.AccessController.doPrivileged(
-              new sun.security.action.GetBooleanAction("sun.security.krb5.debug"));
     public static final sun.security.util.HexDumpEncoder hexDumper =
         new sun.security.util.HexDumpEncoder();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@ import static jdk.test.lib.Asserts.assertTrue;
  * @library /test/lib
  * @modules jdk.jdwp.agent
  * @modules java.base/jdk.internal.misc
+ * @requires vm.jvmti
  * @compile AllModulesCommandTestDebuggee.java
  * @run main/othervm AllModulesCommandTest
  */
@@ -81,7 +82,7 @@ public class AllModulesCommandTest implements DebuggeeLauncher.Listener {
         try {
             // Establish JDWP socket connection
             channel = new JdwpChannel();
-            channel.connect();
+            channel.connect(launcher.getJdwpPort());
             // Send out ALLMODULES JDWP command
             // and verify the reply
             JdwpAllModulesReply reply = new JdwpAllModulesCmd().send(channel);

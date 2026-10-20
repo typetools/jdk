@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.spec;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -42,6 +45,7 @@ import java.security.GeneralSecurityException;
 
 public class InvalidParameterSpecException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -970468769593399342L;
 
     /**
@@ -49,6 +53,7 @@ public class InvalidParameterSpecException extends GeneralSecurityException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidParameterSpecException() {
         super();
     }
@@ -60,7 +65,8 @@ public class InvalidParameterSpecException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
-    public InvalidParameterSpecException(String msg) {
+    @SideEffectFree
+    public InvalidParameterSpecException(@Nullable String msg) {
         super(msg);
     }
 }

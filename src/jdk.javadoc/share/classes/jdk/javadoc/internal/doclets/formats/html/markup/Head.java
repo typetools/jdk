@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,66 +25,57 @@
 
 package jdk.javadoc.internal.doclets.formats.html.markup;
 
-import java.text.SimpleDateFormat;
+import java.io.IOException;
+import java.io.Writer;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.TimeZone;
+import java.util.Locale;
 
 import jdk.javadoc.internal.doclets.toolkit.Content;
-import jdk.javadoc.internal.doclets.toolkit.util.DocFile;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPaths;
 
 /**
- * A builder for HTML HEAD elements.
+ * An HTML {@code <head>} element.
  *
  * Many methods return the current object, to facilitate fluent builder-style usage.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
  */
-public class Head {
-    private final HtmlVersion htmlVersion;
-    private final String docletVersion;
+public class Head extends Content {
+    private final Runtime.Version docletVersion;
+    private final ZonedDateTime generatedDate;
     private final DocPath pathToRoot;
     private String title;
     private String charset;
     private final List<String> keywords;
+    private String description;
+    private String generator;
     private boolean showTimestamp;
-    private boolean showGeneratedBy;    // temporary: for compatibility
-    private boolean showMetaCreated;    // temporary: for compatibility
-    private boolean useModuleDirectories;
-    private DocFile mainStylesheetFile;
-    private List<DocFile> additionalStylesheetFiles = Collections.emptyList();
+    private DocPath mainStylesheet;
+    private List<DocPath> additionalStylesheets = List.of();
     private boolean index;
     private Script mainBodyScript;
     private final List<Script> scripts;
+    // Scripts added via --add-script option
+    private List<DocPath> additionalScripts = List.of();
     private final List<Content> extraContent;
     private boolean addDefaultScript = true;
     private DocPath canonicalLink;
 
-    private static final Calendar calendar = new GregorianCalendar(TimeZone.getDefault());
-
     /**
      * Creates a {@code Head} object, for a given file and HTML version.
      * The file is used to help determine the relative paths to stylesheet and script files.
-     * The HTML version is used to determine the the appropriate form of a META element
+     * The HTML version is used to determine the appropriate form of a META element
      * recording the time the file was created.
      * The doclet version should also be provided for recording in the file.
      * @param path the path for the file that will include this HEAD element
-     * @param htmlVersion the HTML version
-     * @param docletVersion a string identifying the doclet version
+     * @param docletVersion the doclet version
      */
-    public Head(DocPath path, HtmlVersion htmlVersion, String docletVersion) {
-        this.htmlVersion = htmlVersion;
+    public Head(DocPath path, Runtime.Version docletVersion, ZonedDateTime generatedDate) {
         this.docletVersion = docletVersion;
+        this.generatedDate = generatedDate;
         pathToRoot = path.parent().invert();
         keywords = new ArrayList<>();
         scripts = new ArrayList<>();
@@ -103,7 +94,7 @@ public class Head {
     }
 
     /**
-     * Sets the charset to be declared in a META [@code Content-TYPE} element.
+     * Sets the charset to be declared in a META {@code Content-TYPE} element.
      *
      * @param charset the charset
      * @return this object
@@ -116,7 +107,23 @@ public class Head {
     }
 
     /**
-     * Adds a list of keywords to appear in META [@code keywords} elements.
+     * Sets the content for the description META element.
+     */
+    public Head setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    /**
+     * Sets the content for the generator META element.
+     */
+    public Head setGenerator(String generator) {
+        this.generator = generator;
+        return this;
+    }
+
+    /**
+     * Adds a list of keywords to appear in META {@code keywords} elements.
      *
      * @param keywords the list of keywords, or null if none need to be added
      * @return this object
@@ -136,54 +143,38 @@ public class Head {
      * @param timestamp true if timestamps should be be added.
      * @return this object
      */
-    // For temporary backwards compatibiility, if this method is not called,
+    // For temporary backwards compatibility, if this method is not called,
     // no 'Generated by javadoc' comment will be added.
     public Head setTimestamp(boolean timestamp) {
         showTimestamp = timestamp;
-        showGeneratedBy = true;
-        showMetaCreated = timestamp;
-        return this;
-    }
-
-    /**
-     * Sets whether or not timestamps should be recorded in the HEAD element.
-     * The timestamp will be recorded in a comment, and possibly in an appropriate META
-     * element, depending on the HTML version specified when this object was created.
-     *
-     * @param timestamp true if timestamps should be be added.
-     * @param metaCreated  true if a META element should be added containing the timestamp
-     * @return this object
-     */
-    // This method is for temporary compatibility. In time, all clients should use
-    // {@code setTimestamp(boolean)}.
-    public Head setTimestamp(boolean timestamp, boolean metaCreated) {
-        showTimestamp = timestamp;
-        showGeneratedBy = true;
-        showMetaCreated = metaCreated;
         return this;
     }
 
     /**
      * Sets the main and any additional stylesheets to be listed in the HEAD element.
+     * The paths for the stylesheets must be relative to the root of the generated
+     * documentation hierarchy.
      *
      * @param main the main stylesheet, or null to use the default
      * @param additional a list of any additional stylesheets to be included
      * @return  this object
      */
-    public Head setStylesheets(DocFile main, List<DocFile> additional) {
-        this.mainStylesheetFile = main;
-        this.additionalStylesheetFiles = additional;
+    public Head setStylesheets(DocPath main, List<DocPath> additional) {
+        this.mainStylesheet = main;
+        this.additionalStylesheets = additional;
         return this;
     }
 
     /**
-     * Sets whether the module directories should be used. This is used to set the JavaScript variable.
+     * Sets the list of additional script files to be added to the HEAD element.
+     * The path for the script files must be relative to the root of the generated
+     * documentation hierarchy.
      *
-     * @param useModuleDirectories true if the module directories should be used
-     * @return  this object
+     * @param scripts the list of additional script files
+     * @return this object
      */
-    public Head setUseModuleDirectories(boolean useModuleDirectories) {
-        this.useModuleDirectories = useModuleDirectories;
+    public Head setAdditionalScripts(List<DocPath> scripts) {
+        this.additionalScripts = scripts;
         return this;
     }
 
@@ -232,7 +223,7 @@ public class Head {
      * Specifies a value for a
      * <a href="https://en.wikipedia.org/wiki/Canonical_link_element">canonical link</a>
      * in the {@code <head>} element.
-     * @param link
+     * @param link the value for the canonical link
      */
     public void setCanonicalLink(DocPath link) {
         this.canonicalLink = link;
@@ -250,85 +241,104 @@ public class Head {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation always returns {@code false}.
+     *
+     * @return {@code false}
+     */
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
+
+    @Override
+    public boolean write(Writer out, String newline, boolean atNewline) throws IOException {
+        return toContent().write(out, newline, atNewline);
+    }
+
+    /**
      * Returns the HTML for the HEAD element.
      *
      * @return the HTML
      */
-    public Content toContent() {
-        Date now = showTimestamp ? calendar.getTime() : null;
+    private Content toContent() {
+        var head = new HtmlTree(TagName.HEAD);
+        head.add(getGeneratedBy(showTimestamp, generatedDate));
+        head.add(HtmlTree.TITLE(title));
 
-        HtmlTree tree = new HtmlTree(HtmlTag.HEAD);
-        if (showGeneratedBy) {
-            tree.addContent(getGeneratedBy(showTimestamp, now));
-        }
-        tree.addContent(HtmlTree.TITLE(title));
+        head.add(HtmlTree.META("viewport", "width=device-width, initial-scale=1"));
 
         if (charset != null) { // compatibility; should this be allowed?
-            tree.addContent(HtmlTree.META("Content-Type", "text/html", charset));
+            head.add(HtmlTree.META("Content-Type", "text/html", charset));
         }
 
-        if (showMetaCreated) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            tree.addContent(HtmlTree.META(
-                    (htmlVersion == HtmlVersion.HTML5) ? "dc.created" : "date",
-                    dateFormat.format(now)));
+        if (showTimestamp) {
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            head.add(HtmlTree.META("dc.created", generatedDate.format(dateFormat)));
+        }
+
+        if (description != null) {
+            head.add(HtmlTree.META("description", description));
+        }
+
+        if (generator != null) {
+            head.add(HtmlTree.META("generator", generator));
         }
 
         for (String k : keywords) {
-            tree.addContent(HtmlTree.META("keywords", k));
-        }
-
-        for (Content c : extraContent) {
-            tree.addContent(c);
+            head.add(HtmlTree.META("keywords", k));
         }
 
         if (canonicalLink != null) {
-            HtmlTree link = new HtmlTree(HtmlTag.LINK);
-            link.addAttr(HtmlAttr.REL, "canonical");
-            link.addAttr(HtmlAttr.HREF, canonicalLink.getPath());
-            tree.addContent(link);
+            var link = new HtmlTree(TagName.LINK);
+            link.put(HtmlAttr.REL, "canonical");
+            link.put(HtmlAttr.HREF, canonicalLink.getPath());
+            head.add(link);
         }
 
-        addStylesheets(tree);
-        addScripts(tree);
+        addStylesheets(head);
+        addScripts(head);
+        extraContent.forEach(head::add);
 
-        return tree;
+        return head;
     }
 
-    private Comment getGeneratedBy(boolean timestamp, Date now) {
+
+    private Comment getGeneratedBy(boolean timestamp, ZonedDateTime buildDate) {
         String text = "Generated by javadoc"; // marker string, deliberately not localized
+        text += " (" + docletVersion.feature() + ")";
         if (timestamp) {
-            text += " ("+ docletVersion + ") on " + now;
+            DateTimeFormatter fmt =
+                    DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy").withLocale(Locale.US);
+            text += " on " + buildDate.format(fmt);
         }
         return new Comment(text);
     }
 
-    private void addStylesheets(HtmlTree tree) {
-        DocPath mainStylesheet;
-        if (mainStylesheetFile == null) {
+    private void addStylesheets(HtmlTree head) {
+        if (mainStylesheet == null) {
             mainStylesheet = DocPaths.STYLESHEET;
-        } else {
-            mainStylesheet = DocPath.create(mainStylesheetFile.getName());
         }
-        addStylesheet(tree, mainStylesheet);
+        addStylesheet(head, mainStylesheet);
 
-        for (DocFile file : additionalStylesheetFiles) {
-            addStylesheet(tree, DocPath.create(file.getName()));
+        for (DocPath path : additionalStylesheets) {
+            addStylesheet(head, path);
         }
 
         if (index) {
-            addStylesheet(tree, DocPaths.JQUERY_FILES.resolve(DocPaths.JQUERY_STYLESHEET_FILE));
+            addStylesheet(head, DocPaths.SCRIPT_DIR.resolve(DocPaths.JQUERY_UI_CSS));
         }
     }
 
-    private void addStylesheet(HtmlTree tree, DocPath stylesheet) {
-        tree.addContent(HtmlTree.LINK("stylesheet", "text/css",
+    private void addStylesheet(HtmlTree head, DocPath stylesheet) {
+        head.add(HtmlTree.LINK("stylesheet", "text/css",
                 pathToRoot.resolve(stylesheet).getPath(), "Style"));
     }
 
-    private void addScripts(HtmlTree tree) {
+    private void addScripts(HtmlTree head) {
         if (addDefaultScript) {
-            tree.addContent(HtmlTree.SCRIPT(pathToRoot.resolve(DocPaths.JAVASCRIPT).getPath()));
+            head.add(HtmlTree.SCRIPT(pathToRoot.resolve(DocPaths.JAVASCRIPT).getPath()));
         }
         if (index) {
             if (pathToRoot != null && mainBodyScript != null) {
@@ -336,25 +346,21 @@ public class Head {
                 mainBodyScript.append("var pathtoroot = ")
                         .appendStringLiteral(ptrPath + "/")
                         .append(";\n")
-                        .append("var useModuleDirectories = " + useModuleDirectories + ";\n")
-                        .append("loadScripts(document, \'script\');");
+                        .append("loadScripts(document, 'script');");
             }
-            addJQueryFile(tree, DocPaths.JSZIP_MIN);
-            addJQueryFile(tree, DocPaths.JSZIPUTILS_MIN);
-            tree.addContent(new RawHtml("<!--[if IE]>"));
-            addJQueryFile(tree, DocPaths.JSZIPUTILS_IE_MIN);
-            tree.addContent(new RawHtml("<![endif]-->"));
-            addJQueryFile(tree, DocPaths.JQUERY_JS_3_3);
-            addJQueryFile(tree, DocPaths.JQUERY_MIGRATE);
-            addJQueryFile(tree, DocPaths.JQUERY_JS);
+            addScriptElement(head, DocPaths.JQUERY_JS);
+            addScriptElement(head, DocPaths.JQUERY_UI_JS);
+        }
+        for (DocPath path : additionalScripts) {
+            addScriptElement(head, path);
         }
         for (Script script : scripts) {
-            tree.addContent(script.asContent());
+            head.add(script.asContent());
         }
     }
 
-    private void addJQueryFile(HtmlTree tree, DocPath filePath) {
-        DocPath jqueryFile = pathToRoot.resolve(DocPaths.JQUERY_FILES.resolve(filePath));
-        tree.addContent(HtmlTree.SCRIPT(jqueryFile.getPath()));
+    private void addScriptElement(HtmlTree head, DocPath filePath) {
+        DocPath scriptFile = pathToRoot.resolve(DocPaths.SCRIPT_DIR).resolve(filePath);
+        head.add(HtmlTree.SCRIPT(scriptFile.getPath()));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,18 +21,20 @@
  * questions.
  */
 
+package gc.arguments;
+
 /*
  * @test TestNewSizeFlags
- * @key gc
  * @bug 8025166
  * @summary Verify that young gen size conforms values specified by NewSize, MaxNewSize and Xmn options
- * @requires vm.gc != "Z"
+ * @requires vm.gc != "Z" & vm.gc != "Shenandoah"
  * @library /test/lib
+ * @library /
  * @modules java.base/jdk.internal.misc
  *          java.management
- * @build sun.hotspot.WhiteBox
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- * @run driver/timeout=240  TestNewSizeFlags
+ * @build jdk.test.whitebox.WhiteBox
+ * @run driver jdk.test.lib.helpers.ClassFileInstaller jdk.test.whitebox.WhiteBox
+ * @run driver/timeout=240  gc.arguments.TestNewSizeFlags
  */
 
 import java.io.IOException;
@@ -41,9 +43,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import jdk.test.lib.process.OutputAnalyzer;
-import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.Utils;
-import sun.hotspot.WhiteBox;
+import jdk.test.whitebox.WhiteBox;
 
 public class TestNewSizeFlags {
 
@@ -165,7 +166,7 @@ public class TestNewSizeFlags {
                 Long.toString(maxHeapSize)
         );
         vmOptions.removeIf(String::isEmpty);
-        ProcessBuilder procBuilder = ProcessTools.createJavaProcessBuilder(vmOptions.toArray(new String[vmOptions.size()]));
+        ProcessBuilder procBuilder = GCArguments.createJavaProcessBuilder(vmOptions);
         OutputAnalyzer analyzer = new OutputAnalyzer(procBuilder.start());
         return analyzer;
     }
@@ -303,7 +304,6 @@ public class TestNewSizeFlags {
         public static long alignGenSize(long value) {
             switch (YOUNG_GC_TYPE) {
                 case DefNew:
-                case ParNew:
                     return HeapRegionUsageTool.alignDown(value, HEAP_SPACE_ALIGNMENT);
                 case PSNew:
                     return HeapRegionUsageTool.alignUp(HeapRegionUsageTool.alignDown(value,

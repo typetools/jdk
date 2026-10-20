@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,9 +30,13 @@ import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.LengthOf;
 import org.checkerframework.checker.index.qual.SameLen;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -63,7 +67,6 @@ import java.util.stream.StreamSupport;
  *
  * @author Mike McCloskey
  * @since 1.4
- * @spec JSR-51
  */
 
 @AnnotatedFor({"lock", "nullness", "index"})
@@ -75,9 +78,8 @@ public interface CharSequence {
      *
      * @return  the number of {@code char}s in this sequence
      */
-    @LengthOf({"this"})
     @Pure
-    int length(@GuardSatisfied CharSequence this);
+    @LengthOf({"this"}) int length(@GuardSatisfied CharSequence this);
 
     /**
      * Returns the {@code char} value at the specified index.  An index ranges from zero
@@ -86,8 +88,8 @@ public interface CharSequence {
      * indexing.
      *
      * <p>If the {@code char} value specified by the index is a
-     * <a href="{@docRoot}/java.base/java/lang/Character.html#unicode">surrogate</a>, the surrogate
-     * value is returned.
+     * {@linkplain Character##unicode surrogate}, the surrogate value
+     * is returned.
      *
      * @param   index   the index of the {@code char} value to be returned
      *
@@ -97,7 +99,25 @@ public interface CharSequence {
      *          if the {@code index} argument is negative or not less than
      *          {@code length()}
      */
+    @Pure
     char charAt(@IndexFor({"this"}) int index);
+
+    /**
+     * Returns {@code true} if this character sequence is empty.
+     *
+     * @implSpec
+     * The default implementation returns the result of calling {@code length() == 0}.
+     *
+     * @return {@code true} if {@link #length()} is {@code 0}, otherwise
+     * {@code false}
+     *
+     * @since 15
+     */
+    @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    default boolean isEmpty() {
+        return this.length() == 0;
+    }
 
     /**
      * Returns a {@code CharSequence} that is a subsequence of this sequence.
@@ -117,6 +137,7 @@ public interface CharSequence {
      *          if {@code end} is greater than {@code length()},
      *          or if {@code start} is greater than {@code end}
      */
+    @SideEffectFree
     CharSequence subSequence(@IndexOrHigh({"this"}) int start, @IndexOrHigh({"this"}) int end);
 
     /**
@@ -131,9 +152,9 @@ public interface CharSequence {
 
     /**
      * Returns a stream of {@code int} zero-extending the {@code char} values
-     * from this sequence.  Any char which maps to a <a
-     * href="{@docRoot}/java.base/java/lang/Character.html#unicode">surrogate code
-     * point</a> is passed through uninterpreted.
+     * from this sequence.  Any char which maps to a
+     * {@linkplain Character##unicode surrogate code point} is passed
+     * through uninterpreted.
      *
      * <p>The stream binds to this sequence when the terminal stream operation
      * commences (specifically, for mutable sequences the spliterator for the
@@ -148,11 +169,15 @@ public interface CharSequence {
         class CharIterator implements PrimitiveIterator.OfInt {
             int cur = 0;
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cur < length();
             }
 
-            public int nextInt() {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public int nextInt(@NonEmpty CharIterator this) {
                 if (hasNext()) {
                     return charAt(cur++);
                 } else {
@@ -222,11 +247,15 @@ public interface CharSequence {
                 }
             }
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return cur < length();
             }
 
-            public int nextInt() {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public int nextInt(@NonEmpty CodePointIterator this) {
                 final int length = length();
 
                 if (cur >= length) {
@@ -281,6 +310,7 @@ public interface CharSequence {
      * @since 11
      */
     @SuppressWarnings("unchecked")
+    @Pure
     public static int compare(CharSequence cs1, CharSequence cs2) {
         if (Objects.requireNonNull(cs1) == Objects.requireNonNull(cs2)) {
             return 0;

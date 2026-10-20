@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,9 +28,11 @@ package java.util;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.*;
@@ -92,6 +94,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * bit position i % 64 (where bit position 0 refers to the least
      * significant bit and 63 refers to the most significant bit).
      */
+    @java.io.Serial
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField("bits", long[].class),
     };
@@ -113,6 +116,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
     private transient boolean sizeIsSticky = false;
 
     /* use serialVersionUID from JDK 1.0.2 for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = 7997698588986878753L;
 
     /**
@@ -302,7 +306,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @return a byte array containing a little-endian representation
      *         of all the bits in this bit set
      * @since 1.7
-    */
+     */
     public byte[] toByteArray() {
         int n = wordsInUse;
         if (n == 0)
@@ -331,7 +335,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @return a long array containing a little-endian representation
      *         of all the bits in this bit set
      * @since 1.7
-    */
+     */
     public long[] toLongArray() {
         return Arrays.copyOf(words, wordsInUse);
     }
@@ -545,6 +549,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @throws IndexOutOfBoundsException if the specified index is negative
      * @since  1.0
      */
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this, @NonNegative int bitIndex) {
         if (bitIndex < 0)
             throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
@@ -570,6 +575,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      *         larger than {@code toIndex}
      * @since  1.4
      */
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this, @NonNegative int fromIndex, @NonNegative int toIndex) {
         checkRange(fromIndex, toIndex);
 
@@ -613,6 +619,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      *
      * @since 1.4
      */
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this) {
         while (wordsInUse > 0)
             words[--wordsInUse] = 0;
@@ -883,6 +890,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @since  1.4
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty(@GuardSatisfied BitSet this) {
         return wordsInUse == 0;
     }
@@ -1071,7 +1079,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
     /**
      * Compares this object against the specified object.
      * The result is {@code true} if and only if the argument is
-     * not {@code null} and is a {@code Bitset} object that has
+     * not {@code null} and is a {@code BitSet} object that has
      * exactly the same set of bits set to {@code true} as this bit
      * set. That is, for every nonnegative {@code int} index {@code k},
      * <pre>((BitSet)obj).get(k) == this.get(k)</pre>
@@ -1084,12 +1092,10 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     @Pure
     public boolean equals(@GuardSatisfied BitSet this, @GuardSatisfied @Nullable Object obj) {
-        if (!(obj instanceof BitSet))
+        if (!(obj instanceof BitSet set))
             return false;
         if (this == obj)
             return true;
-
-        BitSet set = (BitSet) obj;
 
         checkInvariants();
         set.checkInvariants();
@@ -1145,6 +1151,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * Save the state of the {@code BitSet} instance to a stream (i.e.,
      * serialize it).
      */
+    @java.io.Serial
     private void writeObject(ObjectOutputStream s)
         throws IOException {
 
@@ -1162,6 +1169,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * Reconstitute the {@code BitSet} instance from a stream (i.e.,
      * deserialize it).
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException {
 
@@ -1204,9 +1212,13 @@ public class BitSet implements Cloneable, java.io.Serializable {
     public String toString(@GuardSatisfied BitSet this) {
         checkInvariants();
 
+        final int MAX_INITIAL_CAPACITY = Integer.MAX_VALUE - 8;
         int numBits = (wordsInUse > 128) ?
             cardinality() : wordsInUse * BITS_PER_WORD;
-        StringBuilder b = new StringBuilder(6*numBits + 2);
+        // Avoid overflow in the case of a humongous numBits
+        int initialCapacity = (numBits <= (MAX_INITIAL_CAPACITY - 2) / 6) ?
+            6 * numBits + 2 : MAX_INITIAL_CAPACITY;
+        StringBuilder b = new StringBuilder(initialCapacity);
         b.append('{');
 
         int i = nextSetBit(0);
@@ -1333,7 +1345,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public OfInt trySplit() {
+            public @Nullable OfInt trySplit() {
                 int hi = getFence();
                 int lo = index;
                 if (lo < 0) {
@@ -1378,7 +1390,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public Comparator<? super Integer> getComparator() {
+            public @Nullable Comparator<? super Integer> getComparator() {
                 return null;
             }
         }

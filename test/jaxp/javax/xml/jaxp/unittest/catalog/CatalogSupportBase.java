@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -90,6 +90,7 @@ import org.xml.sax.ext.DefaultHandler2;
 public class CatalogSupportBase {
     // the System Property for the USE_CATALOG feature
     final static String SP_USE_CATALOG = "javax.xml.useCatalog";
+    final static String SP_ACCESS_EXTERNAL_DTD = "javax.xml.accessExternalDTD";
 
     boolean debug = false;
 
@@ -232,7 +233,7 @@ public class CatalogSupportBase {
                 + ""
                 + "</xsl:stylesheet>";
         xsl_includeDTD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                + "<!DOCTYPE HTMLlat1 SYSTEM \"http://openjdk.java.net/xml/catalog/dtd/XSLDTD.dtd\">"
+                + "<!DOCTYPE HTMLlat1 SYSTEM \"http://openjdk_java_net/xml/catalog/dtd/XSLDTD.dtd\">"
                 + "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">"
                 + "  <xsl:import href=\"pathto/XSLImport_html.xsl\"/>"
                 + "  <xsl:include href=\"pathto/XSLInclude_header.xsl\"/>"
@@ -262,7 +263,7 @@ public class CatalogSupportBase {
                 "</content>";
 
         xml_xslDTD = "<?xml version=\"1.0\"?>\n" +
-                "<!DOCTYPE content SYSTEM \"http://openjdk.java.net/xml/catalog/dtd/include.dtd\">" +
+                "<!DOCTYPE content SYSTEM \"http://openjdk_java_net/xml/catalog/dtd/include.dtd\">" +
                 "<content>\n" +
                 "    <header>This is the header</header>\n" +
                 "    Some content\n" +
@@ -305,10 +306,13 @@ public class CatalogSupportBase {
     public void testXInclude(boolean setUseCatalog, boolean useCatalog, String catalog,
             String xml, MyHandler handler, String expected) throws Exception {
         SAXParser parser = getSAXParser(setUseCatalog, useCatalog, catalog);
-
         parser.parse(new InputSource(new StringReader(xml)), handler);
-        debugPrint("handler.result:" + handler.getResult());
-        Assert.assertEquals(handler.getResult().trim(), expected);
+        // the test verifies the result if handler != null, or no exception
+        // is thrown if handler == null.
+        if (handler != null) {
+            debugPrint("handler.result:" + handler.getResult());
+            Assert.assertEquals(handler.getResult().trim(), expected);
+        }
     }
 
     /*

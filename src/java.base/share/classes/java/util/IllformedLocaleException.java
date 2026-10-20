@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -44,30 +46,33 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 @AnnotatedFor({"index"})
 public class IllformedLocaleException extends RuntimeException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -5245986824925681401L;
 
     private int _errIdx = -1;
 
     /**
-     * Constructs a new <code>IllformedLocaleException</code> with no
+     * Constructs a new {@code IllformedLocaleException} with no
      * detail message and -1 as the error index.
      */
+    @SideEffectFree
     public IllformedLocaleException() {
         super();
     }
 
     /**
-     * Constructs a new <code>IllformedLocaleException</code> with the
+     * Constructs a new {@code IllformedLocaleException} with the
      * given message and -1 as the error index.
      *
      * @param message the message
      */
-    public IllformedLocaleException(String message) {
+    @SideEffectFree
+    public IllformedLocaleException(@Nullable String message) {
         super(message);
     }
 
     /**
-     * Constructs a new <code>IllformedLocaleException</code> with the
+     * Constructs a new {@code IllformedLocaleException} with the
      * given message and the error index.  The error index is the approximate
      * offset from the start of the ill-formed value to the point where the
      * parse first detected an error.  A negative error index value indicates
@@ -76,6 +81,7 @@ public class IllformedLocaleException extends RuntimeException {
      * @param message the message
      * @param errorIndex the index
      */
+    @SideEffectFree
     public IllformedLocaleException(String message, int errorIndex) {
         super(message + ((errorIndex < 0) ? "" : " [at index " + errorIndex + "]"));
         _errIdx = errorIndex;

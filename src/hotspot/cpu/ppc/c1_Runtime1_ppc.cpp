@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2018 SAP SE. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "c1/c1_MacroAssembler.hpp"
 #include "c1/c1_Runtime1.hpp"
 #include "ci/ciUtilities.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/cardTable.hpp"
 #include "gc/shared/cardTableBarrierSet.hpp"
 #include "interpreter/interpreter.hpp"
@@ -42,6 +43,7 @@
 #include "runtime/vframeArray.hpp"
 #include "utilities/align.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include "vmreg_ppc.inline.hpp"
 
 // Implementation of StubAssembler
@@ -91,7 +93,7 @@ int StubAssembler::call_RT(Register oop_result1, Register metadata_result,
     if (frame_size() == no_frame_size) {
       ShouldNotReachHere(); // We always have a frame size.
       //pop_frame(); // pop the stub frame
-      //ld(R0, _abi(lr), R1_SP);
+      //ld(R0, _abi0(lr), R1_SP);
       //mtlr(R0);
       //load_const_optimized(R0, StubRoutines::forward_exception_entry());
       //mtctr(R0);
@@ -151,7 +153,7 @@ static int fpu_reg_save_offsets[FrameMap::nof_fpu_regs];
 static int frame_size_in_bytes = -1;
 
 static OopMap* generate_oop_map(StubAssembler* sasm, bool save_fpu_registers) {
-  assert(frame_size_in_bytes > frame::abi_reg_args_size, "init");
+  assert(frame_size_in_bytes > frame::native_abi_reg_args_size, "init");
   sasm->set_frame_size(frame_size_in_bytes / BytesPerWord);
   int frame_size_in_slots = frame_size_in_bytes / sizeof(jint);
   OopMap* oop_map = new OopMap(frame_size_in_slots, 0);
@@ -184,7 +186,7 @@ static OopMap* save_live_registers(StubAssembler* sasm, bool save_fpu_registers 
     ret_pc = R0;
     __ mflr(ret_pc);
   }
-  __ std(ret_pc, _abi(lr), R1_SP); // C code needs pc in C1 method.
+  __ std(ret_pc, _abi0(lr), R1_SP); // C code needs pc in C1 method.
   __ push_frame(frame_size_in_bytes + stack_preserve, R0);
 
   // Record volatile registers as callee-save values in an OopMap so
@@ -198,7 +200,7 @@ static OopMap* save_live_registers(StubAssembler* sasm, bool save_fpu_registers 
     Register r = as_Register(i);
     if (FrameMap::reg_needs_save(r)) {
       int sp_offset = cpu_reg_save_offsets[i];
-      __ std(r, sp_offset + STACK_BIAS, R1_SP);
+      __ std(r, sp_offset, R1_SP);
     }
   }
 
@@ -206,7 +208,7 @@ static OopMap* save_live_registers(StubAssembler* sasm, bool save_fpu_registers 
     for (i = 0; i < FrameMap::nof_fpu_regs; i++) {
       FloatRegister r = as_FloatRegister(i);
       int sp_offset = fpu_reg_save_offsets[i];
-      __ stfd(r, sp_offset + STACK_BIAS, R1_SP);
+      __ stfd(r, sp_offset, R1_SP);
     }
   }
 
@@ -219,7 +221,7 @@ static void restore_live_registers(StubAssembler* sasm, Register result1, Regist
     Register r = as_Register(i);
     if (FrameMap::reg_needs_save(r) && r != result1 && r != result2) {
       int sp_offset = cpu_reg_save_offsets[i];
-      __ ld(r, sp_offset + STACK_BIAS, R1_SP);
+      __ ld(r, sp_offset, R1_SP);
     }
   }
 
@@ -227,19 +229,19 @@ static void restore_live_registers(StubAssembler* sasm, Register result1, Regist
     for (int i = 0; i < FrameMap::nof_fpu_regs; i++) {
       FloatRegister r = as_FloatRegister(i);
       int sp_offset = fpu_reg_save_offsets[i];
-      __ lfd(r, sp_offset + STACK_BIAS, R1_SP);
+      __ lfd(r, sp_offset, R1_SP);
     }
   }
 
   __ pop_frame();
-  __ ld(R0, _abi(lr), R1_SP);
+  __ ld(R0, _abi0(lr), R1_SP);
   __ mtlr(R0);
 }
 
 
 void Runtime1::initialize_pd() {
   int i;
-  int sp_offset = frame::abi_reg_args_size;
+  int sp_offset = frame::native_abi_reg_args_size;
 
   for (i = 0; i < FrameMap::nof_cpu_regs; i++) {
     Register r = as_Register(i);
@@ -368,7 +370,7 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
   // return to the deoptimization handler entry that will cause re-execution
   // of the current bytecode.
   DeoptimizationBlob* deopt_blob = SharedRuntime::deopt_blob();
-  assert(deopt_blob != NULL, "deoptimization blob must have been created");
+  assert(deopt_blob != nullptr, "deoptimization blob must have been created");
 
   // Return to the deoptimization handler entry for unpacking and rexecute.
   // If we simply returned the we'd deopt as if any call we patched had just
@@ -388,7 +390,7 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
 }
 
 OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
-  OopMapSet* oop_maps = NULL;
+  OopMapSet* oop_maps = nullptr;
 
   // For better readability.
   const bool must_gc_arguments = true;
@@ -484,17 +486,17 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         __ bclr(Assembler::bcondCRbiIs1, Assembler::bi0(CCR0, Assembler::equal), Assembler::bhintbhBCLRisReturn);
 
         __ mflr(R0);
-        __ std(R0, _abi(lr), R1_SP);
-        __ push_frame(frame::abi_reg_args_size, R0); // Empty dummy frame (no callee-save regs).
-        sasm->set_frame_size(frame::abi_reg_args_size / BytesPerWord);
-        OopMap* oop_map = new OopMap(frame::abi_reg_args_size / sizeof(jint), 0);
+        __ std(R0, _abi0(lr), R1_SP);
+        __ push_frame(frame::native_abi_reg_args_size, R0); // Empty dummy frame (no callee-save regs).
+        sasm->set_frame_size(frame::native_abi_reg_args_size / BytesPerWord);
+        OopMap* oop_map = new OopMap(frame::native_abi_reg_args_size / sizeof(jint), 0);
         int call_offset = __ call_RT(noreg, noreg,
                                      CAST_FROM_FN_PTR(address, SharedRuntime::register_finalizer), R3_ARG1);
         oop_maps = new OopMapSet();
         oop_maps->add_gc_map(call_offset, oop_map);
 
         __ pop_frame();
-        __ ld(R0, _abi(lr), R1_SP);
+        __ ld(R0, _abi0(lr), R1_SP);
         __ mtlr(R0);
         __ blr();
       }
@@ -553,11 +555,11 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         __ ld(Rcaller_sp, 0, R1_SP);
         __ push_frame_reg_args(0, R0); // dummy frame for C call
         __ mr(Rexception_save, Rexception); // save over C call
-        __ ld(Rexception_pc, _abi(lr), Rcaller_sp); // return pc
+        __ ld(Rexception_pc, _abi0(lr), Rcaller_sp); // return pc
         __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), R16_thread, Rexception_pc);
         __ verify_not_null_oop(Rexception_save);
         __ mtctr(R3_RET);
-        __ ld(Rexception_pc, _abi(lr), Rcaller_sp); // return pc
+        __ ld(Rexception_pc, _abi0(lr), Rcaller_sp); // return pc
         __ mr(R1_SP, Rcaller_sp); // Pop both frames at once.
         __ mr(Rexception, Rexception_save); // restore
         __ mtlr(Rexception_pc);
@@ -646,7 +648,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps = stub_call_with_stack_parms(sasm, noreg, CAST_FROM_FN_PTR(address, deoptimize), 1, /*do_return*/ false);
 
         DeoptimizationBlob* deopt_blob = SharedRuntime::deopt_blob();
-        assert(deopt_blob != NULL, "deoptimization blob must have been created");
+        assert(deopt_blob != nullptr, "deoptimization blob must have been created");
         address stub = deopt_blob->unpack_with_reexecution();
         //__ load_const_optimized(R0, stub);
         __ add_const_optimized(R0, R29_TOC, MacroAssembler::offset_to_global_toc(stub));
@@ -692,7 +694,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
 //        save_live_registers(sasm);
 //
 //        __ save_thread(L7_thread_cache);
-//        __ call(CAST_FROM_FN_PTR(address, SharedRuntime::dtrace_object_alloc),
+//        __ call(CAST_FROM_FN_PTR(address, static_cast<int (*)(oopDesc*)>(SharedRuntime::dtrace_object_alloc)),
 //                relocInfo::runtime_call_type);
 //        __ delayed()->mov(I0, O0);
 //        __ restore_thread(L7_thread_cache);
@@ -714,7 +716,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps->add_gc_map(call_offset, oop_map);
 
         DeoptimizationBlob* deopt_blob = SharedRuntime::deopt_blob();
-        assert(deopt_blob != NULL, "deoptimization blob must have been created");
+        assert(deopt_blob != nullptr, "deoptimization blob must have been created");
         restore_live_registers(sasm, noreg, noreg);
 
         address stub = deopt_blob->unpack_with_reexecution();
@@ -729,10 +731,10 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
       {
         __ set_info("unimplemented entry", dont_gc_arguments);
         __ mflr(R0);
-        __ std(R0, _abi(lr), R1_SP);
-        __ push_frame(frame::abi_reg_args_size, R0); // empty dummy frame
-        sasm->set_frame_size(frame::abi_reg_args_size / BytesPerWord);
-        OopMap* oop_map = new OopMap(frame::abi_reg_args_size / sizeof(jint), 0);
+        __ std(R0, _abi0(lr), R1_SP);
+        __ push_frame(frame::native_abi_reg_args_size, R0); // empty dummy frame
+        sasm->set_frame_size(frame::native_abi_reg_args_size / BytesPerWord);
+        OopMap* oop_map = new OopMap(frame::native_abi_reg_args_size / sizeof(jint), 0);
 
         __ load_const_optimized(R4_ARG2, (int)id);
         int call_offset = __ call_RT(noreg, noreg, CAST_FROM_FN_PTR(address, unimplemented_entry), R4_ARG2);
@@ -752,7 +754,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler* sasm) {
 
   // Save registers, if required.
   OopMapSet* oop_maps = new OopMapSet();
-  OopMap* oop_map = NULL;
+  OopMap* oop_map = nullptr;
   const Register Rexception    = R3 /*LIRGenerator::exceptionOopOpr()*/,
                  Rexception_pc = R4 /*LIRGenerator::exceptionPcOpr()*/;
 
@@ -765,12 +767,12 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler* sasm) {
     // exception handler.
     oop_map = generate_oop_map(sasm, true);
     // Transfer the pending exception to the exception_oop.
-    // Also load the PC which is typically at SP + frame_size_in_bytes + _abi(lr),
+    // Also load the PC which is typically at SP + frame_size_in_bytes +_abi0(lr),
     // but we support additional slots in the frame for parameter passing.
     __ ld(Rexception_pc, 0, R1_SP);
     __ ld(Rexception, in_bytes(JavaThread::pending_exception_offset()), R16_thread);
     __ li(R0, 0);
-    __ ld(Rexception_pc, _abi(lr), Rexception_pc);
+    __ ld(Rexception_pc, _abi0(lr), Rexception_pc);
     __ std(R0, in_bytes(JavaThread::pending_exception_offset()), R16_thread);
     break;
   case handle_exception_nofpu_id:
@@ -782,7 +784,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler* sasm) {
     // At this point all registers except exception oop and exception pc are dead.
     oop_map = new OopMap(frame_size_in_bytes / sizeof(jint), 0);
     sasm->set_frame_size(frame_size_in_bytes / BytesPerWord);
-    __ std(Rexception_pc, _abi(lr), R1_SP);
+    __ std(Rexception_pc, _abi0(lr), R1_SP);
     __ push_frame(frame_size_in_bytes, R0);
     break;
   default:  ShouldNotReachHere();
@@ -795,10 +797,10 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler* sasm) {
   // empty before writing to them.
   __ ld(R0, in_bytes(JavaThread::exception_oop_offset()), R16_thread);
   __ cmpdi(CCR0, R0, 0);
-  __ asm_assert_eq("exception oop already set", 0x963);
+  __ asm_assert_eq("exception oop already set");
   __ ld(R0, in_bytes(JavaThread::exception_pc_offset() ), R16_thread);
   __ cmpdi(CCR0, R0, 0);
-  __ asm_assert_eq("exception pc already set", 0x962);
+  __ asm_assert_eq("exception pc already set");
 #endif
 
   // Save the exception and issuing pc in the thread.
@@ -825,7 +827,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler* sasm) {
     break;
   case handle_exception_from_callee_id: {
     __ pop_frame();
-    __ ld(Rexception_pc, _abi(lr), R1_SP);
+    __ ld(Rexception_pc, _abi0(lr), R1_SP);
     __ mtlr(Rexception_pc);
     __ bctr();
     break;

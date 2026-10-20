@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import jdk.internal.access.SharedSecrets;
+
+import javax.crypto.SecretKey;
 import java.security.MessageDigest;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.Locale;
-import javax.crypto.SecretKey;
 
 /**
  * This class specifies a secret key in a provider-independent fashion.
@@ -55,6 +58,7 @@ import javax.crypto.SecretKey;
  */
 public class SecretKeySpec implements KeySpec, SecretKey {
 
+    @java.io.Serial
     private static final long serialVersionUID = 6577238317307289933L;
 
     /**
@@ -62,14 +66,19 @@ public class SecretKeySpec implements KeySpec, SecretKey {
      *
      * @serial
      */
-    private byte[] key;
+    private final byte[] key;
 
     /**
      * The name of the algorithm associated with this key.
      *
      * @serial
      */
-    private String algorithm;
+    private final String algorithm;
+
+    static {
+        SharedSecrets.setJavaxCryptoSpecAccess(
+                SecretKeySpec::clear);
+    }
 
     /**
      * Constructs a secret key from the given byte array.
@@ -148,12 +157,15 @@ public class SecretKeySpec implements KeySpec, SecretKey {
         if (key.length == 0) {
             throw new IllegalArgumentException("Empty key");
         }
-        if (key.length-offset < len) {
-            throw new IllegalArgumentException
-                ("Invalid offset/length combination");
+        if (offset < 0) {
+            throw new ArrayIndexOutOfBoundsException("offset is negative");
         }
         if (len < 0) {
             throw new ArrayIndexOutOfBoundsException("len is negative");
+        }
+        if (key.length - offset < len) {
+            throw new IllegalArgumentException
+                ("Invalid offset/length combination");
         }
         this.key = new byte[len];
         System.arraycopy(key, offset, this.key, 0, len);
@@ -198,13 +210,12 @@ public class SecretKeySpec implements KeySpec, SecretKey {
             retval += this.key[i] * i;
         }
         if (this.algorithm.equalsIgnoreCase("TripleDES"))
-            return (retval ^= "desede".hashCode());
+            return retval ^ "desede".hashCode();
         else
-            return (retval ^=
-                    this.algorithm.toLowerCase(Locale.ENGLISH).hashCode());
+            return retval ^ this.algorithm.toLowerCase(Locale.ENGLISH).hashCode();
     }
 
-   /**
+    /**
      * Tests for equality between the specified object and this
      * object. Two SecretKeySpec objects are considered equal if
      * they are both SecretKey instances which have the
@@ -234,7 +245,19 @@ public class SecretKeySpec implements KeySpec, SecretKey {
         }
 
         byte[] thatKey = ((SecretKey)obj).getEncoded();
+        try {
+            return MessageDigest.isEqual(this.key, thatKey);
+        } finally {
+            if (thatKey != null) {
+                Arrays.fill(thatKey, (byte)0);
+            }
+        }
+    }
 
-        return MessageDigest.isEqual(this.key, thatKey);
+    /**
+     * Clear the key bytes inside.
+     */
+    void clear() {
+        Arrays.fill(key, (byte)0);
     }
 }

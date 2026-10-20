@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when an illegal combination flags is given.
  *
@@ -34,8 +36,9 @@ package java.util;
  *
  * @since 1.5
  */
-public class IllegalFormatFlagsException extends IllegalFormatException {
+public non-sealed class IllegalFormatFlagsException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 790824L;
 
     private String flags;
@@ -46,6 +49,7 @@ public class IllegalFormatFlagsException extends IllegalFormatException {
      * @param  f
      *         The set of format flags which contain an illegal combination
      */
+    @SideEffectFree
     public IllegalFormatFlagsException(String f) {
         if (f == null)
             throw new NullPointerException();
@@ -61,6 +65,7 @@ public class IllegalFormatFlagsException extends IllegalFormatException {
         return flags;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Flags = '" + flags + "'";
     }

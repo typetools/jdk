@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the formatter has been closed.
  *
@@ -36,10 +38,12 @@ package java.util;
  */
 public class FormatterClosedException extends IllegalStateException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 18111216L;
 
     /**
      * Constructs an instance of this class.
      */
+    @SideEffectFree
     public FormatterClosedException() { }
 }

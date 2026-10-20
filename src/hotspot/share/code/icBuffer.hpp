@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,20 @@
  *
  */
 
-#ifndef SHARE_VM_CODE_ICBUFFER_HPP
-#define SHARE_VM_CODE_ICBUFFER_HPP
+#ifndef SHARE_CODE_ICBUFFER_HPP
+#define SHARE_CODE_ICBUFFER_HPP
 
 #include "asm/codeBuffer.hpp"
 #include "code/stubs.hpp"
 #include "interpreter/bytecodes.hpp"
 #include "memory/allocation.hpp"
+#include "runtime/safepointVerifiers.hpp"
 #include "utilities/align.hpp"
+#include "utilities/debug.hpp"
+#include "utilities/macros.hpp"
+
+class CompiledIC;
+class CompiledICHolder;
 
 //
 // For CompiledIC's:
@@ -50,26 +56,28 @@ class ICStub: public Stub {
  protected:
   friend class ICStubInterface;
   // This will be called only by ICStubInterface
-  void    initialize(int size,
-                     CodeStrings strings)        { _size = size; _ic_site = NULL; }
+  void    initialize(int size)                   { _size = size; _ic_site = nullptr; }
   void    finalize(); // called when a method is removed
 
   // General info
   int     size() const                           { return _size; }
-  static  int code_size_to_size(int code_size)   { return align_up((int)sizeof(ICStub), CodeEntryAlignment) + code_size; }
+
+  // ICStub_from_destination_address looks up Stub* address from code entry address,
+  // which unfortunately means the stub head should be at the same alignment as the code.
+  static  int alignment()                        { return CodeEntryAlignment; }
 
  public:
   // Creation
   void set_stub(CompiledIC *ic, void* cached_value, address dest_addr);
 
   // Code info
-  address code_begin() const                     { return (address)this + align_up(sizeof(ICStub), CodeEntryAlignment); }
+  address code_begin() const                     { return align_up((address)this + sizeof(ICStub), CodeEntryAlignment); }
   address code_end() const                       { return (address)this + size(); }
 
   // Call site info
   address ic_site() const                        { return _ic_site; }
   void    clear();
-  bool    is_empty() const                       { return _ic_site == NULL; }
+  bool    is_empty() const                       { return _ic_site == nullptr; }
 
   // stub info
   address destination() const;  // destination of jump instruction
@@ -92,6 +100,43 @@ inline ICStub* ICStub_from_destination_address(address destination_address) {
   return stub;
 }
 
+#ifdef ASSERT
+// The ICRefillVerifier class is a stack allocated RAII object used to
+// detect if a failed IC transition that required IC stub refilling has
+// been accidentally missed. It is up to the caller to in that case
+// refill IC stubs.
+class ICRefillVerifier: StackObj {
+  bool _refill_requested;
+  bool _refill_remembered;
+
+ public:
+  ICRefillVerifier();
+  ~ICRefillVerifier();
+
+  void request_refill() { _refill_requested = true; }
+  void request_remembered() { _refill_remembered = true; }
+};
+
+// The ICRefillVerifierMark is used to set the thread's current
+// ICRefillVerifier to a provided one. This is useful in particular
+// when transitioning IC stubs in parallel and refilling from the
+// master thread invoking the IC stub transitioning code.
+class ICRefillVerifierMark: StackObj {
+ public:
+  ICRefillVerifierMark(ICRefillVerifier* verifier);
+  ~ICRefillVerifierMark();
+};
+#else
+class ICRefillVerifier: StackObj {
+ public:
+  ICRefillVerifier() {}
+};
+class ICRefillVerifierMark: StackObj {
+ public:
+  ICRefillVerifierMark(ICRefillVerifier* verifier) {}
+};
+#endif
+
 class InlineCacheBuffer: public AllStatic {
  private:
   // friends
@@ -100,19 +145,13 @@ class InlineCacheBuffer: public AllStatic {
   static int ic_stub_code_size();
 
   static StubQueue* _buffer;
-  static ICStub*    _next_stub;
 
   static CompiledICHolder* _pending_released;
   static int _pending_count;
 
   static StubQueue* buffer()                         { return _buffer;         }
-  static void       set_next_stub(ICStub* next_stub) { _next_stub = next_stub; }
-  static ICStub*    get_next_stub()                  { return _next_stub;      }
-
-  static void       init_next_stub();
 
   static ICStub* new_ic_stub();
-
 
   // Machine-dependent implementation of ICBuffer
   static void    assemble_ic_buffer_code(address code_begin, void* cached_value, address entry_point);
@@ -128,7 +167,9 @@ class InlineCacheBuffer: public AllStatic {
   static bool contains(address instruction_address);
 
     // removes the ICStubs after backpatching
+  static bool needs_update_inline_caches();
   static void update_inline_caches();
+  static void refill_ic_stubs();
 
   // for debugging
   static bool is_empty();
@@ -138,9 +179,9 @@ class InlineCacheBuffer: public AllStatic {
   static int pending_icholder_count() { return _pending_count; }
 
   // New interface
-  static void    create_transition_stub(CompiledIC *ic, void* cached_value, address entry);
+  static bool    create_transition_stub(CompiledIC *ic, void* cached_value, address entry);
   static address ic_destination_for(CompiledIC *ic);
   static void*   cached_value_for(CompiledIC *ic);
 };
 
-#endif // SHARE_VM_CODE_ICBUFFER_HPP
+#endif // SHARE_CODE_ICBUFFER_HPP

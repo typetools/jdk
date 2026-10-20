@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,9 +26,9 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.aliasing.qual.Unique;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
-import org.checkerframework.common.aliasing.qual.Unique;
 
 /**
  * The class {@code Exception} and its subclasses are a form of
@@ -49,6 +49,7 @@ import org.checkerframework.common.aliasing.qual.Unique;
  */
 @AnnotatedFor({"aliasing", "nullness"})
 public class Exception extends Throwable {
+    @java.io.Serial
     static final long serialVersionUID = -3387516993124229948L;
 
     /**
@@ -126,6 +127,7 @@ public class Exception extends Throwable {
      *                           be writable
      * @since 1.7
      */
+    @SideEffectFree
     protected @Unique Exception(@Nullable String message, @Nullable Throwable cause,
                         boolean enableSuppression,
                         boolean writableStackTrace) {

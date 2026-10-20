@@ -1,0 +1,534 @@
+/*
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+package java.util;
+
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
+/**
+ * Provides a reversed-ordered view of a SortedMap. Not serializable.
+ *
+ * TODO: copy in equals and hashCode from AbstractMap
+ */
+@AnnotatedFor({"modifiability"})
+class ReverseOrderSortedMapView<K, V> extends AbstractMap<K, V> implements SortedMap<K, V> {
+    final SortedMap<K, V> base;
+    final Comparator<? super K> cmp;
+
+    private ReverseOrderSortedMapView(SortedMap<K, V> map) {
+        base = map;
+        cmp = Collections.reverseOrder(map.comparator());
+    }
+
+    @SideEffectFree
+    public static <K, V> SortedMap<K, V> of(SortedMap<K, V> map) {
+        if (map instanceof ReverseOrderSortedMapView<K, V> rosmv) {
+            return rosmv.base;
+        } else {
+            return new ReverseOrderSortedMapView<>(map);
+        }
+    }
+
+    // ========== Object ==========
+
+    // equals: inherited from AbstractMap
+
+    // hashCode: inherited from AbstractMap
+
+    @SideEffectFree
+    public String toString() {
+        return toString(this, descendingEntryIterator(base));
+    }
+
+    // ========== Map ==========
+
+    public void clear(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
+        base.clear();
+    }
+
+    @Pure
+    public boolean containsKey(Object key) {
+        return base.containsKey(key);
+    }
+
+    @Pure
+    public boolean containsValue(Object value) {
+        return base.containsValue(value);
+    }
+
+    @Pure
+    public @Nullable V get(Object key) {
+        return base.get(key);
+    }
+
+    @Pure
+    public boolean isEmpty() {
+        return base.isEmpty();
+    }
+
+    public @Nullable V put(@Growable @Replaceable ReverseOrderSortedMapView<K,V> this, K key, V value) {
+        return base.put(key, value);
+    }
+
+    public void putAll(@Growable @Replaceable ReverseOrderSortedMapView<K,V> this, Map<? extends K, ? extends V> m) {
+        base.putAll(m);
+    }
+
+    public @Nullable V remove(@Shrinkable ReverseOrderSortedMapView<K,V> this, Object key) {
+        return base.remove(key);
+    }
+
+    @Pure
+    public int size() {
+        return base.size();
+    }
+
+    @SideEffectFree
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<K> keySet(@PolyShrinkable ReverseOrderSortedMapView<K,V> this) {
+        return new AbstractSet<>() {
+            // inherit add(), which throws UOE
+            @SideEffectFree
+            public Iterator<K> iterator() { return descendingKeyIterator(base); }
+            @Pure
+            public int size() { return base.size(); }
+            public void clear() { base.keySet().clear(); }
+            @Pure
+            public boolean contains(Object o) { return base.keySet().contains(o); }
+            public boolean remove(Object o) { return base.keySet().remove(o); }
+        };
+    }
+
+    @SideEffectFree
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable ReverseOrderSortedMapView<K,V> this) {
+        return new AbstractCollection<>() {
+            // inherit add(), which throws UOE
+            @SideEffectFree
+            public Iterator<V> iterator() { return descendingValueIterator(base); }
+            @Pure
+            public int size() { return base.size(); }
+            public void clear() { base.values().clear(); }
+            @Pure
+            public boolean contains(Object o) { return base.values().contains(o); }
+            public boolean remove(Object o) { return base.values().remove(o); }
+        };
+    }
+
+    @SideEffectFree
+    public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<K, V>> entrySet(@PolyModifiable ReverseOrderSortedMapView<K,V> this) {
+        return new AbstractSet<>() {
+            // inherit add(), which throws UOE
+            @SideEffectFree
+            public Iterator<Entry<K, V>> iterator() { return descendingEntryIterator(base); }
+            @Pure
+            public int size() { return base.size(); }
+            public void clear() { base.entrySet().clear(); }
+            @Pure
+            public boolean contains(Object o) { return base.entrySet().contains(o); }
+            public boolean remove(Object o) { return base.entrySet().remove(o); }
+        };
+    }
+
+    // ========== SequencedMap ==========
+
+    @SideEffectFree
+    public SortedMap<K, V> reversed() {
+        return base;
+    }
+
+    @Pure
+    public K firstKey() {
+        return base.lastKey();
+    }
+
+    @Pure
+    public K lastKey() {
+        return base.firstKey();
+    }
+
+    public Map.@Nullable Entry<K, V> firstEntry() {
+        return base.lastEntry();
+    }
+
+    public Map.@Nullable Entry<K, V> lastEntry() {
+        return base.firstEntry();
+    }
+
+    public Map.@Nullable Entry<K,V> pollFirstEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
+        return base.pollLastEntry();
+    }
+
+    public Map.@Nullable Entry<K,V> pollLastEntry(@Shrinkable ReverseOrderSortedMapView<K,V> this) {
+        return base.pollFirstEntry();
+    }
+
+    public @Nullable V putFirst(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
+        return base.putLast(k, v);
+    }
+
+    public @Nullable V putLast(@SeqGrowable ReverseOrderSortedMapView<K,V> this, K k, V v) {
+        return base.putFirst(k, v);
+    }
+
+    // ========== SortedMap ==========
+
+    @Pure
+    public @Nullable Comparator<? super K> comparator() {
+        return cmp;
+    }
+
+    @SideEffectFree
+    public @PolyModifiable SortedMap<K, V> subMap(@PolyModifiable ReverseOrderSortedMapView<K,V> this, K fromKey, K toKey) {
+        if (cmp.compare(fromKey, toKey) <= 0) {
+            return new Submap(fromKey, toKey);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    @SideEffectFree
+    public @PolyModifiable SortedMap<K, V> headMap(@PolyModifiable ReverseOrderSortedMapView<K,V> this, K toKey) {
+        return new Submap(null, toKey);
+    }
+
+    @SideEffectFree
+    public @PolyModifiable SortedMap<K, V> tailMap(@PolyModifiable ReverseOrderSortedMapView<K,V> this, K fromKey) {
+        return new Submap(fromKey, null);
+    }
+
+    // ========== Infrastructure ==========
+
+    static <K, V> Iterator<K> descendingKeyIterator(SortedMap<K, V> map) {
+        return new Iterator<>() {
+            SortedMap<K, V> root = map;
+            SortedMap<K, V> view = map;
+            K prev = null;
+
+            @Pure
+            public boolean hasNext() {
+                return ! view.isEmpty();
+            }
+
+            public K next() {
+                if (view.isEmpty())
+                    throw new NoSuchElementException();
+                K k = prev = view.lastKey();
+                view = root.headMap(k);
+                return k;
+            }
+
+            public void remove() {
+                if (prev == null) {
+                    throw new IllegalStateException();
+                } else {
+                    root.remove(prev);
+                    prev = null;
+                }
+            }
+        };
+    }
+
+    static <K, V> Iterator<V> descendingValueIterator(SortedMap<K, V> map) {
+        return new Iterator<>() {
+            Iterator<K> keyIterator = descendingKeyIterator(map);
+
+            @Pure
+            public boolean hasNext() {
+                return keyIterator.hasNext();
+            }
+
+            public V next() {
+                return map.get(keyIterator.next());
+            }
+
+            public void remove() {
+                keyIterator.remove();
+            }
+        };
+    }
+
+    static <K, V> Iterator<Map.Entry<K, V>> descendingEntryIterator(SortedMap<K, V> map) {
+        return new Iterator<>() {
+            Iterator<K> keyIterator = descendingKeyIterator(map);
+
+            @Pure
+            public boolean hasNext() {
+                return keyIterator.hasNext();
+            }
+
+            public Map.Entry<K, V> next() {
+                K key = keyIterator.next();
+                return new ViewEntry<>(map, key, map.get(key));
+            }
+
+            public void remove() {
+                keyIterator.remove();
+            }
+        };
+    }
+
+    static class ViewEntry<K, V> implements Map.Entry<K, V> {
+        final Map<K, V> map;
+        final K key;
+        final V value;
+
+        ViewEntry(Map<K, V> map, K key, V value) {
+            this.map = map;
+            this.key = key;
+            this.value = value;
+        }
+
+        @Pure
+        public K getKey()             { return key; }
+        @Pure
+        public V getValue()           { return value; }
+        public @Nullable V setValue(@Replaceable ViewEntry<K,V> this, V newValue) { return map.put(key, newValue); }
+
+        @Pure
+        public boolean equals(@Nullable Object o) {
+            return o instanceof Map.Entry<?, ?> e
+                    && Objects.equals(key, e.getKey())
+                    && Objects.equals(value, e.getValue());
+        }
+
+        @Pure
+        public int hashCode() {
+            return Objects.hashCode(key) ^ Objects.hashCode(value);
+        }
+
+        @SideEffectFree
+        public String toString() {
+            return key + "=" + value;
+        }
+    }
+
+    // copied and modified from AbstractMap
+    @SideEffectFree
+    static <K, V> String toString(Map<K, V> thisMap, Iterator<Entry<K,V>> i) {
+        if (! i.hasNext())
+            return "{}";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('{');
+        for (;;) {
+            Entry<K,V> e = i.next();
+            K key = e.getKey();
+            V value = e.getValue();
+            sb.append(key   == thisMap ? "(this Map)" : key);
+            sb.append('=');
+            sb.append(value == thisMap ? "(this Map)" : value);
+            if (! i.hasNext())
+                return sb.append('}').toString();
+            sb.append(',').append(' ');
+        }
+    }
+
+    /**
+     * Used for various submap views. We can't use the base SortedMap's subMap,
+     * because of the asymmetry between from-inclusive and to-exclusive.
+     */
+    class Submap extends AbstractMap<K, V> implements SortedMap<K, V> {
+        final K head; // head key, or negative infinity if null
+        final K tail; // tail key, or positive infinity if null
+
+        @SuppressWarnings("unchecked")
+        Submap(K head, K tail) {
+            this.head = head;
+            this.tail = tail;
+        }
+
+        // returns whether e is above the head, inclusive
+        boolean aboveHead(K k) {
+            return head == null || cmp.compare(k, head) >= 0;
+        }
+
+        // returns whether e is below the tail, exclusive
+        boolean belowTail(K k) {
+            return tail == null || cmp.compare(k, tail) < 0;
+        }
+
+        Iterator<Entry<K, V>> entryIterator() {
+            return new Iterator<>() {
+                Entry<K, V> cache = null;
+                K prevKey = null;
+                boolean dead = false;
+                Iterator<Entry<K, V>> it = descendingEntryIterator(base);
+
+                @Pure
+                public boolean hasNext() {
+                    if (dead)
+                        return false;
+
+                    if (cache != null)
+                        return true;
+
+                    while (it.hasNext()) {
+                        Entry<K, V> e = it.next();
+
+                        if (! aboveHead(e.getKey()))
+                            continue;
+
+                        if (! belowTail(e.getKey())) {
+                            dead = true;
+                            return false;
+                        }
+
+                        cache = e;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                public Entry<K, V> next() {
+                    if (hasNext()) {
+                        Entry<K, V> e = cache;
+                        cache = null;
+                        prevKey = e.getKey();
+                        return e;
+                    } else {
+                        throw new NoSuchElementException();
+                    }
+                }
+
+                public void remove() {
+                    if (prevKey == null) {
+                        throw new IllegalStateException();
+                    } else {
+                        base.remove(prevKey);
+                    }
+                }
+            };
+        }
+
+        // equals: inherited from AbstractMap
+
+        // hashCode: inherited from AbstractMap
+
+        @SideEffectFree
+        public String toString() {
+            return ReverseOrderSortedMapView.toString(this, entryIterator());
+        }
+
+        @SideEffectFree
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<K, V>> entrySet(@PolyModifiable Submap this) {
+            return new AbstractSet<>() {
+                @SideEffectFree
+                public Iterator<Entry<K, V>> iterator() {
+                    return entryIterator();
+                }
+
+                @Pure
+                public int size() {
+                    int sz = 0;
+                    for (var it = entryIterator(); it.hasNext();) {
+                        it.next();
+                        sz++;
+                    }
+                    return sz;
+                }
+            };
+        }
+
+        public @Nullable V put(@Growable @Replaceable Submap this, K key, V value) {
+            if (aboveHead(key) && belowTail(key))
+                return base.put(key, value);
+            else
+                throw new IllegalArgumentException();
+        }
+
+        public @Nullable V remove(@Shrinkable Submap this, Object o) {
+            @SuppressWarnings("unchecked")
+            K key = (K) o;
+            if (aboveHead(key) && belowTail(key))
+                return base.remove(o);
+            else
+                return null;
+        }
+
+        @Pure
+        public int size() {
+            return entrySet().size();
+        }
+
+        @Pure
+        public @Nullable Comparator<? super K> comparator() {
+            return cmp;
+        }
+
+        @Pure
+        public K firstKey() {
+            return this.entryIterator().next().getKey();
+        }
+
+        @Pure
+        public K lastKey() {
+            var it = this.entryIterator();
+            if (! it.hasNext())
+                throw new NoSuchElementException();
+            var last = it.next();
+            while (it.hasNext())
+                last = it.next();
+            return last.getKey();
+        }
+
+        @SideEffectFree
+        public @PolyModifiable SortedMap<K, V> subMap(@PolyModifiable Submap this, K from, K to) {
+            if (aboveHead(from) && belowTail(from) &&
+                aboveHead(to) && belowTail(to) &&
+                cmp.compare(from, to) <= 0) {
+                return new Submap(from, to);
+            } else {
+                throw new IllegalArgumentException();
+            }
+        }
+
+        @SideEffectFree
+        public @PolyModifiable SortedMap<K, V> headMap(@PolyModifiable Submap this, K to) {
+            if (aboveHead(to) && belowTail(to))
+                return new Submap(head, to);
+            else
+                throw new IllegalArgumentException();
+        }
+
+        @SideEffectFree
+        public @PolyModifiable SortedMap<K, V> tailMap(@PolyModifiable Submap this, K from) {
+            if (aboveHead(from) && belowTail(from))
+                return new Submap(from, tail);
+            else
+                throw new IllegalArgumentException();
+        }
+    }
+}

@@ -35,10 +35,28 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -93,6 +111,7 @@ import java.util.function.Predicate;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
+@AnnotatedFor({"nullness", "modifiability"})
 public class LinkedTransferQueue<E> extends AbstractQueue<E>
     implements TransferQueue<E>, java.io.Serializable {
     private static final long serialVersionUID = -3223113410248163686L;
@@ -314,31 +333,12 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * 2. Await match or cancellation (method awaitMatch)
      *
      *    Wait for another thread to match node; instead cancelling if
-     *    the current thread was interrupted or the wait timed out. On
-     *    multiprocessors, we use front-of-queue spinning: If a node
-     *    appears to be the first unmatched node in the queue, it
-     *    spins a bit before blocking. In either case, before blocking
-     *    it tries to unsplice any nodes between the current "head"
-     *    and the first unmatched node.
-     *
-     *    Front-of-queue spinning vastly improves performance of
-     *    heavily contended queues. And so long as it is relatively
-     *    brief and "quiet", spinning does not much impact performance
-     *    of less-contended queues.  During spins threads check their
-     *    interrupt status and generate a thread-local random number
-     *    to decide to occasionally perform a Thread.yield. While
-     *    yield has underdefined specs, we assume that it might help,
-     *    and will not hurt, in limiting impact of spinning on busy
-     *    systems.  We also use smaller (1/2) spins for nodes that are
-     *    not known to be front but whose predecessors have not
-     *    blocked -- these "chained" spins avoid artifacts of
-     *    front-of-queue rules which otherwise lead to alternating
-     *    nodes spinning vs blocking. Further, front threads that
-     *    represent phase changes (from data to request node or vice
-     *    versa) compared to their predecessors receive additional
-     *    chained spins, reflecting longer paths typically required to
-     *    unblock threads during phase changes.
-     *
+     *    the current thread was interrupted or the wait timed out. To
+     *    improve performance in common single-source / single-sink
+     *    usages when there are more tasks that cores, an initial
+     *    Thread.yield is tried when there is apparently only one
+     *    waiter.  In other cases, waiters may help with some
+     *    bookkeeping, then park/unpark.
      *
      * ** Unlinking removed interior nodes **
      *
@@ -374,30 +374,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * When these cases arise, rather than always retraversing the
      * entire list to find an actual predecessor to unlink (which
-     * won't help for case (1) anyway), we record a conservative
-     * estimate of possible unsplice failures (in "sweepVotes").
-     * We trigger a full sweep when the estimate exceeds a threshold
-     * ("SWEEP_THRESHOLD") indicating the maximum number of estimated
-     * removal failures to tolerate before sweeping through, unlinking
-     * cancelled nodes that were not unlinked upon initial removal.
-     * We perform sweeps by the thread hitting threshold (rather than
-     * background threads or by spreading work to other threads)
-     * because in the main contexts in which removal occurs, the
-     * caller is timed-out or cancelled, which are not time-critical
-     * enough to warrant the overhead that alternatives would impose
-     * on other threads.
-     *
-     * Because the sweepVotes estimate is conservative, and because
-     * nodes become unlinked "naturally" as they fall off the head of
-     * the queue, and because we allow votes to accumulate even while
-     * sweeps are in progress, there are typically significantly fewer
-     * such nodes than estimated.  Choice of a threshold value
-     * balances the likelihood of wasted effort and contention, versus
-     * providing a worst-case bound on retention of interior nodes in
-     * quiescent queues. The value defined below was chosen
-     * empirically to balance these under various timeout scenarios.
-     *
-     * Because traversal operations on the linked list of nodes are a
+     * won't help for case (1) anyway), we record the need to sweep the
+     * next time any thread would otherwise block in awaitMatch. Also,
+     * because traversal operations on the linked list of nodes are a
      * natural opportunity to sweep dead nodes, we generally do so,
      * including all the operations that might remove elements as they
      * traverse, such as removeIf and Iterator.remove.  This largely
@@ -410,28 +389,12 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * self-linked.
      */
 
-    /** True if on multiprocessor */
-    private static final boolean MP =
-        Runtime.getRuntime().availableProcessors() > 1;
-
     /**
-     * The number of times to spin (with randomly interspersed calls
-     * to Thread.yield) on multiprocessor before blocking when a node
-     * is apparently the first waiter in the queue.  See above for
-     * explanation. Must be a power of two. The value is empirically
-     * derived -- it works pretty well across a variety of processors,
-     * numbers of CPUs, and OSes.
+     * The number of nanoseconds for which it is faster to spin
+     * rather than to use timed park. A rough estimate suffices.
+     * Using a power of two minus one simplifies some comparisons.
      */
-    private static final int FRONT_SPINS   = 1 << 7;
-
-    /**
-     * The number of times to spin before blocking when a node is
-     * preceded by another node that is apparently spinning.  Also
-     * serves as an increment to FRONT_SPINS on phase changes, and as
-     * base average frequency for yielding during spins. Must be a
-     * power of two.
-     */
-    private static final int CHAINED_SPINS = FRONT_SPINS >>> 1;
+    static final long SPIN_FOR_TIMEOUT_THRESHOLD = 1023L;
 
     /**
      * The maximum number of estimated removal failures (sweepVotes)
@@ -447,7 +410,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * them after use.  Writes that are intrinsically ordered wrt
      * other accesses or CASes use simple relaxed forms.
      */
-    static final class Node {
+    static final class Node implements ForkJoinPool.ManagedBlocker {
         final boolean isData;   // false if this is a request node
         volatile Object item;   // initially non-null if isData; CASed to match
         volatile Node next;
@@ -492,24 +455,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         final void appendRelaxed(Node next) {
             // assert next != null;
             // assert this.next == null;
-            NEXT.set(this, next);
-        }
-
-        /**
-         * Sets item (of a request node) to self and waiter to null,
-         * to avoid garbage retention after matching or cancelling.
-         * Uses relaxed writes because order is already constrained in
-         * the only calling contexts: item is forgotten only after
-         * volatile/atomic mechanics that extract items, and visitors
-         * of request nodes only ever check whether item is null.
-         * Similarly, clearing waiter follows either CAS or return
-         * from park (if ever parked; else we don't care).
-         */
-        final void forgetContents() {
-            // assert isMatched();
-            if (!isData)
-                ITEM.set(this, this);
-            WAITER.set(this, null);
+            NEXT.setOpaque(this, next);
         }
 
         /**
@@ -537,6 +483,16 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         final boolean cannotPrecede(boolean haveData) {
             boolean d = isData;
             return d != haveData && d != (item == null);
+        }
+
+        public final boolean isReleasable() {
+            return (isData == (item == null)) ||
+                Thread.currentThread().isInterrupted();
+        }
+
+        public final boolean block() {
+            while (!isReleasable()) LockSupport.park();
+            return true;
         }
 
         private static final long serialVersionUID = -3375979862319811754L;
@@ -571,7 +527,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     private transient volatile Node tail;
 
     /** The number of apparent failures to unsplice cancelled nodes */
-    private transient volatile int sweepVotes;
+    private transient volatile boolean needSweep;
 
     private boolean casTail(Node cmp, Node val) {
         // assert cmp != null;
@@ -581,11 +537,6 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
     private boolean casHead(Node cmp, Node val) {
         return HEAD.compareAndSet(this, cmp, val);
-    }
-
-    /** Atomic version of ++sweepVotes. */
-    private int incSweepVotes() {
-        return (int) SWEEPVOTES.getAndAdd(this, 1) + 1;
     }
 
     /**
@@ -613,7 +564,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param q p.next: the next live node, or null if at end
      * @return pred if pred still alive and CAS succeeded; else p
      */
-    private Node skipDeadNodes(Node pred, Node c, Node p, Node q) {
+    private Node skipDeadNodes(@Nullable Node pred, Node c, Node p, @Nullable Node q) {
         // assert pred != c;
         // assert p != q;
         // assert c.isMatched();
@@ -664,7 +615,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if haveData mode but e is null
      */
     @SuppressWarnings("unchecked")
-    private E xfer(E e, boolean haveData, int how, long nanos) {
+    private @Nullable E xfer(@Nullable E e, boolean haveData, int how, long nanos) {
         if (haveData && (e == null))
             throw new NullPointerException();
 
@@ -694,7 +645,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     }
 
     /**
-     * Spins/yields/blocks until node s is matched or caller gives up.
+     * Possibly blocks until node s is matched or caller gives up.
      *
      * @param s the waiting node
      * @param pred the predecessor of s, or null if unknown (the null
@@ -705,65 +656,55 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param nanos timeout in nanosecs, used only if timed is true
      * @return matched item, or e if unmatched on interrupt or timeout
      */
-    private E awaitMatch(Node s, Node pred, E e, boolean timed, long nanos) {
+    @SuppressWarnings("unchecked")
+    private @Nullable E awaitMatch(Node s, @Nullable Node pred, @Nullable E e, boolean timed, long nanos) {
+        final boolean isData = s.isData;
         final long deadline = timed ? System.nanoTime() + nanos : 0L;
-        Thread w = Thread.currentThread();
-        int spins = -1; // initialized after first item and cancel checks
-        ThreadLocalRandom randomYields = null; // bound if needed
-
-        for (;;) {
-            final Object item;
-            if ((item = s.item) != e) {       // matched
-                // assert item != s;
-                s.forgetContents();           // avoid garbage
-                @SuppressWarnings("unchecked") E itemE = (E) item;
-                return itemE;
-            }
-            else if (w.isInterrupted() || (timed && nanos <= 0L)) {
-                // try to cancel and unlink
-                if (s.casItem(e, s.isData ? null : s)) {
-                    unsplice(pred, s);
+        final Thread w = Thread.currentThread();
+        int stat = -1;                   // -1: may yield, +1: park, else 0
+        Object item;
+        while ((item = s.item) == e) {
+            if (needSweep)               // help clean
+                sweep();
+            else if ((timed && nanos <= 0L) || w.isInterrupted()) {
+                if (s.casItem(e, (e == null) ? s : null)) {
+                    unsplice(pred, s);   // cancelled
                     return e;
                 }
-                // return normally if lost CAS
             }
-            else if (spins < 0) {            // establish spins at/near front
-                if ((spins = spinsFor(pred, s.isData)) > 0)
-                    randomYields = ThreadLocalRandom.current();
+            else if (stat <= 0) {
+                if (pred != null && pred.next == s) {
+                    if (stat < 0 &&
+                        (pred.isData != isData || pred.isMatched())) {
+                        stat = 0;        // yield once if first
+                        Thread.yield();
+                    }
+                    else {
+                        stat = 1;
+                        s.waiter = w;    // enable unpark
+                    }
+                }                        // else signal in progress
             }
-            else if (spins > 0) {             // spin
-                --spins;
-                if (randomYields.nextInt(CHAINED_SPINS) == 0)
-                    Thread.yield();           // occasionally yield
-            }
-            else if (s.waiter == null) {
-                s.waiter = w;                 // request unpark then recheck
-            }
-            else if (timed) {
-                nanos = deadline - System.nanoTime();
-                if (nanos > 0L)
-                    LockSupport.parkNanos(this, nanos);
+            else if ((item = s.item) != e)
+                break;                   // recheck
+            else if (!timed) {
+                LockSupport.setCurrentBlocker(this);
+                try {
+                    ForkJoinPool.managedBlock(s);
+                } catch (InterruptedException cannotHappen) { }
+                LockSupport.setCurrentBlocker(null);
             }
             else {
-                LockSupport.park(this);
+                nanos = deadline - System.nanoTime();
+                if (nanos > SPIN_FOR_TIMEOUT_THRESHOLD)
+                    LockSupport.parkNanos(this, nanos);
             }
         }
-    }
-
-    /**
-     * Returns spin/yield value for a node with given predecessor and
-     * data mode. See above for explanation.
-     */
-    private static int spinsFor(Node pred, boolean haveData) {
-        if (MP && pred != null) {
-            if (pred.isData != haveData)      // phase change
-                return FRONT_SPINS + CHAINED_SPINS;
-            if (pred.isMatched())             // probably at front
-                return FRONT_SPINS;
-            if (pred.waiter == null)          // pred apparently spinning
-                return CHAINED_SPINS;
-        }
-        return 0;
+        if (stat == 1)
+            WAITER.set(s, null);
+        if (!isData)
+            ITEM.set(s, s);              // self-link to avoid garbage
+        return (E) item;
     }
 
     /* -------------- Traversal methods -------------- */
@@ -819,6 +760,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
     }
 
+    @SideEffectFree
     public String toString() {
         String[] a = null;
         restartFromHead: for (;;) {
@@ -894,7 +836,8 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @return an array containing all of the elements in this queue
      */
-    public @PolyNull Object[] toArray(LinkedTransferQueue<@PolyNull E> this) {
+    @SideEffectFree
+    public @PolyNull @PolySigned Object[] toArray(LinkedTransferQueue<@PolyNull @PolySigned E> this) {
         return toArrayInternal(null);
     }
 
@@ -934,7 +877,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if the specified array is null
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a) {
+    public <T> @Nullable T[] toArray(@PolyNull T[] a) {
         Objects.requireNonNull(a);
         return (T[]) toArrayInternal(a);
     }
@@ -985,11 +928,15 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             advance(null);
         }
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public final boolean hasNext() {
             return nextNode != null;
         }
 
-        public final E next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public final E next(@NonEmpty Itr this) {
             final Node p;
             if ((p = nextNode) == null) throw new NoSuchElementException();
             E e = nextItem;
@@ -1006,6 +953,8 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                 lastRet = q;
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public final void remove() {
             final Node lastRet = this.lastRet;
             if (lastRet == null)
@@ -1057,7 +1006,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         boolean exhausted;  // true when no more nodes
         LTQSpliterator() {}
 
-        public Spliterator<E> trySplit() {
+        public @Nullable Spliterator<E> trySplit() {
             Node p, q;
             if ((p = current()) == null || (q = p.next) == null)
                 return null;
@@ -1161,6 +1110,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return a {@code Spliterator} over the elements in this queue
      * @since 1.8
      */
+    @SideEffectFree
     public Spliterator<E> spliterator() {
         return new LTQSpliterator();
     }
@@ -1186,8 +1136,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
          * See above for rationale. Briefly: if pred still points to
          * s, try to unlink s.  If s cannot be unlinked, because it is
          * trailing node or pred might be unlinked, and neither pred
-         * nor s are head or offlist, add to sweepVotes, and if enough
-         * votes have accumulated, sweep.
+         * nor s are head or offlist, set needSweep;
          */
         if (pred != null && pred.next == s) {
             Node n = s.next;
@@ -1205,10 +1154,8 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                     if (hn != h && casHead(h, hn))
                         h.selfLink();  // advance head
                 }
-                // sweep every SWEEP_THRESHOLD votes
-                if (pred.next != pred && s.next != s // recheck if offlist
-                    && (incSweepVotes() & (SWEEP_THRESHOLD - 1)) == 0)
-                    sweep();
+                if (pred.next != pred && s.next != s)
+                    needSweep = true;
             }
         }
     }
@@ -1218,6 +1165,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * traversal from head.
      */
     private void sweep() {
+        needSweep = false;
         for (Node p = head, s, n; p != null && (s = p.next) != null; ) {
             if (!s.isMatched())
                 // Unmatched nodes are never self-linked
@@ -1235,7 +1183,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * Creates an initially empty {@code LinkedTransferQueue}.
      */
-    public LinkedTransferQueue() {
+    public @Modifiable @IteratorPolyMod LinkedTransferQueue() {
         head = tail = new Node();
     }
 
@@ -1248,7 +1196,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public LinkedTransferQueue(Collection<? extends E> c) {
+    public @Modifiable @IteratorPolyMod LinkedTransferQueue(Collection<? extends E> c) {
         Node h = null, t = null;
         for (E e : c) {
             Node newNode = new Node(Objects.requireNonNull(e));
@@ -1269,8 +1217,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    public void put(E e) {
-        xfer(e, true, ASYNC, 0);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void put(@Growable LinkedTransferQueue<E> this, E e) {
+        xfer(e, true, ASYNC, 0L);
     }
 
     /**
@@ -1282,8 +1232,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *  {@link BlockingQueue#offer(Object,long,TimeUnit) BlockingQueue.offer})
      * @throws NullPointerException if the specified element is null
      */
-    public boolean offer(E e, long timeout, TimeUnit unit) {
-        xfer(e, true, ASYNC, 0);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable LinkedTransferQueue<E> this, E e, long timeout, TimeUnit unit) {
+        xfer(e, true, ASYNC, 0L);
         return true;
     }
 
@@ -1294,8 +1246,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Queue#offer})
      * @throws NullPointerException if the specified element is null
      */
-    public boolean offer(E e) {
-        xfer(e, true, ASYNC, 0);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean offer(@Growable LinkedTransferQueue<E> this, E e) {
+        xfer(e, true, ASYNC, 0L);
         return true;
     }
 
@@ -1307,8 +1261,11 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
-    public boolean add(E e) {
-        xfer(e, true, ASYNC, 0);
+    @EnsuresNonEmpty("this")
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean add(@Growable LinkedTransferQueue<E> this, E e) {
+        xfer(e, true, ASYNC, 0L);
         return true;
     }
 
@@ -1322,8 +1279,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    public boolean tryTransfer(E e) {
-        return xfer(e, true, NOW, 0) == null;
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean tryTransfer(@GuardSatisfied @Growable @CanShrink LinkedTransferQueue<E> this, E e) {
+        return xfer(e, true, NOW, 0L) == null;
     }
 
     /**
@@ -1337,8 +1296,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    public void transfer(E e) throws InterruptedException {
-        if (xfer(e, true, SYNC, 0) != null) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void transfer(@GuardSatisfied @Growable @CanShrink LinkedTransferQueue<E> this, E e) throws InterruptedException {
+        if (xfer(e, true, SYNC, 0L) != null) {
             Thread.interrupted(); // failure possible only due to interrupt
             throw new InterruptedException();
         }
@@ -1358,7 +1319,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @throws NullPointerException if the specified element is null
      */
-    public boolean tryTransfer(E e, long timeout, TimeUnit unit)
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean tryTransfer(@GuardSatisfied @Growable @CanShrink LinkedTransferQueue<E> this, E e, long timeout, TimeUnit unit)
         throws InterruptedException {
         if (xfer(e, true, TIMED, unit.toNanos(timeout)) == null)
             return true;
@@ -1367,30 +1330,38 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         throw new InterruptedException();
     }
 
-    public E take() throws InterruptedException {
-        E e = xfer(null, false, SYNC, 0);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public E take(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this) throws InterruptedException {
+        E e = xfer(null, false, SYNC, 0L);
         if (e != null)
             return e;
         Thread.interrupted();
         throw new InterruptedException();
     }
 
-    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         E e = xfer(null, false, TIMED, unit.toNanos(timeout));
         if (e != null || !Thread.interrupted())
             return e;
         throw new InterruptedException();
     }
 
-    public E poll() {
-        return xfer(null, false, NOW, 0);
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public @Nullable E poll(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this) {
+        return xfer(null, false, NOW, 0L);
     }
 
     /**
      * @throws NullPointerException     {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this, @Growable Collection<? super E> c) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -1404,7 +1375,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @throws NullPointerException     {@inheritDoc}
      * @throws IllegalArgumentException {@inheritDoc}
      */
-    public int drainTo(Collection<? super E> c, int maxElements) {
+    @SideEffectsOnly({"this", "#1"})
+    @DoesNotUnrefineReceiver("modifiability")
+    public int drainTo(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this, @Growable Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -1423,11 +1396,13 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * @return an iterator over the elements in this queue in proper sequence
      */
-    public Iterator<E> iterator() {
+    @SideEffectFree
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty LinkedTransferQueue<E> this) {
         return new Itr();
     }
 
-    public E peek() {
+    @Pure
+    public @Nullable E peek() {
         restartFromHead: for (;;) {
             for (Node p = head; p != null;) {
                 Object item = p.item;
@@ -1452,6 +1427,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @return {@code true} if this queue contains no elements
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return firstDataNode() == null;
     }
@@ -1505,7 +1481,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param o element to be removed from this queue, if present
      * @return {@code true} if this queue changed as a result of the call
      */
-    public boolean remove(@Nullable Object o) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean remove(@Shrinkable @CanShrink LinkedTransferQueue<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         restartFromHead: for (;;) {
             for (Node p = head, pred = null; p != null; ) {
@@ -1541,7 +1519,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * @param o object to be checked for containment in this queue
      * @return {@code true} if this queue contains the specified element
      */
-    public boolean contains(@Nullable Object o) {
+    @Pure
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    public boolean contains(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
         if (o == null) return false;
         restartFromHead: for (;;) {
             for (Node p = head, pred = null; p != null; ) {
@@ -1623,7 +1603,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeIf(Predicate<? super E> filter) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeIf(@Shrinkable @CanShrink LinkedTransferQueue<E> this, Predicate<? super E> filter) {
         Objects.requireNonNull(filter);
         return bulkRemove(filter);
     }
@@ -1631,7 +1613,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean removeAll(Collection<? extends @NonNull Object> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean removeAll(@Shrinkable @CanShrink LinkedTransferQueue<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
     }
@@ -1639,12 +1623,16 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * @throws NullPointerException {@inheritDoc}
      */
-    public boolean retainAll(Collection<? extends @NonNull Object> c) {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public boolean retainAll(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
     }
 
-    public void clear() {
+    @SideEffectsOnly("this")
+    @DoesNotUnrefineReceiver("modifiability")
+    public void clear(@GuardSatisfied @Shrinkable @CanShrink LinkedTransferQueue<E> this) {
         bulkRemove(e -> true);
     }
 
@@ -1729,7 +1717,6 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     // VarHandle mechanics
     private static final VarHandle HEAD;
     private static final VarHandle TAIL;
-    private static final VarHandle SWEEPVOTES;
     static final VarHandle ITEM;
     static final VarHandle NEXT;
     static final VarHandle WAITER;
@@ -1740,8 +1727,6 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                                    Node.class);
             TAIL = l.findVarHandle(LinkedTransferQueue.class, "tail",
                                    Node.class);
-            SWEEPVOTES = l.findVarHandle(LinkedTransferQueue.class, "sweepVotes",
-                                         int.class);
             ITEM = l.findVarHandle(Node.class, "item", Object.class);
             NEXT = l.findVarHandle(Node.class, "next", Node.class);
             WAITER = l.findVarHandle(Node.class, "waiter", Thread.class);
@@ -1750,7 +1735,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
 
         // Reduce the risk of rare disastrous classloading in first call to
-        // LockSupport.park: https://bugs.openjdk.java.net/browse/JDK-8074773
+        // LockSupport.park: https://bugs.openjdk.org/browse/JDK-8074773
         Class<?> ensureLoaded = LockSupport.class;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,6 +81,7 @@ jmethodID MID_InetAddress_getAddr;
 jmethodID MID_GSSNameElement_ctor;
 jmethodID MID_GSSCredElement_ctor;
 jmethodID MID_NativeGSSContext_ctor;
+jmethodID MID_NativeGSSContext_setContext;
 jfieldID FID_GSSLibStub_pMech;
 jfieldID FID_NativeGSSContext_pContext;
 jfieldID FID_NativeGSSContext_srcName;
@@ -145,7 +146,7 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
     return JNI_ERR;
   }
   CLS_GSSNameElement = (*env)->NewGlobalRef(env, cls);
-  if (CLS_GSSException == NULL) {
+  if (CLS_GSSNameElement == NULL) {
     return JNI_ERR;
   }
   cls = (*env)->FindClass(env, "sun/security/jgss/wrapper/GSSCredElement");
@@ -290,6 +291,15 @@ DEF_JNI_OnLoad(JavaVM *jvm, void *reserved) {
     printf("Couldn't find NativeGSSContext(long, GSSLibStub) constructor\n");
     return JNI_ERR;
   }
+
+  MID_NativeGSSContext_setContext =
+    (*env)->GetMethodID(env, CLS_NativeGSSContext, "setContext",
+                        "(J)V");
+  if (MID_NativeGSSContext_setContext == NULL) {
+    printf("Couldn't find NativeGSSContext.setContext(long) method\n");
+    return JNI_ERR;
+  }
+
   /* Compute and cache the field ID */
   cls = (*env)->FindClass(env, "sun/security/jgss/wrapper/GSSLibStub");
   if (cls == NULL) {
@@ -441,18 +451,12 @@ jint getJavaErrorCode(int cNonCallingErr) {
   return GSS_S_COMPLETE;
 }
 
-
-/* Throws a Java Exception by name */
-void throwByName(JNIEnv *env, const char *name, const char *msg) {
-    jclass cls = (*env)->FindClass(env, name);
+void gssThrowOutOfMemoryError(JNIEnv *env, const char *message) {
+    jclass cls = (*env)->FindClass(env, "java/lang/OutOfMemoryError");
 
     if (cls != NULL) {
-        (*env)->ThrowNew(env, cls, msg);
+        (*env)->ThrowNew(env, cls, message);
     }
-}
-
-void throwOutOfMemoryError(JNIEnv *env, const char *message) {
-    throwByName(env, "java/lang/OutOfMemoryError", message);
 }
 
 /*
@@ -592,7 +596,7 @@ void initGSSBuffer(JNIEnv *env, jbyteArray jbytes,
     len = (*env)->GetArrayLength(env, jbytes);
     value = malloc(len);
     if (value == NULL) {
-      throwOutOfMemoryError(env, NULL);
+      gssThrowOutOfMemoryError(env, NULL);
       return;
     } else {
       (*env)->GetByteArrayRegion(env, jbytes, 0, len, value);
@@ -667,13 +671,13 @@ gss_OID newGSSOID(JNIEnv *env, jobject jOid) {
     }
     cOid = malloc(sizeof(struct gss_OID_desc_struct));
     if (cOid == NULL) {
-      throwOutOfMemoryError(env,NULL);
+      gssThrowOutOfMemoryError(env,NULL);
       return GSS_C_NO_OID;
     }
     cOid->length = (*env)->GetArrayLength(env, jbytes) - 2;
     cOid->elements = malloc(cOid->length);
     if (cOid->elements == NULL) {
-      throwOutOfMemoryError(env,NULL);
+      gssThrowOutOfMemoryError(env,NULL);
       goto cleanup;
     }
     (*env)->GetByteArrayRegion(env, jbytes, 2, cOid->length,
@@ -724,17 +728,14 @@ jobject getJavaOID(JNIEnv *env, gss_OID cOid) {
   if (jbytes == NULL) {
     return NULL;
   }
-  (*env)->SetByteArrayRegion(env, jbytes, 0, 2, (jbyte *) oidHdr);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
+  if (!(*env)->ExceptionCheck(env)) {
+    (*env)->SetByteArrayRegion(env, jbytes, 0, 2, (jbyte *) oidHdr);
   }
-  (*env)->SetByteArrayRegion(env, jbytes, 2, cLen, (jbyte *) cOid->elements);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
+  if (!(*env)->ExceptionCheck(env)) {
+    (*env)->SetByteArrayRegion(env, jbytes, 2, cLen, (jbyte *) cOid->elements);
   }
-  result = (*env)->NewObject(env, CLS_Oid, MID_Oid_ctor1, jbytes);
-  if ((*env)->ExceptionCheck(env)) {
-    return NULL;
+  if (!(*env)->ExceptionCheck(env)) {
+    result = (*env)->NewObject(env, CLS_Oid, MID_Oid_ctor1, jbytes);
   }
   (*env)->DeleteLocalRef(env, jbytes);
   return result;

@@ -25,6 +25,8 @@
 
 package javax.xml.stream.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import javax.xml.namespace.QName;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.stream.XMLStreamReader;
@@ -102,6 +104,7 @@ public class StreamReaderDelegate implements XMLStreamReader {
     reader.require(type,namespaceURI,localName);
   }
 
+  @Pure
   public boolean hasNext()
     throws XMLStreamException
   {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,10 +50,9 @@
  *
  * @library /vmTestbase
  *          /test/lib
- * @run driver jdk.test.lib.FileInstaller . .
- * @build nsk.jdb.unwatch.unwatch002.unwatch002
- *        nsk.jdb.unwatch.unwatch002.unwatch002a
- * @run main/othervm PropertyResolvingWrapper nsk.jdb.unwatch.unwatch002.unwatch002
+ * @build nsk.jdb.unwatch.unwatch002.unwatch002a
+ * @run main/othervm
+ *      nsk.jdb.unwatch.unwatch002.unwatch002
  *      -arch=${os.family}-${os.simpleArch}
  *      -waittime=5
  *      -debugee.vmkind=java
@@ -91,6 +90,7 @@ public class unwatch002 extends JdbTest {
     static final String DEBUGGEE_CLASS2    = DEBUGGEE_CLASS + "$CheckedFields";
     static final String FIRST_BREAK        = DEBUGGEE_CLASS + ".main";
     static final String LAST_BREAK         = DEBUGGEE_CLASS + ".breakHere";
+    static final String expectedPrompt     = "main[1]";
 
     static String[] checkedFields  = { "FS1" };
     static String[] checkedFields2 = { "FT1", "FV1" };
@@ -113,7 +113,7 @@ public class unwatch002 extends JdbTest {
 
 //        jdb.contToExit((checkedFields.length *2)  + (checkedFields2.length *2) + 2);
         for (int i = 0; i < (checkedFields.length *2 + checkedFields2.length*2 + 2); i++) {
-            reply = jdb.receiveReplyFor(JdbCommand.cont);
+            reply = jdb.receiveReplyForWithMessageWait(JdbCommand.cont, expectedPrompt);
         }
 
         unwatchFields (DEBUGGEE_CLASS, checkedFields);

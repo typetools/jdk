@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,8 +29,12 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.PolyIndex;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.lock.qual.NewObject;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.IntRange;
@@ -41,7 +45,17 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.misc.CDS;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
+
+import java.lang.constant.Constable;
+import java.lang.constant.DynamicConstantDesc;
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_EXPLICIT_CAST;
+import static java.lang.constant.ConstantDescs.CD_byte;
+import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 
 /**
  *
@@ -54,13 +68,20 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * byte}, as well as other constants and methods useful when dealing
  * with a {@code byte}.
  *
+ * <p>This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
+ *
  * @author  Nakul Saraiya
  * @author  Joseph D. Darcy
  * @see     java.lang.Number
  * @since   1.1
  */
 @AnnotatedFor({"index", "interning", "nullness", "signedness", "value"})
-public final class Byte extends Number implements Comparable<Byte> {
+@jdk.internal.ValueBased
+public final class Byte extends Number implements Comparable<Byte>, Constable {
 
     /**
      * A constant holding the minimum value a {@code byte} can
@@ -91,17 +112,41 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @SideEffectFree
     public static @ArrayLen({1,2,3,4}) String toString(byte b) {
-        return Integer.toString((int)b, 10);
+        return Integer.toString(b);
+    }
+
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance.
+     *
+     * @return an {@link Optional} describing the {@linkplain Byte} instance
+     * @since 15
+     */
+    @Override
+    public Optional<DynamicConstantDesc<Byte>> describeConstable() {
+        return Optional.of(DynamicConstantDesc.ofNamed(BSM_EXPLICIT_CAST, DEFAULT_NAME, CD_byte, intValue()));
     }
 
     private static class ByteCache {
-        private ByteCache(){}
+        private ByteCache() {}
 
-        static final Byte cache[] = new Byte[-(-128) + 127 + 1];
+        static final Byte[] cache;
+        static Byte[] archivedCache;
 
         static {
-            for(int i = 0; i < cache.length; i++)
-                cache[i] = new Byte((byte)(i - 128));
+            final int size = -(-128) + 127 + 1;
+
+            // Load and use the archived cache if it exists
+            CDS.initializeFromArchive(ByteCache.class);
+            if (archivedCache == null || archivedCache.length != size) {
+                Byte[] c = new Byte[size];
+                byte value = (byte)-128;
+                for(int i = 0; i < size; i++) {
+                    c[i] = new Byte(value++);
+                }
+                archivedCache = c;
+            }
+            cache = archivedCache;
         }
     }
 
@@ -120,8 +165,8 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    @HotSpotIntrinsicCandidate
-    public static @PolyIndex @Interned @PolyValue Byte valueOf(@PolyIndex @PolyValue byte b) {
+    @IntrinsicCandidate
+    public static @Interned @NewObject @PolyIndex @PolySigned @PolyValue Byte valueOf(@PolyIndex @PolySigned @PolyValue byte b) {
         final int offset = 128;
         return ByteCache.cache[(int)b + offset];
     }
@@ -216,7 +261,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      * equal to the value of:
      *
      * <blockquote>
-     * {@code new Byte(Byte.parseByte(s, radix))}
+     * {@code Byte.valueOf(Byte.parseByte(s, radix))}
      * </blockquote>
      *
      * @param s         the string to be parsed
@@ -229,7 +274,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static @Interned Byte valueOf(String s, @Positive @IntRange(from = 2, to = 36) int radix)
+    public static @Interned @NewObject Byte valueOf(String s, @Positive @IntRange(from = 2, to = 36) int radix)
         throws NumberFormatException {
         return valueOf(parseByte(s, radix));
     }
@@ -247,7 +292,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      * equal to the value of:
      *
      * <blockquote>
-     * {@code new Byte(Byte.parseByte(s))}
+     * {@code Byte.valueOf(Byte.parseByte(s))}
      * </blockquote>
      *
      * @param s         the string to be parsed
@@ -258,7 +303,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static @Interned Byte valueOf(String s) throws NumberFormatException {
+    public static @Interned @NewObject Byte valueOf(String s) throws NumberFormatException {
         return valueOf(s, 10);
     }
 
@@ -283,8 +328,8 @@ public final class Byte extends Number implements Comparable<Byte> {
      * </blockquote>
      *
      * <i>DecimalNumeral</i>, <i>HexDigits</i>, and <i>OctalDigits</i>
-     * are as defined in section 3.10.1 of
-     * <cite>The Java&trade; Language Specification</cite>,
+     * are as defined in section {@jls 3.10.1} of
+     * <cite>The Java Language Specification</cite>,
      * except that underscores are not accepted between digits.
      *
      * <p>The sequence of characters following an optional
@@ -306,7 +351,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static Byte decode(String nm) throws NumberFormatException {
+    public static @NewObject Byte decode(String nm) throws NumberFormatException {
         int i = Integer.decode(nm);
         if (i < MIN_VALUE || i > MAX_VALUE)
             throw new NumberFormatException(
@@ -334,8 +379,8 @@ public final class Byte extends Number implements Comparable<Byte> {
      * likely to yield significantly better space and time performance.
      */
     @StaticallyExecutable
-    @Deprecated(since="9")
-    public @PolyIndex Byte(@PolyIndex byte value) {
+    @Deprecated(since="9", forRemoval = true)
+    public @PolyIndex @PolySigned @PolyValue Byte(@PolyIndex @PolySigned @PolyValue byte value) {
         this.value = value;
     }
 
@@ -358,7 +403,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      * to convert a string to a {@code Byte} object.
      */
     @StaticallyExecutable
-    @Deprecated(since="9")
+    @Deprecated(since="9", forRemoval = true)
     public Byte(String s) throws NumberFormatException {
         this.value = parseByte(s, 10);
     }
@@ -369,48 +414,48 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    @HotSpotIntrinsicCandidate
-    public @PolyIndex @PolyValue byte byteValue(@PolyIndex @PolyValue Byte this) {
+    @IntrinsicCandidate
+    public @PolyIndex @PolySigned @PolyValue byte byteValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return value;
     }
 
     /**
      * Returns the value of this {@code Byte} as a {@code short} after
      * a widening primitive conversion.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue short shortValue(@PolyIndex @PolyValue Byte this) {
+    public @PolyIndex @PolySigned @PolyValue short shortValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (short)value;
     }
 
     /**
      * Returns the value of this {@code Byte} as an {@code int} after
      * a widening primitive conversion.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue int intValue(@PolyIndex @PolyValue Byte this) {
+    public @PolyIndex @PolySigned @PolyValue int intValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (int)value;
     }
 
     /**
      * Returns the value of this {@code Byte} as a {@code long} after
      * a widening primitive conversion.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     @Pure
     @StaticallyExecutable
-    public @PolyIndex @PolyValue long longValue(@PolyIndex @PolyValue Byte this) {
+    public @PolyIndex @PolySigned @PolyValue long longValue(@PolyIndex @PolySigned @PolyValue Byte this) {
         return (long)value;
     }
 
     /**
      * Returns the value of this {@code Byte} as a {@code float} after
      * a widening primitive conversion.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     @Pure
     @StaticallyExecutable
@@ -421,7 +466,7 @@ public final class Byte extends Number implements Comparable<Byte> {
     /**
      * Returns the value of this {@code Byte} as a {@code double}
      * after a widening primitive conversion.
-     * @jls 5.1.2 Widening Primitive Conversions
+     * @jls 5.1.2 Widening Primitive Conversion
      */
     @Pure
     @StaticallyExecutable
@@ -440,8 +485,9 @@ public final class Byte extends Number implements Comparable<Byte> {
      *          base&nbsp;10.
      */
     @SideEffectFree
+    @Override
     public @ArrayLen({1,2,3,4}) String toString() {
-        return Integer.toString((int)value);
+        return Integer.toString(value);
     }
 
     /**
@@ -565,7 +611,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static @SignedPositive @NonNegative int toUnsignedInt(byte x) {
+    public static @SignedPositive @NonNegative int toUnsignedInt(@UnknownSignedness byte x) {
         return ((int) x) & 0xff;
     }
 
@@ -587,7 +633,7 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     @Pure
     @StaticallyExecutable
-    public static @SignedPositive @NonNegative long toUnsignedLong(byte x) {
+    public static @SignedPositive @NonNegative long toUnsignedLong(@UnknownSignedness byte x) {
         return ((long) x) & 0xffL;
     }
 
@@ -609,5 +655,6 @@ public final class Byte extends Number implements Comparable<Byte> {
     public static final @Positive @IntVal(1) int BYTES = SIZE / Byte.SIZE;
 
     /** use serialVersionUID from JDK 1.1. for interoperability */
+    @java.io.Serial
     private static final long serialVersionUID = -7183698231559129828L;
 }

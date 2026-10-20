@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_INTERPRETER_REWRITER_HPP
-#define SHARE_VM_INTERPRETER_REWRITER_HPP
+#ifndef SHARE_INTERPRETER_REWRITER_HPP
+#define SHARE_INTERPRETER_REWRITER_HPP
 
 #include "memory/allocation.hpp"
+#include "oops/constantPool.hpp"
+#include "oops/resolvedIndyEntry.hpp"
 #include "utilities/growableArray.hpp"
 
 // The Rewriter adds caches to the constant pool and rewrites bytecode indices
@@ -44,17 +46,11 @@ class Rewriter: public StackObj {
   GrowableArray<int>  _invokedynamic_references_map; // for invokedynamic resolved refs
   GrowableArray<int>  _method_handle_invokers;
   int                 _resolved_reference_limit;
+  int                 _invokedynamic_index;
 
-  // For mapping invokedynamic bytecodes, which are discovered during method
-  // scanning.  The invokedynamic entries are added at the end of the cpCache.
-  // If there are any invokespecial/InterfaceMethodref special case bytecodes,
-  // these entries are added before invokedynamic entries so that the
-  // invokespecial bytecode 16 bit index doesn't overflow.
-  GrowableArray<int>      _invokedynamic_cp_cache_map;
-
-  // For patching.
-  GrowableArray<address>* _patch_invokedynamic_bcps;
-  GrowableArray<int>*     _patch_invokedynamic_refs;
+  // For collecting information about invokedynamic bytecodes before resolution
+  // With this, we can know how many indy calls there are and resolve them later
+  GrowableArray<ResolvedIndyEntry> _initialized_indy_entries;
 
   void init_maps(int length) {
     _cp_map.trunc_to(0);
@@ -70,11 +66,6 @@ class Rewriter: public StackObj {
     _invokedynamic_references_map.trunc_to(0);
     _resolved_reference_limit = -1;
     _first_iteration_cp_cache_limit = -1;
-
-    // invokedynamic specific fields
-    _invokedynamic_cp_cache_map.trunc_to(0);
-    _patch_invokedynamic_bcps = new GrowableArray<address>(length / 4);
-    _patch_invokedynamic_refs = new GrowableArray<int>(length / 4);
   }
 
   int _first_iteration_cp_cache_limit;
@@ -111,22 +102,6 @@ class Rewriter: public StackObj {
     return cache_index;
   }
 
-  int add_invokedynamic_cp_cache_entry(int cp_index) {
-    assert(_pool->tag_at(cp_index).value() == JVM_CONSTANT_InvokeDynamic, "use non-indy version");
-    assert(_first_iteration_cp_cache_limit >= 0, "add indy cache entries after first iteration");
-    // add to the invokedynamic index map.
-    int cache_index = _invokedynamic_cp_cache_map.append(cp_index);
-    // do not update _cp_map, since the mapping is one-to-many
-    assert(invokedynamic_cp_cache_entry_pool_index(cache_index) == cp_index, "");
-    // this index starts at one but in the bytecode it's appended to the end.
-    return cache_index + _first_iteration_cp_cache_limit;
-  }
-
-  int invokedynamic_cp_cache_entry_pool_index(int cache_index) {
-    int cp_index = _invokedynamic_cp_cache_map.at(cache_index);
-    return cp_index;
-  }
-
   // add a new CP cache entry beyond the normal cache for the special case of
   // invokespecial with InterfaceMethodref as cpool operand.
   int add_invokespecial_cp_cache_entry(int cp_index) {
@@ -159,18 +134,13 @@ class Rewriter: public StackObj {
     return ref_index;
   }
 
-  // add a new entries to the resolved_references map (for invokedynamic and invokehandle only)
-  int add_invokedynamic_resolved_references_entries(int cp_index, int cache_index) {
+  // add a new entry to the resolved_references map (for invokedynamic and invokehandle only)
+  int add_invokedynamic_resolved_references_entry(int cp_index, int cache_index) {
     assert(_resolved_reference_limit >= 0, "must add indy refs after first iteration");
-    int ref_index = -1;
-    for (int entry = 0; entry < ConstantPoolCacheEntry::_indy_resolved_references_entries; entry++) {
-      const int index = _resolved_references_map.append(cp_index);  // many-to-one
-      assert(index >= _resolved_reference_limit, "");
-      if (entry == 0) {
-        ref_index = index;
-      }
-      assert((index - entry) == ref_index, "entries must be consecutive");
-      _invokedynamic_references_map.at_put_grow(index, cache_index, -1);
+    int ref_index = _resolved_references_map.append(cp_index);  // many-to-one
+    assert(ref_index >= _resolved_reference_limit, "");
+    if (_pool->tag_at(cp_index).value() != JVM_CONSTANT_InvokeDynamic) {
+      _invokedynamic_references_map.at_put_grow(ref_index, cache_index, -1);
     }
     return ref_index;
   }
@@ -191,7 +161,7 @@ class Rewriter: public StackObj {
 
   void compute_index_maps();
   void make_constant_pool_cache(TRAPS);
-  void scan_method(Method* m, bool reverse, bool* invokespecial_error);
+  void scan_method(Thread* thread, Method* m, bool reverse, bool* invokespecial_error);
   void rewrite_Object_init(const methodHandle& m, TRAPS);
   void rewrite_member_reference(address bcp, int offset, bool reverse);
   void maybe_rewrite_invokehandle(address opc, int cp_index, int cache_index, bool reverse);
@@ -199,13 +169,11 @@ class Rewriter: public StackObj {
   void maybe_rewrite_ldc(address bcp, int offset, bool is_wide, bool reverse);
   void rewrite_invokespecial(address bcp, int offset, bool reverse, bool* invokespecial_error);
 
-  void patch_invokedynamic_bytecodes();
-
   // Do all the work.
   void rewrite_bytecodes(TRAPS);
 
   // Revert bytecodes in case of an exception.
-  void restore_bytecodes();
+  void restore_bytecodes(Thread* thread);
 
   static methodHandle rewrite_jsrs(const methodHandle& m, TRAPS);
  public:
@@ -213,4 +181,4 @@ class Rewriter: public StackObj {
   static void rewrite(InstanceKlass* klass, TRAPS);
 };
 
-#endif // SHARE_VM_INTERPRETER_REWRITER_HPP
+#endif // SHARE_INTERPRETER_REWRITER_HPP

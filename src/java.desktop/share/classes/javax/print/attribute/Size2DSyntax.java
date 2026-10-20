@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -89,6 +90,7 @@ public abstract class Size2DSyntax implements Serializable, Cloneable {
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = 5584439964938660530L;
 
     /**
@@ -270,10 +272,9 @@ public abstract class Size2DSyntax implements Serializable, Cloneable {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        return(object != null &&
-               object instanceof Size2DSyntax &&
-               this.x == ((Size2DSyntax) object).x &&
-               this.y == ((Size2DSyntax) object).y);
+        return object instanceof Size2DSyntax size2DSyntax &&
+                this.x == size2DSyntax.x &&
+                this.y == size2DSyntax.y;
     }
 
     /**

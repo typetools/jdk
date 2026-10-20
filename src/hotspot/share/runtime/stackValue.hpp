@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,16 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_STACKVALUE_HPP
-#define SHARE_VM_RUNTIME_STACKVALUE_HPP
+#ifndef SHARE_RUNTIME_STACKVALUE_HPP
+#define SHARE_RUNTIME_STACKVALUE_HPP
 
 #include "code/location.hpp"
 #include "runtime/handles.hpp"
+
+class BasicLock;
+class frame;
+class RegisterMap;
+class ScopeValue;
 
 class StackValue : public ResourceObj {
  private:
@@ -103,14 +108,26 @@ class StackValue : public ResourceObj {
     }
   }
 
-  static StackValue* create_stack_value(const frame* fr, const RegisterMap* reg_map, ScopeValue* sv);
+  static StackValue* create_stack_value_from_oop_location(stackChunkOop chunk, void* addr);
+  static StackValue* create_stack_value_from_narrowOop_location(stackChunkOop chunk, void* addr, bool is_register);
+
   static BasicLock*  resolve_monitor_lock(const frame* fr, Location location);
+
+  template<typename RegisterMapT>
+  static StackValue* create_stack_value(const frame* fr, const RegisterMapT* reg_map, ScopeValue* sv);
+
+  template<typename RegisterMapT>
+  static address stack_value_address(const frame* fr, const RegisterMapT* reg_map, ScopeValue* sv);
 
 #ifndef PRODUCT
  public:
   // Printing
   void print_on(outputStream* st) const;
 #endif
+
+ private:
+   template<typename RegisterMapT>
+   static StackValue* create_stack_value(ScopeValue* sv, address value_addr, const RegisterMapT* reg_map);
 };
 
-#endif // SHARE_VM_RUNTIME_STACKVALUE_HPP
+#endif // SHARE_RUNTIME_STACKVALUE_HPP

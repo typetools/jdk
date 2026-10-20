@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,8 @@
  * questions.
  */
 package java.util.stream;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -658,7 +660,7 @@ final class WhileOps {
         // True if no splitting should be performed, if true then
         // this spliterator may be used for an underlying spliterator whose
         // covered elements have an encounter order
-        // See use in stream take/dropWhile default default methods
+        // See use in stream take/dropWhile default methods
         final boolean noSplitting;
         // True when operations are cancelled for all related spliterators
         // For taking, spliterators cannot split or traversed
@@ -698,12 +700,12 @@ final class WhileOps {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             return s.getComparator();
         }
 
         @Override
-        public T_SPLITR trySplit() {
+        public @Nullable T_SPLITR trySplit() {
             @SuppressWarnings("unchecked")
             T_SPLITR ls = noSplitting ? null : (T_SPLITR) s.trySplit();
             return ls != null ? makeSpliterator(ls) : null;
@@ -766,7 +768,7 @@ final class WhileOps {
                 }
 
                 @Override
-                public Spliterator<T> trySplit() {
+                public @Nullable Spliterator<T> trySplit() {
                     // Do not split if all operations are cancelled
                     return cancel.get() ? null : super.trySplit();
                 }
@@ -871,7 +873,7 @@ final class WhileOps {
                 }
 
                 @Override
-                public Spliterator.OfInt trySplit() {
+                public Spliterator.@Nullable OfInt trySplit() {
                     // Do not split if all operations are cancelled
                     return cancel.get() ? null : super.trySplit();
                 }
@@ -976,7 +978,7 @@ final class WhileOps {
                 }
 
                 @Override
-                public Spliterator.OfLong trySplit() {
+                public Spliterator.@Nullable OfLong trySplit() {
                     // Do not split if all operations are cancelled
                     return cancel.get() ? null : super.trySplit();
                 }
@@ -1081,7 +1083,7 @@ final class WhileOps {
                 }
 
                 @Override
-                public Spliterator.OfDouble trySplit() {
+                public Spliterator.@Nullable OfDouble trySplit() {
                     // Do not split if all operations are cancelled
                     return cancel.get() ? null : super.trySplit();
                 }

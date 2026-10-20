@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,12 @@
  */
 package java.io;
 
-import java.util.Objects;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.util.Objects;
 
 /**
  * Wraps an {@link IOException} with an unchecked exception.
@@ -36,6 +38,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 @AnnotatedFor({"nullness"})
 public class UncheckedIOException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = -8134305061645241065L;
 
     /**
@@ -49,6 +52,7 @@ public class UncheckedIOException extends RuntimeException {
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public UncheckedIOException(@Nullable String message, IOException cause) {
         super(message, Objects.requireNonNull(cause));
     }
@@ -62,6 +66,7 @@ public class UncheckedIOException extends RuntimeException {
      * @throws  NullPointerException
      *          if the cause is {@code null}
      */
+    @SideEffectFree
     public UncheckedIOException(IOException cause) {
         super(Objects.requireNonNull(cause));
     }
@@ -71,6 +76,7 @@ public class UncheckedIOException extends RuntimeException {
      *
      * @return  the {@code IOException} which is the cause of this exception.
      */
+    @Pure
     @Override
     public IOException getCause() {
         return (IOException) super.getCause();
@@ -79,10 +85,14 @@ public class UncheckedIOException extends RuntimeException {
     /**
      * Called to read the object from a stream.
      *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      * @throws  InvalidObjectException
      *          if the object is invalid or has a cause that is not
      *          an {@code IOException}
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s)
         throws IOException, ClassNotFoundException
     {

@@ -20,6 +20,8 @@
 
 package com.sun.org.apache.xerces.internal.util;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * This class is a symbol table implementation that guarantees that
  * strings used as identifiers are unique references. Multiple calls
@@ -363,6 +365,7 @@ public class SymbolTable {
      *
      * @param symbol The symbol to look for.
      */
+    @Pure
     public boolean containsSymbol(String symbol) {
 
         // search for identical symbol
@@ -391,6 +394,7 @@ public class SymbolTable {
      * @param offset The offset into the buffer.
      * @param length The length of the symbol in the buffer.
      */
+    @Pure
     public boolean containsSymbol(char[] buffer, int offset, int length) {
 
         // search for identical symbol

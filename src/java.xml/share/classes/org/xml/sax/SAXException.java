@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,12 +23,11 @@
  * questions.
  */
 
-// SAX exception class.
-// http://www.saxproject.org
-// No warranty; no copyright -- use this as you will.
-// $Id: SAXException.java,v 1.3 2004/11/03 22:55:32 jsuttor Exp $
-
 package org.xml.sax;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 import java.io.InvalidClassException;
@@ -38,13 +37,6 @@ import java.io.ObjectStreamField;
 
 /**
  * Encapsulate a general SAX error or warning.
- *
- * <blockquote>
- * <em>This module, both source code and documentation, is in the
- * Public Domain, and comes with <strong>NO WARRANTY</strong>.</em>
- * See <a href='http://www.saxproject.org'>http://www.saxproject.org</a>
- * for further information.
- * </blockquote>
  *
  * <p>This class can contain basic error or warning information from
  * either the XML parser or the application: a parser writer or
@@ -71,6 +63,7 @@ public class SAXException extends Exception {
     /**
      * Create a new SAXException.
      */
+    @SideEffectFree
     public SAXException ()
     {
         super();
@@ -82,7 +75,8 @@ public class SAXException extends Exception {
      *
      * @param message The error or warning message.
      */
-    public SAXException (String message) {
+    @SideEffectFree
+    public SAXException (@Nullable String message) {
         super(message);
     }
 
@@ -96,7 +90,8 @@ public class SAXException extends Exception {
      *
      * @param e The exception to be wrapped in a SAXException.
      */
-    public SAXException (Exception e)
+    @SideEffectFree
+    public SAXException (@Nullable Exception e)
     {
         super(e);
     }
@@ -111,7 +106,8 @@ public class SAXException extends Exception {
      * @param message The detail message.
      * @param e The exception to be wrapped in a SAXException.
      */
-    public SAXException (String message, Exception e)
+    @SideEffectFree
+    public SAXException (@Nullable String message, @Nullable Exception e)
     {
         super(message, e);
     }
@@ -126,7 +122,8 @@ public class SAXException extends Exception {
      *
      * @return The error or warning message.
      */
-    public String getMessage ()
+    @Pure
+    public @Nullable String getMessage ()
     {
         String message = super.getMessage();
         Throwable cause = super.getCause();
@@ -153,7 +150,8 @@ public class SAXException extends Exception {
      *
      * @return Return the cause of the exception
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return super.getCause();
     }
 
@@ -162,6 +160,7 @@ public class SAXException extends Exception {
      *
      * @return A string representation of this exception.
      */
+    @SideEffectFree
     public String toString ()
     {
         Throwable exception = super.getCause();
@@ -178,6 +177,9 @@ public class SAXException extends Exception {
     // Internal state.
     //////////////////////////////////////////////////////////////////////
 
+    /**
+     * serializable fields
+     */
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField( "exception", Exception.class )
     };

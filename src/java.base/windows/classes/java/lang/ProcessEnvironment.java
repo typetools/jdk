@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,7 +63,10 @@
 
 package java.lang;
 
-import java.io.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.*;
 
 final class ProcessEnvironment extends HashMap<String,String>
@@ -101,10 +104,12 @@ final class ProcessEnvironment extends HashMap<String,String>
         return super.get(nonNullString(key));
     }
 
+    @Pure
     public boolean containsKey(Object key) {
         return super.containsKey(nonNullString(key));
     }
 
+    @Pure
     public boolean containsValue(Object value) {
         return super.containsValue(nonNullString(value));
     }
@@ -124,7 +129,8 @@ final class ProcessEnvironment extends HashMap<String,String>
             return e.setValue(validateValue(value));
         }
         public String toString() { return getKey() + "=" + getValue();}
-        public boolean equals(Object o) {return e.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return e.equals(o);}
         public int hashCode()    {return e.hashCode();}
     }
 
@@ -139,7 +145,9 @@ final class ProcessEnvironment extends HashMap<String,String>
         public Iterator<Map.Entry<String,String>> iterator() {
             return new Iterator<Map.Entry<String,String>>() {
                 Iterator<Map.Entry<String,String>> i = s.iterator();
+                @Pure
                 public boolean hasNext() { return i.hasNext();}
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new CheckedEntry(i.next());
                 }
@@ -153,6 +161,7 @@ final class ProcessEnvironment extends HashMap<String,String>
             nonNullString(e.getValue());
             return e;
         }
+        @Pure
         public boolean contains(Object o) {return s.contains(checkedEntry(o));}
         public boolean remove(Object o)   {return s.remove(checkedEntry(o));}
     }
@@ -164,6 +173,7 @@ final class ProcessEnvironment extends HashMap<String,String>
         public boolean isEmpty()           {return c.isEmpty();}
         public void clear()                {       c.clear();}
         public Iterator<String> iterator() {return c.iterator();}
+        @Pure
         public boolean contains(Object o)  {return c.contains(nonNullString(o));}
         public boolean remove(Object o)    {return c.remove(nonNullString(o));}
     }
@@ -175,6 +185,7 @@ final class ProcessEnvironment extends HashMap<String,String>
         public boolean isEmpty()           {return s.isEmpty();}
         public void clear()                {       s.clear();}
         public Iterator<String> iterator() {return s.iterator();}
+        @Pure
         public boolean contains(Object o)  {return s.contains(nonNullString(o));}
         public boolean remove(Object o)    {return s.remove(nonNullString(o));}
     }
@@ -194,6 +205,7 @@ final class ProcessEnvironment extends HashMap<String,String>
 
     private static final class NameComparator
         implements Comparator<String> {
+        @Pure
         public int compare(String s1, String s2) {
             // We can't use String.compareToIgnoreCase since it
             // canonicalizes to lower case, while Windows
@@ -219,6 +231,7 @@ final class ProcessEnvironment extends HashMap<String,String>
 
     private static final class EntryComparator
         implements Comparator<Map.Entry<String,String>> {
+        @Pure
         public int compare(Map.Entry<String,String> e1,
                            Map.Entry<String,String> e2) {
             return nameComparator.compare(e1.getKey(), e2.getKey());
@@ -301,7 +314,7 @@ final class ProcessEnvironment extends HashMap<String,String>
     String toEnvironmentBlock() {
         // Sort Unicode-case-insensitively by name
         List<Map.Entry<String,String>> list = new ArrayList<>(entrySet());
-        Collections.sort(list, entryComparator);
+        list.sort(entryComparator);
 
         StringBuilder sb = new StringBuilder(size()*30);
         int cmp = -1;

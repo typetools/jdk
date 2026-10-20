@@ -25,6 +25,9 @@
 
 package javax.management;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Represents "user defined" exceptions thrown by MBean methods
@@ -51,6 +54,7 @@ public class MBeanException extends JMException   {
      *
      * @param e the wrapped exception.
      */
+    @SideEffectFree
     public MBeanException(java.lang.Exception e) {
         super() ;
         exception = e ;
@@ -63,7 +67,8 @@ public class MBeanException extends JMException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public MBeanException(java.lang.Exception e, String message) {
+    @SideEffectFree
+    public MBeanException(java.lang.Exception e, @Nullable String message) {
         super(message) ;
         exception = e ;
     }
@@ -83,7 +88,8 @@ public class MBeanException extends JMException   {
      *
      * @return the wrapped exception.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return exception;
     }
 }

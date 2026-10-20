@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,14 +25,19 @@
 
 package java.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Unchecked exception thrown when the format width is a negative value other
- * than {@code -1} or is otherwise unsupported.
+ * than {@code -1} or is otherwise unsupported. If a given format width is not
+ * representable by an {@code int} type, then the value
+ * {@code Integer.MIN_VALUE} will be used in the exception.
  *
  * @since 1.5
  */
-public class IllegalFormatWidthException extends IllegalFormatException {
+public non-sealed class IllegalFormatWidthException extends IllegalFormatException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 16660902L;
 
     private int w;
@@ -43,12 +48,14 @@ public class IllegalFormatWidthException extends IllegalFormatException {
      * @param  w
      *         The width
      */
+    @SideEffectFree
     public IllegalFormatWidthException(int w) {
         this.w = w;
     }
 
     /**
-     * Returns the width
+     * Returns the width. If the width is not representable by an {@code int},
+     * then returns {@code Integer.MIN_VALUE}.
      *
      * @return  The width
      */
@@ -56,6 +63,7 @@ public class IllegalFormatWidthException extends IllegalFormatException {
         return w;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return Integer.toString(w);
     }

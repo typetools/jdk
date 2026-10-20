@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,8 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import jdk.internal.net.http.common.BufferSupplier;
@@ -147,7 +149,7 @@ final class SocketTube implements FlowTube {
     //                           Events                                      //
     // ======================================================================//
 
-    void signalClosed() {
+    void signalClosed(Throwable cause) {
         // Ensures that the subscriber will be terminated and that future
         // subscribers will be notified when the connection is closed.
         if (Log.channel()) {
@@ -155,7 +157,7 @@ final class SocketTube implements FlowTube {
                     channelDescr());
         }
         readPublisher.subscriptionImpl.signalError(
-                new IOException("connection closed locally"));
+                new IOException("connection closed locally", cause));
     }
 
     /**
@@ -163,16 +165,22 @@ final class SocketTube implements FlowTube {
      */
     private static class SocketFlowTask implements RestartableTask {
         final Runnable task;
-        private final Object monitor = new Object();
+        private final Lock lock = new ReentrantLock();
         SocketFlowTask(Runnable task) {
             this.task = task;
         }
         @Override
         public final void run(DeferredCompleter taskCompleter) {
             try {
-                // non contentious synchronized for visibility.
-                synchronized(monitor) {
+                // The logics of the sequential scheduler should ensure that
+                // the restartable task is running in only one thread at
+                // a given time: there should never be contention.
+                boolean locked = lock.tryLock();
+                assert locked : "contention detected in SequentialScheduler";
+                try {
                     task.run();
+                } finally {
+                    if (locked) lock.unlock();
                 }
             } finally {
                 taskCompleter.complete();
@@ -218,7 +226,7 @@ final class SocketTube implements FlowTube {
      * signaled. It is the responsibility of the code triggered by
      * {@code signalEvent} to resume the event if required.
      */
-    private static abstract class SocketFlowEvent extends AsyncEvent {
+    private abstract static class SocketFlowEvent extends AsyncEvent {
         final SocketChannel channel;
         final int defaultInterest;
         volatile int interestOps;
@@ -246,7 +254,7 @@ final class SocketTube implements FlowTube {
         }
         @Override
         public final void abort(IOException error) {
-            debug().log(() -> "abort: " + error);
+            debug().log(() -> this.getClass().getSimpleName() + " abort: " + error);
             pause();              // pause, then signal
             signalError(error);   // should not be resumed after abort (not checked)
         }
@@ -322,7 +330,7 @@ final class SocketTube implements FlowTube {
         // onNext is usually called from within a user / executor thread.
         // Initial writing will be performed in that thread. If for some reason,
         // not all the data can be written, a writeEvent will be registered, and
-        // writing will resume in the the selector manager thread when the
+        // writing will resume in the selector manager thread when the
         // writeEvent is fired.
         //
         // If this method is invoked in the selector manager thread (because of
@@ -333,6 +341,10 @@ final class SocketTube implements FlowTube {
         void tryFlushCurrent(boolean inSelectorThread) {
             List<ByteBuffer> bufs = current;
             if (bufs == null) return;
+            if (client.isSelectorClosed()) {
+                signalError(client.selectorClosedException());
+                return;
+            }
             try {
                 assert inSelectorThread == client.isSelectorThread() :
                        "should " + (inSelectorThread ? "" : "not ")
@@ -346,6 +358,10 @@ final class SocketTube implements FlowTube {
                 if (remaining - written == 0) {
                     current = null;
                     if (writeDemand.tryDecrement()) {
+                        if (client.isSelectorClosed()) {
+                            signalError(client.selectorClosedException());
+                            return;
+                        }
                         Runnable requestMore = this::requestMore;
                         if (inSelectorThread) {
                             assert client.isSelectorThread();
@@ -479,9 +495,9 @@ final class SocketTube implements FlowTube {
             }
 
             void dropSubscription() {
+                if (debug.on()) debug.log("write: resetting demand to 0");
                 synchronized (InternalWriteSubscriber.this) {
                     cancelled = true;
-                    if (debug.on()) debug.log("write: resetting demand to 0");
                     writeDemand.reset();
                 }
             }
@@ -724,10 +740,12 @@ final class SocketTube implements FlowTube {
             @Override
             public final void cancel() {
                 pauseReadEvent();
+                if (debug.on()) debug.log("Read subscription cancelled");
                 if (Log.channel()) {
                     Log.logChannel("Read subscription cancelled for channel {0}",
                             channelDescr());
                 }
+                if (debug.on()) debug.log("Stopping read scheduler");
                 readScheduler.stop();
             }
 
@@ -748,6 +766,7 @@ final class SocketTube implements FlowTube {
             }
 
             final void signalError(Throwable error) {
+                if (debug.on()) debug.log("signal read error: " + error);
                 if (!errorRef.compareAndSet(null, error)) {
                     return;
                 }
@@ -808,6 +827,7 @@ final class SocketTube implements FlowTube {
                             }
                             current.errorRef.compareAndSet(null, error);
                             current.signalCompletion();
+                            if (debug.on()) debug.log("Stopping read scheduler");
                             readScheduler.stop();
                             debugState("leaving read() loop with error: ");
                             return;
@@ -831,6 +851,7 @@ final class SocketTube implements FlowTube {
                                         // anyway.
                                         pauseReadEvent();
                                         current.signalCompletion();
+                                        if (debug.on()) debug.log("Stopping read scheduler");
                                         readScheduler.stop();
                                     }
                                     debugState("leaving read() loop after EOF: ");
@@ -850,6 +871,7 @@ final class SocketTube implements FlowTube {
                                     // waiting for this event to terminate.
                                     // So resume the read event and return now...
                                     resumeReadEvent();
+                                    if (errorRef.get() != null) continue;
                                     debugState("leaving read() loop after onNext: ");
                                     return;
                                 } else {
@@ -861,6 +883,7 @@ final class SocketTube implements FlowTube {
                                     // readable again.
                                     demand.increase(1);
                                     resumeReadEvent();
+                                    if (errorRef.get() != null) continue;
                                     debugState("leaving read() loop with no bytes");
                                     return;
                                 }
@@ -879,6 +902,7 @@ final class SocketTube implements FlowTube {
                             // Trying to pause the event here would actually
                             // introduce a race condition between this loop and
                             // request(n).
+                            if (errorRef.get() != null) continue;
                             debugState("leaving read() loop with no demand");
                             break;
                         }
@@ -946,6 +970,7 @@ final class SocketTube implements FlowTube {
 
             @Override
             protected final void signalError(Throwable error) {
+                if (debug.on()) debug.log("signalError to %s (%s)", sub, error);
                 sub.signalError(error);
             }
 
@@ -1238,7 +1263,7 @@ final class SocketTube implements FlowTube {
     private void resumeEvent(SocketFlowEvent event,
                              Consumer<Throwable> errorSignaler) {
         boolean registrationRequired;
-        synchronized(lock) {
+        synchronized (lock) {
             registrationRequired = !event.registered();
             event.resume();
         }
@@ -1255,7 +1280,7 @@ final class SocketTube implements FlowTube {
 
     private void pauseEvent(SocketFlowEvent event,
                             Consumer<Throwable> errorSignaler) {
-        synchronized(lock) {
+        synchronized (lock) {
             event.pause();
         }
         try {

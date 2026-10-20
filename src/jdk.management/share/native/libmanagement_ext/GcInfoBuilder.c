@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,10 +34,10 @@ JNIEXPORT jint JNICALL Java_com_sun_management_internal_GcInfoBuilder_getNumGcEx
     jlong value;
 
     if (gc == NULL) {
-        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMBean");
+        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMXBean");
         return 0;
     }
-    value = jmm_interface->GetLongAttribute(env, gc,
+    value = jmm_interface_management_ext->GetLongAttribute(env, gc,
                                             JMM_GC_EXT_ATTRIBUTE_INFO_SIZE);
     return (jint) value;
 }
@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_com_sun_management_internal_GcInfoBuilder_fillGcAttr
     jint i;
 
     if (gc == NULL) {
-        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMBean");
+        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMXBean");
         return;
     }
 
@@ -70,7 +70,7 @@ JNIEXPORT void JNICALL Java_com_sun_management_internal_GcInfoBuilder_fillGcAttr
         JNU_ThrowOutOfMemoryError(env, 0);
         return;
     }
-    ret = jmm_interface->GetGCExtAttributeInfo(env, gc,
+    ret = jmm_interface_management_ext->GetGCExtAttributeInfo(env, gc,
                                                ext_att_info, num_attributes);
     if (ret != num_attributes) {
         JNU_ThrowInternalError(env, "Unexpected num_attributes");
@@ -207,7 +207,7 @@ JNIEXPORT jobject JNICALL Java_com_sun_management_internal_GcInfoBuilder_getLast
     jvalue      v;
 
     if (gc == NULL) {
-        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMBean");
+        JNU_ThrowNullPointerException(env, "Invalid GarbageCollectorMXBean");
         return 0;
     }
 
@@ -231,7 +231,7 @@ JNIEXPORT jobject JNICALL Java_com_sun_management_internal_GcInfoBuilder_getLast
     }
 
 
-    jmm_interface->GetLastGCStat(env, gc, &gc_stat);
+    jmm_interface_management_ext->GetLastGCStat(env, gc, &gc_stat);
     if (gc_stat.gc_index == 0) {
         if (gc_stat.gc_ext_attribute_values != NULL) {
             free(gc_stat.gc_ext_attribute_values);

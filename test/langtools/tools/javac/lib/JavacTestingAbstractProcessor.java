@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,9 +21,11 @@
  * questions.
  */
 
+import java.io.Writer;
 import java.util.*;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.*;
 import javax.lang.model.util.*;
 import static javax.lang.model.SourceVersion.*;
 
@@ -110,8 +112,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
      * corresponding platform visitor type.
      */
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static abstract class AbstractAnnotationValueVisitor<R, P> extends AbstractAnnotationValueVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static abstract class AbstractAnnotationValueVisitor<R, P> extends AbstractAnnotationValueVisitor14<R, P> {
 
         /**
          * Constructor for concrete subclasses to call.
@@ -121,8 +123,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static abstract class AbstractElementVisitor<R, P> extends AbstractElementVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static abstract class AbstractElementVisitor<R, P> extends AbstractElementVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses to call.
          */
@@ -131,8 +133,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static abstract class AbstractTypeVisitor<R, P> extends AbstractTypeVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static abstract class AbstractTypeVisitor<R, P> extends AbstractTypeVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses to call.
          */
@@ -141,8 +143,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class ElementKindVisitor<R, P> extends ElementKindVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class ElementKindVisitor<R, P> extends ElementKindVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -162,8 +164,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class ElementScanner<R, P> extends ElementScanner9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class ElementScanner<R, P> extends ElementScanner14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -181,8 +183,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class SimpleAnnotationValueVisitor<R, P> extends SimpleAnnotationValueVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class SimpleAnnotationValueVisitor<R, P> extends SimpleAnnotationValueVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -202,8 +204,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class SimpleElementVisitor<R, P> extends SimpleElementVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class SimpleElementVisitor<R, P> extends SimpleElementVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -223,8 +225,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class SimpleTypeVisitor<R, P> extends SimpleTypeVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class SimpleTypeVisitor<R, P> extends SimpleTypeVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -244,8 +246,8 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         }
     }
 
-    @SupportedSourceVersion(RELEASE_11)
-    public static class TypeKindVisitor<R, P> extends TypeKindVisitor9<R, P> {
+    @SupportedSourceVersion(RELEASE_21)
+    public static class TypeKindVisitor<R, P> extends TypeKindVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses to call; uses {@code null}
          * for the default value.
@@ -263,5 +265,61 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
         protected TypeKindVisitor(R defaultValue) {
             super(defaultValue);
         }
+    }
+
+    /**
+     * Vacuous implementation of javax.lang.model.util.Elements to aid
+     * in test development. Methods with defaults in the interface are
+     * *not* overridden to allow them to be tested.
+     */
+    public static class VacuousElements implements Elements {
+        public VacuousElements() {}
+
+        @Override
+        public PackageElement getPackageElement(CharSequence name) {return null;}
+
+        @Override
+        public TypeElement getTypeElement(CharSequence name) {return null;}
+
+        @Override
+        public Map<? extends ExecutableElement, ? extends AnnotationValue>
+                                                          getElementValuesWithDefaults(AnnotationMirror a) {return null;}
+        @Override
+        public String getDocComment(Element e) {return null;}
+
+        @Override
+        public boolean isDeprecated(Element e) {return false;}
+
+        @Override
+        public  Name getBinaryName(TypeElement type) {return null;}
+
+        @Override
+        public PackageElement getPackageOf(Element e) {return null;}
+
+        @Override
+        public List<? extends Element> getAllMembers(TypeElement type) {return null;}
+
+        @Override
+        public List<? extends AnnotationMirror> getAllAnnotationMirrors(Element e) {return null;}
+
+        @Override
+        public boolean hides(Element hider, Element hidden) {return false;}
+
+        @Override
+        public boolean overrides(ExecutableElement overrider,
+                             ExecutableElement overridden,
+                             TypeElement type) {return false;}
+
+        @Override
+        public String getConstantExpression(Object value) {return null;}
+
+        @Override
+        public void printElements(Writer w, Element... elements) {}
+
+        @Override
+        public Name getName(CharSequence cs)  {return null;}
+
+        @Override
+        public boolean isFunctionalInterface(TypeElement type) {return false;}
     }
 }

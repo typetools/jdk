@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamField;
+import java.io.*;
 import java.security.BasicPermission;
 import java.security.Permission;
 import java.security.PermissionCollection;
@@ -73,6 +70,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class DelegationPermission extends BasicPermission
     implements java.io.Serializable {
 
+    @Serial
     private static final long serialVersionUID = 883133252142523922L;
 
     private transient String subordinate, service;
@@ -84,7 +82,8 @@ public final class DelegationPermission extends BasicPermission
      * @param principals the name of the subordinate and target principals
      *
      * @throws NullPointerException if {@code principals} is {@code null}.
-     * @throws IllegalArgumentException if {@code principals} is empty.
+     * @throws IllegalArgumentException if {@code principals} is empty,
+     *      or does not contain a pair of principals, or is improperly quoted
      */
     public DelegationPermission(String principals) {
         super(principals);
@@ -100,7 +99,8 @@ public final class DelegationPermission extends BasicPermission
      * @param actions should be null.
      *
      * @throws NullPointerException if {@code principals} is {@code null}.
-     * @throws IllegalArgumentException if {@code principals} is empty.
+     * @throws IllegalArgumentException if {@code principals} is empty,
+     *      or does not contain a pair of principals, or is improperly quoted
      */
     public DelegationPermission(String principals, String actions) {
         super(principals, actions);
@@ -113,24 +113,39 @@ public final class DelegationPermission extends BasicPermission
      */
     private void init(String target) {
 
-        StringTokenizer t = null;
-        if (!target.startsWith("\"")) {
-            throw new IllegalArgumentException
-                ("service principal [" + target +
-                 "] syntax invalid: " +
-                 "improperly quoted");
-        } else {
-            t = new StringTokenizer(target, "\"", false);
-            subordinate = t.nextToken();
-            if (t.countTokens() == 2) {
-                t.nextToken();  // bypass whitespace
-                service = t.nextToken();
-            } else if (t.countTokens() > 0) {
-                throw new IllegalArgumentException
-                    ("service principal [" + t.nextToken() +
-                     "] syntax invalid: " +
-                     "improperly quoted");
+        // 7 tokens in a string:
+        //    "subordinate@R1" "service@R2"
+        //    1<------2----->345<----6--->7
+        StringTokenizer t = new StringTokenizer(target, "\"", true);
+        try {
+            if (!t.nextToken().equals("\"")) { // 1
+                throw new IllegalArgumentException("Illegal input [" + target
+                        + "]: improperly quoted");
             }
+            subordinate = t.nextToken(); // 2
+            if (subordinate.equals("\"")) {
+                throw new IllegalArgumentException("Illegal input [" + target
+                        + "]: bad subordinate name");
+            }
+            t.nextToken(); // 3
+            if (!t.nextToken().trim().isEmpty()) { // 4
+                throw new IllegalArgumentException("Illegal input [" + target
+                        + "]: improperly separated");
+            }
+            t.nextToken(); // 5
+            service = t.nextToken(); // 6
+            if (service.equals("\"")) {
+                throw new IllegalArgumentException("Illegal input [" + target
+                        + "]: bad service name");
+            }
+            t.nextToken(); // 7
+        } catch (NoSuchElementException e) {
+            throw new IllegalArgumentException("Illegal input [" + target
+                    + "]: not enough input");
+        }
+        if (t.hasMoreTokens()) {
+            throw new IllegalArgumentException("Illegal input [" + target
+                    + "]: extra input");
         }
     }
 
@@ -168,11 +183,9 @@ public final class DelegationPermission extends BasicPermission
             return true;
         }
 
-        if (!(obj instanceof DelegationPermission)) {
+        if (!(obj instanceof DelegationPermission that)) {
             return false;
         }
-
-        DelegationPermission that = (DelegationPermission) obj;
 
         return this.subordinate.equals(that.subordinate) &&
                 this.service.equals(that.service);
@@ -209,7 +222,11 @@ public final class DelegationPermission extends BasicPermission
      * WriteObject is called to save the state of the DelegationPermission
      * to a stream. The actions are serialized, and the superclass
      * takes care of the name.
+     *
+     * @param  s the {@code ObjectOutputStream} to which data is written
+     * @throws IOException if an I/O error occurs
      */
+    @Serial
     private synchronized void writeObject(java.io.ObjectOutputStream s)
         throws IOException
     {
@@ -219,7 +236,12 @@ public final class DelegationPermission extends BasicPermission
     /**
      * readObject is called to restore the state of the
      * DelegationPermission from a stream.
+     *
+     * @param  s the {@code ObjectInputStream} from which data is read
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
+    @Serial
     private synchronized void readObject(java.io.ObjectInputStream s)
          throws IOException, ClassNotFoundException
     {
@@ -293,6 +315,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
         return perms.keys();
     }
 
+    @Serial
     private static final long serialVersionUID = -3383936936589966948L;
 
     // Need to maintain serialization interoperability with earlier releases,
@@ -302,6 +325,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
      * @serialField permissions java.util.Vector
      *     A list of DelegationPermission objects.
      */
+    @Serial
     private static final ObjectStreamField[] serialPersistentFields = {
         new ObjectStreamField("permissions", Vector.class),
     };
@@ -313,6 +337,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
      * Writes the contents of the perms field out as a Vector for
      * serialization compatibility with earlier releases.
      */
+    @Serial
     private void writeObject(ObjectOutputStream out) throws IOException {
         // Don't call out.defaultWriteObject()
 
@@ -327,6 +352,7 @@ final class KrbDelegationPermissionCollection extends PermissionCollection
     /*
      * Reads in a Vector of DelegationPermissions and saves them in the perms field.
      */
+    @Serial
     @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException

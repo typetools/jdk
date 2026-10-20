@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,8 +54,13 @@
 
 package java.lang;
 
-import java.io.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
 import java.util.*;
+
+import static java.lang.ProcessImpl.JNU_CHARSET;
 
 
 final class ProcessEnvironment
@@ -141,13 +146,14 @@ final class ProcessEnvironment
             return str;
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof ExternalData
-                && arrayEquals(getBytes(), ((ExternalData) o).getBytes());
+                && Arrays.equals(getBytes(), ((ExternalData) o).getBytes());
         }
 
         public int hashCode() {
-            return arrayHash(getBytes());
+            return Arrays.hashCode(getBytes());
         }
     }
 
@@ -163,7 +169,7 @@ final class ProcessEnvironment
         }
 
         public static Variable valueOfQueryOnly(String str) {
-            return new Variable(str, str.getBytes());
+            return new Variable(str, str.getBytes(JNU_CHARSET));
         }
 
         public static Variable valueOf(String str) {
@@ -172,14 +178,16 @@ final class ProcessEnvironment
         }
 
         public static Variable valueOf(byte[] bytes) {
-            return new Variable(new String(bytes), bytes);
+            return new Variable(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Variable variable) {
-            return arrayCompare(getBytes(), variable.getBytes());
+            return Arrays.compare(getBytes(), variable.getBytes());
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof Variable && super.equals(o);
         }
     }
@@ -196,7 +204,7 @@ final class ProcessEnvironment
         }
 
         public static Value valueOfQueryOnly(String str) {
-            return new Value(str, str.getBytes());
+            return new Value(str, str.getBytes(JNU_CHARSET));
         }
 
         public static Value valueOf(String str) {
@@ -205,14 +213,16 @@ final class ProcessEnvironment
         }
 
         public static Value valueOf(byte[] bytes) {
-            return new Value(new String(bytes), bytes);
+            return new Value(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Value value) {
-            return arrayCompare(getBytes(), value.getBytes());
+            return Arrays.compare(getBytes(), value.getBytes());
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof Value && super.equals(o);
         }
     }
@@ -226,12 +236,16 @@ final class ProcessEnvironment
             return v == null ? null : v.toString();
         }
         public StringEnvironment(Map<Variable,Value> m) {this.m = m;}
+        @Pure
         public int size()        {return m.size();}
+        @Pure
         public boolean isEmpty() {return m.isEmpty();}
         public void clear()      {       m.clear();}
+        @Pure
         public boolean containsKey(Object key) {
             return m.containsKey(Variable.valueOfQueryOnly(key));
         }
+        @Pure
         public boolean containsValue(Object value) {
             return m.containsValue(Value.valueOfQueryOnly(value));
         }
@@ -310,7 +324,8 @@ final class ProcessEnvironment
             return e.setValue(Value.valueOf(newValue)).toString();
         }
         public String toString() {return getKey() + "=" + getValue();}
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringEntry
                 && e.equals(((StringEntry)o).e);
         }
@@ -328,7 +343,9 @@ final class ProcessEnvironment
         public Iterator<Map.Entry<String,String>> iterator() {
             return new Iterator<Map.Entry<String,String>>() {
                 Iterator<Map.Entry<Variable,Value>> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new StringEntry(i.next());
                 }
@@ -350,12 +367,15 @@ final class ProcessEnvironment
                 }
             };
         }
+        @Pure
         public boolean contains(Object o) { return s.contains(vvEntry(o)); }
         public boolean remove(Object o)   { return s.remove(vvEntry(o)); }
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringEntrySet
                 && s.equals(((StringEntrySet) o).s);
         }
+        @Pure
         public int hashCode() {return s.hashCode();}
     }
 
@@ -370,21 +390,26 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Value> i = c.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return c.contains(Value.valueOfQueryOnly(o));
         }
         public boolean remove(Object o) {
             return c.remove(Value.valueOfQueryOnly(o));
         }
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringValues
                 && c.equals(((StringValues)o).c);
         }
+        @Pure
         public int hashCode() {return c.hashCode();}
     }
 
@@ -397,44 +422,20 @@ final class ProcessEnvironment
         public Iterator<String> iterator() {
             return new Iterator<String>() {
                 Iterator<Variable> i = s.iterator();
+                @Pure
                 public boolean hasNext() {return i.hasNext();}
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {       i.remove();}
             };
         }
+        @Pure
         public boolean contains(Object o) {
             return s.contains(Variable.valueOfQueryOnly(o));
         }
         public boolean remove(Object o) {
             return s.remove(Variable.valueOfQueryOnly(o));
         }
-    }
-
-    // Replace with general purpose method someday
-    private static int arrayCompare(byte[]x, byte[] y) {
-        int min = x.length < y.length ? x.length : y.length;
-        for (int i = 0; i < min; i++)
-            if (x[i] != y[i])
-                return x[i] - y[i];
-        return x.length - y.length;
-    }
-
-    // Replace with general purpose method someday
-    private static boolean arrayEquals(byte[] x, byte[] y) {
-        if (x.length != y.length)
-            return false;
-        for (int i = 0; i < x.length; i++)
-            if (x[i] != y[i])
-                return false;
-        return true;
-    }
-
-    // Replace with general purpose method someday
-    private static int arrayHash(byte[] x) {
-        int hash = 0;
-        for (int i = 0; i < x.length; i++)
-            hash = 31 * hash + x[i];
-        return hash;
     }
 
 }

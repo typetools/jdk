@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,16 +34,15 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * file and determines that the file is malformed or otherwise cannot
  * be interpreted as a class file.
  *
- * @author  unascribed
  * @since   1.0
  */
 @AnnotatedFor({"nullness"})
-public
-class ClassFormatError extends LinkageError {
+public class ClassFormatError extends LinkageError {
+    @java.io.Serial
     private static final long serialVersionUID = -8420114879011949195L;
 
     /**
-     * Constructs a <code>ClassFormatError</code> with no detail message.
+     * Constructs a {@code ClassFormatError} with no detail message.
      */
     @SideEffectFree
     public ClassFormatError() {
@@ -51,7 +50,7 @@ class ClassFormatError extends LinkageError {
     }
 
     /**
-     * Constructs a <code>ClassFormatError</code> with the specified
+     * Constructs a {@code ClassFormatError} with the specified
      * detail message.
      *
      * @param   s   the detail message.

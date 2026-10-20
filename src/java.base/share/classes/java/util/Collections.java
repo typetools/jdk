@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,20 +27,41 @@ package java.util;
 
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyFor;
 import org.checkerframework.checker.nullness.qual.EnsuresKeyForIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.signedness.qual.PolySigned;
+import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -51,9 +72,11 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * This class consists exclusively of static methods that operate on or return
@@ -94,7 +117,7 @@ import java.util.stream.StreamSupport;
  * @since   1.2
  */
 
-@AnnotatedFor({"lock", "nullness", "index"})
+@AnnotatedFor({"lock", "index", "nonempty", "nullness"})
 public class Collections {
     // Suppresses default constructor, ensuring non-instantiability.
     private Collections() {
@@ -154,8 +177,8 @@ public class Collections {
      *         found to violate the {@link Comparable} contract
      * @see List#sort(Comparator)
      */
-    @SuppressWarnings("unchecked")
-    public static <T extends Comparable<? super T>> void sort(List<T> list) {
+    @SideEffectsOnly("#1")
+    public static <T extends Comparable<? super T>> void sort(@IteratorPolyMod @Replaceable List<T> list) {
         list.sort(null);
     }
 
@@ -189,7 +212,8 @@ public class Collections {
      * @see List#sort(Comparator)
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> void sort(List<T> list, @Nullable Comparator<? super T> c) {
+    @SideEffectsOnly("#1")
+    public static <T> void sort(@IteratorPolyMod @Replaceable List<T> list, @Nullable Comparator<? super T> c) {
         list.sort(c);
     }
 
@@ -226,7 +250,7 @@ public class Collections {
      *         with the elements of the list.
      */
     public static <T>
-    int binarySearch(List<? extends Comparable<? super T>> list, T key) {
+    int binarySearch(@MaybeModifiable List<? extends Comparable<? super T>> list, T key) {
         if (list instanceof RandomAccess || list.size()<BINARYSEARCH_THRESHOLD)
             return Collections.indexedBinarySearch(list, key);
         else
@@ -234,7 +258,7 @@ public class Collections {
     }
 
     private static <T>
-    int indexedBinarySearch(List<? extends Comparable<? super T>> list, T key) {
+    int indexedBinarySearch(@MaybeModifiable List<? extends Comparable<? super T>> list, T key) {
         int low = 0;
         int high = list.size()-1;
 
@@ -254,7 +278,7 @@ public class Collections {
     }
 
     private static <T>
-    int iteratorBinarySearch(List<? extends Comparable<? super T>> list, T key)
+    int iteratorBinarySearch(@MaybeModifiable List<? extends Comparable<? super T>> list, T key)
     {
         int low = 0;
         int high = list.size()-1;
@@ -279,8 +303,9 @@ public class Collections {
      * Gets the ith element from the given list by repositioning the specified
      * list listIterator.
      */
+    @SideEffectsOnly("#1")
     private static <T> T get(ListIterator<? extends T> i, int index) {
-        T obj = null;
+        T obj;
         int pos = i.nextIndex();
         if (pos <= index) {
             do {
@@ -330,7 +355,7 @@ public class Collections {
      *         elements of the list using this comparator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> int binarySearch(List<? extends T> list, T key, @Nullable Comparator<? super T> c) {
+    public static <T> int binarySearch(@MaybeModifiable List<? extends T> list, T key, @Nullable Comparator<? super T> c) {
         if (c==null)
             return binarySearch((List<? extends Comparable<? super T>>) list, key);
 
@@ -340,7 +365,7 @@ public class Collections {
             return Collections.iteratorBinarySearch(list, key, c);
     }
 
-    private static <T> int indexedBinarySearch(List<? extends T> l, T key, Comparator<? super T> c) {
+    private static <T> int indexedBinarySearch(@MaybeModifiable List<? extends T> l, T key, Comparator<? super T> c) {
         int low = 0;
         int high = l.size()-1;
 
@@ -359,7 +384,7 @@ public class Collections {
         return -(low + 1);  // key not found
     }
 
-    private static <T> int iteratorBinarySearch(List<? extends T> l, T key, Comparator<? super T> c) {
+    private static <T> int iteratorBinarySearch(@MaybeModifiable List<? extends T> l, T key, Comparator<? super T> c) {
         int low = 0;
         int high = l.size()-1;
         ListIterator<? extends T> i = l.listIterator();
@@ -384,12 +409,18 @@ public class Collections {
      *
      * This method runs in linear time.
      *
+     * @apiNote
+     * This method mutates the specified list in-place. To obtain a
+     * reverse-ordered view of a list without mutating it, use the
+     * {@link List#reversed List.reversed} method.
+     *
      * @param  list the list whose elements are to be reversed.
      * @throws UnsupportedOperationException if the specified list or
      *         its list-iterator does not support the {@code set} operation.
+     * @see    List#reversed List.reversed
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void reverse(@GuardSatisfied List<?> list) {
+    public static void reverse(@IteratorPolyMod @Replaceable @GuardSatisfied List<?> list) {
         int size = list.size();
         if (size < REVERSE_THRESHOLD || list instanceof RandomAccess) {
             for (int i=0, mid=size>>1, j=size-1; i<mid; i++, j--)
@@ -425,8 +456,8 @@ public class Collections {
      * portion of the list that runs from the first element to the current
      * position, inclusive.
      *
-     * <p>This method runs in linear time.  If the specified list does not
-     * implement the {@link RandomAccess} interface and is large, this
+     * @implSpec This method runs in linear time.  If the specified list does
+     * not implement the {@link RandomAccess} interface and is large, this
      * implementation dumps the specified list into an array before shuffling
      * it, and dumps the shuffled array back into the list.  This avoids the
      * quadratic behavior that would result from shuffling a "sequential
@@ -436,7 +467,7 @@ public class Collections {
      * @throws UnsupportedOperationException if the specified list or
      *         its list-iterator does not support the {@code set} operation.
      */
-    public static void shuffle(@GuardSatisfied List<?> list) {
+    public static void shuffle(@IteratorPolyMod @Replaceable @GuardSatisfied List<?> list) {
         Random rnd = r;
         if (rnd == null)
             r = rnd = new Random(); // harmless race.
@@ -447,6 +478,24 @@ public class Collections {
 
     /**
      * Randomly permute the specified list using the specified source of
+     * randomness.<p>
+     *
+     * This method is equivalent to {@link #shuffle(List, RandomGenerator)}
+     * and exists for backward compatibility. The {@link #shuffle(List, RandomGenerator)}
+     * method is preferred, as it is not limited to random generators
+     * that extend the {@link Random} class.
+     *
+     * @param  list the list to be shuffled.
+     * @param  rnd the source of randomness to use to shuffle the list.
+     * @throws UnsupportedOperationException if the specified list or its
+     *         list-iterator does not support the {@code set} operation.
+     */
+    public static void shuffle(@IteratorPolyMod @Replaceable List<?> list, Random rnd) {
+        shuffle(list, (RandomGenerator) rnd);
+    }
+
+    /**
+     * Randomly permute the specified list using the specified source of
      * randomness.  All permutations occur with equal likelihood
      * assuming that the source of randomness is fair.<p>
      *
@@ -454,10 +503,10 @@ public class Collections {
      * up to the second, repeatedly swapping a randomly selected element into
      * the "current position".  Elements are randomly selected from the
      * portion of the list that runs from the first element to the current
-     * position, inclusive.<p>
+     * position, inclusive.
      *
-     * This method runs in linear time.  If the specified list does not
-     * implement the {@link RandomAccess} interface and is large, this
+     * @implSpec This method runs in linear time.  If the specified list does
+     * not implement the {@link RandomAccess} interface and is large, this
      * implementation dumps the specified list into an array before shuffling
      * it, and dumps the shuffled array back into the list.  This avoids the
      * quadratic behavior that would result from shuffling a "sequential
@@ -467,15 +516,16 @@ public class Collections {
      * @param  rnd the source of randomness to use to shuffle the list.
      * @throws UnsupportedOperationException if the specified list or its
      *         list-iterator does not support the {@code set} operation.
+     * @since 21
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void shuffle(@GuardSatisfied List<?> list, Random rnd) {
+    public static void shuffle(@IteratorPolyMod @Replaceable @GuardSatisfied List<?> list, RandomGenerator rnd) {
         int size = list.size();
         if (size < SHUFFLE_THRESHOLD || list instanceof RandomAccess) {
             for (int i=size; i>1; i--)
                 swap(list, i-1, rnd.nextInt(i));
         } else {
-            Object arr[] = list.toArray();
+            Object[] arr = list.toArray();
 
             // Shuffle array
             for (int i=size; i>1; i--)
@@ -507,7 +557,7 @@ public class Collections {
      * @since 1.4
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void swap(@GuardSatisfied List<?> list, int i, int j) {
+    public static void swap(@Replaceable @GuardSatisfied List<?> list, int i, int j) {
         // instead of using a raw type here, it's possible to capture
         // the wildcard but it will require a call to a supplementary
         // private method
@@ -536,7 +586,7 @@ public class Collections {
      * @throws UnsupportedOperationException if the specified list or its
      *         list-iterator does not support the {@code set} operation.
      */
-    public static <T> void fill(@GuardSatisfied List<? super T> list, T obj) {
+    public static <T> void fill(@IteratorPolyMod @Replaceable @GuardSatisfied List<? super T> list, T obj) {
         int size = list.size();
 
         if (size < FILL_THRESHOLD || list instanceof RandomAccess) {
@@ -569,7 +619,7 @@ public class Collections {
      * @throws UnsupportedOperationException if the destination list's
      *         list-iterator does not support the {@code set} operation.
      */
-    public static <T> void copy(List<? super T> dest, List<? extends T> src) {
+    public static <T> void copy(@IteratorPolyMod @Replaceable List<? super T> dest, @MaybeModifiable List<? extends T> src) {
         int srcSize = src.size();
         if (srcSize > dest.size())
             throw new IndexOutOfBoundsException("Source does not fit in dest");
@@ -610,7 +660,9 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
-    public static <T extends Object & Comparable<? super T>> T min(Collection<? extends T> coll) {
+    @Pure
+    @StaticallyExecutable
+    public static <T extends Object & Comparable<? super T>> T min(@MaybeModifiable Collection<? extends T> coll) {
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
 
@@ -646,9 +698,11 @@ public class Collections {
      * @see Comparable
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> T min(Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
+    @Pure
+    @StaticallyExecutable
+    public static <T> T min(@MaybeModifiable Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
         if (comp==null)
-            return (T)min((Collection) coll);
+            return (T)min((Collection<Comparable<Object>>) coll);
 
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -683,7 +737,9 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
-    public static <T extends Object & Comparable<? super T>> T max(Collection<? extends T> coll) {
+    @Pure
+    @StaticallyExecutable
+    public static <T extends Object & Comparable<? super T>> T max(@MaybeModifiable Collection<? extends T> coll) {
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
 
@@ -719,9 +775,11 @@ public class Collections {
      * @see Comparable
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> T max(Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
+    @Pure
+    @StaticallyExecutable
+    public static <T> T max(@MaybeModifiable Collection<? extends T> coll, @Nullable Comparator<? super T> comp) {
         if (comp==null)
-            return (T)max((Collection) coll);
+            return (T)max((Collection<Comparable<Object>>) coll);
 
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -789,7 +847,7 @@ public class Collections {
      *         its list-iterator does not support the {@code set} operation.
      * @since 1.4
      */
-    public static void rotate(@GuardSatisfied List<?> list, int distance) {
+    public static void rotate(@IteratorPolyMod @Replaceable @GuardSatisfied List<?> list, int distance) {
         if (list instanceof RandomAccess || list.size() < ROTATE_THRESHOLD)
             rotate1(list, distance);
         else
@@ -853,7 +911,9 @@ public class Collections {
      *         its list-iterator does not support the {@code set} operation.
      * @since  1.4
      */
-    public static <T> boolean replaceAll(List<T> list, @Nullable T oldVal, T newVal) {
+    @SideEffectsOnly("#1")
+    @DoesNotUnrefineReceiver("modifiability")
+    public static <T> boolean replaceAll(@IteratorPolyMod @Replaceable List<T> list, @Nullable T oldVal, T newVal) {
         boolean result = false;
         int size = list.size();
         if (size < REPLACEALL_THRESHOLD || list instanceof RandomAccess) {
@@ -914,7 +974,8 @@ public class Collections {
      * @since  1.4
      */
     @Pure
-    public static @GTENegativeOne int indexOfSubList(@GuardSatisfied List<?> source, @GuardSatisfied List<?> target) {
+    @StaticallyExecutable
+    public static @GTENegativeOne int indexOfSubList(@MaybeModifiable @GuardSatisfied List<?> source, @GuardSatisfied List<?> target) {
         int sourceSize = source.size();
         int targetSize = target.size();
         int maxCandidate = sourceSize - targetSize;
@@ -968,7 +1029,8 @@ public class Collections {
      * @since  1.4
      */
     @Pure
-    public static @GTENegativeOne int lastIndexOfSubList(@GuardSatisfied List<?> source, @GuardSatisfied List<?> target) {
+    @StaticallyExecutable
+    public static @GTENegativeOne int lastIndexOfSubList(@MaybeModifiable @GuardSatisfied List<?> source, @GuardSatisfied List<?> target) {
         int sourceSize = source.size();
         int targetSize = target.size();
         int maxCandidate = sourceSize - targetSize;
@@ -1024,12 +1086,18 @@ public class Collections {
      * The returned collection will be serializable if the specified collection
      * is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param  <T> the class of the objects in the collection
      * @param  c the collection for which an unmodifiable view is to be
      *         returned.
      * @return an unmodifiable view of the specified collection.
      */
-    public static <T> Collection<T> unmodifiableCollection(Collection<? extends T> c) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <T> @IteratorPolyMod @Unmodifiable @PolyGrowShrink @PolyNonEmpty Collection<T> unmodifiableCollection(@MaybeModifiable @PolyGrowShrink @PolyNonEmpty Collection<? extends T> c) {
+        if (c.getClass() == UnmodifiableCollection.class) {
+            return (Collection<T>) c;
+        }
         return new UnmodifiableCollection<>(c);
     }
 
@@ -1037,11 +1105,13 @@ public class Collections {
      * @serial include
      */
     static class UnmodifiableCollection<E> implements Collection<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 1820017752578914078L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         final Collection<? extends E> c;
 
-        UnmodifiableCollection(Collection<? extends E> c) {
+        @PolyNonEmpty UnmodifiableCollection(@PolyNonEmpty Collection<? extends E> c) {
             if (c==null)
                 throw new NullPointerException();
             this.c = c;
@@ -1050,26 +1120,37 @@ public class Collections {
         @Pure
         public @NonNegative int size()                          {return c.size();}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   {return c.isEmpty();}
-        public boolean contains(Object o)          {return c.contains(o);}
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o)          {return c.contains(o);}
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.UnmodifiableCollection<@PolyNull E> this)                  {return c.toArray();}
+        public @PolyNull @PolySigned Object[] toArray(Collections.UnmodifiableCollection<@PolyNull @PolySigned E> this)                  {return c.toArray();}
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)              {return c.toArray(a);}
         @SideEffectFree
-        public <T> T[] toArray(T[] a)              {return c.toArray(a);}
         public <T> T[] toArray(IntFunction<T[]> f) {return c.toArray(f);}
+        @SideEffectFree
         public String toString()                   {return c.toString();}
 
         @SideEffectFree
-        public Iterator<E> iterator() {
-            return new Iterator<E>() {
+        public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty UnmodifiableCollection<E> this) {
+            return new Iterator<>() {
                 private final Iterator<? extends E> i = c.iterator();
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() {return i.hasNext();}
-                public E next()          {return i.next();}
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
+                public E next(/*@NonEmpty Iterator<E> this*/)          {return i.next();}
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
                 @Override
+                @DoesNotUnrefineReceiver("modifiability")
                 public void forEachRemaining(Consumer<? super E> action) {
                     // Use backing collection version
                     i.forEachRemaining(action);
@@ -1077,35 +1158,52 @@ public class Collections {
             };
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        @EnsuresNonEmpty("this")
         public boolean add(E e) {
             throw new UnsupportedOperationException();
         }
-        public boolean remove(Object o) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object o) {
             throw new UnsupportedOperationException();
         }
 
-        public boolean containsAll(Collection<?> coll) {
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             throw new UnsupportedOperationException();
         }
-        public boolean removeAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
-        public boolean retainAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             throw new UnsupportedOperationException();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             throw new UnsupportedOperationException();
         }
 
         // Override default methods in Collection
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void forEach(Consumer<? super E> action) {
             c.forEach(action);
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
@@ -1117,13 +1215,113 @@ public class Collections {
         }
         @SuppressWarnings("unchecked")
         @Override
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public Stream<E> stream() {
             return (Stream<E>)c.stream();
         }
         @SuppressWarnings("unchecked")
         @Override
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public Stream<E> parallelStream() {
             return (Stream<E>)c.parallelStream();
+        }
+    }
+
+    /**
+     * Returns an <a href="Collection.html#unmodview">unmodifiable view</a> of the
+     * specified {@code SequencedCollection}. Query operations on the returned collection
+     * "read through" to the specified collection, and attempts to modify the returned
+     * collection, whether direct or via its iterator, result in an
+     * {@code UnsupportedOperationException}.<p>
+     *
+     * The returned collection does <i>not</i> pass the {@code hashCode} and
+     * {@code equals} operations through to the backing collection, but relies on
+     * {@code Object}'s {@code equals} and {@code hashCode} methods.  This
+     * is necessary to preserve the contracts of these operations in the case
+     * that the backing collection is a set or a list.<p>
+     *
+     * The returned collection will be serializable if the specified collection
+     * is serializable.
+     *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
+     * @param  <T> the class of the objects in the collection
+     * @param  c the collection for which an unmodifiable view is to be
+     *         returned.
+     * @return an unmodifiable view of the specified collection.
+     * @since 21
+     */
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <T> @Unmodifiable SequencedCollection<T> unmodifiableSequencedCollection(SequencedCollection<? extends T> c) {
+        if (c.getClass() == UnmodifiableSequencedCollection.class) {
+            return (SequencedCollection<T>) c;
+        }
+        return new UnmodifiableSequencedCollection<>(c);
+    }
+
+    /**
+     * @serial include
+     */
+    static class UnmodifiableSequencedCollection<E> extends UnmodifiableCollection<E>
+            implements SequencedCollection<E>, Serializable {
+
+        @java.io.Serial
+        private static final long serialVersionUID = -6060065079711684830L;
+
+        UnmodifiableSequencedCollection(SequencedCollection<? extends E> c) {
+            super(c);
+        }
+
+        @SuppressWarnings("unchecked")
+        private SequencedCollection<E> sc() {
+            return (SequencedCollection<E>) c;
+        }
+
+        // Even though this wrapper class is serializable, the reversed view is effectively
+        // not serializable because it points to the reversed collection view, which usually isn't
+        // serializable.
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
+        public SequencedCollection<E> reversed() {
+            return new UnmodifiableSequencedCollection<>(sc().reversed());
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void addFirst(E e) {
+            throw new UnsupportedOperationException();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void addLast(E e) {
+            throw new UnsupportedOperationException();
+        }
+
+        @EnsuresNonEmpty("this")
+        @Pure
+        public E getFirst() {
+            return sc().getFirst();
+        }
+
+        @EnsuresNonEmpty("this")
+        @Pure
+        public E getLast() {
+            return sc().getLast();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E removeFirst() {
+            throw new UnsupportedOperationException();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E removeLast() {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -1136,11 +1334,18 @@ public class Collections {
      * The returned set will be serializable if the specified set
      * is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param  <T> the class of the objects in the set
      * @param  s the set for which an unmodifiable view is to be returned.
      * @return an unmodifiable view of the specified set.
      */
-    public static <T> Set<T> unmodifiableSet(Set<? extends T> s) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <T> @IteratorPolyMod @Unmodifiable @PolyNonEmpty Set<T> unmodifiableSet(@MaybeModifiable @PolyNonEmpty Set<? extends T> s) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (s.getClass() == UnmodifiableSet.class) {
+            return (Set<T>) s;
+        }
         return new UnmodifiableSet<>(s);
     }
 
@@ -1149,11 +1354,69 @@ public class Collections {
      */
     static class UnmodifiableSet<E> extends UnmodifiableCollection<E>
                                  implements Set<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -9215047833775013803L;
 
         UnmodifiableSet(Set<? extends E> s)     {super(s);}
-        public boolean equals(Object o) {return o == this || c.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()           {return c.hashCode();}
+    }
+
+    /**
+     * Returns an <a href="Collection.html#unmodview">unmodifiable view</a> of the
+     * specified {@code SequencedSet}. Query operations on the returned set
+     * "read through" to the specified set, and attempts to modify the returned
+     * set, whether direct or via its iterator, result in an
+     * {@code UnsupportedOperationException}.<p>
+     *
+     * The returned set will be serializable if the specified set
+     * is serializable.
+     *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
+     * @param  <T> the class of the objects in the set
+     * @param  s the set for which an unmodifiable view is to be returned.
+     * @return an unmodifiable view of the specified sequenced set.
+     * @since 21
+     */
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <T> @Unmodifiable SequencedSet<T> unmodifiableSequencedSet(SequencedSet<? extends T> s) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (s.getClass() == UnmodifiableSequencedSet.class) {
+            return (SequencedSet<T>) s;
+        }
+        return new UnmodifiableSequencedSet<>(s);
+    }
+
+    /**
+     * @serial include
+     */
+    static class UnmodifiableSequencedSet<E> extends UnmodifiableSequencedCollection<E>
+                                             implements SequencedSet<E>, Serializable {
+        @java.io.Serial
+        private static final long serialVersionUID = -2153469532349793522L;
+
+        UnmodifiableSequencedSet(SequencedSet<? extends E> s)    {super(s);}
+        @Pure
+        public boolean equals(@Nullable Object o)                          {return o == this || c.equals(o);}
+        @Pure
+        public int hashCode()                                    {return c.hashCode();}
+
+        @SuppressWarnings("unchecked")
+        private SequencedSet<E> ss() {
+            return (SequencedSet<E>) c;
+        }
+
+        // Even though this wrapper class is serializable, the reversed view is effectively
+        // not serializable because it points to the reversed set view, which usually isn't
+        // serializable.
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
+        public SequencedSet<E> reversed() {
+            return new UnmodifiableSequencedSet<>(ss().reversed());
+        }
     }
 
     /**
@@ -1167,12 +1430,18 @@ public class Collections {
      * The returned sorted set will be serializable if the specified sorted set
      * is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param  <T> the class of the objects in the set
      * @param s the sorted set for which an unmodifiable view is to be
      *        returned.
      * @return an unmodifiable view of the specified sorted set.
      */
-    public static <T> SortedSet<T> unmodifiableSortedSet(SortedSet<T> s) {
+    @SideEffectFree
+    public static <T> @Unmodifiable @PolyNonEmpty SortedSet<T> unmodifiableSortedSet(@MaybeModifiable @PolyNonEmpty SortedSet<T> s) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (s.getClass() == UnmodifiableSortedSet.class) {
+            return s;
+        }
         return new UnmodifiableSortedSet<>(s);
     }
 
@@ -1182,24 +1451,35 @@ public class Collections {
     static class UnmodifiableSortedSet<E>
                              extends UnmodifiableSet<E>
                              implements SortedSet<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -4929149591599911165L;
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
         UnmodifiableSortedSet(SortedSet<E> s) {super(s); ss = s;}
 
-        public Comparator<? super E> comparator() {return ss.comparator();}
+        @Pure
+        public @Nullable Comparator<? super E> comparator() {return ss.comparator();}
 
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> subSet(E fromElement, E toElement) {
             return new UnmodifiableSortedSet<>(ss.subSet(fromElement,toElement));
         }
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> headSet(E toElement) {
             return new UnmodifiableSortedSet<>(ss.headSet(toElement));
         }
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public SortedSet<E> tailSet(E fromElement) {
             return new UnmodifiableSortedSet<>(ss.tailSet(fromElement));
         }
 
+        @Pure
         public E first()                   {return ss.first();}
+        @Pure
         public E last()                    {return ss.last();}
     }
 
@@ -1214,13 +1494,18 @@ public class Collections {
      * The returned navigable set will be serializable if the specified
      * navigable set is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param  <T> the class of the objects in the set
      * @param s the navigable set for which an unmodifiable view is to be
      *        returned
      * @return an unmodifiable view of the specified navigable set
      * @since 1.8
      */
-    public static <T> NavigableSet<T> unmodifiableNavigableSet(NavigableSet<T> s) {
+    @SideEffectFree
+    public static <T> @Unmodifiable @PolyNonEmpty NavigableSet<T> unmodifiableNavigableSet(@MaybeModifiable @PolyNonEmpty NavigableSet<T> s) {
+        if (s.getClass() == UnmodifiableNavigableSet.class) {
+            return s;
+        }
         return new UnmodifiableNavigableSet<>(s);
     }
 
@@ -1234,6 +1519,7 @@ public class Collections {
                              extends UnmodifiableSortedSet<E>
                              implements NavigableSet<E>, Serializable {
 
+        @java.io.Serial
         private static final long serialVersionUID = -6027448201786391929L;
 
         /**
@@ -1244,47 +1530,68 @@ public class Collections {
          */
         private static class EmptyNavigableSet<E> extends UnmodifiableNavigableSet<E>
             implements Serializable {
+            @java.io.Serial
             private static final long serialVersionUID = -6291252904449939134L;
 
+            @SideEffectFree
             public EmptyNavigableSet() {
                 super(new TreeSet<>());
             }
 
+            @java.io.Serial
             private Object readResolve()        { return EMPTY_NAVIGABLE_SET; }
         }
 
-        @SuppressWarnings("rawtypes")
         private static final NavigableSet<?> EMPTY_NAVIGABLE_SET =
                 new EmptyNavigableSet<>();
 
         /**
          * The instance we are protecting.
          */
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
 
         UnmodifiableNavigableSet(NavigableSet<E> s)         {super(s); ns = s;}
 
-        public E lower(E e)                             { return ns.lower(e); }
-        public E floor(E e)                             { return ns.floor(e); }
-        public E ceiling(E e)                         { return ns.ceiling(e); }
-        public E higher(E e)                           { return ns.higher(e); }
-        public E pollFirst()     { throw new UnsupportedOperationException(); }
-        public E pollLast()      { throw new UnsupportedOperationException(); }
+        @Pure
+        public @Nullable E lower(E e)                             { return ns.lower(e); }
+        @Pure
+        public @Nullable E floor(E e)                             { return ns.floor(e); }
+        @Pure
+        public @Nullable E ceiling(E e)                         { return ns.ceiling(e); }
+        @Pure
+        public @Nullable E higher(E e)                           { return ns.higher(e); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollFirst()     { throw new UnsupportedOperationException(); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollLast()      { throw new UnsupportedOperationException(); }
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> descendingSet()
                  { return new UnmodifiableNavigableSet<>(ns.descendingSet()); }
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public Iterator<E> descendingIterator()
                                          { return descendingSet().iterator(); }
 
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> subSet(E fromElement, boolean fromInclusive, E toElement, boolean toInclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.subSet(fromElement, fromInclusive, toElement, toInclusive));
         }
 
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> headSet(E toElement, boolean inclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.headSet(toElement, inclusive));
         }
 
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public NavigableSet<E> tailSet(E fromElement, boolean inclusive) {
             return new UnmodifiableNavigableSet<>(
                 ns.tailSet(fromElement, inclusive));
@@ -1302,11 +1609,18 @@ public class Collections {
      * is serializable. Similarly, the returned list will implement
      * {@link RandomAccess} if the specified list does.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param  <T> the class of the objects in the list
      * @param  list the list for which an unmodifiable view is to be returned.
      * @return an unmodifiable view of the specified list.
      */
-    public static <T> List<T> unmodifiableList(List<? extends T> list) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <T> @Unmodifiable @PolyGrowShrink @PolyNonEmpty List<T> unmodifiableList(@MaybeModifiable @PolyGrowShrink @PolyNonEmpty List<? extends T> list) {
+        if (list.getClass() == UnmodifiableList.class || list.getClass() == UnmodifiableRandomAccessList.class) {
+           return (List<T>) list;
+        }
+
         return (list instanceof RandomAccess ?
                 new UnmodifiableRandomAccessList<>(list) :
                 new UnmodifiableList<>(list));
@@ -1317,8 +1631,10 @@ public class Collections {
      */
     static class UnmodifiableList<E> extends UnmodifiableCollection<E>
                                   implements List<E> {
+        @java.io.Serial
         private static final long serialVersionUID = -283967356065247728L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         final List<? extends E> list;
 
         UnmodifiableList(List<? extends E> list) {
@@ -1326,54 +1642,89 @@ public class Collections {
             this.list = list;
         }
 
-        public boolean equals(Object o) {return o == this || list.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return o == this || list.equals(o);}
+        @Pure
         public int hashCode()           {return list.hashCode();}
 
+        @Pure
         public E get(int index) {return list.get(index);}
+        @EnsuresNonEmpty("this")
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             throw new UnsupportedOperationException();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             throw new UnsupportedOperationException();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             throw new UnsupportedOperationException();
         }
+        @Pure
+        @StaticallyExecutable
         public int indexOf(Object o)            {return list.indexOf(o);}
+        @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o)        {return list.lastIndexOf(o);}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             throw new UnsupportedOperationException();
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             throw new UnsupportedOperationException();
         }
 
-        public ListIterator<E> listIterator()   {return listIterator(0);}
+        public @PolyGrowShrink @PolyNonEmpty ListIterator<E> listIterator(@PolyGrowShrink @PolyNonEmpty UnmodifiableList<E> this)   {return listIterator(0);}
 
+        @SideEffectFree
+        @DoesNotUnrefineReceiver("modifiability")
         public ListIterator<E> listIterator(final int index) {
-            return new ListIterator<E>() {
+            return new ListIterator<>() {
                 private final ListIterator<? extends E> i
                     = list.listIterator(index);
 
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     {return i.hasNext();}
-                public E next()              {return i.next();}
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
+                public E next(/*@NonEmpty ListIterator<E> this*/)              {return i.next();}
+                @Pure
                 public boolean hasPrevious() {return i.hasPrevious();}
+                @SideEffectsOnly("this")
                 public E previous()          {return i.previous();}
+                @Pure
                 public int nextIndex()       {return i.nextIndex();}
+                @Pure
                 public int previousIndex()   {return i.previousIndex();}
 
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     throw new UnsupportedOperationException();
                 }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     throw new UnsupportedOperationException();
                 }
@@ -1401,6 +1752,7 @@ public class Collections {
          * serialized in 1.4.1 and deserialized in 1.4 will become
          * UnmodifiableList instances, as this method was missing in 1.4.
          */
+        @java.io.Serial
         private Object readResolve() {
             return (list instanceof RandomAccess
                     ? new UnmodifiableRandomAccessList<>(list)
@@ -1423,6 +1775,7 @@ public class Collections {
                 list.subList(fromIndex, toIndex));
         }
 
+        @java.io.Serial
         private static final long serialVersionUID = -2542308836966382001L;
 
         /**
@@ -1431,6 +1784,7 @@ public class Collections {
          * a readResolve method that inverts this transformation upon
          * deserialization.
          */
+        @java.io.Serial
         private Object writeReplace() {
             return new UnmodifiableList<>(list);
         }
@@ -1446,12 +1800,19 @@ public class Collections {
      * The returned map will be serializable if the specified map
      * is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param <K> the class of the map keys
      * @param <V> the class of the map values
      * @param  m the map for which an unmodifiable view is to be returned.
      * @return an unmodifiable view of the specified map.
      */
-    public static <K,V> Map<K,V> unmodifiableMap(Map<? extends K, ? extends V> m) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <K,V> @Unmodifiable @PolyNonEmpty Map<K,V> unmodifiableMap(@MaybeModifiable @PolyNonEmpty Map<? extends K, ? extends V> m) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (m.getClass() == UnmodifiableMap.class) {
+            return (Map<K,V>) m;
+        }
         return new UnmodifiableMap<>(m);
     }
 
@@ -1459,9 +1820,11 @@ public class Collections {
      * @serial include
      */
     private static class UnmodifiableMap<K,V> implements Map<K,V>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -1034234728574286014L;
 
-        private final Map<? extends K, ? extends V> m;
+        @SuppressWarnings("serial") // Conditionally serializable
+        final Map<? extends K, ? extends V> m;
 
         UnmodifiableMap(Map<? extends K, ? extends V> m) {
             if (m==null)
@@ -1472,24 +1835,34 @@ public class Collections {
         @Pure
         public @NonNegative int size()                        {return m.size();}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                 {return m.isEmpty();}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(Object key)   {return m.containsKey(key);}
+        public boolean containsKey(@UnknownSignedness Object key)   {return m.containsKey(key);}
         @Pure
-        public boolean containsValue(Object val) {return m.containsValue(val);}
-        public V get(Object key)                 {return m.get(key);}
+        public boolean containsValue(@UnknownSignedness Object val) {return m.containsValue(val);}
+        @Pure
+        public @Nullable V get(Object key)                 {return m.get(key);}
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             throw new UnsupportedOperationException();
         }
-        public V remove(Object key) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V remove(Object key) {
             throw new UnsupportedOperationException();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void putAll(Map<? extends K, ? extends V> m) {
             throw new UnsupportedOperationException();
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             throw new UnsupportedOperationException();
         }
@@ -1517,7 +1890,9 @@ public class Collections {
             return values;
         }
 
-        public boolean equals(Object o) {return o == this || m.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return o == this || m.equals(o);}
+        @Pure
         public int hashCode()           {return m.hashCode();}
         public String toString()        {return m.toString();}
 
@@ -1536,49 +1911,62 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             throw new UnsupportedOperationException();
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean remove(Object key, Object value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V replace(K key, V value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key, Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
@@ -1594,12 +1982,12 @@ public class Collections {
          */
         static class UnmodifiableEntrySet<K,V>
             extends UnmodifiableSet<Map.Entry<K,V>> {
+            @java.io.Serial
             private static final long serialVersionUID = 7854390611657943733L;
 
-            @SuppressWarnings({"unchecked", "rawtypes"})
+            @SuppressWarnings({"unchecked"})
             UnmodifiableEntrySet(Set<? extends Map.Entry<? extends K, ? extends V>> s) {
-                // Need to cast to raw in order to work around a limitation in the type system
-                super((Set)s);
+                super((Set<Map.Entry<K, V>>)s);
             }
 
             static <K, V> Consumer<Map.Entry<? extends K, ? extends V>> entryConsumer(
@@ -1633,7 +2021,7 @@ public class Collections {
                 }
 
                 @Override
-                public Spliterator<Entry<K, V>> trySplit() {
+                public @Nullable Spliterator<Entry<K, V>> trySplit() {
                     Spliterator<Entry<K, V>> split = s.trySplit();
                     return split == null
                            ? null
@@ -1661,7 +2049,7 @@ public class Collections {
                 }
 
                 @Override
-                public Comparator<? super Entry<K, V>> getComparator() {
+                public @Nullable Comparator<? super Entry<K, V>> getComparator() {
                     return s.getComparator();
                 }
             }
@@ -1683,25 +2071,33 @@ public class Collections {
             }
 
             public Iterator<Map.Entry<K,V>> iterator() {
-                return new Iterator<Map.Entry<K,V>>() {
+                return new Iterator<>() {
                     private final Iterator<? extends Map.Entry<? extends K, ? extends V>> i = c.iterator();
 
+                    @Pure
+                    @EnsuresNonEmptyIf(result = true, expression = "this")
                     public boolean hasNext() {
                         return i.hasNext();
                     }
-                    public Map.Entry<K,V> next() {
+                    @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
+                    public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return new UnmodifiableEntry<>(i.next());
                     }
+                    @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
                     public void remove() {
                         throw new UnsupportedOperationException();
                     }
                     public void forEachRemaining(Consumer<? super Map.Entry<K, V>> action) {
+                        Objects.requireNonNull(action);
                         i.forEachRemaining(entryConsumer(action));
                     }
                 };
             }
 
             @SuppressWarnings("unchecked")
+            @SideEffectFree
             public Object[] toArray() {
                 Object[] a = c.toArray();
                 for (int i=0; i<a.length; i++)
@@ -1710,7 +2106,7 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
-            public <T> T[] toArray(T[] a) {
+            public <T> @Nullable T[] toArray(@PolyNull T[] a) {
                 // We don't pass a to c.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
                 // could get his hands on raw (unwrapped) Entries from c.
@@ -1734,7 +2130,9 @@ public class Collections {
              * that the equality-candidate is Map.Entry and calls its
              * setValue method.
              */
-            public boolean contains(Object o) {
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
+            public boolean contains(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
                 return c.contains(
@@ -1746,23 +2144,22 @@ public class Collections {
              * an unscrupulous List whose contains(Object o) method senses
              * when o is a Map.Entry, and calls o.setValue.
              */
-            public boolean containsAll(Collection<?> coll) {
+            @Pure
+            public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
                 for (Object e : coll) {
                     if (!contains(e)) // Invokes safe contains() above
                         return false;
                 }
                 return true;
             }
-            public boolean equals(Object o) {
+            @Pure
+            public boolean equals(@Nullable Object o) {
                 if (o == this)
                     return true;
 
-                if (!(o instanceof Set))
-                    return false;
-                Set<?> s = (Set<?>) o;
-                if (s.size() != c.size())
-                    return false;
-                return containsAll(s); // Invokes safe containsAll() above
+                return o instanceof Set<?> s
+                        && s.size() == c.size()
+                        && containsAll(s); // Invokes safe containsAll() above
             }
 
             /**
@@ -1778,23 +2175,101 @@ public class Collections {
                 UnmodifiableEntry(Map.Entry<? extends K, ? extends V> e)
                         {this.e = Objects.requireNonNull(e);}
 
+                @Pure
                 public K getKey()        {return e.getKey();}
+                @Pure
                 public V getValue()      {return e.getValue();}
                 public V setValue(V value) {
                     throw new UnsupportedOperationException();
                 }
+                @Pure
                 public int hashCode()    {return e.hashCode();}
-                public boolean equals(Object o) {
+                @Pure
+                public boolean equals(@Nullable Object o) {
                     if (this == o)
                         return true;
-                    if (!(o instanceof Map.Entry))
-                        return false;
-                    Map.Entry<?,?> t = (Map.Entry<?,?>)o;
-                    return eq(e.getKey(),   t.getKey()) &&
-                           eq(e.getValue(), t.getValue());
+                    return o instanceof Map.Entry<?, ?> t
+                            && eq(e.getKey(),   t.getKey())
+                            && eq(e.getValue(), t.getValue());
                 }
                 public String toString() {return e.toString();}
             }
+        }
+    }
+
+    /**
+     * Returns an <a href="Collection.html#unmodview">unmodifiable view</a> of the
+     * specified {@code SequencedMap}. Query operations on the returned map
+     * "read through" to the specified map, and attempts to modify the returned
+     * map, whether direct or via its collection views, result in an
+     * {@code UnsupportedOperationException}.<p>
+     *
+     * The returned map will be serializable if the specified map
+     * is serializable.
+     *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
+     * @param <K> the class of the map keys
+     * @param <V> the class of the map values
+     * @param  m the map for which an unmodifiable view is to be returned.
+     * @return an unmodifiable view of the specified map.
+     * @since 21
+     */
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <K,V> @Unmodifiable SequencedMap<K,V> unmodifiableSequencedMap(SequencedMap<? extends K, ? extends V> m) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (m.getClass() == UnmodifiableSequencedMap.class) {
+            return (SequencedMap<K,V>) m;
+        }
+        return new UnmodifiableSequencedMap<>(m);
+    }
+
+    /**
+     * @serial include
+     */
+    private static class UnmodifiableSequencedMap<K,V> extends UnmodifiableMap<K,V> implements SequencedMap<K,V>, Serializable {
+        @java.io.Serial
+        private static final long serialVersionUID = -8171676257373950636L;
+
+        UnmodifiableSequencedMap(Map<? extends K, ? extends V> m) {
+            super(m);
+        }
+
+        @SuppressWarnings("unchecked")
+        private SequencedMap<K, V> sm() {
+            return (SequencedMap<K, V>) m;
+        }
+
+        // Even though this wrapper class is serializable, the reversed view is effectively
+        // not serializable because it points to the reversed map view, which usually isn't
+        // serializable.
+        @SideEffectFree
+        public SequencedMap<K, V> reversed() {
+            return new UnmodifiableSequencedMap<>(sm().reversed());
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollFirstEntry() {
+            throw new UnsupportedOperationException();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollLastEntry() {
+            throw new UnsupportedOperationException();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V putFirst(K k, V v) {
+            throw new UnsupportedOperationException();
+        }
+
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V putLast(K k, V v) {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -1809,13 +2284,20 @@ public class Collections {
      * The returned sorted map will be serializable if the specified sorted map
      * is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param <K> the class of the map keys
      * @param <V> the class of the map values
      * @param m the sorted map for which an unmodifiable view is to be
      *        returned.
      * @return an unmodifiable view of the specified sorted map.
      */
-    public static <K,V> SortedMap<K,V> unmodifiableSortedMap(SortedMap<K, ? extends V> m) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <K,V> @Unmodifiable @PolyNonEmpty SortedMap<K,V> unmodifiableSortedMap(@MaybeModifiable @PolyNonEmpty SortedMap<K, ? extends V> m) {
+        // Not checking for subclasses because of heap pollution and information leakage.
+        if (m.getClass() == UnmodifiableSortedMap.class) {
+            return (SortedMap<K,V>) m;
+        }
         return new UnmodifiableSortedMap<>(m);
     }
 
@@ -1825,12 +2307,15 @@ public class Collections {
     static class UnmodifiableSortedMap<K,V>
           extends UnmodifiableMap<K,V>
           implements SortedMap<K,V>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -8806743815996713206L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K, ? extends V> sm;
 
         UnmodifiableSortedMap(SortedMap<K, ? extends V> m) {super(m); sm = m; }
-        public Comparator<? super K> comparator()   { return sm.comparator(); }
+        @Pure
+        public @Nullable Comparator<? super K> comparator()   { return sm.comparator(); }
         @SideEffectFree
         public SortedMap<K,V> subMap(K fromKey, K toKey)
              { return new UnmodifiableSortedMap<>(sm.subMap(fromKey, toKey)); }
@@ -1840,7 +2325,9 @@ public class Collections {
         @SideEffectFree
         public SortedMap<K,V> tailMap(K fromKey)
                    { return new UnmodifiableSortedMap<>(sm.tailMap(fromKey)); }
+        @Pure
         public K firstKey()                           { return sm.firstKey(); }
+        @Pure
         public K lastKey()                             { return sm.lastKey(); }
     }
 
@@ -1855,6 +2342,7 @@ public class Collections {
      * The returned navigable map will be serializable if the specified
      * navigable map is serializable.
      *
+     * @implNote This method may return its argument if the argument is already unmodifiable.
      * @param <K> the class of the map keys
      * @param <V> the class of the map values
      * @param m the navigable map for which an unmodifiable view is to be
@@ -1862,7 +2350,12 @@ public class Collections {
      * @return an unmodifiable view of the specified navigable map
      * @since 1.8
      */
-    public static <K,V> NavigableMap<K,V> unmodifiableNavigableMap(NavigableMap<K, ? extends V> m) {
+    @SuppressWarnings("unchecked")
+    @SideEffectFree
+    public static <K,V> @Unmodifiable @PolyNonEmpty NavigableMap<K,V> unmodifiableNavigableMap(@MaybeModifiable @PolyNonEmpty NavigableMap<K, ? extends V> m) {
+        if (m.getClass() == UnmodifiableNavigableMap.class) {
+            return (NavigableMap<K,V>) m;
+        }
         return new UnmodifiableNavigableMap<>(m);
     }
 
@@ -1872,10 +2365,11 @@ public class Collections {
     static class UnmodifiableNavigableMap<K,V>
           extends UnmodifiableSortedMap<K,V>
           implements NavigableMap<K,V>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -4858195264774772197L;
 
         /**
-         * A class for the {@link EMPTY_NAVIGABLE_MAP} which needs readResolve
+         * A class for the {@link #EMPTY_NAVIGABLE_MAP} which needs readResolve
          * to preserve singleton property.
          *
          * @param <K> type of keys, if there were any, and of bounds
@@ -1884,6 +2378,7 @@ public class Collections {
         private static class EmptyNavigableMap<K,V> extends UnmodifiableNavigableMap<K,V>
             implements Serializable {
 
+            @java.io.Serial
             private static final long serialVersionUID = -2239321462712562324L;
 
             EmptyNavigableMap()                       { super(new TreeMap<>()); }
@@ -1893,11 +2388,12 @@ public class Collections {
             public NavigableSet<K> navigableKeySet()
                                                 { return emptyNavigableSet(); }
 
+            @java.io.Serial
             private Object readResolve()        { return EMPTY_NAVIGABLE_MAP; }
         }
 
         /**
-         * Singleton for {@link emptyNavigableMap()} which is also immutable.
+         * Singleton for {@link #emptyNavigableMap()} which is also immutable.
          */
         private static final EmptyNavigableMap<?,?> EMPTY_NAVIGABLE_MAP =
             new EmptyNavigableMap<>();
@@ -1905,18 +2401,23 @@ public class Collections {
         /**
          * The instance we wrap and protect.
          */
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K, ? extends V> nm;
 
         UnmodifiableNavigableMap(NavigableMap<K, ? extends V> m)
                                                             {super(m); nm = m;}
 
-        public K lowerKey(K key)                   { return nm.lowerKey(key); }
-        public K floorKey(K key)                   { return nm.floorKey(key); }
-        public K ceilingKey(K key)               { return nm.ceilingKey(key); }
-        public K higherKey(K key)                 { return nm.higherKey(key); }
+        @Pure
+        public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
+        @Pure
+        public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
+        @Pure
+        public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
+        @Pure
+        public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> lowerEntry(K key) {
+        public @Nullable Entry<K, V> lowerEntry(K key) {
             Entry<K,V> lower = (Entry<K, V>) nm.lowerEntry(key);
             return (null != lower)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(lower)
@@ -1924,7 +2425,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> floorEntry(K key) {
+        public @Nullable Entry<K, V> floorEntry(K key) {
             Entry<K,V> floor = (Entry<K, V>) nm.floorEntry(key);
             return (null != floor)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(floor)
@@ -1932,7 +2433,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> ceilingEntry(K key) {
+        public @Nullable Entry<K, V> ceilingEntry(K key) {
             Entry<K,V> ceiling = (Entry<K, V>) nm.ceilingEntry(key);
             return (null != ceiling)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(ceiling)
@@ -1941,7 +2442,7 @@ public class Collections {
 
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> higherEntry(K key) {
+        public @Nullable Entry<K, V> higherEntry(K key) {
             Entry<K,V> higher = (Entry<K, V>) nm.higherEntry(key);
             return (null != higher)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(higher)
@@ -1949,7 +2450,7 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> firstEntry() {
+        public @Nullable Entry<K, V> firstEntry() {
             Entry<K,V> first = (Entry<K, V>) nm.firstEntry();
             return (null != first)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(first)
@@ -1957,16 +2458,20 @@ public class Collections {
         }
 
         @SuppressWarnings("unchecked")
-        public Entry<K, V> lastEntry() {
+        public @Nullable Entry<K, V> lastEntry() {
             Entry<K,V> last = (Entry<K, V>) nm.lastEntry();
             return (null != last)
                 ? new UnmodifiableEntrySet.UnmodifiableEntry<>(last)
                 : null;
         }
 
-        public Entry<K, V> pollFirstEntry()
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollFirstEntry()
                                  { throw new UnsupportedOperationException(); }
-        public Entry<K, V> pollLastEntry()
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollLastEntry()
                                  { throw new UnsupportedOperationException(); }
         @SideEffectFree
         public NavigableMap<K, V> descendingMap()
@@ -2027,11 +2532,11 @@ public class Collections {
      * @param  c the collection to be "wrapped" in a synchronized collection.
      * @return a synchronized view of the specified collection.
      */
-    public static <T> Collection<T> synchronizedCollection(Collection<T> c) {
+    public static <T> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<T> synchronizedCollection(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<T> c) {
         return new SynchronizedCollection<>(c);
     }
 
-    static <T> Collection<T> synchronizedCollection(Collection<T> c, Object mutex) {
+    static <T> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<T> synchronizedCollection(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<T> c, Object mutex) {
         return new SynchronizedCollection<>(c, mutex);
     }
 
@@ -2039,9 +2544,12 @@ public class Collections {
      * @serial include
      */
     static class SynchronizedCollection<E> implements Collection<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 3053995032091335093L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         final Collection<E> c;  // Backing Collection
+        @SuppressWarnings("serial") // Conditionally serializable
         final Object mutex;     // Object on which to synchronize
 
         SynchronizedCollection(Collection<E> c) {
@@ -2059,20 +2567,23 @@ public class Collections {
             synchronized (mutex) {return c.size();}
         }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             synchronized (mutex) {return c.isEmpty();}
         }
-        public boolean contains(Object o) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {
             synchronized (mutex) {return c.contains(o);}
         }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.SynchronizedCollection<@PolyNull E> this) {
+        public @PolyNull @PolySigned Object[] toArray(Collections.SynchronizedCollection<@PolyNull @PolySigned E> this) {
             synchronized (mutex) {return c.toArray();}
         }
-        @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             synchronized (mutex) {return c.toArray(a);}
         }
+        @SideEffectFree
         public <T> T[] toArray(IntFunction<T[]> f) {
             synchronized (mutex) {return c.toArray(f);}
         }
@@ -2082,25 +2593,39 @@ public class Collections {
             return c.iterator(); // Must be manually synched by user!
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        @EnsuresNonEmpty("this")
         public boolean add(E e) {
             synchronized (mutex) {return c.add(e);}
         }
-        public boolean remove(Object o) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object o) {
             synchronized (mutex) {return c.remove(o);}
         }
 
-        public boolean containsAll(Collection<?> coll) {
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.containsAll(coll);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             synchronized (mutex) {return c.addAll(coll);}
         }
-        public boolean removeAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.removeAll(coll);}
         }
-        public boolean retainAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             synchronized (mutex) {return c.retainAll(coll);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             synchronized (mutex) {c.clear();}
         }
@@ -2113,6 +2638,8 @@ public class Collections {
             synchronized (mutex) {c.forEach(consumer);}
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             synchronized (mutex) {return c.removeIf(filter);}
         }
@@ -2129,6 +2656,7 @@ public class Collections {
         public Stream<E> parallelStream() {
             return c.parallelStream(); // Must be manually synched by user!
         }
+        @java.io.Serial
         private void writeObject(ObjectOutputStream s) throws IOException {
             synchronized (mutex) {s.defaultWriteObject();}
         }
@@ -2161,11 +2689,11 @@ public class Collections {
      * @param  s the set to be "wrapped" in a synchronized set.
      * @return a synchronized view of the specified set.
      */
-    public static <T> Set<T> synchronizedSet(Set<T> s) {
+    public static <T> @PolyIteratorPolyMod @PolyModifiable Set<T> synchronizedSet(@PolyIteratorPolyMod @PolyModifiable Set<T> s) {
         return new SynchronizedSet<>(s);
     }
 
-    static <T> Set<T> synchronizedSet(Set<T> s, Object mutex) {
+    static <T> @PolyIteratorPolyMod @PolyModifiable Set<T> synchronizedSet(@PolyIteratorPolyMod @PolyModifiable Set<T> s, Object mutex) {
         return new SynchronizedSet<>(s, mutex);
     }
 
@@ -2175,6 +2703,7 @@ public class Collections {
     static class SynchronizedSet<E>
           extends SynchronizedCollection<E>
           implements Set<E> {
+        @java.io.Serial
         private static final long serialVersionUID = 487447009682186044L;
 
         SynchronizedSet(Set<E> s) {
@@ -2184,11 +2713,13 @@ public class Collections {
             super(s, mutex);
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return c.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return c.hashCode();}
         }
@@ -2233,7 +2764,7 @@ public class Collections {
      * @param  s the sorted set to be "wrapped" in a synchronized sorted set.
      * @return a synchronized view of the specified sorted set.
      */
-    public static <T> SortedSet<T> synchronizedSortedSet(SortedSet<T> s) {
+    public static <T> @PolyModifiable SortedSet<T> synchronizedSortedSet(@PolyModifiable SortedSet<T> s) {
         return new SynchronizedSortedSet<>(s);
     }
 
@@ -2244,8 +2775,10 @@ public class Collections {
         extends SynchronizedSet<E>
         implements SortedSet<E>
     {
+        @java.io.Serial
         private static final long serialVersionUID = 8695801310862127406L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
         SynchronizedSortedSet(SortedSet<E> s) {
@@ -2257,7 +2790,8 @@ public class Collections {
             ss = s;
         }
 
-        public Comparator<? super E> comparator() {
+        @Pure
+        public @Nullable Comparator<? super E> comparator() {
             synchronized (mutex) {return ss.comparator();}
         }
 
@@ -2278,9 +2812,11 @@ public class Collections {
             }
         }
 
+        @Pure
         public E first() {
             synchronized (mutex) {return ss.first();}
         }
+        @Pure
         public E last() {
             synchronized (mutex) {return ss.last();}
         }
@@ -2327,7 +2863,7 @@ public class Collections {
      * @return a synchronized view of the specified navigable set
      * @since 1.8
      */
-    public static <T> NavigableSet<T> synchronizedNavigableSet(NavigableSet<T> s) {
+    public static <T> @PolyModifiable NavigableSet<T> synchronizedNavigableSet(@PolyModifiable NavigableSet<T> s) {
         return new SynchronizedNavigableSet<>(s);
     }
 
@@ -2338,8 +2874,10 @@ public class Collections {
         extends SynchronizedSortedSet<E>
         implements NavigableSet<E>
     {
+        @java.io.Serial
         private static final long serialVersionUID = -5505529816273629798L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
 
         SynchronizedNavigableSet(NavigableSet<E> s) {
@@ -2351,19 +2889,25 @@ public class Collections {
             super(s, mutex);
             ns = s;
         }
-        public E lower(E e)      { synchronized (mutex) {return ns.lower(e);} }
-        public E floor(E e)      { synchronized (mutex) {return ns.floor(e);} }
-        public E ceiling(E e)  { synchronized (mutex) {return ns.ceiling(e);} }
-        public E higher(E e)    { synchronized (mutex) {return ns.higher(e);} }
-        public E pollFirst()  { synchronized (mutex) {return ns.pollFirst();} }
-        public E pollLast()    { synchronized (mutex) {return ns.pollLast();} }
+        public @Nullable E lower(E e)      { synchronized (mutex) {return ns.lower(e);} }
+        public @Nullable E floor(E e)      { synchronized (mutex) {return ns.floor(e);} }
+        public @Nullable E ceiling(E e)  { synchronized (mutex) {return ns.ceiling(e);} }
+        public @Nullable E higher(E e)    { synchronized (mutex) {return ns.higher(e);} }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollFirst()  { synchronized (mutex) {return ns.pollFirst();} }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E pollLast()    { synchronized (mutex) {return ns.pollLast();} }
 
+        @SideEffectFree
         public NavigableSet<E> descendingSet() {
             synchronized (mutex) {
                 return new SynchronizedNavigableSet<>(ns.descendingSet(), mutex);
             }
         }
 
+        @SideEffectFree
         public Iterator<E> descendingIterator()
                  { synchronized (mutex) { return descendingSet().iterator(); } }
 
@@ -2429,13 +2973,13 @@ public class Collections {
      * @param  list the list to be "wrapped" in a synchronized list.
      * @return a synchronized view of the specified list.
      */
-    public static <T> List<T> synchronizedList(List<T> list) {
+    public static <T> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<T> synchronizedList(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<T> list) {
         return (list instanceof RandomAccess ?
                 new SynchronizedRandomAccessList<>(list) :
                 new SynchronizedList<>(list));
     }
 
-    static <T> List<T> synchronizedList(List<T> list, Object mutex) {
+    static <T> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<T> synchronizedList(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<T> list, Object mutex) {
         return (list instanceof RandomAccess ?
                 new SynchronizedRandomAccessList<>(list, mutex) :
                 new SynchronizedList<>(list, mutex));
@@ -2447,8 +2991,10 @@ public class Collections {
     static class SynchronizedList<E>
         extends SynchronizedCollection<E>
         implements List<E> {
+        @java.io.Serial
         private static final long serialVersionUID = -7754090372962971524L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         final List<E> list;
 
         SynchronizedList(List<E> list) {
@@ -2460,35 +3006,51 @@ public class Collections {
             this.list = list;
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return list.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return list.hashCode();}
         }
 
+        @Pure
         public E get(int index) {
             synchronized (mutex) {return list.get(index);}
         }
+        @EnsuresNonEmpty("this")
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             synchronized (mutex) {return list.set(index, element);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             synchronized (mutex) {list.add(index, element);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index) {
             synchronized (mutex) {return list.remove(index);}
         }
 
+        @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             synchronized (mutex) {return list.indexOf(o);}
         }
+        @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             synchronized (mutex) {return list.lastIndexOf(o);}
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             synchronized (mutex) {return list.addAll(index, c);}
         }
@@ -2509,10 +3071,13 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             synchronized (mutex) {list.replaceAll(operator);}
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             synchronized (mutex) {list.sort(c);}
         }
@@ -2529,6 +3094,7 @@ public class Collections {
          * serialized in 1.4.1 and deserialized in 1.4 will become
          * SynchronizedList instances, as this method was missing in 1.4.
          */
+        @java.io.Serial
         private Object readResolve() {
             return (list instanceof RandomAccess
                     ? new SynchronizedRandomAccessList<>(list)
@@ -2558,6 +3124,7 @@ public class Collections {
             }
         }
 
+        @java.io.Serial
         private static final long serialVersionUID = 1530674583602358482L;
 
         /**
@@ -2566,6 +3133,7 @@ public class Collections {
          * a readResolve method that inverts this transformation upon
          * deserialization.
          */
+        @java.io.Serial
         private Object writeReplace() {
             return new SynchronizedList<>(list);
         }
@@ -2601,7 +3169,7 @@ public class Collections {
      * @param  m the map to be "wrapped" in a synchronized map.
      * @return a synchronized view of the specified map.
      */
-    public static <K,V> Map<K,V> synchronizedMap(Map<K,V> m) {
+    public static <K,V> @PolyModifiable Map<K,V> synchronizedMap(@PolyModifiable Map<K,V> m) {
         return new SynchronizedMap<>(m);
     }
 
@@ -2610,9 +3178,12 @@ public class Collections {
      */
     private static class SynchronizedMap<K,V>
         implements Map<K,V>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 1978198479659022715L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final Map<K,V> m;     // Backing Map
+        @SuppressWarnings("serial") // Conditionally serializable
         final Object      mutex;        // Object on which to synchronize
 
         SynchronizedMap(Map<K,V> m) {
@@ -2630,32 +3201,42 @@ public class Collections {
             synchronized (mutex) {return m.size();}
         }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {
             synchronized (mutex) {return m.isEmpty();}
         }
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(Object key) {
+        public boolean containsKey(@UnknownSignedness Object key) {
             synchronized (mutex) {return m.containsKey(key);}
         }
         @Pure
-        public boolean containsValue(Object value) {
+        public boolean containsValue(@UnknownSignedness Object value) {
             synchronized (mutex) {return m.containsValue(value);}
         }
-        public V get(Object key) {
+        @Pure
+        public @Nullable V get(Object key) {
             synchronized (mutex) {return m.get(key);}
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             synchronized (mutex) {return m.put(key, value);}
         }
-        public V remove(Object key) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V remove(Object key) {
             synchronized (mutex) {return m.remove(key);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void putAll(Map<? extends K, ? extends V> map) {
             synchronized (mutex) {m.putAll(map);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear() {
             synchronized (mutex) {m.clear();}
         }
@@ -2664,7 +3245,7 @@ public class Collections {
         private transient Set<Map.Entry<K,V>> entrySet;
         private transient Collection<V> values;
 
-        public Set<K> keySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<K> keySet(@PolyShrinkable SynchronizedMap<K,V> this) {
             synchronized (mutex) {
                 if (keySet==null)
                     keySet = new SynchronizedSet<>(m.keySet(), mutex);
@@ -2673,7 +3254,7 @@ public class Collections {
         }
 
         @SideEffectFree
-        public Set<Map.Entry<K,V>> entrySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<K,V>> entrySet(@PolyModifiable SynchronizedMap<K,V> this) {
             synchronized (mutex) {
                 if (entrySet==null)
                     entrySet = new SynchronizedSet<>(m.entrySet(), mutex);
@@ -2681,7 +3262,7 @@ public class Collections {
             }
         }
 
-        public Collection<V> values() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable SynchronizedMap<K,V> this) {
             synchronized (mutex) {
                 if (values==null)
                     values = new SynchronizedCollection<>(m.values(), mutex);
@@ -2689,11 +3270,13 @@ public class Collections {
             }
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (this == o)
                 return true;
             synchronized (mutex) {return m.equals(o);}
         }
+        @Pure
         public int hashCode() {
             synchronized (mutex) {return m.hashCode();}
         }
@@ -2712,47 +3295,61 @@ public class Collections {
             synchronized (mutex) {m.forEach(action);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             synchronized (mutex) {m.replaceAll(function);}
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             synchronized (mutex) {return m.putIfAbsent(key, value);}
         }
         @Override
-        public boolean remove(Object key, Object value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             synchronized (mutex) {return m.remove(key, value);}
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             synchronized (mutex) {return m.replace(key, oldValue, newValue);}
         }
         @Override
-        public V replace(K key, V value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V replace(K key, V value) {
             synchronized (mutex) {return m.replace(key, value);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             synchronized (mutex) {return m.computeIfAbsent(key, mappingFunction);}
         }
         @Override
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             synchronized (mutex) {return m.computeIfPresent(key, remappingFunction);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.compute(key, remappingFunction);}
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             synchronized (mutex) {return m.merge(key, value, remappingFunction);}
         }
 
+        @java.io.Serial
         private void writeObject(ObjectOutputStream s) throws IOException {
             synchronized (mutex) {s.defaultWriteObject();}
         }
@@ -2803,7 +3400,7 @@ public class Collections {
      * @param  m the sorted map to be "wrapped" in a synchronized sorted map.
      * @return a synchronized view of the specified sorted map.
      */
-    public static <K,V> SortedMap<K,V> synchronizedSortedMap(SortedMap<K,V> m) {
+    public static <K,V> @PolyModifiable SortedMap<K,V> synchronizedSortedMap(@PolyModifiable SortedMap<K,V> m) {
         return new SynchronizedSortedMap<>(m);
     }
 
@@ -2814,8 +3411,10 @@ public class Collections {
         extends SynchronizedMap<K,V>
         implements SortedMap<K,V>
     {
+        @java.io.Serial
         private static final long serialVersionUID = -8798146769416483793L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K,V> sm;
 
         SynchronizedSortedMap(SortedMap<K,V> m) {
@@ -2827,7 +3426,8 @@ public class Collections {
             sm = m;
         }
 
-        public Comparator<? super K> comparator() {
+        @Pure
+        public @Nullable Comparator<? super K> comparator() {
             synchronized (mutex) {return sm.comparator();}
         }
 
@@ -2851,9 +3451,11 @@ public class Collections {
             }
         }
 
+        @Pure
         public K firstKey() {
             synchronized (mutex) {return sm.firstKey();}
         }
+        @Pure
         public K lastKey() {
             synchronized (mutex) {return sm.lastKey();}
         }
@@ -2889,7 +3491,7 @@ public class Collections {
      *  Set s2 = m2.keySet();  // Needn't be in synchronized block
      *      ...
      *  synchronized (m) {  // Synchronizing on m, not m2 or s2!
-     *      Iterator i = s.iterator(); // Must be in synchronized block
+     *      Iterator i = s2.iterator(); // Must be in synchronized block
      *      while (i.hasNext())
      *          foo(i.next());
      *  }
@@ -2906,7 +3508,7 @@ public class Collections {
      * @return a synchronized view of the specified navigable map.
      * @since 1.8
      */
-    public static <K,V> NavigableMap<K,V> synchronizedNavigableMap(NavigableMap<K,V> m) {
+    public static <K,V> @PolyModifiable NavigableMap<K,V> synchronizedNavigableMap(@PolyModifiable NavigableMap<K,V> m) {
         return new SynchronizedNavigableMap<>(m);
     }
 
@@ -2919,8 +3521,10 @@ public class Collections {
         extends SynchronizedSortedMap<K,V>
         implements NavigableMap<K,V>
     {
+        @java.io.Serial
         private static final long serialVersionUID = 699392247599746807L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K,V> nm;
 
         SynchronizedNavigableMap(NavigableMap<K,V> m) {
@@ -2932,29 +3536,37 @@ public class Collections {
             nm = m;
         }
 
-        public Entry<K, V> lowerEntry(K key)
+        public @Nullable Entry<K, V> lowerEntry(K key)
                         { synchronized (mutex) { return nm.lowerEntry(key); } }
-        public K lowerKey(K key)
+        @Pure
+        public @Nullable K lowerKey(K key)
                           { synchronized (mutex) { return nm.lowerKey(key); } }
-        public Entry<K, V> floorEntry(K key)
+        public @Nullable Entry<K, V> floorEntry(K key)
                         { synchronized (mutex) { return nm.floorEntry(key); } }
-        public K floorKey(K key)
+        @Pure
+        public @Nullable K floorKey(K key)
                           { synchronized (mutex) { return nm.floorKey(key); } }
-        public Entry<K, V> ceilingEntry(K key)
+        public @Nullable Entry<K, V> ceilingEntry(K key)
                       { synchronized (mutex) { return nm.ceilingEntry(key); } }
-        public K ceilingKey(K key)
+        @Pure
+        public @Nullable K ceilingKey(K key)
                         { synchronized (mutex) { return nm.ceilingKey(key); } }
-        public Entry<K, V> higherEntry(K key)
+        public @Nullable Entry<K, V> higherEntry(K key)
                        { synchronized (mutex) { return nm.higherEntry(key); } }
-        public K higherKey(K key)
+        @Pure
+        public @Nullable K higherKey(K key)
                          { synchronized (mutex) { return nm.higherKey(key); } }
-        public Entry<K, V> firstEntry()
+        public @Nullable Entry<K, V> firstEntry()
                            { synchronized (mutex) { return nm.firstEntry(); } }
-        public Entry<K, V> lastEntry()
+        public @Nullable Entry<K, V> lastEntry()
                             { synchronized (mutex) { return nm.lastEntry(); } }
-        public Entry<K, V> pollFirstEntry()
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollFirstEntry()
                        { synchronized (mutex) { return nm.pollFirstEntry(); } }
-        public Entry<K, V> pollLastEntry()
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollLastEntry()
                         { synchronized (mutex) { return nm.pollLastEntry(); } }
 
         @SideEffectFree
@@ -2965,19 +3577,19 @@ public class Collections {
             }
         }
 
-        public NavigableSet<K> keySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> keySet(@PolyShrinkable SynchronizedNavigableMap<K,V> this) {
             return navigableKeySet();
         }
 
         @SideEffectFree
-        public NavigableSet<K> navigableKeySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> navigableKeySet(@PolyShrinkable SynchronizedNavigableMap<K,V> this) {
             synchronized (mutex) {
                 return new SynchronizedNavigableSet<>(nm.navigableKeySet(), mutex);
             }
         }
 
         @SideEffectFree
-        public NavigableSet<K> descendingKeySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> descendingKeySet(@PolyShrinkable SynchronizedNavigableMap<K,V> this) {
             synchronized (mutex) {
                 return new SynchronizedNavigableSet<>(nm.descendingKeySet(), mutex);
             }
@@ -3092,7 +3704,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified collection
      * @since 1.5
      */
-    public static <E> Collection<E> checkedCollection(Collection<E> c,
+    public static <E> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<E> checkedCollection(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty Collection<E> c,
                                                       Class<E> type) {
         return new CheckedCollection<>(c, type);
     }
@@ -3106,9 +3718,12 @@ public class Collections {
      * @serial include
      */
     static class CheckedCollection<E> implements Collection<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 1578914078182001775L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         final Collection<E> c;
+        @SuppressWarnings("serial") // Conditionally serializable
         final Class<E> type;
 
         @SuppressWarnings("unchecked")
@@ -3131,24 +3746,36 @@ public class Collections {
         @Pure
         public @NonNegative int size()                          { return c.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   { return c.isEmpty(); }
-        public boolean contains(Object o)          { return c.contains(o); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o)          { return c.contains(o); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.CheckedCollection<@PolyNull E> this)                  { return c.toArray(); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.CheckedCollection<@PolyNull @PolySigned E> this)                  { return c.toArray(); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)              { return c.toArray(a); }
         @SideEffectFree
-        public <T> T[] toArray(T[] a)              { return c.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f) { return c.toArray(f); }
         public String toString()                   { return c.toString(); }
-        public boolean remove(Object o)            { return c.remove(o); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object o)            { return c.remove(o); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear()                        {        c.clear(); }
 
-        public boolean containsAll(Collection<?> coll) {
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.containsAll(coll);
         }
-        public boolean removeAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.removeAll(coll);
         }
-        public boolean retainAll(Collection<?> coll) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> coll) {
             return c.retainAll(coll);
         }
 
@@ -3157,9 +3784,15 @@ public class Collections {
             // JDK-6363904 - unwrapped iterator could be typecast to
             // ListIterator with unsafe set()
             final Iterator<E> it = c.iterator();
-            return new Iterator<E>() {
+            return new Iterator<>() {
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext() { return it.hasNext(); }
-                public E next()          { return it.next(); }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
+                public E next(/*@NonEmpty Iterator<E> this*/)          { return it.next(); }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove()     {        it.remove(); }
                 public void forEachRemaining(Consumer<? super E> action) {
                     it.forEachRemaining(action);
@@ -3167,8 +3800,12 @@ public class Collections {
             };
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        @EnsuresNonEmpty("this")
         public boolean add(E e)          { return c.add(typeCheck(e)); }
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private E[] zeroLengthElementArray; // Lazily initialized
 
         private E[] zeroLengthElementArray() {
@@ -3199,6 +3836,8 @@ public class Collections {
             return (Collection<E>) Arrays.asList(a);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(Collection<? extends E> coll) {
             // Doing things this way insulates us from concurrent changes
             // in the contents of coll and provides all-or-nothing
@@ -3211,6 +3850,8 @@ public class Collections {
         @Override
         public void forEach(Consumer<? super E> action) {c.forEach(action);}
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             return c.removeIf(filter);
         }
@@ -3250,7 +3891,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified queue
      * @since 1.8
      */
-    public static <E> Queue<E> checkedQueue(Queue<E> queue, Class<E> type) {
+    public static <E> @PolyGrowShrink @PolyModifiable @PolyNonEmpty Queue<E> checkedQueue(@PolyGrowShrink @PolyModifiable @PolyNonEmpty Queue<E> queue, Class<E> type) {
         return new CheckedQueue<>(queue, type);
     }
 
@@ -3261,7 +3902,9 @@ public class Collections {
         extends CheckedCollection<E>
         implements Queue<E>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 1433151992604707767L;
+        @SuppressWarnings("serial") // Conditionally serializable
         final Queue<E> queue;
 
         CheckedQueue(Queue<E> queue, Class<E> elementType) {
@@ -3269,12 +3912,22 @@ public class Collections {
             this.queue = queue;
         }
 
+        @Pure
         public E element()              {return queue.element();}
-        public boolean equals(Object o) {return o == this || c.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return o == this || c.equals(o);}
+        @Pure
         public int hashCode()           {return c.hashCode();}
-        public E peek()                 {return queue.peek();}
-        public E poll()                 {return queue.poll();}
+        @Pure
+        public @Nullable E peek()                 {return queue.peek();}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable E poll()                 {return queue.poll();}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove()               {return queue.remove();}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean offer(E e)       {return queue.offer(typeCheck(e));}
     }
 
@@ -3305,7 +3958,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified set
      * @since 1.5
      */
-    public static <E> Set<E> checkedSet(Set<E> s, Class<E> type) {
+    public static <E> @PolyIteratorPolyMod @PolyModifiable Set<E> checkedSet(@PolyIteratorPolyMod @PolyModifiable Set<E> s, Class<E> type) {
         return new CheckedSet<>(s, type);
     }
 
@@ -3315,11 +3968,14 @@ public class Collections {
     static class CheckedSet<E> extends CheckedCollection<E>
                                  implements Set<E>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 4694047833775013803L;
 
         CheckedSet(Set<E> s, Class<E> elementType) { super(s, elementType); }
 
-        public boolean equals(Object o) { return o == this || c.equals(o); }
+        @Pure
+        public boolean equals(@Nullable Object o) { return o == this || c.equals(o); }
+        @Pure
         public int hashCode()           { return c.hashCode(); }
     }
 
@@ -3351,7 +4007,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified sorted set
      * @since 1.5
      */
-    public static <E> SortedSet<E> checkedSortedSet(SortedSet<E> s,
+    public static <E> @PolyModifiable SortedSet<E> checkedSortedSet(@PolyModifiable SortedSet<E> s,
                                                     Class<E> type) {
         return new CheckedSortedSet<>(s, type);
     }
@@ -3362,8 +4018,10 @@ public class Collections {
     static class CheckedSortedSet<E> extends CheckedSet<E>
         implements SortedSet<E>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 1599911165492914959L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedSet<E> ss;
 
         CheckedSortedSet(SortedSet<E> s, Class<E> type) {
@@ -3371,8 +4029,11 @@ public class Collections {
             ss = s;
         }
 
-        public Comparator<? super E> comparator() { return ss.comparator(); }
+        @Pure
+        public @Nullable Comparator<? super E> comparator() { return ss.comparator(); }
+        @Pure
         public E first()                   { return ss.first(); }
+        @Pure
         public E last()                    { return ss.last(); }
 
         public SortedSet<E> subSet(E fromElement, E toElement) {
@@ -3386,7 +4047,7 @@ public class Collections {
         }
     }
 
-/**
+    /**
      * Returns a dynamically typesafe view of the specified navigable set.
      * Any attempt to insert an element of the wrong type will result in an
      * immediate {@link ClassCastException}.  Assuming a navigable set
@@ -3414,7 +4075,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified navigable set
      * @since 1.8
      */
-    public static <E> NavigableSet<E> checkedNavigableSet(NavigableSet<E> s,
+    public static <E> @PolyModifiable NavigableSet<E> checkedNavigableSet(@PolyModifiable NavigableSet<E> s,
                                                     Class<E> type) {
         return new CheckedNavigableSet<>(s, type);
     }
@@ -3425,8 +4086,10 @@ public class Collections {
     static class CheckedNavigableSet<E> extends CheckedSortedSet<E>
         implements NavigableSet<E>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = -5429120189805438922L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableSet<E> ns;
 
         CheckedNavigableSet(NavigableSet<E> s, Class<E> type) {
@@ -3434,14 +4097,20 @@ public class Collections {
             ns = s;
         }
 
-        public E lower(E e)                             { return ns.lower(e); }
-        public E floor(E e)                             { return ns.floor(e); }
-        public E ceiling(E e)                         { return ns.ceiling(e); }
-        public E higher(E e)                           { return ns.higher(e); }
-        public E pollFirst()                         { return ns.pollFirst(); }
-        public E pollLast()                            {return ns.pollLast(); }
+        @Pure
+        public @Nullable E lower(E e)                             { return ns.lower(e); }
+        @Pure
+        public @Nullable E floor(E e)                             { return ns.floor(e); }
+        @Pure
+        public @Nullable E ceiling(E e)                         { return ns.ceiling(e); }
+        @Pure
+        public @Nullable E higher(E e)                           { return ns.higher(e); }
+        public @Nullable E pollFirst()                         { return ns.pollFirst(); }
+        public @Nullable E pollLast()                            {return ns.pollLast(); }
+        @SideEffectFree
         public NavigableSet<E> descendingSet()
                       { return checkedNavigableSet(ns.descendingSet(), type); }
+        @SideEffectFree
         public Iterator<E> descendingIterator()
             {return checkedNavigableSet(ns.descendingSet(), type).iterator(); }
 
@@ -3495,7 +4164,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified list
      * @since 1.5
      */
-    public static <E> List<E> checkedList(List<E> list, Class<E> type) {
+    public static <E> @PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<E> checkedList(@PolyGrowShrink @PolyIteratorPolyMod @PolyModifiable @PolyNonEmpty List<E> list, Class<E> type) {
         return (list instanceof RandomAccess ?
                 new CheckedRandomAccessList<>(list, type) :
                 new CheckedList<>(list, type));
@@ -3508,7 +4177,9 @@ public class Collections {
         extends CheckedCollection<E>
         implements List<E>
     {
+        @java.io.Serial
         private static final long serialVersionUID = 65247728283967356L;
+        @SuppressWarnings("serial") // Conditionally serializable
         final List<E> list;
 
         CheckedList(List<E> list, Class<E> type) {
@@ -3516,21 +4187,38 @@ public class Collections {
             this.list = list;
         }
 
-        public boolean equals(Object o)  { return o == this || list.equals(o); }
+        @Pure
+        public boolean equals(@Nullable Object o)  { return o == this || list.equals(o); }
+        @Pure
         public int hashCode()            { return list.hashCode(); }
+        @Pure
+        @StaticallyExecutable
         public E get(int index)          { return list.get(index); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E remove(int index)       { return list.remove(index); }
+        @Pure
+        @StaticallyExecutable
         public int indexOf(Object o)     { return list.indexOf(o); }
+        @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) { return list.lastIndexOf(o); }
 
+        @EnsuresNonEmpty("this")
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public E set(int index, E element) {
             return list.set(index, typeCheck(element));
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(int index, E element) {
             list.add(index, typeCheck(element));
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean addAll(int index, Collection<? extends E> c) {
             return list.addAll(index, checkedCopyOf(c));
         }
@@ -3539,19 +4227,32 @@ public class Collections {
         public ListIterator<E> listIterator(final int index) {
             final ListIterator<E> i = list.listIterator(index);
 
-            return new ListIterator<E>() {
+            return new ListIterator<>() {
+                @Pure
+                @EnsuresNonEmptyIf(result = true, expression = "this")
                 public boolean hasNext()     { return i.hasNext(); }
-                public E next()              { return i.next(); }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
+                public E next(/*@NonEmpty ListIterator<E> this*/)              { return i.next(); }
+                @Pure
                 public boolean hasPrevious() { return i.hasPrevious(); }
                 public E previous()          { return i.previous(); }
+                @Pure
                 public int nextIndex()       { return i.nextIndex(); }
+                @Pure
                 public int previousIndex()   { return i.previousIndex(); }
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void remove()         {        i.remove(); }
 
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void set(E e) {
                     i.set(typeCheck(e));
                 }
 
+                @SideEffectsOnly("this")
+                @DoesNotUnrefineReceiver("modifiability")
                 public void add(E e) {
                     i.add(typeCheck(e));
                 }
@@ -3576,12 +4277,15 @@ public class Collections {
          *         already been replaced.
          */
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             Objects.requireNonNull(operator);
             list.replaceAll(e -> typeCheck(operator.apply(e)));
         }
 
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void sort(Comparator<? super E> c) {
             list.sort(c);
         }
@@ -3593,6 +4297,7 @@ public class Collections {
     static class CheckedRandomAccessList<E> extends CheckedList<E>
                                             implements RandomAccess
     {
+        @java.io.Serial
         private static final long serialVersionUID = 1638200125423088369L;
 
         CheckedRandomAccessList(List<E> list, Class<E> type) {
@@ -3641,7 +4346,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified map
      * @since 1.5
      */
-    public static <K, V> Map<K, V> checkedMap(Map<K, V> m,
+    public static <K, V> @PolyModifiable Map<K, V> checkedMap(@PolyModifiable Map<K, V> m,
                                               Class<K> keyType,
                                               Class<V> valueType) {
         return new CheckedMap<>(m, keyType, valueType);
@@ -3654,10 +4359,14 @@ public class Collections {
     private static class CheckedMap<K,V>
         implements Map<K,V>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 5742860141034234728L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final Map<K, V> m;
+        @SuppressWarnings("serial") // Conditionally serializable
         final Class<K> keyType;
+        @SuppressWarnings("serial") // Conditionally serializable
         final Class<V> valueType;
 
         private void typeCheck(Object key, Object value) {
@@ -3697,27 +4406,39 @@ public class Collections {
         @Pure
         public @NonNegative int size()                      { return m.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()               { return m.isEmpty(); }
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(Object key) { return m.containsKey(key); }
+        public boolean containsKey(@UnknownSignedness Object key) { return m.containsKey(key); }
         @Pure
-        public boolean containsValue(Object v) { return m.containsValue(v); }
-        public V get(Object key)               { return m.get(key); }
-        public V remove(Object key)            { return m.remove(key); }
+        public boolean containsValue(@UnknownSignedness Object v) { return m.containsValue(v); }
+        @Pure
+        public @Nullable V get(Object key)               { return m.get(key); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V remove(Object key)            { return m.remove(key); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void clear()                    { m.clear(); }
-        public Set<K> keySet()                 { return m.keySet(); }
-        public Collection<V> values()          { return m.values(); }
-        public boolean equals(Object o)        { return o == this || m.equals(o); }
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<K> keySet(@PolyShrinkable CheckedMap<K,V> this)                 { return m.keySet(); }
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Collection<V> values(@PolyShrinkable CheckedMap<K,V> this)          { return m.values(); }
+        @Pure
+        public boolean equals(@Nullable Object o)        { return o == this || m.equals(o); }
+        @Pure
         public int hashCode()                  { return m.hashCode(); }
         public String toString()               { return m.toString(); }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             typeCheck(key, value);
             return m.put(key, value);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @SuppressWarnings("unchecked")
         public void putAll(Map<? extends K, ? extends V> t) {
             // Satisfy the following goals:
@@ -3742,7 +4463,7 @@ public class Collections {
         private transient Set<Map.Entry<K,V>> entrySet;
 
         @SideEffectFree
-        public Set<Map.Entry<K,V>> entrySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable Set<Map.@PolyModifiable Entry<K,V>> entrySet(@PolyModifiable CheckedMap<K,V> this) {
             if (entrySet==null)
                 entrySet = new CheckedEntrySet<>(m.entrySet(), valueType);
             return entrySet;
@@ -3755,35 +4476,45 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             m.replaceAll(typeCheck(function));
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             typeCheck(key, value);
             return m.putIfAbsent(key, value);
         }
 
         @Override
-        public boolean remove(Object key, Object value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             return m.remove(key, value);
         }
 
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             typeCheck(key, newValue);
             return m.replace(key, oldValue, newValue);
         }
 
         @Override
-        public V replace(K key, V value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V replace(K key, V value) {
             typeCheck(key, value);
             return m.replace(key, value);
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             Objects.requireNonNull(mappingFunction);
@@ -3795,18 +4526,20 @@ public class Collections {
         }
 
         @Override
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             return m.computeIfPresent(key, typeCheck(remappingFunction));
         }
 
         @Override
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             return m.compute(key, typeCheck(remappingFunction));
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             Objects.requireNonNull(remappingFunction);
@@ -3837,14 +4570,24 @@ public class Collections {
             @Pure
             public int size()        { return s.size(); }
             @Pure
+            @EnsuresNonEmptyIf(result = false, expression = "this")
             public boolean isEmpty() { return s.isEmpty(); }
+            @SideEffectFree
             public String toString() { return s.toString(); }
+            @Pure
             public int hashCode()    { return s.hashCode(); }
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public void clear()      {        s.clear(); }
 
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            @EnsuresNonEmpty("this")
             public boolean add(Map.Entry<K, V> e) {
                 throw new UnsupportedOperationException();
             }
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public boolean addAll(Collection<? extends Map.Entry<K, V>> coll) {
                 throw new UnsupportedOperationException();
             }
@@ -3852,15 +4595,22 @@ public class Collections {
             public Iterator<Map.Entry<K,V>> iterator() {
                 final Iterator<Map.Entry<K, V>> i = s.iterator();
 
-                return new Iterator<Map.Entry<K,V>>() {
+                return new Iterator<>() {
+                    @Pure
+                    @EnsuresNonEmptyIf(result = true, expression = "this")
                     public boolean hasNext() { return i.hasNext(); }
+                    @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
                     public void remove()     { i.remove(); }
 
-                    public Map.Entry<K,V> next() {
+                    @SideEffectsOnly("this")
+                    @DoesNotUnrefineReceiver("modifiability")
+                    public Map.Entry<K,V> next(/*@NonEmpty Iterator<Map.Entry<K,V>> this*/) {
                         return checkedEntry(i.next(), valueType);
                     }
 
                     public void forEachRemaining(Consumer<? super Entry<K, V>> action) {
+                        Objects.requireNonNull(action);
                         i.forEachRemaining(
                             e -> action.accept(checkedEntry(e, valueType)));
                     }
@@ -3868,6 +4618,7 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
+            @SideEffectFree
             public Object[] toArray() {
                 Object[] source = s.toArray();
 
@@ -3886,7 +4637,7 @@ public class Collections {
             }
 
             @SuppressWarnings("unchecked")
-            public <T> T[] toArray(T[] a) {
+            public <T> @Nullable T[] toArray(@PolyNull T[] a) {
                 // We don't pass a to s.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
                 // could get his hands on raw (unwrapped) Entries from s.
@@ -3910,12 +4661,11 @@ public class Collections {
              * that the equality-candidate is Map.Entry and calls its
              * setValue method.
              */
-            public boolean contains(Object o) {
-                if (!(o instanceof Map.Entry))
-                    return false;
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-                return s.contains(
-                    (e instanceof CheckedEntry) ? e : checkedEntry(e, valueType));
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
+            public boolean contains(@UnknownSignedness Object o) {
+                return o instanceof Map.Entry<?, ?> e
+                        && s.contains((e instanceof CheckedEntry) ? e : checkedEntry(e, valueType));
             }
 
             /**
@@ -3923,24 +4673,31 @@ public class Collections {
              * against an unscrupulous collection whose contains(Object o)
              * method senses when o is a Map.Entry, and calls o.setValue.
              */
-            public boolean containsAll(Collection<?> c) {
+            @Pure
+            public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {
                 for (Object o : c)
                     if (!contains(o)) // Invokes safe contains() above
                         return false;
                 return true;
             }
 
-            public boolean remove(Object o) {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public boolean remove(@UnknownSignedness Object o) {
                 if (!(o instanceof Map.Entry))
                     return false;
                 return s.remove(new AbstractMap.SimpleImmutableEntry
                                 <>((Map.Entry<?,?>)o));
             }
 
-            public boolean removeAll(Collection<?> c) {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public boolean removeAll(Collection<? extends @UnknownSignedness Object> c) {
                 return batchRemove(c, false);
             }
-            public boolean retainAll(Collection<?> c) {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public boolean retainAll(Collection<? extends @UnknownSignedness Object> c) {
                 return batchRemove(c, true);
             }
             private boolean batchRemove(Collection<?> c, boolean complement) {
@@ -3956,14 +4713,13 @@ public class Collections {
                 return modified;
             }
 
-            public boolean equals(Object o) {
+            @Pure
+            public boolean equals(@Nullable Object o) {
                 if (o == this)
                     return true;
-                if (!(o instanceof Set))
-                    return false;
-                Set<?> that = (Set<?>) o;
-                return that.size() == s.size()
-                    && containsAll(that); // Invokes safe containsAll() above
+                return o instanceof Set<?> that
+                        && that.size() == s.size()
+                        && containsAll(that); // Invokes safe containsAll() above
             }
 
             static <K,V,T> CheckedEntry<K,V,T> checkedEntry(Map.Entry<K,V> e,
@@ -3987,8 +4743,11 @@ public class Collections {
                     this.valueType = Objects.requireNonNull(valueType);
                 }
 
+                @Pure
                 public K getKey()        { return e.getKey(); }
+                @Pure
                 public V getValue()      { return e.getValue(); }
+                @Pure
                 public int hashCode()    { return e.hashCode(); }
                 public String toString() { return e.toString(); }
 
@@ -4003,7 +4762,8 @@ public class Collections {
                         " value into map with value type " + valueType;
                 }
 
-                public boolean equals(Object o) {
+                @Pure
+                public boolean equals(@Nullable Object o) {
                     if (o == this)
                         return true;
                     if (!(o instanceof Map.Entry))
@@ -4051,7 +4811,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified map
      * @since 1.5
      */
-    public static <K,V> SortedMap<K,V> checkedSortedMap(SortedMap<K, V> m,
+    public static <K,V> @PolyModifiable SortedMap<K,V> checkedSortedMap(@PolyModifiable SortedMap<K, V> m,
                                                         Class<K> keyType,
                                                         Class<V> valueType) {
         return new CheckedSortedMap<>(m, keyType, valueType);
@@ -4063,8 +4823,10 @@ public class Collections {
     static class CheckedSortedMap<K,V> extends CheckedMap<K,V>
         implements SortedMap<K,V>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 1599671320688067438L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final SortedMap<K, V> sm;
 
         CheckedSortedMap(SortedMap<K, V> m,
@@ -4073,8 +4835,11 @@ public class Collections {
             sm = m;
         }
 
-        public Comparator<? super K> comparator() { return sm.comparator(); }
+        @Pure
+        public @Nullable Comparator<? super K> comparator() { return sm.comparator(); }
+        @Pure
         public K firstKey()                       { return sm.firstKey(); }
+        @Pure
         public K lastKey()                        { return sm.lastKey(); }
 
         @SideEffectFree
@@ -4128,7 +4893,7 @@ public class Collections {
      * @return a dynamically typesafe view of the specified map
      * @since 1.8
      */
-    public static <K,V> NavigableMap<K,V> checkedNavigableMap(NavigableMap<K, V> m,
+    public static <K,V> @PolyModifiable NavigableMap<K,V> checkedNavigableMap(@PolyModifiable NavigableMap<K, V> m,
                                                         Class<K> keyType,
                                                         Class<V> valueType) {
         return new CheckedNavigableMap<>(m, keyType, valueType);
@@ -4140,8 +4905,10 @@ public class Collections {
     static class CheckedNavigableMap<K,V> extends CheckedSortedMap<K,V>
         implements NavigableMap<K,V>, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = -4852462692372534096L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final NavigableMap<K, V> nm;
 
         CheckedNavigableMap(NavigableMap<K, V> m,
@@ -4150,68 +4917,79 @@ public class Collections {
             nm = m;
         }
 
-        public Comparator<? super K> comparator()   { return nm.comparator(); }
+        @Pure
+        public @Nullable Comparator<? super K> comparator()   { return nm.comparator(); }
+        @Pure
         public K firstKey()                           { return nm.firstKey(); }
+        @Pure
         public K lastKey()                             { return nm.lastKey(); }
 
-        public Entry<K, V> lowerEntry(K key) {
+        public @Nullable Entry<K, V> lowerEntry(K key) {
             Entry<K,V> lower = nm.lowerEntry(key);
             return (null != lower)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(lower, valueType)
                 : null;
         }
 
-        public K lowerKey(K key)                   { return nm.lowerKey(key); }
+        @Pure
+        public @Nullable K lowerKey(K key)                   { return nm.lowerKey(key); }
 
-        public Entry<K, V> floorEntry(K key) {
+        public @Nullable Entry<K, V> floorEntry(K key) {
             Entry<K,V> floor = nm.floorEntry(key);
             return (null != floor)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(floor, valueType)
                 : null;
         }
 
-        public K floorKey(K key)                   { return nm.floorKey(key); }
+        @Pure
+        public @Nullable K floorKey(K key)                   { return nm.floorKey(key); }
 
-        public Entry<K, V> ceilingEntry(K key) {
+        public @Nullable Entry<K, V> ceilingEntry(K key) {
             Entry<K,V> ceiling = nm.ceilingEntry(key);
             return (null != ceiling)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(ceiling, valueType)
                 : null;
         }
 
-        public K ceilingKey(K key)               { return nm.ceilingKey(key); }
+        @Pure
+        public @Nullable K ceilingKey(K key)               { return nm.ceilingKey(key); }
 
-        public Entry<K, V> higherEntry(K key) {
+        public @Nullable Entry<K, V> higherEntry(K key) {
             Entry<K,V> higher = nm.higherEntry(key);
             return (null != higher)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(higher, valueType)
                 : null;
         }
 
-        public K higherKey(K key)                 { return nm.higherKey(key); }
+        @Pure
+        public @Nullable K higherKey(K key)                 { return nm.higherKey(key); }
 
-        public Entry<K, V> firstEntry() {
+        public @Nullable Entry<K, V> firstEntry() {
             Entry<K,V> first = nm.firstEntry();
             return (null != first)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(first, valueType)
                 : null;
         }
 
-        public Entry<K, V> lastEntry() {
+        public @Nullable Entry<K, V> lastEntry() {
             Entry<K,V> last = nm.lastEntry();
             return (null != last)
                 ? new CheckedMap.CheckedEntrySet.CheckedEntry<>(last, valueType)
                 : null;
         }
 
-        public Entry<K, V> pollFirstEntry() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollFirstEntry() {
             Entry<K,V> entry = nm.pollFirstEntry();
             return (null == entry)
                 ? null
                 : new CheckedMap.CheckedEntrySet.CheckedEntry<>(entry, valueType);
         }
 
-        public Entry<K, V> pollLastEntry() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable Entry<K, V> pollLastEntry() {
             Entry<K,V> entry = nm.pollLastEntry();
             return (null == entry)
                 ? null
@@ -4223,17 +5001,17 @@ public class Collections {
             return checkedNavigableMap(nm.descendingMap(), keyType, valueType);
         }
 
-        public NavigableSet<K> keySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> keySet(@PolyShrinkable CheckedNavigableMap<K,V> this) {
             return navigableKeySet();
         }
 
         @SideEffectFree
-        public NavigableSet<K> navigableKeySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> navigableKeySet(@PolyShrinkable CheckedNavigableMap<K,V> this) {
             return checkedNavigableSet(nm.navigableKeySet(), keyType);
         }
 
         @SideEffectFree
-        public NavigableSet<K> descendingKeySet() {
+        public @IteratorPolyMod @PolyShrinkable @Ungrowable NavigableSet<K> descendingKeySet(@PolyShrinkable CheckedNavigableMap<K,V> this) {
             return checkedNavigableSet(nm.descendingKeySet(), keyType);
         }
 
@@ -4294,7 +5072,8 @@ public class Collections {
      * @since 1.7
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> emptyIterator() {
+    @SideEffectFree
+    public static <T> @Unmodifiable Iterator<T> emptyIterator() {
         return (Iterator<T>) EmptyIterator.EMPTY_ITERATOR;
     }
 
@@ -4302,9 +5081,15 @@ public class Collections {
         static final EmptyIterator<Object> EMPTY_ITERATOR
             = new EmptyIterator<>();
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() { return false; }
-        public E next() { throw new NoSuchElementException(); }
-        public void remove() { throw new IllegalStateException(); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public E next(@NonEmpty EmptyIterator<E> this) { throw new NoSuchElementException(); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public void remove(@NonEmpty EmptyIterator<E> this) { throw new IllegalStateException(); }
         @Override
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
@@ -4338,7 +5123,8 @@ public class Collections {
      * @since 1.7
      */
     @SuppressWarnings("unchecked")
-    public static <T> ListIterator<T> emptyListIterator() {
+    @SideEffectFree
+    public static <T> @Unmodifiable ListIterator<T> emptyListIterator() {
         return (ListIterator<T>) EmptyListIterator.EMPTY_ITERATOR;
     }
 
@@ -4349,11 +5135,18 @@ public class Collections {
         static final EmptyListIterator<Object> EMPTY_ITERATOR
             = new EmptyListIterator<>();
 
+        @Pure
         public boolean hasPrevious() { return false; }
         public E previous() { throw new NoSuchElementException(); }
+        @Pure
         public int nextIndex()     { return 0; }
+        @Pure
         public int previousIndex() { return -1; }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void set(E e) { throw new IllegalStateException(); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public void add(E e) { throw new UnsupportedOperationException(); }
     }
 
@@ -4375,6 +5168,7 @@ public class Collections {
      * @since 1.7
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public static <T> Enumeration<T> emptyEnumeration() {
         return (Enumeration<T>) EmptyEnumeration.EMPTY_ENUMERATION;
     }
@@ -4383,8 +5177,10 @@ public class Collections {
         static final EmptyEnumeration<Object> EMPTY_ENUMERATION
             = new EmptyEnumeration<>();
 
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasMoreElements() { return false; }
-        public E nextElement() { throw new NoSuchElementException(); }
+        public E nextElement(@NonEmpty EmptyEnumeration<E> this) { throw new NoSuchElementException(); }
         public Iterator<E> asIterator() { return emptyIterator(); }
     }
 
@@ -4394,7 +5190,7 @@ public class Collections {
      * @see #emptySet()
      */
     @SuppressWarnings("rawtypes")
-    public static final Set EMPTY_SET = new EmptySet<>();
+    public static final @Unmodifiable @IteratorPolyMod Set EMPTY_SET = new EmptySet<>();
 
     /**
      * Returns an empty set (immutable).  This set is serializable.
@@ -4416,7 +5212,8 @@ public class Collections {
      * @since 1.5
      */
     @SuppressWarnings("unchecked")
-    public static final <T> Set<T> emptySet() {
+    @SideEffectFree
+    public static final <T> @Unmodifiable @IteratorPolyMod Set<T> emptySet() {
         return (Set<T>) EMPTY_SET;
     }
 
@@ -4427,6 +5224,7 @@ public class Collections {
         extends AbstractSet<E>
         implements Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 1582296315990362920L;
 
         @SideEffectFree
@@ -4435,17 +5233,19 @@ public class Collections {
         @Pure
         public @NonNegative int size() {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {return true;}
         public void clear() {}
 
-        public boolean contains(Object obj) {return false;}
-        public boolean containsAll(Collection<?> c) { return c.isEmpty(); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object obj) {return false;}
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
 
-        @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.EmptySet<@PolyNull E> this) { return new Object[0]; }
+        public @PolyNull @PolySigned Object[] toArray(Collections.EmptySet<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
-        @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
             return a;
@@ -4466,11 +5266,13 @@ public class Collections {
         public Spliterator<E> spliterator() { return Spliterators.emptySpliterator(); }
 
         // Preserves singleton property
+        @java.io.Serial
         private Object readResolve() {
             return EMPTY_SET;
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return 0;
         }
@@ -4493,7 +5295,8 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static <E> SortedSet<E> emptySortedSet() {
+    @SideEffectFree
+    public static <E> @Unmodifiable SortedSet<E> emptySortedSet() {
         return (SortedSet<E>) UnmodifiableNavigableSet.EMPTY_NAVIGABLE_SET;
     }
 
@@ -4514,7 +5317,8 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static <E> NavigableSet<E> emptyNavigableSet() {
+    @SideEffectFree
+    public static <E> @Unmodifiable NavigableSet<E> emptyNavigableSet() {
         return (NavigableSet<E>) UnmodifiableNavigableSet.EMPTY_NAVIGABLE_SET;
     }
 
@@ -4524,7 +5328,7 @@ public class Collections {
      * @see #emptyList()
      */
     @SuppressWarnings("rawtypes")
-    public static final List EMPTY_LIST = new EmptyList<>();
+    public static final @Unmodifiable List EMPTY_LIST = new EmptyList<>();
 
     /**
      * Returns an empty list (immutable).  This list is serializable.
@@ -4547,7 +5351,8 @@ public class Collections {
      * @since 1.5
      */
     @SuppressWarnings("unchecked")
-    public static final <T> List<T> emptyList() {
+    @SideEffectFree
+    public static final <T> @Unmodifiable List<T> emptyList() {
         return (List<T>) EMPTY_LIST;
     }
 
@@ -4557,6 +5362,7 @@ public class Collections {
     private static class EmptyList<E>
         extends AbstractList<E>
         implements RandomAccess, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 8842843931221139166L;
 
         @SideEffectFree
@@ -4570,30 +5376,35 @@ public class Collections {
         @Pure
         public @NonNegative int size() {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty() {return true;}
         public void clear() {}
 
-        public boolean contains(Object obj) {return false;}
-        public boolean containsAll(Collection<?> c) { return c.isEmpty(); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object obj) {return false;}
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return c.isEmpty(); }
 
-        @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.EmptyList<@PolyNull E> this) { return new Object[0]; }
+        public @PolyNull @PolySigned Object[] toArray(Collections.EmptyList<@PolyNull @PolySigned E> this) { return new Object[0]; }
 
-        @SideEffectFree
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             if (a.length > 0)
                 a[0] = null;
             return a;
         }
 
+        @Pure
         public E get(int index) {
             throw new IndexOutOfBoundsException("Index: "+index);
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return (o instanceof List) && ((List<?>)o).isEmpty();
         }
 
+        @Pure
         public int hashCode() { return 1; }
 
         @Override
@@ -4620,6 +5431,7 @@ public class Collections {
         public Spliterator<E> spliterator() { return Spliterators.emptySpliterator(); }
 
         // Preserves singleton property
+        @java.io.Serial
         private Object readResolve() {
             return EMPTY_LIST;
         }
@@ -4632,7 +5444,7 @@ public class Collections {
      * @since 1.3
      */
     @SuppressWarnings("rawtypes")
-    public static final Map EMPTY_MAP = new EmptyMap<>();
+    public static final @Unmodifiable Map EMPTY_MAP = new EmptyMap<>();
 
     /**
      * Returns an empty map (immutable).  This map is serializable.
@@ -4653,7 +5465,8 @@ public class Collections {
      * @since 1.5
      */
     @SuppressWarnings("unchecked")
-    public static final <K,V> Map<K,V> emptyMap() {
+    @SideEffectFree
+    public static final <K,V> @Unmodifiable Map<K,V> emptyMap() {
         return (Map<K,V>) EMPTY_MAP;
     }
 
@@ -4674,7 +5487,8 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static final <K,V> SortedMap<K,V> emptySortedMap() {
+    @SideEffectFree
+    public static final <K,V> @Unmodifiable SortedMap<K,V> emptySortedMap() {
         return (SortedMap<K,V>) UnmodifiableNavigableMap.EMPTY_NAVIGABLE_MAP;
     }
 
@@ -4695,7 +5509,8 @@ public class Collections {
      * @since 1.8
      */
     @SuppressWarnings("unchecked")
-    public static final <K,V> NavigableMap<K,V> emptyNavigableMap() {
+    @SideEffectFree
+    public static final <K,V> @Unmodifiable NavigableMap<K,V> emptyNavigableMap() {
         return (NavigableMap<K,V>) UnmodifiableNavigableMap.EMPTY_NAVIGABLE_MAP;
     }
 
@@ -4706,33 +5521,37 @@ public class Collections {
         extends AbstractMap<K,V>
         implements Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 6428348081105594320L;
 
         @Pure
         public @NonNegative int size()                          {return 0;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                   {return true;}
         public void clear()                        {}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(Object key)     {return false;}
+        public boolean containsKey(@UnknownSignedness Object key)     {return false;}
         @Pure
-        public boolean containsValue(Object value) {return false;}
-        public V get(Object key)                   {return null;}
+        public boolean containsValue(@UnknownSignedness Object value) {return false;}
+        @Pure
+        public @Nullable V get(Object key)                   {return null;}
         public Set<K> keySet()                     {return emptySet();}
         public Collection<V> values()              {return emptySet();}
         @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet()      {return emptySet();}
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return (o instanceof Map) && ((Map<?,?>)o).isEmpty();
         }
 
+        @Pure
         public int hashCode()                      {return 0;}
 
         // Override default methods in Map
         @Override
-        @SuppressWarnings("unchecked")
         @Pure
         public V getOrDefault(Object k, V defaultValue) {
             return defaultValue;
@@ -4748,52 +5567,65 @@ public class Collections {
             Objects.requireNonNull(function);
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean remove(Object key, Object value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V replace(K key, V value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         // Preserves singleton property
+        @java.io.Serial
         private Object readResolve() {
             return EMPTY_MAP;
         }
@@ -4809,23 +5641,29 @@ public class Collections {
      * @param o the sole object to be stored in the returned set.
      * @return an immutable set containing only the specified object.
      */
-    public static <T> Set<T> singleton(T o) {
+    public static <T> @Unmodifiable Set<T> singleton(T o) {
         return new SingletonSet<>(o);
     }
 
-    static <E> Iterator<E> singletonIterator(final E e) {
-        return new Iterator<E>() {
+    static <E> @Unmodifiable Iterator<E> singletonIterator(final E e) {
+        return new Iterator<>() {
             private boolean hasNext = true;
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasNext() {
                 return hasNext;
             }
-            public E next() {
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
+            public E next(/*@NonEmpty Iterator<E> this*/) {
                 if (hasNext) {
                     hasNext = false;
                     return e;
                 }
                 throw new NoSuchElementException();
             }
+            @SideEffectsOnly("this")
+            @DoesNotUnrefineReceiver("modifiability")
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -4847,11 +5685,11 @@ public class Collections {
      * @return A singleton {@code Spliterator}
      */
     static <T> Spliterator<T> singletonSpliterator(final T element) {
-        return new Spliterator<T>() {
+        return new Spliterator<>() {
             long est = 1;
 
             @Override
-            public Spliterator<T> trySplit() {
+            public @Nullable Spliterator<T> trySplit() {
                 return null;
             }
 
@@ -4893,8 +5731,10 @@ public class Collections {
         extends AbstractSet<E>
         implements Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 3193687207550431679L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final E element;
 
         SingletonSet(E e) {element = e;}
@@ -4907,7 +5747,9 @@ public class Collections {
         @Pure
         public @NonNegative int size() {return 1;}
 
-        public boolean contains(Object o) {return eq(o, element);}
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) {return eq(o, element);}
 
         // Override default methods for Collection
         @Override
@@ -4920,10 +5762,13 @@ public class Collections {
             return singletonSpliterator(element);
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(element);
         }
@@ -4938,7 +5783,7 @@ public class Collections {
      * @return an immutable list containing only the specified object.
      * @since 1.3
      */
-    public static <T> @ArrayLen(1) List<T> singletonList(T o) {
+    public static <T> @Unmodifiable @ArrayLen(1) List<T> singletonList(T o) {
         return new SingletonList<>(o);
     }
 
@@ -4949,8 +5794,10 @@ public class Collections {
         extends AbstractList<E>
         implements RandomAccess, Serializable {
 
+        @java.io.Serial
         private static final long serialVersionUID = 3093736618740652951L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final E element;
 
         @SuppressWarnings({"inconsistent.constructor.type", "super.invocation.invalid"})
@@ -4965,8 +5812,11 @@ public class Collections {
         @Pure
         public @NonNegative int size()                   {return 1;}
 
-        public boolean contains(Object obj) {return eq(obj, element);}
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object obj) {return eq(obj, element);}
 
+        @Pure
         public E get(int index) {
             if (index != 0)
               throw new IndexOutOfBoundsException("Index: "+index+", Size: 1");
@@ -4979,10 +5829,13 @@ public class Collections {
             action.accept(element);
         }
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean removeIf(Predicate<? super E> filter) {
             throw new UnsupportedOperationException();
         }
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(UnaryOperator<E> operator) {
             throw new UnsupportedOperationException();
         }
@@ -4995,6 +5848,7 @@ public class Collections {
             return singletonSpliterator(element);
         }
         @Override
+        @Pure
         public int hashCode() {
             return 31 + Objects.hashCode(element);
         }
@@ -5012,7 +5866,7 @@ public class Collections {
      *         mapping.
      * @since 1.3
      */
-    public static <K,V> Map<K,V> singletonMap(K key, V value) {
+    public static <K,V> @Unmodifiable Map<K,V> singletonMap(K key, V value) {
         return new SingletonMap<>(key, value);
     }
 
@@ -5022,9 +5876,12 @@ public class Collections {
     private static class SingletonMap<K,V>
           extends AbstractMap<K,V>
           implements Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -6979724477215052911L;
 
+        @SuppressWarnings("serial") // Conditionally serializable
         private final K k;
+        @SuppressWarnings("serial") // Conditionally serializable
         private final V v;
 
         SingletonMap(K key, V value) {
@@ -5035,13 +5892,15 @@ public class Collections {
         @Pure
         public @NonNegative int size()                                           {return 1;}
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                                {return false;}
         @Pure
         @EnsuresKeyForIf(expression={"#1"}, result=true, map={"this"})
-        public boolean containsKey(Object key)             {return eq(key, k);}
+        public boolean containsKey(@UnknownSignedness Object key)             {return eq(key, k);}
         @Pure
-        public boolean containsValue(Object value)       {return eq(value, v);}
-        public V get(Object key)              {return (eq(key, k) ? v : null);}
+        public boolean containsValue(@UnknownSignedness Object value)       {return eq(value, v);}
+        @Pure
+        public @Nullable V get(Object key)              {return (eq(key, k) ? v : null);}
 
         private transient Set<K> keySet;
         private transient Set<Map.Entry<K,V>> entrySet;
@@ -5056,7 +5915,7 @@ public class Collections {
         @SideEffectFree
         public Set<Map.Entry<K,V>> entrySet() {
             if (entrySet==null)
-                entrySet = Collections.<Map.Entry<K,V>>singleton(
+                entrySet = Collections.singleton(
                     new SimpleImmutableEntry<>(k, v));
             return entrySet;
         }
@@ -5080,56 +5939,70 @@ public class Collections {
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
             throw new UnsupportedOperationException();
         }
 
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         @EnsuresKeyFor(value={"#1"}, map={"this"})
         @Override
-        public V putIfAbsent(K key, V value) {
+        public @Nullable V putIfAbsent(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean remove(Object key, Object value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object key, @UnknownSignedness Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public boolean replace(K key, V oldValue, V newValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public V replace(K key, V value) {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V replace(K key, V value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V computeIfAbsent(K key,
                 Function<? super K, ? extends @PolyNull V> mappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public @PolyNull V computeIfPresent(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+        @DoesNotUnrefineReceiver("modifiability")
+        public @Nullable V computeIfPresent(K key,
+                BiFunction<? super K, ? super V, ? extends @Nullable V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V compute(K key,
-                BiFunction<? super K, ? super V, ? extends @PolyNull V> remappingFunction) {
+                BiFunction<? super K, ? super @Nullable V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @DoesNotUnrefineReceiver("modifiability")
         public @PolyNull V merge(K key, @NonNull V value,
                 BiFunction<? super V, ? super V, ? extends @PolyNull V> remappingFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        @Pure
         public int hashCode() {
             return Objects.hashCode(k) ^ Objects.hashCode(v);
         }
@@ -5154,7 +6027,7 @@ public class Collections {
      * @see    List#addAll(Collection)
      * @see    List#addAll(int, Collection)
      */
-    public static <T> List<T> nCopies(@NonNegative int n, T o) {
+    public static <T> @Unmodifiable List<T> nCopies(@NonNegative int n, T o) {
         if (n < 0)
             throw new IllegalArgumentException("List length = " + n);
         return new CopiesList<>(n, o);
@@ -5167,9 +6040,11 @@ public class Collections {
         extends AbstractList<E>
         implements RandomAccess, Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 2739099268398711800L;
 
         final int n;
+        @SuppressWarnings("serial") // Conditionally serializable
         final E element;
 
         CopiesList(int n, E e) {
@@ -5183,36 +6058,51 @@ public class Collections {
             return n;
         }
 
-        public boolean contains(Object obj) {
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object obj) {
             return n != 0 && eq(obj, element);
         }
 
+        @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             return contains(o) ? 0 : -1;
         }
 
+        @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             return contains(o) ? n - 1 : -1;
         }
 
+        @Pure
         public E get(int index) {
-            if (index < 0 || index >= n)
-                throw new IndexOutOfBoundsException("Index: "+index+
-                                                    ", Size: "+n);
+            Objects.checkIndex(index, n);
             return element;
         }
 
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.CopiesList<@PolyNull E> this) {
+        @Override
+        public void forEach(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            int n = this.n;
+            E element = this.element;
+            for (int i = 0; i < n; i++) {
+                action.accept(element);
+            }
+        }
+
+        @SideEffectFree
+        public @PolyNull @PolySigned Object[] toArray(Collections.CopiesList<@PolyNull @PolySigned E> this) {
             final Object[] a = new Object[n];
             if (element != null)
                 Arrays.fill(a, 0, n, element);
             return a;
         }
 
-        @SideEffectFree
         @SuppressWarnings("unchecked")
-        public <T> T[] toArray(T[] a) {
+        public <T> @Nullable T[] toArray(@PolyNull T[] a) {
             final int n = this.n;
             if (a.length < n) {
                 a = (T[])java.lang.reflect.Array
@@ -5238,6 +6128,54 @@ public class Collections {
             return new CopiesList<>(toIndex - fromIndex, element);
         }
 
+        @Override
+        @Pure
+        public int hashCode() {
+            if (n == 0) return 1;
+            // hashCode of n repeating elements is 31^n + elementHash * Sum(31^k, k = 0..n-1)
+            // this implementation completes in O(log(n)) steps taking advantage of
+            // 31^(2*n) = (31^n)^2 and Sum(31^k, k = 0..(2*n-1)) = Sum(31^k, k = 0..n-1) * (31^n + 1)
+            int pow = 31;
+            int sum = 1;
+            for (int i = Integer.numberOfLeadingZeros(n) + 1; i < Integer.SIZE; i++) {
+                sum *= pow + 1;
+                pow *= pow;
+                if ((n << i) < 0) {
+                    pow *= 31;
+                    sum = sum * 31 + 1;
+                }
+            }
+            return pow + sum * (element == null ? 0 : element.hashCode());
+        }
+
+        @Override
+        @Pure
+        public boolean equals(@Nullable Object o) {
+            if (o == this)
+                return true;
+            if (o instanceof CopiesList<?> other) {
+                return n == other.n && (n == 0 || eq(element, other.element));
+            }
+            if (!(o instanceof List))
+                return false;
+
+            int remaining = n;
+            E e = element;
+            Iterator<?> itr = ((List<?>) o).iterator();
+            if (e == null) {
+                while (itr.hasNext() && remaining-- > 0) {
+                    if (itr.next() != null)
+                        return false;
+                }
+            } else {
+                while (itr.hasNext() && remaining-- > 0) {
+                    if (!e.equals(itr.next()))
+                        return false;
+                }
+            }
+            return remaining == 0 && !itr.hasNext();
+        }
+
         // Override default methods in Collection
         @Override
         public Stream<E> stream() {
@@ -5254,6 +6192,12 @@ public class Collections {
         public Spliterator<E> spliterator() {
             return stream().spliterator();
         }
+
+        @java.io.Serial
+        private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+            ois.defaultReadObject();
+            SharedSecrets.getJavaObjectInputStreamAccess().checkArray(ois, Object[].class, n);
+        }
     }
 
     /**
@@ -5269,6 +6213,14 @@ public class Collections {
      * </pre> sorts the array in reverse-lexicographic (alphabetical) order.<p>
      *
      * The returned comparator is serializable.
+     *
+     * @apiNote
+     * This method returns a {@code Comparator} that is suitable for sorting
+     * elements in reverse order. To obtain a reverse-ordered <i>view</i> of a
+     * sequenced collection, use the {@link SequencedCollection#reversed
+     * SequencedCollection.reversed} method. Or, to obtain a reverse-ordered
+     * <i>view</i> of a sequenced map, use the {@link SequencedMap#reversed
+     * SequencedMap.reversed} method.
      *
      * @param  <T> the class of the objects compared by the comparator
      * @return A comparator that imposes the reverse of the <i>natural
@@ -5287,18 +6239,22 @@ public class Collections {
     private static class ReverseComparator
         implements Comparator<Comparable<Object>>, Serializable {
 
+        @java.io.Serial
         private static final long serialVersionUID = 7207038068494060240L;
 
         static final ReverseComparator REVERSE_ORDER
             = new ReverseComparator();
 
+        @Pure
         public int compare(Comparable<Object> c1, Comparable<Object> c2) {
             return c2.compareTo(c1);
         }
 
+        @java.io.Serial
         private Object readResolve() { return Collections.reverseOrder(); }
 
         @Override
+        @SideEffectFree
         public Comparator<Comparable<Object>> reversed() {
             return Comparator.naturalOrder();
         }
@@ -5313,6 +6269,14 @@ public class Collections {
      *
      * <p>The returned comparator is serializable (assuming the specified
      * comparator is also serializable or {@code null}).
+     *
+     * @apiNote
+     * This method returns a {@code Comparator} that is suitable for sorting
+     * elements in reverse order. To obtain a reverse-ordered <i>view</i> of a
+     * sequenced collection, use the {@link SequencedCollection#reversed
+     * SequencedCollection.reversed} method. Or, to obtain a reverse-ordered
+     * <i>view</i> of a sequenced map, use the {@link SequencedMap#reversed
+     * SequencedMap.reversed} method.
      *
      * @param <T> the class of the objects compared by the comparator
      * @param cmp a comparator who's ordering is to be reversed by the returned
@@ -5342,6 +6306,7 @@ public class Collections {
     private static class ReverseComparator2<T> implements Comparator<T>,
         Serializable
     {
+        @java.io.Serial
         private static final long serialVersionUID = 4374092139857L;
 
         /**
@@ -5351,6 +6316,7 @@ public class Collections {
          *
          * @serial
          */
+        @SuppressWarnings("serial") // Conditionally serializable
         final Comparator<T> cmp;
 
         ReverseComparator2(Comparator<T> cmp) {
@@ -5358,21 +6324,25 @@ public class Collections {
             this.cmp = cmp;
         }
 
+        @Pure
         public int compare(T t1, T t2) {
             return cmp.compare(t2, t1);
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return (o == this) ||
-                (o instanceof ReverseComparator2 &&
-                 cmp.equals(((ReverseComparator2)o).cmp));
+                (o instanceof ReverseComparator2<?> that &&
+                 cmp.equals(that.cmp));
         }
 
+        @Pure
         public int hashCode() {
             return cmp.hashCode() ^ Integer.MIN_VALUE;
         }
 
         @Override
+        @SideEffectFree
         public Comparator<T> reversed() {
             return cmp;
         }
@@ -5394,14 +6364,16 @@ public class Collections {
      * @see Enumeration
      */
     public static <T> Enumeration<T> enumeration(final Collection<T> c) {
-        return new Enumeration<T>() {
+        return new Enumeration<>() {
             private final Iterator<T> i = c.iterator();
 
+            @Pure
+            @EnsuresNonEmptyIf(result = true, expression = "this")
             public boolean hasMoreElements() {
                 return i.hasNext();
             }
 
-            public T nextElement() {
+            public T nextElement(/*@NonEmpty Enumeration<T> this*/) {
                 return i.next();
             }
         };
@@ -5423,7 +6395,7 @@ public class Collections {
      * @see Enumeration
      * @see ArrayList
      */
-    public static <T> ArrayList<T> list(Enumeration<T> e) {
+    public static <T> @Modifiable @IteratorPolyMod ArrayList<T> list(Enumeration<T> e) {
         ArrayList<T> l = new ArrayList<>();
         while (e.hasMoreElements())
             l.add(e.nextElement());
@@ -5452,7 +6424,7 @@ public class Collections {
      * @throws NullPointerException if {@code c} is null
      * @since 1.5
      */
-    public static @NonNegative int frequency(Collection<?> c, @Nullable Object o) {
+    public static @NonNegative int frequency(@MaybeModifiable Collection<?> c, @Nullable Object o) {
         int result = 0;
         if (o == null) {
             for (Object e : c)
@@ -5504,7 +6476,7 @@ public class Collections {
      * (<a href="Collection.html#optional-restrictions">optional</a>)
      * @since 1.5
      */
-    public static boolean disjoint(Collection<?> c1, Collection<?> c2) {
+    public static boolean disjoint(@MaybeModifiable Collection<?> c1, @MaybeModifiable Collection<?> c2) {
         // The collection to be used for contains(). Preference is given to
         // the collection who's contains() has lower O() complexity.
         Collection<?> contains = c2;
@@ -5559,9 +6531,8 @@ public class Collections {
     /**
      * Adds all of the specified elements to the specified collection.
      * Elements to be added may be specified individually or as an array.
-     * The behavior of this convenience method is identical to that of
-     * {@code c.addAll(Arrays.asList(elements))}, but this method is likely
-     * to run significantly faster under most implementations.
+     * The behaviour of this convenience method is similar to that of
+     * {@code c.addAll(Collections.unmodifiableList(Arrays.asList(elements)))}.
      *
      * <p>When elements are specified individually, this method provides a
      * convenient way to add a few elements to an existing collection:
@@ -5584,7 +6555,8 @@ public class Collections {
      * @since 1.5
      */
     @SafeVarargs
-    public static <T> boolean addAll(@GuardSatisfied Collection<? super T> c, T... elements) {
+    @SideEffectsOnly("#1")
+    public static <T> boolean addAll(@Growable @GuardSatisfied Collection<? super T> c, T... elements) {
         boolean result = false;
         for (T element : elements)
             result |= c.add(element);
@@ -5622,7 +6594,10 @@ public class Collections {
      * @throws IllegalArgumentException if {@code map} is not empty
      * @since 1.6
      */
-    public static <E> Set<E> newSetFromMap(Map<E, Boolean> map) {
+    @SideEffectFree
+    public static <E> @PolyModifiable Set<E> newSetFromMap(@PolyModifiable Map<E, Boolean> map) {
+        if (! map.isEmpty()) // implicit null check
+            throw new IllegalArgumentException("Map is non-empty");
         return new SetFromMap<>(map);
     }
 
@@ -5632,12 +6607,11 @@ public class Collections {
     private static class SetFromMap<E> extends AbstractSet<E>
         implements Set<E>, Serializable
     {
-        private final Map<E, Boolean> m;  // The backing map
+        @SuppressWarnings("serial") // Conditionally serializable
+        final Map<E, Boolean> m;          // The backing map
         private transient Set<E> s;       // Its keySet
 
         SetFromMap(Map<E, Boolean> map) {
-            if (!map.isEmpty())
-                throw new IllegalArgumentException("Map is non-empty");
             m = map;
             s = map.keySet();
         }
@@ -5646,22 +6620,34 @@ public class Collections {
         @Pure
         public @NonNegative int size()                 { return m.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()          { return m.isEmpty(); }
-        public boolean contains(Object o) { return m.containsKey(o); }
-        public boolean remove(Object o)   { return m.remove(o) != null; }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o) { return m.containsKey(o); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object o)   { return m.remove(o) != null; }
+        @EnsuresNonEmpty("this")
         public boolean add(E e) { return m.put(e, Boolean.TRUE) == null; }
         @SideEffectFree
         public Iterator<E> iterator()     { return s.iterator(); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.SetFromMap<@PolyNull E> this)         { return s.toArray(); }
-        @SideEffectFree
-        public <T> T[] toArray(T[] a)     { return s.toArray(a); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.SetFromMap<@PolyNull @PolySigned E> this)         { return s.toArray(); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)     { return s.toArray(a); }
         public String toString()          { return s.toString(); }
+        @Pure
         public int hashCode()             { return s.hashCode(); }
-        public boolean equals(Object o)   { return o == this || s.equals(o); }
-        public boolean containsAll(Collection<?> c) {return s.containsAll(c);}
-        public boolean removeAll(Collection<?> c)   {return s.removeAll(c);}
-        public boolean retainAll(Collection<?> c)   {return s.retainAll(c);}
+        @Pure
+        public boolean equals(@Nullable Object o)   { return o == this || s.equals(o); }
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) {return s.containsAll(c);}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   {return s.removeAll(c);}
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   {return s.retainAll(c);}
         // addAll is the only inherited implementation
 
         // Override default methods in Collection
@@ -5682,14 +6668,102 @@ public class Collections {
         @Override
         public Stream<E> parallelStream()   {return s.parallelStream();}
 
+        @java.io.Serial
         private static final long serialVersionUID = 2454657854757543876L;
 
+        @java.io.Serial
         private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException
         {
             stream.defaultReadObject();
             s = m.keySet();
         }
+
+        @java.io.Serial
+        private void readObjectNoData() throws java.io.ObjectStreamException {
+            throw new java.io.InvalidObjectException("missing SetFromMap data");
+        }
+    }
+
+    /**
+     * Returns a sequenced set backed by the specified map.  The resulting set displays
+     * the same ordering, concurrency, and performance characteristics as the
+     * backing map. In essence, this factory method provides a {@link SequencedSet}
+     * implementation corresponding to any {@link SequencedMap} implementation.
+     *
+     * <p>Each method invocation on the set returned by this method results in
+     * exactly one method invocation on the backing map or its {@code keySet}
+     * view, with one exception.  The {@code addAll} method is implemented
+     * as a sequence of {@code put} invocations on the backing map.
+     *
+     * <p>The specified map must be empty at the time this method is invoked,
+     * and should not be accessed directly after this method returns.  These
+     * conditions are ensured if the map is created empty, passed directly
+     * to this method, and no reference to the map is retained.
+     *
+     * @apiNote
+     * The following example code creates a {@code SequencedSet} from a
+     * {@code LinkedHashMap}. This differs from a {@code LinkedHashSet}
+     * in that the map's {@code removeEldestEntry} is overridden to provide
+     * an eviction policy, which is not possible with a {@code LinkedHashSet}.
+     *
+     * {@snippet :
+     *     SequencedSet<String> set = Collections.newSequencedSetFromMap(
+     *         new LinkedHashMap<String, Boolean>() {
+     *             protected boolean removeEldestEntry(Map.Entry<String, Boolean> e) {
+     *                 return this.size() > 5;
+     *             }
+     *        });
+     * }
+     *
+     * @param <E> the class of the map keys and of the objects in the
+     *        returned set
+     * @param map the backing map
+     * @return the set backed by the map
+     * @throws IllegalArgumentException if {@code map} is not empty
+     * @since 21
+     */
+    public static <E> SequencedSet<E> newSequencedSetFromMap(SequencedMap<E, Boolean> map) {
+        if (! map.isEmpty()) // implicit null check
+            throw new IllegalArgumentException("Map is non-empty");
+        return new SequencedSetFromMap<>(map);
+    }
+
+    /**
+     * @serial include
+     */
+    private static class SequencedSetFromMap<E> extends SetFromMap<E> implements SequencedSet<E> {
+        private E nsee(Map.Entry<E, Boolean> e) {
+            if (e == null) {
+                throw new NoSuchElementException();
+            } else {
+                return e.getKey();
+            }
+        }
+
+        private SequencedMap<E, Boolean> map() {
+            return (SequencedMap<E, Boolean>) super.m;
+        }
+
+        SequencedSetFromMap(SequencedMap<E, Boolean> map) {
+            super(map);
+        }
+
+        // Even though this wrapper class is serializable, the reversed view is effectively
+        // not serializable because it points to the reversed map view, which usually isn't
+        // serializable.
+        @SideEffectFree
+        public SequencedSet<E> reversed() { return new SequencedSetFromMap<>(map().reversed()); }
+
+        public void addFirst(E e) { map().putFirst(e, Boolean.TRUE); }
+        public void addLast(E e)  { map().putLast(e, Boolean.TRUE); }
+        public E getFirst()       { return nsee(map().firstEntry()); }
+        public E getLast()        { return nsee(map().lastEntry()); }
+        public E removeFirst()    { return nsee(map().pollFirstEntry()); }
+        public E removeLast()     { return nsee(map().pollLastEntry()); }
+
+        @java.io.Serial
+        private static final long serialVersionUID = -3943479744841433802L;
     }
 
     /**
@@ -5705,12 +6779,17 @@ public class Collections {
      * implemented as a sequence of {@link Deque#addFirst addFirst}
      * invocations on the backing deque.
      *
+     * @apiNote
+     * This method provides a view that inverts the sense of certain operations,
+     * but it doesn't reverse the encounter order. To obtain a reverse-ordered
+     * view, use the {@link Deque#reversed Deque.reversed} method.
+     *
      * @param  <T> the class of the objects in the deque
      * @param deque the deque
      * @return the queue
      * @since  1.6
      */
-    public static <T> Queue<T> asLifoQueue(Deque<T> deque) {
+    public static <T> @PolyGrowShrink @PolyModifiable @PolyNonEmpty Queue<T> asLifoQueue(@PolyGrowShrink @PolyModifiable @PolyNonEmpty Deque<T> deque) {
         return new AsLIFOQueue<>(Objects.requireNonNull(deque));
     }
 
@@ -5719,33 +6798,48 @@ public class Collections {
      */
     static class AsLIFOQueue<E> extends AbstractQueue<E>
         implements Queue<E>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 1802017725587941708L;
+        @SuppressWarnings("serial") // Conditionally serializable
         private final Deque<E> q;
         AsLIFOQueue(Deque<E> q)                     { this.q = q; }
+        @EnsuresNonEmpty("this")
         public boolean add(E e)                     { q.addFirst(e); return true; }
         public boolean offer(E e)                   { return q.offerFirst(e); }
-        public E poll()                             { return q.pollFirst(); }
+        public @Nullable E poll()                             { return q.pollFirst(); }
         public E remove()                           { return q.removeFirst(); }
-        public E peek()                             { return q.peekFirst(); }
+        @Pure
+        public @Nullable E peek()                             { return q.peekFirst(); }
+        @Pure
         public E element()                          { return q.getFirst(); }
         public void clear()                         {        q.clear(); }
         @Pure
         public @NonNegative int size()                           { return q.size(); }
         @Pure
+        @EnsuresNonEmptyIf(result = false, expression = "this")
         public boolean isEmpty()                    { return q.isEmpty(); }
-        public boolean contains(Object o)           { return q.contains(o); }
-        public boolean remove(Object o)             { return q.remove(o); }
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
+        public boolean contains(@UnknownSignedness Object o)           { return q.contains(o); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean remove(@UnknownSignedness Object o)             { return q.remove(o); }
         @SideEffectFree
         public Iterator<E> iterator()               { return q.iterator(); }
         @SideEffectFree
-        public @PolyNull Object[] toArray(Collections.AsLIFOQueue<@PolyNull E> this)                   { return q.toArray(); }
+        public @PolyNull @PolySigned Object[] toArray(Collections.AsLIFOQueue<@PolyNull @PolySigned E> this)                   { return q.toArray(); }
+        public <T> @Nullable T[] toArray(@PolyNull T[] a)               { return q.toArray(a); }
         @SideEffectFree
-        public <T> T[] toArray(T[] a)               { return q.toArray(a); }
         public <T> T[] toArray(IntFunction<T[]> f)  { return q.toArray(f); }
         public String toString()                    { return q.toString(); }
-        public boolean containsAll(Collection<?> c) { return q.containsAll(c); }
-        public boolean removeAll(Collection<?> c)   { return q.removeAll(c); }
-        public boolean retainAll(Collection<?> c)   { return q.retainAll(c); }
+        @Pure
+        public boolean containsAll(Collection<? extends @UnknownSignedness Object> c) { return q.containsAll(c); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean removeAll(Collection<? extends @UnknownSignedness Object> c)   { return q.removeAll(c); }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public boolean retainAll(Collection<? extends @UnknownSignedness Object> c)   { return q.retainAll(c); }
         // We use inherited addAll; forwarding addAll would be wrong
 
         // Override default methods in Collection

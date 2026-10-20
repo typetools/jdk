@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,9 @@
  */
 package java.io;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception indicating the failure of an object read operation due to
  * unread primitive data, or the end of data belonging to a serialized
@@ -42,25 +45,28 @@ package java.io;
  *       is set to 0.
  * </ul>
  *
- * @author  unascribed
  * @since   1.1
  */
+@AnnotatedFor({"nullness"})
 public class OptionalDataException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -8011121865681257820L;
 
     /*
-     * Create an <code>OptionalDataException</code> with a length.
+     * Create an {@code OptionalDataException} with a length.
      */
+    @SideEffectFree
     OptionalDataException(int len) {
         eof = false;
         length = len;
     }
 
     /*
-     * Create an <code>OptionalDataException</code> signifying no
+     * Create an {@code OptionalDataException} signifying no
      * more primitive data is available.
      */
+    @SideEffectFree
     OptionalDataException(boolean end) {
         length = 0;
         eof = end;

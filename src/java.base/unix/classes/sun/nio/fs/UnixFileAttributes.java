@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,6 +74,19 @@ class UnixFileAttributes
         return attrs;
     }
 
+    // get the UnixFileAttributes for a given file. Returns null if the file does not exist.
+    static UnixFileAttributes getIfExists(UnixPath path) throws UnixException {
+        UnixFileAttributes attrs = new UnixFileAttributes();
+        int errno = UnixNativeDispatcher.stat2(path, attrs);
+        if (errno == 0) {
+            return attrs;
+        } else if (errno == UnixConstants.ENOENT) {
+            return null;
+        } else {
+            throw new UnixException(errno);
+        }
+    }
+
     // get the UnixFileAttributes for an open file
     static UnixFileAttributes get(int fd) throws UnixException {
         UnixFileAttributes attrs = new UnixFileAttributes();
@@ -109,11 +122,15 @@ class UnixFileAttributes
         if (nsec == 0) {
             return FileTime.from(sec, TimeUnit.SECONDS);
         } else {
-            // truncate to microseconds to avoid overflow with timestamps
-            // way out into the future. We can re-visit this if FileTime
-            // is updated to define a from(secs,nsecs) method.
-            long micro = sec*1000000L + nsec/1000L;
-            return FileTime.from(micro, TimeUnit.MICROSECONDS);
+            try {
+                long nanos = Math.addExact(nsec,
+                    Math.multiplyExact(sec, 1_000_000_000L));
+                return FileTime.from(nanos, TimeUnit.NANOSECONDS);
+            } catch (ArithmeticException ignore) {
+                // truncate to microseconds if nanoseconds overflow
+                long micro = sec*1_000_000L + nsec/1_000L;
+                return FileTime.from(micro, TimeUnit.MICROSECONDS);
+            }
         }
     }
 
@@ -247,16 +264,6 @@ class UnixFileAttributes
         return UnixAsBasicFileAttributes.wrap(this);
     }
 
-    // unwrap BasicFileAttributes to get the underlying UnixFileAttributes
-    // object. Returns null is not wrapped.
-    static UnixFileAttributes toUnixFileAttributes(BasicFileAttributes attrs) {
-        if (attrs instanceof UnixFileAttributes)
-            return (UnixFileAttributes)attrs;
-        if (attrs instanceof UnixAsBasicFileAttributes) {
-            return ((UnixAsBasicFileAttributes)attrs).unwrap();
-        }
-        return null;
-    }
 
     // wrap a UnixFileAttributes object as a BasicFileAttributes
     private static class UnixAsBasicFileAttributes implements BasicFileAttributes {
@@ -270,9 +277,6 @@ class UnixFileAttributes
             return new UnixAsBasicFileAttributes(attrs);
         }
 
-        UnixFileAttributes unwrap() {
-            return attrs;
-        }
 
         @Override
         public FileTime lastModifiedTime() {

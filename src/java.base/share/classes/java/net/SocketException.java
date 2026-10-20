@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -33,8 +36,8 @@ import java.io.IOException;
  * @author  Jonathan Payne
  * @since   1.0
  */
-public
-class SocketException extends IOException {
+public class SocketException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = -5935874303556886934L;
 
     /**
@@ -43,13 +46,40 @@ class SocketException extends IOException {
      *
      * @param msg the detail message.
      */
-    public SocketException(String msg) {
+    @SideEffectFree
+    public SocketException(@Nullable String msg) {
         super(msg);
     }
 
     /**
      * Constructs a new {@code SocketException} with no detail message.
      */
+    @SideEffectFree
     public SocketException() {
+    }
+
+    /**
+     * Constructs a new {@code SocketException} with the
+     * specified detail message and cause.
+     *
+     * @param msg the detail message.
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    public SocketException(@Nullable String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
+
+    /**
+     * Constructs a new {@code SocketException} with the
+     * specified cause.
+     *
+     * @param cause the cause
+     * @since 19
+     */
+    @SideEffectFree
+    public SocketException(@Nullable Throwable cause) {
+        super(cause);
     }
 }

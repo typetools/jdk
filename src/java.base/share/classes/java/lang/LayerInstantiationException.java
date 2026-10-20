@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,19 +25,23 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown when creating a {@linkplain ModuleLayer module layer} fails.
  *
  * @see ModuleLayer
  * @since 9
- * @spec JPMS
  */
 public class LayerInstantiationException extends RuntimeException {
+    @java.io.Serial
     private static final long serialVersionUID = -906239691613568347L;
 
     /**
      * Constructs a {@code LayerInstantiationException} with no detail message.
      */
+    @SideEffectFree
     public LayerInstantiationException() {
     }
 
@@ -48,7 +52,8 @@ public class LayerInstantiationException extends RuntimeException {
      * @param msg
      *        The detail message; can be {@code null}
      */
-    public LayerInstantiationException(String msg) {
+    @SideEffectFree
+    public LayerInstantiationException(@Nullable String msg) {
         super(msg);
     }
 
@@ -58,7 +63,8 @@ public class LayerInstantiationException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
-    public LayerInstantiationException(Throwable cause) {
+    @SideEffectFree
+    public LayerInstantiationException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -71,7 +77,8 @@ public class LayerInstantiationException extends RuntimeException {
      * @param cause
      *        The cause; can be {@code null}
      */
-    public LayerInstantiationException(String msg, Throwable cause) {
+    @SideEffectFree
+    public LayerInstantiationException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

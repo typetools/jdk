@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.io;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -35,21 +36,37 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  * @see ObjectInputValidation
  * @since 1.1
  *
- * @author  unascribed
  * @since   1.1
  */
 @AnnotatedFor({"nullness"})
 public class InvalidObjectException extends ObjectStreamException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 3233174318281839583L;
 
     /**
-     * Constructs an <code>InvalidObjectException</code>.
+     * Constructs an {@code InvalidObjectException}.
      * @param reason Detailed message explaining the reason for the failure.
      *
      * @see ObjectInputValidation
      */
-    public  InvalidObjectException(@Nullable String reason) {
+    @SideEffectFree
+    public InvalidObjectException(@Nullable String reason) {
         super(reason);
+    }
+
+    /**
+     * Constructs an {@code InvalidObjectException} with the given
+     * reason and cause.
+     *
+     * @param reason Detailed message explaining the reason for the failure.
+     * @param cause the cause
+     *
+     * @see ObjectInputValidation
+     * @since 19
+     */
+    @SideEffectFree
+    public InvalidObjectException(@Nullable String reason, @Nullable Throwable cause) {
+        super(reason, cause);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,15 @@
 
 package sun.jvm.hotspot.interpreter;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.*;
 import sun.jvm.hotspot.code.*;
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 public class Interpreter {
   private static AddressField codeField;
@@ -56,6 +60,7 @@ public class Interpreter {
     return new StubQueue(code, InterpreterCodelet.class);
   }
 
+  @Pure
   public boolean contains(Address pc) {
     return getCode().contains(pc);
   }

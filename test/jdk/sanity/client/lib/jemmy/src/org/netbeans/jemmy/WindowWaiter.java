@@ -4,7 +4,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation. Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -284,7 +286,7 @@ public class WindowWaiter extends Waiter<Window, Void> implements Timeoutable {
     }
 
     /**
-     * Wait till the count of windows which meet the the search criteria becomes
+     * Wait till the count of windows which meet the search criteria becomes
      * equal to count.
      *
      * @param ch a component chooser used to define and apply the search
@@ -298,7 +300,7 @@ public class WindowWaiter extends Waiter<Window, Void> implements Timeoutable {
     }
 
     /**
-     * Wait till the count of windows which meet the the search criteria becomes
+     * Wait till the count of windows which meet the search criteria becomes
      * equal to count.
      *
      * @param owner The owner window of all the windows to be checked

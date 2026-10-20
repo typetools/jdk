@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,14 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
+
 import java.util.*;
 import jdk.internal.vm.annotation.Stable;
-
-import static java.lang.invoke.MethodHandleStatics.rangeCheck1;
-import static java.lang.invoke.MethodHandleStatics.rangeCheck2;
 
 /** Utility class for implementing ConstantGroup. */
 /*non-public*/
@@ -44,7 +47,9 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         this.size = size;
     }
 
-    @Override public final int size() {
+    @Override
+    @Pure
+    public final int size() {
         return size;
     }
 
@@ -91,12 +96,16 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         }
 
         @Override
+        @Pure
+        @EnsuresNonEmptyIf(result = true, expression = "this")
         public boolean hasNext() {
             return index < end;
         }
 
         @Override
-        public Object next() {
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
+        public Object next(@NonEmpty AsIterator this) {
             int i = bumpIndex();
             if (resolving)
                 return self.get(i);
@@ -104,7 +113,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
                 return self.get(i, ifNotPresent);
         }
 
-        private int bumpIndex() {
+        private int bumpIndex(@NonEmpty AsIterator this) {
             int i = index;
             if (i >= end)  throw new NoSuchElementException();
             index = i+1;
@@ -119,11 +128,11 @@ abstract class AbstractConstantGroup implements ConstantGroup {
             super(end - start);
             this.self = self;
             this.offset = start;
-            rangeCheck2(start, end, size);
+            Objects.checkFromToIndex(start, end, size);
         }
 
         private int mapIndex(int index) {
-            return rangeCheck1(index, size) + offset;
+            return Objects.checkIndex(index, size) + offset;
         }
 
         @Override
@@ -143,7 +152,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
 
         @Override
         public ConstantGroup subGroup(int start, int end) {
-            rangeCheck2(start, end, size);
+            Objects.checkFromToIndex(start, end, size);
             return new SubGroup(self, offset + start, offset + end);
         }
 
@@ -160,7 +169,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         @Override
         public int copyConstants(int start, int end,
                                   Object[] buf, int pos) throws LinkageError {
-            rangeCheck2(start, end, size);
+            Objects.checkFromToIndex(start, end, size);
             return self.copyConstants(offset + start, offset + end,
                                       buf, pos);
         }
@@ -169,7 +178,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         public int copyConstants(int start, int end,
                                   Object[] buf, int pos,
                                   Object ifNotPresent) {
-            rangeCheck2(start, end, size);
+            Objects.checkFromToIndex(start, end, size);
             return self.copyConstants(offset + start, offset + end,
                                       buf, pos, ifNotPresent);
         }
@@ -189,7 +198,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
             this.offset = start;
             this.resolving = resolving;
             this.ifNotPresent = ifNotPresent;
-            rangeCheck2(start, end, self.size());
+            Objects.checkFromToIndex(start, end, self.size());
         }
         AsList(ConstantGroup self, int start, int end) {
             this(self, start, end, true, null);
@@ -200,7 +209,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         }
 
         private int mapIndex(int index) {
-            return rangeCheck1(index, size) + offset;
+            return Objects.checkIndex(index, size) + offset;
         }
 
         @Override public final int size() {
@@ -223,7 +232,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         }
 
         @Override public List<Object> subList(int start, int end) {
-            rangeCheck2(start, end, size);
+            Objects.checkFromToIndex(start, end, size);
             return new AsList(self, offset + start, offset + end,
                               resolving, ifNotPresent);
         }
@@ -247,7 +256,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         }
     }
 
-    static abstract
+    abstract static
     class WithCache extends AbstractConstantGroup {
         @Stable final Object[] cache;
 
@@ -316,8 +325,7 @@ abstract class AbstractConstantGroup implements ConstantGroup {
     }
 
     /** Skeleton implementation of BootstrapCallInfo. */
-    static
-    class BSCIWithCache<T> extends WithCache implements BootstrapCallInfo<T> {
+    static class BSCIWithCache<T> extends WithCache implements BootstrapCallInfo<T> {
         private final MethodHandle bsm;
         private final String name;
         private final T type;

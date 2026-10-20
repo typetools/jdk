@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,6 +61,9 @@
  */
 package java.time.format;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.time.DateTimeException;
 
 /**
@@ -78,6 +81,7 @@ public class DateTimeParseException extends DateTimeException {
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 4304633501674722597L;
 
     /**
@@ -96,7 +100,8 @@ public class DateTimeParseException extends DateTimeException {
      * @param parsedData  the parsed text, should not be null
      * @param errorIndex  the index in the parsed string that was invalid, should be a valid index
      */
-    public DateTimeParseException(String message, CharSequence parsedData, int errorIndex) {
+    @SideEffectFree
+    public DateTimeParseException(@Nullable String message, CharSequence parsedData, int errorIndex) {
         super(message);
         this.parsedString = parsedData.toString();
         this.errorIndex = errorIndex;
@@ -110,7 +115,8 @@ public class DateTimeParseException extends DateTimeException {
      * @param errorIndex  the index in the parsed string that was invalid, should be a valid index
      * @param cause  the cause exception, may be null
      */
-    public DateTimeParseException(String message, CharSequence parsedData, int errorIndex, Throwable cause) {
+    @SideEffectFree
+    public DateTimeParseException(@Nullable String message, CharSequence parsedData, int errorIndex, @Nullable Throwable cause) {
         super(message, cause);
         this.parsedString = parsedData.toString();
         this.errorIndex = errorIndex;

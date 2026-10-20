@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,10 +28,10 @@ package javax.management.monitor;
 
 // jmx imports
 //
-import javax.management.ObjectName;
-
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import javax.management.ObjectName;
 
 /**
  * Provides definitions of the notifications sent by monitor MBeans.
@@ -166,6 +166,7 @@ public class MonitorNotification extends javax.management.Notification {
     /**
      * @serial Monitor notification observed object.
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private ObjectName observedObject = null;
 
     /**
@@ -176,6 +177,7 @@ public class MonitorNotification extends javax.management.Notification {
     /**
      * @serial Monitor notification derived gauge.
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private Object derivedGauge = null;
 
     /**
@@ -183,6 +185,7 @@ public class MonitorNotification extends javax.management.Notification {
      *         This value is used to keep the threshold/string (depending on the
      *         monitor type) that triggered off this notification.
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private Object trigger = null;
 
 

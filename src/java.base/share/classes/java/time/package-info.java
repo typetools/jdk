@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -237,7 +237,7 @@
  * This is made manageable through the use of consistent method prefixes.
  * <ul>
  * <li>{@code of} - static factory method</li>
- * <li>{@code parse} - static factory method focussed on parsing</li>
+ * <li>{@code parse} - static factory method focused on parsing</li>
  * <li>{@code get} - gets the value of something</li>
  * <li>{@code is} - checks if something is true</li>
  * <li>{@code with} - the immutable equivalent of a setter</li>
@@ -288,6 +288,6 @@
 @DefaultQualifier(value = KeyForBottom.class, locations = TypeUseLocation.LOWER_BOUND)
 package java.time;
 
-import  org.checkerframework.framework.qual.DefaultQualifier;
-import  org.checkerframework.framework.qual.TypeUseLocation;
-import  org.checkerframework.checker.nullness.qual.KeyForBottom;
+import org.checkerframework.checker.nullness.qual.KeyForBottom;
+import org.checkerframework.framework.qual.DefaultQualifier;
+import org.checkerframework.framework.qual.TypeUseLocation;

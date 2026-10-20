@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package sun.util.calendar;
 
-import java.security.AccessController;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,7 +42,7 @@ public class LocalGregorianCalendar extends BaseCalendar {
         new Era("Taisho", "T", -1812153600000L, true),
         new Era("Showa",  "S", -1357603200000L, true),
         new Era("Heisei", "H",   600220800000L, true),
-        new Era("NewEra", "N",  1556668800000L, true),
+        new Era("Reiwa",  "R",  1556668800000L, true),
     };
 
     private static boolean isValidEra(Era newEra, Era[] eras) {
@@ -123,7 +122,7 @@ public class LocalGregorianCalendar extends BaseCalendar {
         public String toString() {
             String time = super.toString();
             time = time.substring(time.indexOf('T'));
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             Era era = getEra();
             if (era != null) {
                 String abbr = era.getAbbreviation();

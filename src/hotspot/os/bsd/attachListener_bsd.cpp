@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,10 +24,10 @@
 
 #include "precompiled.hpp"
 #include "logging/log.hpp"
+#include "os_posix.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/os.inline.hpp"
 #include "services/attachListener.hpp"
-#include "services/dtraceAttacher.hpp"
 
 #include <unistd.h>
 #include <signal.h>
@@ -66,19 +66,9 @@ class BsdAttachListener: AllStatic {
   static bool _has_path;
 
   // the file descriptor for the listening socket
-  static int _listener;
+  static volatile int _listener;
 
-  static void set_path(char* path) {
-    if (path == NULL) {
-      _has_path = false;
-    } else {
-      strncpy(_path, path, UNIX_PATH_MAX);
-      _path[UNIX_PATH_MAX-1] = '\0';
-      _has_path = true;
-    }
-  }
-
-  static void set_listener(int s)               { _listener = s; }
+  static bool _atexit_registered;
 
   // reads a request from the given connected socket
   static BsdAttachOperation* read_request(int s);
@@ -90,6 +80,19 @@ class BsdAttachListener: AllStatic {
   enum {
     ATTACH_ERROR_BADVERSION     = 101           // error codes
   };
+
+  static void set_path(char* path) {
+    if (path == nullptr) {
+      _path[0] = '\0';
+      _has_path = false;
+    } else {
+      strncpy(_path, path, UNIX_PATH_MAX);
+      _path[UNIX_PATH_MAX-1] = '\0';
+      _has_path = true;
+    }
+  }
+
+  static void set_listener(int s)               { _listener = s; }
 
   // initialize the listener, returns 0 if okay
   static int init();
@@ -123,7 +126,8 @@ class BsdAttachOperation: public AttachOperation {
 // statics
 char BsdAttachListener::_path[UNIX_PATH_MAX];
 bool BsdAttachListener::_has_path;
-int BsdAttachListener::_listener = -1;
+volatile int BsdAttachListener::_listener = -1;
+bool BsdAttachListener::_atexit_registered = false;
 
 // Supporting class to help split a buffer into individual components
 class ArgumentIterator : public StackObj {
@@ -141,7 +145,7 @@ class ArgumentIterator : public StackObj {
       if (_pos < _end) {
         _pos += 1;
       }
-      return NULL;
+      return nullptr;
     }
     char* res = _pos;
     char* next_pos = strchr(_pos, '\0');
@@ -158,16 +162,15 @@ class ArgumentIterator : public StackObj {
 // bound too.
 extern "C" {
   static void listener_cleanup() {
-    static int cleanup_done;
-    if (!cleanup_done) {
-      cleanup_done = 1;
-      int s = BsdAttachListener::listener();
-      if (s != -1) {
-        ::close(s);
-      }
-      if (BsdAttachListener::has_path()) {
-        ::unlink(BsdAttachListener::path());
-      }
+    int s = BsdAttachListener::listener();
+    if (s != -1) {
+      BsdAttachListener::set_listener(-1);
+      ::shutdown(s, SHUT_RDWR);
+      ::close(s);
+    }
+    if (BsdAttachListener::has_path()) {
+      ::unlink(BsdAttachListener::path());
+      BsdAttachListener::set_path(nullptr);
     }
   }
 }
@@ -180,7 +183,10 @@ int BsdAttachListener::init() {
   int listener;                      // listener socket (file descriptor)
 
   // register function to cleanup
-  ::atexit(listener_cleanup);
+  if (!_atexit_registered) {
+    _atexit_registered = true;
+    ::atexit(listener_cleanup);
+  }
 
   int n = snprintf(path, UNIX_PATH_MAX, "%s/.java_pid%d",
                    os::get_temp_directory(), os::current_process_id());
@@ -242,7 +248,7 @@ int BsdAttachListener::init() {
 //
 BsdAttachOperation* BsdAttachListener::read_request(int s) {
   char ver_str[8];
-  sprintf(ver_str, "%d", ATTACH_PROTOCOL_VER);
+  size_t ver_str_len = os::snprintf_checked(ver_str, sizeof(ver_str), "%d", ATTACH_PROTOCOL_VER);
 
   // The request is a sequence of strings so we first figure out the
   // expected count and the maximum possible length of the request.
@@ -269,7 +275,7 @@ BsdAttachOperation* BsdAttachListener::read_request(int s) {
     assert(n <= left, "buffer was too small, impossible!");
     buf[max_len - 1] = '\0';
     if (n == -1) {
-      return NULL;      // reset by peer or other error
+      return nullptr;      // reset by peer or other error
     }
     if (n == 0) {
       break;
@@ -280,14 +286,14 @@ BsdAttachOperation* BsdAttachListener::read_request(int s) {
         str_count++;
 
         // The first string is <ver> so check it now to
-        // check for protocol mis-match
+        // check for protocol mismatch
         if (str_count == 1) {
-          if ((strlen(buf) != strlen(ver_str)) ||
+          if ((strlen(buf) != ver_str_len) ||
               (atoi(buf) != ATTACH_PROTOCOL_VER)) {
             char msg[32];
-            sprintf(msg, "%d\n", ATTACH_ERROR_BADVERSION);
-            write_fully(s, msg, strlen(msg));
-            return NULL;
+            int msg_len = os::snprintf_checked(msg, sizeof(msg), "%d\n", ATTACH_ERROR_BADVERSION);
+            write_fully(s, msg, msg_len);
+            return nullptr;
           }
         }
       }
@@ -297,7 +303,7 @@ BsdAttachOperation* BsdAttachListener::read_request(int s) {
   } while (left > 0 && str_count < expected_str_count);
 
   if (str_count != expected_str_count) {
-    return NULL;        // incomplete request
+    return nullptr;        // incomplete request
   }
 
   // parse request
@@ -308,20 +314,20 @@ BsdAttachOperation* BsdAttachListener::read_request(int s) {
   char* v = args.next();
 
   char* name = args.next();
-  if (name == NULL || strlen(name) > AttachOperation::name_length_max) {
-    return NULL;
+  if (name == nullptr || strlen(name) > AttachOperation::name_length_max) {
+    return nullptr;
   }
 
   BsdAttachOperation* op = new BsdAttachOperation(name);
 
   for (int i=0; i<AttachOperation::arg_count_max; i++) {
     char* arg = args.next();
-    if (arg == NULL) {
-      op->set_arg(i, NULL);
+    if (arg == nullptr) {
+      op->set_arg(i, nullptr);
     } else {
       if (strlen(arg) > AttachOperation::arg_length_max) {
         delete op;
-        return NULL;
+        return nullptr;
       }
       op->set_arg(i, arg);
     }
@@ -346,7 +352,7 @@ BsdAttachOperation* BsdAttachListener::dequeue() {
     socklen_t len = sizeof(addr);
     RESTARTABLE(::accept(listener(), &addr, &len), s);
     if (s == -1) {
-      return NULL;      // log a warning?
+      return nullptr;      // log a warning?
     }
 
     // get the credentials of the peer and check the effective uid/guid
@@ -367,7 +373,7 @@ BsdAttachOperation* BsdAttachListener::dequeue() {
 
     // peer credential look okay so we read the request
     BsdAttachOperation* op = read_request(s);
-    if (op == NULL) {
+    if (op == nullptr) {
       ::close(s);
       continue;
     } else {
@@ -403,14 +409,10 @@ void BsdAttachOperation::complete(jint result, bufferedStream* st) {
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   // write operation result
   char msg[32];
-  sprintf(msg, "%d\n", result);
-  int rc = BsdAttachListener::write_fully(this->socket(), msg, strlen(msg));
+  int msg_len = os::snprintf_checked(msg, sizeof(msg), "%d\n", result);
+  int rc = BsdAttachListener::write_fully(this->socket(), msg, msg_len);
 
   // write any result data
   if (rc == 0) {
@@ -420,9 +422,6 @@ void BsdAttachOperation::complete(jint result, bufferedStream* st) {
 
   // done
   ::close(this->socket());
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 
   delete this;
 }
@@ -434,14 +433,7 @@ AttachOperation* AttachListener::dequeue() {
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   AttachOperation* op = BsdAttachListener::dequeue();
-
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
 
   return op;
 }
@@ -473,16 +465,33 @@ int AttachListener::pd_init() {
   JavaThread* thread = JavaThread::current();
   ThreadBlockInVM tbivm(thread);
 
-  thread->set_suspend_equivalent();
-  // cleared by handle_special_suspend_equivalent_condition() or
-  // java_suspend_self() via check_and_wait_while_suspended()
-
   int ret_code = BsdAttachListener::init();
 
-  // were we externally suspended while we were waiting?
-  thread->check_and_wait_while_suspended();
-
   return ret_code;
+}
+
+bool AttachListener::check_socket_file() {
+  int ret;
+  struct stat st;
+  ret = stat(BsdAttachListener::path(), &st);
+  if (ret == -1) { // need to restart attach listener.
+    log_debug(attach)("Socket file %s does not exist - Restart Attach Listener",
+                      BsdAttachListener::path());
+
+    listener_cleanup();
+
+    // wait to terminate current attach listener instance...
+    {
+      // avoid deadlock if AttachListener thread is blocked at safepoint
+      ThreadBlockInVM tbivm(JavaThread::current());
+      while (AttachListener::transit_state(AL_INITIALIZING,
+                                           AL_NOT_INITIALIZED) != AL_NOT_INITIALIZED) {
+        os::naked_yield();
+      }
+    }
+    return is_init_trigger();
+  }
+  return false;
 }
 
 // Attach Listener is started lazily except in the case when
@@ -534,7 +543,7 @@ void AttachListener::pd_data_dump() {
 }
 
 AttachOperationFunctionInfo* AttachListener::pd_find_operation(const char* n) {
-  return NULL;
+  return nullptr;
 }
 
 jint AttachListener::pd_set_flag(AttachOperation* op, outputStream* out) {

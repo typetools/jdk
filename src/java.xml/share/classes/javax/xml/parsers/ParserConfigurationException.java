@@ -25,6 +25,8 @@
 
 package javax.xml.parsers;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -42,6 +44,7 @@ public class ParserConfigurationException extends Exception {
      * detail message.
      */
 
+    @SideEffectFree
     public ParserConfigurationException() {
         super();
     }
@@ -53,7 +56,8 @@ public class ParserConfigurationException extends Exception {
      * @param msg The error message for the exception.
      */
 
-    public ParserConfigurationException(String msg) {
+    @SideEffectFree
+    public ParserConfigurationException(@Nullable String msg) {
         super(msg);
     }
 

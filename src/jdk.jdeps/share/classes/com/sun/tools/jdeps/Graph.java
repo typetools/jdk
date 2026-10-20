@@ -24,6 +24,9 @@
  */
 package com.sun.tools.jdeps;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -57,6 +60,7 @@ public final class Graph<T> {
         return edges.get(u);
     }
 
+    @Pure
     public boolean contains(T u) {
         return nodes.contains(u);
     }
@@ -72,8 +76,7 @@ public final class Graph<T> {
      */
     public Graph<T> reduce() {
         Builder<T> builder = new Builder<>();
-        nodes.stream()
-                .forEach(u -> {
+        nodes.forEach(u -> {
                     builder.addNode(u);
                     edges.get(u).stream()
                          .filter(v -> !pathExists(u, v, false))
@@ -97,8 +100,7 @@ public final class Graph<T> {
         }
 
         Builder<T> builder = new Builder<>();
-        nodes.stream()
-                .forEach(u -> {
+        nodes.forEach(u -> {
                     builder.addNode(u);
                     // filter the edge if there exists a path from u to v in the given g
                     // or there exists another path from u to v in this graph
@@ -108,7 +110,7 @@ public final class Graph<T> {
                 });
 
         // add the overlapped edges from this graph and the given g
-        g.edges().keySet().stream()
+        g.edges().keySet()
                 .forEach(u -> g.adjacentNodes(u).stream()
                                 .filter(v -> isAdjacent(u, v))
                                 .forEach(v -> builder.addEdge(u, v)));
@@ -147,7 +149,7 @@ public final class Graph<T> {
         builder.addNodes(nodes);
         // reverse edges
         edges.keySet().forEach(u -> {
-            edges.get(u).stream()
+            edges.get(u)
                 .forEach(v -> builder.addEdge(v, u));
         });
         return builder.build();
@@ -214,8 +216,7 @@ public final class Graph<T> {
 
     public void printGraph(PrintWriter out) {
         out.println("graph for " + nodes);
-        nodes.stream()
-             .forEach(u -> adjacentNodes(u).stream()
+        nodes.forEach(u -> adjacentNodes(u)
                                .forEach(v -> out.format("  %s -> %s%n", u, v)));
     }
 
@@ -238,7 +239,8 @@ public final class Graph<T> {
         }
 
         @Override
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (this == o) return true;
             if (o == null || !(o instanceof Edge))
                 return false;
@@ -322,7 +324,7 @@ public final class Graph<T> {
                 return;
             }
             visited.add(node);
-            graph.edges().get(node).stream()
+            graph.edges().get(node)
                  .forEach(x -> visit(x, visited, done));
             done.add(node);
             result.addLast(node);

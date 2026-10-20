@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
  * @library /test/lib
  * @build jdk.test.lib.RandomFactory
  * @run main BigIntegerTest
- * @bug 4181191 4161971 4227146 4194389 4823171 4624738 4812225 4837946 4026465 8074460 8078672 8032027
+ * @bug 4181191 4161971 4227146 4194389 4823171 4624738 4812225 4837946 4026465 8074460 8078672 8032027 8229845
  * @summary tests methods in BigInteger (use -Dseed=X to set PRNG seed)
  * @run main/timeout=400 BigIntegerTest
  * @author madbot
@@ -795,7 +795,7 @@ public class BigIntegerTest {
 
         // Generic string conversion.
         for (int i=0; i<100; i++) {
-            byte xBytes[] = new byte[Math.abs(random.nextInt())%100+1];
+            byte xBytes[] = new byte[Math.abs(random.nextInt())%200+1];
             random.nextBytes(xBytes);
             BigInteger x = new BigInteger(xBytes);
 
@@ -834,6 +834,16 @@ public class BigIntegerTest {
                     }
                 }
             }
+        }
+
+        // Check value with many trailing zeros.
+        String val = "123456789" + "0".repeat(200);
+        BigInteger b = new BigInteger(val);
+        String s = b.toString();
+        if (!val.equals(s)) {
+            System.err.format("Expected length %d but got %d%n",
+                val.length(), s.length());
+            failCount++;
         }
 
         report("String Conversion", failCount);
@@ -1212,6 +1222,17 @@ public class BigIntegerTest {
      *
      */
     public static void main(String[] args) throws Exception {
+        // subset zero indicates to run all subsets
+        int subset = Integer.valueOf(System.getProperty("subset",
+            String.valueOf(1 + random.nextInt(3))));
+        if (subset < 0 || subset > 3) {
+            throw new RuntimeException("Unknown subset " + subset);
+        }
+        if (subset == 0)
+            System.out.println("Testing all subsets");
+        else
+            System.out.println("Testing subset " + subset);
+
         // Some variables for sizing test numbers in bits
         int order1 = ORDER_MEDIUM;
         int order2 = ORDER_SMALL;
@@ -1227,52 +1248,57 @@ public class BigIntegerTest {
         if (args.length >3)
             order4 = (int)((Integer.parseInt(args[3]))* 3.333);
 
-        constructor();
+        if (subset == 0 || subset == 1) {
+            constructor();
 
-        prime();
-        nextProbablePrime();
+            prime();
+            nextProbablePrime();
 
-        arithmetic(order1);   // small numbers
-        arithmetic(order3);   // Karatsuba range
-        arithmetic(order4);   // Toom-Cook / Burnikel-Ziegler range
+            arithmetic(order1);   // small numbers
+            arithmetic(order3);   // Karatsuba range
+            arithmetic(order4);   // Toom-Cook / Burnikel-Ziegler range
 
-        divideAndRemainder(order1);   // small numbers
-        divideAndRemainder(order3);   // Karatsuba range
-        divideAndRemainder(order4);   // Toom-Cook / Burnikel-Ziegler range
+            divideAndRemainder(order1);   // small numbers
+            divideAndRemainder(order3);   // Karatsuba range
+            divideAndRemainder(order4);   // Toom-Cook / Burnikel-Ziegler range
 
-        pow(order1);
-        pow(order3);
-        pow(order4);
+            pow(order1);
+            pow(order3);
+            pow(order4);
 
-        square(ORDER_MEDIUM);
-        square(ORDER_KARATSUBA_SQUARE);
-        square(ORDER_TOOM_COOK_SQUARE);
+            square(ORDER_MEDIUM);
+            square(ORDER_KARATSUBA_SQUARE);
+            square(ORDER_TOOM_COOK_SQUARE);
 
-        squareRoot();
-        squareRootAndRemainder();
+            squareRoot();
+            squareRootAndRemainder();
 
-        bitCount();
-        bitLength();
-        bitOps(order1);
-        bitwise(order1);
+            bitCount();
+            bitLength();
+            bitOps(order1);
+            bitwise(order1);
 
-        shift(order1);
+            shift(order1);
 
-        byteArrayConv(order1);
+            byteArrayConv(order1);
 
-        modInv(order1);   // small numbers
-        modInv(order3);   // Karatsuba range
-        modInv(order4);   // Toom-Cook / Burnikel-Ziegler range
+            modInv(order1);   // small numbers
+            modInv(order3);   // Karatsuba range
+        }
+        if (subset == 0 || subset == 2) {
+            modInv(order4);   // Toom-Cook / Burnikel-Ziegler range
 
-        modExp(order1, order2);
-        modExp2(order1);
+            modExp(order1, order2);
+            modExp2(order1);
+        }
+        if (subset == 0 || subset == 3) {
+            stringConv();
+            serialize();
 
-        stringConv();
-        serialize();
-
-        multiplyLarge();
-        squareLarge();
-        divideLarge();
+            multiplyLarge();
+            squareLarge();
+            divideLarge();
+        }
 
         if (failure)
             throw new RuntimeException("Failure in BigIntegerTest.");

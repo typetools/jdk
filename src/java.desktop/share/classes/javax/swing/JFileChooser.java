@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,46 +22,61 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package javax.swing;
 
 import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
-import javax.swing.event.*;
-import javax.swing.filechooser.*;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.plaf.FileChooserUI;
-
-import javax.accessibility.*;
-
-import java.io.*;
-
-import java.util.Vector;
 import java.awt.AWTEvent;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.BorderLayout;
-import java.awt.Window;
 import java.awt.Dialog;
+import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
-import java.awt.EventQueue;
 import java.awt.Toolkit;
-import java.awt.event.*;
-import java.beans.JavaBean;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
+import java.awt.event.InputEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.BeanProperty;
-import java.beans.PropertyChangeListener;
+import java.beans.JavaBean;
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serial;
+import java.io.Serializable;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Vector;
+
+import javax.accessibility.Accessible;
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
+import javax.swing.event.EventListenerList;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.filechooser.FileView;
+import javax.swing.plaf.FileChooserUI;
 
 /**
  * <code>JFileChooser</code> provides a simple mechanism for the user to
  * choose a file.
  * For information about using <code>JFileChooser</code>, see
  * <a
- href="http://docs.oracle.com/javase/tutorial/uiswing/components/filechooser.html">How to Use File Choosers</a>,
+ href="https://docs.oracle.com/javase/tutorial/uiswing/components/filechooser.html">How to Use File Choosers</a>,
  * a section in <em>The Java Tutorial</em>.
  *
  * <p>
@@ -224,7 +239,7 @@ public class JFileChooser extends JComponent implements Accessible {
     public static final @Interned String ACCESSORY_CHANGED_PROPERTY = "AccessoryChangedProperty";
 
     /**
-     * Identifies whether a the AcceptAllFileFilter is used or not.
+     * Identifies whether the AcceptAllFileFilter is used or not.
      */
     public static final @Interned String ACCEPT_ALL_FILE_FILTER_USED_CHANGED_PROPERTY = "acceptAllFileFilterUsedChanged";
 
@@ -284,7 +299,7 @@ public class JFileChooser extends JComponent implements Accessible {
 
     private @Nullable File currentDirectory = null;
     private @Nullable File selectedFile = null;
-    private File @Nullable[] selectedFiles;
+    private File @Nullable [] selectedFiles;
 
     // *************************************
     // ***** JFileChooser Constructors *****
@@ -293,7 +308,7 @@ public class JFileChooser extends JComponent implements Accessible {
     /**
      * Constructs a <code>JFileChooser</code> pointing to the user's
      * default directory. This default depends on the operating system.
-     * It is typically the "My Documents" folder on Windows, and the
+     * It is typically the "Documents" folder on Windows, and the
      * user's home directory on Unix.
      */
     public JFileChooser() {
@@ -305,7 +320,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Passing in a <code>null</code>
      * string causes the file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * @param currentDirectoryPath  a <code>String</code> giving the path
@@ -320,7 +335,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * as the path. Passing in a <code>null</code> file
      * causes the file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * @param currentDirectory  a <code>File</code> object specifying
@@ -436,7 +451,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <code>TransferHandler</code>.
      *
      * @param b the value to set the <code>dragEnabled</code> property to
-     * @exception HeadlessException if
+     * @throws HeadlessException if
      *            <code>b</code> is <code>true</code> and
      *            <code>GraphicsEnvironment.isHeadless()</code>
      *            returns <code>true</code>
@@ -533,7 +548,7 @@ public class JFileChooser extends JComponent implements Accessible {
      */
     @BeanProperty(description
             = "The list of selected files if the chooser is in multiple selection mode.")
-    public void setSelectedFiles(File @Nullable[] selectedFiles) {
+    public void setSelectedFiles(File @Nullable [] selectedFiles) {
         File[] oldValue = this.selectedFiles;
         if (selectedFiles == null || selectedFiles.length == 0) {
             selectedFiles = null;
@@ -560,7 +575,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Sets the current directory. Passing in <code>null</code> sets the
      * file chooser to point to the user's default directory.
      * This default depends on the operating system. It is
-     * typically the "My Documents" folder on Windows, and the user's
+     * typically the "Documents" folder on Windows, and the user's
      * home directory on Unix.
      *
      * If the file passed in as <code>currentDirectory</code> is not a
@@ -648,7 +663,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #showDialog
@@ -673,7 +688,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @see #showDialog
@@ -733,7 +748,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.ERROR_OPTION if an error occurs or the
      *                  dialog is dismissed
      * </ul>
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
@@ -774,7 +789,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * Creates and returns a new <code>JDialog</code> wrapping
      * <code>this</code> centered on the <code>parent</code>
      * in the <code>parent</code>'s frame.
-     * This method can be overriden to further manipulate the dialog,
+     * This method can be overridden to further manipulate the dialog,
      * to disable resizing, set the location, etc. Example:
      * <pre>
      *     class MyFileChooser extends JFileChooser {
@@ -790,7 +805,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * @param   parent  the parent component of the dialog;
      *                  can be <code>null</code>
      * @return a new <code>JDialog</code> containing this instance
-     * @exception HeadlessException if GraphicsEnvironment.isHeadless()
+     * @throws HeadlessException if GraphicsEnvironment.isHeadless()
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @since 1.4
@@ -914,7 +929,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.CUSTOM_DIALOG
      * </ul>
      *
-     * @exception IllegalArgumentException if <code>dialogType</code> is
+     * @throws IllegalArgumentException if <code>dialogType</code> is
      *                          not legal
      *
      * @see #getDialogType
@@ -1301,7 +1316,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <li>JFileChooser.FILES_AND_DIRECTORIES
      * </ul>
      *
-     * @exception IllegalArgumentException  if <code>mode</code> is an
+     * @throws IllegalArgumentException  if <code>mode</code> is an
      *                          illegal file selection mode
      *
      * @see #getFileSelectionMode
@@ -1402,7 +1417,8 @@ public class JFileChooser extends JComponent implements Accessible {
 
     /**
      * Returns true if hidden files are not shown in the file chooser;
-     * otherwise, returns false.
+     * otherwise, returns false. The default value of this property may be
+     * derived from the underlying Operating System.
      *
      * @return the status of the file hiding property
      * @see #setFileHidingEnabled
@@ -1447,7 +1463,7 @@ public class JFileChooser extends JComponent implements Accessible {
         fileFilter = filter;
         if (filter != null) {
             if (isMultiSelectionEnabled() && selectedFiles != null && selectedFiles.length > 0) {
-                Vector<File> fList = new Vector<File>();
+                ArrayList<File> fList = new ArrayList<File>();
                 boolean failed = false;
                 for (File file : selectedFiles) {
                     if (filter.accept(file)) {
@@ -1615,20 +1631,23 @@ public class JFileChooser extends JComponent implements Accessible {
     public boolean isTraversable(@Nullable File f) {
         Boolean traversable = null;
         if (f != null) {
-            if (getFileView() != null) {
-                traversable = getFileView().isTraversable(f);
+            FileView fileView = getFileView();
+            if (fileView != null) {
+                traversable = fileView.isTraversable(f);
             }
-
-            FileView uiFileView = getUI().getFileView(this);
-
-            if (traversable == null && uiFileView != null) {
-                traversable = uiFileView.isTraversable(f);
+            FileChooserUI ui = getUI();
+            if (traversable == null && ui != null) {
+                FileView uiFileView = ui.getFileView(this);
+                if (uiFileView != null) {
+                    traversable = uiFileView.isTraversable(f);
+                }
             }
-            if (traversable == null) {
-                traversable = getFileSystemView().isTraversable(f);
+            FileSystemView fileSystemView = getFileSystemView();
+            if (traversable == null && fileSystemView != null) {
+                traversable = fileSystemView.isTraversable(f);
             }
         }
-        return (traversable != null && traversable.booleanValue());
+        return traversable != null && traversable;
     }
 
     /**
@@ -1638,11 +1657,8 @@ public class JFileChooser extends JComponent implements Accessible {
      * @see FileFilter#accept
      */
     public boolean accept(@Nullable File f) {
-        boolean shown = true;
-        if(f != null && fileFilter != null) {
-            shown = fileFilter.accept(f);
-        }
-        return shown;
+        FileFilter filter = fileFilter;
+        return f == null || filter == null || filter.accept(f);
     }
 
     /**
@@ -1863,6 +1879,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <code>JComponent</code> for more
      * information about serialization in Swing.
      */
+    @Serial
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {
         ObjectInputStream.GetField f = in.readFields();
@@ -1910,6 +1927,7 @@ public class JFileChooser extends JComponent implements Accessible {
      * <code>JComponent</code> for more
      * information about serialization in Swing.
      */
+    @Serial
     private void writeObject(ObjectOutputStream s) throws IOException {
         FileSystemView fsv = null;
 
@@ -2032,6 +2050,11 @@ public class JFileChooser extends JComponent implements Accessible {
      */
     @SuppressWarnings("serial") // Superclass is not serializable across versions
     protected class AccessibleJFileChooser extends AccessibleJComponent {
+
+        /**
+         * Constructs an {@code AccessibleJFileChooser}.
+         */
+        protected AccessibleJFileChooser() {}
 
         /**
          * Gets the role of this object.

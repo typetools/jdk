@@ -28,7 +28,7 @@
 
 template <>
 size_t WorkerDataArray<size_t>::uninitialized() {
-  return (size_t)-1;
+  return SIZE_MAX;
 }
 
 template <>
@@ -54,7 +54,7 @@ void WorkerDataArray<size_t>::WDAPrinter::summary(outputStream* out, size_t min,
 
 template <>
 void WorkerDataArray<double>::WDAPrinter::details(const WorkerDataArray<double>* phase, outputStream* out) {
-  out->print("%-25s", "");
+  out->print("%-30s", "");
   for (uint i = 0; i < phase->_length; ++i) {
     double value = phase->get(i);
     if (value != phase->uninitialized()) {
@@ -68,7 +68,7 @@ void WorkerDataArray<double>::WDAPrinter::details(const WorkerDataArray<double>*
 
 template <>
 void WorkerDataArray<size_t>::WDAPrinter::details(const WorkerDataArray<size_t>* phase, outputStream* out) {
-  out->print("%-25s", "");
+  out->print("%-30s", "");
   for (uint i = 0; i < phase->_length; ++i) {
     size_t value = phase->get(i);
     if (value != phase->uninitialized()) {

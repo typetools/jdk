@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,8 +28,12 @@ package java.lang.invoke;
 import java.lang.reflect.*;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+
+import jdk.internal.access.JavaLangReflectAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.invoke.WrapperInstance;
 import java.util.ArrayList;
+
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import sun.reflect.misc.ReflectUtil;
@@ -52,10 +56,13 @@ public class MethodHandleProxies {
      * A single-method interface is an interface which declares a uniquely named method.
      * When determining the uniquely named method of a single-method interface,
      * the public {@code Object} methods ({@code toString}, {@code equals}, {@code hashCode})
-     * are disregarded.  For example, {@link java.util.Comparator} is a single-method interface,
-     * even though it re-declares the {@code Object.equals} method.
+     * are disregarded as are any default (non-abstract) methods.
+     * For example, {@link java.util.Comparator} is a single-method interface,
+     * even though it re-declares the {@code Object.equals} method and also
+     * declares default methods, such as {@code Comparator.reverse}.
      * <p>
-     * The interface must be public.  No additional access checks are performed.
+     * The interface must be public and not {@linkplain Class#isSealed() sealed}.
+     * No additional access checks are performed.
      * <p>
      * The resulting instance of the required type will respond to
      * invocation of the type's uniquely named method by calling
@@ -83,7 +90,7 @@ public class MethodHandleProxies {
      * Therefore, each instance must implement a unique single-method interface.
      * Implementations may not bundle together
      * multiple single-method interfaces onto single implementation classes
-     * in the style of {@link java.awt.AWTEventMulticaster}.
+     * in the style of {@link java.desktop/java.awt.AWTEventMulticaster}.
      * <p>
      * The method handle may throw an <em>undeclared exception</em>,
      * which means any checked exception (or other checked throwable)
@@ -147,11 +154,14 @@ public class MethodHandleProxies {
     // entry points, must be covered by hand-written or automatically
     // generated adapter classes.
     //
+    @SuppressWarnings({"removal",
+                       "doclint:reference"}) // cross-module links
     @CallerSensitive
-    public static
-    <T> T asInterfaceInstance(final Class<T> intfc, final MethodHandle target) {
+    public static <T> T asInterfaceInstance(final Class<T> intfc, final MethodHandle target) {
         if (!intfc.isInterface() || !Modifier.isPublic(intfc.getModifiers()))
             throw newIllegalArgumentException("not a public interface", intfc.getName());
+        if (intfc.isSealed())
+            throw newIllegalArgumentException("a sealed interface", intfc.getName());
         final MethodHandle mh;
         if (System.getSecurityManager() != null) {
             final Class<?> caller = Reflection.getCallerClass();
@@ -192,6 +202,10 @@ public class MethodHandleProxies {
                         return getArg(method.getName());
                     if (isObjectMethod(method))
                         return callObjectMethod(proxy, method, args);
+                    if (isDefaultMethod(method)) {
+                        // no additional access check is performed
+                        return JLRA.invokeDefault(proxy, method, args, null);
+                    }
                     throw newInternalError("bad proxy method: "+method);
                 }
             };
@@ -226,8 +240,7 @@ public class MethodHandleProxies {
      * @param x any reference
      * @return true if the reference is not null and points to an object produced by {@code asInterfaceInstance}
      */
-    public static
-    boolean isWrapperInstance(Object x) {
+    public static boolean isWrapperInstance(Object x) {
         return x instanceof WrapperInstance;
     }
 
@@ -249,8 +262,7 @@ public class MethodHandleProxies {
      * @return a method handle implementing the unique method
      * @throws IllegalArgumentException if the reference x is not to a wrapper instance
      */
-    public static
-    MethodHandle wrapperInstanceTarget(Object x) {
+    public static MethodHandle wrapperInstanceTarget(Object x) {
         return asWrapperInstance(x).getWrapperInstanceTarget();
     }
 
@@ -262,44 +274,34 @@ public class MethodHandleProxies {
      * @return the single-method interface type for which the wrapper was created
      * @throws IllegalArgumentException if the reference x is not to a wrapper instance
      */
-    public static
-    Class<?> wrapperInstanceType(Object x) {
+    public static Class<?> wrapperInstanceType(Object x) {
         return asWrapperInstance(x).getWrapperInstanceType();
     }
 
-    private static
-    boolean isObjectMethod(Method m) {
-        switch (m.getName()) {
-        case "toString":
-            return (m.getReturnType() == String.class
-                    && m.getParameterTypes().length == 0);
-        case "hashCode":
-            return (m.getReturnType() == int.class
-                    && m.getParameterTypes().length == 0);
-        case "equals":
-            return (m.getReturnType() == boolean.class
-                    && m.getParameterTypes().length == 1
-                    && m.getParameterTypes()[0] == Object.class);
-        }
-        return false;
+    private static boolean isObjectMethod(Method m) {
+        return switch (m.getName()) {
+            case "toString" -> m.getReturnType() == String.class
+                               && m.getParameterCount() == 0;
+            case "hashCode" -> m.getReturnType() == int.class
+                               && m.getParameterCount() == 0;
+            case "equals"   -> m.getReturnType() == boolean.class
+                               && m.getParameterCount() == 1
+                               && m.getParameterTypes()[0] == Object.class;
+            default -> false;
+        };
     }
 
-    private static
-    Object callObjectMethod(Object self, Method m, Object[] args) {
+    private static Object callObjectMethod(Object self, Method m, Object[] args) {
         assert(isObjectMethod(m)) : m;
-        switch (m.getName()) {
-        case "toString":
-            return self.getClass().getName() + "@" + Integer.toHexString(self.hashCode());
-        case "hashCode":
-            return System.identityHashCode(self);
-        case "equals":
-            return (self == args[0]);
-        }
-        return null;
+        return switch (m.getName()) {
+            case "toString" -> java.util.Objects.toIdentityString(self);
+            case "hashCode" -> System.identityHashCode(self);
+            case "equals"   -> (self == args[0]);
+            default -> null;
+        };
     }
 
-    private static
-    Method[] getSingleNameMethods(Class<?> intfc) {
+    private static Method[] getSingleNameMethods(Class<?> intfc) {
         ArrayList<Method> methods = new ArrayList<>();
         String uniqueName = null;
         for (Method m : intfc.getMethods()) {
@@ -315,4 +317,10 @@ public class MethodHandleProxies {
         if (uniqueName == null)  return null;
         return methods.toArray(new Method[methods.size()]);
     }
+
+    private static boolean isDefaultMethod(Method m) {
+        return !Modifier.isAbstract(m.getModifiers());
+    }
+
+    private static final JavaLangReflectAccess JLRA = SharedSecrets.getJavaLangReflectAccess();
 }

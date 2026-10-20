@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
  * @test
  * @bug 8151939
  * @summary os+cpu output should contain some os,cpu information
+ * @requires vm.flagless
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
  *          java.management
@@ -45,7 +46,7 @@ public class OsCpuLoggingTest {
     }
 
     static void analyzeOutputForOsCpuLog(OutputAnalyzer output) throws Exception {
-        output.shouldContain("CPU:total");
+        output.shouldContain("CPU: total");
         output.shouldHaveExitValue(0);
     }
 

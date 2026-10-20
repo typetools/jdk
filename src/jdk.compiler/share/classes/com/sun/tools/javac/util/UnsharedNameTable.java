@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,7 +38,7 @@ import java.lang.ref.WeakReference;
  *  deletion without notice.</b>
  */
 public class UnsharedNameTable extends Name.Table {
-    static public Name.Table create(Names names) {
+    public static Name.Table create(Names names) {
         return new UnsharedNameTable(names);
     }
 
@@ -81,11 +81,17 @@ public class UnsharedNameTable extends Name.Table {
     public Name fromChars(char[] cs, int start, int len) {
         byte[] name = new byte[len * 3];
         int nbytes = Convert.chars2utf(cs, start, name, 0, len);
-        return fromUtf(name, 0, nbytes);
+        return fromValidUtf(name, 0, nbytes);
     }
 
     @Override
-    public Name fromUtf(byte[] cs, int start, int len) {
+    public Name fromUtf(byte[] cs, int start, int len, Convert.Validation validation) throws InvalidUtfException {
+        if (validation != Convert.Validation.NONE)
+            Convert.utfValidate(cs, start, len, validation);
+        return fromValidUtf(cs, start, len);
+    }
+
+    private Name fromValidUtf(byte[] cs, int start, int len) {
         int h = hashValue(cs, start, len) & hashMask;
 
         HashEntry element = hashes[h];
@@ -96,10 +102,6 @@ public class UnsharedNameTable extends Name.Table {
         HashEntry firstTableEntry = element;
 
         while (element != null) {
-            if (element == null) {
-                break;
-            }
-
             n = element.get();
 
             if (n == null) {

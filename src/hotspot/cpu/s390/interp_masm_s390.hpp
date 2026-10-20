@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2017, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016, 2017 SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,13 +23,13 @@
  *
  */
 
-#ifndef CPU_S390_VM_INTERP_MASM_ZARCH_64_64_HPP
-#define CPU_S390_VM_INTERP_MASM_ZARCH_64_64_HPP
+#ifndef CPU_S390_INTERP_MASM_S390_HPP
+#define CPU_S390_INTERP_MASM_S390_HPP
 
 #include "asm/macroAssembler.hpp"
 #include "interpreter/invocationCounter.hpp"
 
-// This file specializes the assember with interpreter-specific macros.
+// This file specializes the assembler with interpreter-specific macros.
 
 class InterpreterMacroAssembler: public MacroAssembler {
 
@@ -72,7 +72,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // Helper routine for frame allocation/deallocation.
   // Compute the delta by which the caller's SP has to
-  // be adjusted to accomodate for the non-argument locals.
+  // be adjusted to accommodate for the non-argument locals.
   void compute_extra_locals_size_in_bytes(Register args_size, Register locals_size, Register delta);
 
   // dispatch routines
@@ -112,6 +112,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void gen_subtype_check(Register sub_klass, Register super_klass, Register tmp1, Register tmp2, Label &ok_is_subtype);
 
   void get_cache_and_index_at_bcp(Register cache, Register cpe_offset, int bcp_offset, size_t index_size = sizeof(u2));
+  void load_resolved_indy_entry(Register cache, Register index);
   void get_cache_and_index_and_bytecode_at_bcp(Register cache, Register cpe_offset, Register bytecode,
                                                int byte_no, int bcp_offset, size_t index_size = sizeof(u2));
   void get_cache_entry_pointer_at_bcp(Register cache, Register tmp, int bcp_offset, size_t index_size = sizeof(u2));
@@ -119,6 +120,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void load_resolved_reference_at_index(Register result, Register index);
   // load cpool->resolved_klass_at(index)
   void load_resolved_klass_at_offset(Register cpool, Register offset, Register iklass);
+
+  void load_resolved_method_at_index(int byte_no, Register cache, Register cpe_offset, Register method);
 
   // Pop topmost element from stack. It just disappears. Useful if
   // consumed previously by access via stackTop().
@@ -164,7 +167,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // Accessors to the template interpreter state.
 
-  void asm_assert_ijava_state_magic(Register tmp) PRODUCT_RETURN;
+  void asm_assert_ijava_state_magic(Register tmp) NOT_DEBUG_RETURN;
 
   void save_bcp();
 
@@ -330,4 +333,4 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void pop_interpreter_frame(Register return_pc, Register tmp1, Register tmp2);
 };
 
-#endif // CPU_S390_VM_INTERP_MASM_ZARCH_64_64_HPP
+#endif // CPU_S390_INTERP_MASM_S390_HPP

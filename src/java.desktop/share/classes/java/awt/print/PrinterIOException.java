@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2000, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,13 @@
  */
 
 package java.awt.print;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
+import java.io.Serial;
 
 /**
  * The {@code PrinterIOException} class is a subclass of
@@ -40,7 +46,12 @@ import java.io.IOException;
  * as well as the aforementioned "legacy method."
  */
 public class PrinterIOException extends PrinterException {
-    static final long serialVersionUID = 5850870712125932846L;
+
+    /**
+     * Use serialVersionUID from JDK 1.4 for interoperability.
+     */
+    @Serial
+    private static final long serialVersionUID = 5850870712125932846L;
 
     /**
      * The IO error that terminated the print job.
@@ -54,6 +65,7 @@ public class PrinterIOException extends PrinterException {
      * {@link IOException}.
      * @param exception the specified {@code IOException}
      */
+    @SideEffectFree
     public PrinterIOException(IOException exception) {
         initCause(null);  // Disallow subsequent initCause
         mException = exception;
@@ -82,7 +94,8 @@ public class PrinterIOException extends PrinterException {
      * @return  the cause of this exception.
      * @since   1.4
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return mException;
     }
 }

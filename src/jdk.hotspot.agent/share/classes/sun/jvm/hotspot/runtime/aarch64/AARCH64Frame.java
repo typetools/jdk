@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2001, 2012, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, Red Hat Inc.
+ * Copyright (c) 2001, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Red Hat Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,8 @@ import sun.jvm.hotspot.oops.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
 import sun.jvm.hotspot.utilities.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 /** Specialization of and implementation of abstract methods of the
     Frame class for the aarch64 family of CPUs. */
@@ -68,7 +70,10 @@ public class AARCH64Frame extends Frame {
   // Native frames
   private static final int NATIVE_FRAME_INITIAL_PARAM_OFFSET =  2;
 
-  private static VMReg fp = new VMReg(29);
+  private static CIntegerField ropProtectionField;
+  private static CIntegerField pacMaskField;
+
+  private static VMReg fp = new VMReg(29 << 1);
 
   static {
     VM.registerVMInitializedObserver(new Observer() {
@@ -88,8 +93,11 @@ public class AARCH64Frame extends Frame {
     INTERPRETER_FRAME_INITIAL_SP_OFFSET           = INTERPRETER_FRAME_BCX_OFFSET - 1;
     INTERPRETER_FRAME_MONITOR_BLOCK_TOP_OFFSET    = INTERPRETER_FRAME_INITIAL_SP_OFFSET;
     INTERPRETER_FRAME_MONITOR_BLOCK_BOTTOM_OFFSET = INTERPRETER_FRAME_INITIAL_SP_OFFSET;
-  }
 
+    Type vmVersion = db.lookupType("VM_Version");
+    ropProtectionField = vmVersion.getCIntegerField("_rop_protection");
+    pacMaskField = vmVersion.getCIntegerField("_pac_mask");
+  }
 
   // an additional field beyond sp and pc:
   Address raw_fp; // frame pointer
@@ -136,7 +144,15 @@ public class AARCH64Frame extends Frame {
     this.raw_sp = raw_sp;
     this.raw_unextendedSP = raw_sp;
     this.raw_fp = raw_fp;
-    this.pc = raw_sp.getAddressAt(-1 * VM.getVM().getAddressSize());
+
+    // We cannot assume SP[-1] always contains a valid return PC (e.g. if
+    // the callee is a C/C++ compiled frame). If the PC is not known to
+    // Java then this.pc is null.
+    Address savedPC = raw_sp.getAddressAt(-1 * VM.getVM().getAddressSize());
+    if (VM.getVM().isJavaPCDbg(savedPC)) {
+      this.pc = savedPC;
+    }
+
     adjustUnextendedSP();
 
     // Frame must be fully constructed before this call
@@ -376,12 +392,12 @@ public class AARCH64Frame extends Frame {
 
     // frame owned by optimizing compiler
     if (Assert.ASSERTS_ENABLED) {
-        Assert.that(cb.getFrameSize() >= 0, "must have non-zero frame size");
+        Assert.that(cb.getFrameSize() > 0, "must have non-zero frame size");
     }
     Address senderSP = getUnextendedSP().addOffsetTo(cb.getFrameSize());
 
     // The return_address is always the word on the stack
-    Address senderPC = senderSP.getAddressAt(-1 * VM.getVM().getAddressSize());
+    Address senderPC = stripPAC(senderSP.getAddressAt(-1 * VM.getVM().getAddressSize()));
 
     // This is the saved value of FP which may or may not really be an FP.
     // It is only an FP if the sender is an interpreter frame.
@@ -435,7 +451,19 @@ public class AARCH64Frame extends Frame {
 
   // Return address:
   public Address getSenderPCAddr() { return addressOfStackSlot(RETURN_ADDR_OFFSET); }
-  public Address getSenderPC()     { return getSenderPCAddr().getAddressAt(0);      }
+  public Address getSenderPC()     { return stripPAC(getSenderPCAddr().getAddressAt(0)); }
+
+  // Remove any embedded pointer authentication code from an address.
+  private Address stripPAC(Address addr) {
+    // Really we should use the XPACI instruction to do this but we
+    // can't access that from Java so rely on the mask of PAC bits
+    // calculated by vm_version_aarch64.cpp on startup.
+    if (ropProtectionField.getValue() != 0) {
+      return addr.andWithMask(pacMaskField.getValue());
+    } else {
+      return addr;
+    }
+  }
 
   // return address of param, zero origin index.
   public Address getNativeParamAddr(int idx) {
@@ -445,7 +473,8 @@ public class AARCH64Frame extends Frame {
   public Address getSenderSP()     { return addressOfStackSlot(SENDER_SP_OFFSET); }
 
   public Address addressOfInterpreterFrameLocals() {
-    return addressOfStackSlot(INTERPRETER_FRAME_LOCALS_OFFSET);
+    long n = addressOfStackSlot(INTERPRETER_FRAME_LOCALS_OFFSET).getCIntegerAt(0, VM.getVM().getAddressSize(), false);
+    return getFP().addOffsetTo(n * VM.getVM().getAddressSize());
   }
 
   private Address addressOfInterpreterFrameBCX() {

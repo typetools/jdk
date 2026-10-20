@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.runtime.*;
 import sun.jvm.hotspot.types.*;
 import sun.jvm.hotspot.utilities.*;
+import sun.jvm.hotspot.utilities.Observable;
+import sun.jvm.hotspot.utilities.Observer;
 
 //  ConstantPoolCache : A constant pool cache (ConstantPoolCache).
 //  See cpCache.hpp for details about this class.
@@ -53,6 +55,7 @@ public class ConstantPoolCache extends Metadata {
     intSize        = VM.getVM().getObjectHeap().getIntSize();
     resolvedReferences = type.getAddressField("_resolved_references");
     referenceMap   = type.getAddressField("_reference_map");
+    resolvedIndyArray = type.getAddressField("_resolved_indy_entries");
   }
 
   public ConstantPoolCache(Address addr) {
@@ -69,6 +72,7 @@ public class ConstantPoolCache extends Metadata {
   private static long intSize;
   private static AddressField  resolvedReferences;
   private static AddressField  referenceMap;
+  private static AddressField  resolvedIndyArray;
 
   public ConstantPool getConstants() { return (ConstantPool) constants.getValue(this); }
 
@@ -77,8 +81,14 @@ public class ConstantPoolCache extends Metadata {
   }
 
   public ConstantPoolCacheEntry getEntryAt(int i) {
-    if (i < 0 || i >= getLength()) throw new IndexOutOfBoundsException(i + " " + getLength());
+    Objects.checkIndex(i, getLength());
     return new ConstantPoolCacheEntry(this, i);
+  }
+
+  public ResolvedIndyEntry getIndyEntryAt(int i) {
+    Address addr = resolvedIndyArray.getValue(getAddress());
+    ResolvedIndyArray array = new ResolvedIndyArray(addr);
+    return array.getAt(i);
   }
 
   public int getIntAt(int entry, int fld) {

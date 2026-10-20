@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,29 +43,29 @@ import javax.lang.model.SourceVersion;
  * call {@link #defaultAction defaultAction}, passing their arguments
  * to {@code defaultAction}'s corresponding parameters.
  *
- * <p> Methods in this class may be overridden subject to their
- * general contract.  Note that annotating methods in concrete
- * subclasses with {@link java.lang.Override @Override} will help
- * ensure that methods are overridden as intended.
+ * @apiNote
+ * Methods in this class may be overridden subject to their general
+ * contract.
  *
- * <p> <b>WARNING:</b> The {@code ElementVisitor} interface
- * implemented by this class may have methods added to it or the
- * {@code ElementKind} {@code enum} used in this case may have
- * constants added to it in the future to accommodate new, currently
- * unknown, language structures added to future versions of the
- * Java&trade; programming language.  Therefore, methods whose names
- * begin with {@code "visit"} may be added to this class in the
- * future; to avoid incompatibilities, classes which extend this class
- * should not declare any instance methods with names beginning with
- * {@code "visit"}.
+ * <p id=note_for_subclasses><strong>WARNING:</strong> The {@code
+ * ElementVisitor} interface implemented by this class may have
+ * methods added to it or the {@link ElementKind ElementKind enum}
+ * used in this class may have constants added to it in the future to
+ * accommodate new, currently unknown, language structures added to
+ * future versions of the Java programming language.
+ * Therefore, methods whose names begin with {@code "visit"} may be
+ * added to this class in the future; to avoid incompatibilities,
+ * classes and subclasses which extend this class should not declare
+ * any instance methods with names beginning with {@code "visit"}.</p>
  *
  * <p>When such a new visit method is added, the default
- * implementation in this class will be to call the {@link
- * #visitUnknown visitUnknown} method.  A new abstract element kind
- * visitor class will also be introduced to correspond to the new
- * language level; this visitor will have different default behavior
- * for the visit method in question.  When the new visitor is
- * introduced, all or portions of this visitor may be deprecated.
+ * implementation in this class will be to directly or indirectly call
+ * the {@link #visitUnknown visitUnknown} method.  A new abstract
+ * element kind visitor class will also be introduced to correspond to
+ * the new language level; this visitor will have different default
+ * behavior for the visit method in question.  When a new visitor is
+ * introduced, portions of this visitor class may be deprecated,
+ * including its constructors.
  *
  * @param <R> the return type of this visitor's methods.  Use {@link
  *            Void} for visitors that do not need to return results.
@@ -73,13 +73,10 @@ import javax.lang.model.SourceVersion;
  *            methods.  Use {@code Void} for visitors that do not need an
  *            additional parameter.
  *
- * @author Joseph D. Darcy
- * @author Scott Seligman
- * @author Peter von der Ah&eacute;
- *
  * @see ElementKindVisitor7
  * @see ElementKindVisitor8
  * @see ElementKindVisitor9
+ * @see ElementKindVisitor14
  * @since 1.6
  */
 @SupportedSourceVersion(RELEASE_6)
@@ -154,6 +151,9 @@ public class ElementKindVisitor6<R, P>
         case INTERFACE:
             return visitTypeAsInterface(e, p);
 
+        case RECORD:
+            return visitTypeAsRecord(e, p);
+
         default:
             throw new AssertionError("Bad kind " + k + " for TypeElement" + e);
         }
@@ -212,6 +212,21 @@ public class ElementKindVisitor6<R, P>
     }
 
     /**
+     * Visits a {@code RECORD} type element.
+     *
+     * @implSpec This implementation calls {@code visitUnknown}.
+     *.
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code visitUnknown}
+     *
+     * @since 16
+     */
+    public R visitTypeAsRecord(TypeElement e, P p) {
+        return visitUnknown(e, p);
+    }
+
+    /**
      * Visits a variable element
      *
      * @implSpec This implementation dispatches to the visit method for
@@ -244,6 +259,9 @@ public class ElementKindVisitor6<R, P>
 
         case RESOURCE_VARIABLE:
             return visitVariableAsResourceVariable(e, p);
+
+        case BINDING_VARIABLE:
+            return visitVariableAsBindingVariable(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for VariableElement" + e);
@@ -327,6 +345,21 @@ public class ElementKindVisitor6<R, P>
      * @since 1.7
      */
     public R visitVariableAsResourceVariable(VariableElement e, P p) {
+        return visitUnknown(e, p);
+    }
+
+    /**
+     * Visits a {@code BINDING_VARIABLE} variable element.
+     *
+     * @implSpec This implementation calls {@code visitUnknown}.
+     *
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code visitUnknown}
+     *
+     * @since 14
+     */
+    public R visitVariableAsBindingVariable(VariableElement e, P p) {
         return visitUnknown(e, p);
     }
 

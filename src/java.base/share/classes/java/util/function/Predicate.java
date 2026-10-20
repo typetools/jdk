@@ -24,6 +24,8 @@
  */
 package java.util.function;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Objects;
@@ -114,7 +116,8 @@ public interface Predicate<T> {
      * @return a predicate that tests if two arguments are equal according
      * to {@link Objects#equals(Object, Object)}
      */
-    static <T> Predicate<T> isEqual(Object targetRef) {
+    @SideEffectFree
+    static <T> Predicate<T> isEqual(@Nullable Object targetRef) {
         return (null == targetRef)
                 ? Objects::isNull
                 : object -> targetRef.equals(object);

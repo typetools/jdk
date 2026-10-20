@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,15 +39,16 @@
 package java.text;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.signedness.qual.SignednessGlb;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.Character;
 import java.util.Vector;
 import sun.text.CollatorUtilities;
-import sun.text.normalizer.NormalizerBase;
+import jdk.internal.icu.text.NormalizerBase;
 
 /**
- * The <code>CollationElementIterator</code> class is used as an iterator
+ * The {@code CollationElementIterator} class is used as an iterator
  * to walk through each character of an international string. Use the iterator
  * to return the ordering priority of the positioned character. The ordering
  * priority of a character, which we refer to as a key, defines how a character
@@ -71,38 +72,36 @@ import sun.text.normalizer.NormalizerBase;
  * The key of a character is an integer composed of primary order(short),
  * secondary order(byte), and tertiary order(byte). Java strictly defines
  * the size and signedness of its primitive data types. Therefore, the static
- * functions <code>primaryOrder</code>, <code>secondaryOrder</code>, and
- * <code>tertiaryOrder</code> return <code>int</code>, <code>short</code>,
- * and <code>short</code> respectively to ensure the correctness of the key
+ * functions {@code primaryOrder}, {@code secondaryOrder}, and
+ * {@code tertiaryOrder} return {@code int}, {@code short},
+ * and {@code short} respectively to ensure the correctness of the key
  * value.
  *
  * <p>
  * Example of the iterator usage,
  * <blockquote>
- * <pre>
- *
- *  String testString = "This is a test";
- *  Collator col = Collator.getInstance();
- *  if (col instanceof RuleBasedCollator) {
- *      RuleBasedCollator ruleBasedCollator = (RuleBasedCollator)col;
- *      CollationElementIterator collationElementIterator = ruleBasedCollator.getCollationElementIterator(testString);
- *      int primaryOrder = CollationElementIterator.primaryOrder(collationElementIterator.next());
- *          :
- *  }
- * </pre>
+ * {@snippet lang=java :
+ * String testString = "This is a test";
+ * Collator col = Collator.getInstance();
+ * if (col instanceof RuleBasedCollator ruleBasedCollator) {
+ *     CollationElementIterator collationElementIterator = ruleBasedCollator.getCollationElementIterator(testString);
+ *     int primaryOrder = CollationElementIterator.primaryOrder(collationElementIterator.next());
+ *         \u22ee
+ * }
+ * }
  * </blockquote>
  *
  * <p>
- * <code>CollationElementIterator.next</code> returns the collation order
+ * {@code CollationElementIterator.next} returns the collation order
  * of the next character. A collation order consists of primary order,
  * secondary order and tertiary order. The data type of the collation
  * order is <strong>int</strong>. The first 16 bits of a collation order
  * is its primary order; the next 8 bits is the secondary order and the
  * last 8 bits is the tertiary order.
  *
- * <p><b>Note:</b> <code>CollationElementIterator</code> is a part of
- * <code>RuleBasedCollator</code> implementation. It is only usable
- * with <code>RuleBasedCollator</code> instances.
+ * <p><b>Note:</b> {@code CollationElementIterator} is a part of
+ * {@code RuleBasedCollator} implementation. It is only usable
+ * with {@code RuleBasedCollator} instances.
  *
  * @see                Collator
  * @see                RuleBasedCollator
@@ -116,7 +115,7 @@ public final @UsesObjectEquals class CollationElementIterator
      * Null order which indicates the end of string is reached by the
      * cursor.
      */
-    public static final int NULLORDER = 0xffffffff;
+    public static final @SignednessGlb int NULLORDER = 0xffffffff;
 
     /**
      * CollationElementIterator constructor.  This takes the source string and
@@ -129,7 +128,7 @@ public final @UsesObjectEquals class CollationElementIterator
     CollationElementIterator(String sourceText, RuleBasedCollator owner) {
         this.owner = owner;
         ordering = owner.getTables();
-        if ( sourceText.length() != 0 ) {
+        if (!sourceText.isEmpty()) {
             NormalizerBase.Mode mode =
                 CollatorUtilities.toNormalizerMode(owner.getDecomposition());
             text = new NormalizerBase(sourceText, mode);
@@ -780,7 +779,7 @@ public final @UsesObjectEquals class CollationElementIterator
     private NormalizerBase text = null;
     private int[] buffer = null;
     private int expIndex = 0;
-    private StringBuffer key = new StringBuffer(5);
+    private StringBuilder key = new StringBuilder(5);
     private int swapOrder = 0;
     private RBCollationTables ordering;
     private RuleBasedCollator owner;

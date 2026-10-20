@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,13 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the general key management exception for all operations
  * dealing with key management. Examples of subclasses of
- * KeyManagementException that developers might create for
+ * {@code KeyManagementException} that developers might create for
  * giving more detailed information could include:
  *
  * <ul>
@@ -46,25 +49,28 @@ package java.security;
 
 public class KeyManagementException extends KeyException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 947674216157062695L;
 
     /**
-     * Constructs a KeyManagementException with no detail message. A
-     * detail message is a String that describes this particular
+     * Constructs a {@code KeyManagementException} with no detail message. A
+     * detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public KeyManagementException() {
         super();
     }
 
-     /**
-     * Constructs a KeyManagementException with the specified detail
-     * message. A detail message is a String that describes this
+    /**
+     * Constructs a {@code KeyManagementException} with the specified detail
+     * message. A detail message is a {@code String} that describes this
      * particular exception.
      *
      * @param msg the detail message.
      */
-   public KeyManagementException(String msg) {
+    @SideEffectFree
+    public KeyManagementException(@Nullable String msg) {
         super(msg);
     }
 
@@ -79,7 +85,8 @@ public class KeyManagementException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyManagementException(String message, Throwable cause) {
+    @SideEffectFree
+    public KeyManagementException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -94,7 +101,8 @@ public class KeyManagementException extends KeyException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public KeyManagementException(Throwable cause) {
+    @SideEffectFree
+    public KeyManagementException(@Nullable Throwable cause) {
         super(cause);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_INTERPRETER_OOPMAPCACHE_HPP
-#define SHARE_VM_INTERPRETER_OOPMAPCACHE_HPP
+#ifndef SHARE_INTERPRETER_OOPMAPCACHE_HPP
+#define SHARE_INTERPRETER_OOPMAPCACHE_HPP
 
 #include "oops/generateOopMap.hpp"
 #include "runtime/mutex.hpp"
@@ -60,6 +60,7 @@ class OffsetClosure  {
   virtual void offset_do(int offset) = 0;
 };
 
+class OopMapCacheEntry;
 
 class InterpreterOopMap: ResourceObj {
   friend class OopMapCache;
@@ -90,7 +91,8 @@ class InterpreterOopMap: ResourceObj {
                                   // ptr to bit mask otherwise
                                   // "protected" so that sub classes can
                                   // access it without using trickery in
-                                  // methd bit_mask().
+                                  // method bit_mask().
+  int            _num_oops;
 #ifdef ASSERT
   bool _resource_allocate_bit_mask;
 #endif
@@ -138,6 +140,7 @@ class InterpreterOopMap: ResourceObj {
   int number_of_entries() const                  { return mask_size() / bits_per_entry; }
   bool is_dead(int offset) const                 { return (entry_at(offset) & (1 << dead_bit_number)) != 0; }
   bool is_oop (int offset) const                 { return (entry_at(offset) & (1 << oop_bit_number )) != 0; }
+  int  num_oops() const                          { return _num_oops; }
 
   int expression_stack_size() const              { return _expression_stack_size; }
 
@@ -176,4 +179,4 @@ class OopMapCache : public CHeapObj<mtClass> {
   static void cleanup_old_entries();
 };
 
-#endif // SHARE_VM_INTERPRETER_OOPMAPCACHE_HPP
+#endif // SHARE_INTERPRETER_OOPMAPCACHE_HPP

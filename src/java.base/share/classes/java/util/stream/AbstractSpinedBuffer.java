@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -25,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.dataflow.qual.Pure;
 
 /**
@@ -101,6 +101,7 @@ abstract class AbstractSpinedBuffer {
      * Is the buffer currently empty?
      */
     @Pure
+    @EnsuresNonEmptyIf(result = false, expression = "this")
     public boolean isEmpty() {
         return (spineIndex == 0) && (elementIndex == 0);
     }

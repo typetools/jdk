@@ -21,6 +21,8 @@
 
 package com.sun.org.apache.xml.internal.serializer.utils;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A very simple lookup table that stores a list of strings, the even
  * number strings being keys, and the odd number strings being values.
@@ -173,6 +175,7 @@ public final class StringToIntTable
    *
    * @return True if the string is in the table
    */
+  @Pure
   public final boolean contains(String key)
   {
 

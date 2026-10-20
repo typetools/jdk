@@ -49,7 +49,7 @@ import jdk.tools.jlink.internal.Jlink.JlinkConfiguration;
 import jdk.tools.jlink.internal.Jlink.PluginsConfiguration;
 import jdk.tools.jlink.internal.PostProcessor;
 import jdk.tools.jlink.internal.plugins.DefaultCompressPlugin;
-import jdk.tools.jlink.internal.plugins.StripDebugPlugin;
+import jdk.tools.jlink.internal.plugins.DefaultStripDebugPlugin;
 
 import tests.Helper;
 import tests.JImageGenerator;
@@ -69,7 +69,7 @@ import tests.JImageGenerator;
  *          jdk.jlink/jdk.tools.jimage
  *          jdk.compiler
  * @build tests.*
- * @run main IntegrationTest
+ * @run main/othervm -Xmx1g IntegrationTest
  */
 public class IntegrationTest {
 
@@ -168,16 +168,20 @@ public class IntegrationTest {
         //Strip debug
         {
             Map<String, String> config1 = new HashMap<>();
-            config1.put(StripDebugPlugin.NAME, "");
             Plugin strip = Jlink.newPlugin("strip-debug", config1, null);
+            config1.put(strip.getName(), "");
             lst.add(strip);
         }
         // compress
         {
             Map<String, String> config1 = new HashMap<>();
-            config1.put(DefaultCompressPlugin.NAME, "2");
+            String pluginName = "compress";
+            config1.put(pluginName, "2");
             Plugin compress
-                    = Jlink.newPlugin("compress", config1, null);
+                    = Jlink.newPlugin(pluginName, config1, null);
+            if(!pluginName.equals(compress.getName())) {
+                throw new AssertionError("compress plugin name doesn't match test constant");
+            }
             lst.add(compress);
         }
         // Post processor

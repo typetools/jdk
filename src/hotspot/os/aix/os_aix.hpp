@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2013, 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,31 +23,20 @@
  *
  */
 
-#ifndef OS_AIX_VM_OS_AIX_HPP
-#define OS_AIX_VM_OS_AIX_HPP
+#ifndef OS_AIX_OS_AIX_HPP
+#define OS_AIX_OS_AIX_HPP
 
-// Information about the protection of the page at address '0' on this os.
-static bool zero_page_read_protected() { return false; }
+#include "runtime/os.hpp"
 
 // Class Aix defines the interface to the Aix operating systems.
 
-class Aix {
+class os::Aix {
   friend class os;
-
-  static bool libjsig_is_loaded;        // libjsig that interposes sigaction(),
-                                        // __sigaction(), signal() is loaded
-  static struct sigaction *(*get_signal_action)(int);
-  static struct sigaction *get_preinstalled_handler(int);
-  static void save_preinstalled_handler(int, struct sigaction&);
-
-  static void check_signal_handler(int sig);
 
  private:
 
   static julong _physical_memory;
   static pthread_t _main_thread;
-  static Mutex* _createThread_lock;
-  static int _page_size;
 
   // -1 = uninitialized, 0 = AIX, 1 = OS/400 (PASE)
   static int _on_pase;
@@ -70,6 +59,7 @@ class Aix {
   static int _extshm;
 
   static julong available_memory();
+  static julong free_memory();
   static julong physical_memory() { return _physical_memory; }
   static void initialize_system_info();
 
@@ -92,42 +82,14 @@ class Aix {
  public:
   static void init_thread_fpu_state();
   static pthread_t main_thread(void)                                { return _main_thread; }
-  static void set_createThread_lock(Mutex* lk)                      { _createThread_lock = lk; }
-  static Mutex* createThread_lock(void)                             { return _createThread_lock; }
-  static void hotspot_sigmask(Thread* thread);
 
   // Given an address, returns the size of the page backing that address
   static size_t query_pagesize(void* p);
 
-  static int page_size(void) {
-    assert(_page_size != -1, "not initialized");
-    return _page_size;
-  }
-
-  static address   ucontext_get_pc(const ucontext_t* uc);
   static intptr_t* ucontext_get_sp(const ucontext_t* uc);
   static intptr_t* ucontext_get_fp(const ucontext_t* uc);
-  // Set PC into context. Needed for continuation after signal.
-  static void ucontext_set_pc(ucontext_t* uc, address pc);
 
   static bool get_frame_at_stack_banging_point(JavaThread* thread, ucontext_t* uc, frame* fr);
-
-  // This boolean allows users to forward their own non-matching signals
-  // to JVM_handle_aix_signal, harmlessly.
-  static bool signal_handlers_are_installed;
-
-  static int get_our_sigflags(int);
-  static void set_our_sigflags(int, int);
-  static void signal_sets_init();
-  static void install_signal_handlers();
-  static void set_signal_handler(int, bool);
-
-  static sigset_t* unblocked_signals();
-  static sigset_t* vm_signals();
-
-  // For signal-chaining
-  static struct sigaction *get_chained_signal_action(int sig);
-  static bool chained_handler(int sig, siginfo_t* siginfo, void* context);
 
   // libpthread version string
   static void libpthread_init();
@@ -210,6 +172,8 @@ class Aix {
   // Returns true if ok, false if error.
   static bool get_meminfo(meminfo_t* pmi);
 
+  static bool platform_print_native_stack(outputStream* st, const void* context, char *buf, int buf_size);
+  static void* resolve_function_descriptor(void* p);
 };
 
-#endif // OS_AIX_VM_OS_AIX_HPP
+#endif // OS_AIX_OS_AIX_HPP

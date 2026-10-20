@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,8 +21,8 @@
  * questions.
  */
 
-import jdk.testlibrary.OutputAnalyzer;
-import jdk.testlibrary.ProcessTools;
+import jdk.test.lib.process.OutputAnalyzer;
+import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.Platform;
 
 import java.io.BufferedWriter;
@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -94,7 +95,7 @@ public abstract class AbstractFilePermissionTest {
             return true;
         }
 
-        if (!Platform.isLinux() && !Platform.isSolaris()) {
+        if (!Platform.isLinux()) {
             System.out.println("Test not designed to run on this operating system, skipping...");
             return true;
         }
@@ -161,10 +162,10 @@ public abstract class AbstractFilePermissionTest {
     private int doTest() throws Exception {
 
         for (int i = 0; i < MAX_GET_FREE_PORT_TRIES; ++i) {
-            final String pp = "-Dcom.sun.management.jmxremote.port=" + jdk.testlibrary.Utils.getFreePort();
+            final String pp = "-Dcom.sun.management.jmxremote.port=" + jdk.test.lib.Utils.getFreePort();
 
             List<String> command = new ArrayList<>();
-            command.addAll(jdk.testlibrary.Utils.getVmOptions());
+            Collections.addAll(command, jdk.test.lib.Utils.getTestJavaOpts());
             command.add(mp);
             command.add(pp);
             command.add("-cp");

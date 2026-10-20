@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,10 @@
  */
 
 package sun.net.www;
+
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.*;
 import java.util.Collections;
@@ -191,6 +195,7 @@ class MessageHeader {
             key = k;
             this.lock = lock;
         }
+        @Pure
         public boolean hasNext () {
             synchronized (lock) {
                 if (haveNext) {
@@ -207,6 +212,8 @@ class MessageHeader {
                 return false;
             }
         }
+        @SideEffectsOnly("this")
+        @DoesNotUnrefineReceiver("modifiability")
         public String next() {
             synchronized (lock) {
                 if (haveNext) {
@@ -220,6 +227,7 @@ class MessageHeader {
                 }
             }
         }
+        @DoesNotUnrefineReceiver("modifiability")
         public void remove () {
             throw new UnsupportedOperationException ("remove not allowed");
         }
@@ -245,7 +253,7 @@ class MessageHeader {
             String[] excludeList, Map<String, List<String>>  include) {
         boolean skipIt = false;
         Map<String, List<String>> m = new HashMap<>();
-        for (int i = nkeys; --i >= 0;) {
+        for (int i = 0; i < nkeys; i++) {
             if (excludeList != null) {
                 // check if the key is in the excludeList.
                 // if so, don't include it in the Map.
@@ -288,14 +296,55 @@ class MessageHeader {
         return Collections.unmodifiableMap(m);
     }
 
+    /** Check if a line of message header looks like a request line.
+     * This method does not perform a full validation but simply
+     * returns false if the line does not end with 'HTTP/[1-9].[0-9]'
+     * @param line the line to check.
+     * @return true if the line might be a request line.
+     */
+    private static boolean isRequestline(String line) {
+        String k = line.trim();
+        int i = k.lastIndexOf(' ');
+        if (i <= 0) return false;
+        int len = k.length();
+        if (len - i < 9) return false;
+
+        char c1 = k.charAt(len-3);
+        char c2 = k.charAt(len-2);
+        char c3 = k.charAt(len-1);
+        if (c1 < '1' || c1 > '9') return false;
+        if (c2 != '.') return false;
+        if (c3 < '0' || c3 > '9') return false;
+
+        return (k.substring(i+1, len-3).equalsIgnoreCase("HTTP/"));
+    }
+
     /** Prints the key-value pairs represented by this
-        header.  Also prints the RFC required blank line
-        at the end. Omits pairs with a null key. */
-    public synchronized void print(PrintStream p) {
+        header. Also prints the RFC required blank line
+        at the end. Omits pairs with a null key. Omits
+        colon if key-value pair is the requestline. */
+    public void print(PrintStream p) {
+        // no synchronization: use cloned arrays instead.
+        String[] k; String[] v; int n;
+        synchronized (this) { n = nkeys; k = keys.clone(); v = values.clone(); }
+        print(n, k, v, p);
+    }
+
+
+    /** Prints the key-value pairs represented by this
+        header. Also prints the RFC required blank line
+        at the end. Omits pairs with a null key. Omits
+        colon if key-value pair is the requestline. */
+    private  static void print(int nkeys, String[] keys, String[] values, PrintStream p) {
         for (int i = 0; i < nkeys; i++)
             if (keys[i] != null) {
-                p.print(keys[i] +
-                    (values[i] != null ? ": "+values[i]: "") + "\r\n");
+                StringBuilder sb = new StringBuilder(keys[i]);
+                if (values[i] != null) {
+                    sb.append(": " + values[i]);
+                } else if (i != 0 || !isRequestline(keys[i])) {
+                    sb.append(":");
+                }
+                p.print(sb.append("\r\n"));
             }
         p.print("\r\n");
         p.flush();

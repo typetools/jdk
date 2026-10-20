@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,26 +25,29 @@
 package java.util.stream;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
+import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -169,7 +172,9 @@ import java.util.function.UnaryOperator;
  * @see DoubleStream
  * @see <a href="package-summary.html">java.util.stream</a>
  */
-@AnnotatedFor({"lock", "nullness"})
+@AnnotatedFor({"lock", "mustcall", "nullness"})
+@CFComment({"MustCall: most Streams do not need to be closed.  There is no need for",
+   "`@InheritableMustCall({})` because `AutoCloseable` already has that class annotation."})
 public interface Stream<T> extends BaseStream<T, Stream<T>> {
 
     /**
@@ -200,7 +205,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *               function to apply to each element
      * @return the new stream
      */
-    <R> Stream<R> map(Function<? super T, ? extends R> mapper);
+    <R> @PolyNonEmpty Stream<R> map(@PolyNonEmpty Stream<T> this, Function<? super T, ? extends R> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of applying the
@@ -285,8 +290,9 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *               function to apply to each element which produces a stream
      *               of new values
      * @return the new stream
+     * @see #mapMulti
      */
-    <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper);
+    <R> Stream<R> flatMap(Function<? super T, ? extends @Nullable Stream<? extends R>> mapper);
 
     /**
      * Returns an {@code IntStream} consisting of the results of replacing each
@@ -306,7 +312,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper);
+    IntStream flatMapToInt(Function<? super T, ? extends @Nullable IntStream> mapper);
 
     /**
      * Returns an {@code LongStream} consisting of the results of replacing each
@@ -326,7 +332,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper);
+    LongStream flatMapToLong(Function<? super T, ? extends @Nullable LongStream> mapper);
 
     /**
      * Returns an {@code DoubleStream} consisting of the results of replacing
@@ -346,7 +352,213 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return the new stream
      * @see #flatMap(Function)
      */
-    DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper);
+    DoubleStream flatMapToDouble(Function<? super T, ? extends @Nullable DoubleStream> mapper);
+
+    // THE EXAMPLES USED IN THE JAVADOC MUST BE IN SYNC WITH THEIR CORRESPONDING
+    // TEST IN test/jdk/java/util/stream/examples/JavadocExamples.java.
+    /**
+     * Returns a stream consisting of the results of replacing each element of
+     * this stream with multiple elements, specifically zero or more elements.
+     * Replacement is performed by applying the provided mapping function to each
+     * element in conjunction with a {@linkplain Consumer consumer} argument
+     * that accepts replacement elements. The mapping function calls the consumer
+     * zero or more times to provide the replacement elements.
+     *
+     * <p>This is an <a href="package-summary.html#StreamOps">intermediate
+     * operation</a>.
+     *
+     * <p>If the {@linkplain Consumer consumer} argument is used outside the scope of
+     * its application to the mapping function, the results are undefined.
+     *
+     * @implSpec
+     * The default implementation invokes {@link #flatMap flatMap} on this stream,
+     * passing a function that behaves as follows. First, it calls the mapper function
+     * with a {@code Consumer} that accumulates replacement elements into a newly created
+     * internal buffer. When the mapper function returns, it creates a stream from the
+     * internal buffer. Finally, it returns this stream to {@code flatMap}.
+     *
+     * @apiNote
+     * This method is similar to {@link #flatMap flatMap} in that it applies a one-to-many
+     * transformation to the elements of the stream and flattens the result elements
+     * into a new stream. This method is preferable to {@code flatMap} in the following
+     * circumstances:
+     * <ul>
+     * <li>When replacing each stream element with a small (possibly zero) number of
+     * elements. Using this method avoids the overhead of creating a new Stream instance
+     * for every group of result elements, as required by {@code flatMap}.</li>
+     * <li>When it is easier to use an imperative approach for generating result
+     * elements than it is to return them in the form of a Stream.</li>
+     * </ul>
+     *
+     * <p>If a lambda expression is provided as the mapper function argument, additional type
+     * information may be necessary for proper inference of the element type {@code <R>} of
+     * the returned stream. This can be provided in the form of explicit type declarations for
+     * the lambda parameters or as an explicit type argument to the {@code mapMulti} call.
+     *
+     * <p><b>Examples</b>
+     *
+     * <p>Given a stream of {@code Number} objects, the following
+     * produces a list containing only the {@code Integer} objects:
+     * <pre>{@code
+     *     Stream<Number> numbers = ... ;
+     *     List<Integer> integers = numbers.<Integer>mapMulti((number, consumer) -> {
+     *             if (number instanceof Integer i)
+     *                 consumer.accept(i);
+     *         })
+     *         .collect(Collectors.toList());
+     * }</pre>
+     *
+     * <p>If we have an {@code Iterable<Object>} and need to recursively expand its elements
+     * that are themselves of type {@code Iterable}, we can use {@code mapMulti} as follows:
+     * <pre>{@code
+     * class C {
+     *     static void expandIterable(Object e, Consumer<Object> c) {
+     *         if (e instanceof Iterable<?> elements) {
+     *             for (Object ie : elements) {
+     *                 expandIterable(ie, c);
+     *             }
+     *         } else if (e != null) {
+     *             c.accept(e);
+     *         }
+     *     }
+     *
+     *     public static void main(String[] args) {
+     *         var nestedList = List.of(1, List.of(2, List.of(3, 4)), 5);
+     *         Stream<Object> expandedStream = nestedList.stream().mapMulti(C::expandIterable);
+     *     }
+     * }
+     * }</pre>
+     *
+     * @param <R> The element type of the new stream
+     * @param mapper a <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *               <a href="package-summary.html#Statelessness">stateless</a>
+     *               function that generates replacement elements
+     * @return the new stream
+     * @see #flatMap flatMap
+     * @since 16
+     */
+    default <R> Stream<R> mapMulti(BiConsumer<? super T, ? super Consumer<R>> mapper) {
+        Objects.requireNonNull(mapper);
+        return flatMap(e -> {
+            SpinedBuffer<R> buffer = new SpinedBuffer<>();
+            mapper.accept(e, buffer);
+            return StreamSupport.stream(buffer.spliterator(), false);
+        });
+    }
+
+    /**
+     * Returns an {@code IntStream} consisting of the results of replacing each
+     * element of this stream with multiple elements, specifically zero or more
+     * elements.
+     * Replacement is performed by applying the provided mapping function to each
+     * element in conjunction with a {@linkplain IntConsumer consumer} argument
+     * that accepts replacement elements. The mapping function calls the consumer
+     * zero or more times to provide the replacement elements.
+     *
+     * <p>This is an <a href="package-summary.html#StreamOps">intermediate
+     * operation</a>.
+     *
+     * <p>If the {@linkplain IntConsumer consumer} argument is used outside the scope of
+     * its application to the mapping function, the results are undefined.
+     *
+     * @implSpec
+     * The default implementation invokes {@link #flatMapToInt flatMapToInt} on this stream,
+     * passing a function that behaves as follows. First, it calls the mapper function
+     * with an {@code IntConsumer} that accumulates replacement elements into a newly created
+     * internal buffer. When the mapper function returns, it creates an {@code IntStream} from
+     * the internal buffer. Finally, it returns this stream to {@code flatMapToInt}.
+     *
+     * @param mapper a <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *               <a href="package-summary.html#Statelessness">stateless</a>
+     *               function that generates replacement elements
+     * @return the new stream
+     * @see #mapMulti mapMulti
+     * @since 16
+     */
+    default IntStream mapMultiToInt(BiConsumer<? super T, ? super IntConsumer> mapper) {
+        Objects.requireNonNull(mapper);
+        return flatMapToInt(e -> {
+            SpinedBuffer.OfInt buffer = new SpinedBuffer.OfInt();
+            mapper.accept(e, buffer);
+            return StreamSupport.intStream(buffer.spliterator(), false);
+        });
+    }
+
+    /**
+     * Returns a {@code LongStream} consisting of the results of replacing each
+     * element of this stream with multiple elements, specifically zero or more
+     * elements.
+     * Replacement is performed by applying the provided mapping function to each
+     * element in conjunction with a {@linkplain LongConsumer consumer} argument
+     * that accepts replacement elements. The mapping function calls the consumer
+     * zero or more times to provide the replacement elements.
+     *
+     * <p>This is an <a href="package-summary.html#StreamOps">intermediate
+     * operation</a>.
+     *
+     * <p>If the {@linkplain LongConsumer consumer} argument is used outside the scope of
+     * its application to the mapping function, the results are undefined.
+     *
+     * @implSpec
+     * The default implementation invokes {@link #flatMapToLong flatMapToLong} on this stream,
+     * passing a function that behaves as follows. First, it calls the mapper function
+     * with a {@code LongConsumer} that accumulates replacement elements into a newly created
+     * internal buffer. When the mapper function returns, it creates a {@code LongStream} from
+     * the internal buffer. Finally, it returns this stream to {@code flatMapToLong}.
+     *
+     * @param mapper a <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *               <a href="package-summary.html#Statelessness">stateless</a>
+     *               function that generates replacement elements
+     * @return the new stream
+     * @see #mapMulti mapMulti
+     * @since 16
+     */
+    default LongStream mapMultiToLong(BiConsumer<? super T, ? super LongConsumer> mapper) {
+        Objects.requireNonNull(mapper);
+        return flatMapToLong(e -> {
+            SpinedBuffer.OfLong buffer = new SpinedBuffer.OfLong();
+            mapper.accept(e, buffer);
+            return StreamSupport.longStream(buffer.spliterator(), false);
+        });
+    }
+
+    /**
+     * Returns a {@code DoubleStream} consisting of the results of replacing each
+     * element of this stream with multiple elements, specifically zero or more
+     * elements.
+     * Replacement is performed by applying the provided mapping function to each
+     * element in conjunction with a {@linkplain DoubleConsumer consumer} argument
+     * that accepts replacement elements. The mapping function calls the consumer
+     * zero or more times to provide the replacement elements.
+     *
+     * <p>This is an <a href="package-summary.html#StreamOps">intermediate
+     * operation</a>.
+     *
+     * <p>If the {@linkplain DoubleConsumer consumer} argument is used outside the scope of
+     * its application to the mapping function, the results are undefined.
+     *
+     * @implSpec
+     * The default implementation invokes {@link #flatMapToDouble flatMapToDouble} on this stream,
+     * passing a function that behaves as follows. First, it calls the mapper function
+     * with an {@code DoubleConsumer} that accumulates replacement elements into a newly created
+     * internal buffer. When the mapper function returns, it creates a {@code DoubleStream} from
+     * the internal buffer. Finally, it returns this stream to {@code flatMapToDouble}.
+     *
+     * @param mapper a <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *               <a href="package-summary.html#Statelessness">stateless</a>
+     *               function that generates replacement elements
+     * @return the new stream
+     * @see #mapMulti mapMulti
+     * @since 16
+     */
+    default DoubleStream mapMultiToDouble(BiConsumer<? super T, ? super DoubleConsumer> mapper) {
+        Objects.requireNonNull(mapper);
+        return flatMapToDouble(e -> {
+            SpinedBuffer.OfDouble buffer = new SpinedBuffer.OfDouble();
+            mapper.accept(e, buffer);
+            return StreamSupport.doubleStream(buffer.spliterator(), false);
+        });
+    }
 
     /**
      * Returns a stream consisting of the distinct elements (according to
@@ -375,7 +587,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> distinct();
+    @PolyNonEmpty Stream<T> distinct(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -391,7 +603,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *
      * @return the new stream
      */
-    Stream<T> sorted();
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this);
 
     /**
      * Returns a stream consisting of the elements of this stream, sorted
@@ -408,7 +620,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                   {@code Comparator} to be used to compare stream elements
      * @return the new stream
      */
-    Stream<T> sorted(Comparator<? super T> comparator);
+    @PolyNonEmpty Stream<T> sorted(@PolyNonEmpty Stream<T> this, Comparator<? super T> comparator);
 
     /**
      * Returns a stream consisting of the elements of this stream, additionally
@@ -681,7 +893,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * type} is {@code Object}, containing the elements of this stream
      */
     @SideEffectFree
-    @PolyNull Object[] toArray(Stream<@PolyNull T> this);
+    @PolyNull Object @PolyNonEmpty[] toArray(@PolyNonEmpty Stream<@PolyNull T> this);
 
     /**
      * Returns an array containing the elements of this stream, using the
@@ -710,7 +922,6 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         stream is not assignable to the {@linkplain Class#getComponentType
      *         runtime component type} of the generated array
      */
-    @SideEffectFree
     <A> A[] toArray(IntFunction<A[]> generator);
 
     /**
@@ -910,6 +1121,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                    first result container.
      * @return the result of the reduction
      */
+    @CFComment("@SideEffectFree: the supplied functions should not have side effects")
+    @SideEffectFree
     <R> R collect(Supplier<R> supplier,
                   BiConsumer<R, ? super T> accumulator,
                   BiConsumer<R, R> combiner);
@@ -940,7 +1153,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * additional synchronization is needed for a parallel reduction.
      *
      * @apiNote
-     * The following will accumulate strings into an ArrayList:
+     * The following will accumulate strings into a List:
      * <pre>{@code
      *     List<String> asList = stringStream.collect(Collectors.toList());
      * }</pre>
@@ -966,7 +1179,43 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @see #collect(Supplier, BiConsumer, BiConsumer)
      * @see Collectors
      */
+    @CFComment("@SideEffectFree: the collector should not have side effects")
+    @SideEffectFree
     <R, A> R collect(Collector<? super T, A, R> collector);
+
+    /**
+     * Accumulates the elements of this stream into a {@code List}. The elements in
+     * the list will be in this stream's encounter order, if one exists. The returned List
+     * is unmodifiable; calls to any mutator method will always cause
+     * {@code UnsupportedOperationException} to be thrown. There are no
+     * guarantees on the implementation type or serializability of the returned List.
+     *
+     * <p>The returned instance may be <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>.
+     * Callers should make no assumptions about the identity of the returned instances.
+     * Identity-sensitive operations on these instances (reference equality ({@code ==}),
+     * identity hash code, and synchronization) are unreliable and should be avoided.
+     *
+     * <p>This is a <a href="package-summary.html#StreamOps">terminal operation</a>.
+     *
+     * @apiNote If more control over the returned object is required, use
+     * {@link Collectors#toCollection(Supplier)}.
+     *
+     * @implSpec The implementation in this interface returns a List produced as if by the following:
+     * <pre>{@code
+     * Collections.unmodifiableList(new ArrayList<>(Arrays.asList(this.toArray())))
+     * }</pre>
+     *
+     * @implNote Most instances of Stream will override this method and provide an implementation
+     * that is highly optimized compared to the implementation in this interface.
+     *
+     * @return a List containing the stream elements
+     *
+     * @since 16
+     */
+    @SuppressWarnings("unchecked")
+    default List<T> toList() {
+        return (List<T>) Collections.unmodifiableList(new ArrayList<>(Arrays.asList(this.toArray())));
+    }
 
     /**
      * Returns the minimum element of this stream according to the provided
@@ -1053,7 +1302,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if any elements of the stream match the provided
      * predicate, otherwise {@code false}
      */
-    boolean anyMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean anyMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether all elements of this stream match the provided predicate.
@@ -1076,7 +1326,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either all elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean allMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = true, expression = "this")
+    boolean allMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns whether no elements of this stream match the provided predicate.
@@ -1099,7 +1350,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @return {@code true} if either no elements of the stream match the
      * provided predicate or the stream is empty, otherwise {@code false}
      */
-    boolean noneMatch(Predicate<? super T> predicate);
+    @EnsuresNonEmptyIf(result = false, expression = "this")
+    boolean noneMatch(Stream<T> this, Predicate<? super T> predicate);
 
     /**
      * Returns an {@link Optional} describing the first element of this stream,
@@ -1164,7 +1416,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * @param <T> the type of stream elements
      * @return a singleton sequential stream
      */
-    public static<T> Stream<T> of(T t) {
+    public static<T> @NonEmpty Stream<T> of(T t) {
         return StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
 
@@ -1178,7 +1430,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *         is non-null, otherwise an empty stream
      * @since 9
      */
-    public static<T> Stream<T> ofNullable(T t) {
+    public static<T> Stream<T> ofNullable(@Nullable T t) {
         return t == null ? Stream.empty()
                          : StreamSupport.stream(new Streams.StreamBuilderImpl<>(t), false);
     }
@@ -1192,7 +1444,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      */
     @SafeVarargs
     @SuppressWarnings("varargs") // Creating a stream from an array is safe
-    public static<T> Stream<T> of(T... values) {
+    public static<T> @PolyNonEmpty Stream<T> of(T @PolyNonEmpty... values) {
         return Arrays.stream(values);
     }
 
@@ -1416,7 +1668,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * the built state
          */
         @Override
-        void accept(T t);
+        @EnsuresNonEmpty("this")
+        void accept(Stream.Builder<T> this, T t);
 
         /**
          * Adds an element to the stream being built.
@@ -1433,7 +1686,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        default Builder<T> add(Stream.@GuardSatisfied Builder<T> this, T t) {
+        default @NonEmpty Builder<T> add(Stream.@GuardSatisfied Builder<T> this, T t) {
             accept(t);
             return this;
         }
@@ -1447,7 +1700,7 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
          * @throws IllegalStateException if the builder has already transitioned to
          * the built state
          */
-        Stream<T> build();
+        @PolyNonEmpty Stream<T> build(Stream.@PolyNonEmpty Builder<T> this);
 
     }
 }

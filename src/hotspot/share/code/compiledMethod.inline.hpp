@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_CODE_COMPILEDMETHOD_INLINE_HPP
-#define SHARE_VM_CODE_COMPILEDMETHOD_INLINE_HPP
+#ifndef SHARE_CODE_COMPILEDMETHOD_INLINE_HPP
+#define SHARE_CODE_COMPILEDMETHOD_INLINE_HPP
 
 #include "code/compiledMethod.hpp"
+
 #include "code/nativeInst.hpp"
+#include "runtime/atomic.hpp"
 #include "runtime/frame.hpp"
-#include "runtime/orderAccess.hpp"
 
 inline bool CompiledMethod::is_deopt_pc(address pc) { return is_deopt_entry(pc) || is_deopt_mh_entry(pc); }
 
@@ -41,8 +42,12 @@ inline bool CompiledMethod::is_deopt_entry(address pc) {
     ;
 }
 
-inline void CompiledMethod::release_set_exception_cache(ExceptionCache *ec) {
-  OrderAccess::release_store(&_exception_cache, ec);
+inline bool CompiledMethod::is_deopt_mh_entry(address pc) {
+  return pc == deopt_mh_handler_begin()
+#if INCLUDE_JVMCI
+    || (is_compiled_by_jvmci() && pc == (deopt_mh_handler_begin() + NativeCall::instruction_size))
+#endif
+    ;
 }
 
 // -----------------------------------------------------------------------------
@@ -53,19 +58,19 @@ inline void CompiledMethod::release_set_exception_cache(ExceptionCache *ec) {
 // (b) it is a deopt PC
 
 inline address CompiledMethod::get_deopt_original_pc(const frame* fr) {
-  if (fr->cb() == NULL)  return NULL;
+  if (fr->cb() == nullptr)  return nullptr;
 
   CompiledMethod* cm = fr->cb()->as_compiled_method_or_null();
-  if (cm != NULL && cm->is_deopt_pc(fr->pc()))
+  if (cm != nullptr && cm->is_deopt_pc(fr->pc()))
     return cm->get_original_pc(fr);
 
-  return NULL;
+  return nullptr;
 }
 
 
 // class ExceptionCache methods
 
-inline int ExceptionCache::count() { return OrderAccess::load_acquire(&_count); }
+inline int ExceptionCache::count() { return Atomic::load_acquire(&_count); }
 
 address ExceptionCache::pc_at(int index) {
   assert(index >= 0 && index < count(),"");
@@ -78,7 +83,7 @@ address ExceptionCache::handler_at(int index) {
 }
 
 // increment_count is only called under lock, but there may be concurrent readers.
-inline void ExceptionCache::increment_count() { OrderAccess::release_store(&_count, _count + 1); }
+inline void ExceptionCache::increment_count() { Atomic::release_store(&_count, _count + 1); }
 
 
-#endif //SHARE_VM_CODE_COMPILEDMETHOD_INLINE_HPP
+#endif // SHARE_CODE_COMPILEDMETHOD_INLINE_HPP

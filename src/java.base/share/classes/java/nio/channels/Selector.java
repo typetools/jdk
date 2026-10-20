@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 
 package java.nio.channels;
 
+import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethodsIf;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.Closeable;
@@ -83,8 +85,8 @@ import java.util.function.Consumer;
  * <p> A key is added to its selector's cancelled-key set when it is cancelled,
  * whether by closing its channel or by invoking its {@link SelectionKey#cancel
  * cancel} method.  Cancelling a key will cause its channel to be deregistered
- * during the next selection operation, at which time the key will removed from
- * all of the selector's key sets.
+ * during the next selection operation, at which time the key will be removed
+ * from all of the selector's key sets.
  *
  * <a id="sks"></a><p> Keys are added to the selected-key set by selection
  * operations.  A key may be removed directly from the selected-key set by
@@ -274,7 +276,7 @@ import java.util.function.Consumer;
  * @see SelectionKey
  */
 
-@AnnotatedFor({"interning"})
+@AnnotatedFor({"interning", "mustcall"})
 public abstract @UsesObjectEquals class Selector implements Closeable {
 
     /**
@@ -304,6 +306,7 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      *
      * @return {@code true} if, and only if, this selector is open
      */
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
     public abstract boolean isOpen();
 
     /**
@@ -359,7 +362,8 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      * of the {@link #wakeup wakeup} method.  </p>
      *
      * @return  The number of keys, possibly zero, whose ready-operation sets
-     *          were updated by the selection operation
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
@@ -387,8 +391,9 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      *                  channel to become ready; if zero, block indefinitely;
      *                  must not be negative
      *
-     * @return  The number of keys, possibly zero,
-     *          whose ready-operation sets were updated
+     * @return  The number of keys, possibly zero, whose ready-operation sets
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
@@ -410,8 +415,9 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      * this selector's {@link #wakeup wakeup} method is invoked, or the current
      * thread is interrupted, whichever comes first.  </p>
      *
-     * @return  The number of keys, possibly zero,
-     *          whose ready-operation sets were updated
+     * @return  The number of keys, possibly zero, whose ready-operation sets
+     *          now indicate readiness for at least one category of operations
+     *          for which the channel was not previously detected to be ready
      *
      * @throws  IOException
      *          If an I/O error occurs
@@ -610,7 +616,7 @@ public abstract @UsesObjectEquals class Selector implements Closeable {
      *
      * @return  This selector
      */
-    public abstract Selector wakeup();
+    public abstract @MustCallAlias Selector wakeup(@MustCallAlias Selector this);
 
     /**
      * Closes this selector.

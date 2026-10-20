@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,6 +73,7 @@ public @UsesObjectEquals class Statement {
         }
     };
 
+    @SuppressWarnings("removal")
     private final AccessControlContext acc = AccessController.getContext();
     private final Object target;
     private final String methodName;
@@ -179,6 +180,7 @@ public @UsesObjectEquals class Statement {
         invoke();
     }
 
+    @SuppressWarnings("removal")
     Object invoke() throws Exception {
         AccessControlContext acc = this.acc;
         if ((acc == null) && (System.getSecurityManager() != null)) {
@@ -317,7 +319,7 @@ public @UsesObjectEquals class Statement {
                                     iae);
             }
             catch (InvocationTargetException ite) {
-                Throwable te = ite.getTargetException();
+                Throwable te = ite.getCause();
                 if (te instanceof Exception) {
                     throw (Exception)te;
                 }

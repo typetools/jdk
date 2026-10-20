@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,19 +25,23 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that a data format error has occurred.
  *
  * @author      David Connelly
  * @since 1.1
  */
-public
-class DataFormatException extends Exception {
+public class DataFormatException extends Exception {
+    @java.io.Serial
     private static final long serialVersionUID = 2219632870893641452L;
 
     /**
      * Constructs a DataFormatException with no detail message.
      */
+    @SideEffectFree
     public DataFormatException() {
         super();
     }
@@ -47,7 +51,8 @@ class DataFormatException extends Exception {
      * A detail message is a String that describes this particular exception.
      * @param s the String containing a detail message
      */
-    public DataFormatException(String s) {
+    @SideEffectFree
+    public DataFormatException(@Nullable String s) {
         super(s);
     }
 }

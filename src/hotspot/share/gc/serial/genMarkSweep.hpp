@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,14 @@
  *
  */
 
-#ifndef SHARE_VM_GC_SERIAL_GENMARKSWEEP_HPP
-#define SHARE_VM_GC_SERIAL_GENMARKSWEEP_HPP
+#ifndef SHARE_GC_SERIAL_GENMARKSWEEP_HPP
+#define SHARE_GC_SERIAL_GENMARKSWEEP_HPP
 
 #include "gc/serial/markSweep.hpp"
 
 class GenMarkSweep : public MarkSweep {
-  friend class VM_MarkSweep;
  public:
-  static void invoke_at_safepoint(ReferenceProcessor* rp, bool clear_all_softrefs);
+  static void invoke_at_safepoint(bool clear_all_softrefs);
 
  private:
 
@@ -48,4 +47,4 @@ class GenMarkSweep : public MarkSweep {
   static void deallocate_stacks();
 };
 
-#endif // SHARE_VM_GC_SERIAL_GENMARKSWEEP_HPP
+#endif // SHARE_GC_SERIAL_GENMARKSWEEP_HPP

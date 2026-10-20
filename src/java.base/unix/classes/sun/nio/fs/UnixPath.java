@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,33 +31,40 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-import java.nio.*;
-import java.nio.file.*;
-import java.nio.charset.*;
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
-import java.util.*;
-import java.lang.ref.SoftReference;
+import java.nio.charset.CharacterCodingException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.ProviderMismatchException;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.Objects;
 
-import static sun.nio.fs.UnixNativeDispatcher.*;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 import static sun.nio.fs.UnixConstants.*;
+import static sun.nio.fs.UnixNativeDispatcher.*;
 
 /**
- * Solaris/Linux implementation of java.nio.file.Path
+ * Linux/Mac implementation of java.nio.file.Path
  */
-
 class UnixPath implements Path {
-    private static ThreadLocal<SoftReference<CharsetEncoder>> encoder =
-        new ThreadLocal<SoftReference<CharsetEncoder>>();
 
-    // FIXME - eliminate this reference to reduce space
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
     private final UnixFileSystem fs;
 
     // internal representation
     private final byte[] path;
 
-    // String representation (created lazily)
-    private volatile String stringValue;
+    // String representation (created lazily, no need to be volatile)
+    private String stringValue;
 
     // cached hashcode (created lazily, no need to be volatile)
     private int hash;
@@ -121,43 +128,13 @@ class UnixPath implements Path {
 
     // encodes the given path-string into a sequence of bytes
     private static byte[] encode(UnixFileSystem fs, String input) {
-        SoftReference<CharsetEncoder> ref = encoder.get();
-        CharsetEncoder ce = (ref != null) ? ref.get() : null;
-        if (ce == null) {
-            ce = Util.jnuEncoding().newEncoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT);
-            encoder.set(new SoftReference<>(ce));
-        }
-
-        char[] ca = fs.normalizeNativePath(input.toCharArray());
-
-        // size output buffer for worse-case size
-        byte[] ba = new byte[(int)(ca.length * (double)ce.maxBytesPerChar())];
-
-        // encode
-        ByteBuffer bb = ByteBuffer.wrap(ba);
-        CharBuffer cb = CharBuffer.wrap(ca);
-        ce.reset();
-        CoderResult cr = ce.encode(cb, bb, true);
-        boolean error;
-        if (!cr.isUnderflow()) {
-            error = true;
-        } else {
-            cr = ce.flush(bb);
-            error = !cr.isUnderflow();
-        }
-        if (error) {
+        input = fs.normalizeNativePath(input);
+        try {
+            return JLA.getBytesNoRepl(input, Util.jnuEncoding());
+        } catch (CharacterCodingException cce) {
             throw new InvalidPathException(input,
                 "Malformed input or input contains unmappable characters");
         }
-
-        // trim result to actual length if required
-        int len = bb.position();
-        if (len != ba.length)
-            ba = Arrays.copyOf(ba, len);
-
-        return ba;
     }
 
     // package-private
@@ -249,7 +226,7 @@ class UnixPath implements Path {
     }
 
     // returns {@code true} if this path is an empty path
-    private boolean isEmpty() {
+    boolean isEmpty() {
         return path.length == 0;
     }
 
@@ -746,6 +723,7 @@ class UnixPath implements Path {
     }
 
     @Override
+    @Pure
     public int compareTo(Path other) {
         int len1 = path.length;
         int len2 = ((UnixPath) other).path.length;
@@ -770,8 +748,8 @@ class UnixPath implements Path {
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object ob) {
-        if ((ob != null) && (ob instanceof UnixPath)) {
-            return compareTo((Path)ob) == 0;
+        if (ob instanceof UnixPath path) {
+            return compareTo(path) == 0;
         }
         return false;
     }
@@ -792,8 +770,9 @@ class UnixPath implements Path {
     @Override
     public String toString() {
         // OK if two or more threads create a String
+        String stringValue = this.stringValue;
         if (stringValue == null) {
-            stringValue = fs.normalizeJavaPath(Util.toString(path));     // platform encoding
+            this.stringValue = stringValue = fs.normalizeJavaPath(Util.toString(path));     // platform encoding
         }
         return stringValue;
     }
@@ -809,30 +788,25 @@ class UnixPath implements Path {
                     ("NOFOLLOW_LINKS is not supported on this platform");
             flags |= O_NOFOLLOW;
         }
-        try {
-            return open(this, flags, 0);
-        } catch (UnixException x) {
-            // HACK: EINVAL instead of ELOOP on Solaris 10 prior to u4 (see 6460380)
-            if (getFileSystem().isSolaris() && x.errno() == EINVAL)
-                x.setError(ELOOP);
-
-            throw x;
-        }
+        return open(this, flags, 0);
     }
 
     void checkRead() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkRead(getPathForPermissionCheck());
     }
 
     void checkWrite() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkWrite(getPathForPermissionCheck());
     }
 
     void checkDelete() {
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
             sm.checkDelete(getPathForPermissionCheck());
@@ -845,6 +819,7 @@ class UnixPath implements Path {
         }
         // The path is relative so need to resolve against default directory,
         // taking care not to reveal the user.dir
+        @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPropertyAccess("user.dir");
@@ -872,15 +847,17 @@ class UnixPath implements Path {
         // if not resolving links then eliminate "." and also ".."
         // where the previous element is not a link.
         UnixPath result = fs.rootDirectory();
-        for (int i=0; i<absolute.getNameCount(); i++) {
+        for (int i = 0; i < absolute.getNameCount(); i++) {
             UnixPath element = absolute.getName(i);
 
             // eliminate "."
-            if ((element.asByteArray().length == 1) && (element.asByteArray()[0] == '.'))
+            if ((element.asByteArray().length == 1) &&
+                (element.asByteArray()[0] == '.'))
                 continue;
 
             // cannot eliminate ".." if previous element is a link
-            if ((element.asByteArray().length == 2) && (element.asByteArray()[0] == '.') &&
+            if ((element.asByteArray().length == 2) &&
+                (element.asByteArray()[0] == '.') &&
                 (element.asByteArray()[1] == '.'))
             {
                 UnixFileAttributes attrs = null;
@@ -900,13 +877,82 @@ class UnixPath implements Path {
             result = result.resolve(element);
         }
 
-        // check file exists (without following links)
+        // check whether file exists (without following links)
         try {
             UnixFileAttributes.get(result, false);
         } catch (UnixException x) {
             x.rethrowAsIOException(result);
         }
-        return result;
+
+        // Return if the file system is not both case insensitive and retentive
+        if (!fs.isCaseInsensitiveAndPreserving())
+            return result;
+
+        UnixPath path = fs.rootDirectory();
+
+        // Traverse the result obtained above from the root downward, leaving
+        // any '..' elements intact, and replacing other elements with the
+        // entry in the same directory which has an equal key
+        for (int i = 0; i < result.getNameCount(); i++ ) {
+            UnixPath element = result.getName(i);
+
+            // If the element is "..", append it directly and continue
+            if (element.toString().equals("..")) {
+                path = path.resolve(element);
+                continue;
+            }
+
+            // Derive full path to element and check readability
+            UnixPath elementPath = path.resolve(element);
+
+            // Obtain the file key of elementPath
+            UnixFileAttributes attrs = null;
+            try {
+                attrs = UnixFileAttributes.get(elementPath, false);
+            } catch (UnixException x) {
+                x.rethrowAsIOException(result);
+            }
+            final UnixFileKey elementKey = attrs.fileKey();
+
+            // Obtain the directory stream pointer. It will be closed by
+            // UnixDirectoryStream::close.
+            long dp = -1;
+            try {
+                dp = opendir(path);
+            } catch (UnixException x) {
+                x.rethrowAsIOException(path);
+            }
+
+            // Obtain the stream of entries in the directory corresponding
+            // to the path constructed thus far, and extract the entry whose
+            // key is equal to the key of the current element
+            DirectoryStream.Filter<Path> filter = (p) -> { return true; };
+            try (DirectoryStream<Path> entries = new UnixDirectoryStream(path, dp, filter)) {
+                boolean found = false;
+                for (Path entry : entries) {
+                    UnixPath p = path.resolve(entry.getFileName());
+                    UnixFileAttributes attributes = null;
+                    try {
+                        attributes = UnixFileAttributes.get(p, false);
+                        UnixFileKey key = attributes.fileKey();
+                        if (key.equals(elementKey)) {
+                            path = path.resolve(entry);
+                            found = true;
+                            break;
+                        }
+                    } catch (UnixException ignore) {
+                        continue;
+                    }
+                }
+
+                // Fallback which should in theory never happen
+                if (!found) {
+                    path = path.resolve(element);
+                }
+            }
+        }
+
+        return path;
     }
 
     @Override

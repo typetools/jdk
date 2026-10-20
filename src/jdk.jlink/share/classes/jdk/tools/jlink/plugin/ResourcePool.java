@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,8 +24,9 @@
  */
 package jdk.tools.jlink.plugin;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.nio.ByteOrder;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -78,6 +79,7 @@ public interface ResourcePool {
      * @param data The module data to check existence for.
      * @return The module data or null if not found.
      */
+    @Pure
     public boolean contains(ResourcePoolEntry data);
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,10 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Checked exception thrown when a file system loop, or cycle, is encountered.
  *
@@ -32,9 +36,11 @@ package java.nio.file;
  * @see Files#walkFileTree
  */
 
+@AnnotatedFor({"nullness"})
 public class FileSystemLoopException
     extends FileSystemException
 {
+    @java.io.Serial
     private static final long serialVersionUID = 4843039591949217617L;
 
     /**
@@ -44,7 +50,8 @@ public class FileSystemLoopException
      *          a string identifying the file causing the cycle or {@code null} if
      *          not known
      */
-    public FileSystemLoopException(String file) {
+    @SideEffectFree
+    public FileSystemLoopException(@Nullable String file) {
         super(file);
     }
 }

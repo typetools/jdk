@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This exception is thrown when a particular cryptographic algorithm is
  * requested but is not available in the environment.
@@ -35,26 +38,29 @@ package java.security;
 
 public class NoSuchAlgorithmException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = -7443947487218346562L;
 
     /**
-     * Constructs a NoSuchAlgorithmException with no detail
-     * message. A detail message is a String that describes this
+     * Constructs a {@code NoSuchAlgorithmException} with no detail
+     * message. A detail message is a {@code String} that describes this
      * particular exception.
      */
+    @SideEffectFree
     public NoSuchAlgorithmException() {
         super();
     }
 
     /**
-     * Constructs a NoSuchAlgorithmException with the specified
-     * detail message. A detail message is a String that describes
+     * Constructs a {@code NoSuchAlgorithmException} with the specified
+     * detail message. A detail message is a {@code String} that describes
      * this particular exception, which may, for example, specify which
      * algorithm is not available.
      *
      * @param msg the detail message.
      */
-    public NoSuchAlgorithmException(String msg) {
+    @SideEffectFree
+    public NoSuchAlgorithmException(@Nullable String msg) {
         super(msg);
     }
 
@@ -69,7 +75,8 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public NoSuchAlgorithmException(String message, Throwable cause) {
+    @SideEffectFree
+    public NoSuchAlgorithmException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -84,7 +91,8 @@ public class NoSuchAlgorithmException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public NoSuchAlgorithmException(Throwable cause) {
+    @SideEffectFree
+    public NoSuchAlgorithmException(@Nullable Throwable cause) {
         super(cause);
     }
 }

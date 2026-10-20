@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef SHARE_VM_OOPS_OBJARRAYOOP_HPP
-#define SHARE_VM_OOPS_OBJARRAYOOP_HPP
+#ifndef SHARE_OOPS_OBJARRAYOOP_HPP
+#define SHARE_OOPS_OBJARRAYOOP_HPP
 
 #include "oops/arrayOop.hpp"
 #include "utilities/align.hpp"
+#include <type_traits>
 
 class Klass;
 
@@ -34,14 +35,16 @@ class Klass;
 // Evaluating "String arg[10]" will create an objArrayOop.
 
 class objArrayOopDesc : public arrayOopDesc {
+  friend class ArchiveHeapWriter;
   friend class ObjArrayKlass;
   friend class Runtime1;
   friend class psPromotionManager;
-  friend class CSetMarkOopClosure;
-  friend class G1ParScanPartialArrayClosure;
+  friend class CSetMarkWordClosure;
+  friend class Continuation;
+  template <typename T>
+  friend class RawOopWriter;
 
   template <class T> T* obj_at_addr(int index) const;
-  template <class T> T* obj_at_addr_raw(int index) const;
 
   template <class T>
   static ptrdiff_t obj_at_offset(int index) {
@@ -82,26 +85,25 @@ private:
 
   // base is the address following the header.
   HeapWord* base() const;
-  HeapWord* base_raw() const;
 
   // Accessing
   oop obj_at(int index) const;
 
   void obj_at_put(int index, oop value);
 
-  oop atomic_compare_exchange_oop(int index, oop exchange_value, oop compare_value);
+  oop replace_if_null(int index, oop exchange_value);
 
   // Sizing
   static int header_size()    { return arrayOopDesc::header_size(T_OBJECT); }
-  int object_size()           { return object_size(length()); }
+  size_t object_size()        { return object_size(length()); }
 
-  static int object_size(int length) {
+  static size_t object_size(int length) {
     // This returns the object size in HeapWords.
     uint asz = array_size(length);
     uint osz = align_object_size(header_size() + asz);
     assert(osz >= asz,   "no overflow");
     assert((int)osz > 0, "no overflow");
-    return (int)osz;
+    return (size_t)osz;
   }
 
   Klass* element_klass();
@@ -112,4 +114,7 @@ public:
   void oop_iterate_range(OopClosureType* blk, int start, int end);
 };
 
-#endif // SHARE_VM_OOPS_OBJARRAYOOP_HPP
+// See similar requirement for oopDesc.
+static_assert(std::is_trivially_default_constructible<objArrayOopDesc>::value, "required");
+
+#endif // SHARE_OOPS_OBJARRAYOOP_HPP

@@ -39,7 +39,7 @@ import javax.swing.plaf.basic.*;
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *
@@ -158,7 +158,7 @@ class MetalSplitPaneDivider extends BasicSplitPaneDivider
                     }
                     else {
                             // Draw the image for a horizontal split
-                            // by simply swaping the i and j axis.
+                            // by simply swapping the i and j axis.
                             // Except the drawLine() call this code is
                             // identical to the code block above. This was done
                             // in order to remove the additional orientation
@@ -268,7 +268,7 @@ class MetalSplitPaneDivider extends BasicSplitPaneDivider
                     }
                     else {
                             // Draw the image for a horizontal split
-                            // by simply swaping the i and j axis.
+                            // by simply swapping the i and j axis.
                             // Except the drawLine() call this code is
                             // identical to the code block above. This was done
                             // in order to remove the additional orientation

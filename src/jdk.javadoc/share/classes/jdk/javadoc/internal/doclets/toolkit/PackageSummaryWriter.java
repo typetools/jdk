@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,142 +25,103 @@
 
 package jdk.javadoc.internal.doclets.toolkit;
 
+import java.util.List;
 import java.util.SortedSet;
 
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
 import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
 
 /**
  * The interface for writing package summary output.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
- *
- * @author Jamie Ho
- * @author Bhavesh Patel (Modified)
  */
-
 public interface PackageSummaryWriter {
 
     /**
      * Get the header for the summary.
      *
-     * @param heading Package name.
-     * @return the header to be added to the content tree
+     * @return the header to be added to the content
      */
-    public abstract Content getPackageHeader(String heading);
+    Content getPackageHeader();
 
     /**
      * Get the header for the package content.
      *
-     * @return a content tree for the package content header
+     * @return the package content header
      */
-    public abstract Content getContentHeader();
+    Content getContentHeader();
 
     /**
      * Get the header for the package summary.
      *
-     * @return a content tree with the package summary header
+     * @return the package summary header
      */
-    public abstract Content getSummaryHeader();
+    Content getSummariesList();
 
     /**
-     * Adds the table of interfaces to the documentation tree.
+     * Adds the table of related packages to the documentation.
      *
-     * @param interfaces the interfaces to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
+     * @param summaryContent the content to which the summaries will be added
      */
-    public abstract void addInterfaceSummary(SortedSet<TypeElement> interfaces,
-            Content summaryContentTree);
+    void addRelatedPackagesSummary(Content summaryContent);
 
     /**
-     * Adds the table of classes to the documentation tree.
+     * Adds the table of all classes and interfaces to the documentation.
      *
-     * @param classes the classes to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
+     * @param summaryContent the content to which the summaries will be added
      */
-    public abstract void addClassSummary(SortedSet<TypeElement> classes,
-            Content summaryContentTree);
+    void addAllClassesAndInterfacesSummary(Content summaryContent);
 
     /**
-     * Adds the table of enums to the documentation tree.
+     * Adds the package description from the "packages.html" file to the documentation.
      *
-     * @param enums the enums to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
+     * @param packageContent the content to which the package description
+     *                       will be added
      */
-    public abstract void addEnumSummary(SortedSet<TypeElement> enums,
-            Content summaryContentTree);
+    void addPackageDescription(Content packageContent);
 
     /**
-     * Adds the table of exceptions to the documentation tree.
+     * Adds the tag information from the "packages.html" file to the documentation.
      *
-     * @param exceptions the exceptions to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
+     * @param packageContent the content to which the package tags will
+     *                       be added
      */
-    public abstract void addExceptionSummary(SortedSet<TypeElement> exceptions,
-            Content summaryContentTree);
+    void addPackageTags(Content packageContent);
 
     /**
-     * Adds the table of errors to the documentation tree.
+     * Adds the package signature.
      *
-     * @param errors the errors to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
+     * @param packageContent the content to which the package signature
+     *                       will be added
      */
-    public abstract void addErrorSummary(SortedSet<TypeElement> errors,
-            Content summaryContentTree);
-
-    /**
-     * Adds the table of annotation types to the documentation tree.
-     *
-     * @param annoTypes the annotation types to document.
-     * @param summaryContentTree the content tree to which the summaries will be added
-     */
-    public abstract void addAnnotationTypeSummary(SortedSet<TypeElement> annoTypes,
-            Content summaryContentTree);
-
-    /**
-     * Adds the package description from the "packages.html" file to the documentation
-     * tree.
-     *
-     * @param packageContentTree the content tree to which the package description
-     *                           will be added
-     */
-    public abstract void addPackageDescription(Content packageContentTree);
-
-    /**
-     * Adds the tag information from the "packages.html" file to the documentation
-     * tree.
-     *
-     * @param packageContentTree the content tree to which the package tags will
-     *                           be added
-     */
-    public abstract void addPackageTags(Content packageContentTree);
+    void addPackageSignature(Content packageContent);
 
     /**
      * Adds the tag information from the "packages.html" or "package-info.java" file to the
-     * documentation tree.
+     * documentation.
      *
-     * @param contentTree the content tree to which the package content tree will be added
-     * @param packageContentTree the package content tree to be added
+     * @param packageContent the package content to be added
      */
-    public abstract void addPackageContent(Content contentTree, Content packageContentTree);
+    void addPackageContent(Content packageContent);
 
     /**
-     * Adds the footer to the documentation tree.
-     *
-     * @param contentTree the tree to which the footer will be added
+     * Adds the footer to the documentation.
      */
-    public abstract void addPackageFooter(Content contentTree);
+    void addPackageFooter();
 
     /**
      * Print the package summary document.
      *
-     * @param contentTree the content tree that will be printed
+     * @param content the content that will be printed
      * @throws DocFileIOException if there is a problem while writing the document
      */
-    public abstract void printDocument(Content contentTree) throws DocFileIOException;
+    void printDocument(Content content) throws DocFileIOException;
 
+    /**
+     * Gets the package summary.
+     * @param summaryContent the content representing the package summary
+     * @return the package summary
+     */
+    Content getPackageSummary(Content summaryContent);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_JFR_UTILITIES_JFRTRYLOCK_HPP
-#define SHARE_VM_JFR_UTILITIES_JFRTRYLOCK_HPP
+#ifndef SHARE_JFR_UTILITIES_JFRTRYLOCK_HPP
+#define SHARE_JFR_UTILITIES_JFRTRYLOCK_HPP
 
 #include "runtime/atomic.hpp"
 #include "runtime/orderAccess.hpp"
@@ -33,20 +33,20 @@
 class JfrTryLock {
  private:
   volatile int* const _lock;
-  bool _has_lock;
+  bool _acquired;
 
  public:
-  JfrTryLock(volatile int* lock) : _lock(lock), _has_lock(Atomic::cmpxchg(1, lock, 0) == 0) {}
+  JfrTryLock(volatile int* lock) : _lock(lock), _acquired(Atomic::cmpxchg(lock, 0, 1) == 0) {}
 
   ~JfrTryLock() {
-    if (_has_lock) {
+    if (_acquired) {
       OrderAccess::fence();
       *_lock = 0;
     }
   }
 
-  bool has_lock() const {
-    return _has_lock;
+  bool acquired() const {
+    return _acquired;
   }
 };
 
@@ -71,4 +71,4 @@ class JfrMonitorTryLock : public StackObj {
 
 };
 
-#endif // SHARE_VM_JFR_UTILITIES_JFRTRYLOCK_HPP
+#endif // SHARE_JFR_UTILITIES_JFRTRYLOCK_HPP

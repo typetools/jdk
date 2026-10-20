@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,9 +36,16 @@ import jdk.jfr.internal.Type;
 @Description("An object derived from java.lang.Error has been created. OutOfMemoryErrors are ignored")
 public final class ErrorThrownEvent extends AbstractJDKEvent {
 
+    // The order of these fields must be the same as the parameters in
+    // commit(..., String, Class)
+
     @Label("Message")
     public String message;
 
     @Label("Class")
     public Class<?> thrownClass;
+
+    public static void commit(long start, long duration, String message, Class<? extends Error> thrownClass) {
+        // Generated
+    }
 }

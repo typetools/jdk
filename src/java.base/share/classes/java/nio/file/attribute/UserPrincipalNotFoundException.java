@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.nio.file.attribute;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -37,9 +40,13 @@ import java.io.IOException;
 public class UserPrincipalNotFoundException
     extends IOException
 {
+    @java.io.Serial
     static final long serialVersionUID = -5369283889045833024L;
 
-    private final String name;
+    /**
+     * The user principal name.
+     */
+    private final @Nullable String name;
 
     /**
      * Constructs an instance of this class.
@@ -47,7 +54,8 @@ public class UserPrincipalNotFoundException
      * @param   name
      *          the principal name; may be {@code null}
      */
-    public UserPrincipalNotFoundException(String name) {
+    @SideEffectFree
+    public UserPrincipalNotFoundException(@Nullable String name) {
         super();
         this.name = name;
     }
@@ -58,7 +66,7 @@ public class UserPrincipalNotFoundException
      *
      * @return  the user principal name or {@code null}
      */
-    public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 }

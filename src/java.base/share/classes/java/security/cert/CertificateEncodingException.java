@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Certificate Encoding Exception. This is thrown whenever an error
  * occurs while attempting to encode a certificate.
@@ -34,6 +37,7 @@ package java.security.cert;
  */
 public class CertificateEncodingException extends CertificateException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 6219492851589449162L;
 
     /**
@@ -41,6 +45,7 @@ public class CertificateEncodingException extends CertificateException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public CertificateEncodingException() {
         super();
     }
@@ -52,7 +57,8 @@ public class CertificateEncodingException extends CertificateException {
      *
      * @param message the detail message.
      */
-    public CertificateEncodingException(String message) {
+    @SideEffectFree
+    public CertificateEncodingException(@Nullable String message) {
         super(message);
     }
 
@@ -67,7 +73,8 @@ public class CertificateEncodingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CertificateEncodingException(String message, Throwable cause) {
+    @SideEffectFree
+    public CertificateEncodingException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -83,7 +90,8 @@ public class CertificateEncodingException extends CertificateException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public CertificateEncodingException(Throwable cause) {
+    @SideEffectFree
+    public CertificateEncodingException(@Nullable Throwable cause) {
         super(cause);
     }
 }

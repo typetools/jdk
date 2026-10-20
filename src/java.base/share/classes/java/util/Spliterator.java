@@ -25,6 +25,7 @@
 package java.util;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -288,7 +289,7 @@ import java.util.function.LongConsumer;
  * }}</pre>
  *
  * @implNote
- * If the boolean system property {@code org.openjdk.java.util.stream.tripwire}
+ * If the boolean system property {@systemProperty org.openjdk.java.util.stream.tripwire}
  * is set to {@code true} then diagnostic warnings are reported if boxing of
  * primitive values occur when operating on primitive subtype specializations.
  *
@@ -300,13 +301,16 @@ import java.util.function.LongConsumer;
 @AnnotatedFor({"lock", "nullness"})
 public interface Spliterator<T> {
     /**
-     * If a remaining element exists, performs the given action on it,
+     * If a remaining element exists: performs the given action on it,
      * returning {@code true}; else returns {@code false}.  If this
      * Spliterator is {@link #ORDERED} the action is performed on the
      * next element in encounter order.  Exceptions thrown by the
      * action are relayed to the caller.
+     * <p>
+     * Subsequent behavior of a spliterator is unspecified if the action throws
+     * an exception.
      *
-     * @param action The action
+     * @param action The action whose operation is performed at-most once
      * @return {@code false} if no remaining elements existed
      * upon entry to this method, else {@code true}.
      * @throws NullPointerException if the specified action is null
@@ -319,6 +323,9 @@ public interface Spliterator<T> {
      * throws an exception.  If this Spliterator is {@link #ORDERED}, actions
      * are performed in encounter order.  Exceptions thrown by the action
      * are relayed to the caller.
+     * <p>
+     * Subsequent behavior of a spliterator is unspecified if the action throws
+     * an exception.
      *
      * @implSpec
      * The default implementation repeatedly invokes {@link #tryAdvance} until
@@ -489,14 +496,14 @@ public interface Spliterator<T> {
      * {@code ORDERED} are expected to preserve ordering constraints in
      * non-commutative parallel computations.
      */
-    public static final int ORDERED    = 0x00000010;
+    public static final @SignedPositive int ORDERED    = 0x00000010;
 
     /**
      * Characteristic value signifying that, for each pair of
      * encountered elements {@code x, y}, {@code !x.equals(y)}. This
      * applies for example, to a Spliterator based on a {@link Set}.
      */
-    public static final int DISTINCT   = 0x00000001;
+    public static final @SignedPositive int DISTINCT   = 0x00000001;
 
     /**
      * Characteristic value signifying that encounter order follows a defined
@@ -510,7 +517,7 @@ public interface Spliterator<T> {
      * @apiNote The spliterators for {@code Collection} classes in the JDK that
      * implement {@link NavigableSet} or {@link SortedSet} report {@code SORTED}.
      */
-    public static final int SORTED     = 0x00000004;
+    public static final @SignedPositive int SORTED     = 0x00000004;
 
     /**
      * Characteristic value signifying that the value returned from
@@ -524,14 +531,14 @@ public interface Spliterator<T> {
      * those for {@link HashSet}, that cover a sub-set of elements and
      * approximate their reported size do not.
      */
-    public static final int SIZED      = 0x00000040;
+    public static final @SignedPositive int SIZED      = 0x00000040;
 
     /**
      * Characteristic value signifying that the source guarantees that
      * encountered elements will not be {@code null}. (This applies,
      * for example, to most concurrent collections, queues, and maps.)
      */
-    public static final int NONNULL    = 0x00000100;
+    public static final @SignedPositive int NONNULL    = 0x00000100;
 
     /**
      * Characteristic value signifying that the element source cannot be
@@ -542,7 +549,7 @@ public interface Spliterator<T> {
      * {@link ConcurrentModificationException}) concerning structural
      * interference detected during traversal.
      */
-    public static final int IMMUTABLE  = 0x00000400;
+    public static final @SignedPositive int IMMUTABLE  = 0x00000400;
 
     /**
      * Characteristic value signifying that the element source may be safely
@@ -570,7 +577,7 @@ public interface Spliterator<T> {
      * Spliterator construction, but possibly not reflecting subsequent
      * additions or removals.
      */
-    public static final int CONCURRENT = 0x00001000;
+    public static final @SignedPositive int CONCURRENT = 0x00001000;
 
     /**
      * Characteristic value signifying that all Spliterators resulting from
@@ -587,7 +594,7 @@ public interface Spliterator<T> {
      * {@code SUBSIZED}, since it is common to know the size of the entire tree
      * but not the exact sizes of subtrees.
      */
-    public static final int SUBSIZED = 0x00004000;
+    public static final @SignedPositive int SUBSIZED = 0x00004000;
 
     /**
      * A Spliterator specialized for primitive values.
@@ -619,6 +626,9 @@ public interface Spliterator<T> {
          * Spliterator is {@link #ORDERED} the action is performed on the
          * next element in encounter order.  Exceptions thrown by the
          * action are relayed to the caller.
+         * <p>
+         * Subsequent behavior of a spliterator is unspecified if the action throws
+         * an exception.
          *
          * @param action The action
          * @return {@code false} if no remaining elements existed
@@ -634,6 +644,9 @@ public interface Spliterator<T> {
          * action throws an exception.  If this Spliterator is {@link #ORDERED},
          * actions are performed in encounter order.  Exceptions thrown by the
          * action are relayed to the caller.
+         * <p>
+         * Subsequent behavior of a spliterator is unspecified if the action throws
+         * an exception.
          *
          * @implSpec
          * The default implementation repeatedly invokes {@link #tryAdvance}
@@ -653,6 +666,7 @@ public interface Spliterator<T> {
      * A Spliterator specialized for {@code int} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public interface OfInt extends OfPrimitive<Integer, IntConsumer, OfInt> {
 
         @Override
@@ -717,6 +731,7 @@ public interface Spliterator<T> {
      * A Spliterator specialized for {@code long} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public interface OfLong extends OfPrimitive<Long, LongConsumer, OfLong> {
 
         @Override
@@ -781,6 +796,7 @@ public interface Spliterator<T> {
      * A Spliterator specialized for {@code double} values.
      * @since 1.8
      */
+    @SuppressWarnings("overloads")
     public interface OfDouble extends OfPrimitive<Double, DoubleConsumer, OfDouble> {
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -36,11 +39,13 @@ import java.io.IOException;
  * @since   1.0
  */
 public class MalformedURLException extends IOException {
+    @java.io.Serial
     private static final long serialVersionUID = -182787522200415866L;
 
     /**
      * Constructs a {@code MalformedURLException} with no detail message.
      */
+    @SideEffectFree
     public MalformedURLException() {
     }
 
@@ -50,7 +55,8 @@ public class MalformedURLException extends IOException {
      *
      * @param   msg   the detail message.
      */
-    public MalformedURLException(String msg) {
+    @SideEffectFree
+    public MalformedURLException(@Nullable String msg) {
         super(msg);
     }
 }

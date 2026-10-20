@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.net;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -35,6 +36,7 @@ import org.checkerframework.framework.qual.AnnotatedFor;
  */
 
 public class SocketTimeoutException extends java.io.InterruptedIOException {
+    @java.io.Serial
     private static final long serialVersionUID = -8846654841826352300L;
 
     /**
@@ -42,6 +44,7 @@ public class SocketTimeoutException extends java.io.InterruptedIOException {
      * message.
      * @param msg the detail message
      */
+    @SideEffectFree
     public SocketTimeoutException(@Nullable String msg) {
         super(msg);
     }
@@ -49,5 +52,6 @@ public class SocketTimeoutException extends java.io.InterruptedIOException {
     /**
      * Construct a new SocketTimeoutException with no detailed message.
      */
+    @SideEffectFree
     public SocketTimeoutException() {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package javax.swing.plaf.nimbus;
 
 import org.checkerframework.checker.interning.qual.Interned;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 import javax.swing.Painter;
@@ -43,7 +45,6 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -165,6 +166,7 @@ public final class NimbusStyle extends SynthStyle {
     private static final Comparator<RuntimeState> STATE_COMPARATOR =
         new Comparator<RuntimeState>() {
             @Override
+            @Pure
             public int compare(RuntimeState a, RuntimeState b) {
                 return a.state - b.state;
             }
@@ -307,7 +309,7 @@ public final class NimbusStyle extends SynthStyle {
         //there are no custom states or custom state ordering
         String statesString = (String)defaults.get(prefix + ".States");
         if (statesString != null) {
-            String s[] = statesString.split(",");
+            String[] s = statesString.split(",");
             for (int i=0; i<s.length; i++) {
                 s[i] = s[i].trim();
                 if (!State.isStandardStateName(s[i])) {
@@ -341,7 +343,7 @@ public final class NimbusStyle extends SynthStyle {
             //standard synth states. Note that the "v.stateTypes" is not
             //being set here, indicating that at runtime the state selection
             //routines should use standard synth states instead of custom
-            //states. I do need to popuplate this temp list now though, so that
+            //states. I do need to populate this temp list now though, so that
             //the remainder of this method will function as expected.
             states.add(State.Enabled);
             states.add(State.MouseOver);
@@ -467,7 +469,7 @@ public final class NimbusStyle extends SynthStyle {
 
         //now that I've collected all the runtime states, I'll sort them based
         //on their integer "state" (see SynthState for how this works).
-        Collections.sort(runtimeStates, STATE_COMPARATOR);
+        runtimeStates.sort(STATE_COMPARATOR);
 
         //finally, set the array of runtime states on the values object
         values.states = runtimeStates.toArray(new RuntimeState[runtimeStates.size()]);
@@ -1024,7 +1026,7 @@ public final class NimbusStyle extends SynthStyle {
      * fonts, painters, etc associated with some state for this
      * style.
      */
-    private final class RuntimeState implements Cloneable {
+    private static final class RuntimeState implements Cloneable {
         int state;
         Painter<Object> backgroundPainter;
         Painter<Object> foregroundPainter;
@@ -1107,7 +1109,8 @@ public final class NimbusStyle extends SynthStyle {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             final CacheKey other = (CacheKey) obj;
             if (obj == null) return false;
             if (this.xstate != other.xstate) return false;

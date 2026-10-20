@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,9 +86,13 @@ import java.util.function.Function;
  * by the Cleaner when the CleaningExample instance has become phantom reachable.
  * <pre>{@code
  * public class CleaningExample implements AutoCloseable {
- *        // A cleaner, preferably one shared within a library
- *        private static final Cleaner cleaner = <cleaner>;
+ *        // A cleaner (preferably one shared within a library,
+          // but for the sake of example, a new one is created here)
+ *        private static final Cleaner cleaner = Cleaner.create();
  *
+ *        // State class captures information necessary for cleanup.
+ *        // It must hold no reference to the instance being cleaned
+ *        // and therefore it is a static inner class in this example.
  *        static class State implements Runnable {
  *
  *            State(...) {
@@ -100,8 +104,8 @@ import java.util.function.Function;
  *            }
  *        }
  *
- *        private final State;
- *        private final Cleaner.Cleanable cleanable
+ *        private final State state;
+ *        private final Cleaner.Cleanable cleanable;
  *
  *        public CleaningExample() {
  *            this.state = new State(...);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,10 @@
  * $Id: URIReferenceException.java,v 1.4 2005/05/10 15:47:42 mullan Exp $
  */
 package javax.xml.crypto;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -55,14 +59,20 @@ public class URIReferenceException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
+    /**
+     * The {@code URIReference} that was being dereferenced
+     * when the exception was thrown, or {@code null} if not specified.
+     */
+    @SuppressWarnings("serial") // Type of field is not Serializable
     private URIReference uriReference;
 
     /**
      * Constructs a new {@code URIReferenceException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public URIReferenceException() {
         super();
     }
@@ -73,7 +83,8 @@ public class URIReferenceException extends Exception {
      *
      * @param message the detail message
      */
-    public URIReferenceException(String message) {
+    @SideEffectFree
+    public URIReferenceException(@Nullable String message) {
         super(message);
     }
 
@@ -88,7 +99,8 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public URIReferenceException(String message, Throwable cause) {
+    @SideEffectFree
+    public URIReferenceException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -108,7 +120,8 @@ public class URIReferenceException extends Exception {
      * @throws NullPointerException if {@code uriReference} is
      *    {@code null}
      */
-    public URIReferenceException(String message, Throwable cause,
+    @SideEffectFree
+    public URIReferenceException(@Nullable String message, @Nullable Throwable cause,
         URIReference uriReference) {
         this(message, cause);
         if (uriReference == null) {
@@ -126,7 +139,8 @@ public class URIReferenceException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public URIReferenceException(Throwable cause) {
+    @SideEffectFree
+    public URIReferenceException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -151,7 +165,8 @@ public class URIReferenceException extends Exception {
      * @return the cause of this {@code URIReferenceException} or
      *    {@code null} if the cause is nonexistent or unknown.
      */
-    public Throwable getCause() {
+    @Pure
+    public @Nullable Throwable getCause() {
         return cause;
     }
 

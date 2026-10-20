@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Signals that an error occurred while attempting to connect a
  * socket to a remote address and port.  Typically, the connection
@@ -34,6 +37,7 @@ package java.net;
  * @since   1.1
  */
 public class ConnectException extends SocketException {
+    @java.io.Serial
     private static final long serialVersionUID = 3831404271622369215L;
 
     /**
@@ -43,12 +47,14 @@ public class ConnectException extends SocketException {
      * description of this error.
      * @param msg the detail message
      */
-    public ConnectException(String msg) {
+    @SideEffectFree
+    public ConnectException(@Nullable String msg) {
         super(msg);
     }
 
     /**
      * Construct a new ConnectException with no detailed message.
      */
+    @SideEffectFree
     public ConnectException() {}
 }

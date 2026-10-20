@@ -25,6 +25,8 @@
 
 package jdk.internal.net.http;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -200,6 +202,7 @@ class HeaderParser {
             returnsValue = returnValue;
         }
         @Override
+        @Pure
         public boolean hasNext () {
             return index<nkeys;
         }

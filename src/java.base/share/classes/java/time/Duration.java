@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -123,12 +123,12 @@ import java.util.regex.Pattern;
  * This difference only impacts durations measured near a leap-second and should not affect
  * most applications.
  * See {@link Instant} for a discussion as to the meaning of the second and time-scales.
- *
  * <p>
  * This is a <a href="{@docRoot}/java.base/java/lang/doc-files/ValueBased.html">value-based</a>
- * class; use of identity-sensitive operations (including reference equality
- * ({@code ==}), identity hash code, or synchronization) on instances of
- * {@code Duration} may have unpredictable results and should be avoided.
+ * class; programmers should treat instances that are
+ * {@linkplain #equals(Object) equal} as interchangeable and should not
+ * use instances for synchronization, or unpredictable behavior may
+ * occur. For example, in a future release, synchronization may fail.
  * The {@code equals} method should be used for comparisons.
  *
  * @implSpec
@@ -136,6 +136,7 @@ import java.util.regex.Pattern;
  *
  * @since 1.8
  */
+@jdk.internal.ValueBased
 public final class Duration
         implements TemporalAmount, Comparable<Duration>, Serializable {
 
@@ -146,6 +147,7 @@ public final class Duration
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 3078945930695997490L;
     /**
      * Constant for nanos per second.
@@ -287,7 +289,7 @@ public final class Duration
         long secs = nanos / NANOS_PER_SECOND;
         int nos = (int) (nanos % NANOS_PER_SECOND);
         if (nos < 0) {
-            nos += NANOS_PER_SECOND;
+            nos += (int) NANOS_PER_SECOND;
             secs--;
         }
         return create(secs, nos);
@@ -415,7 +417,7 @@ public final class Duration
                     try {
                         return create(negate, daysAsSecs, hoursAsSecs, minsAsSecs, seconds, nanos);
                     } catch (ArithmeticException ex) {
-                        throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: overflow", text, 0).initCause(ex);
+                        throw new DateTimeParseException("Text cannot be parsed to a Duration: overflow", text, 0, ex);
                     }
                 }
             }
@@ -436,7 +438,7 @@ public final class Duration
             long val = Long.parseLong(text, start, end, 10);
             return Math.multiplyExact(val, multiplier);
         } catch (NumberFormatException | ArithmeticException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: " + errorText, text, 0).initCause(ex);
+            throw new DateTimeParseException("Text cannot be parsed to a Duration: " + errorText, text, 0, ex);
         }
     }
 
@@ -455,7 +457,7 @@ public final class Duration
             }
             return fraction * negate;
         } catch (NumberFormatException | ArithmeticException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: fraction", text, 0).initCause(ex);
+            throw new DateTimeParseException("Text cannot be parsed to a Duration: fraction", text, 0, ex);
         }
     }
 
@@ -530,7 +532,6 @@ public final class Duration
      * @param nanos  the nanoseconds within the second, from 0 to 999,999,999
      */
     private Duration(long seconds, int nanos) {
-        super();
         this.seconds = seconds;
         this.nanos = nanos;
     }
@@ -586,6 +587,20 @@ public final class Duration
     }
 
     //-----------------------------------------------------------------------
+    /**
+     * Checks if this duration is positive, excluding zero.
+     * <p>
+     * A {@code Duration} represents a directed distance between two points on
+     * the time-line and can therefore be positive, zero or negative.
+     * This method checks whether the length is greater than zero.
+     *
+     * @return true if this duration has a total length greater than zero
+     * @since 18
+     */
+    public boolean isPositive() {
+        return (seconds | nanos) > 0;
+    }
+
     /**
      * Checks if this duration is zero length.
      * <p>
@@ -723,14 +738,14 @@ public final class Duration
         if (amountToAdd == 0) {
             return this;
         }
-        if (unit instanceof ChronoUnit) {
-            switch ((ChronoUnit) unit) {
-                case NANOS: return plusNanos(amountToAdd);
-                case MICROS: return plusSeconds((amountToAdd / (1000_000L * 1000)) * 1000).plusNanos((amountToAdd % (1000_000L * 1000)) * 1000);
-                case MILLIS: return plusMillis(amountToAdd);
-                case SECONDS: return plusSeconds(amountToAdd);
-            }
-            return plusSeconds(Math.multiplyExact(unit.getDuration().seconds, amountToAdd));
+        if (unit instanceof ChronoUnit chronoUnit) {
+            return switch (chronoUnit) {
+                case NANOS -> plusNanos(amountToAdd);
+                case MICROS -> plusSeconds((amountToAdd / (1000_000L * 1000)) * 1000).plusNanos((amountToAdd % (1000_000L * 1000)) * 1000);
+                case MILLIS -> plusMillis(amountToAdd);
+                case SECONDS -> plusSeconds(amountToAdd);
+                default -> plusSeconds(Math.multiplyExact(unit.getDuration().seconds, amountToAdd));
+            };
         }
         Duration duration = unit.getDuration().multipliedBy(amountToAdd);
         return plusSeconds(duration.getSeconds()).plusNanos(duration.getNano());
@@ -1264,6 +1279,8 @@ public final class Duration
      * This is based on the standard definition of a day as 24 hours.
      * <p>
      * This instance is immutable and unaffected by this method call.
+     * @apiNote
+     * This method behaves exactly the same way as {@link #toDays()}.
      *
      * @return the number of days in the duration, may be negative
      * @since 9
@@ -1411,6 +1428,7 @@ public final class Duration
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Duration otherDuration) {
         int cmp = Long.compare(seconds, otherDuration.seconds);
         if (cmp != 0) {
@@ -1425,22 +1443,19 @@ public final class Duration
      * <p>
      * The comparison is based on the total length of the durations.
      *
-     * @param otherDuration the other duration, null returns false
+     * @param other the other duration, null returns false
      * @return true if the other duration is equal to this one
      */
     @Override
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object otherDuration) {
-        if (this == otherDuration) {
+    public boolean equals(@Nullable Object other) {
+        if (this == other) {
             return true;
         }
-        if (otherDuration instanceof Duration) {
-            Duration other = (Duration) otherDuration;
-            return this.seconds == other.seconds &&
-                   this.nanos == other.nanos;
-        }
-        return false;
+        return (other instanceof Duration otherDuration)
+                && this.seconds == otherDuration.seconds
+                && this.nanos == otherDuration.nanos;
     }
 
     /**
@@ -1527,7 +1542,7 @@ public final class Duration
     //-----------------------------------------------------------------------
     /**
      * Writes the object using a
-     * <a href="../../serialized-form.html#java.time.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(1);  // identifies a Duration
@@ -1537,6 +1552,7 @@ public final class Duration
      *
      * @return the instance of {@code Ser}, not null
      */
+    @java.io.Serial
     private Object writeReplace() {
         return new Ser(Ser.DURATION_TYPE, this);
     }
@@ -1547,6 +1563,7 @@ public final class Duration
      * @param s the stream to read
      * @throws InvalidObjectException always
      */
+    @java.io.Serial
     private void readObject(ObjectInputStream s) throws InvalidObjectException {
         throw new InvalidObjectException("Deserialization via serialization delegate");
     }

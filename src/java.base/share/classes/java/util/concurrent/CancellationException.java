@@ -35,6 +35,10 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Exception indicating that the result of a value-producing task,
  * such as a {@link FutureTask}, cannot be retrieved because the task
@@ -43,12 +47,14 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+@AnnotatedFor({"nullness"})
 public class CancellationException extends IllegalStateException {
     private static final long serialVersionUID = -9202173006928992231L;
 
     /**
      * Constructs a {@code CancellationException} with no detail message.
      */
+    @SideEffectFree
     public CancellationException() {}
 
     /**
@@ -57,7 +63,8 @@ public class CancellationException extends IllegalStateException {
      *
      * @param message the detail message
      */
-    public CancellationException(String message) {
+    @SideEffectFree
+    public CancellationException(@Nullable String message) {
         super(message);
     }
 }

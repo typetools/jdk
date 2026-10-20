@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_PERFDATA_HPP
-#define SHARE_VM_RUNTIME_PERFDATA_HPP
+#ifndef SHARE_RUNTIME_PERFDATA_HPP
+#define SHARE_RUNTIME_PERFDATA_HPP
 
 #include "memory/allocation.hpp"
+#include "runtime/perfDataTypes.hpp"
 #include "runtime/perfMemory.hpp"
 #include "runtime/timer.hpp"
 
@@ -77,7 +78,7 @@ enum CounterNS {
  * by accessor methods to make algorithmic decisions as they are potentially
  * extracted from a shared memory region. Although any shared memory region
  * created is with appropriate access restrictions, allowing read-write access
- * only to the principal that created the JVM, it is believed that a the
+ * only to the principal that created the JVM, it is believed that the
  * shared memory region facilitates an easier attack path than attacks
  * launched through mechanisms such as /proc. For this reason, it is
  * recommended that data returned by PerfData accessor methods be used
@@ -306,7 +307,7 @@ class PerfData : public CHeapObj<mtInternal> {
     // returns a boolean indicating the validity of this object.
     // the object is valid if and only if memory in PerfMemory
     // region was successfully allocated.
-    inline bool is_valid() { return _valuep != NULL; }
+    inline bool is_valid() { return _valuep != nullptr; }
 
     // returns a boolean indicating whether the underlying object
     // was allocated in the PerfMemory region or on the C heap.
@@ -332,10 +333,6 @@ class PerfData : public CHeapObj<mtInternal> {
     // returns the address of the data portion of the item in the
     // PerfData memory region.
     inline void* get_address() { return _valuep; }
-
-    // returns the value of the data portion of the item in the
-    // PerfData memory region formatted as a string.
-    virtual int format(char* cp, int length) = 0;
 };
 
 /*
@@ -349,9 +346,6 @@ class PerfLongSampleHelper : public CHeapObj<mtInternal> {
     virtual jlong take_sample() = 0;
 };
 
-typedef PerfLongSampleHelper PerfSampleHelper;
-
-
 /*
  * PerfLong is the base class for the various Long PerfData subtypes.
  * it contains implementation details that are common among its derived
@@ -364,8 +358,6 @@ class PerfLong : public PerfData {
     PerfLong(CounterNS ns, const char* namep, Units u, Variability v);
 
   public:
-    int format(char* buffer, int length);
-
     // returns the value of the data portion of the item in the
     // PerfData memory region.
     inline jlong get_value() { return *(jlong*)_valuep; }
@@ -395,8 +387,6 @@ class PerfLongConstant : public PerfLong {
     }
 };
 
-typedef PerfLongConstant PerfConstant;
-
 /*
  * The PerfLongVariant class, and its alias PerfVariant, implement
  * a PerfData subtype that holds a jlong data value that can be modified
@@ -416,9 +406,6 @@ class PerfLongVariant : public PerfLong {
     }
 
     PerfLongVariant(CounterNS ns, const char* namep, Units u, Variability v,
-                    jlong* sampled);
-
-    PerfLongVariant(CounterNS ns, const char* namep, Units u, Variability v,
                     PerfLongSampleHelper* sample_helper);
 
     void sample();
@@ -427,8 +414,6 @@ class PerfLongVariant : public PerfLong {
     inline void inc() { (*(jlong*)_valuep)++; }
     inline void inc(jlong val) { (*(jlong*)_valuep) += val; }
     inline void dec(jlong val) { inc(-val); }
-    inline void add(jlong val) { (*(jlong*)_valuep) += val; }
-    void clear_sample_helper() { _sample_helper = NULL; }
 };
 
 /*
@@ -451,16 +436,11 @@ class PerfLongCounter : public PerfLongVariant {
                    : PerfLongVariant(ns, namep, u, V_Monotonic,
                                      initial_value) { }
 
-    PerfLongCounter(CounterNS ns, const char* namep, Units u, jlong* sampled)
-                  : PerfLongVariant(ns, namep, u, V_Monotonic, sampled) { }
-
     PerfLongCounter(CounterNS ns, const char* namep, Units u,
                     PerfLongSampleHelper* sample_helper)
                    : PerfLongVariant(ns, namep, u, V_Monotonic,
                                      sample_helper) { }
 };
-
-typedef PerfLongCounter PerfCounter;
 
 /*
  * The PerfLongVariable class, and its alias PerfVariable, implement
@@ -478,9 +458,6 @@ class PerfLongVariable : public PerfLongVariant {
                     : PerfLongVariant(ns, namep, u, V_Variable,
                                       initial_value) { }
 
-    PerfLongVariable(CounterNS ns, const char* namep, Units u, jlong* sampled)
-                    : PerfLongVariant(ns, namep, u, V_Variable, sampled) { }
-
     PerfLongVariable(CounterNS ns, const char* namep, Units u,
                      PerfLongSampleHelper* sample_helper)
                     : PerfLongVariant(ns, namep, u, V_Variable,
@@ -489,8 +466,6 @@ class PerfLongVariable : public PerfLongVariant {
   public:
     inline void set_value(jlong val) { (*(jlong*)_valuep) = val; }
 };
-
-typedef PerfLongVariable PerfVariable;
 
 /*
  * The PerfByteArray provides a PerfData subtype that allows the creation
@@ -519,9 +494,6 @@ class PerfString : public PerfByteArray {
        if (is_valid()) set_string(initial_value);
     }
 
-  public:
-
-    int format(char* buffer, int length);
 };
 
 /*
@@ -623,26 +595,18 @@ class PerfDataList : public CHeapObj<mtInternal> {
     ~PerfDataList();
 
     // return the PerfData item indicated by name,
-    // or NULL if it doesn't exist.
+    // or null if it doesn't exist.
     PerfData* find_by_name(const char* name);
 
     // return true if a PerfData item with the name specified in the
     // argument exists, otherwise return false.
-    bool contains(const char* name) { return find_by_name(name) != NULL; }
+    bool contains(const char* name) { return find_by_name(name) != nullptr; }
 
     // return the number of PerfData items in this list
     inline int length();
 
     // add a PerfData item to this list
     inline void append(PerfData *p);
-
-    // remove the given PerfData item from this list. When called
-    // while iterating over the list, this method will result in a
-    // change in the length of the container. The at(int index)
-    // method is also impacted by this method as elements with an
-    // index greater than the index of the element removed by this
-    // method will be shifted down by one.
-    inline void remove(PerfData *p);
 
     // create a new PerfDataList from this list. The new list is
     // a shallow copy of the original list and care should be taken
@@ -677,28 +641,16 @@ class PerfDataManager : AllStatic {
     static void add_item(PerfData* p, bool sampled);
 
   protected:
-    // return the list of all known PerfData items
-    static PerfDataList* all();
-    static inline int count();
 
     // return the list of all known PerfData items that are to be
     // sampled by the StatSampler.
     static PerfDataList* sampled();
-    static inline int sampled_count();
-
-    // return the list of all known PerfData items that have a
-    // variability classification of type Constant
-    static PerfDataList* constants();
-    static inline int constants_count();
 
   public:
 
     // method to check for the existence of a PerfData item with
     // the given name.
     static inline bool exists(const char* name);
-
-    // method to search for a instrumentation object by name
-    static PerfData* find_by_name(const char* name);
 
     // method to map a CounterNS enumeration to a namespace string
     static const char* ns_to_string(CounterNS ns) {
@@ -713,9 +665,6 @@ class PerfDataManager : AllStatic {
     static bool is_unstable_supported(CounterNS ns) {
       return (ns != NULL_NS) && ((ns % 3) == COM_NS);
     }
-    static bool is_unstable_unsupported(CounterNS ns) {
-      return (ns == NULL_NS) || ((ns % 3) == SUN_NS);
-    }
 
     // methods to test the interface stability of a given counter name
     //
@@ -726,9 +675,6 @@ class PerfDataManager : AllStatic {
     static bool is_unstable_supported(const char* name) {
       const char* comdot = "com.sun.";
       return strncmp(name, comdot, strlen(comdot)) == 0;
-    }
-    static bool is_unstable_unsupported(const char* name) {
-      return !(is_stable_supported(name) && is_unstable_supported(name));
     }
 
     // method to construct counter name strings in a given name space.
@@ -774,12 +720,6 @@ class PerfDataManager : AllStatic {
                                                       int max_length,
                                                       const char *s, TRAPS);
 
-    static PerfStringVariable* create_string_variable(CounterNS ns,
-                                                      const char* name,
-                                                      const char *s, TRAPS) {
-      return create_string_variable(ns, name, 0, s, THREAD);
-    };
-
     static PerfLongVariable* create_long_variable(CounterNS ns,
                                                   const char* name,
                                                   PerfData::Units u,
@@ -790,10 +730,6 @@ class PerfDataManager : AllStatic {
                                                   PerfData::Units u, TRAPS) {
       return create_long_variable(ns, name, u, (jlong)0, THREAD);
     };
-
-    static PerfLongVariable* create_long_variable(CounterNS, const char* name,
-                                                  PerfData::Units u,
-                                                  jlong* sp, TRAPS);
 
     static PerfLongVariable* create_long_variable(CounterNS ns,
                                                   const char* name,
@@ -806,15 +742,6 @@ class PerfDataManager : AllStatic {
     static PerfLongCounter* create_long_counter(CounterNS ns, const char* name,
                                                 PerfData::Units u,
                                                 jlong ival, TRAPS);
-
-    static PerfLongCounter* create_long_counter(CounterNS ns, const char* name,
-                                                PerfData::Units u, TRAPS) {
-      return create_long_counter(ns, name, u, (jlong)0, THREAD);
-    };
-
-    static PerfLongCounter* create_long_counter(CounterNS ns, const char* name,
-                                                PerfData::Units u, jlong* sp,
-                                                TRAPS);
 
     static PerfLongCounter* create_long_counter(CounterNS ns, const char* name,
                                                 PerfData::Units u,
@@ -841,29 +768,14 @@ class PerfDataManager : AllStatic {
     }
 
     static PerfVariable* create_variable(CounterNS ns, const char* name,
-                                         PerfData::Units u, jlong* sp, TRAPS) {
-      return create_long_variable(ns, name, u, sp, THREAD);
-    }
-
-    static PerfVariable* create_variable(CounterNS ns, const char* name,
                                          PerfData::Units u,
                                          PerfSampleHelper* sh, TRAPS) {
       return create_long_variable(ns, name, u, sh, THREAD);
     }
 
     static PerfCounter* create_counter(CounterNS ns, const char* name,
-                                       PerfData::Units u, jlong ival, TRAPS) {
-      return create_long_counter(ns, name, u, ival, THREAD);
-    }
-
-    static PerfCounter* create_counter(CounterNS ns, const char* name,
                                        PerfData::Units u, TRAPS) {
       return create_long_counter(ns, name, u, (jlong)0, THREAD);
-    }
-
-    static PerfCounter* create_counter(CounterNS ns, const char* name,
-                                       PerfData::Units u, jlong* sp, TRAPS) {
-      return create_long_counter(ns, name, u, sp, THREAD);
     }
 
     static PerfCounter* create_counter(CounterNS ns, const char* name,
@@ -913,29 +825,18 @@ class PerfTraceTime : public StackObj {
   protected:
     elapsedTimer _t;
     PerfLongCounter* _timerp;
-    // pointer to thread-local or global recursion counter variable
-    int* _recursion_counter;
 
   public:
-    inline PerfTraceTime(PerfLongCounter* timerp) : _timerp(timerp), _recursion_counter(NULL) {
+    inline PerfTraceTime(PerfLongCounter* timerp) : _timerp(timerp) {
       if (!UsePerfData) return;
       _t.start();
     }
-
-    inline PerfTraceTime(PerfLongCounter* timerp, int* recursion_counter) : _timerp(timerp), _recursion_counter(recursion_counter) {
-      if (!UsePerfData || (_recursion_counter != NULL &&
-                           (*_recursion_counter)++ > 0)) return;
-      _t.start();
-    }
-
-    inline void suspend() { if (!UsePerfData) return; _t.stop(); }
-    inline void resume() { if (!UsePerfData) return; _t.start(); }
 
     ~PerfTraceTime();
 };
 
 /* The PerfTraceTimedEvent class is responsible for counting the
- * occurrence of some event and measuring the the elapsed time of
+ * occurrence of some event and measuring the elapsed time of
  * the event in two separate PerfCounter instances.
  *
  * Example:
@@ -964,10 +865,6 @@ class PerfTraceTimedEvent : public PerfTraceTime {
       _eventp->inc();
     }
 
-    inline PerfTraceTimedEvent(PerfLongCounter* timerp, PerfLongCounter* eventp, int* recursion_counter): PerfTraceTime(timerp, recursion_counter), _eventp(eventp) {
-      if (!UsePerfData) return;
-      _eventp->inc();
-    }
 };
 
-#endif // SHARE_VM_RUNTIME_PERFDATA_HPP
+#endif // SHARE_RUNTIME_PERFDATA_HPP

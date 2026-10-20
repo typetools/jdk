@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1922, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * This is the exception for invalid or inappropriate algorithm parameters.
  *
@@ -40,27 +43,30 @@ package java.security;
 public class InvalidAlgorithmParameterException
 extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 2864672297499471472L;
 
     /**
-     * Constructs an InvalidAlgorithmParameterException with no detail
+     * Constructs an {@code InvalidAlgorithmParameterException} with no detail
      * message.
-     * A detail message is a String that describes this particular
+     * A detail message is a {@code String} that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidAlgorithmParameterException() {
         super();
     }
 
     /**
-     * Constructs an InvalidAlgorithmParameterException with the specified
-     * detail message.
-     * A detail message is a String that describes this
+     * Constructs an {@code InvalidAlgorithmParameterException} with the
+     * specified detail message.
+     * A detail message is a {@code String} that describes this
      * particular exception.
      *
      * @param msg the detail message.
      */
-    public InvalidAlgorithmParameterException(String msg) {
+    @SideEffectFree
+    public InvalidAlgorithmParameterException(@Nullable String msg) {
         super(msg);
     }
 
@@ -75,7 +81,8 @@ extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidAlgorithmParameterException(String message, Throwable cause) {
+    @SideEffectFree
+    public InvalidAlgorithmParameterException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -91,7 +98,8 @@ extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidAlgorithmParameterException(Throwable cause) {
+    @SideEffectFree
+    public InvalidAlgorithmParameterException(@Nullable Throwable cause) {
         super(cause);
     }
 }

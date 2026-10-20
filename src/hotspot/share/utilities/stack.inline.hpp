@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,20 @@
  *
  */
 
-#ifndef SHARE_VM_UTILITIES_STACK_INLINE_HPP
-#define SHARE_VM_UTILITIES_STACK_INLINE_HPP
+#ifndef SHARE_UTILITIES_STACK_INLINE_HPP
+#define SHARE_UTILITIES_STACK_INLINE_HPP
+
+#include "utilities/stack.hpp"
 
 #include "memory/allocation.inline.hpp"
 #include "utilities/align.hpp"
-#include "utilities/stack.hpp"
 #include "utilities/copy.hpp"
 
 template <MEMFLAGS F> StackBase<F>::StackBase(size_t segment_size, size_t max_cache_size,
                      size_t max_size):
   _seg_size(segment_size),
-  _max_cache_size(max_cache_size),
-  _max_size(adjust_max_size(max_size, segment_size))
+  _max_size(adjust_max_size(max_size, segment_size)),
+  _max_cache_size(max_cache_size)
 {
   assert(_max_size % _seg_size == 0, "not a multiple");
 }
@@ -61,23 +62,27 @@ template <class E, MEMFLAGS F>
 void Stack<E, F>::push(E item)
 {
   assert(!is_full(), "pushing onto a full stack");
-  if (this->_cur_seg_size == this->_seg_size) {
+  size_t index = this->_cur_seg_size;
+  if (index == this->_seg_size) {
     push_segment();
+    index = 0;                  // Instead of fetching known zero _cur_seg_size.
   }
-  this->_cur_seg[this->_cur_seg_size] = item;
-  ++this->_cur_seg_size;
+  this->_cur_seg[index] = item;
+  this->_cur_seg_size = index + 1;
 }
 
 template <class E, MEMFLAGS F>
 E Stack<E, F>::pop()
 {
   assert(!is_empty(), "popping from an empty stack");
-  if (this->_cur_seg_size == 1) {
-    E tmp = _cur_seg[--this->_cur_seg_size];
-    pop_segment();
-    return tmp;
-  }
-  return this->_cur_seg[--this->_cur_seg_size];
+  // _cur_seg_size is never 0 if not empty.  pop that empties a
+  // segment also pops the segment.  push that adds a segment always
+  // adds an entry to the new segment.
+  assert(this->_cur_seg_size != 0, "invariant");
+  size_t index = --this->_cur_seg_size;
+  E result = _cur_seg[index];
+  if (index == 0) pop_segment();
+  return result;
 }
 
 template <class E, MEMFLAGS F>
@@ -145,9 +150,8 @@ void Stack<E, F>::free(E* addr, size_t bytes)
 
 // Stack is used by the GC code and in some hot paths a lot of the Stack
 // code gets inlined. This is generally good, but when too much code has
-// been inlined, no further inlining is allowed by GCC. Therefore we need
-// to prevent parts of the slow path in Stack to be inlined to allow other
-// code to be.
+// been inlined, further inlining in the caller might be inhibited. So
+// prevent infrequent slow path segment manipulation from being inlined.
 template <class E, MEMFLAGS F>
 NOINLINE void Stack<E, F>::push_segment()
 {
@@ -170,7 +174,7 @@ NOINLINE void Stack<E, F>::push_segment()
 }
 
 template <class E, MEMFLAGS F>
-void Stack<E, F>::pop_segment()
+NOINLINE void Stack<E, F>::pop_segment()
 {
   assert(this->_cur_seg_size == 0, "current segment is not empty");
   E* const prev = get_link(_cur_seg);
@@ -183,7 +187,7 @@ void Stack<E, F>::pop_segment()
     DEBUG_ONLY(zap_segment(_cur_seg, true);)
     free(_cur_seg, segment_bytes());
   }
-  const bool at_empty_transition = prev == NULL;
+  const bool at_empty_transition = prev == nullptr;
   this->_cur_seg = prev;
   this->_cur_seg_size = this->_seg_size;
   this->_full_seg_size -= at_empty_transition ? 0 : this->_seg_size;
@@ -194,7 +198,7 @@ template <class E, MEMFLAGS F>
 void Stack<E, F>::free_segments(E* seg)
 {
   const size_t bytes = segment_bytes();
-  while (seg != NULL) {
+  while (seg != nullptr) {
     E* const prev = get_link(seg);
     free(seg, bytes);
     seg = prev;
@@ -206,10 +210,10 @@ void Stack<E, F>::reset(bool reset_cache)
 {
   this->_cur_seg_size = this->_seg_size; // So push() will alloc a new segment.
   this->_full_seg_size = 0;
-  _cur_seg = NULL;
+  _cur_seg = nullptr;
   if (reset_cache) {
     this->_cache_size = 0;
-    _cache = NULL;
+    _cache = nullptr;
   }
 }
 
@@ -223,7 +227,7 @@ void Stack<E, F>::verify(bool at_empty_transition) const
 
   assert(this->_full_seg_size % this->_seg_size == 0, "not a multiple");
   assert(at_empty_transition || is_empty() == (size() == 0), "mismatch");
-  assert((_cache == NULL) == (this->cache_size() == 0), "mismatch");
+  assert((_cache == nullptr) == (this->cache_size() == 0), "mismatch");
 
   if (is_empty()) {
     assert(this->_cur_seg_size == this->segment_size(), "sanity");
@@ -238,18 +242,6 @@ void Stack<E, F>::zap_segment(E* seg, bool zap_link_field) const
   Copy::fill_to_bytes(seg, zap_bytes, badStackSegVal);
 }
 #endif
-
-template <class E, MEMFLAGS F>
-E* ResourceStack<E, F>::alloc(size_t bytes)
-{
-  return (E*) resource_allocate_bytes(bytes);
-}
-
-template <class E, MEMFLAGS F>
-void ResourceStack<E, F>::free(E* addr, size_t bytes)
-{
-  resource_free_bytes((char*) addr, bytes);
-}
 
 template <class E, MEMFLAGS F>
 void StackIterator<E, F>::sync()
@@ -273,4 +265,4 @@ E* StackIterator<E, F>::next_addr()
   return _cur_seg + --_cur_seg_size;
 }
 
-#endif // SHARE_VM_UTILITIES_STACK_INLINE_HPP
+#endif // SHARE_UTILITIES_STACK_INLINE_HPP

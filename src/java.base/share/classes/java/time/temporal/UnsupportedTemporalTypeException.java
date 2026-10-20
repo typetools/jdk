@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,6 +61,9 @@
  */
 package java.time.temporal;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.time.DateTimeException;
 
 /**
@@ -77,6 +80,7 @@ public class UnsupportedTemporalTypeException extends DateTimeException {
     /**
      * Serialization version.
      */
+    @java.io.Serial
     private static final long serialVersionUID = -6158898438688206006L;
 
     /**
@@ -84,7 +88,8 @@ public class UnsupportedTemporalTypeException extends DateTimeException {
      *
      * @param message  the message to use for this exception, may be null
      */
-    public UnsupportedTemporalTypeException(String message) {
+    @SideEffectFree
+    public UnsupportedTemporalTypeException(@Nullable String message) {
         super(message);
     }
 
@@ -94,7 +99,8 @@ public class UnsupportedTemporalTypeException extends DateTimeException {
      * @param message  the message to use for this exception, may be null
      * @param cause  the cause of the exception, may be null
      */
-    public UnsupportedTemporalTypeException(String message, Throwable cause) {
+    @SideEffectFree
+    public UnsupportedTemporalTypeException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 

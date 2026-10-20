@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * StringConcatException is thrown by {@link StringConcatFactory} when linkage
  * invariants are violated.
@@ -32,13 +35,15 @@ package java.lang.invoke;
  * @since 9
  */
 public class StringConcatException extends Exception {
+    @java.io.Serial
     private static final long serialVersionUID = 292L + 9L;
 
     /**
      * Constructs an exception with a message
      * @param msg exception message
      */
-    public StringConcatException(String msg) {
+    @SideEffectFree
+    public StringConcatException(@Nullable String msg) {
         super(msg);
     }
 
@@ -47,7 +52,8 @@ public class StringConcatException extends Exception {
      * @param msg   exception message
      * @param cause throwable cause
      */
-    public StringConcatException(String msg, Throwable cause) {
+    @SideEffectFree
+    public StringConcatException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

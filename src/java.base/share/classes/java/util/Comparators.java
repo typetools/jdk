@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,10 @@
  * questions.
  */
 package java.util;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.Serializable;
 import java.util.function.BinaryOperator;
@@ -48,11 +52,13 @@ class Comparators {
         INSTANCE;
 
         @Override
+        @Pure
         public int compare(Comparable<Object> c1, Comparable<Object> c2) {
             return c1.compareTo(c2);
         }
 
         @Override
+        @SideEffectFree
         public Comparator<Comparable<Object>> reversed() {
             return Comparator.reverseOrder();
         }
@@ -62,18 +68,21 @@ class Comparators {
      * Null-friendly comparators
      */
     static final class NullComparator<T> implements Comparator<T>, Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = -7569533591570686392L;
         private final boolean nullFirst;
         // if null, non-null Ts are considered equal
-        private final Comparator<T> real;
+        @SuppressWarnings("serial") // Not statically typed as Serializable
+        private final @Nullable Comparator<T> real;
 
         @SuppressWarnings("unchecked")
-        NullComparator(boolean nullFirst, Comparator<? super T> real) {
+        NullComparator(boolean nullFirst, @Nullable Comparator<? super T> real) {
             this.nullFirst = nullFirst;
             this.real = (Comparator<T>) real;
         }
 
         @Override
+        @Pure
         public int compare(T a, T b) {
             if (a == null) {
                 return (b == null) ? 0 : (nullFirst ? -1 : 1);
@@ -91,6 +100,7 @@ class Comparators {
         }
 
         @Override
+        @SideEffectFree
         public Comparator<T> reversed() {
             return new NullComparator<>(!nullFirst, real == null ? null : real.reversed());
         }

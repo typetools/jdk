@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,12 +60,12 @@ import sun.util.logging.PlatformLogger;
  * ISO web site</a> for more information.
  * <p>
  * The class is designed so that there's never more than one
- * <code>Currency</code> instance for any given currency. Therefore, there's
- * no public constructor. You obtain a <code>Currency</code> instance using
- * the <code>getInstance</code> methods.
+ * {@code Currency} instance for any given currency. Therefore, there's
+ * no public constructor. You obtain a {@code Currency} instance using
+ * the {@code getInstance} methods.
  * <p>
  * Users can supersede the Java runtime currency data by means of the system
- * property {@code java.util.currency.data}. If this system property is
+ * property {@systemProperty java.util.currency.data}. If this system property is
  * defined then its value is the location of a properties file, the contents of
  * which are key/value pairs of the ISO 3166 country codes and the ISO 4217
  * currency data respectively.  The value part consists of three ISO 4217 values
@@ -113,12 +113,14 @@ import sun.util.logging.PlatformLogger;
  * with {@code Currency} or monetary values as it provides better handling of floating
  * point numbers and their operations.
  *
+ * @spec http://www.iso.org/iso/home/standards/currency_codes.htm ISO - ISO 4217 - Currency codes
  * @see java.math.BigDecimal
  * @since 1.4
  */
 @AnnotatedFor({"interning", "lock", "nullness"})
 public final @UsesObjectEquals class Currency implements Serializable {
 
+    @java.io.Serial
     private static final long serialVersionUID = -158308464356906721L;
 
     /**
@@ -214,6 +216,11 @@ public final @UsesObjectEquals class Currency implements Serializable {
     private static final int VALID_FORMAT_VERSION = 3;
 
     static {
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
         AccessController.doPrivileged(new PrivilegedAction<>() {
             @Override
             public Void run() {
@@ -279,8 +286,8 @@ public final @UsesObjectEquals class Currency implements Serializable {
 
 
     /**
-     * Constructs a <code>Currency</code> instance. The constructor is private
-     * so that we can insure that there's never more than one instance for a
+     * Constructs a {@code Currency} instance. The constructor is private
+     * so that we can ensure that there's never more than one instance for a
      * given currency.
      */
     private Currency(String currencyCode, int defaultFractionDigits, int numericCode) {
@@ -290,12 +297,12 @@ public final @UsesObjectEquals class Currency implements Serializable {
     }
 
     /**
-     * Returns the <code>Currency</code> instance for the given currency code.
+     * Returns the {@code Currency} instance for the given currency code.
      *
      * @param currencyCode the ISO 4217 code of the currency
-     * @return the <code>Currency</code> instance for the given currency code
-     * @exception NullPointerException if <code>currencyCode</code> is null
-     * @exception IllegalArgumentException if <code>currencyCode</code> is not
+     * @return the {@code Currency} instance for the given currency code
+     * @throws    NullPointerException if {@code currencyCode} is null
+     * @throws    IllegalArgumentException if {@code currencyCode} is not
      * a supported ISO 4217 code.
      */
     public static Currency getInstance(String currencyCode) {
@@ -355,7 +362,7 @@ public final @UsesObjectEquals class Currency implements Serializable {
     }
 
     /**
-     * Returns the <code>Currency</code> instance for the country of the
+     * Returns the {@code Currency} instance for the country of the
      * given locale. The language and variant components of the locale
      * are ignored. The result may vary over time, as countries change their
      * currencies. For example, for the original member countries of the
@@ -364,22 +371,22 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * of the respective countries.
      * <p>
      * If the specified {@code locale} contains "cu" and/or "rg"
-     * <a href="./Locale.html#def_locale_extension">Unicode extensions</a>,
+     * {@linkplain Locale##def_locale_extension Unicode extensions},
      * the instance returned from this method reflects
      * the values specified with those extensions. If both "cu" and "rg" are
      * specified, the currency from the "cu" extension supersedes the implicit one
      * from the "rg" extension.
      * <p>
-     * The method returns <code>null</code> for territories that don't
+     * The method returns {@code null} for territories that don't
      * have a currency, such as Antarctica.
      *
-     * @param locale the locale for whose country a <code>Currency</code>
+     * @param locale the locale for whose country a {@code Currency}
      * instance is needed
-     * @return the <code>Currency</code> instance for the country of the given
+     * @return the {@code Currency} instance for the country of the given
      * locale, or {@code null}
-     * @exception NullPointerException if <code>locale</code>
+     * @throws    NullPointerException if {@code locale}
      * is {@code null}
-     * @exception IllegalArgumentException if the country of the given {@code locale}
+     * @throws    IllegalArgumentException if the country of the given {@code locale}
      * is not a supported ISO 3166 country code.
      */
     public static Currency getInstance(Locale locale) {
@@ -513,7 +520,7 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * <p>
      * If the default {@link Locale.Category#DISPLAY DISPLAY} locale
      * contains "rg" (region override)
-     * <a href="./Locale.html#def_locale_extension">Unicode extension</a>,
+     * {@linkplain Locale##def_locale_extension Unicode extensions},
      * the symbol returned from this method reflects
      * the value specified with that extension.
      * <p>
@@ -535,14 +542,14 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * symbol can be determined, the ISO 4217 currency code is returned.
      * <p>
      * If the specified {@code locale} contains "rg" (region override)
-     * <a href="./Locale.html#def_locale_extension">Unicode extension</a>,
+     * {@linkplain Locale##def_locale_extension Unicode extensions},
      * the symbol returned from this method reflects
      * the value specified with that extension.
      *
      * @param locale the locale for which a display name for this currency is
      * needed
      * @return the symbol of this currency for the specified locale
-     * @exception NullPointerException if <code>locale</code> is null
+     * @throws    NullPointerException if {@code locale} is null
      */
     public String getSymbol(@GuardSatisfied Currency this, Locale locale) {
         LocaleServiceProviderPool pool =
@@ -637,7 +644,7 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * @param locale the locale for which a display name for this currency is
      * needed
      * @return the display name of this currency for the specified locale
-     * @exception NullPointerException if <code>locale</code> is null
+     * @throws    NullPointerException if {@code locale} is null
      * @since 1.7
      */
     public String getDisplayName(Locale locale) {
@@ -668,6 +675,7 @@ public final @UsesObjectEquals class Currency implements Serializable {
     /**
      * Resolves instances being deserialized to a single instance per currency.
      */
+    @java.io.Serial
     private Object readResolve() {
         return getInstance(currencyCode);
     }
@@ -944,16 +952,16 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * - oldCurrencyNumericCode: numeric code for old currencies
      * - newCurrencyNumericCode: numeric code for new currencies, 0 for countries
      *   that are not changing currencies
-    */
+     */
     private static class SpecialCaseEntry {
 
-        final private long cutOverTime;
-        final private String oldCurrency;
-        final private String newCurrency;
-        final private int oldCurrencyFraction;
-        final private int newCurrencyFraction;
-        final private int oldCurrencyNumericCode;
-        final private int newCurrencyNumericCode;
+        private final long cutOverTime;
+        private final String oldCurrency;
+        private final String newCurrency;
+        private final int oldCurrencyFraction;
+        private final int newCurrencyFraction;
+        private final int oldCurrencyNumericCode;
+        private final int newCurrencyNumericCode;
 
         private SpecialCaseEntry(long cutOverTime, String oldCurrency, String newCurrency,
                 int oldCurrencyFraction, int newCurrencyFraction,
@@ -1046,9 +1054,9 @@ public final @UsesObjectEquals class Currency implements Serializable {
      */
     private static class OtherCurrencyEntry {
 
-        final private String currencyCode;
-        final private int fraction;
-        final private int numericCode;
+        private final String currencyCode;
+        private final int fraction;
+        private final int numericCode;
 
         private OtherCurrencyEntry(String currencyCode, int fraction,
                 int numericCode) {
@@ -1083,11 +1091,11 @@ public final @UsesObjectEquals class Currency implements Serializable {
      * - date: cutover date
      */
     private static class CurrencyProperty {
-        final private String country;
-        final private String currencyCode;
-        final private int fraction;
-        final private int numericCode;
-        final private String date;
+        private final String country;
+        private final String currencyCode;
+        private final int fraction;
+        private final int numericCode;
+        private final String date;
 
         private CurrencyProperty(String country, String currencyCode,
                 int fraction, int numericCode, String date) {
@@ -1202,5 +1210,3 @@ public final @UsesObjectEquals class Currency implements Serializable {
     }
 
 }
-
-

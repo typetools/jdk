@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
+import java.io.Serial;
 
 import javax.print.attribute.Attribute;
 import javax.print.attribute.DocAttribute;
@@ -67,6 +69,7 @@ public abstract class Media extends EnumSyntax
     /**
      * Use serialVersionUID from JDK 1.4 for interoperability.
      */
+    @Serial
     private static final long serialVersionUID = -2823970704630722439L;
 
     /**
@@ -95,9 +98,9 @@ public abstract class Media extends EnumSyntax
     @Pure
     @EnsuresNonNullIf(expression="#1", result=true)
     public boolean equals(@Nullable Object object) {
-        return(object != null && object instanceof Media &&
-               object.getClass() == this.getClass() &&
-               ((Media)object).getValue() == this.getValue());
+        return object instanceof Media other &&
+                object.getClass() == this.getClass() &&
+                other.getValue() == this.getValue();
     }
 
     /**

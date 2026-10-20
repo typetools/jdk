@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,6 +37,9 @@ import jdk.jfr.internal.Type;
 @StackTrace(false)
 public final class ActiveSettingEvent extends AbstractJDKEvent {
 
+    // The order of these fields must be the same as the parameters in
+    // commit(... , long, String, String)
+
     @Label("Event Id")
     public long id;
 
@@ -45,4 +48,12 @@ public final class ActiveSettingEvent extends AbstractJDKEvent {
 
     @Label("Setting Value")
     public String value;
+
+    public static void commit(long startTime, long duration, long id, String name, String value) {
+        // Generated
+    }
+
+    public static boolean enabled() {
+        return false; // Generated
+    }
 }

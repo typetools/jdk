@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -196,6 +196,7 @@ import jdk.xml.internal.SecuritySupport;
  * @author Sunitha Reddy
  * @see javax.xml.datatype.Duration
  * @since 1.5
+ * @LastModified: Aug 2020
  */
 
 public class XMLGregorianCalendarImpl
@@ -1454,6 +1455,7 @@ public class XMLGregorianCalendarImpl
      * @throws NullPointerException if <code>lhs</code> or <code>rhs</code>
      * parameters are null.
      */
+    @Pure
     public int compare(XMLGregorianCalendar rhs) {
 
         XMLGregorianCalendar lhs = this;
@@ -1686,51 +1688,6 @@ public class XMLGregorianCalendarImpl
 
         return Pfield.compareTo(Qfield);
     }
-
-    /**
-     * <p>Indicates whether parameter <code>obj</code> is "equal to" this one.</p>
-     *
-     * @param obj to compare.
-     *
-     * @return <code>true</code> when <code>compare(this,(XMLGregorianCalendar)obj) == EQUAL.</code>.
-     */
-    @Pure
-    @EnsuresNonNullIf(expression="#1", result=true)
-    public boolean equals(@Nullable Object obj) {
-
-        if (obj == null || !(obj instanceof XMLGregorianCalendar)) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        return compare((XMLGregorianCalendar) obj) == DatatypeConstants.EQUAL;
-    }
-
-    /**
-     * <p>Returns a hash code consistent with the definition of the equals method.</p>
-     *
-     * @return hash code of this object.
-     */
-    public int hashCode() {
-
-        // Following two dates compare to EQUALS since in different timezones.
-        // 2000-01-15T12:00:00-05:00 == 2000-01-15T13:00:00-04:00
-        //
-        // Must ensure both instances generate same hashcode by normalizing
-        // this to UTC timezone.
-        int timezone = getTimezone();
-        if (timezone == DatatypeConstants.FIELD_UNDEFINED) {
-            timezone = 0;
-        }
-        XMLGregorianCalendar gc = this;
-        if (timezone != 0) {
-            gc = this.normalizeToTimezone(getTimezone());
-        }
-        return gc.getYear() + gc.getMonth() + gc.getDay() +
-                gc.getHour() + gc.getMinute() + gc.getSecond();
-    }
-
 
     /**
      * <p>Constructs a new XMLGregorianCalendar object by
@@ -2475,12 +2432,12 @@ public class XMLGregorianCalendarImpl
         if (lang != null) {
             if (country != null) {
                 if (variant != null) {
-                    locale = new Locale(lang, country, variant);
+                    locale = Locale.of(lang, country, variant);
                 } else {
-                    locale = new Locale(lang, country);
+                    locale = Locale.of(lang, country);
                 }
             } else {
-                locale = new Locale(lang);
+                locale = Locale.of(lang);
             }
         }
         if (locale == null) {
@@ -2763,7 +2720,7 @@ public class XMLGregorianCalendarImpl
             if ((fractional.compareTo(DECIMAL_ZERO) < 0) ||
                     (fractional.compareTo(DECIMAL_ONE) > 0)) {
                 throw new IllegalArgumentException(DatatypeMessageFormatter.formatMessage(null,
-                        "InvalidFractional", new Object[]{fractional}));
+                        "InvalidFractional", new Object[]{fractional.toString()}));
             }
         }
         this.fractionalSecond = fractional;

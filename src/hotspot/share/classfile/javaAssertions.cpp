@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 #include "precompiled.hpp"
 #include "classfile/javaAssertions.hpp"
 #include "classfile/javaClasses.hpp"
+#include "classfile/symbolTable.hpp"
 #include "classfile/systemDictionary.hpp"
+#include "classfile/vmClasses.hpp"
 #include "classfile/vmSymbols.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/oopFactory.hpp"
@@ -56,7 +58,7 @@ int JavaAssertions::OptionList::count(OptionList* p) {
 void JavaAssertions::addOption(const char* name, bool enable) {
   assert(name != 0, "must have a name");
 
-  // Copy the name.  The storage needs to exist for the the lifetime of the vm;
+  // Copy the name.  The storage needs to exist for the lifetime of the vm;
   // it is never freed, so will be leaked (along with other option strings -
   // e.g., bootclasspath) if a process creates/destroys multiple VMs.
   int len = (int)strlen(name);
@@ -79,7 +81,7 @@ void JavaAssertions::addOption(const char* name, bool enable) {
   // JVM_DesiredAssertionStatus pass the external_name() to
   // JavaAssertion::enabled(), but that is done once per loaded class.
   for (int i = 0; i < len; ++i) {
-    if (name_copy[i] == '.') name_copy[i] = '/';
+    if (name_copy[i] == JVM_SIGNATURE_DOT) name_copy[i] = JVM_SIGNATURE_SLASH;
   }
 
   if (TraceJavaAssertions) {
@@ -104,14 +106,14 @@ oop JavaAssertions::createAssertionStatusDirectives(TRAPS) {
   int len;
   typeArrayOop t;
   len = OptionList::count(_packages);
-  objArrayOop pn = oopFactory::new_objArray(SystemDictionary::String_klass(), len, CHECK_NULL);
+  objArrayOop pn = oopFactory::new_objArray(vmClasses::String_klass(), len, CHECK_NULL);
   objArrayHandle pkgNames (THREAD, pn);
   t = oopFactory::new_typeArray(T_BOOLEAN, len, CHECK_NULL);
   typeArrayHandle pkgEnabled(THREAD, t);
   fillJavaArrays(_packages, len, pkgNames, pkgEnabled, CHECK_NULL);
 
   len = OptionList::count(_classes);
-  objArrayOop cn = oopFactory::new_objArray(SystemDictionary::String_klass(), len, CHECK_NULL);
+  objArrayOop cn = oopFactory::new_objArray(vmClasses::String_klass(), len, CHECK_NULL);
   objArrayHandle classNames (THREAD, cn);
   t = oopFactory::new_typeArray(T_BOOLEAN, len, CHECK_NULL);
   typeArrayHandle classEnabled(THREAD, t);
@@ -126,7 +128,8 @@ oop JavaAssertions::createAssertionStatusDirectives(TRAPS) {
 }
 
 void JavaAssertions::fillJavaArrays(const OptionList* p, int len,
-objArrayHandle names, typeArrayHandle enabled, TRAPS) {
+                                    objArrayHandle names,
+                                    typeArrayHandle enabled, TRAPS) {
   // Fill in the parallel names and enabled (boolean) arrays.  Start at the end
   // of the array and work backwards, so the order of items in the arrays
   // matches the order on the command line (the list is in reverse order, since
@@ -134,8 +137,8 @@ objArrayHandle names, typeArrayHandle enabled, TRAPS) {
   int index;
   for (index = len - 1; p != 0; p = p->next(), --index) {
     assert(index >= 0, "length does not match list");
-    Handle s = java_lang_String::create_from_str(p->name(), CHECK);
-    s = java_lang_String::char_converter(s, '/', '.', CHECK);
+    TempNewSymbol name = SymbolTable::new_symbol(p->name());
+    Handle s = java_lang_String::externalize_classname(name, CHECK);
     names->obj_at_put(index, s());
     enabled->bool_at_put(index, p->enabled());
   }
@@ -163,10 +166,10 @@ JavaAssertions::match_package(const char* classname) {
   // does not include a package, length will be 0 which will match items for the
   // default package (from options "-ea:..."  or "-da:...").
   size_t len = strlen(classname);
-  for (/* empty */; len > 0 && classname[len] != '/'; --len) /* empty */;
+  for (/* empty */; len > 0 && classname[len] != JVM_SIGNATURE_SLASH; --len) /* empty */;
 
   do {
-    assert(len == 0 || classname[len] == '/', "not a package name");
+    assert(len == 0 || classname[len] == JVM_SIGNATURE_SLASH, "not a package name");
     for (OptionList* p = _packages; p != 0; p = p->next()) {
       if (strncmp(p->name(), classname, len) == 0 && p->name()[len] == '\0') {
         return p;
@@ -175,7 +178,7 @@ JavaAssertions::match_package(const char* classname) {
 
     // Find the length of the next package, taking care to avoid decrementing
     // past 0 (len is unsigned).
-    while (len > 0 && classname[--len] != '/') /* empty */;
+    while (len > 0 && classname[--len] != JVM_SIGNATURE_SLASH) /* empty */;
   } while (len > 0);
 
   return 0;

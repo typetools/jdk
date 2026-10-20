@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * The {@code GeneralSecurityException} class is a generic
  * security exception class that provides type safety for all the
@@ -36,24 +39,27 @@ package java.security;
 
 public class GeneralSecurityException extends Exception {
 
+    @java.io.Serial
     private static final long serialVersionUID = 894798122053539237L;
 
     /**
-     * Constructs a GeneralSecurityException with no detail message.
+     * Constructs a {@code GeneralSecurityException} with no detail message.
      */
+    @SideEffectFree
     public GeneralSecurityException() {
         super();
     }
 
     /**
-     * Constructs a GeneralSecurityException with the specified detail
+     * Constructs a {@code GeneralSecurityException} with the specified detail
      * message.
-     * A detail message is a String that describes this particular
+     * A detail message is a {@code String} that describes this particular
      * exception.
      *
      * @param msg the detail message.
      */
-    public GeneralSecurityException(String msg) {
+    @SideEffectFree
+    public GeneralSecurityException(@Nullable String msg) {
         super(msg);
     }
 
@@ -68,7 +74,8 @@ public class GeneralSecurityException extends Exception {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public GeneralSecurityException(String message, Throwable cause) {
+    @SideEffectFree
+    public GeneralSecurityException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -83,7 +90,8 @@ public class GeneralSecurityException extends Exception {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public GeneralSecurityException(Throwable cause) {
+    @SideEffectFree
+    public GeneralSecurityException(@Nullable Throwable cause) {
         super(cause);
     }
 }

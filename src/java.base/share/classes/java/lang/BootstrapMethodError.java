@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 /**
  * Thrown to indicate that an {@code invokedynamic} instruction or a dynamic
  * constant failed to resolve its bootstrap method and arguments,
@@ -40,11 +43,13 @@ package java.lang;
  * @since 1.7
  */
 public class BootstrapMethodError extends LinkageError {
+    @java.io.Serial
     private static final long serialVersionUID = 292L;
 
     /**
      * Constructs a {@code BootstrapMethodError} with no detail message.
      */
+    @SideEffectFree
     public BootstrapMethodError() {
         super();
     }
@@ -55,7 +60,8 @@ public class BootstrapMethodError extends LinkageError {
      *
      * @param s the detail message.
      */
-    public BootstrapMethodError(String s) {
+    @SideEffectFree
+    public BootstrapMethodError(@Nullable String s) {
         super(s);
     }
 
@@ -66,7 +72,8 @@ public class BootstrapMethodError extends LinkageError {
      * @param s the detail message.
      * @param cause the cause, may be {@code null}.
      */
-    public BootstrapMethodError(String s, Throwable cause) {
+    @SideEffectFree
+    public BootstrapMethodError(@Nullable String s, @Nullable Throwable cause) {
         super(s, cause);
     }
 
@@ -76,7 +83,9 @@ public class BootstrapMethodError extends LinkageError {
      *
      * @param cause the cause, may be {@code null}.
      */
-    public BootstrapMethodError(Throwable cause) {
+    @SideEffectFree
+    @SuppressWarnings("purity.call") // initCause affects only the new object
+    public BootstrapMethodError(@Nullable Throwable cause) {
         // cf. Throwable(Throwable cause) constructor.
         super(cause == null ? null : cause.toString());
         initCause(cause);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -23,24 +23,16 @@
  *
  */
 
-#ifndef CPU_S390_VM_GLOBALDEFINITIONS_S390_HPP
-#define CPU_S390_VM_GLOBALDEFINITIONS_S390_HPP
-
-#ifdef CC_INTERP
-#error "CC_INTERP is not supported on z/Architecture."
-#endif
-
-// Convenience macro that produces a string literal with the filename
-// and linenumber of the location where the macro was used.
-#ifndef FILE_AND_LINE
-#define FILE_AND_LINE __FILE__ ":" XSTR(__LINE__)
-#endif
+#ifndef CPU_S390_GLOBALDEFINITIONS_S390_HPP
+#define CPU_S390_GLOBALDEFINITIONS_S390_HPP
 
 #define ShortenBranches true
 
 const int StackAlignmentInBytes = 16;
 
 #define SUPPORTS_NATIVE_CX8
+
+#define CPU_MULTI_COPY_ATOMIC
 
 // Indicates whether the C calling conventions require that
 // 32-bit integer argument values are extended to 64 bits.
@@ -54,6 +46,4 @@ const bool CCallingConventionRequiresIntsAsLongs = true;
 
 #define SUPPORT_RESERVED_STACK_AREA
 
-#define THREAD_LOCAL_POLL
-
-#endif // CPU_S390_VM_GLOBALDEFINITIONS_S390_HPP
+#endif // CPU_S390_GLOBALDEFINITIONS_S390_HPP

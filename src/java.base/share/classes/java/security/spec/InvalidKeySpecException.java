@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,9 @@
 
 package java.security.spec;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -40,6 +43,7 @@ import java.security.GeneralSecurityException;
 
 public class InvalidKeySpecException extends GeneralSecurityException {
 
+    @java.io.Serial
     private static final long serialVersionUID = 3546139293998810778L;
 
     /**
@@ -47,6 +51,7 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      * detail message is a String that describes this particular
      * exception.
      */
+    @SideEffectFree
     public InvalidKeySpecException() {
         super();
     }
@@ -58,7 +63,8 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      *
      * @param msg the detail message.
      */
-    public InvalidKeySpecException(String msg) {
+    @SideEffectFree
+    public InvalidKeySpecException(@Nullable String msg) {
         super(msg);
     }
 
@@ -73,7 +79,8 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidKeySpecException(String message, Throwable cause) {
+    @SideEffectFree
+    public InvalidKeySpecException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -88,7 +95,8 @@ public class InvalidKeySpecException extends GeneralSecurityException {
      *        and indicates that the cause is nonexistent or unknown.)
      * @since 1.5
      */
-    public InvalidKeySpecException(Throwable cause) {
+    @SideEffectFree
+    public InvalidKeySpecException(@Nullable Throwable cause) {
         super(cause);
     }
 }
